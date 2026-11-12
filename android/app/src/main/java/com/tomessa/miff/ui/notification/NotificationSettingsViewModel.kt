@@ -12,7 +12,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
 /*
- * No analytics event, no write to the account: the choices of this screen stay on the phone (ticket 9.2, decision Q16 for phase 0).
+ * No analytics event. The choices of this screen stay on the phone (ticket 9.2, decision Q16 for phase 0), EXCEPT the general switch and the switch "Quand un proche donne des
+ * nouvelles": the server must know them to send or not (SRV-2), so they are mirrored in the document of this device by the registrar (observed in the container; nothing is
+ * written from this screen).
  */
 
 /** What Settings > Notifications draws (ticket section 9). */
@@ -22,6 +24,7 @@ data class NotificationSettingsUiState(
     /** The person turned the normal channel of a family off in the phone settings (Android only): "Ce type est coupé dans le téléphone". */
     val reminderChannelBlocked: Boolean = false,
     val circleChannelBlocked: Boolean = false,
+    val newsChannelBlocked: Boolean = false,
     /** The pop-in of the permission is open over the screen (the general switch was turned on while the permission had never been asked). */
     val primerOpen: Boolean = false,
 ) {
@@ -41,6 +44,7 @@ data class NotificationSettingsUiState(
         when (family) {
             NotificationFamily.REMINDER -> reminderChannelBlocked
             NotificationFamily.CIRCLE -> circleChannelBlocked
+            NotificationFamily.NEWS -> newsChannelBlocked
         }
 }
 
@@ -62,6 +66,7 @@ class NotificationSettingsViewModel(
             permission = authorization.state(),
             reminderChannelBlocked = channelBlocked(NotificationFamily.REMINDER),
             circleChannelBlocked = channelBlocked(NotificationFamily.CIRCLE),
+            newsChannelBlocked = channelBlocked(NotificationFamily.NEWS),
             primerOpen = primerOpen,
         )
 
@@ -84,6 +89,8 @@ class NotificationSettingsViewModel(
             }
 
             NotificationPermissionState.ALLOWED -> {
+                // Turning them ON by hand is the person's yes (SRV-2): the identifier of the phone may be registered for this account.
+                if (on) authorization.markConsentGiven()
                 settings.setEnabled(on)
                 refresh()
             }

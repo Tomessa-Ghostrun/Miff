@@ -7,6 +7,8 @@ import android.app.NotificationManager
 import android.content.Context
 import android.content.Intent
 import androidx.test.core.app.ApplicationProvider
+import com.tomessa.miff.domain.notification.CircleNewsKeys
+import com.tomessa.miff.domain.notification.CircleNewsPayload
 import com.tomessa.miff.domain.notification.NotificationDestination
 import com.tomessa.miff.domain.notification.NotificationFamily
 import com.tomessa.miff.domain.notification.NotificationType
@@ -25,7 +27,7 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
- * The part of the reminders that talks to the system, on the JVM (Robolectric): the alarms (inexact, one per type, replaced and cancelled), the four channels,
+ * The part of the reminders that talks to the system, on the JVM (Robolectric): the alarms (inexact, one per type, replaced and cancelled), the six channels,
  * the notification itself (the words of the PM, the tag, the tap), and what is kept on the disk (snapshot, ledger).
  */
 @RunWith(RobolectricTestRunner::class)
@@ -87,10 +89,13 @@ class NotificationPlatformTest {
     @Test
     fun cancelRemovesOnlyThatType_andCancelAllRemovesEverything() {
         val alarms = AndroidNotificationAlarms(context)
-        NotificationType.entries.filter { it != NotificationType.N6 }.forEachIndexed { i, type ->
+        NotificationType.entries.filter { it != NotificationType.N6 && it != NotificationType.N9 }.forEachIndexed {
+            i,
+            type,
+            ->
             alarms.schedule(type, ScheduledAlarm("k$i", "m", t0 + i))
         }
-        // N1, N2, N3, N4 and N7 (the end of a trip) wait for an hour: N6 is immediate.
+        // N1, N2, N3, N4 and N7 (the end of a trip) wait for an hour: N6 is immediate and N9 comes from the server.
         assertEquals(5, shadowOf(alarmManager).scheduledAlarms.size)
         alarms.cancel(NotificationType.N3)
         assertEquals(4, shadowOf(alarmManager).scheduledAlarms.size)
@@ -119,7 +124,7 @@ class NotificationPlatformTest {
     // --- Channels --------------------------------------------------------------------------------------------------------------------------
 
     @Test
-    fun fourChannels_twoFamiliesInTwoVersions_withTheLevelsOfTheDecision_andNoBadge() {
+    fun sixChannels_threeFamiliesInTwoVersions_withTheLevelsOfTheDecision_andNoBadge() {
         NotificationChannels.ensure(context)
         val channels = notificationManager.notificationChannels.associateBy { it.id }
         assertEquals(NotificationChannels.all.toSet(), channels.keys)
@@ -141,7 +146,24 @@ class NotificationPlatformTest {
         assertEquals("Nouvelles de ta Miff", channels.getValue(NotificationChannels.CIRCLE).name.toString())
         // Idempotent: asking again changes nothing.
         NotificationChannels.ensure(context)
-        assertEquals(4, notificationManager.notificationChannels.size)
+        assertEquals(6, notificationManager.notificationChannels.size)
+    }
+
+    @Test
+    fun theChannelOfTheNewsOfTheCircle_hasSoundAndVibrationByDay_theQuietOneNeither() {
+        NotificationChannels.ensure(context)
+        val channels = notificationManager.notificationChannels.associateBy { it.id }
+        val day = channels.getValue(NotificationChannels.UPDATES)
+        val night = channels.getValue(NotificationChannels.UPDATES_QUIET)
+        // Decision of the PM, 2026-11-12: the default level with sound and vibration (the phone's ring mode decides), quiet at night.
+        assertEquals(NotificationManager.IMPORTANCE_DEFAULT, day.importance)
+        assertTrue(day.shouldVibrate())
+        assertEquals(NotificationManager.IMPORTANCE_LOW, night.importance)
+        assertFalse(night.shouldVibrate())
+        assertEquals("Nouvelles des proches", day.name.toString())
+        assertEquals("Nouvelles des proches (nuit calme)", night.name.toString())
+        // The older channels keep not vibrating.
+        assertFalse(channels.getValue(NotificationChannels.CIRCLE).shouldVibrate())
     }
 
     @Test
@@ -161,6 +183,12 @@ class NotificationPlatformTest {
         )
         assertEquals(NotificationType.N1.family, NotificationFamily.REMINDER)
         assertEquals(NotificationType.N6.family, NotificationFamily.CIRCLE)
+        assertEquals(NotificationChannels.UPDATES, NotificationChannels.idOf(NotificationFamily.NEWS, quiet = false))
+        assertEquals(
+            NotificationChannels.UPDATES_QUIET,
+            NotificationChannels.idOf(NotificationFamily.NEWS, quiet = true),
+        )
+        assertEquals(NotificationType.N9.family, NotificationFamily.NEWS)
     }
 
     @Test
@@ -272,6 +300,92 @@ class NotificationPlatformTest {
                     .putExtra(NotificationIntents.EXTRA_KEY, "x".repeat(500)),
             ),
         )
+    }
+
+    // --- N9: a loved one gave news -----------------------------------------------------------------------------------------------------------
+
+    private fun news(
+        author: String? = "author1",
+        name: String = "Amandine",
+        miff: String = "miffAAAA",
+        sentAt: Long = t0,
+    ) = CircleNewsPayload(miff, author, name, sentAt)
+
+    @Test
+    fun theNotificationOfANews_holdsTheFirstNameAndTheFixedSentence_nothingElse_onTheNewsChannel() {
+        allowed()
+        val message = news()
+        val id = CircleNewsKeys.centerId(message)
+        AndroidNotificationPresenter(context).showCircleNews(message, id, quiet = false)
+        val tag = CircleNewsKeys.trayTag(message)
+        val shown = shadowOf(notificationManager).getNotification(tag, AndroidNotificationTray.TAG_ID)
+        assertNotNull(shown)
+        assertEquals("Amandine a donné des nouvelles", shown.extras.getString("android.title"))
+        assertEquals("Retrouve-les dans ta Miff.", shown.extras.getString("android.text"))
+        assertEquals(NotificationChannels.UPDATES, shown.channelId)
+        assertTrue(shown.flags and android.app.Notification.FLAG_AUTO_CANCEL != 0)
+        assertNull(shown.extras.getCharSequence("android.subText"))
+        assertNull(shown.extras.getCharSequence("android.bigText"))
+        assertNull("no photo", shown.getLargeIcon())
+        assertEquals(0, shown.number)
+        // At night: the quiet channel.
+        AndroidNotificationPresenter(context).showCircleNews(news(author = "author2"), "n9|u|author2|1", quiet = true)
+        val night = shadowOf(notificationManager).getNotification("n9|u|author2", AndroidNotificationTray.TAG_ID)
+        assertEquals(NotificationChannels.UPDATES_QUIET, night.channelId)
+    }
+
+    @Test
+    fun aSecondNewsOfTheSameAuthorReplacesTheFirstInTheTray_twoAuthorsMakeTwo() {
+        allowed()
+        val presenter = AndroidNotificationPresenter(context)
+        presenter.showCircleNews(news(sentAt = t0), "n9|u|author1|$t0", quiet = false)
+        presenter.showCircleNews(news(sentAt = t0 + 1, miff = "miffBBBB"), "n9|u|author1|${t0 + 1}", quiet = false)
+        assertEquals(1, shadowOf(notificationManager).allNotifications.size)
+        presenter.showCircleNews(news(author = "author2", name = "Thomas"), "n9|u|author2|$t0", quiet = false)
+        assertEquals(2, shadowOf(notificationManager).allNotifications.size)
+    }
+
+    @Test
+    fun theTapOnANewsCarriesTheFeedTheLineOfTheCentreAndTheMiff_andEachAuthorHasItsOwnTap() {
+        allowed()
+        val presenter = AndroidNotificationPresenter(context)
+        presenter.showCircleNews(news(author = "author1", miff = "miffAAAA"), "n9|u|author1|1", quiet = false)
+        presenter.showCircleNews(news(author = "author2", miff = "miffBBBB"), "n9|u|author2|2", quiet = false)
+
+        fun tapOf(tag: String) =
+            shadowOf(shadowOf(notificationManager).getNotification(tag, 0).contentIntent).savedIntent
+        val first = tapOf("n9|u|author1")
+        val second = tapOf("n9|u|author2")
+        assertEquals(NotificationDestination.FEED to "n9|u|author1|1", NotificationIntents.parse(first))
+        assertEquals("miffAAAA", NotificationIntents.miffId(first))
+        assertEquals("miffBBBB", NotificationIntents.miffId(second))
+    }
+
+    @Test
+    fun theMiffOfAnIntentIsCheckedForItsShape_anythingElseIsIgnored() {
+        fun intent(miff: String?) =
+            Intent(NotificationIntents.ACTION_OPEN)
+                .putExtra(NotificationIntents.EXTRA_DESTINATION, "FEED")
+                .apply { if (miff != null) putExtra(NotificationIntents.EXTRA_MIFF_ID, miff) }
+        assertEquals("AbC123", NotificationIntents.miffId(intent("AbC123")))
+        assertNull(NotificationIntents.miffId(intent(null)))
+        assertNull(NotificationIntents.miffId(intent("https://evil.example/x")))
+        assertNull(NotificationIntents.miffId(intent("a/../b")))
+        assertNull(NotificationIntents.miffId(intent("")))
+        assertNull(NotificationIntents.miffId(intent("x".repeat(65))))
+        // Another action, or none: nothing is read.
+        assertNull(
+            NotificationIntents.miffId(
+                Intent(Intent.ACTION_VIEW).putExtra(NotificationIntents.EXTRA_MIFF_ID, "AbC123"),
+            ),
+        )
+        assertNull(NotificationIntents.miffId(null))
+    }
+
+    @Test
+    fun withoutThePermissionANewsShowsNothing() {
+        AndroidNotificationPresenter(context).showCircleNews(news(), "n9|u|author1|1", quiet = false)
+        assertTrue(shadowOf(notificationManager).allNotifications.isEmpty())
     }
 
     // --- On the disk ------------------------------------------------------------------------------------------------------------------------

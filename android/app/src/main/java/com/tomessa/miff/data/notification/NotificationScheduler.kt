@@ -2,6 +2,8 @@ package com.tomessa.miff.data.notification
 
 import com.tomessa.miff.data.feed.CircleRead
 import com.tomessa.miff.data.feed.CircleStatusReader
+import com.tomessa.miff.domain.notification.CircleNewsKeys
+import com.tomessa.miff.domain.notification.CircleNewsPayload
 import com.tomessa.miff.domain.notification.Delivery
 import com.tomessa.miff.domain.notification.ItemState
 import com.tomessa.miff.domain.notification.NotificationDelivery
@@ -315,7 +317,8 @@ class NotificationScheduler(
                 }
             }
 
-            NotificationType.N6 -> {
+            // N6 is shown at once; N9 comes from the server: neither waits for an hour.
+            NotificationType.N6, NotificationType.N9 -> {
                 Unit
             }
 
@@ -388,6 +391,79 @@ class NotificationScheduler(
                     ledger.remember(key, now)
                     ledger.remember(rearmKey, now)
                     ledger.saveCounters(counters.afterShown(NotificationType.N6))
+                }
+            }
+        }
+    }
+
+    // --- N9: a loved one gave news (SRV-2, push of the server) ---------------------------------------------------------------------------------
+
+    /**
+     * The server told this phone that a member of a Miff published an update ([news], already validated by the parser). It reads and writes NOTHING on the server (the
+     * message carries everything: no read at the arrival of a push). Dropped when: nobody is signed in with a valid session, the phone does not let Miff notify, the author is
+     * the person herself, the general switch or the switch "Quand un proche donne des nouvelles" is off, or the same message already came (a key is never notified twice).
+     * Written to the centre only (a SILENT line, no notification) when: the app is in front (the Feed already shows it), the message is older than 2 hours (the life of the
+     * message at the server), or the 6 of the day were shown. Shown on the quiet channel from 22 h to 7 h (the local time of this phone is the time zone of the person)
+     * when "Nuit calme" is on. Not cut by a trip of the person: she receives as usual (ticket 5, Q5).
+     */
+    fun onCircleNews(
+        myUid: String,
+        news: CircleNewsPayload,
+    ) {
+        synchronized(lock) {
+            if (!permissionAllowed() || !sessionValid(myUid)) return
+            if (news.authorUid == myUid) return
+            val now = nowMillis()
+            val centerId = CircleNewsKeys.centerId(news)
+            val keys = ledger.keys(now)
+            val zone = zone()
+            val at = Instant.ofEpochMilli(now).atZone(zone)
+            val counters = ledger.counters(at.toLocalDate().toString())
+            val decision =
+                NotificationDelivery.decide(
+                    type = NotificationType.N9,
+                    preferences = settings.current(),
+                    counters = counters,
+                    localHour = at.hour,
+                    appInForeground = appInForeground(),
+                    latenessMillis = maxOf(0L, now - news.sentAtMillis),
+                    alreadyNotified = NotifiedKeys.contains(keys, centerId, now),
+                    maxLatenessMillis = NotificationPolicy.N9_MAX_AGE_MILLIS,
+                )
+            when (decision) {
+                Delivery.Drop -> {
+                    Unit
+                }
+
+                Delivery.Silent -> {
+                    center.add(
+                        NotificationItem(
+                            centerId,
+                            NotificationType.N9,
+                            news.miffId,
+                            minOf(news.sentAtMillis, now),
+                            state = ItemState.SILENT,
+                            who = news.authorFirstName,
+                        ),
+                    )
+                    ledger.remember(centerId, now)
+                }
+
+                is Delivery.Show -> {
+                    // The line first: if the tray refuses (permission withdrawn a second ago), the centre still tells what happened.
+                    center.add(
+                        NotificationItem(
+                            centerId,
+                            NotificationType.N9,
+                            news.miffId,
+                            now,
+                            state = ItemState.SHOWN,
+                            who = news.authorFirstName,
+                        ),
+                    )
+                    presenter.showCircleNews(news, centerId, decision.quiet)
+                    ledger.remember(centerId, now)
+                    ledger.saveCounters(counters.afterShown(NotificationType.N9))
                 }
             }
         }

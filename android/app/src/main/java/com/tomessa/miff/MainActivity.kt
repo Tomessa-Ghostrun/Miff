@@ -103,6 +103,8 @@ class MainActivity : ComponentActivity() {
                 MainTab.FEED
             },
         )
+        // N9: the tap also names the Miff concerned (shape checked: the intent may come from any application); the Feed shows it if the person belongs to it.
+        NotificationIntents.miffId(intent)?.let { container.miffDirectory.preselect(it) }
         key?.let { container.notificationCenter.markRead(it) }
     }
 

@@ -29,12 +29,23 @@ data class DailyCounters(
 ) {
     fun count(type: NotificationType): Int = perType[type] ?: 0
 
-    /** N1 to N4 together; N6 has its own cap and is OUTSIDE the total (decision Q30), N7 (once per trip, key `n7|uid|end`) has no cap at all (ticket mode voyage 9.1). */
-    val total: Int get() = perType.filterKeys { it != NotificationType.N6 && it != NotificationType.N7 }.values.sum()
+    /**
+     * N1 to N4 together; N6 has its own cap and is OUTSIDE the total (decision Q30), N7 (once per trip, key `n7|uid|end`) has no cap at all (ticket mode voyage 9.1), N9
+     * (news pushed by the server) has its own cap of 6 a day and does not count in the total (ticket notification-update-membres 7 and 13: "autre mécanisme").
+     */
+    val total: Int
+        get() =
+            perType
+                .filterKeys {
+                    it != NotificationType.N6 && it != NotificationType.N7 && it != NotificationType.N9
+                }.values
+                .sum()
 
     fun canShow(type: NotificationType): Boolean =
         if (type == NotificationType.N7) {
             true
+        } else if (type == NotificationType.N9) {
+            count(type) < NotificationPolicy.MAX_N9_PER_DAY
         } else if (type == NotificationType.N6) {
             count(type) < NotificationPolicy.MAX_N6_PER_DAY
         } else {
@@ -53,7 +64,7 @@ object NotificationDelivery {
      * 1. already notified for this key (it is never notified twice, a restart or a change of time must not repeat it): drop;
      * 2. the type or the general switch is off: drop (a switch cancels at once);
      * 3. the app is in front: only the centre (the bubble of the Feed already speaks, section 20.3, "Foreground");
-     * 4. late by more than 15 minutes (restart, deferred work, late alarm): only the centre (section 20.8);
+     * 4. late by more than [maxLatenessMillis] (15 minutes by default: restart, deferred work, late alarm; 2 hours for a push, the life of the message): only the centre (section 20.8);
      * 5. the daily cap is reached: only the centre (decision Q30);
      * 6. otherwise show it, quietly at night for N1, N3 and N6 (22 h to 7 h, local time NOW), normally for N2 and N4.
      */
@@ -65,12 +76,13 @@ object NotificationDelivery {
         appInForeground: Boolean,
         latenessMillis: Long,
         alreadyNotified: Boolean,
+        maxLatenessMillis: Long = NotificationPolicy.CATCH_UP_MAX_LATENESS_MILLIS,
     ): Delivery =
         when {
             alreadyNotified -> Delivery.Drop
             !preferences.allows(type) -> Delivery.Drop
             appInForeground -> Delivery.Silent
-            latenessMillis > NotificationPolicy.CATCH_UP_MAX_LATENESS_MILLIS -> Delivery.Silent
+            latenessMillis > maxLatenessMillis -> Delivery.Silent
             !counters.canShow(type) -> Delivery.Silent
             else -> Delivery.Show(quiet = NightCalm.isQuiet(type, preferences, localHour))
         }

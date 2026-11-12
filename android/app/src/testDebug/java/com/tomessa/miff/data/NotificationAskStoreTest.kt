@@ -88,7 +88,7 @@ class NotificationAskStoreTest {
             .edit()
             .putString(
                 "items",
-                """[{"id":"a","type":"n9","createdAt":1},{"id":"b","type":"n2","miffId":"m","createdAt":2}]""",
+                """[{"id":"a","type":"n99","createdAt":1},{"id":"b","type":"n2","miffId":"m","createdAt":2}]""",
             ).commit()
         assertEquals(listOf("b"), store.load().map { it.id })
 
@@ -98,6 +98,43 @@ class NotificationAskStoreTest {
         store.save(items)
         store.clear()
         assertTrue(store.load().isEmpty())
+    }
+
+    @Test
+    fun theConsentToBeNotifiedIsPerAccount_nothingByDefault_survivesARestart_andGoesWithTheAccount() {
+        assertFalse(store().pushConsent("uid-1"))
+        store().markPushConsent("uid-1")
+        assertTrue(store().pushConsent("uid-1"))
+        assertFalse("another account has not agreed", store().pushConsent("uid-2"))
+        assertTrue("a new instance finds it again", SharedPreferencesNotificationAskStore(context).pushConsent("uid-1"))
+        store().forget("uid-1")
+        assertFalse(store().pushConsent("uid-1"))
+    }
+
+    @Test
+    fun aLineOfTheNewsKeepsTheFirstNameOfTheAuthor_andNoOtherTypeDoes() {
+        val store = SharedPreferencesNotificationCenterStore(context)
+        val items =
+            listOf(
+                NotificationItem("n9|u|a|1", NotificationType.N9, "miff", 5L, who = "Amandine"),
+                NotificationItem("n6|m|p|1", NotificationType.N6, "miff", 6L),
+            )
+        store.save(items)
+        val loaded = store.load()
+        assertEquals("Amandine", loaded.first { it.type == NotificationType.N9 }.who)
+        assertEquals(null, loaded.first { it.type == NotificationType.N6 }.who)
+        store.clear()
+        assertTrue("gone with the session", store.load().isEmpty())
+    }
+
+    @Test
+    fun theSwitchOfTheNewsIsKeptOnThePhone_onByDefault() {
+        val store = SharedPreferencesNotificationPreferencesStore(context)
+        assertTrue(store.load().n9)
+        store.save(NotificationPreferences(n9 = false))
+        assertFalse(SharedPreferencesNotificationPreferencesStore(context).load().n9)
+        store.clear()
+        assertTrue(store.load().n9)
     }
 
     @Test

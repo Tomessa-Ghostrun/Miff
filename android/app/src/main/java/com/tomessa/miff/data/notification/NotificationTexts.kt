@@ -19,6 +19,7 @@ object NotificationTexts {
             NotificationType.N4 -> R.string.notif_n4_title
             NotificationType.N6 -> R.string.notif_n6a_title
             NotificationType.N7 -> R.string.notif_n7_title
+            NotificationType.N9 -> R.string.notif_center_circle_update_title
         }
 
     @StringRes
@@ -30,6 +31,7 @@ object NotificationTexts {
             NotificationType.N4 -> R.string.notif_n4_body
             NotificationType.N6 -> R.string.notif_n6a_body
             NotificationType.N7 -> R.string.notif_n7_body
+            NotificationType.N9 -> R.string.notif_circle_update_body
         }
 
     /** The label of the switch of the type in Settings > Notifications. */
@@ -42,5 +44,6 @@ object NotificationTexts {
             NotificationType.N4 -> R.string.notif_settings_n4
             NotificationType.N6 -> R.string.notif_settings_n6
             NotificationType.N7 -> R.string.notif_settings_n7
+            NotificationType.N9 -> R.string.notif_settings_circle_update
         }
 }

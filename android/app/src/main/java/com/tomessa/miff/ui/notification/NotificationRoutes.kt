@@ -128,6 +128,8 @@ internal fun NavGraphBuilder.notificationRoutes(
                     onBack = { navController.popBackStackIfSafe() },
                     onOpen = { row ->
                         viewModel.onOpen(row.id)
+                        // N9: the Feed of the Miff concerned (ignored if the person does not belong to it).
+                        row.miffId?.let(container.miffDirectory::preselect)
                         // The screen the notification is about (never an error): the Update for N1 and N2, the Feed for the others.
                         container.tabRequests.request(
                             if (row.type.destination ==

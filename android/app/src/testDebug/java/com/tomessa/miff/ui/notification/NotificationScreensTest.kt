@@ -22,6 +22,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
@@ -118,10 +119,15 @@ class NotificationScreensTest {
         ).forEach { composeRule.onNodeWithText(text(it)).assertHasClickAction().assertHeightIsAtLeast(48.dp) }
         // N6: said on the screen that the switch cuts the notification, never what the Miff sees.
         composeRule.onNodeWithText(text(R.string.notif_settings_n6_hint)).assertExists()
+        // SRV-2: the section "Pour tes proches" with the switch of the news pushed by the server, ON by default.
+        composeRule.onNodeWithText(text(R.string.notif_settings_section_loved_ones)).assertExists()
+        composeRule.onNodeWithText(text(R.string.notif_settings_circle_update)).assertExists()
+        composeRule.onNodeWithText(text(R.string.notif_settings_circle_update_hint)).assertExists()
         composeRule.onNodeWithText(text(R.string.notif_settings_night_title)).assertExists()
         composeRule.onNodeWithText(text(R.string.notif_settings_n6)).performClick()
         composeRule.onNodeWithText(text(R.string.notif_settings_general)).performClick()
-        composeRule.onNodeWithText(text(R.string.notif_settings_see_all)).performClick()
+        // The list grew (the news of the loved ones, SRV-2): the link is further down, the screen scrolls to it.
+        composeRule.onNodeWithText(text(R.string.notif_settings_see_all)).performScrollTo().performClick()
         assertEquals(listOf(NotificationType.N6 to false), typed)
         assertEquals(false, general)
         assertEquals(1, seen)

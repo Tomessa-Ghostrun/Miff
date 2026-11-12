@@ -146,6 +146,8 @@ class PermissionGateViewModel(
         currentUid()?.let(asked::markShown)
         notificationsHandled = true
         snapshot = permissions.snapshot()
+        // SRV-2: "Autoriser" on the pop-in (which now says Miff registers an identifier of the phone) and the phone lets Miff notify: the consent to be notified, per account.
+        if (snapshot.notifications) currentUid()?.let(asked::markPushConsent)
         publish()
     }
 

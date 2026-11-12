@@ -47,6 +47,7 @@ import com.tomessa.miff.R
 import com.tomessa.miff.data.notification.NotificationTexts
 import com.tomessa.miff.domain.notification.ItemSection
 import com.tomessa.miff.domain.notification.NotificationSections
+import com.tomessa.miff.domain.notification.NotificationType
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.miff.MiffConfirmDialog
 import com.tomessa.miff.ui.settings.SettingsScaffold
@@ -408,7 +409,12 @@ private fun CenterRowView(
     onDelete: () -> Unit,
 ) {
     val context = LocalContext.current
-    val title = stringResource(NotificationTexts.title(row.type))
+    val title =
+        if (row.type == NotificationType.N9 && row.who != null) {
+            stringResource(R.string.notif_circle_update_title, row.who)
+        } else {
+            stringResource(NotificationTexts.title(row.type))
+        }
     val body = stringResource(NotificationTexts.body(row.type))
     val time =
         remember(row.createdAtMillis, older) {

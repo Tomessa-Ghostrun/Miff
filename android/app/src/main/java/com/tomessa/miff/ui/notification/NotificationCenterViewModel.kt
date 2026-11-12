@@ -27,6 +27,10 @@ class CenterRow(
     val miffName: String?,
     val createdAtMillis: Long,
     val unread: Boolean,
+    /** N9 only: the first name of the author (the line says "{Prénom} a donné des nouvelles"). */
+    val who: String? = null,
+    /** N9 only: the Miff the line is about, for the tap (the Feed shows it if the person belongs to it). */
+    val miffId: String? = null,
 ) {
     override fun toString(): String = "CenterRow(redacted)"
 }
@@ -91,6 +95,8 @@ class NotificationCenterViewModel(
             miffName = miffId?.let(names::get),
             createdAtMillis = createdAtMillis,
             unread = unread,
+            who = who,
+            miffId = if (type == NotificationType.N9) miffId else null,
         )
 
     /** The screen is in front again (the permission may have changed in the settings of the phone). */

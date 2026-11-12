@@ -45,7 +45,8 @@ class NotificationAlarmReceiver : BroadcastReceiver() {
                             { it.notificationScheduler.fire(type, key) }
                         }
 
-                        NotificationType.N6 -> {
+                        // N6 is shown at once and N9 comes from the server: no alarm exists for them.
+                        NotificationType.N6, NotificationType.N9 -> {
                             return
                         }
                     }

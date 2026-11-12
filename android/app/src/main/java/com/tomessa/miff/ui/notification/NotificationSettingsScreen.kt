@@ -94,6 +94,11 @@ fun NotificationSettingsScreen(
         TypeRow(NotificationType.N6, state, actions, body = stringResource(R.string.notif_settings_n6_hint))
         ChannelBlockedNote(state.blocked(NotificationFamily.CIRCLE), actions.onOpenPhoneSettings)
 
+        // N9 (push of the server): "Quand un proche donne des nouvelles", ON by default; the switch is also what the server reads (notify.updates).
+        SectionTitle(R.string.notif_settings_section_loved_ones)
+        TypeRow(NotificationType.N9, state, actions, body = stringResource(R.string.notif_settings_circle_update_hint))
+        ChannelBlockedNote(state.blocked(NotificationFamily.NEWS), actions.onOpenPhoneSettings)
+
         Spacer(Modifier.size(Spacing.m))
         SwitchRow(
             title = stringResource(R.string.notif_settings_night_title),
