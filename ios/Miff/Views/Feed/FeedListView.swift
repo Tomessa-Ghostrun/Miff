@@ -54,13 +54,14 @@ struct FeedListView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(spacing: 14) {
+                VStack(spacing: 0) {
                     topAnchor
-                    items
+                    LazyVStack(spacing: 14) {
+                        items
+                    }
+                    .padding(.horizontal, Spacing.md)
+                    .padding(.bottom, Spacing.md)
                 }
-                .padding(.horizontal, Spacing.md)
-                .padding(.top, topInset + Spacing.md)
-                .padding(.bottom, Spacing.md)
                 .background(ScrollDistanceReader(onChange: onScrolled, onOrigin: onOrigin))
             }
             .onPreferenceChange(ContentTopKey.self) { onContentMoved($0) }
@@ -79,10 +80,11 @@ struct FeedListView: View {
         }
     }
 
-    /// Un point de hauteur nulle tout en haut du contenu : sa position dit où est le contenu.
+    /// La marge haute du contenu (l'en-tête mesuré + `FeedTopInset.gapBelowHeader`), tout en haut : son haut est le haut du contenu, sa position
+    /// dit où est le contenu, et « retour en haut » (le logo) y ramène la liste AVEC la marge, jamais la première carte sous l'en-tête.
     private var topAnchor: some View {
         Color.clear
-            .frame(height: 0)
+            .frame(height: topInset + FeedTopInset.gapBelowHeader)
             .id(Self.topId)
             .background(
                 GeometryReader { proxy in
