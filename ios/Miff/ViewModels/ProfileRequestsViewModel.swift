@@ -13,8 +13,12 @@ struct ProfileRequestsState: Equatable, CustomStringConvertible {
     var selectedMiffId: String?
     /// Par identifiant de Miff. Une Miff absente n'a encore rien.
     var views: [String: RequestsView] = [:]
-    /// La demande en cours de reprise (ses boutons attendent, un second toucher ne fait rien).
+    /// La demande en cours de reprise, d'acceptation ou de refus (ses boutons attendent, un second toucher ne fait rien).
     var busyRequestId: String?
+    /// Qui a demandé, par Miff et par personne (voir `RequesterKey`). Une personne absente n'a pas encore été lue.
+    var requesters: [String: RequesterState] = [:]
+    /// Le point de l'onglet Profil : une demande attend que le créateur n'a pas encore vue dans sa liste (ticket LIEU-REQ, question Q-R1).
+    var profileDot = false
 
     var description: String {
         "ProfileRequestsState(redacted)"
@@ -28,6 +32,10 @@ struct ProfileRequestsState: Equatable, CustomStringConvertible {
     func request(miffId: String, requestId: String) -> PlaceRequest? {
         views[miffId]?.requests.first { $0.id == requestId }
     }
+
+    func requester(of request: PlaceRequest) -> RequesterState? {
+        requesters[RequesterKey.key(miffId: request.miffId, uid: request.requestedBy)]
+    }
 }
 
 /// Ce que les écrans disent une fois, calmement, après un geste sur une demande.
@@ -36,6 +44,12 @@ enum RequestNoticeKind: Equatable, CustomStringConvertible {
     case withdrawn
     /// « Cette demande n'est plus en attente. »
     case gone
+    /// « « X » a été ajouté à la Miff. » (le créateur a accepté : les lieux de cette Miff sont relus).
+    case accepted(placeName: String)
+    /// « Demande retirée de la liste. » (le créateur a refusé : rien n'est dit au demandeur).
+    case declined
+    /// « Impossible de vérifier ton abonnement pour l'instant. » : aucune offre n'est ouverte sur un doute.
+    case subscriptionUnknown
     /// Le geste n'a pas marché : la phrase calme et générique, ou celle de « pas de connexion ».
     case failed(offline: Bool)
 
@@ -50,9 +64,33 @@ enum RequestNoticeKind: Equatable, CustomStringConvertible {
             return "place_request_withdrawn"
         case .gone:
             return "place_request_gone"
+        case .accepted:
+            return "place_request_accepted_toast"
+        case .declined:
+            return "place_request_declined_toast"
+        case .subscriptionUnknown:
+            return "place_request_subscription_unknown"
         case .failed(let offline):
             return offline ? "miff_message_offline" : "miff_message_generic"
         }
+    }
+
+    /// Le geste n'a pas abouti (le message reste sur l'écran où la personne est) ; les autres le terminent (l'écran se referme).
+    var isProblem: Bool {
+        switch self {
+        case .failed, .subscriptionUnknown:
+            return true
+        case .withdrawn, .gone, .accepted, .declined:
+            return false
+        }
+    }
+
+    /// Le texte montré (le nom du lieu accepté est celui de la demande, en mémoire seulement).
+    var text: String {
+        if case .accepted(let name) = self {
+            return L10n.format(textKey, name)
+        }
+        return L10n.string(textKey)
     }
 }
 
@@ -60,11 +98,21 @@ enum RequestNoticeKind: Equatable, CustomStringConvertible {
 ///
 /// MEMBRE (B) : les demandes en attente de la personne sont lues quand la carte d'une Miff apparaît (`onCardShown`), en tête de sa liste ;
 /// une demande est reprise avec `onWithdraw`.
+/// CRÉATEUR (C) : `watch` écoute les demandes d'UNE Miff (celle de la carte regardée, sinon la Miff active : `tracked`) pendant que l'app est
+/// devant ; chaque demande allume le point de l'onglet Profil jusqu'à ce que la liste soit vue, et se montre dans la liste avec qui l'a faite ;
+/// `onAccept` et `onDecline` y répondent. Les demandes de plus de 30 jours, ou faites par quelqu'un qui a quitté la Miff, sont masquées et
+/// supprimées par le créateur (`ProfileRequestsViewModel+Creator.swift`).
 @MainActor
 final class ProfileRequestsViewModel: ObservableObject {
     @Published var state = ProfileRequestsState()
     /// Le message calme du dernier geste, montré sur la liste jusqu'à ce que la personne la quitte ou fasse un autre geste.
     @Published var notice: RequestNoticeKind?
+    /// La Miff dont le créateur est prévenu en direct : celle de la carte montrée si la personne l'a créée, sinon la Miff active du Feed si
+    /// elle l'a créée, sinon aucune (un membre n'est prévenu de rien : il ne lit que ses propres demandes). UN écouteur, jamais un par Miff.
+    @Published var tracked: String?
+    /// L'offre doit s'ouvrir (la formule gratuite a ses 3 lieux, ou la demande est une zone de danger) : l'hôte la consomme. La demande reste
+    /// en attente.
+    @Published var paywall: PaywallReason?
 
     let repository: PlaceRequestRepository
     let network: NetworkMonitor
@@ -74,8 +122,18 @@ final class ProfileRequestsViewModel: ObservableObject {
     var creatorMiffs = Set<String>()
     /// Les Miffs dont la liste est dessinée : redessinées à chaque changement.
     var drawn = Set<String>()
+    /// La Miff active du Feed si la personne l'a créée (décide `tracked` tant qu'aucune carte n'a été montrée).
+    var activeCreatorMiff: String?
+    /// Les demandes dont la liste a été vue (par Miff et par demande) : le point de l'onglet Profil s'éteint.
+    var seen = Set<String>()
+    var resolving = Set<String>()
+    var unknownSince: [String: Int] = [:]
+    var purging = Set<String>()
+    let nowMillis: () -> Int
+    /// Une demande vient d'être acceptée : les lieux de cette Miff sont relus (l'hôte branche la liste des lieux du Profil).
+    var onAccepted: (String) -> Void = { _ in }
     /// Les Miffs que la personne a maintenant, une fois connues : une lecture qui finit après le départ d'une Miff est jetée.
-    private var knownMiffIds: Set<String>?
+    var knownMiffIds: Set<String>?
 
     init(
         repository: PlaceRequestRepository,
@@ -86,6 +144,7 @@ final class ProfileRequestsViewModel: ObservableObject {
         self.repository = repository
         self.network = network
         self.myUid = myUid
+        self.nowMillis = nowMillis
         book = PlaceRequestBook(nowMillis: nowMillis)
     }
 
@@ -103,6 +162,7 @@ final class ProfileRequestsViewModel: ObservableObject {
         if state.selectedMiffId != miffId {
             state.selectedMiffId = miffId
         }
+        updateTracked()
         publish()
         guard !creator, book.needsReading(miffId: miffId), let uid = myUid() else {
             return
@@ -134,7 +194,22 @@ final class ProfileRequestsViewModel: ObservableObject {
         guard state.views[miffId] == nil else {
             return
         }
-        onCardShown(miffId: miffId, creator: creator)
+        guard creator else {
+            onCardShown(miffId: miffId, creator: false)
+            return
+        }
+        // Le créateur : toutes les demandes de la Miff, une fois (l'écouteur n'est pas branché).
+        creatorMiffs.insert(miffId)
+        drawn.insert(miffId)
+        guard book.needsReading(miffId: miffId) else {
+            return
+        }
+        book.readingStarted(miffId: miffId)
+        let repository = self.repository
+        Task { [weak self] in
+            let answer = await repository.readAll(miffId: miffId)
+            self?.creatorReadingEnded(miffId: miffId, answer: answer)
+        }
     }
 
     /// « Réessayer » : relit à la prochaine apparition (un rafraîchissement discret, rien n'est dit en cas d'échec).
@@ -169,9 +244,18 @@ final class ProfileRequestsViewModel: ObservableObject {
         if kept != state.views {
             state.views = kept
         }
+        // Rien d'une Miff quittée ne reste : ni ses demandes, ni qui les a faites.
+        let people = state.requesters.filter { entry in miffIds.contains { entry.key.hasPrefix("\($0)|") } }
+        if people != state.requesters {
+            state.requesters = people
+        }
+        if let active = activeCreatorMiff, !miffIds.contains(active) {
+            activeCreatorMiff = nil
+        }
         if let selected = state.selectedMiffId, !miffIds.contains(selected) {
             state.selectedMiffId = nil
         }
+        updateTracked()
         publish()
     }
 
@@ -233,12 +317,15 @@ final class ProfileRequestsViewModel: ObservableObject {
         publish()
     }
 
-    /// Chaque Miff dessinée est redessinée (l'horloge a avancé : une demande a pu expirer).
+    /// Chaque Miff dessinée est redessinée (l'horloge a avancé : une demande a pu expirer), et le point de l'onglet Profil suit.
     func publish() {
         var views = state.views
         var ids = Set(views.keys).union(drawn)
         if let selected = state.selectedMiffId {
             ids.insert(selected)
+        }
+        if let tracked {
+            ids.insert(tracked)
         }
         for id in ids {
             views[id] = visibleView(id)
@@ -246,10 +333,53 @@ final class ProfileRequestsViewModel: ObservableObject {
         if views != state.views {
             state.views = views
         }
+        let dot = hasUnseen(in: tracked.flatMap { views[$0] })
+        if dot != state.profileDot {
+            state.profileDot = dot
+        }
     }
 
-    /// Les demandes d'une Miff telles que la liste les dessine.
+    /// Une demande de la Miff suivie dont la liste n'a pas encore été vue : le point s'allume.
+    private func hasUnseen(in view: RequestsView?) -> Bool {
+        guard let tracked, let view else {
+            return false
+        }
+        return view.requests.contains { !seen.contains(seenKey(tracked, $0)) }
+    }
+
+    func seenKey(_ miffId: String, _ request: PlaceRequest) -> String {
+        "\(miffId)|\(request.id)"
+    }
+
+    /// Les demandes d'une Miff telles que la liste les dessine : pour un créateur, seulement celles de personnes qui sont encore dans la Miff
+    /// (les autres sont en cours de suppression).
     func visibleView(_ miffId: String) -> RequestsView {
-        book.view(miffId: miffId, creator: creatorMiffs.contains(miffId))
+        let creator = creatorMiffs.contains(miffId)
+        let view = book.view(miffId: miffId, creator: creator)
+        guard creator, case .ready(let requests) = view else {
+            return view
+        }
+        return .ready(requests.filter { state.requester(of: $0) != .notMember })
+    }
+
+    func updateTracked() {
+        let selected = state.selectedMiffId.flatMap { creatorMiffs.contains($0) ? $0 : nil }
+        let next = selected ?? activeCreatorMiff
+        if next != tracked {
+            tracked = next
+        }
+    }
+
+    private func creatorReadingEnded(miffId: String, answer: MineRead) {
+        if let known = knownMiffIds, !known.contains(miffId) {
+            return
+        }
+        switch answer {
+        case .loaded(let found):
+            onKnown(miffId: miffId, requests: found, live: false)
+        case .failed:
+            book.readingFailed(miffId: miffId)
+        }
+        publish()
     }
 }

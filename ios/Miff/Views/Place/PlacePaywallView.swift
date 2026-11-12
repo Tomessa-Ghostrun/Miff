@@ -6,11 +6,13 @@ struct PlacePaywallView: View {
     let reason: PaywallReason
     let tracker: AnalyticsTracker
     let onClose: () -> Void
+    /// L'offre vient d'« Accepter » sur une demande reçue : la carte du haut dit que la demande reste en attente (ticket LIEU-REQ, §4.5).
+    var fromRequest = false
 
     @State private var tracking: PlacePaywallTracking?
 
     var body: some View {
-        PlacePaywallContent(reason: reason, onClose: onClose)
+        PlacePaywallContent(reason: reason, onClose: onClose, fromRequest: fromRequest)
             .onAppear {
                 let current = tracking ?? PlacePaywallTracking(reason: reason)
                 tracking = current
@@ -37,13 +39,14 @@ struct PlacePaywallView: View {
 struct PlacePaywallContent: View {
     let reason: PaywallReason
     let onClose: () -> Void
+    var fromRequest = false
 
     var body: some View {
         VStack(spacing: 0) {
             topBar
             ScrollView {
                 VStack(spacing: Spacing.md) {
-                    PlacePaywallContext(reason: reason)
+                    PlacePaywallContext(reason: reason, fromRequest: fromRequest)
                     Text("place_paywall_headline")
                         .miffTextStyle(textTitleBold24)
                         .miffBrandTitleFill()
@@ -116,6 +119,22 @@ struct PlacePaywallContent: View {
 /// La phrase calme du haut : pourquoi l'offre s'affiche (maquettes 14 et 15).
 struct PlacePaywallContext: View {
     let reason: PaywallReason
+    var fromRequest = false
+
+    /// Le texte du corps : celui de la demande reçue quand l'offre vient d'« Accepter » (limite ou zone de danger seulement).
+    private var bodyKey: String {
+        guard fromRequest else {
+            return reason.bodyKey
+        }
+        switch reason {
+        case .limit:
+            return "place_request_paywall_limit"
+        case .danger:
+            return "place_request_paywall_danger"
+        case .extraMiff:
+            return reason.bodyKey
+        }
+    }
 
     var body: some View {
         HStack(spacing: Spacing.md) {
@@ -125,7 +144,7 @@ struct PlacePaywallContext: View {
                     .miffTextStyle(textBodyBold16)
                     .foregroundColor(colorTextPrimary.color)
                     .accessibilityAddTraits(.isHeader)
-                Text(verbatim: L10n.string(reason.bodyKey))
+                Text(verbatim: L10n.string(bodyKey))
                     .miffTextStyle(textBodyRegular)
                     .foregroundColor(colorTextDescription.color)
                     .fixedSize(horizontal: false, vertical: true)

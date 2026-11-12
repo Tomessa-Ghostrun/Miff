@@ -23,6 +23,9 @@ struct PlaceListUi: Equatable, CustomStringConvertible {
     var requestKind: RequestNoticeKind?
     /// La demande en cours de réponse : ses boutons attendent.
     var busyRequestId: String?
+    /// Le CRÉATEUR : les demandes reçues (LIEU-REQ-C), la plus ancienne d'abord ; elles viennent AVANT les lieux, dans des cartes qui les
+    /// distinguent des lieux de la Miff.
+    var received: [ReceivedRequest] = []
 
     /// Combien de lieux différents la liste montre (un lieu n'apparaît qu'une fois dans la liste d'une Miff).
     var distinctCount: Int {

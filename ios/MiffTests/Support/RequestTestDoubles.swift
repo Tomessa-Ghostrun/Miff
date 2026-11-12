@@ -111,6 +111,61 @@ final class FakePlaceRequestStore: PlaceRequestStore {
     func enqueue(_ writes: [DocWrite]) {
         enqueued.append(writes)
     }
+
+    // MARK: - Le créateur
+
+    /// La fiche de chaque personne qui a demandé, par uid ; absente = la personne n'est plus dans la Miff (le serveur le dit).
+    var requesters: [String: RequesterCard] = [:]
+    var requesterFailure: Error?
+    private(set) var requesterReads: [String] = []
+    private(set) var observers: [AsyncThrowingStream<RequestsSnapshot, Error>.Continuation] = []
+
+    func observeAll(miffId: String) -> AsyncThrowingStream<RequestsSnapshot, Error> {
+        AsyncThrowingStream { continuation in
+            self.observers.append(continuation)
+        }
+    }
+
+    /// L'écouteur donne ces demandes.
+    func emit(_ list: [PlaceRequest], fromCache: Bool = false) {
+        for observer in observers {
+            observer.yield(RequestsSnapshot(requests: list, fromCache: fromCache))
+        }
+    }
+
+    /// Le serveur refuse l'écouteur (ou une coupure) : le flux se termine avec cette erreur.
+    func failObservation(_ error: Error) {
+        for observer in observers {
+            observer.finish(throwing: error)
+        }
+    }
+
+    func readAll(miffId: String) async throws -> [PlaceRequest] {
+        reads.append("all")
+        if let readFailure {
+            throw readFailure
+        }
+        return requests.filter { $0.miffId == miffId }
+    }
+
+    func readOne(miffId: String, requestId: String) async throws -> PlaceRequest? {
+        reads.append("one")
+        if let readFailure {
+            throw readFailure
+        }
+        return requests.first { $0.miffId == miffId && $0.id == requestId }
+    }
+
+    func readRequester(miffId: String, uid: String) async throws -> RequesterRead {
+        requesterReads.append(uid)
+        if let requesterFailure {
+            throw requesterFailure
+        }
+        if let card = requesters[uid] {
+            return .found(card)
+        }
+        return .notMember
+    }
 }
 
 /// Le dépôt des demandes tel que les view models le voient : ce que disent ses lectures, et chaque appel reçu.
@@ -158,5 +213,65 @@ final class FakePlaceRequestRepository: PlaceRequestRepository {
 
     func withdrawAllMine(uid: String, miffId: String) async {
         withdrawAllCalls.append(miffId)
+    }
+
+    // MARK: - Le créateur
+
+    var readAllResult = MineRead.loaded([])
+    var requesterResults: [String: RequesterState] = [:]
+    var acceptResult = RequestAcceptResult.done(placeId: "p1")
+    var declineResult = RequestDeclineResult.done
+    private(set) var readAllCalls: [String] = []
+    private(set) var requesterCalls: [String] = []
+    private(set) var accepted: [PlaceRequest] = []
+    private(set) var acceptedCounts: [Int] = []
+    private(set) var declined: [PlaceRequest] = []
+    private(set) var declinedCounts: [Int] = []
+    private(set) var purged: [[String]] = []
+    private(set) var purgedRemaining: [Int] = []
+    private(set) var observedMiffs: [String] = []
+    private var continuations: [AsyncStream<RequestsObservation>.Continuation] = []
+
+    func observe(miffId: String) -> AsyncStream<RequestsObservation> {
+        observedMiffs.append(miffId)
+        return AsyncStream { continuation in
+            self.continuations.append(continuation)
+        }
+    }
+
+    /// L'écouteur dit ceci à tous ceux qui l'écoutent.
+    func emit(_ observation: RequestsObservation) {
+        for continuation in continuations {
+            continuation.yield(observation)
+        }
+    }
+
+    func readAll(miffId: String) async -> MineRead {
+        readAllCalls.append(miffId)
+        return readAllResult
+    }
+
+    func readRequester(miffId: String, uid: String) async -> RequesterState {
+        requesterCalls.append(uid)
+        return requesterResults[uid] ?? .unknown
+    }
+
+    func accept(uid: String, request: PlaceRequest, knownCount: Int) async -> RequestAcceptResult {
+        accepted.append(request)
+        acceptedCounts.append(knownCount)
+        await gate?.wait()
+        return acceptResult
+    }
+
+    func decline(_ request: PlaceRequest, knownCount: Int) async -> RequestDeclineResult {
+        declined.append(request)
+        declinedCounts.append(knownCount)
+        await gate?.wait()
+        return declineResult
+    }
+
+    func purge(miffId: String, requestIds: [String], remaining: Int) async {
+        purged.append(requestIds)
+        purgedRemaining.append(remaining)
     }
 }

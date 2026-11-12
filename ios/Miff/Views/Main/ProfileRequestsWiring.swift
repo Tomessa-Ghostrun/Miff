@@ -11,6 +11,8 @@ struct ProfileRequestsContent: Equatable, CustomStringConvertible {
     var sentNotice: RequestNotice?
     var kind: RequestNoticeKind?
     var busyRequestId: String?
+    /// Un créateur : les demandes reçues, la plus ancienne d'abord, avec qui les a faites.
+    var received: [ReceivedRequest] = []
 
     static let none = ProfileRequestsContent()
 
@@ -26,11 +28,13 @@ struct ProfileRequestsContent: Equatable, CustomStringConvertible {
         sentNotice: RequestNotice?,
         kind: RequestNoticeKind?
     ) -> ProfileRequestsContent {
-        ProfileRequestsContent(
-            requests: isCreator ? [] : (state.views[miffId]?.requests ?? []),
+        let found = state.views[miffId]?.requests ?? []
+        return ProfileRequestsContent(
+            requests: isCreator ? [] : found,
             sentNotice: isCreator ? nil : sentNotice,
             kind: kind,
-            busyRequestId: state.busyRequestId
+            busyRequestId: state.busyRequestId,
+            received: isCreator ? found.map { ReceivedRequest(request: $0, requester: state.requester(of: $0)) } : []
         )
     }
 }
@@ -50,6 +54,7 @@ extension ProfilePlacesPresentation {
         ui.requestNotice = requests.sentNotice
         ui.requestKind = requests.kind
         ui.busyRequestId = requests.busyRequestId
+        ui.received = requests.received
         return ui
     }
 }
@@ -79,7 +84,10 @@ extension ProfilePlacesActions {
                 model.onProfileAppeared()
             },
             onOpenRequest: { miffId, requestId in open(.placeRequestDetail(miffId: miffId, requestId: requestId)) },
-            onRequestPlace: { miffId in open(.placeRequestForm(miffId: miffId)) }
+            onRequestPlace: { miffId in open(.placeRequestForm(miffId: miffId)) },
+            onAcceptRequest: { model.onAccept($0) },
+            onDeclineRequest: { model.onDecline($0) },
+            onRequestsSeen: { model.onListSeen(miffId: $0) }
         )
     }
 }

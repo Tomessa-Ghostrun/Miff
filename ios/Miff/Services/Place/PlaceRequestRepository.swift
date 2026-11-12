@@ -42,10 +42,17 @@ final class FirestorePlaceRequestRepository: PlaceRequestRepository {
     /// Au plus une minute en tout pour reprendre ses demandes avant « Quitter », quoi que fasse le réseau : jamais une longue attente.
     static let leaveBudgetSeconds: TimeInterval = 60
 
-    private let store: PlaceRequestStore
-    private let places: PlaceStore
-    private let nowMillis: () -> Int
-    private let timeoutSeconds: TimeInterval
+    let store: PlaceRequestStore
+    let places: PlaceStore
+    /// Ce que l'acceptation lit pour appliquer les limites de la formule gratuite (la formule, les Miffs et les lieux de la personne).
+    let placeRepository: PlaceRepository
+    /// L'identifiant d'un lieu d'un créateur Miff+ (tiré sur le téléphone, comme pour une création).
+    let newPlaceId: () -> String
+    let nowMillis: () -> Int
+    let timeoutSeconds: TimeInterval
+    /// Un lieu vient d'être créé par l'acceptation d'une demande : le suivi des lieux relit les lieux (comme pour un lieu créé par le
+    /// créateur lui-même, `ChangeNotifyingPlaceRepository`), pour que les zones se programment sans attendre l'heure.
+    let onPlaceAdded: () -> Void
     /// Y a-t-il un réseau ? Quitter une Miff saute la reprise des demandes quand il n'y en a pas (le départ lui-même a besoin du réseau).
     private let online: () -> Bool
     private let queued = QueuedRequestMarks()
@@ -53,15 +60,21 @@ final class FirestorePlaceRequestRepository: PlaceRequestRepository {
     init(
         store: PlaceRequestStore,
         places: PlaceStore,
+        placeRepository: PlaceRepository,
+        newPlaceId: @escaping () -> String,
         nowMillis: @escaping () -> Int = { Int(Date().timeIntervalSince1970 * 1000) },
         timeoutSeconds: TimeInterval = 20,
-        online: @escaping () -> Bool = { true }
+        online: @escaping () -> Bool = { true },
+        onPlaceAdded: @escaping () -> Void = {}
     ) {
         self.store = store
         self.places = places
+        self.placeRepository = placeRepository
+        self.newPlaceId = newPlaceId
         self.nowMillis = nowMillis
         self.timeoutSeconds = timeoutSeconds
         self.online = online
+        self.onPlaceAdded = onPlaceAdded
     }
 
     // MARK: - Lire
@@ -130,7 +143,7 @@ final class FirestorePlaceRequestRepository: PlaceRequestRepository {
     }
 
     /// Miff+ = un abonnement actif qui n'a pas expiré. Aucun document = pas Miff+.
-    private func isActive(_ read: EntitlementRead?) -> Bool {
+    func isActive(_ read: EntitlementRead?) -> Bool {
         guard let read, let expires = read.expiresAtMillis else {
             return false
         }
@@ -331,7 +344,7 @@ final class FirestorePlaceRequestRepository: PlaceRequestRepository {
         return nil
     }
 
-    private func guarded<Value>(_ call: @escaping () async throws -> Value) async -> Guarded<Value> {
+    func guarded<Value>(_ call: @escaping () async throws -> Value) async -> Guarded<Value> {
         await guardedCall(timeoutSeconds: timeoutSeconds, call)
     }
 }

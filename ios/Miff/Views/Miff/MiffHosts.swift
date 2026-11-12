@@ -60,7 +60,10 @@ struct MiffOnboardingHost: View {
                 navigate: { open(.settings($0)) },
                 onBack: { pop() }
             )
-        case .miff, .placeForm, .placeDetail, .placePaywall, .placeRequestForm, .placeRequestDetail:
+        case .miff, .placeForm, .placeDetail, .placePaywall:
+            // Pas d'écran de Miff ni de lieu avant la fin de l'onboarding : la personne n'en a pas encore.
+            EmptyView()
+        case .placeRequestForm, .placeRequestDetail, .placeRequestPaywall:
             // Pas d'écran de Miff ni de lieu avant la fin de l'onboarding : la personne n'en a pas encore.
             EmptyView()
         }
@@ -207,6 +210,20 @@ struct MiffHomeHost: View {
                 memberPreviews.replaceFace(uid: uid, initials: mine.initials, jpeg: mine.avatarJpeg)
             }
         }
+        // « Accepter » sur une demande reçue, formule gratuite pleine ou zone de danger : l'offre s'ouvre, la demande reste en attente.
+        .onChange(of: profileRequests.paywall) { reason in
+            if let reason {
+                profileRequests.consumePaywall()
+                open(.placeRequestPaywall(reason))
+            }
+        }
+        // Une demande acceptée : le lieu est dans la Miff, la liste des lieux du Profil est relue (sans attendre les 5 minutes).
+        .onAppear {
+            profileRequests.onAccepted = { miffId in
+                profilePlaces.onPlacesMayChange()
+                profilePlaces.onCardShown(miffId: miffId)
+            }
+        }
         // Une seule lecture des Miffs par session à l'ouverture (pas une à chaque retour sur l'écran) : le contrôle auprès du
         // serveur que l'accès à chaque Miff existe encore, avant d'en montrer quoi que ce soit (ticket §5.7, critère D2).
         .task {
@@ -343,6 +360,13 @@ struct MiffHomeHost: View {
             )
         case .placePaywall(let reason):
             PlacePaywallView(reason: reason, tracker: environment.analyticsTracker, onClose: { pop() })
+        case .placeRequestPaywall(let reason):
+            PlacePaywallView(
+                reason: reason,
+                tracker: environment.analyticsTracker,
+                onClose: { pop() },
+                fromRequest: true
+            )
         case .placeRequestForm, .placeRequestDetail:
             // Une demande d'ajout d'un lieu (LIEU-REQ) : le formulaire, ou le détail d'une demande en attente.
             PlaceRequestRouteView(
