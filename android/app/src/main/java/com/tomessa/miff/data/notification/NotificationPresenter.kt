@@ -86,7 +86,14 @@ class AndroidNotificationPresenter(
         // Resolved NOW, in the language of the app (the choice of Settings > Langue, also before Android 13): the text of the moment, not of the planning.
         val context = AndroidLanguageStore.wrap(appContext)
         val manager = NotificationManagerCompat.from(context)
-        if (!canPost(context, manager)) return
+        // The check stays INSIDE this method (Android Lint only accepts a permission check it can see next to the call to notify).
+        if (!manager.areNotificationsEnabled()) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
         NotificationChannels.ensure(context)
         val open =
             Intent(context, MainActivity::class.java)
@@ -139,7 +146,14 @@ class AndroidNotificationPresenter(
     ) {
         val context = AndroidLanguageStore.wrap(appContext)
         val manager = NotificationManagerCompat.from(context)
-        if (!canPost(context, manager)) return
+        // The check stays INSIDE this method (Android Lint only accepts a permission check it can see next to the call to notify).
+        if (!manager.areNotificationsEnabled()) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
         NotificationChannels.ensure(context)
         val tag = CircleNewsKeys.trayTag(news)
         val open =
@@ -173,16 +187,6 @@ class AndroidNotificationPresenter(
                 .build()
         // Tag = one per author: a new notification of the same author replaces the previous one (ticket 7, "Remplacement").
         manager.notify(tag, AndroidNotificationTray.TAG_ID, notification)
-    }
-
-    private fun canPost(
-        context: Context,
-        manager: NotificationManagerCompat,
-    ): Boolean {
-        if (!manager.areNotificationsEnabled()) return false
-        return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
-            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) ==
-            PackageManager.PERMISSION_GRANTED
     }
 
     private companion object {
