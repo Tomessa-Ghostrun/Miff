@@ -23,15 +23,24 @@ test('WORKFLOWS - hygiene.yml et firestore-rules.yml existent', () => {
   assert.ok(names.includes('firestore-rules.yml'));
 });
 
-// Un envoi signé vers TestFlight ne doit pas être interrompu à mi-course par une exécution suivante :
-// ce workflow (manuel) garde cancel-in-progress: false, et lui seul.
-const KEEP_RUNNING = new Set(['ios-testflight.yml']);
+// Un envoi signé vers TestFlight ne doit pas être interrompu à mi-course par une exécution suivante, ni un bundle Android signé
+// avec la clé d'envoi : ces deux workflows (manuels) gardent cancel-in-progress: false, et eux seuls.
+const KEEP_RUNNING = new Set(['ios-testflight.yml', 'android-release.yml']);
 
 // Seuls ces workflows ont le droit de lire des secrets, et seulement ceux-ci (liste fermée, noms exacts).
 // Tout autre workflow, ou tout autre secret, fait échouer le test : l'ajout d'un secret doit être une décision visible en revue.
 const SECRETS_ALLOWED = {
   // android.yml : la configuration Firebase + le keystore de debug stable (SHA-1 fixe pour la connexion Google).
   'android.yml': ['DEBUG_KEYSTORE_B64', 'GOOGLE_SERVICES_JSON_B64'],
+  // android-release.yml (manuel, branche main) : les 4 secrets de la clé d'envoi Google Play + la configuration Firebase (recréée pour la compilation,
+  // supprimée en fin de job). Liste triée comme le fait le test.
+  'android-release.yml': [
+    'ANDROID_UPLOAD_KEYSTORE_B64',
+    'ANDROID_UPLOAD_KEY_ALIAS',
+    'ANDROID_UPLOAD_KEY_PASSWORD',
+    'ANDROID_UPLOAD_STORE_PASSWORD',
+    'GOOGLE_SERVICES_JSON_B64',
+  ],
   // ios.yml : seulement la configuration Firebase (recréée pour la compilation, supprimée en fin de job).
   'ios.yml': ['GOOGLE_SERVICE_INFO_PLIST_B64'],
   // ios-testflight.yml : les 4 secrets de signature + la configuration Firebase (mêmes règles que ios.yml).
@@ -112,11 +121,13 @@ test('WORKFLOWS - la durée de chaque job est consignée dans le résumé', () =
   }
 });
 
-test('DEPENDABOT - github-actions et npm (backend) déclarés ; gradle / swift dès qu\'un manifeste existe', () => {
+test('DEPENDABOT - github-actions et npm (backend et backend/functions) déclarés ; gradle / swift dès qu\'un manifeste existe', () => {
   const doc = load(`${root}.github/dependabot.yml`);
-  const ecosystems = Object.fromEntries(doc.updates.map((u) => [u['package-ecosystem'], u.directory]));
+  const ecosystems = Object.fromEntries(doc.updates.filter((u) => u['package-ecosystem'] !== 'npm').map((u) => [u['package-ecosystem'], u.directory]));
   assert.equal(ecosystems['github-actions'], '/');
-  assert.equal(ecosystems.npm, '/backend');
+  // Plusieurs entrées npm : un package.json par dossier (Dependabot ne descend pas dans les sous-dossiers).
+  const npmDirectories = doc.updates.filter((u) => u['package-ecosystem'] === 'npm').map((u) => u.directory).sort();
+  assert.deepEqual(npmDirectories, ['/backend', '/backend/functions']);
   // Une entrée vers un dossier sans manifeste fait échouer Dependabot ; à l'inverse, un manifeste sans entrée
   // n'est pas surveillé. Ce test oblige à ajouter l'entrée au moment où android/ ou ios/ reçoivent leur manifeste.
   const has = (dir, names) => existsSync(`${root}${dir}`) && readdirSync(`${root}${dir}`).some((f) => names.includes(f));

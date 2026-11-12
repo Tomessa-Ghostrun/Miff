@@ -1,5 +1,6 @@
 package com.tomessa.miff.navigation
 
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -8,6 +9,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.tomessa.miff.AppContainer
 import com.tomessa.miff.data.FirebaseDiagnosticRepository
+import com.tomessa.miff.data.SharedPreferencesDebugAppCheckSetting
 import com.tomessa.miff.ui.diagnostic.DiagnosticScreen
 import com.tomessa.miff.ui.diagnostic.DiagnosticViewModel
 import com.tomessa.miff.ui.navigation.AppRoute
@@ -26,13 +28,17 @@ object InternalDestinations {
         container: AppContainer,
     ) {
         builder.composable<DiagnosticRoute> {
+            val context = LocalContext.current.applicationContext
             val viewModel: DiagnosticViewModel =
                 viewModel(
                     factory =
                         viewModelFactory {
                             initializer {
                                 DiagnosticViewModel(
-                                    repository = FirebaseDiagnosticRepository(),
+                                    repository =
+                                        FirebaseDiagnosticRepository(
+                                            SharedPreferencesDebugAppCheckSetting(context),
+                                        ),
                                     privacy = container.privacySettings,
                                     tracker = container.analyticsTracker,
                                 )

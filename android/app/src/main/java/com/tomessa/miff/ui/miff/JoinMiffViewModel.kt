@@ -40,6 +40,12 @@ enum class JoinProblem {
     OFFLINE,
     GENERIC,
 
+    /**
+     * AC-4: "Cet appareil n'est pas reconnu pour le moment. Mets Miff à jour depuis le store, puis réessaie." Not a mistake of the person
+     * and not a wrong code: it does not count as a failed try (no pause).
+     */
+    DEVICE_NOT_RECOGNIZED,
+
     /** A free account that already has a Miff ("une seule Miff à la fois"): the Premium ticket decides what is offered. */
     ONE_MIFF,
 }
@@ -191,12 +197,10 @@ class JoinMiffViewModel(
 
                 is JoinPreparation.Failed -> {
                     val problem =
-                        if (messageFor(prepared.failure) ==
-                            ActionMessage.OFFLINE
-                        ) {
-                            JoinProblem.OFFLINE
-                        } else {
-                            JoinProblem.GENERIC
+                        when (messageFor(prepared.failure)) {
+                            ActionMessage.OFFLINE -> JoinProblem.OFFLINE
+                            ActionMessage.DEVICE_NOT_RECOGNIZED -> JoinProblem.DEVICE_NOT_RECOGNIZED
+                            else -> JoinProblem.GENERIC
                         }
                     mutableState.update { it.copy(checking = false, problem = problem) }
                 }

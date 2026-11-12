@@ -9,7 +9,7 @@ rules_version = '2';
 // connue R-LIEU-POS ; renouvellement d'un consentement actif R-LIEU-3), puis le 2026-11-05 (SESS-1 temps 1) et le 2026-11-06
 // (R-PHOTO-LOC), puis le 2026-11-10 (fichier de `main` de ce jour : 3 lieux gratuits p1/p2/p3, mode voyage, R-LIEU-1 au plus tard
 // à cette date ; informations du PM, non vérifiables par l'agent, à confirmer dans la console : Firestore > Règles). NON DÉPLOYÉ :
-// SESS-1 temps 2 (deviceIdRequired() = true). Tout déploiement suit la procédure
+// SESS-1 temps 2 (deviceIdRequired() = true) et, depuis la PR backend/lieu-demande, la demande d'ajout d'un lieu (LIEU-REQ-A, point 13). Et, depuis la PR backend/jetons-appareil, les jetons d'appareil (SRV-2R, point 14). Tout déploiement suit la procédure
 // docs/dev/deploiement-regles.md et l'accord explicite du PM.
 //
 // Principes :
@@ -75,6 +75,29 @@ rules_version = '2';
 //     règle ne les interdit ni ne les supprime à l'activation (comportement voulu, pas une limite). Contrat du CLIENT : ne pas écrire de statut de
 //     présence ordinaire pendant le voyage (les règles l'acceptent, c'est le geste « désactiver », mais il mettrait fin au voyage côté proches ;
 //     data-model.md). Commentaire seul : aucune règle modifiée.
+//
+// 13. Demande d'ajout d'un lieu par un membre (LIEU-REQ-A, ticket docs/tickets/demande-ajout-lieu.md, décisions du PM D1 à D9 du 2026-11-11) — NON DÉPLOYÉ
+//     (le fichier déployé est celui du 2026-11-10 : en production, `placeRequests` et `meta` sont refusés par défaut). Un membre NON créateur dépose
+//     une demande miffs/{id}/placeRequests/{uid}_{1..3} (trois emplacements fixes par membre ; 9 clés exactes dont la catégorie ; `requestedBy` = soi ; `createdAt` =
+//     heure serveur ; `risk` = demandeur Miff+) ; un compteur miffs/{id}/meta/placeRequests tient le plafond de 10 par Miff, écrit DANS LE MÊME LOT
+//     (la règle de la demande exige `lastReqId` = cette demande et `updatedAt` = request.time ; la règle du compteur contrôle +1 / -1 et la borne).
+//     Lecture : le créateur lit toutes les demandes, le demandeur les siennes (requête filtrée), les autres membres rien. Aucune modification.
+//     Suppression : le créateur (sans contrainte) ou le demandeur (compteur -1 dans le lot). Accepter = lot de 3 : lieu (règles de `places` INCHANGÉES)
+//     + suppression de la demande + compteur. Expiration à 30 jours : AUCUNE règle (masquage et nettoyage côté clients). Le lot « Quitter » et le lot de
+//     retrait ne sont PAS modifiés : les demandes d'un membre qui part sont retirées par son client avant « Quitter », sinon elles restent orphelines.
+//     Limites : pas de limitation de débit (App Check) ; compteur auto-réparé par le créateur (valeur absolue) ; aucune règle ne juge le contenu
+//     (adresse d'un tiers) ; risque juridique assumé par le PM (data-model.md §11, point 31).
+//
+// 14. Jetons d'appareil pour les notifications push (SRV-2R, ticket docs/tickets/notification-update-membres.md §8, étude docs/dev/etude-serveur-notifications-premium.md §8) — NON DÉPLOYÉ
+//     (le fichier déployé porte encore l'ANCIEN gabarit de `devices` { token ≤ 512, platform, updatedAt } : aucun client ne l'écrit). Document
+//     users/{uid}/devices/{deviceId} : `deviceId` = l'identifiant de la SESSION active (users/{uid}/session/active.deviceId, un compte = un appareil) ;
+//     7 clés exactes (token ≤ 4096, platform, appVersion, tz, notify { updates }, updatedAt = heure serveur, createdAt =
+//     heure serveur à la création puis figé) ; propriétaire SEUL pour lire (get et list), écrire et supprimer. L'écriture exige que l'identifiant soit celui de
+//     la session (getAfter : 1 lecture de règles, le lot de connexion peut contenir la session ET le jeton) : un appareil remplacé ne peut plus s'enregistrer.
+//     La suppression ne dépend PAS de la session (déconnexion, suppression de compte : la session est supprimée d'abord). Le plafond « 5 appareils » n'est pas
+//     compté (les règles ne savent pas compter) : un seul identifiant est écrivable à la fois (celui de la session) ; le nouvel appareil supprime les autres au
+//     lot de connexion. `notifState/{miffId}` (état du serveur : idempotence, plafond horaire) n'a AUCUNE règle : refusé par défaut, lu et écrit avec les droits
+//     Admin seulement. Remplace l'ancien bloc `devices` (seule règle existante modifiée : voir data-model.md §2.10).
 //
 // Coût : chaque get()/exists()/getAfter()/existsAfter() dans une règle est
 // facturé comme une lecture (même si la requête est refusée) et est limité à
@@ -671,6 +694,39 @@ service cloud.firestore {
         && d.startedAt == request.time;
     }
 
+    // -------------------------------------------------------------------------
+    // Jetons d'appareil pour les notifications (SRV-2R) : users/{uid}/devices/{deviceId}.
+    // -------------------------------------------------------------------------
+    // Fuseau horaire IANA ou assimilé ('Europe/Paris', 'America/Argentina/Buenos_Aires', 'Etc/GMT+5', 'GMT+01:00') : 1 à 64 caractères, commence par une lettre.
+    function isDeviceTz(v) {
+      return v is string && v.matches('^[A-Za-z][A-Za-z0-9_+:/-]{0,63}$');
+    }
+
+    // Préférences par type de notification : map fermée, un seul booléen en v1 (d'autres types = une évolution des règles).
+    function validDeviceNotify(n) {
+      return n is map
+        && n.keys().hasOnly(['updates'])
+        && n.keys().hasAll(['updates'])
+        && n.updates is bool;
+    }
+
+    // Forme commune à la création et à la mise à jour, APRÈS l'écriture (document fusionné). `deviceId` = identifiant de la session active du compte :
+    // getAfter (et non get) pour que le lot de connexion puisse écrire la session et le jeton ensemble ; si la session n'existe pas, getAfter échoue
+    // et l'écriture est refusée. UNE lecture de règles. Aucune donnée d'un autre utilisateur n'est lue.
+    function validDeviceShape(uid, deviceId) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['token', 'platform', 'appVersion', 'tz', 'notify', 'updatedAt', 'createdAt'])
+        && d.keys().hasAll(['token', 'platform', 'appVersion', 'tz', 'notify', 'updatedAt', 'createdAt'])
+        && isStr(d.token, 1, 4096)
+        && d.platform in ['ios', 'android']
+        && isStr(d.appVersion, 1, 32)
+        && isDeviceTz(d.tz)
+        && validDeviceNotify(d.notify)
+        && d.updatedAt == request.time
+        && isDeviceId(deviceId)
+        && getAfter(/databases/$(database)/documents/users/$(uid)/session/active).data.deviceId == deviceId;
+    }
+
     // L'écriture (statut, position) vient-elle de l'appareil actif ? Sans clé deviceId : acceptée au temps 1, refusée au temps 2
     // (aucune lecture). Avec la clé : elle doit égaler celle de la session du même compte (UNE lecture de règles ; si la session
     // n'existe pas, get() échoue et l'écriture est refusée). Mesure de COHÉRENCE : un client modifié peut recopier l'identifiant
@@ -764,6 +820,93 @@ service cloud.firestore {
         && validPhotoLocation(d, s);
     }
 
+    // -------------------------------------------------------------------------
+    // Demande d'ajout d'un lieu par un membre (LIEU-REQ-A, ticket docs/tickets/demande-ajout-lieu.md, décisions du PM D1 à D9 du 2026-11-11).
+    // NON DÉPLOYÉ. Document miffs/{id}/placeRequests/{uid}_{1..3} : TROIS EMPLACEMENTS FIXES par membre (même principe que p1/p2/p3 : les règles ne
+    // savent pas compter, elles imposent un identifiant). Un compteur miffs/{id}/meta/placeRequests tient le plafond de 10 par Miff.
+    // -------------------------------------------------------------------------
+    // Identifiant d'emplacement du demandeur : {uid}_1, {uid}_2 ou {uid}_3 (comparaison de textes, pas d'expression régulière : un uid ne peut
+    // pas injecter de motif). Aucune lecture de règles.
+    function isOwnRequestId(reqId) {
+      return isSignedIn()
+        && reqId in [request.auth.uid + '_1', request.auth.uid + '_2', request.auth.uid + '_3'];
+    }
+
+    // Forme d'une demande : EXACTEMENT ces 9 clés (ni statut, ni message, ni nom du demandeur : minimisation). Mêmes bornes qu'un lieu pour les
+    // champs communs (nom, type, catégorie, adresse, coordonnées, rayon). Pas de `priority` : le lieu créé à l'acceptation la reçoit du client
+    // (validPlaceShape l'exige ; `category` est copiée de la demande). createdAt et requestedBy sont contrôlés par la règle de création. Aucune lecture de règles.
+    function validRequestShape(d) {
+      return isStr(d.name, 1, 60)
+        && d.keys().hasOnly(['requestedBy', 'name', 'type', 'category', 'address', 'lat', 'lng', 'radiusM', 'createdAt'])
+        && d.keys().hasAll(['requestedBy', 'name', 'type', 'category', 'address', 'lat', 'lng', 'radiusM', 'createdAt'])
+        && (d.type == 'trusted' || d.type == 'risk')
+        && isRequestCategory(d.category)
+        && (d.address == null || (d.address is string && d.address.size() <= 200))
+        && isLatLng(d.lat, d.lng)
+        && isPlaceRadius(d.radiusM);
+    }
+
+    // Catégorie de la demande : la MÊME liste fermée qu'un lieu (isPlaceCategory, R-LIEU-2), obligatoire ; l'acceptation la copie dans le lieu créé.
+    function isRequestCategory(v) {
+      return isPlaceCategory(v);
+    }
+
+    // Point géographique valide (mêmes bornes que les lieux) et rayon en mètres (mêmes bornes que les lieux : 50 à 2000, entier). Aucune lecture.
+    function isLatLng(lat, lng) {
+      return isCoordinate(lat, 90) && isCoordinate(lng, 180);
+    }
+
+    function isPlaceRadius(v) {
+      return v is int && v >= 50 && v <= 2000;
+    }
+
+    // Membre qui n'est PAS le créateur, en UNE lecture de règles (la fiche du membre : le rôle est immuable). Échoue (refus) si la fiche n'existe pas.
+    function isPlainMember(miffId) {
+      return isSignedIn()
+        && get(/databases/$(database)/documents/miffs/$(miffId)/members/$(request.auth.uid)).data.role == 'member';
+    }
+
+    // Le compteur de la Miff est écrit DANS CE LOT et pointe vers CETTE demande : `updatedAt == request.time` prouve que le compteur est écrit dans
+    // le lot en cours (un `lastReqId` périmé d'un lot précédent ne suffit pas), `lastReqId == reqId` le lie à la demande. Le sens (+1 / -1), la
+    // borne de 10 et l'existence de la demande avant / après sont contrôlés par la règle du compteur (validRequestCounter). UNE lecture de règles.
+    function requestCounterMoved(miffId, reqId) {
+      let c = getAfter(/databases/$(database)/documents/miffs/$(miffId)/meta/placeRequests).data;
+      return c.lastReqId == reqId && c.updatedAt == request.time;
+    }
+
+    // Écriture du compteur par un MEMBRE : liée à la création (+1) ou à la suppression (-1) de SA demande dans le même lot. `resource` (état avant)
+    // et `request.resource` (état après) ne coûtent aucune lecture ; la demande est lue avant (exists) et après (existsAfter) : 2 lectures.
+    // Création de la demande : compteur +1 (1 si le compteur n'existait pas) ; la borne de 10 est dans la forme du compteur (la 11e est refusée).
+    // Suppression : compteur -1, jamais en dessous de 0 (un compteur recalé trop bas par le créateur ne doit pas empêcher un membre de retirer sa demande).
+    function memberCounterOk(miffId, d) {
+      let req = /databases/$(database)/documents/miffs/$(miffId)/placeRequests/$(d.lastReqId);
+      let was = exists(req);
+      let will = existsAfter(req);
+      return isOwnRequestId(d.lastReqId)
+        && (
+          (!was && will
+            && d.pending == (resource == null ? 0 : resource.data.pending) + 1)
+          || (was && !will && resource != null
+            && d.pending == (resource.data.pending > 0 ? resource.data.pending - 1 : 0))
+        );
+    }
+
+    // Compteur miffs/{id}/meta/placeRequests : { pending 0..10, lastReqId, updatedAt = heure serveur }. Deux écrivains :
+    //  - le CRÉATEUR (lastReqId == null) : valeur libre dans 0..10, c'est lui qui recale le compteur s'il a dérivé (il connaît le nombre réel de demandes) ;
+    //  - un MEMBRE : seulement lié à la création ou au retrait de sa propre demande dans le même lot (memberCounterOk). Un membre ne peut jamais fixer
+    //    la valeur, la remettre à zéro, ni la gonfler sans créer de demande (anti-blocage du plafond).
+    function validRequestCounter(miffId) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['pending', 'lastReqId', 'updatedAt'])
+        && d.keys().hasAll(['pending', 'lastReqId', 'updatedAt'])
+        && d.pending is int && d.pending >= 0 && d.pending <= 10
+        && d.updatedAt == request.time
+        && (
+          (d.lastReqId == null && isOwnerOneRead(miffId))
+          || (d.lastReqId != null && memberCounterOk(miffId, d))
+        );
+    }
+
     // =========================================================================
     // users/{uid} — profil privé (lisible uniquement par son propriétaire)
     // Les autres membres voient une COPIE du profil dans miffs/*/members/*.
@@ -839,16 +982,20 @@ service cloud.firestore {
           && !existsAfter(/databases/$(database)/documents/miffs/$(resource.data.miffId)/members/$(uid));
       }
 
-      // ---- Jetons FCM (à n'utiliser qu'avec le push, donc Blaze) ------------
+      // ---- Jetons de notification (SRV-2R) — NON DÉPLOYÉ ---------------------------------------------------------------------
+      // Un document par session active : l'identifiant est celui de users/{uid}/session/active. PRIVÉ : ni un co-membre, ni le créateur d'une Miff ne le lit
+      // (le serveur le lit avec les droits Admin). Lecture (get et list) par le propriétaire : le nouvel appareil liste les anciens pour les supprimer, la
+      // suppression de compte les liste. Création : forme exacte + createdAt = heure serveur. Mise à jour : même forme, createdAt et platform figés. Suppression :
+      // propriétaire, sans condition (la session est supprimée avant les jetons à la suppression de compte). 1 lecture de règles à l'écriture, 0 sinon.
       match /devices/{deviceId} {
         allow get, list: if isSelf(uid);
-        allow create, update: if isSelf(uid)
-          && request.resource.data.keys().hasOnly(['token', 'platform', 'updatedAt'])
-          && request.resource.data.keys().hasAll(['token', 'platform', 'updatedAt'])
-          && isStr(request.resource.data.token, 1, 512)
-          && request.resource.data.platform in ['ios', 'android']
-          && request.resource.data.updatedAt == request.time
-          && deviceId.matches('^[A-Za-z0-9_-]{1,64}$');
+        allow create: if isSelf(uid)
+          && validDeviceShape(uid, deviceId)
+          && request.resource.data.createdAt == request.resource.data.updatedAt;
+        allow update: if isSelf(uid)
+          && validDeviceShape(uid, deviceId)
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.platform == resource.data.platform;
         allow delete: if isSelf(uid);
       }
     }
@@ -985,6 +1132,41 @@ service cloud.firestore {
         allow create: if isOwner(miffId) && validPlaceCreate(placeId);
         allow update: if isOwner(miffId) && validPlaceUpdate();
         allow delete: if isOwner(miffId);
+      }
+
+      // ---- Demandes d'ajout d'un lieu (LIEU-REQ-A) — NON DÉPLOYÉ ---------------------------------------------------------------
+      // Un membre NON créateur dépose une demande ; seul le créateur la transforme en lieu (règles de `places` INCHANGÉES : limite gratuite et zone
+      // de danger Miff+ s'appliquent à l'acceptation comme à une création directe). Lecture : le créateur lit TOUTES les demandes de sa Miff ; le demandeur
+      // lit les SIENNES (requête filtrée sur requestedBy, encore membre, Miff existante) ; les autres membres : rien. Création : emplacement
+      // {uid}_{1..3} du demandeur, forme exacte (9 clés), requestedBy = soi, createdAt = heure serveur, `risk` = demandeur Miff+, créateur et non-membre exclus,
+      // compteur +1 dans le même lot. Aucune modification (update interdit : on retire et on redemande). Suppression : le créateur (refuser, accepter,
+      // nettoyer les demandes expirées ou d'un ex-membre : aucune contrainte sur le compteur, il est maître de sa Miff) ou le demandeur (retrait, compteur -1
+      // dans le même lot ; sans condition d'appartenance : un ex-membre peut effacer sa propre demande). L'expiration à 30 jours n'est PAS contrôlée par
+      // les règles (masquage côté clients, suppression au passage) ; createdAt = request.time garantit qu'une demande n'est jamais créée déjà expirée.
+      match /placeRequests/{reqId} {
+        allow get: if isOwnerOneRead(miffId)
+          || (isOwnRequestId(reqId) && isMember(miffId) && miffAlive(miffId));
+        allow list: if isOwnerOneRead(miffId)
+          || (resource.data.requestedBy == request.auth.uid && isMember(miffId) && miffAlive(miffId));
+        allow create: if isOwnRequestId(reqId)
+          && validRequestShape(request.resource.data)
+          && request.resource.data.requestedBy == request.auth.uid
+          && request.time == request.resource.data.createdAt
+          && (request.resource.data.type == 'trusted' || isPremiumOneRead(request.auth.uid))
+          && isPlainMember(miffId)
+          && miffAlive(miffId)
+          && requestCounterMoved(miffId, reqId);
+        allow update: if false;
+        allow delete: if isOwnerOneRead(miffId)
+          || (isOwnRequestId(reqId) && requestCounterMoved(miffId, reqId));
+      }
+
+      // ---- Compteur des demandes en attente (plafond de 10 par Miff) : lisible du créateur seul (get ; aucune règle de liste : une requête sur la
+      // collection `meta` tombe dans le refus par défaut). Voir validRequestCounter. ----
+      match /meta/placeRequests {
+        allow get: if isOwnerOneRead(miffId);
+        allow create, update: if validRequestCounter(miffId);
+        allow delete: if isOwnerOneRead(miffId);
       }
     }
 
