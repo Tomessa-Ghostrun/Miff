@@ -18,7 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -72,7 +72,7 @@ fun ColorsInfoScreen(
     onBack: () -> Unit,
     durations: ColorsInfoDurations = ColorsInfoDurations.FromThresholds,
 ) {
-    val locale = LocalConfiguration.current.locales[0] ?: Locale.getDefault()
+    val locale = LocalLocale.current.platformLocale
     val orange = remember(durations, locale) { formatDuration(durations.orangeAfterMillis, locale) }
     val red = remember(durations, locale) { formatDuration(durations.redAfterMillis, locale) }
     val danger = remember(durations, locale) { formatDuration(durations.dangerGreenMillis, locale) }
