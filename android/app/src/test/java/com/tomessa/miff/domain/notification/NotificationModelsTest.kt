@@ -24,7 +24,7 @@ class NotificationModelsTest {
 
     @Test
     fun thereAreSixTypes_n5IsAbandonedAndAbsent_n7IsTheEndOfMyTrip() {
-        assertEquals(listOf("n1", "n2", "n3", "n4", "n6", "n7"), NotificationType.entries.map { it.code })
+        assertEquals(listOf("n1", "n2", "n3", "n4", "n6", "n7"), NotificationType.PERIMETER.map { it.code })
         assertNull(NotificationType.fromCode("n5"))
         assertNull(NotificationType.fromCode(null))
         assertEquals(NotificationType.N6, NotificationType.fromCode("n6"))
@@ -45,7 +45,7 @@ class NotificationModelsTest {
     fun theNightIsQuietForN1N3N6_andTheRedOnesKeepTheirNormalLevel_decisionQ30() {
         assertEquals(
             setOf(NotificationType.N1, NotificationType.N3, NotificationType.N6),
-            NotificationType.entries.filter { it.quietAtNight }.toSet(),
+            NotificationType.PERIMETER.filter { it.quietAtNight }.toSet(),
         )
     }
 
@@ -55,13 +55,13 @@ class NotificationModelsTest {
     fun everySwitchIsOnByDefault() {
         val p = NotificationPreferences()
         assertTrue(p.enabled && p.nightCalm)
-        NotificationType.entries.forEach { assertTrue("$it", p.allows(it)) }
+        NotificationType.PERIMETER.forEach { assertTrue("$it", p.allows(it)) }
     }
 
     @Test
     fun theGeneralSwitchOffStopsEveryType_butKeepsTheirValues() {
         val p = NotificationPreferences().with(NotificationType.N3, false).copy(enabled = false)
-        NotificationType.entries.forEach { assertFalse("$it", p.allows(it)) }
+        NotificationType.PERIMETER.forEach { assertFalse("$it", p.allows(it)) }
         // The values of the types are kept (only greyed): turning the general switch back on restores the choice.
         assertTrue(p.switchOf(NotificationType.N1))
         assertFalse(p.switchOf(NotificationType.N3))
@@ -72,9 +72,9 @@ class NotificationModelsTest {
 
     @Test
     fun aTypeSwitchOnlyChangesItsOwnType() {
-        NotificationType.entries.forEach { off ->
+        NotificationType.PERIMETER.forEach { off ->
             val p = NotificationPreferences().with(off, false)
-            NotificationType.entries.forEach { other -> assertEquals("$off/$other", other != off, p.allows(other)) }
+            NotificationType.PERIMETER.forEach { other -> assertEquals("$off/$other", other != off, p.allows(other)) }
         }
     }
 
@@ -147,11 +147,11 @@ class NotificationModelsTest {
     @Test
     fun atNight_n1n3n6AreQuiet_n2n4AreNot_andTheSwitchOffMakesNothingQuiet() {
         val on = NotificationPreferences()
-        val quiet = NotificationType.entries.filter { NightCalm.isQuiet(it, on, localHour = 2) }.toSet()
+        val quiet = NotificationType.PERIMETER.filter { NightCalm.isQuiet(it, on, localHour = 2) }.toSet()
         assertEquals(setOf(NotificationType.N1, NotificationType.N3, NotificationType.N6), quiet)
-        NotificationType.entries.forEach { assertFalse("$it by day", NightCalm.isQuiet(it, on, localHour = 14)) }
+        NotificationType.PERIMETER.forEach { assertFalse("$it by day", NightCalm.isQuiet(it, on, localHour = 14)) }
         val off = on.copy(nightCalm = false)
-        NotificationType.entries.forEach {
+        NotificationType.PERIMETER.forEach {
             assertFalse(
                 "$it with the switch off",
                 NightCalm.isQuiet(it, off, localHour = 2),

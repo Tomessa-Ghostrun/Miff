@@ -110,7 +110,7 @@ class AndroidNotificationAlarms(
         }
 
     override fun cancelAll() {
-        NotificationType.entries.forEach(::cancel)
+        NotificationType.PERIMETER.forEach(::cancel)
         synchronized(lock) { prefs.edit(commit = true) { clear() } }
     }
 

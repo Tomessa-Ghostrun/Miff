@@ -4,6 +4,7 @@ import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.firebase.firestore.SetOptions
 import com.google.firebase.firestore.Source
 import com.tomessa.miff.domain.miff.DocWrite
 import com.tomessa.miff.domain.miff.JoinCode
@@ -33,6 +34,14 @@ class MiffTxView(
     val codeDocumentExists: Boolean,
 ) {
     override fun toString(): String = "MiffTxView(redacted)"
+}
+
+/** What the requests to add a place leave in a Miff: their ids, and whether the counter of requests exists (ticket LIEU-REQ). */
+class PlaceRequestLeftovers(
+    val requestIds: List<String>,
+    val counterExists: Boolean,
+) {
+    override fun toString(): String = "PlaceRequestLeftovers(redacted)"
 }
 
 /** What `get miffs/{id}` said. A refusal of the rules is an exception (PERMISSION_DENIED), not a value. */
@@ -121,6 +130,13 @@ interface MiffStore {
 
     /** The ids of `miffs/{id}/places`, read from the SERVER. */
     suspend fun readPlaceIds(miffId: String): List<String>
+
+    /**
+     * What the requests to add a place leave in a Miff the creator is deleting (ticket LIEU-REQ, criterion L3), from the SERVER: the ids of
+     * `miffs/{id}/placeRequests` and whether the counter `meta/placeRequests` exists. Nothing by default (a store that knows nothing of requests).
+     */
+    suspend fun readPlaceRequestLeftovers(miffId: String): PlaceRequestLeftovers =
+        PlaceRequestLeftovers(emptyList(), false)
 
     /**
      * ONE transaction: the Miff (and whether its code document exists) is read first, [build] makes the lot from what was read
@@ -305,6 +321,27 @@ class FirestoreMiffStore(
             .documents
             .map { it.id }
 
+    override suspend fun readPlaceRequestLeftovers(miffId: String): PlaceRequestLeftovers {
+        val requests =
+            firestore()
+                .collection("miffs")
+                .document(miffId)
+                .collection("placeRequests")
+        val counter =
+            firestore()
+                .collection("miffs")
+                .document(miffId)
+                .collection("meta")
+                .document("placeRequests")
+        val ids =
+            requests
+                .get(Source.SERVER)
+                .await()
+                .documents
+                .map { it.id }
+        return PlaceRequestLeftovers(ids, counter.get(Source.SERVER).await().exists())
+    }
+
     override suspend fun commitWithMiff(
         miffId: String,
         build: (MiffTxView) -> List<DocWrite>,
@@ -351,6 +388,7 @@ class FirestoreMiffStore(
                 WriteKind.SET -> transaction.set(ref, write.data)
                 WriteKind.UPDATE -> transaction.update(ref, write.data)
                 WriteKind.DELETE -> transaction.delete(ref)
+                WriteKind.MERGE -> transaction.set(ref, write.data, SetOptions.merge())
             }
         }
     }
