@@ -13,7 +13,8 @@
 
 ### Étape 1. L'interrupteur existe, éteint (1 min)
 
-- [ ] Installez l'APK **debug** de la PR (artefact `miff-debug-apk` de l'exécution de la CI) et ouvrez l'app : l'écran de diagnostic s'affiche.
+- [ ] Installez l'APK **debug** de la PR (artefact `miff-debug-apk` de l'exécution de la CI) et ouvrez l'app, puis ouvrez le diagnostic (**Profil > Réglages > Diagnostic**, ou appui continu de 10 secondes n'importe où).
+
 - [ ] Dans la carte **App Check**, sous le bouton « Vérifier », une phrase explique le test et un interrupteur **« Sans App Check (au prochain lancement) »** est **éteint**. Aucun autre message.
 
 ### Étape 2. L'activer (2 min)
