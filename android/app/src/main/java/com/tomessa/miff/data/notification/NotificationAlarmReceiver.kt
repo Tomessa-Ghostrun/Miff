@@ -45,7 +45,8 @@ class NotificationAlarmReceiver : BroadcastReceiver() {
                             { it.notificationScheduler.fire(type, key) }
                         }
 
-                        NotificationType.N6 -> {
+                        // N6 and N8 are never an alarm (N8 is only a line of the centre, written by the app when it is in front).
+                        NotificationType.N6, NotificationType.N8 -> {
                             return
                         }
                     }

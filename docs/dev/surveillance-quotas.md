@@ -133,6 +133,47 @@ La carte de chaque Miff du Profil montre le nombre de membres et leurs photos en
 
 **Limite connue** : le coût est proportionnel au nombre de Miffs d'un compte **Miff+** (aujourd'hui accordé à la main : quelques testeurs) et à leur défilement ; il n'y en a aucun pour un compte gratuit. **Signal** : celui du §2 (ratio > 150 deux jours de suite) ; si les comptes Miff+ font monter le ratio, **leviers gratuits** avant de parler de Blaze : allonger la réutilisation (5 minutes à 1 heure, constante `MiffFacesBook.TTL_MILLIS`), ou n'afficher que des initiales pour les Miffs autres que la Miff active.
 
+### Les lieux de la Miff du carrousel, visibles par tous les membres (décision du PM du 2026-11-11) : ce que ça coûte
+
+Sous le carrousel, l'onglet Profil montre la liste des lieux de confiance de la Miff dont la carte est affichée, **à tous ses membres** (les règles l'autorisent déjà : `match /places/{placeId}`, `allow get, list: if isMember(miffId) && miffAlive(miffId)`, aucune modification). Android : `FirestorePlacesReader` (**un seul `get`** de `miffs/{id}/places`, **jamais d'écouteur**), règles de réutilisation dans `MiffPlacesBook` (testées, mêmes règles que `MiffFacesBook`). **Ce changement supprime** l'écoute en direct (3 écouteurs : Miff, membres, lieux) que l'ancienne liste attachait à la Miff du Feed tant que le Profil était à l'écran.
+
+| Cas | Lectures | Pourquoi |
+|---|---|---|
+| La Miff du Feed (compte gratuit : la seule) | **0 de plus** | ses lieux sont ceux que le Feed a déjà lus (comme pour les photos du carrousel : état de la dernière visite du Feed ; une copie du cache du téléphone non confirmée par le serveur n'est pas reprise) |
+| Une autre Miff, au moment où sa carte s'affiche (le carrousel s'arrête dessus) | **P + 2** (P lieux, 3 au plus en gratuit, + 2 lectures de règles) | une seule lecture, puis réutilisée **5 minutes** ; un voisin préparé hors de l'écran ne lit rien |
+| Retour sur le Profil ou sur une carte déjà lue, dans les 5 minutes | **0** | réutilisé |
+| Retour sur une carte après 5 minutes | **P + 2** | une relecture (jamais en boucle) |
+| Le **créateur** ouvre un lieu ou « Ajouter un lieu », puis revient | **P + 2** (une fois) | un lieu a pu être ajouté, modifié ou supprimé : les listes sont relues à leur prochaine apparition. Un **membre** qui ouvre un lieu (lecture seule) ne déclenche **aucune** relecture |
+| Lecture qui échoue (hors ligne, refus) | 0 à P + 2, puis **attente de 30 s** | la liste dit calmement « Les lieux ne sont pas disponibles pour le moment. » avec « Réessayer » (qui relit tout de suite) ; jamais de boucle |
+
+Ouvrir le **détail** d'un lieu garde son écoute en direct de la Miff (3 écouteurs, comme avant), tant que l'écran est ouvert : inchangé.
+
+**Limite connue** : un lieu ajouté ou retiré par le créateur sur un autre téléphone n'apparaît chez les membres qu'à leur prochaine relecture (au plus 5 minutes sur le Profil, ou à leur retour sur le Feed qui écoute à nouveau). Les lieux changent rarement et la détection est lente par conception (« dans les prochaines heures », ticket Lieux). **Signal** : celui du §2 ; **levier gratuit** : allonger `MiffPlacesBook.TTL_MILLIS`.
+
+### Les demandes d'ajout d'un lieu (LIEU-REQ, décision du PM du 2026-11-11) : ce que ça coûte
+
+Un membre qui n'est pas le créateur propose un lieu ; le créateur l'accepte ou non. **Aucune notification quand l'app est fermée** (il faudrait un serveur : plan Blaze, pas pour l'instant) : le créateur le découvre à l'ouverture de l'app.
+
+| Qui | Quand | Lectures | Écritures |
+|---|---|---|---|
+| Membre | La carte d'une Miff dont il n'est pas le créateur s'affiche dans le carrousel du Profil | **1 requête sur SES demandes** (3 documents au plus), **au plus une fois par Miff et par 5 minutes** ; jamais d'écouteur | 0 |
+| Membre | Il ouvre le formulaire de demande | 3 lectures de départ (formule, Miff, ses demandes) puis rien tant qu'il est ouvert | 0 |
+| Membre | Il envoie ou retire une demande | 0 à 1 (vérification si la réponse a été perdue) | **2** (la demande + le compteur) |
+| Membre | Il quitte la Miff | jusqu'à 1 + 3 | jusqu'à 6 (3 demandes + 3 compteurs) avant le lot « Quitter » |
+| Créateur | L'app est devant et le créateur a créé la Miff suivie | **1 écouteur** sur `placeRequests` de **cette seule Miff** : 1 lecture par demande (10 au plus) au branchement, puis 1 par demande nouvelle ou modifiée ; **détaché en arrière-plan** | 0 |
+| Créateur | Une demande apparaît | **1 lecture par personne qui demande, une fois par session** (sa fiche de membre : prénom, photo) | 0 |
+| Créateur | Il accepte | formule + Miffs + lieux (comme la création d'un lieu) + 1 pour vérifier que la demande existe encore | **3** en un lot (le lieu, la suppression de la demande, le compteur) |
+| Créateur | Il refuse | 0 à 1 | **2** (suppression + compteur) |
+| Créateur | Demandes de plus de 30 jours, ou d'une personne qui a quitté la Miff | 0 de plus | 2 à 5 par lot de 4 suppressions (jamais de suppression automatique côté serveur) |
+
+**Ordre de grandeur.** Pour un créateur : de +1 à +12 lectures par ouverture de l'app (10 demandes en attente au pire, 0 à 2 le plus souvent), plus 1 lecture par nouveau demandeur. Pour un membre : +1 requête de 3 documents au plus par Miff regardée, sans compter les relectures dans les 5 minutes. Les lots existants (créer, rejoindre, quitter, retirer un membre, supprimer) ne grossissent pas, sauf le départ d'un membre (jusqu'à 3 lots de 2 avant le lot « Quitter ») et la suppression d'une Miff (5 demandes par lot + le compteur, **avant** le dernier lot).
+
+**Limites connues et signaux de bascule.**
+- **Seule la Miff suivie est écoutée** (celle de la carte du Profil, sinon la Miff active du Feed). Un créateur Miff+ qui a plusieurs Miffs ne verra pas le point sur le Profil pour les autres avant de les ouvrir. Signal : un créateur qui dit découvrir une demande « longtemps après ». Levier gratuit : un écouteur par Miff créée (coût linéaire en nombre de Miffs créées).
+- **Pas de rappel ni de notification fermée** : levier = Blaze + FCM (une fonction par demande, négligeable face aux quotas gratuits), décision du PM.
+- **Compteur `meta/placeRequests`** (plafond de 10 par Miff) : peut dériver si un lot du créateur échoue en route ; le créateur le réécrit au nombre réel de demandes qu'il lit à chaque réponse. Signal : un membre bloqué par « Cette Miff a déjà plusieurs demandes… » alors que le créateur en voit moins de 10.
+- **Rafales** (créer, retirer, recréer en boucle) : non limitables en règles sur Spark ; au plus 3 demandes simultanées par membre ; App Check à activer.
+
 ## 5. Journal de relevé (modèle à recopier)
 
 Une ligne par jour de bêta externe, dans un fichier à toi (ou dans une conversation avec Claude) :
@@ -276,7 +317,7 @@ Soit, pour une Miff de 4 membres : **6 lectures facturées par écriture** (born
 
 ## 5 sexies. Cloud Functions (SRV-1, Blaze activé le 2026-11-11) : quoi regarder
 
-Tant que `ping` est la seule fonction, le coût attendu est **0 €**. Dès qu'une vraie fonction existe (notifications, SRV-4), ajouter à la revue (1 minute, une fois par semaine suffit au début) :
+Tant que `ping` est la seule fonction en ligne, le coût attendu est **0 €**. Dès qu'une vraie fonction est déployée (`notifierUpdate`, SRV-4B : section 5 septies), ajouter à la revue (1 minute, une fois par semaine suffit au début) :
 
 | Quoi | Où | Normal | À examiner |
 |---|---|---|---|
@@ -285,6 +326,36 @@ Tant que `ping` est la seule fonction, le coût attendu est **0 €**. Dès qu'u
 | Dépense | Google Cloud > Facturation > Rapports, filtre projet `miff-3d283` | 0 € à quelques centimes | Une ligne qui monte sans explication, ou un e-mail de l'alerte de budget (5 €/mois : 50 %, 90 %, 100 %) |
 
 Les alertes de budget **ne plafonnent pas** la dépense ; le plafond de dépense Preview de Cloud Functions n'existe pas pour Firestore (`deploiement-functions.md` §1). Procédure pour désactiver une fonction : `deploiement-functions.md` §6.
+
+---
+
+## 5 septies. Cloud Functions : la fonction `notifierUpdate` (SRV-4B, notification d'une update aux proches)
+
+**Ce qu'elle consomme** (comptes faits par la fonction et vérifiés à l'émulateur ; `backend/data-model.md` §2.16, `deploiement-functions.md` §11.2) :
+
+| Cas | Lectures | Écritures |
+|---|---|---|
+| Update dans une Miff de 4 membres (3 destinataires, 1 téléphone chacun) | **13** (contrôle préalable 1, Miff 1, fiches 4, sessions 3, téléphones 3, vérification finale 1) | **1** |
+| Miff de 15 membres | 46 | 1 |
+| Miff de 40 membres (bornée) | 73 au plus (74 si l'auteur est hors des 30 premières fiches) | 1 |
+| 2e update de l'heure du même auteur, ou événement rejoué | **1** (le contrôle préalable arrête tout) | **0** |
+| Jeton rejeté par Google (appli désinstallée) | n/a | +1 (suppression) |
+
+**Effet sur le ratio de la section 1** : l'hypothèse du ticket est de 2 updates par utilisateur actif et par jour, soit **≈ +26 lectures et +2 écritures par jour et par utilisateur actif** (hypothèse haute). Le ratio de référence passe donc d'environ **75 à environ 100** lectures par utilisateur actif **dès que la fonction est en ligne** : ne pas y voir une dérive. Le quota gratuit de lectures (50 000 par jour) correspond alors à **≈ 500 utilisateurs actifs par jour** au lieu de ≈ 650. Les 30 premiers jours, relever séparément la **part des lectures due à la fonction** : console Firebase > Functions > `notifierUpdate` > Tableau de bord (nombre d'invocations du jour) × 13, à comparer au total de lectures de la journée.
+
+**Quoi regarder (1 minute, chaque jour pendant la bêta, puis chaque semaine)**
+
+| Quoi | Où | Normal | À examiner |
+|---|---|---|---|
+| Invocations par jour | Functions > `notifierUpdate` > Tableau de bord | ≈ **4** par utilisateur actif et par jour (≈ 2 publications + ≈ 2 suppressions de photo : chaque photo expirée, chaque arrêt de partage ou départ déclenche aussi la fonction, qui s'arrête aussitôt sans rien lire) ; à 10 000 utilisateurs actifs par jour, ≈ 1,2 million d'invocations par mois | Plus de 10 par utilisateur actif : boucle de publication ou abus (App Check) |
+| Notifications envoyées vs écartées | Journaux (`npx firebase functions:log --only notifierUpdate -n 50 --project miff-3d283`) : lignes `notif.update.bilan` (`envoyes`, `ecartes`, `purges`, `lectures`, `ecritures`) | `envoyes` ≈ 1 à 3 par update ; `lectures` ≈ 13 pour une Miff de 4 | `envoyes` toujours 0 alors que des updates sont publiées : jetons non enregistrés, règles des jetons non déployées, ou partage coupé chez tout le monde |
+| Erreurs d'envoi | Lignes `notif.update.fcm-erreur` (`code` : 1 jeton inconnu, 8 clé APNs refusée, 3 ou 4 panne passagère de Google, 9 message refusé) | Aucune, ou quelques `code 1` isolés (purge normale) | **`code 8` en série** : clé APNs à revoir (ticket §12) ; **`code 1` > 10 % des envois** : nettoyage insuffisant (signal 3 du ticket §14) ; `code 5` ou 6 : quota d'envoi atteint |
+| Plafonnées / rejouées | Lignes `notif.update.ignore` (`motif: plafond` ou `deja_vu`) | Quelques-unes | `deja_vu` en nombre : Google livre les événements plusieurs fois (le comportement est sûr, mais regarder le coût) |
+| Dépense | Google Cloud > Facturation > Rapports, filtre projet `miff-3d283` | 0 € à quelques centimes | Une ligne qui monte, ou un e-mail de l'alerte de budget |
+
+**Signaux de bascule ou de revue** (reprise du ticket §14) : (1) facture Blaze > **5 $ par mois** ; (2) invocations > **1 million par mois** ou erreurs FCM > **5 %** des envois ; (3) jetons « inconnus » > **10 %** ; (4) **≈ 5 000 utilisateurs actifs par jour** : revoir les lectures de la fonction (garder la liste des membres en mémoire, lister les destinataires dans un document dérivé). **Rien ne plafonne la dépense** : seules les limites de la fonction (5 instances au plus, 256 Mio, 30 s, aucune reprise automatique), l'alerte de budget et App Check strict sur Firestore bornent l'exposition. Arrêt rapide : `deploiement-functions.md` §11.5.
+
+**Les mises à jour de lectures par utilisateur du Feed, de la batterie et des Réglages restent inchangées** : seule la fonction ajoute les lectures ci-dessus, et elles ne passent pas par l'application (elles comptent néanmoins dans le même quota Firestore du projet).
 
 ---
 

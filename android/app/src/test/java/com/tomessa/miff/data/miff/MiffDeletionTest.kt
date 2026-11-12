@@ -286,4 +286,90 @@ class MiffDeletionTest {
             assertNotEquals(used[0], used[1])
             assertTrue(used.all { it.length == 12 })
         }
+
+    // --- The requests to add a place (ticket LIEU-REQ, criterion L3) ---------------------------------------------------------------------------
+
+    @Test
+    fun theRequestsAndTheirCounter_goBeforeTheLastLot_fivePerLot() =
+        runTest {
+            world(others = emptyList(), places = emptyList())
+            store.requestIds = (1..7).map { "u${it}_1" }.toMutableList()
+            store.requestCounterExists = true
+            assertEquals(MiffDeletionResult.Deleted, deletion().run(uid, MIFF_ID))
+            // 5 requests, then 2 requests with the counter, then the last lot of the Miff.
+            assertEquals(listOf(5, 3, 8), lotSizes)
+            val withCounter = store.commitsAsLots[1]
+            assertEquals("miffs/$MIFF_ID/meta/placeRequests", withCounter.last().path)
+            assertTrue(store.requestIds.isEmpty())
+            assertEquals(
+                "the Miff itself goes last",
+                "miffs/$MIFF_ID",
+                store.commitsAsLots
+                    .last()
+                    .first()
+                    .path,
+            )
+        }
+
+    @Test
+    fun aCounterAlone_isDeletedToo_noOrphanLeftBehind() =
+        runTest {
+            world(others = emptyList(), places = emptyList())
+            store.requestCounterExists = true
+            assertEquals(MiffDeletionResult.Deleted, deletion().run(uid, MIFF_ID))
+            assertEquals(listOf(1, 8), lotSizes)
+            assertEquals(
+                "miffs/$MIFF_ID/meta/placeRequests",
+                store.commitsAsLots
+                    .first()
+                    .single()
+                    .path,
+            )
+        }
+
+    @Test
+    fun noRequestAndNoCounter_changesNothing_noExtraLot() =
+        runTest {
+            world(others = emptyList(), places = emptyList())
+            assertEquals(MiffDeletionResult.Deleted, deletion().run(uid, MIFF_ID))
+            assertEquals(listOf(8), lotSizes)
+        }
+
+    @Test
+    fun theRulesThatDoNotKnowTheRequestsYet_neverBlockTheDeletion() =
+        runTest {
+            world(others = emptyList(), places = emptyList())
+            // Not deployed: the server refuses the read of `placeRequests`; there is nothing of that kind to delete.
+            store.requestsFailure = firestoreError(Code.PERMISSION_DENIED)
+            assertEquals(MiffDeletionResult.Deleted, deletion().run(uid, MIFF_ID))
+            assertEquals(listOf(8), lotSizes)
+        }
+
+    @Test
+    fun aNetworkCutWhileReadingTheRequests_pausesTheDeletion_andARunAgainCarriesOn() =
+        runTest {
+            world(others = emptyList(), places = emptyList())
+            store.requestIds = mutableListOf("u2_1")
+            store.requestsFailure = firestoreError(Code.UNAVAILABLE)
+            assertEquals(MiffDeletionResult.Paused(MiffFailure.OFFLINE), deletion().run(uid, MIFF_ID))
+            store.requestsFailure = null
+            assertEquals(MiffDeletionResult.Deleted, deletion().run(uid, MIFF_ID))
+            assertTrue(store.requestIds.isEmpty())
+        }
+
+    @Test
+    fun aRequestLotThatFailsOnTheNetwork_pausesBeforeTheLastLot_andIsNeverDoneTwice() =
+        runTest {
+            world(others = emptyList(), places = emptyList())
+            store.requestIds = mutableListOf("u2_1", "u3_1")
+            val failures = ArrayDeque<Exception?>()
+            failures.addLast(firestoreError(Code.UNAVAILABLE))
+            store.commitFailures = failures
+            assertEquals(MiffDeletionResult.Paused(MiffFailure.OFFLINE), deletion().run(uid, MIFF_ID))
+            assertEquals(0, store.commitsAsLots.size)
+            assertEquals(MiffDeletionResult.Deleted, deletion().run(uid, MIFF_ID))
+            val paths = store.commitsAsLots.flatten().map { it.path }
+            assertEquals(1, paths.count { it == "miffs/$MIFF_ID/placeRequests/u2_1" })
+            assertEquals(1, paths.count { it == "miffs/$MIFF_ID" })
+        }
 }

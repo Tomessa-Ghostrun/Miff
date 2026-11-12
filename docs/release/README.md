@@ -80,7 +80,7 @@ Les textes publics affirment les points suivants. **Chacun doit être vérifié 
 | V4 | La dernière position est effacée dans le **même lot** que le statut (arrêt du partage, sortie, retrait, suppression de la Miff ou du compte) | `backend-data` (règles) + devs |
 | V5 | L'app masque une position de plus de 24 h en gardant sa date visible | devs |
 | V6 | La copie locale de la dernière position est stockée en privé, exclue des sauvegardes et effacée à la déconnexion | devs |
-| V7 | Aucun jeton de notification n'est enregistré (pas de FCM/APNs) | devs |
+| V7 | **Mis à jour le 2026-11-12 (SRV-3)** : un jeton de notification n'est enregistré **qu'après** l'explication affichée dans l'app **et** l'autorisation du téléphone ; il est supprimé (document `devices` **et** `deleteToken` chez FCM) à la déconnexion, à la suppression du compte, à la coupure des notifications, au retrait de la permission et au remplacement par un autre téléphone ; aucune position, aucun nom ni identifiant publicitaire dans le document ; jamais journalisé ni envoyé à Analytics (`docs/dev/jetons-appareil-clients.md` §8) | devs |
 | V8 | Le document de session ne contient qu'un identifiant aléatoire d'installation, la plateforme et l'heure | `backend-data` |
 | V9 | Le lieu enregistré est visible des membres avec son adresse ; le créateur seul crée, modifie, supprime | règles + devs |
 | V10 | **Update** : le manifeste Android déclare `CAMERA` et aucune permission de stockage, de photothèque ni de micro ; `uses-feature` caméra à `required="false"` ; `PermissionPrivacyTest` et la CI mis à jour | `android-dev` |
