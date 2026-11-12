@@ -274,7 +274,6 @@ Soit, pour une Miff de 4 membres : **6 lectures facturées par écriture** (born
 
 ---
 
-<<<<<<< HEAD
 ## 5 sexies. Cloud Functions (SRV-1, Blaze activé le 2026-11-11) : quoi regarder
 
 Tant que `ping` est la seule fonction, le coût attendu est **0 €**. Dès qu'une vraie fonction existe (notifications, SRV-4), ajouter à la revue (1 minute, une fois par semaine suffit au début) :
@@ -286,7 +285,9 @@ Tant que `ping` est la seule fonction, le coût attendu est **0 €**. Dès qu'u
 | Dépense | Google Cloud > Facturation > Rapports, filtre projet `miff-3d283` | 0 € à quelques centimes | Une ligne qui monte sans explication, ou un e-mail de l'alerte de budget (5 €/mois : 50 %, 90 %, 100 %) |
 
 Les alertes de budget **ne plafonnent pas** la dépense ; le plafond de dépense Preview de Cloud Functions n'existe pas pour Firestore (`deploiement-functions.md` §1). Procédure pour désactiver une fonction : `deploiement-functions.md` §6.
-=======
+
+---
+
 ## 5 quinquies. iOS : carrousel de Miffs du Profil (décision du PM, 2026-11-10)
 
 **Ce que fait l'application.** Chaque carte de Miff de l'onglet Profil montre le nombre de membres et leurs photos en miniature : cela demande la **liste des fiches `miffs/{id}/members`** de chaque Miff. Code : `MiffMemberPreviews` (quand lire) et `FirestoreMemberPreviewReader` (la lecture). Android a le même principe (section 4, « Le carrousel de Miffs du Profil »).
@@ -306,7 +307,6 @@ Les alertes de budget **ne plafonnent pas** la dépense ; le plafond de dépense
 **Limite connue et signal de bascule** : le coût est proportionnel au nombre de Miffs d'un compte **Miff+** (accordé à la main aujourd'hui : quelques testeurs) et à leur défilement ; il est nul pour un compte gratuit. Signal : celui de la section 2 (ratio > 150 deux jours de suite). **Leviers gratuits** avant de parler de Blaze : allonger la réutilisation (constante `MiffMemberPreviews.freshMillis`, 5 minutes), ou n'afficher que des initiales pour les Miffs autres que la Miff active.
 
 **Sécurité** : une photo vient d'un autre téléphone ; seules les photos de 20 000 octets au plus et de 2048 px de côté au plus sont décodées, et réduites à la taille du rond (`AvatarDecoding`). Les noms et photos restent en mémoire pour la session (jamais sur le disque, jamais dans Analytics ni dans un journal).
->>>>>>> origin/ios/profil-carrousel-emoji-lieux3
 
 ---
 
