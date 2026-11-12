@@ -133,6 +133,23 @@ La carte de chaque Miff du Profil montre le nombre de membres et leurs photos en
 
 **Limite connue** : le coût est proportionnel au nombre de Miffs d'un compte **Miff+** (aujourd'hui accordé à la main : quelques testeurs) et à leur défilement ; il n'y en a aucun pour un compte gratuit. **Signal** : celui du §2 (ratio > 150 deux jours de suite) ; si les comptes Miff+ font monter le ratio, **leviers gratuits** avant de parler de Blaze : allonger la réutilisation (5 minutes à 1 heure, constante `MiffFacesBook.TTL_MILLIS`), ou n'afficher que des initiales pour les Miffs autres que la Miff active.
 
+### Les lieux de la Miff du carrousel, visibles par tous les membres (décision du PM du 2026-11-11) : ce que ça coûte
+
+Sous le carrousel, l'onglet Profil montre la liste des lieux de confiance de la Miff dont la carte est affichée, **à tous ses membres** (les règles l'autorisent déjà : `match /places/{placeId}`, `allow get, list: if isMember(miffId) && miffAlive(miffId)`, aucune modification). Android : `FirestorePlacesReader` (**un seul `get`** de `miffs/{id}/places`, **jamais d'écouteur**), règles de réutilisation dans `MiffPlacesBook` (testées, mêmes règles que `MiffFacesBook`). **Ce changement supprime** l'écoute en direct (3 écouteurs : Miff, membres, lieux) que l'ancienne liste attachait à la Miff du Feed tant que le Profil était à l'écran.
+
+| Cas | Lectures | Pourquoi |
+|---|---|---|
+| La Miff du Feed (compte gratuit : la seule) | **0 de plus** | ses lieux sont ceux que le Feed a déjà lus (comme pour les photos du carrousel : état de la dernière visite du Feed ; une copie du cache du téléphone non confirmée par le serveur n'est pas reprise) |
+| Une autre Miff, au moment où sa carte s'affiche (le carrousel s'arrête dessus) | **P + 2** (P lieux, 3 au plus en gratuit, + 2 lectures de règles) | une seule lecture, puis réutilisée **5 minutes** ; un voisin préparé hors de l'écran ne lit rien |
+| Retour sur le Profil ou sur une carte déjà lue, dans les 5 minutes | **0** | réutilisé |
+| Retour sur une carte après 5 minutes | **P + 2** | une relecture (jamais en boucle) |
+| Le **créateur** ouvre un lieu ou « Ajouter un lieu », puis revient | **P + 2** (une fois) | un lieu a pu être ajouté, modifié ou supprimé : les listes sont relues à leur prochaine apparition. Un **membre** qui ouvre un lieu (lecture seule) ne déclenche **aucune** relecture |
+| Lecture qui échoue (hors ligne, refus) | 0 à P + 2, puis **attente de 30 s** | la liste dit calmement « Les lieux ne sont pas disponibles pour le moment. » avec « Réessayer » (qui relit tout de suite) ; jamais de boucle |
+
+Ouvrir le **détail** d'un lieu garde son écoute en direct de la Miff (3 écouteurs, comme avant), tant que l'écran est ouvert : inchangé.
+
+**Limite connue** : un lieu ajouté ou retiré par le créateur sur un autre téléphone n'apparaît chez les membres qu'à leur prochaine relecture (au plus 5 minutes sur le Profil, ou à leur retour sur le Feed qui écoute à nouveau). Les lieux changent rarement et la détection est lente par conception (« dans les prochaines heures », ticket Lieux). **Signal** : celui du §2 ; **levier gratuit** : allonger `MiffPlacesBook.TTL_MILLIS`.
+
 ## 5. Journal de relevé (modèle à recopier)
 
 Une ligne par jour de bêta externe, dans un fichier à toi (ou dans une conversation avec Claude) :

@@ -238,7 +238,8 @@ class PlaceFormViewModel(
                 mutableState.update { it.copy(loading = false, premium = false, paywall = PaywallReason.LIMIT) }
                 return
             }
-            val default = DefaultMiffChoice.of(loaded.ownedMiffs, loaded.lastJoinedMiffId)
+            // Opened from the list of a Miff the person created: that Miff is ticked (else the usual choice, decision Q4).
+            val default = DefaultMiffChoice.of(loaded.ownedMiffs, loaded.lastJoinedMiffId, openedFromId = miffId)
             mutableState.update {
                 it.copy(
                     loading = false,

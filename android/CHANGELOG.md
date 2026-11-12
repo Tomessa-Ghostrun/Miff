@@ -44,6 +44,30 @@ Ticket `docs/tickets/notification-update-membres.md` (§4 à §13 ; décisions d
 - **OPPO / ColorOS** : voir `docs/dev/fcm-android.md`. Non mesuré ; la mesure sur l'OPPO du PM est dans la recette.
 - **Écarts avec le ticket** : le ticket dit « discret » dans plusieurs passages ; la décision du PM du 2026-11-12 prime (son et vibration le jour, calme la nuit). Pas de regroupement explicite par le système (« {n} nouvelles dans ta Miff ») dans ce lot : Android regroupe de lui-même au-delà de quatre notifications d'une même app ; un résumé explicite reste à faire si le PM le veut. Pas de défilement vers la carte de l'auteur : l'appui ouvre le Feed de la bonne Miff.
 - **Côté iOS** : tout reste à faire (clé APNs, capacité Push) ; les clés de texte ci-dessus sont dans cette entrée.
+## [0.32.0] - 2026-11-11 : Profil, les lieux de la Miff du carrousel sont visibles par tous les membres
+
+Décision du PM du 2026-11-11 (sans maquette ni spec Notion) ; ticket `docs/tickets/lieux-de-confiance.md` (critère PL1b), contrat Android / iOS `docs/contracts/profile-places-members.md` ; branche `android/profil-lieux-membres`, PR brouillon.
+
+### Ajouté
+- **Les lieux de confiance sont visibles par tous les membres de la Miff** (plus seulement par son créateur) : sous le carrousel « Mes Miffs », la liste est celle de **la Miff dont la carte est affichée** (avant : celle du Feed, quoi qu'affiche le carrousel). Titre **« Lieux de confiance de <nom de la Miff> »** (toujours nommée), emoji de catégorie, étiquette « Zone de danger » sans autre mot ; liste vide : **« Aucun lieu de confiance pour l'instant. »** ; liste illisible (hors ligne, refus) : « Les lieux ne sont pas disponibles pour le moment. » avec « Réessayer ».
+- **Un membre qui n'est pas le créateur lit, sans rien pouvoir changer** : il ouvre le détail d'un lieu **sans « Modifier »** (déjà le cas du détail, vérifié), et ne voit **jamais** « Ajouter un lieu », le compteur « n lieux sur 3 avec la formule gratuite » ni la pastille « Miff+ » (le forfait et les quotas ne concernent que le créateur). Le créateur garde Ajouter / Modifier / Supprimer et son compteur, inchangés. Le créateur d'une Miff est le `ownerUid` du document de la Miff, **déjà lu** pour la liste des Miffs (`MiffSummary.ownerUid`, 0 lecture de plus) ; **inconnu = membre** (les boutons du créateur ne s'affichent jamais dans le doute).
+- **Lecteur d'écran** : la ligne d'une zone de danger dit aussi « Zone de danger » (avant, l'étiquette visible était absente de la phrase lue).
+- **Textes** (fr / en, **clés partagées avec iOS**, catalogue iOS mis à jour sans écran iOS) : `place_profile_title_named`, `place_list_empty_member`, `place_profile_unavailable`, `place_list_row_type_a11y`.
+- Tests : `MiffPlacesBookTest` (quand lire, TTL, échec, invalidation), `ProfilePlacesViewModelTest` (lecture unique par Miff, 0 pour la Miff du Feed, relecture après passage du créateur, un membre qui ouvre un lieu ne coûte rien), `PlaceViewerRoleTest`, `ProfilePlacesSectionTest` (bouton, compteur et offre absents pour un membre quel que soit le forfait, état vide, danger, titre qui suit la carte, ordre des blocs : « Mode voyage » en dernier).
+
+### Modifié
+- `ProfilePlacesSection` ne lit plus la Miff en direct : `ProfilePlacesViewModel` + `FirestorePlacesReader` (un seul `get`), même mécanique que les visages du carrousel. `ProfileTravelCardOrderTest` inchangé et vert : la carte « Mode voyage » reste le dernier bloc.
+- `FeedViewModel` expose `readPlaces` (les lieux que le Feed a déjà lus, hors copie du cache non confirmée) ; `MiffSummary` gagne `ownerUid`.
+- `PlaceRows` : un membre dont la liste est vide lit « Aucun lieu de confiance pour l'instant. » (le créateur garde « Pas encore de lieu pour cette Miff. »), aussi sur l'écran de la Miff.
+
+### Choix « économiques »
+- **Une seule lecture par Miff, jamais d'écouteur** (`MiffPlacesBook`, `docs/dev/surveillance-quotas.md`, section « Les lieux de la Miff du carrousel ») : 0 lecture pour la Miff du Feed ; P + 2 pour une autre Miff quand sa carte s'arrête (P lieux, 3 au plus en gratuit), réutilisée 5 minutes ; une relecture quand le créateur est passé par un lieu ou le formulaire. **Ce changement supprime** les 3 écouteurs que l'ancienne liste attachait à la Miff du Feed tant que le Profil était ouvert. **Limite connue** : un lieu changé sur un autre téléphone apparaît chez les membres à leur prochaine relecture (5 minutes au plus). **Signal de bascule** : le ratio du §2 ; levier gratuit : allonger `MiffPlacesBook.TTL_MILLIS`.
+
+### À savoir
+- **Règles Firestore : aucun changement.** `match /places/{placeId}` autorise déjà `get, list` à `isMember(miffId) && miffAlive(miffId)` ; la création, la modification et la suppression restent au créateur (`isOwner`).
+- **« Ajouter un lieu » présélectionne la Miff dont on regarde la liste** (Profil, et écran de la Miff) quand la personne en est la créatrice, pour qu'un lieu ne soit jamais partagé avec le mauvais cercle par surprise ; sinon, le choix habituel du formulaire (dernière Miff rejointe créée par la personne) s'applique (`DefaultMiffChoice.of(..., openedFromId)`).
+- Revue : `PlaceDetailViewModel.canEdit` suit `PlaceViewerRole.isCreator` (jamais vrai si les deux uid sont vides) ; une lecture des lieux lancée avant une invalidation et terminée après n'efface plus la marque « à relire ».
+- Ce que cette PR ne fait pas : l'écran iOS (miroir à faire d'après le contrat).
 
 ## [0.35.0] - 2026-11-11 : App Check, interrupteur de debug « sans App Check » (AC-4) et message « appareil non reconnu »
 
