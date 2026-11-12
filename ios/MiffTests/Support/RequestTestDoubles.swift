@@ -103,8 +103,8 @@ final class FakePlaceRequestStore: PlaceRequestStore {
         }
         commits.append(writes)
         for write in writes where write.kind == .delete && write.path.contains("/placeRequests/") {
-            let id = String(write.path.split(separator: "/").last ?? "")
-            requests.removeAll { $0.id == id }
+            let parts = write.path.split(separator: "/").map(String.init)
+            requests.removeAll { $0.miffId == parts[1] && $0.id == parts[3] }
         }
     }
 

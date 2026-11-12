@@ -134,13 +134,7 @@ struct MiffHomeHost: View {
         )
         _memberPreviews = StateObject(wrappedValue: MiffMemberPreviews(reader: environment.memberPreviewReader))
         _profilePlaces = StateObject(wrappedValue: ProfilePlacesViewModel(reader: environment.placesReader))
-        _profileRequests = StateObject(
-            wrappedValue: ProfileRequestsViewModel(
-                repository: environment.placeRequestRepository,
-                network: environment.network,
-                myUid: { session.currentUid }
-            )
-        )
+        _profileRequests = StateObject(wrappedValue: environment.makeProfileRequestsViewModel())
         _updateModel = StateObject(wrappedValue: environment.update.makeViewModel())
         let engine = environment.tracking.engine
         _travel = StateObject(wrappedValue: TravelViewModel(control: EngineTravelControl(engine: engine)))
@@ -205,6 +199,8 @@ struct MiffHomeHost: View {
         .onChange(of: path.isEmpty) { isEmpty in
             if isEmpty {
                 profilePlaces.onReturnedToRoot()
+                // Une demande a pu être envoyée ou reprise : la liste regardée est relue si elle est périmée (aucune lecture sinon).
+                profileRequests.onProfileAppeared()
             }
         }
         // Mon visage sur les cartes du Profil suit mon profil, SANS lecture : le profil est déjà lu pour l'en-tête (et relu après une modification).
