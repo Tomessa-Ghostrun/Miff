@@ -28,9 +28,11 @@ Les specs ci-dessus sont les notes d'origine ; là où elles contredisent cette 
 | Premium réel et paywall | Validation directe côté serveur (pas de RevenueCat) ; offre limitée à ce qui est livré (**pas de « notifications intelligentes »**) ; 30 jours de mise en veille avant suppression des excédents ; **croix du paywall différée de 3 s à chaque affichage** (risque assumé) | 2026-11-12 | `paywall-premium` |
 | Zone de danger | Nom affiché (au lieu de « zone à risque »), valeur technique `risk` inchangée ; **réservée au premium** | 2026-11-01 | `lieux-de-confiance`, `feed-cercle-de-confiance`, `notifications`, `localisation-lieux-de-confiance` |
 | Qui gère les lieux | Seul le créateur de la Miff crée, modifie, supprime ; un lieu est rattaché à 1 à 5 Miffs | 2026-11-01 | `lieux-de-confiance` |
-| Seuils de statut | Orange à **1 h**, rouge à **2 h** après le départ d'un lieu de confiance (avant : 2 h / 4 h) | 2026-11-01 | `update-et-escalade-statut` |
+| Seuils de statut | Orange à **2 h**, rouge à **4 h** après le départ d'un lieu de confiance (depuis le 2026-11-08 ; avant : 1 h / 2 h) | 2026-11-08 | `update-et-escalade-statut` |
 | Position | **Dernière position connue stockée côté serveur** (aucun historique) pour « Localiser » ; le statut ne contient aucune coordonnée | 2026-11-01 | aucune spec ne la décrivait ; voir `backend/data-model.md` |
 | Un compte, un appareil | Un compte actif sur un seul appareil à la fois | 2026-11-01 | aucune spec ; voir `backend/data-model.md` |
 
 ## Miroir Notion
 Chaque spec ci-dessus a une entrée correspondante dans la base [Tâches développement Miff](https://app.notion.com/p/3c3fe034208580a6b7cef1866dcb6415) (statut "Backlog discovery"), avec le même contenu, pour relecture directe par le PM.
+
+Tickets récents sans spec d'origine : [couleurs-info](../tickets/couleurs-info.md), spec décidée sur délégation du PM le 2026-11-12, prête à développer.
