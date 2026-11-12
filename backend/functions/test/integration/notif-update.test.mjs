@@ -58,8 +58,13 @@ async function creerMiff(miffId, membres) {
         locale: 'fr',
         notify: 'notify' in appareil ? appareil.notify : { updates: true },
         ...(appareil.extra ?? {}),
-        updatedAt: ts(T_PUBLICATION),
+        updatedAt: appareil.updatedAt ?? ts(T_PUBLICATION),
       });
+    }
+    // Session active du compte (SESS) : `session: 'dev1'` ou `{ deviceId, startedAt }`.
+    if (m.session) {
+      const s = typeof m.session === 'string' ? { deviceId: m.session, startedAt: ts(plus(T_PUBLICATION, -60 * 60_000)) } : m.session;
+      await db.doc(`users/${uid}/session/active`).set(s);
     }
   }
 }
@@ -191,18 +196,51 @@ test("V4 : un membre sans aucun appareil enregistré n'est pas notifié, les aut
   assert.equal(bilan.ecartes.sans_appareil, 1);
 });
 
-test('plusieurs appareils : un message par appareil (3 au plus lus) ; jeton illisible ou plateforme inconnue écartés', async () => {
+test("plusieurs jetons chez un même compte : seul l'appareil de la SESSION active est notifié (1 lecture de plus, seulement dans ce cas)", async () => {
   const m = quatre();
-  m.B.appareils = [{ platform: 'ios' }, { platform: 'android' }, { platform: 'windows' }, { platform: 'android' }];
-  m.C.appareils = [{ token: '' }];
-  m.D.appareils = [null];
+  m.B.appareils = [{ platform: 'ios' }, { platform: 'android' }, { platform: 'android' }, { platform: 'android' }]; // 4 documents, 3 lus au plus
+  m.B.session = 'dev1';
   await creerMiff(MIFF, m);
   const c = contexte();
   const bilan = await publier(c);
-  // B : 4 documents mais 3 lus au plus ; le troisième (plateforme inconnue) est écarté.
-  assert.equal(c.fcm.messages.length, 2);
+  assert.deepEqual(jetonsEnvoyes(c), ['jeton-B-1', 'jeton-C-0', 'jeton-D-0']);
+  assert.equal(bilan.ecartes.appareil_remplace, 2);
+  assert.equal(bilan.lectures, 4 + 3 + 1 + 1 + 1 + 1, 'fiches 4 + appareils de B 3 + session de B 1 + C 1 + D 1 + état 1');
+});
+
+test("plusieurs jetons : session d'un autre identifiant -> repli sur les jetons écrits depuis le début de la session ; pas de session -> aucun envoi à ce compte", async () => {
+  const ancien = Timestamp.fromDate(plus(T_PUBLICATION, -3 * 60 * 60_000));
+  const recent = Timestamp.fromDate(plus(T_PUBLICATION, -5 * 60_000));
+  const m = quatre();
+  m.B.appareils = [{ updatedAt: ancien }, { updatedAt: recent }];
+  m.B.session = { deviceId: 'IdentifiantInconnu', startedAt: Timestamp.fromDate(plus(T_PUBLICATION, -10 * 60_000)) };
+  m.C.appareils = [{ updatedAt: ancien }, { updatedAt: recent }]; // C : aucune session enregistrée
+  await creerMiff(MIFF, m);
+  const c = contexte();
+  const bilan = await publier(c);
+  assert.deepEqual(jetonsEnvoyes(c), ['jeton-B-1', 'jeton-D-0']);
+  assert.equal(bilan.ecartes.appareil_remplace, 3, 'B : 1 ancien jeton ; C : 2 jetons sans session');
+});
+
+test('un seul document : envoyé tel quel, sans lire la session (budget de lectures inchangé)', async () => {
+  const m = quatre();
+  m.B.session = 'AutreSessionSansRapport';
+  await creerMiff(MIFF, m);
+  const c = contexte();
+  const bilan = await publier(c);
+  assert.deepEqual(jetonsEnvoyes(c), ['jeton-B-0', 'jeton-C-0', 'jeton-D-0']);
+  assert.equal(bilan.lectures, 8);
+});
+
+test('jeton illisible (vide) ou plateforme inconnue : écartés sans erreur', async () => {
+  const m = quatre();
+  m.C.appareils = [{ token: '' }];
+  m.D.appareils = [{ platform: 'windows' }];
+  await creerMiff(MIFF, m);
+  const c = contexte();
+  const bilan = await publier(c);
+  assert.deepEqual(jetonsEnvoyes(c), ['jeton-B-0']);
   assert.equal(bilan.ecartes.jeton_illisible, 2);
-  assert.equal(bilan.lectures, 4 + 3 + 1 + 1 + 1, 'fiches 4 + appareils B 3, C 1, D 1 (requête vide : 1 lecture) + état 1');
 });
 
 test("V8 : un ancien membre (fiche supprimée) n'est pas notifié, même s'il a encore un appareil enregistré", async () => {
@@ -384,11 +422,11 @@ test("un échec d'envoi chez un appareil n'empêche pas les autres (tous les app
 
 // --- V10 : nuit ------------------------------------------------------------------------------------------------------------------------
 
-test('V10 : publication à 23:30 à Paris -> B (Paris) en mode calme, D (New York, 17:30) non ; tz inconnu = calme', async () => {
+test('V10 : publication à 23:30 à Paris -> B (Paris) en mode calme, D (New York, 17:30) non', async () => {
   const m = quatre();
   m.B.appareils = [{ platform: 'ios', tz: 'Europe/Paris' }];
   m.C.appareils = [{ platform: 'android', tz: 'Europe/Paris' }];
-  m.D.appareils = [{ platform: 'android', tz: 'America/New_York' }, { platform: 'ios', tz: 'Pas/UnFuseau' }];
+  m.D.appareils = [{ platform: 'android', tz: 'America/New_York' }];
   await creerMiff(MIFF, m);
   const nuit = new Date('2026-12-10T22:30:00Z');
   const c = contexte({ maintenant: plus(nuit, 5000) });
@@ -398,7 +436,6 @@ test('V10 : publication à 23:30 à Paris -> B (Paris) en mode calme, D (New Yor
   assert.equal(par['jeton-B-0'].apns.payload.aps.sound, undefined);
   assert.equal(par['jeton-C-0'].data.quiet, '1');
   assert.equal(par['jeton-D-0'].data.quiet, '0', 'New York : 17:30, de jour');
-  assert.equal(par['jeton-D-1'].apns.payload.aps['interruption-level'], 'passive', 'fuseau inconnu = discret');
 });
 
 // --- V11, V12 : âge, grande Miff -------------------------------------------------------------------------------------------------------

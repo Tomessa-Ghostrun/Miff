@@ -87,6 +87,24 @@ function enTimestamp(valeur: unknown): Timestamp | null {
   return null;
 }
 
+interface SessionActive {
+  deviceId?: unknown;
+  startedAt?: unknown;
+}
+
+/** Parmi plusieurs jetons d'un meme compte : celui dont l'identifiant est celui de la session active ; a defaut, ceux ecrits depuis le debut de la session. Pas de session = aucun. */
+function appareilsDeLaSession<D extends { id: string; data(): unknown }>(docs: D[], session: SessionActive | null): D[] {
+  if (!session) return [];
+  const identiques = typeof session.deviceId === "string" ? docs.filter((d) => d.id === session.deviceId) : [];
+  if (identiques.length > 0) return identiques;
+  const debut = enTimestamp(session.startedAt);
+  if (!debut) return [];
+  return docs.filter((d) => {
+    const ecrit = enTimestamp((d.data() as { updatedAt?: unknown }).updatedAt);
+    return ecrit !== null && nanos(ecrit) >= nanos(debut);
+  });
+}
+
 function ecarter(bilan: Bilan, raison: string, n = 1): void {
   bilan.ecartes[raison] = (bilan.ecartes[raison] ?? 0) + n;
 }
@@ -144,15 +162,28 @@ async function executer(dep: Dependances, evenement: Evenement, bilan: Bilan): P
   // --- 3. Appareils : jeton present, notification "update" activee ----------------------------------------------------------------
   const cibles: Cible[] = [];
   const lots = await Promise.all(
-    destinataires.map(async (d) => ({ uid: d.uid, snap: await db.collection(`users/${d.uid}/devices`).limit(MAX_APPAREILS).get() })),
+    destinataires.map(async (d) => {
+      const snap = await db.collection(`users/${d.uid}/devices`).limit(MAX_APPAREILS).get();
+      bilan.lectures += Math.max(1, snap.size);
+      // Un compte = un appareil (SESS) : le cas normal est UN document, envoye tel quel. Si plusieurs documents subsistent (ancien appareil dont le jeton
+      // n'a pas ete supprime), contrat docs/dev/jetons-appareil-clients.md §7 : on n'envoie qu'a l'appareil de la session active (1 lecture de plus, seulement ici).
+      let session: SessionActive | null | undefined;
+      if (snap.size > 1) {
+        const s = await db.doc(`users/${d.uid}/session/active`).get();
+        bilan.lectures += 1;
+        session = s.exists ? (s.data() as SessionActive) : null;
+      }
+      return { uid: d.uid, snap, session };
+    }),
   );
-  for (const { uid, snap } of lots) {
-    bilan.lectures += Math.max(1, snap.size);
+  for (const { uid, snap, session } of lots) {
     if (snap.empty) {
       ecarter(bilan, "sans_appareil");
       continue;
     }
-    for (const doc of snap.docs) {
+    const retenus = session === undefined ? snap.docs : appareilsDeLaSession(snap.docs, session);
+    if (retenus.length < snap.size) ecarter(bilan, "appareil_remplace", snap.size - retenus.length);
+    for (const doc of retenus) {
       bilan.examines += 1;
       const d = doc.data() as { token?: unknown; platform?: unknown; tz?: unknown; notify?: { updates?: unknown }; notificationsEnabled?: unknown };
       if (d.notify?.updates !== true || d.notificationsEnabled === false) {

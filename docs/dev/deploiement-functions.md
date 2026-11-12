@@ -331,6 +331,7 @@ Quand un membre **publie une update** (une photo écrite dans `miffs/{miff}/phot
 | Miff de **15 membres** | **30** | 1 |
 | Miff de **40 membres** | **51** au plus (30 fiches, 20 destinataires, 1 état) | 1 |
 | Update plafonnée (2e de l'heure) ou rejouée | comme ci-dessus (fiches et téléphones sont lus avant le plafond) | **0** |
+| Un destinataire a **plusieurs** téléphones enregistrés (cas anormal : un compte = un appareil) | +1 lecture pour ce destinataire (sa session), l'envoi ne va qu'au téléphone de la session active | 0 |
 | Auteur seul dans sa Miff | **1** | 0 |
 | Événement de plus de 5 min, suppression de photo | **0** | 0 |
 | Jeton invalide purgé | n/a | +1 par jeton |
