@@ -64,6 +64,9 @@ final class NotificationReconciler {
             await removeEverything()
             return
         }
+        // Un réveil en arrière-plan n'a pas ouvert d'écran : les choix de la personne ET le centre (plafonds du jour) sont lus depuis l'appareil
+        // AVANT toute décision, jamais les valeurs par défaut (tout actif).
+        loadFromDevice()
         let now = deps.nowMillis()
         let authorization = await deps.authorization.authorization()
         let pending = await deps.scheduler.pendingIdentifiers()
@@ -74,14 +77,24 @@ final class NotificationReconciler {
         var ledger = deps.plans.loadLedger(uid: uid).pruned(nowMillis: now)
         let snapshot = deps.plans.loadSnapshot(uid: uid)
         forgetOldTravelEnd(uid: uid, now: now)
-        ledger = settleFired(ledger, pending: pending, snapshot: snapshot, now: now)
+        ledger = settleFired(ledger, pending: pending, snapshot: snapshot, authorization: authorization, now: now)
         let input = makeInput(uid: uid, now: now, snapshot: snapshot, authorization: authorization, ledger: ledger)
         let plan = NotificationPlanner.plan(input)
         ledger = await removeStale(plan, ledger: ledger, pending: pending)
         await removeObsolete(delivered: delivered, snapshot: snapshot, input: input)
-        ledger = await program(plan, ledger: ledger, pending: pending, now: now)
-        ledger = await catchUp(plan, ledger: ledger, now: now)
+        ledger = await program(plan, ledger: ledger, pending: pending, now: now, uid: uid)
+        ledger = await catchUp(plan, ledger: ledger, now: now, uid: uid)
+        // La session a pu finir pendant qu'on parlait au système (déconnexion, suppression du compte) : rien n'est réécrit pour un compte parti.
+        guard deps.currentUid() == uid else {
+            return
+        }
         deps.plans.saveLedger(ledger, uid: uid)
+    }
+
+    /// Les choix de la personne et le centre (ses entrées du jour comptent pour les plafonds) sont lus depuis l'appareil, une fois par compte.
+    func loadFromDevice() {
+        deps.preferences.ensureLoaded()
+        deps.center.load()
     }
 
     // MARK: - L'entrée du planificateur
@@ -133,12 +146,15 @@ final class NotificationReconciler {
         _ start: NotificationLedger,
         pending: Set<String>,
         snapshot: NotificationPlanSnapshot?,
+        authorization: NotificationAuthorization,
         now: Int
     ) -> NotificationLedger {
         var ledger = start
         for (identifier, entry) in start.scheduled where !pending.contains(identifier) {
             ledger = ledger.unscheduling([identifier])
-            guard entry.fireAtMillis <= now else {
+            // Permission retirée entre-temps : on ne sait pas si elle a sonné, on ne l'inscrit pas comme « affichée » (le planificateur
+            // décidera si elle est toujours à faire quand l'autorisation reviendra).
+            guard entry.fireAtMillis <= now, authorization.isAllowed else {
                 continue
             }
             ledger = recordFired(entry, ledger: ledger, now: now)
@@ -235,11 +251,16 @@ final class NotificationReconciler {
         _ plan: NotificationPlan,
         ledger start: NotificationLedger,
         pending: Set<String>,
-        now: Int
+        now: Int,
+        uid: String
     ) async -> NotificationLedger {
         var ledger = start
         let language = deps.language()
         for planned in plan.scheduled {
+            // La session peut finir entre deux demandes : la suivante ne part pas (et le registre ne dira pas qu'elle est programmée).
+            guard deps.currentUid() == uid else {
+                return ledger
+            }
             let identifier = planned.identifier
             let scheduled = ScheduledRecord(
                 type: planned.type,
@@ -266,7 +287,9 @@ final class NotificationReconciler {
             body: deps.text(planned.type.bodyKey),
             threadIdentifier: planned.miffId,
             categoryIdentifier: NotificationCategory.identifier(for: planned.type),
-            userInfo: ["type": planned.type.rawValue, "miffId": planned.miffId, "key": planned.key],
+            // Type et Miff suffisent à ouvrir le bon écran ; la clé de dédoublonnage (qui contient l'identifiant du compte) reste dans le
+            // registre local, jamais dans la demande du système.
+            userInfo: ["type": planned.type.rawValue, "miffId": planned.miffId],
             delaySeconds: delaySeconds,
             quiet: planned.quiet
         )
@@ -279,10 +302,14 @@ final class NotificationReconciler {
     private func catchUp(
         _ plan: NotificationPlan,
         ledger start: NotificationLedger,
-        now: Int
+        now: Int,
+        uid: String
     ) async -> NotificationLedger {
         var ledger = start
         for planned in plan.catchUp {
+            guard deps.currentUid() == uid else {
+                return ledger
+            }
             let late = now - planned.fireAtMillis
             let showsNow = !deps.isForeground() && late <= NotificationPlanner.catchUpWindowMillis
             if showsNow {

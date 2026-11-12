@@ -38,6 +38,8 @@ class ReconcilerTestCase: XCTestCase {
         var delivered: Set<String> = []
         private(set) var added: [LocalNotificationRequest] = []
         private(set) var removedDelivered: [String] = []
+        /// Appelé après chaque demande ajoutée (un test y fait finir la session, pour essayer la course déconnexion / réconciliation).
+        var onAdd: (() -> Void)?
 
         func pendingIdentifiers() async -> Set<String> {
             Set(pending.keys)
@@ -50,6 +52,7 @@ class ReconcilerTestCase: XCTestCase {
         func add(_ request: LocalNotificationRequest) async {
             pending[request.identifier] = request
             added.append(request)
+            onAdd?()
         }
 
         func removePending(_ identifiers: [String]) async {

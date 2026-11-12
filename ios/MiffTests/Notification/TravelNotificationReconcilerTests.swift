@@ -41,8 +41,8 @@ final class TravelNotificationReconcilerTests: ReconcilerTestCase {
         XCTAssertEqual(request?.delaySeconds, Double(due - at(16, 0)) / 1000)
         XCTAssertEqual(request?.quiet, false, "8 h : jamais la nuit")
         XCTAssertEqual(request?.categoryIdentifier, "miff.notif.category.n7")
-        XCTAssertEqual(Set(request?.userInfo.keys.map { $0 } ?? []), ["type", "miffId", "key"], "ni nom, ni lieu, ni position")
-        XCTAssertEqual(request?.userInfo["key"], "n7|me|\(tripEnd)")
+        XCTAssertEqual(Set(request?.userInfo.keys.map { $0 } ?? []), ["type", "miffId"], "ni nom, ni lieu, ni position, ni identifiant de compte")
+        XCTAssertEqual(rig.memory.plan.loadLedger(uid: "me").scheduled[n7Identifier]?.key, "n7|me|\(tripEnd)", "la clé reste dans le registre local")
         XCTAssertEqual(rig.memory.plan.loadTravelEnd(uid: "me"), tripEnd)
     }
 
@@ -65,7 +65,9 @@ final class TravelNotificationReconcilerTests: ReconcilerTestCase {
 
         XCTAssertEqual(Set(rig.scheduler.pending.keys), [n7Identifier], "une seule N7, jamais deux")
         XCTAssertEqual(rig.scheduler.pending[n7Identifier]?.delaySeconds, Double(due + 24 * 3_600_000 - at(16, 0)) / 1000)
-        XCTAssertEqual(rig.scheduler.pending[n7Identifier]?.userInfo["key"], "n7|me|\(tripEnd + 24 * 3_600_000)")
+        XCTAssertEqual(
+            rig.memory.plan.loadLedger(uid: "me").scheduled[n7Identifier]?.key, "n7|me|\(tripEnd + 24 * 3_600_000)"
+        )
     }
 
     // MARK: - Mon voyage coupe N1 à N4
