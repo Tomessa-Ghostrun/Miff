@@ -130,6 +130,8 @@ shot 96-en-lieu-rempli 6 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview 
 # La photo d'un proche en plein écran (FEED-8), dans un vrai fullScreenCover : un 3:4 (comme la capture du PM) puis le format du viseur (9:19,5).
 shot 150-fr-photo-plein-ecran-3-4 4 "${fr_args[@]}" -MiffPreview photo-3-4
 shot 151-fr-photo-plein-ecran-haute 4 "${fr_args[@]}" -MiffPreview photo-tall
+# Zones sures annoncees NULLES (cas du fullScreenCover sur un vrai appareil) : les planchers (47 pt + 12 pt en haut, 34 pt + 16 pt en bas) doivent tenir.
+shot 153-fr-photo-plein-ecran-zones-sures-nulles 4 "${fr_args[@]}" -MiffPreview photo-tall -MiffForceZeroSafeArea YES
 
 # Le vrai parcours de l'app (session, routage) : première ouverture = carrousel, après le splash animé.
 shot 37-fr-vrai-parcours 7 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffShowApp YES

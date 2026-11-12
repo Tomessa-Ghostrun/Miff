@@ -2,6 +2,14 @@
 
 ## Non publié
 
+### Corrigé : photo en plein écran, croix et icône plus écrasées contre l'heure, bouton plus collé au bord bas (retour du PM, TestFlight 32, iPhone 11 Pro à encoche)
+
+Sur le vrai appareil, le `fullScreenCover` peut annoncer des zones sûres NULLES (le simulateur de la CI, lui, les donne bien) : la croix et l'icône se retrouvaient contre l'heure et la batterie, le bouton « Voir où c'était » contre le bord bas. Correctif durable en deux couches :
+- **Lecture des zones sûres de la fenêtre** (`PhotoSafeArea`, lecture seule) en plus de celles du lecteur de géométrie : on garde le plus grand des deux, côté par côté.
+- **Planchers de sécurité** (Swift pur et testé, `PhotoFullScreenLayout.topMargin` / `bottomMargin`) : haut = max(zone sûre haute, **47 pt**) + **12 pt** ; bas = max(zone sûre basse, **34 pt**) + **16 pt**. Ils ne valent qu'en portrait (en paysage il n'y a pas d'encoche en haut : le plancher ferait perdre de la place pour rien ; la zone sûre lue + les marges s'appliquent seules).
+- Tests : marges nulles (cas du cover) = 59 pt en haut, 50 pt en bas ; encoche 47/34 = 59 et 50 ; île dynamique (59) : la vraie valeur gagne ; paysage sans plancher. **Capture CI 153** (`-MiffForceZeroSafeArea YES`, option Debug seulement) : zones sûres simulées à 0, les planchers tiennent. Sur la capture, l'écran lui-même garde ses vraies dimensions.
+- Compromis visible : sur un iPhone sans encoche (SE) le plancher laisse ~27 pt de plus qu'il ne faudrait en haut ; c'est le prix de la sûreté demandée. À confirmer sur TestFlight.
+
 ### Corrigé : la légende de la photo en plein écran n'est plus décollée du bas (retour du PM, build 30) — cause trouvée sur des captures de la CI
 
 Le PM voyait, sur son iPhone 11 Pro, la légende vers le milieu-bas avec ~350 px de noir sous le bouton « Voir où c'était », et une photo qui semblait « alignée en haut ». **Cause réelle**, lue sur de VRAIES captures du simulateur (nouvel écran de capture `-MiffPreview photo-3-4` / `photo-tall`, dans un vrai `fullScreenCover`, étapes 150 à 152 de `ios/ci/screenshots.sh`) : la photo était bien centrée, mais la légende était dans un `ViewThatFits { légende ; ScrollView { légende } }` qui **choisissait la variante `ScrollView` même en texte normal** ; un `ScrollView` prend toute la hauteur permise (45 % de l'écran) et range son contenu **en haut** : le voile sombre (78 %) recouvrait donc ~40 % de l'écran, légende en haut de ce bloc, vide dessous ; ce voile large cachait le bas de la photo, qui paraissait s'arrêter et laissait croire à une photo alignée en haut. Le calcul de mise en page était juste ; c'est le choix implicite de `ViewThatFits` qui ne l'était pas.
