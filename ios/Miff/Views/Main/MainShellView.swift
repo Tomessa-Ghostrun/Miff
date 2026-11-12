@@ -20,6 +20,14 @@ private struct TabLayer<Content: View>: View {
     }
 }
 
+/// Ce que la coquille donne à l'onglet Profil pour la liste des lieux sous le carrousel (décision du PM, 2026-11-11) : le view model qui les
+/// lit, le message calme d'un geste, et la personne avec ses gestes.
+struct ProfilePlacesShell {
+    let model: ProfilePlacesViewModel
+    let notices: PlaceNotices
+    let context: ProfilePlacesContext
+}
+
 /// Ce que la coquille a besoin de l'Update (UPDATE-3) : le view model de l'écran, et MON statut dans la Miff affichée (la couleur du bouton
 /// central, la bulle d'incitation, le nettoyage de la photo expirée).
 struct UpdateShell {
@@ -66,6 +74,7 @@ struct MainShellView<Feed: View>: View {
     /// Les membres des cartes du Profil : le Profil les observe lui-même (la coquille n'a pas à se redessiner pour eux).
     private let memberPreviews: MiffMemberPreviews
     private let travel: TravelViewModel
+    private let places: ProfilePlacesShell
     @ObservedObject private var updateModel: UpdateViewModel
     @ObservedObject private var myStatus: MyStatusStore
     private let update: UpdateShell
@@ -90,6 +99,7 @@ struct MainShellView<Feed: View>: View {
         profile: ProfileTabViewModel,
         memberPreviews: MiffMemberPreviews,
         travel: TravelViewModel,
+        places: ProfilePlacesShell,
         update: UpdateShell,
         onOpenMiff: @escaping (String) -> Void,
         onCreateMiff: @escaping () -> Void,
@@ -101,6 +111,7 @@ struct MainShellView<Feed: View>: View {
         _profile = ObservedObject(wrappedValue: profile)
         self.memberPreviews = memberPreviews
         self.travel = travel
+        self.places = places
         _updateModel = ObservedObject(wrappedValue: update.model)
         _myStatus = ObservedObject(wrappedValue: update.status)
         self.update = update
@@ -194,6 +205,9 @@ struct MainShellView<Feed: View>: View {
                         isActive: shownTab == .profile,
                         travel: travel,
                         offlineRetry: profile.offlineRetry,
+                        placesModel: places.model,
+                        placeNotices: places.notices,
+                        placesContext: places.context,
                         actions: ProfileTabActions(
                             onOpenMyInfo: { onOpenSettings(.myInfo) },
                             onOpenSettings: { onOpenSettings(.settings) },

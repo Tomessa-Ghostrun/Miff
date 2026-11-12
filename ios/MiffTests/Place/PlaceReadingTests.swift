@@ -91,6 +91,23 @@ final class PlaceReadingTests: XCTestCase {
         XCTAssertEqual(model.state.creatorName, "Emmanuelle Martin")
     }
 
+    func testDetailNobodyCanEditWhenTheCreatorOrTheViewerIsUnknown() async {
+        // Deux valeurs vides ne font pas un créateur : « Modifier » n'apparaît jamais dans le doute.
+        let model = detail("")
+        let unknownCreator = MiffSnapshot(
+            miff: testMiffDetails(name: "Famille Martin", owner: ""),
+            members: [creator, other],
+            places: [testPlace(id: "p1", name: "Maison de Papa")],
+            fromCache: false
+        )
+
+        emit(.data(unknownCreator))
+        await waitUntil { model.state.status == .ready }
+
+        XCTAssertEqual(model.state.status, .ready)
+        XCTAssertFalse(model.state.canEdit)
+    }
+
     func testDetailAPlaceThatIsGoneForTheServerIsNoticedButNotWhenTheCacheSimplyLacksIt() async {
         let model = detail("u2")
 

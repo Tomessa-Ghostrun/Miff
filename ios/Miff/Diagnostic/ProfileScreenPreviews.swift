@@ -11,10 +11,22 @@ struct ProfileScreenPreview: View {
     /// La carte « Mode voyage » (dernière de l'écran), sans voyage en cours : un contrôle qui ne fait rien.
     @StateObject private var travel = TravelViewModel(control: DemoTravelControl())
     /// La pop-in « Pas de connexion » (jamais montrée dans l'aperçu : le réseau est toujours là).
-    @StateObject private var offlineRetry = OfflineRetryModel(network: AlwaysOnlineNetwork())
+    @StateObject private var offlineRetry = OfflineRetryModel(network: AlwaysOnlineMonitor())
+
+    /// Les lieux de la Miff regardée (démonstration, sans lecture) : Miff A = créatrice (« Ajouter un lieu »), Miff B = membre (lecture seule).
+    @StateObject private var places: ProfilePlacesViewModel
+    @StateObject private var placeNotices = PlaceNotices()
+
+    init(name: String) {
+        self.name = name
+        let shown = ProfileScreenPreview.shownMiff(for: name)
+        _places = StateObject(wrappedValue: ProfileScreenPreview.demoPlaces(selecting: shown))
+    }
+
 
     private static let miffA = "AbCdEfGhIjKlMnOpQrSt"
     private static let miffB = "ZyXwVuTsRqPoNmLkJiHg"
+    private static let me = "demoMe"
 
     /// Page de départ : « profile-carousel-2 » montre la 2e carte, « profile-carousel-create » la dernière.
     private var initialPage: Int? {
@@ -30,8 +42,8 @@ struct ProfileScreenPreview: View {
 
     private var directory: DirectoryState {
         let miffs = [
-            MiffSummary(id: Self.miffA, name: "Famille Martin"),
-            MiffSummary(id: Self.miffB, name: "Les copains du foot")
+            MiffSummary(id: Self.miffA, name: "Famille Martin", ownerUid: Self.me),
+            MiffSummary(id: Self.miffB, name: "Les copains du foot", ownerUid: "someoneElse")
         ]
         return .ready(DirectoryReady(miffs: miffs, activeId: Self.miffA, premium: true, fromCache: false))
     }
@@ -49,6 +61,9 @@ struct ProfileScreenPreview: View {
             initialCarouselPage: initialPage,
             travel: travel,
             offlineRetry: offlineRetry,
+            placesModel: places,
+            placeNotices: placeNotices,
+            placesContext: ProfilePlacesContext(myUid: Self.me),
             actions: ProfileTabActions(
                 onOpenMyInfo: {},
                 onOpenSettings: {},
@@ -57,6 +72,29 @@ struct ProfileScreenPreview: View {
                 onCreateMiff: {}
             )
         )
+    }
+
+    /// La Miff dont la liste est montrée : celle de la carte de départ (la dernière carte, « Créer une Miff », garde la dernière Miff).
+    private static func shownMiff(for name: String) -> String {
+        name == "profile-carousel-2" || name == "profile-carousel-create" ? miffB : miffA
+    }
+
+    private static func demoPlace(_ miffId: String, _ id: String, _ name: String, _ type: PlaceType) -> Place {
+        Place(
+            id: id, miffId: miffId, name: name, type: type, category: type == .risk ? .other : .home,
+            address: "26 rue du Volnay, 21000 Dijon, France", lat: 47.32207, lng: 5.04148, radiusM: 150, createdBy: "u1"
+        )
+    }
+
+    @MainActor
+    private static func demoPlaces(selecting miffId: String) -> ProfilePlacesViewModel {
+        let model = ProfilePlacesViewModel(reader: DemoPlacesReader())
+        let home = demoPlace(miffA, "p1", "Maison de Papa", .trusted)
+        let site = demoPlace(miffA, "p2", "Chantier rue Haute", .risk)
+        model.seedFromFeed(miffId: miffA, places: [home, site])
+        model.seedFromFeed(miffId: miffB, places: [demoPlace(miffB, "p3", "Stade des Poussots", .trusted)])
+        model.onCardShown(miffId: miffId)
+        return model
     }
 
     private static func demoMember(_ uid: String, _ first: String, _ last: String) -> MiffMember {
@@ -88,6 +126,12 @@ struct ProfileScreenPreview: View {
 
         func end() async -> Bool {
             false
+        }
+    }
+
+    private struct DemoPlacesReader: PlacesReader {
+        func read(miffId: String) async -> PlacesReadResult {
+            .failed
         }
     }
 

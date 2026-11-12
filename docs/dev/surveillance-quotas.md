@@ -174,6 +174,8 @@ Un membre qui n'est pas le créateur propose un lieu ; le créateur l'accepte ou
 - **Compteur `meta/placeRequests`** (plafond de 10 par Miff) : peut dériver si un lot du créateur échoue en route ; le créateur le réécrit au nombre réel de demandes qu'il lit à chaque réponse. Signal : un membre bloqué par « Cette Miff a déjà plusieurs demandes… » alors que le créateur en voit moins de 10.
 - **Rafales** (créer, retirer, recréer en boucle) : non limitables en règles sur Spark ; au plus 3 demandes simultanées par membre ; App Check à activer.
 
+**iOS (même décision, même principe)** : `FirestorePlacesReader` (un seul `getDocuments` de `miffs/{id}/places`, jamais d'écouteur), règles de réutilisation dans `MiffPlacesBook` (testées, mêmes chiffres : 5 minutes, 30 s après un échec), `ProfilePlacesViewModel`. La Miff du Feed est reprise sans lecture (`FeedDependencies.onPlaces`, seulement une réponse confirmée par le serveur). **Différence avec Android** : la liste n'existait pas encore sur le Profil iOS, donc ce changement n'ajoute aucun écouteur et n'en supprime aucun ; pour un compte gratuit (une seule Miff, celle du Feed) il ajoute **0 lecture**. Une copie du téléphone VIDE est traitée comme un échec (jamais « aucun lieu » inventé hors ligne). **Levier gratuit** : `MiffPlacesBook.freshMillis`.
+
 ## 5. Journal de relevé (modèle à recopier)
 
 Une ligne par jour de bêta externe, dans un fichier à toi (ou dans une conversation avec Claude) :
