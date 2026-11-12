@@ -27,6 +27,9 @@ sealed interface Test1State {
 
     data object Running : Test1State
 
+    /** A real account is signed in: the test would sign it out, so it is not run. */
+    data object RefusedSignedIn : Test1State
+
     data class Done(
         val outcome: RulesProbeOutcome,
     ) : Test1State
@@ -36,6 +39,9 @@ sealed interface Test2State {
     data object Idle : Test2State
 
     data object Running : Test2State
+
+    /** A real account is signed in: the test would sign it out, so it is not run. */
+    data object RefusedSignedIn : Test2State
 
     data class InputProblem(
         val problem: CredentialsInputProblem,
@@ -126,6 +132,10 @@ class DiagnosticViewModel(
 
     fun runTest1() {
         if (local.value.test1 is Test1State.Running) return
+        if (repository.hasSession) {
+            local.update { it.copy(test1 = Test1State.RefusedSignedIn) }
+            return
+        }
         local.update { it.copy(test1 = Test1State.Running) }
         viewModelScope.launch {
             val outcome = repository.probeRulesUnauthenticated()
@@ -139,6 +149,10 @@ class DiagnosticViewModel(
         password: String,
     ) {
         if (local.value.test2 is Test2State.Running) return
+        if (repository.hasSession) {
+            local.update { it.copy(test2 = Test2State.RefusedSignedIn) }
+            return
+        }
         val problem = CredentialsInput.check(email, password)
         if (problem != null) {
             local.update { it.copy(test2 = Test2State.InputProblem(problem)) }

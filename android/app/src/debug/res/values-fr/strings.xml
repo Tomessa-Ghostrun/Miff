@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Build debug seulement (écran de diagnostic interne) : ce dossier n'est ni dans le release ni dans releaseLike. Préfixe android_ (ignoré par la parité des traductions). -->
+<resources>
+    <string name="android_diag_settings_title">Diagnostic</string>
+    <string name="android_diag_settings_subtitle">Outils de test, réservés aux versions de test</string>
+    <string name="android_diag_access_hint">Versions de test seulement. À ouvrir depuis Réglages > Diagnostic, ou en restant appuyé 10 secondes avec un doigt n\'importe où dans l\'app.</string>
+    <string name="android_diag_back">Retour à l\'application</string>
+    <string name="android_diag_signed_in_refusal">Un compte est connecté sur ce téléphone : ce test le déconnecterait. Déconnecte-toi d\'abord (Réglages > Mon compte), puis lance le test.</string>
+    <string name="android_diag_privacy_real_warning">Attention : ces interrupteurs changent les vrais choix de ce téléphone (mesure d\'usage et rapports de plantage), les mêmes que dans Réglages > Confidentialité.</string>
+</resources>
