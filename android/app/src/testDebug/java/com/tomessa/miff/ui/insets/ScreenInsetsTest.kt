@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalConfiguration
@@ -1204,7 +1205,7 @@ class ScreenInsetsTest {
     private fun Offer(
         reason: PaywallReason,
         state: PaywallUiState = PaywallUiState.PRODUCTION,
-    ) = PaywallScreen(reason, PaywallViewModel(MonotonicClock { 0L }), state, PaywallActions(onClose = {}))
+    ) = PaywallScreen(reason, remember { PaywallViewModel(MonotonicClock { 0L }) }, state, PaywallActions(onClose = {}))
 
     @Test
     fun placeOffer_isInsideTheSafeArea() = assertScreenIsSafe("place-offer") { Offer(PaywallReason.LIMIT) }
