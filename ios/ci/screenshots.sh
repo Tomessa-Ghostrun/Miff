@@ -171,6 +171,12 @@ shot 67-fr-miff-ecran-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview miff-scree
 shot 79-fr-miff-supprimer-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview miff-screen-delete
 shot 152-fr-photo-plein-ecran-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview photo-3-4
 shot 93-fr-feed-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-orange
+
+shot 93-fr-feed-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-orange
+
+shot 152-fr-photo-plein-ecran-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview photo-3-4
+
+
 xcrun simctl ui "$udid" content_size large > /dev/null 2>&1 || true
 
 xcrun simctl terminate "$udid" "$bundle_id" > /dev/null 2>&1 || true

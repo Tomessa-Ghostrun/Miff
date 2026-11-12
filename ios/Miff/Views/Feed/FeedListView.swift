@@ -12,6 +12,9 @@ struct FeedListActions {
     let onRetry: () -> Void
     let onReviewAgreement: () -> Void
     let onRefresh: () async -> Void
+    /// La carte « deuxième chance » des notifications (NOTIF-1I).
+    let onSecondChanceActivate: () -> Void
+    let onSecondChanceDismiss: () -> Void
 }
 
 /// Où est le haut du contenu sur l'écran (lu par l'écran pour déplacer l'en-tête ; seuls les écarts comptent).
@@ -35,6 +38,8 @@ struct FeedListView: View {
     /// Le mouvement de la bulle n'existe que si l'onglet est en usage et l'app au premier plan.
     let isActive: Bool
     let agreementWaiting: Bool
+    /// La carte « Un rappel si tu oublies de donner de tes nouvelles ? » est due (une seule fois, après la première update).
+    let secondChanceDue: Bool
     let scrollToTop: Int
     let actions: FeedListActions
     let onContentMoved: (CGFloat) -> Void
@@ -106,6 +111,12 @@ struct FeedListView: View {
             AgreementCard(
                 message: L10n.format("miff_waiting_feed_body", ready.active?.name ?? ""),
                 onReview: actions.onReviewAgreement
+            )
+        }
+        if secondChanceDue {
+            NotificationSecondChanceCard(
+                onActivate: actions.onSecondChanceActivate,
+                onDismiss: actions.onSecondChanceDismiss
             )
         }
         switch feed {

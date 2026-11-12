@@ -155,6 +155,7 @@ import com.tomessa.miff.domain.auth.ResendCooldown
 import com.tomessa.miff.domain.auth.SignInProvider
 import com.tomessa.miff.domain.miff.JoinAttemptLimiter
 import com.tomessa.miff.domain.notification.SnapshotMember
+import com.tomessa.miff.domain.paywall.MonotonicClock
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.profile.GooglePhotoPrefill
 import com.tomessa.miff.domain.tracking.DetectionJournal
@@ -586,6 +587,12 @@ class AppContainer(
      * give a free new series. An aid of the interface, not a protection (ticket Miff 5.3).
      */
     val joinLimiter: JoinAttemptLimiter by lazy { JoinAttemptLimiter(nowMillis = SystemClock::elapsedRealtime) }
+
+    /**
+     * The clock of the close cross of the offer (the paywall, ticket paywall-v2): elapsed real time since boot, counted in the background too, and
+     * not changeable by the person (unlike the wall clock). Tests give their own.
+     */
+    val paywallClock: MonotonicClock = MonotonicClock(SystemClock::elapsedRealtime)
 
     /** The Miffs of the person signed in, in memory for the session (Feed, Profile tab); also deals with a loss of access. */
     val miffDirectory: MiffDirectory by lazy {

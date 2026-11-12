@@ -10,6 +10,10 @@ final class AccountLocalStorageGuardTests: XCTestCase {
     private let known: [String: String] = [
         "App/AppEnvironment.swift": "branchement des réglages ; rien de plus",
         "App/AppEnvironment+AccountDeletion.swift": "branchement des effaceurs (AccountLocalData)",
+        "Services/Notification/NotificationCenterFileStore.swift": "centre : teardown, AccountLocalData",
+        "Services/Notification/NotificationDefaultsStores.swift": "choix : teardown ; carte : AccountLocalData",
+        "Services/Notification/NotificationPlanFileStore.swift": "instantané et registre : teardown, AccountLocalData",
+        "Services/Notification/NotificationLocalData.swift": "regroupe et efface les stockages des notifications",
         "Services/Permission/DevicePermissions.swift": "drapeau par compte : AccountLocalData (notificationAsks)",
         "Services/PrivacySettings.swift": "choix Analytics / plantages : SessionManager (eraseCollectedData)",
         "Services/Storage/AccountDeletionFileMarker.swift": "le marqueur lui-même : effacé en dernier",

@@ -93,6 +93,9 @@ struct FeedDependencies {
     var zone: () -> TimeZone = { TimeZone.current }
     var sleep: (Int) async -> Void = AppClock.live.pause
     var timings = FeedTimings()
+    /// NOTIF-P0 : appelé à chaque réponse DU SERVEUR sur les statuts de la Miff affichée (la carte « deuxième chance » des notifications
+    /// en vit ; le planificateur de rappels s'y branchera).
+    var onStatusesLoaded: @MainActor (FeedStatusesEvent) -> Void = { _ in }
     /// MON statut et « mon partage est arrêté » à chaque calcul : l'Update en tire la couleur du bouton central et la bulle (D19).
     var onMyStatus: (MyStatusFacts?, Bool) -> Void = { _, _ in }
     /// Les membres de la Miff affichée, DÉJÀ lus par l'écoute : le Profil les réutilise pour les photos de sa carte (zéro lecture de plus).

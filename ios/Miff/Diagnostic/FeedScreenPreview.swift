@@ -20,7 +20,7 @@ struct AlwaysOnlineNetwork: NetworkMonitor {
 
 struct FeedScreenPreview: View {
     let name: String
-    @StateObject private var offlineRetry = OfflineRetryModel(network: AlwaysOnlineNetwork())
+    @StateObject private var offlineRetry = OfflineRetryModel(network: AlwaysOnlineMonitor())
 
     private static let miffId = "AbCdEfGhIjKlMnOpQrSt"
     private static let now = 1_794_063_600_000
@@ -84,7 +84,9 @@ struct FeedScreenPreview: View {
             bubble: BubbleActions(onMessage: { _ in }, onResumeSharing: {}),
             onRetry: {},
             onReviewAgreement: {},
-            onRefresh: {}
+            onRefresh: {},
+            onSecondChanceActivate: {},
+            onSecondChanceDismiss: {}
         )
     }
 
@@ -94,6 +96,9 @@ struct FeedScreenPreview: View {
             myLevel: .green,
             myStatusDescription: nil,
             pill: FeedPillState.make(from: ready),
+            showsBell: false,
+            unreadNotifications: 0,
+            onOpenNotifications: {},
             onOpenProfile: {},
             onLogo: onLogo,
             onSelect: { _ in },
@@ -114,6 +119,7 @@ struct FeedScreenPreview: View {
                 topInset: layout.listInset,
                 isActive: false,
                 agreementWaiting: false,
+                secondChanceDue: false,
                 scrollToTop: layout.scrollToTop,
                 actions: listActions,
                 onContentMoved: layout.onContentMoved,
