@@ -10,6 +10,8 @@ struct ProfileScreenPreview: View {
     @StateObject private var previews = ProfileScreenPreview.demoPreviews()
     /// La carte « Mode voyage » (dernière de l'écran), sans voyage en cours : un contrôle qui ne fait rien.
     @StateObject private var travel = TravelViewModel(control: DemoTravelControl())
+    /// La pop-in « Pas de connexion » (jamais montrée dans l'aperçu : le réseau est toujours là).
+    @StateObject private var offlineRetry = OfflineRetryModel(network: AlwaysOnlineNetwork())
 
     private static let miffA = "AbCdEfGhIjKlMnOpQrSt"
     private static let miffB = "ZyXwVuTsRqPoNmLkJiHg"
@@ -46,6 +48,7 @@ struct ProfileScreenPreview: View {
             isActive: false,
             initialCarouselPage: initialPage,
             travel: travel,
+            offlineRetry: offlineRetry,
             actions: ProfileTabActions(
                 onOpenMyInfo: {},
                 onOpenSettings: {},
