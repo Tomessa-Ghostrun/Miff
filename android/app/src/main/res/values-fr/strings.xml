@@ -649,6 +649,10 @@
     <string name="place_list_title">Lieux de la Miff</string>
     <string name="place_list_title_named">Lieux de %1$s</string>
     <string name="place_list_member_hint">Les lieux de ta Miff, définis par son créateur.</string>
+    <string name="place_list_empty_member">Aucun lieu de confiance pour l\'instant.</string>
+    <string name="place_profile_title_named">Lieux de confiance de %1$s</string>
+    <string name="place_profile_unavailable">Les lieux ne sont pas disponibles pour le moment.</string>
+    <string name="place_list_row_type_a11y">%1$s, %2$s</string>
     <string name="place_list_add_action">Ajouter un lieu</string>
     <string name="place_list_add_premium_a11y">Ajouter un lieu, fait partie de Miff+</string>
     <string name="place_list_row_a11y">%1$s, catégorie %2$s, %3$s</string>

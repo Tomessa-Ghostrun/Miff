@@ -105,7 +105,9 @@ fun PlaceRows(
         }
         if (ui.places.isEmpty()) {
             Text(
-                text = stringResource(R.string.miff_places_empty),
+                // A member has nothing to add: a calm "nothing yet" (decision of the PM, 2026-11-11); the creator keeps its sentence.
+                text =
+                    stringResource(if (ui.isCreator) R.string.miff_places_empty else R.string.place_list_empty_member),
                 style = textBodyRegular14,
                 color = colorTextDescription,
                 textAlign = TextAlign.Center,
@@ -135,7 +137,7 @@ private fun PlaceRow(
 ) {
     val category = place.category
     val address = place.address
-    val spoken =
+    val described =
         when {
             category != null && !address.isNullOrEmpty() -> {
                 stringResource(R.string.place_list_row_a11y, place.name, stringResource(category.labelRes), address)
@@ -152,6 +154,13 @@ private fun PlaceRow(
             else -> {
                 stringResource(R.string.place_list_row_nocategory_noaddress_a11y, place.name)
             }
+        }
+    // The row is read as ONE block: the visible tag "Zone de danger" must be in it, or a screen reader would hide the type of the place.
+    val spoken =
+        if (place.type == PlaceType.RISK) {
+            stringResource(R.string.place_list_row_type_a11y, described, stringResource(place.type.labelRes))
+        } else {
+            described
         }
     Row(
         modifier =
