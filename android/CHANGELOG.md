@@ -53,6 +53,10 @@ Décisions du PM du 2026-11-11 (sans maquette ni Notion) ; ticket `docs/tickets/
 - `FirestoreMiffRepository.leave` appelle d'abord `beforeLeave` (retrait des demandes de la personne, jamais bloquant).
 - Le formulaire de lieu gagne un mode `REQUEST` ; `PlaceDetailScreen` accepte le détail d'une demande ; `PlaceRows` accepte les demandes d'un membre.
 
+### Correctif (retour du PM sur l'APK : « On n'arrive pas à ouvrir ce formulaire pour le moment »)
+- **Cause** : à l'ouverture du formulaire de demande, l'app lisait les demandes du membre sur le serveur pour connaître ses emplacements ; tant que les règles de `placeRequests` ne sont pas déployées, cette lecture est refusée et le formulaire se fermait sur le message générique. Rien à voir avec « être créateur d'une Miff » ni avec la lecture des lieux (la liste des lieux s'affichait). **Certitude : forte** (lecture du code et reproduction par test avec une lecture refusée) ; non vérifié sur le téléphone.
+- **Correction** : un refus de cette lecture n'empêche plus d'ouvrir le formulaire (les emplacements ne servent qu'à l'envoi). Une panne réseau reste un échec. À l'**envoi**, si même la lecture est refusée, le message calme **« Les demandes de lieu ne sont pas encore disponibles. Réessaie un peu plus tard. »** (clé `place_request_unavailable`, partagée avec iOS) remplace le faux « Cette Miff a déjà plusieurs demandes en attente ».
+
 ### Revue indépendante (corrections)
 - **Suppression de compte** : avant chaque « Quitter » d'une Miff rejointe, les demandes d'ajout de lieu du compte (adresse, coordonnées) sont retirées, au mieux, sans jamais arrêter la suppression (`StoreAccountMiffs.beforeLeave`, contrat du backend 2.7.3).
 - **Fusion** de la branche `android/profil-lieux-membres` à jour (« Ajouter un lieu » présélectionne la Miff de la liste ; le formulaire de demande a déjà sa Miff fixe).

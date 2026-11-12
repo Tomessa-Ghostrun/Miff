@@ -692,6 +692,7 @@
     <string name="place_request_withdrawn">Request withdrawn.</string>
     <string name="place_request_limit_member">You already have 3 pending requests. You can suggest more once they\'ve been handled.</string>
     <string name="place_request_limit_miff">This Miff already has several pending requests. Please try again a little later.</string>
+    <string name="place_request_unavailable">Place requests are not available yet. Please try again a little later.</string>
     <string name="place_request_gone">This request is no longer pending.</string>
     <string name="place_request_a11y_pending_mine">Your pending request: %1$s</string>
     <string name="place_list_row_a11y">%1$s, category %2$s, %3$s</string>

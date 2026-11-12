@@ -71,6 +71,9 @@ sealed interface RequestSubmitResult {
     /** The Miff is gone, or the person is no longer in it. */
     data object MiffUnavailable : RequestSubmitResult
 
+    /** The server does not take requests for the moment (its rules refuse even the reading of them): nothing was sent, a calm sentence says so. */
+    data object RequestsUnavailable : RequestSubmitResult
+
     data class Failed(
         val failure: MiffFailure,
     ) : RequestSubmitResult
@@ -189,8 +192,16 @@ class FirestorePlaceRequestRepository(
             }
         val mine =
             when (val read = guarded { store.readMine(miffId, uid, fromServer = true) }) {
-                is Guarded.Value -> read.value
-                is Guarded.Failed -> return RequestContextLoad.Failed(read.failure)
+                is Guarded.Value -> {
+                    read.value
+                }
+
+                // The rules refuse the read of `placeRequests` (they are not deployed yet, or the Miff changed): the form OPENS all the same. Its slots are only
+                // needed to SEND; the sending says calmly if requests are not available (see [RequestSubmitResult.Unavailable]).
+                is Guarded.Failed -> {
+                    if (read.failure != MiffFailure.REFUSED) return RequestContextLoad.Failed(read.failure)
+                    emptyList()
+                }
             }
         // An expired request still occupies its slot until it is deleted: the author deletes it here, so that the slot is free again (ticket 5.3).
         mine.forEach { queued.remove("$miffId|${it.id}") }
@@ -306,7 +317,14 @@ class FirestorePlaceRequestRepository(
             }
         }
         // (b) a race on the slot (another phone took it): the requests are read again and, if a slot is free, the lot is sent once more.
-        val fresh = (guarded { store.readMine(miffId, uid, fromServer = true) } as? Guarded.Value)?.value
+        val freshRead = guarded { store.readMine(miffId, uid, fromServer = true) }
+        // Even reading the person's own requests is refused: it is not the limit of the Miff, the requests are simply not available yet.
+        if (freshRead is Guarded.Failed &&
+            freshRead.failure == MiffFailure.REFUSED
+        ) {
+            return RequestSubmitResult.RequestsUnavailable
+        }
+        val fresh = (freshRead as? Guarded.Value)?.value
         if (fresh != null && fresh.any { it.id == sent.id }) {
             val slot = PlaceRequestSlots.firstFree(uid, fresh) ?: return RequestSubmitResult.MemberLimit
             val again = sentRequest(uid, miffId, slot, draft)

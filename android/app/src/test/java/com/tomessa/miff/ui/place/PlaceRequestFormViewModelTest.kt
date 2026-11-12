@@ -242,6 +242,19 @@ class PlaceRequestFormViewModelTest {
     }
 
     @Test
+    fun requestsNotAvailableYet_aCalmSentenceAtSending_theFormStaysOpen() {
+        val vm = viewModel()
+        vm.fill()
+        requests.submitResult = RequestSubmitResult.RequestsUnavailable
+        vm.onSave()
+        dispatcher.scheduler.runCurrent()
+        assertEquals(PlaceMessage.REQUESTS_UNAVAILABLE, vm.uiState.value.message)
+        assertFalse(vm.uiState.value.saving)
+        assertNull(vm.uiState.value.end)
+        assertNull(vm.uiState.value.loadFailed)
+    }
+
+    @Test
     fun aMiffThatIsGone_isSaid_notAnInventedLimit() {
         val vm = viewModel()
         vm.fill()

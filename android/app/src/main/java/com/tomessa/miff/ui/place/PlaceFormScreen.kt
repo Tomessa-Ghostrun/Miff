@@ -1096,13 +1096,15 @@ private fun Foot(
                             PlaceMessage.MIFF_GONE -> R.string.place_message_miff_gone
                             PlaceMessage.REQUEST_LIMIT_MEMBER -> R.string.place_request_limit_member
                             PlaceMessage.REQUEST_LIMIT_MIFF -> R.string.place_request_limit_miff
+                            PlaceMessage.REQUESTS_UNAVAILABLE -> R.string.place_request_unavailable
                         },
                     ),
                 // The limits of a request are said calmly, as information: never in the colour of an error.
                 isError =
                     message != PlaceMessage.OFFLINE &&
                         message != PlaceMessage.REQUEST_LIMIT_MEMBER &&
-                        message != PlaceMessage.REQUEST_LIMIT_MIFF,
+                        message != PlaceMessage.REQUEST_LIMIT_MIFF &&
+                        message != PlaceMessage.REQUESTS_UNAVAILABLE,
             )
         }
         if (state.mode == PlaceFormMode.REQUEST) InfoLine(stringResource(R.string.place_request_form_hint))

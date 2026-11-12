@@ -104,6 +104,38 @@ class PlaceRequestRepositoryTest {
             assertEquals(listOf("u2_1"), loaded.mine.map { it.id })
         }
 
+    // --- The rules do not know the requests yet (not deployed): the form opens, the sending says so calmly ----------------------------------------
+
+    @Test
+    fun prepare_whenTheRulesRefuseTheReadOfMyRequests_theFormOpensAllTheSame_withNoRequestKnown() =
+        runTest {
+            premium()
+            requests.readFailure = firestoreError(FirebaseFirestoreException.Code.PERMISSION_DENIED)
+            val load = repo.prepare(uid, MIFF_ID)
+            val loaded = (load as RequestContextLoad.Loaded).context
+            assertTrue(loaded.mine.isEmpty())
+            assertEquals("Famille", loaded.miffName)
+            assertTrue(loaded.premium)
+        }
+
+    @Test
+    fun prepare_aNetworkFailureOnThatRead_isStillAFailure_neverAnOpenFormOnAGuess() =
+        runTest {
+            requests.readFailure = firestoreError(FirebaseFirestoreException.Code.UNAVAILABLE)
+            assertEquals(MiffFailure.OFFLINE, (repo.prepare(uid, MIFF_ID) as RequestContextLoad.Failed).failure)
+        }
+
+    @Test
+    fun submit_whenEvenTheReadingIsRefused_isNotTheLimitOfTheMiff_itIsUnavailable() =
+        runTest {
+            requests.readFailure = firestoreError(FirebaseFirestoreException.Code.PERMISSION_DENIED)
+            val loaded = (repo.prepare(uid, MIFF_ID) as RequestContextLoad.Loaded).context
+            requests.commitFailures.add(firestoreError(FirebaseFirestoreException.Code.PERMISSION_DENIED))
+            val result = repo.submit(uid, MIFF_ID, testRequestDraft(), loaded, online = true)
+            assertTrue(result is RequestSubmitResult.RequestsUnavailable)
+            assertTrue(requests.commits.isEmpty())
+        }
+
     // --- Sending (M3, M4, M5, M7) ---------------------------------------------------------------------------------------------------
 
     @Test

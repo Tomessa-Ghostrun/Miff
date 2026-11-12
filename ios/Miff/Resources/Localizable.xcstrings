@@ -9242,6 +9242,23 @@
         }
       }
     },
+    "place_request_unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Place requests are not available yet. Please try again a little later."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les demandes de lieu ne sont pas encore disponibles. Réessaie un peu plus tard."
+          }
+        }
+      }
+    },
     "place_request_withdraw": {
       "extractionState": "manual",
       "localizations": {

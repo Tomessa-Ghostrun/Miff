@@ -670,6 +670,7 @@
     <string name="place_request_withdrawn">Demande retirée.</string>
     <string name="place_request_limit_member">Tu as déjà 3 demandes en attente. Tu pourras en proposer d\'autres quand elles auront été traitées.</string>
     <string name="place_request_limit_miff">Cette Miff a déjà plusieurs demandes en attente. Réessaie un peu plus tard.</string>
+    <string name="place_request_unavailable">Les demandes de lieu ne sont pas encore disponibles. Réessaie un peu plus tard.</string>
     <string name="place_request_gone">Cette demande n\'est plus en attente.</string>
     <string name="place_request_a11y_pending_mine">Ta demande en attente : %1$s</string>
     <string name="place_list_row_a11y">%1$s, catégorie %2$s, %3$s</string>
