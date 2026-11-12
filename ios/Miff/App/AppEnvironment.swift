@@ -193,6 +193,9 @@ final class AppEnvironment {
         AppEnvironment()
     }
 
+    // Le câblage de l'app tient en un seul endroit (chaque service reçoit ce qu'il lui faut des autres) : l'initialiseur dépasse 60 lignes avec les
+    // notifications push (SRV-2I). Le découper ferait passer des dizaines de valeurs entre fonctions sans rien clarifier.
+    // swiftlint:disable:next function_body_length
     private init() {
         let flagStore = UserDefaultsBooleanStore()
         let privacy = PrivacySettings(

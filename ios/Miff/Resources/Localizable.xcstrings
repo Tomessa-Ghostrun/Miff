@@ -12407,7 +12407,7 @@
         }
       }
     },
-    "permission_notifications_note": {
+    "ios_permission_notifications_note": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -12420,6 +12420,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Miff te prévient aussi quand un proche donne des nouvelles. Pour cela, Miff enregistre un identifiant technique de ton téléphone, fourni par Apple pour envoyer les notifications. Tu peux tout couper à tout moment dans les réglages de ton téléphone. Les exemples ci-dessus montrent ce que tu pourrais recevoir."
+          }
+        }
+      }
+    },
+    "permission_notifications_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For now, Miff doesn't send notifications yet. The examples above show what is planned."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour l'instant, Miff n'envoie pas encore de notification. Les exemples ci-dessus montrent ce qui est prévu."
           }
         }
       }

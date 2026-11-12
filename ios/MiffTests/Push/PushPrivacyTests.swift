@@ -137,6 +137,27 @@ final class PushPrivacyTests: XCTestCase {
         XCTAssertNil(info["UIBackgroundModes"])
     }
 
+    func testTheScreenThatRecordsTheConsentCarriesTheSentenceAboutThePhoneIdentifier() throws {
+        // Toute surface qui ouvre la fenêtre du système doit porter cette phrase (consentement explicite, ticket §15).
+        let url = iosRoot.appendingPathComponent("Miff/Resources/Localizable.xcstrings")
+        let root = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        let strings = try XCTUnwrap(root["strings"] as? [String: [String: Any]])
+        let key = "ios_permission_notifications_note"
+        let entry = try XCTUnwrap(strings[key]?["localizations"] as? [String: [String: Any]])
+        let sentences = [
+            "fr": "un identifiant technique de ton téléphone, fourni par Apple pour envoyer les notifications",
+            "en": "a technical identifier of your phone, provided by Apple to send notifications"
+        ]
+        for (language, sentence) in sentences {
+            let unit = try XCTUnwrap(entry[language]?["stringUnit"] as? [String: Any])
+            XCTAssertTrue((unit["value"] as? String ?? "").contains(sentence), language)
+        }
+        let screens = try String(
+            contentsOf: iosRoot.appendingPathComponent("Miff/Views/Permission/PermissionScreens.swift"), encoding: .utf8
+        )
+        XCTAssertTrue(screens.contains("Text(\"ios_permission_notifications_note\")"))
+    }
+
     func testTheNotificationTextsAreInTheCatalogForTheServerKeys() throws {
         // Le serveur envoie ces DEUX clés de texte (backend/functions/src/notifRegles.ts) : le système les résout dans la langue du téléphone.
         let url = iosRoot.appendingPathComponent("Miff/Resources/Localizable.xcstrings")
