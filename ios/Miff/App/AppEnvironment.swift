@@ -129,6 +129,11 @@ struct PlaceServices {
         )
     }
 
+    /// « Quitter une Miff » reprend d'abord les demandes d'ajout d'un lieu de la personne dans cette Miff (LIEU-REQ, critère L1).
+    var beforeLeave: (_ uid: String, _ miffId: String) async -> Void {
+        { [requests] uid, miffId in await requests.withdrawAllMine(uid: uid, miffId: miffId) }
+    }
+
     /// Fin de session : le message, ce qui a été tapé dans la recherche d'adresse et ce qu'elle a reçu ne sont pas gardés.
     func stop() async {
         notices.stop()
@@ -231,12 +236,10 @@ final class AppEnvironment {
             gateway: gateway, cache: cache, network: networkMonitor, device: device
         )
         let places = PlaceServices.make(network: networkMonitor, onChanged: trackingServices.sharingChanged)
-        let requests = places.requests
         // Un partage ou un lieu qui change : le suivi relit les Miffs et les lieux (depuis n'importe quel fil).
         let miff = MiffServices.make(
             gateway: gateway, cache: cache, network: networkMonitor, device: device,
-            onSharingChanged: trackingServices.sharingChanged,
-            beforeLeave: { uid, miffId in await requests.withdrawAllMine(uid: uid, miffId: miffId) }
+            onSharingChanged: trackingServices.sharingChanged, beforeLeave: places.beforeLeave
         )
         let updateServices = UpdateServices.make(
             gateway: gateway, network: networkMonitor, device: device, tracking: trackingServices, miff: miff
