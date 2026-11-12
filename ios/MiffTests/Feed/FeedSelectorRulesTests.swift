@@ -103,30 +103,21 @@ final class FeedSelectorRulesTests: XCTestCase {
 
     // MARK: - L'offre d'une 2e Miff
 
-    func testThePaywallOfASecondMiffHasItsOwnTextsInBothLanguages() {
+    func testThePaywallOfASecondMiffKeepsItsComingSoonTextInBothLanguages() {
         let reason = PaywallReason.extraMiff
 
-        for key in [reason.titleKey, reason.bodyKey, reason.soonBodyKey] {
-            XCTAssertNotEqual(L10n.string(key), key, "\(key) n'a pas de texte")
-        }
-        XCTAssertEqual(reason.titleKey, "feed_selector_paywall_title")
-        XCTAssertEqual(reason.bodyKey, "feed_selector_paywall_body")
+        XCTAssertNotEqual(L10n.string(reason.soonBodyKey), reason.soonBodyKey, "\(reason.soonBodyKey) n'a pas de texte")
         XCTAssertEqual(reason.soonBodyKey, "feed_selector_paywall_soon_body")
     }
 
-    func testTheOtherReasonsKeepTheirTexts() {
-        XCTAssertEqual(PaywallReason.limit.titleKey, "place_paywall_limit_title")
-        XCTAssertEqual(PaywallReason.limit.bodyKey, "place_paywall_limit_body")
-        XCTAssertEqual(PaywallReason.danger.titleKey, "place_paywall_danger_title")
-        XCTAssertEqual(PaywallReason.danger.bodyKey, "place_paywall_danger_body")
+    func testTheOtherReasonsKeepTheirComingSoonText() {
         XCTAssertEqual(PaywallReason.limit.soonBodyKey, "place_paywall_soon_body")
         XCTAssertEqual(PaywallReason.danger.soonBodyKey, "place_paywall_soon_body")
     }
 
     func testNoTextOfTheOfferSaysPremiumNorShowsAPrice() {
         for key in [
-            "feed_selector_paywall_title", "feed_selector_paywall_body", "feed_selector_paywall_soon_body",
-            "feed_selector_join", "feed_selector_create", "feed_selector_a11y"
+            "feed_selector_paywall_soon_body", "feed_selector_join", "feed_selector_create", "feed_selector_a11y"
         ] {
             let text = L10n.string(key).lowercased()
             XCTAssertFalse(text.contains("premium"), "\(key) : jamais « Premium » dans un texte affiché")

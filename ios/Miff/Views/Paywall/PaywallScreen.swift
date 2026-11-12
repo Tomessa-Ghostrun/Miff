@@ -66,7 +66,6 @@ struct PaywallScreen: View {
         if model.state == .subscribed {
             PaywallSubscribedContent()
         } else {
-            PlacePaywallContext(reason: model.reason)
             Text("place_paywall_headline")
                 .miffTextStyle(textTitleBold24)
                 .miffBrandTitleFill()
@@ -76,20 +75,17 @@ struct PaywallScreen: View {
             PlacePaywallFeature(
                 symbol: "mappin.and.ellipse",
                 title: L10n.string("place_paywall_feature_places"),
-                detail: L10n.string("place_paywall_feature_places_desc"),
-                highlighted: model.reason == .limit
+                detail: L10n.string("place_paywall_feature_places_desc")
             )
             PlacePaywallFeature(
                 symbol: "person.2",
                 title: L10n.string("place_paywall_feature_miffs"),
-                detail: L10n.string("place_paywall_feature_miffs_desc"),
-                highlighted: model.reason == .extraMiff
+                detail: L10n.string("place_paywall_feature_miffs_desc")
             )
             PlacePaywallFeature(
                 symbol: "exclamationmark.triangle",
                 title: L10n.string("place_paywall_feature_danger"),
-                detail: L10n.string("place_paywall_feature_danger_desc"),
-                highlighted: model.reason == .danger
+                detail: L10n.string("place_paywall_feature_danger_desc")
             )
         }
     }

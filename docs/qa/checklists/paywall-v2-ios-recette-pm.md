@@ -15,7 +15,7 @@
 ## Partie 1 : fidélité aux maquettes (5 min)
 
 1. [ ] Ouvrez l'offre par **un lieu au-delà de la limite gratuite** (Miff > « Ajouter un lieu » ; aujourd'hui **2 lieux sur iPhone**, voir « Écarts »). L'écran s'ouvre **en plein écran** (il monte depuis le bas, sans barre de navigation).
-2. [ ] Le **fond en dégradé clair**, le **logo Miff** en haut, la **phrase de contexte** (« Tu as atteint 2 lieux »), le **titre sur deux lignes en dégradé bleu-vert** (« Débloque l'ensemble des fonctionnalités de Miff ! »), puis **trois cartes** blanches à pastille bleue : **Lieux de confiance illimités**, **Nombre de Miffs illimité**, **Zones de danger**. **Il n'y a PAS de carte « Notifications intelligentes »** (décision du 2026-11-12 : elles ne sont pas livrées).
+2. [ ] Le **fond en dégradé clair**, le **logo Miff** en haut, **aucune phrase de contexte** (décision du PM du 2026-11-12 : le même contenu quel que soit le point d'entrée), le **titre sur deux lignes en dégradé bleu-vert** (« Débloque l'ensemble des fonctionnalités de Miff ! »), puis **trois cartes** blanches à pastille bleue : **Lieux de confiance illimités**, **Nombre de Miffs illimité**, **Zones de danger**. **Il n'y a PAS de carte « Notifications intelligentes »** (décision du 2026-11-12 : elles ne sont pas livrées).
 3. [ ] Sous les cartes : **« Miff+ arrive bientôt »** et « Cette option n'est pas encore ouverte. Tes lieux actuels restent en place. » **Aucun prix, aucun bouton d'essai, aucun bouton « Plus tard »**, aucun lien « Restaurer ». Le tutoiement partout.
 4. [ ] Changez la langue du téléphone en **anglais** : les mêmes textes en anglais (« Miff+ is coming soon »).
 
@@ -24,8 +24,8 @@
 Pour **chaque** entrée : à l'ouverture, **la croix n'est pas là** (un espace vide en haut à gauche, rien ne bouge quand elle arrive) ; **après environ 3 secondes** elle **apparaît en fondu** (disque gris foncé, croix blanche), et **reste**.
 
 5. [ ] **Lieu au-delà de la limite** (Miff > « Ajouter un lieu »).
-6. [ ] **Zone de danger** : formulaire d'un lieu, choisissez le type « zone de danger » (réservée à Miff+) : même comportement. La phrase de contexte dit « Les zones de danger font partie de Miff+ ».
-7. [ ] **2e Miff par le sélecteur du Feed** : touchez le nom de la Miff en haut du Feed, puis « Créer une Miff » ou « Rejoindre une Miff » : même comportement. La phrase de contexte dit « Une seule Miff avec la formule gratuite ».
+6. [ ] **Zone de danger** : formulaire d'un lieu, choisissez le type « zone de danger » (réservée à Miff+) : même comportement. Le contenu est **le même** que pour les autres entrées (pas de phrase qui explique la zone de danger).
+7. [ ] **2e Miff par le sélecteur du Feed** : touchez le nom de la Miff en haut du Feed, puis « Créer une Miff » ou « Rejoindre une Miff » : même comportement. Le contenu est **le même** que pour les autres entrées (pas de phrase « Une seule Miff… »).
 8. [ ] **Nouveau départ à chaque affichage** : fermez l'offre (croix) et **rouvrez-la tout de suite** (même entrée, puis une autre) : **la croix est de nouveau absente 3 secondes**.
 9. [ ] **Glissement** : pendant les 3 premières secondes, **tirez l'écran vers le bas** et glissez depuis le bord gauche : **rien ne ferme** l'écran. **Après** les 3 secondes, la croix ferme l'écran (touchez-la).
 10. [ ] **Aucune autre sortie** : pendant les 3 secondes, **aucun** bouton, lien ni geste ne ferme l'écran.

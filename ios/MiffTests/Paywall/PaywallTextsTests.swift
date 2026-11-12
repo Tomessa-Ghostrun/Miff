@@ -84,13 +84,12 @@ final class PaywallTextsTests: XCTestCase {
         }
     }
 
-    func testTheContextTextsOfEveryEntryPointNeverMentionAPriceOrPremium() {
+    func testTheComingSoonTextOfEveryEntryPointNeverMentionsAPriceOrPremium() {
         for reason in [PaywallReason.limit, .danger, .extraMiff] {
-            for key in [reason.titleKey, reason.bodyKey, reason.soonBodyKey] {
-                let text = L10n.string(key).lowercased()
-                XCTAssertNotEqual(text, key, "\(key) n'a pas de texte")
-                XCTAssertFalse(text.contains("premium") || text.contains("€"), "\(key) : PW3")
-            }
+            let key = reason.soonBodyKey
+            let text = L10n.string(key).lowercased()
+            XCTAssertNotEqual(text, key, "\(key) n'a pas de texte")
+            XCTAssertFalse(text.contains("premium") || text.contains("€"), "\(key) : PW3")
         }
     }
 }

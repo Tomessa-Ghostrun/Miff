@@ -59,31 +59,9 @@ enum PlacePaywall {
     }
 }
 
-/// Les textes de la phrase calme du haut de l'offre (la raison pour laquelle elle s'affiche) et de la mention « bientôt », par
+/// Le texte de la mention « bientôt » de la variante sans achat, par
 /// raison. Des clés du catalogue : le texte lui-même est dans les deux langues.
 extension PaywallReason {
-    var titleKey: String {
-        switch self {
-        case .limit:
-            return "place_paywall_limit_title"
-        case .danger:
-            return "place_paywall_danger_title"
-        case .extraMiff:
-            return "feed_selector_paywall_title"
-        }
-    }
-
-    var bodyKey: String {
-        switch self {
-        case .limit:
-            return "place_paywall_limit_body"
-        case .danger:
-            return "place_paywall_danger_body"
-        case .extraMiff:
-            return "feed_selector_paywall_body"
-        }
-    }
-
     /// « Cette option n'est pas encore ouverte. » + ce qui reste en place (les lieux, ou la Miff actuelle).
     var soonBodyKey: String {
         self == .extraMiff ? "feed_selector_paywall_soon_body" : "place_paywall_soon_body"
