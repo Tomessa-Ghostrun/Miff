@@ -6,6 +6,7 @@ import com.tomessa.miff.data.miff.SharingConsentRead
 import com.tomessa.miff.domain.miff.MembershipRef
 import com.tomessa.miff.domain.place.PlaceType
 import com.tomessa.miff.domain.tracking.BreakerState
+import com.tomessa.miff.domain.tracking.Fix
 import com.tomessa.miff.domain.tracking.JournalKind
 import com.tomessa.miff.domain.tracking.PlaceFact
 import com.tomessa.miff.domain.tracking.TrackingLimits
@@ -21,6 +22,7 @@ import com.tomessa.miff.testsupport.FakeTrackingEnv
 import com.tomessa.miff.testsupport.FakeTrackingStore
 import com.tomessa.miff.testsupport.RecordingJournal
 import com.tomessa.miff.testsupport.T0
+import com.tomessa.miff.testsupport.fullPermissions
 import com.tomessa.miff.testsupport.whileInUseOnly
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -663,6 +665,57 @@ class TrackingEngineTest {
             assertEquals(setOf(miffA), local.state!!.miffs.keys)
             engine.onTransition(TransitionKind.ENTER, home.key, env.now)
             assertEquals(listOf("miffs/miffA/status/uid1"), statusWrites().map { it.path })
+        }
+
+    // --- The Update hands its measure over (it never writes the position itself, criterion U8) ----------------------------------------------------
+
+    @Test
+    fun aMeasureHandedOverByTheUpdate_isPublishedByTheEngineItself_withoutAskingForAnotherOne() =
+        runTest {
+            share(miffA)
+            // The phone is slow: the engine's own wait finds nothing, so no position of mine is published yet.
+            position.available = false
+            engine.refresh(TrackingEngine.Reason.OPENED)
+            assertTrue(positionWrites().isEmpty())
+            assertNull(local.state!!.miffs[miffA]!!.positionAtMillis)
+            val reads = position.reads
+            // The Update measured (10 s of waiting) and hands the measure over.
+            engine.refresh(TrackingEngine.Reason.SHARING_CHANGED, Fix(lat, lng, env.now))
+            assertEquals("the measure of the Update is used as it is", reads, position.reads)
+            assertEquals(listOf("miffs/miffA/positions/uid1"), positionWrites().map { it.path })
+            assertNotNull(local.state!!.miffs[miffA]!!.positionAtMillis)
+            assertTrue(JournalKind.POSITION_WRITTEN in journal.kinds)
+        }
+
+    @Test
+    fun aMeasureHandedOver_isNotPublishedWithoutAlways_orWithAnOldConsent() =
+        runTest {
+            share(miffA)
+            env.snapshot = whileInUseOnly()
+            engine.refresh(TrackingEngine.Reason.SHARING_CHANGED, Fix(lat, lng, env.now))
+            assertTrue(positionWrites().isEmpty())
+            env.snapshot = fullPermissions()
+            store.consents[miffA] = SharingConsentRead(enabled = true, version = "2026-10-v2")
+            engine.refresh(TrackingEngine.Reason.SHARING_CHANGED, Fix(lat, lng, env.now))
+            assertTrue(positionWrites().isEmpty())
+        }
+
+    @Test
+    fun aMeasureHandedOver_ofMoreThan10Minutes_isNeverPublished() =
+        runTest {
+            share(miffA)
+            position.available = false
+            engine.refresh(TrackingEngine.Reason.SHARING_CHANGED, Fix(lat, lng, env.now - 11 * minute))
+            assertTrue(positionWrites().isEmpty())
+        }
+
+    @Test
+    fun aRefusedPosition_isInTheJournal_asACodeOnly() =
+        runTest {
+            share(miffA)
+            store.alwaysFailing["miffs/miffA/positions/uid1"] = refused()
+            engine.refresh(TrackingEngine.Reason.SHARING_CHANGED, Fix(lat, lng, env.now))
+            assertTrue(JournalKind.POSITION_REFUSED in journal.kinds)
         }
 
     @Test

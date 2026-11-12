@@ -16,12 +16,14 @@ La checklist QA de sortie `docs/qa/release-checklist.md` **n'existe pas encore**
 | `google-play-data-safety.md` | Formulaire « Sécurité des données » (Data safety) : réponses proposées, points à confirmer |
 | `app-store-confidentialite-et-revue.md` | Étiquettes de confidentialité Apple (App Privacy, Precise Location...), manifeste de confidentialité, textes d'usage iOS (FR/EN), note de revue Apple pour la guideline 5.1.2(i), plan B |
 | `changements-testeurs-externes.md` | Ce qui change pour les testeurs externes (court) |
+| `alignement-decisions-2026-11-11.md` | **Alignement du 2026-11-11** : 3 lieux gratuits, « Enregistrer cette photo », photo Google, mode voyage, notifications locales : ce qui a été corrigé, **ce qui reste à faire à la publication** (avec les fichiers) et les points ambigus |
 | `update-photo-declarations.md` | **Update (photo « Donner des nouvelles »)** : permission caméra (Android, iOS FR/EN), photo et lieu de la photo (toujours attaché), écarts Data safety et App Privacy, contenu généré par les utilisateurs (Apple 1.2, Google UGC), mineurs, passages légaux adaptés, pages web à mettre à jour, captures, risques de rejet et **plan de repli** (2026-11-06, décisions P1 à P8) |
+| `checklist-android.md` | **Soumission Google Play, pas à pas** (2026-11-11) : clé d'envoi et secrets GitHub, workflow `android-release`, Play App Signing, piste interne, 12 testeurs / 14 jours, SHA-1 / SHA-256 dans Firebase et App Check, Data safety, localisation en arrière-plan avec vidéo ; ce qui reste bloqué côté PM |
 | `decisions-stores-avant-soumission.md` | **20 décisions et actions du PM avant toute soumission** (2026-11-07) : classification d'âge, catégorie, contenu généré par les utilisateurs, identité publique de l'éditeur, règle des 12 testeurs de Google, déploiement du site, nom « Miff », partage du code, avis, analytics, vidéos, Miff+, ordre iOS / Android. Recoupe les brouillons de `marketing/` avec ce dossier ; règles des stores relues le même jour |
 | `../legal/consentement-localisation-v3.md` | Texte de consentement version 3 et règle `AAAA-MM-vNN` |
 | `../legal/*.md`, `../../web/` | Politique de confidentialité, CGU, page web (FR et EN), mis à jour dans la même PR |
 
-Les checklists `checklist-ios.md` et `checklist-android.md` (étapes de soumission complètes : comptes, signature, versions, fiches) **ne sont pas encore écrites** : elles ne faisaient pas partie de cette tâche.
+**`checklist-android.md`** (2026-11-11) : étapes de soumission Google Play pas à pas pour le PM (création de l'app, clé d'envoi, Play App Signing, piste de test interne, règle des 12 testeurs, empreintes dans Firebase, déclarations) et ce qui reste bloqué côté PM ; annexe technique (version, signature, pages de 16 Ko). La checklist `checklist-ios.md` **n'est pas encore écrite**.
 
 ## À faire par le PM, à la main (aucun agent ne le fait)
 
@@ -82,7 +84,7 @@ Les textes publics affirment les points suivants. **Chacun doit être vérifié 
 | V8 | Le document de session ne contient qu'un identifiant aléatoire d'installation, la plateforme et l'heure | `backend-data` |
 | V9 | Le lieu enregistré est visible des membres avec son adresse ; le créateur seul crée, modifie, supprime | règles + devs |
 | V10 | **Update** : le manifeste Android déclare `CAMERA` et aucune permission de stockage, de photothèque ni de micro ; `uses-feature` caméra à `required="false"` ; `PermissionPrivacyTest` et la CI mis à jour | `android-dev` |
-| V11 | **Update** : iOS, `NSCameraUsageDescription` en FR et EN, aucune clé `NSPhotoLibrary*` ni `NSMicrophone*` ; `check-binaries.sh` et `PrivacyInfo.xcprivacy` mis à jour | `ios-dev` |
+| V11 | **Update** : iOS, `NSCameraUsageDescription` en FR et EN, **EXACTEMENT** la clé `NSPhotoLibraryAddUsageDescription` (ajout seul, FEED-8, décision du 2026-11-11), jamais `NSPhotoLibraryUsageDescription` ni `NSMicrophone*` ; `check-binaries.sh` et `PrivacyInfo.xcprivacy` mis à jour | `ios-dev` |
 | V12 | **Update** : la photo publiée ne contient aucune métadonnée (test d'octets, dix photos) et pèse au plus 150 000 octets | devs |
 | V13 | **Update** : la caméra ne démarre que si l'écran Update est visible, s'arrête en arrière-plan, ne peut pas être déclenchée à distance | devs |
 | V14 | **Update** : aucune photo dans la galerie ni sur disque avec le viseur intégré ; le repli système utilise un fichier du cache privé supprimé aussitôt | devs |
@@ -93,6 +95,9 @@ Les textes publics affirment les points suivants. **Chacun doit être vérifié 
 | V19 | **Update** : iOS, comportement réel du repli « appareil photo du système » quand la caméra est refusée (P8 : aucun repli promis dans les textes) | `ios-dev` |
 | V20 | **Update** : tous les textes d'écran (explication de la caméra, aperçu, consentement amendé, `NSLocation*UsageDescription`) citent l'endroit de la photo dans les mêmes termes que la politique et les CGU | devs + `release-manager` |
 | V21 | **Update** : un membre qui ne partage pas sa position voit « Partage ta position pour voir cette photo » pour toute photo ; un compte sans consentement suffisant ne peut pas publier | devs |
+| V22 | **« Enregistrer cette photo »** (décision du 2026-11-11) : l'icône n'existe qu'au plein écran de la photo d'un proche ; l'écriture part d'un toucher, jamais d'un effet automatique ; Android : aucune permission de stockage ni de photothèque ; iOS : seule `NSPhotoLibraryAddUsageDescription` (ajout) est déclarée, jamais la clé de lecture ; le fichier enregistré n'a ni métadonnée ni lieu (`update-photo-declarations.md` §16). **V11 est à lire avec cette exception** | devs |
+| V23 | **Mode voyage** : la dernière position et l'endroit des photos continuent d'être écrits et lus pendant un voyage ; aucun texte (app, fiche, politique) ne dit que le voyage arrête ou suspend la position | devs + `release-manager` |
+| V24 | **Photo Google** : téléchargée une seule fois, en HTTPS, depuis `googleusercontent.com`, redimensionnée et enregistrée sans métadonnée ; aucune copie conservée après l'enregistrement du profil (le brouillon local est effacé) | devs |
 
 ## Sources officielles consultées le 2026-11-04
 

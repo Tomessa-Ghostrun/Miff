@@ -29,7 +29,6 @@ import com.tomessa.miff.ui.theme.GlassBorderWidth
 import com.tomessa.miff.ui.theme.GlassCentralPlate
 import com.tomessa.miff.ui.theme.GlassConditions
 import com.tomessa.miff.ui.theme.GlassLevel
-import com.tomessa.miff.ui.theme.GlassPaletteLight
 import com.tomessa.miff.ui.theme.GlassPolicy
 import com.tomessa.miff.ui.theme.GlassVariant
 import com.tomessa.miff.ui.theme.ShadowDefault
@@ -162,11 +161,14 @@ class CentralButtonColors(
  */
 fun centralButtonColors(level: StatusLevel): CentralButtonColors =
     when (level) {
-        StatusLevel.NEUTRAL -> CentralButtonColors(GlassPaletteLight.iconInactive, GlassPaletteLight.iconInactive)
+        StatusLevel.NEUTRAL -> CentralButtonColors(NeutralStatusGrey, NeutralStatusGrey)
         StatusLevel.GREEN -> CentralButtonColors(colorActionPrimary, colorStatusSafe)
         StatusLevel.ORANGE -> CentralButtonColors(colorActionPrimary, colorStatusWarning)
         StatusLevel.RED -> CentralButtonColors(colorActionPrimary, colorStatusDanger)
     }
+
+/** The grey of the neutral status button, decided by the PM on 2026-11-06 (`#595959`). It stays as it is: the inactive icons of the bar became darker (`#404040`) with the lighter veil of 2026-11-11. */
+private val NeutralStatusGrey = Color(0xFF595959)
 
 private val PlateSize = 44.dp
 private val RingSize = 36.dp

@@ -186,7 +186,7 @@ private struct UpdateNoticeCard: View {
         switch notice {
         case .offline:
             return "icloud.slash"
-        case .positionNotFound, .locationOff:
+        case .positionNotFound, .locationOff, .locationApproximate:
             return "mappin.and.ellipse"
         default:
             return "clock"
@@ -200,7 +200,7 @@ private struct UpdateNoticeCard: View {
             return UpdatePopIn.Action(titleKey: "update_action_review_agreement", run: actions.onReviewAgreement)
         case .sharingStopped:
             return UpdatePopIn.Action(titleKey: "update_action_resume_sharing", run: actions.onResumeSharing)
-        case .locationOff:
+        case .locationOff, .locationApproximate:
             return UpdatePopIn.Action(titleKey: "update_action_open_settings", run: actions.onOpenSettings)
         case .unconfirmed:
             return UpdatePopIn.Action(titleKey: "update_action_open_feed", run: actions.onClose)

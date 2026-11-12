@@ -37,12 +37,19 @@ enum class ActionMessage {
 
     /** The profile (or its phone number) is missing: the person goes back to the profile step. */
     NO_PROFILE,
+
+    /**
+     * AC-4: "Cet appareil n'est pas reconnu pour le moment. Mets Miff à jour depuis le store, puis réessaie." The server refused and this
+     * phone holds no App Check token (see [MiffFailure.DEVICE_NOT_RECOGNIZED]). Calm, no reproach, one thing to do.
+     */
+    DEVICE_NOT_RECOGNIZED,
 }
 
 internal fun messageFor(failure: MiffFailure): ActionMessage =
     when (failure) {
         MiffFailure.OFFLINE -> ActionMessage.OFFLINE
         MiffFailure.NO_PROFILE -> ActionMessage.NO_PROFILE
+        MiffFailure.DEVICE_NOT_RECOGNIZED -> ActionMessage.DEVICE_NOT_RECOGNIZED
         else -> ActionMessage.GENERIC
     }
 

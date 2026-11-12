@@ -2,15 +2,17 @@
 
 **Décision du PM, 2026-11-10** : la limite gratuite passe de **2 à 3 lieux de confiance** ; au-delà de 3 = Premium (Miff+). Le reste ne change pas (1 Miff à la fois, zones de danger réservées au Premium, seul le créateur crée ses lieux).
 
+**État au 2026-11-11** : les textes de la section « Hors applications » (CGU, page d'accueil et son test, fiches des stores, documents de `docs/release/`, specs, tickets d'initialisation et d'onboarding, `design/screens/lieux/*.md`) ont été alignés sur 3 lieux par la PR `docs/aligner-decisions-publication` (voir `docs/release/alignement-decisions-2026-11-11.md`). Restent : les clients (Android fait dans `main` ; iOS = PR #145), les maquettes HTML et les checklists QA.
+
 Ce fichier liste ce qu'il faut changer **sans le faire** : la PR `backend/lieux-gratuits-3` ne touche ni `android/`, ni `ios/`, ni `web/`, ni `docs/legal/`, ni `CLAUDE.md`. Numéros de ligne relevés sur `origin/main` au 2026-11-10 (ils peuvent bouger).
 
 ## Ordre à respecter (important)
 
-1. Fusion de la PR backend (après « oui » du PM).
-2. **Déploiement des règles par le PM** (commande exacte dans la PR et dans `docs/dev/deploiement-regles.md`).
+1. Fusion de la PR backend (après « oui » du PM) : faite.
+2. **Déploiement des règles par le PM** : **fait le 2026-11-10** (information du PM, non vérifiable par l'agent ; commande dans `docs/dev/deploiement-regles.md`).
 3. Seulement ensuite : livraison des applications qui écrivent `p3`.
 
-Tant que les règles ne sont pas déployées, la production n'accepte que `p1` et `p2` : **un client à 3 lieux serait refusé** sur le 3e lieu (erreur de permission, rien d'écrit). L'inverse est sans risque : une application actuelle (2 lieux) continue de fonctionner après le déploiement des règles.
+Avant ce déploiement, la production n'acceptait que `p1` et `p2` : **un client à 3 lieux aurait été refusé** sur le 3e lieu (erreur de permission, rien d'écrit). L'inverse est sans risque : une application actuelle (2 lieux) continue de fonctionner après le déploiement des règles. **Les règles à 3 lieux étant déployées (2026-11-10), les clients à 3 lieux peuvent être livrés.**
 
 ## Contrat client (inchangé sauf la liste d'identifiants)
 

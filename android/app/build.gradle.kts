@@ -19,6 +19,66 @@ val locationBlockingProperty: String = providers.gradleProperty("miff.locationBl
 // reconfirmed the window at the gate "prêt à soumettre". Checked by ReviewPromptReleaseTest, and on the real bundle by android.yml.
 val reviewPromptProperty: String? = providers.gradleProperty("miff.reviewPrompt").orNull
 
+// VERSIONS (docs/release/checklist-android.md). Nothing is frozen here any more:
+// - versionName = the first "## [x.y.z]" heading of android/CHANGELOG.md (one place: the changelog the team already keeps), or -Pmiff.versionName=... for a test.
+// - versionCode = -Pmiff.versionCode=N when given (the release workflow gives its own run number: Google Play only accepts a code HIGHER than every one it has
+//   already received, so a signed release MUST be given one on purpose, see the guard at the end of this file). Without it (local builds, test APKs of the CI,
+//   unsigned bundle): derived from the version, major * 1 000 000 + minor * 1 000 + patch (0.32.0 -> 32000): always growing with the changelog, never 1.
+// The file is read through a Gradle provider, so that the configuration cache notices when the changelog changes.
+val changelogVersion: String =
+    providers
+        .fileContents(rootProject.layout.projectDirectory.file("CHANGELOG.md"))
+        .asText
+        .map { text ->
+            Regex("""(?m)^## \[(\d+\.\d+\.\d+)]""").find(text)?.groupValues?.get(1)
+                ?: throw GradleException(
+                    "android/CHANGELOG.md has no heading like \"## [0.32.0]\": the versionName cannot be derived from it",
+                )
+        }.get()
+val appVersionName: String = providers.gradleProperty("miff.versionName").getOrElse(changelogVersion)
+require(Regex("""\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?""").matches(appVersionName)) {
+    "miff.versionName must look like 1.2.3 (optionally followed by -suffix)"
+}
+val explicitVersionCode: String? = providers.gradleProperty("miff.versionCode").orNull
+val appVersionCode: Int =
+    if (explicitVersionCode != null) {
+        val parsed = explicitVersionCode.toIntOrNull()
+        require(parsed != null && parsed in 1..2_100_000_000) {
+            "miff.versionCode must be a whole number between 1 and 2100000000 (Google Play limit)"
+        }
+        parsed
+    } else {
+        val (major, minor, patch) = appVersionName.substringBefore('-').split('.').map { it.toInt() }
+        require(major < 2000 && minor < 1000 && patch < 1000) {
+            "the version $appVersionName is too large to derive a versionCode: give -Pmiff.versionCode"
+        }
+        major * 1_000_000 + minor * 1_000 + patch
+    }
+
+// UPLOAD KEY (Google Play). The signature of a release comes from ENVIRONMENT VARIABLES ONLY, set by the release workflow (.github/workflows/android-release.yml)
+// after it has decoded the keystore from a GitHub secret into a temporary file of the runner. Nothing is read from a file of the repository, nothing is committed
+// (the keystore, the passwords and the alias never appear in a Gradle file, a property file or a log). With NONE of the four variables the release stays UNSIGNED
+// (what the CI builds on every pull request, what a developer builds locally). With only SOME of them the build FAILS: a half-configured signature must never turn
+// into a silently unsigned bundle. The key is an UPLOAD key: with Play App Signing, Google re-signs what is sent with its own key, which Miff never holds.
+val uploadSigningVariables =
+    listOf("MIFF_UPLOAD_STORE_FILE", "MIFF_UPLOAD_STORE_PASSWORD", "MIFF_UPLOAD_KEY_ALIAS", "MIFF_UPLOAD_KEY_PASSWORD")
+val uploadSigning: Map<String, String> =
+    uploadSigningVariables
+        .mapNotNull { name ->
+            providers
+                .environmentVariable(name)
+                .orNull
+                ?.takeIf { it.isNotBlank() }
+                ?.let { name to it }
+        }.toMap()
+require(uploadSigning.isEmpty() || uploadSigning.size == uploadSigningVariables.size) {
+    "The upload signature is half configured: set all of ${uploadSigningVariables.joinToString()} or none of them"
+}
+val uploadSigningConfigured: Boolean = uploadSigning.isNotEmpty()
+require(!uploadSigningConfigured || file(uploadSigning.getValue("MIFF_UPLOAD_STORE_FILE")).isFile) {
+    "MIFF_UPLOAD_STORE_FILE does not point to a file"
+}
+
 android {
     namespace = "com.tomessa.miff"
     // compileSdk 37 (not 36): the current AndroidX releases (Compose 1.12, Navigation 2.10, Core 1.19) require it.
@@ -29,8 +89,8 @@ android {
         applicationId = "com.tomessa.miff"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
 
         // Single place for the public pages of the legal texts (AUTH-W, not deployed yet) and for the provisional
         // contact (ticket decision N2: replace by a dedicated address before the external beta).
@@ -96,6 +156,18 @@ android {
         generateLocaleConfig = true
     }
 
+    signingConfigs {
+        // Only created when the four environment variables above are all there (see UPLOAD KEY): otherwise the release stays unsigned.
+        if (uploadSigningConfigured) {
+            create("release") {
+                storeFile = file(uploadSigning.getValue("MIFF_UPLOAD_STORE_FILE"))
+                storePassword = uploadSigning.getValue("MIFF_UPLOAD_STORE_PASSWORD")
+                keyAlias = uploadSigning.getValue("MIFF_UPLOAD_KEY_ALIAS")
+                keyPassword = uploadSigning.getValue("MIFF_UPLOAD_KEY_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         debug {
             buildConfigField("boolean", "STARTUP_METRICS", "true")
@@ -108,7 +180,9 @@ android {
             isShrinkResources = true
             isDebuggable = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // Unsigned on purpose: no signing key exists yet (never commit one).
+            // Signed with the UPLOAD key only when the release workflow provides it through the environment (see UPLOAD KEY above); unsigned otherwise.
+            // Never the debug key. No key is ever committed.
+            if (uploadSigningConfigured) signingConfig = signingConfigs.getByName("release")
             // No automatic upload of the R8 mapping to Firebase from a developer machine: a build must never write to
             // the Firebase project. CI will enable it (-Pmiff.uploadCrashlyticsMapping=true) once release builds are shared.
             (this as ExtensionAware).extensions.configure<CrashlyticsExtension>("firebaseCrashlytics") {
@@ -163,6 +237,8 @@ android {
         unitTests.isReturnDefaultValues = true
         // Screen tests (Robolectric) need the app resources: they run in testDebugUnitTest only.
         unitTests.isIncludeAndroidResources = true
+        // The screen tests (Robolectric) are many: the default heap of the test JVM (512 MB) ran out in CI (OutOfMemoryError in the test worker).
+        unitTests.all { it.maxHeapSize = "2g" }
     }
 }
 
@@ -281,6 +357,20 @@ run {
                     "miff.reviewPrompt=true is not allowed in a release build (the review window must be absent " +
                         "from distributed builds). Add -Pmiff.allowReviewPromptInRelease=true only after the PM " +
                         "reconfirmed the window at the gate \"prêt à soumettre\".",
+                )
+            }
+        }
+    }
+}
+
+// A SIGNED release goes to Google Play, which refuses a versionCode it has already seen and any lower one: it must be given on purpose (-Pmiff.versionCode=N,
+// done by the release workflow with its run number), never silently derived from the version. The unsigned bundle of the CI is not concerned.
+run {
+    if (uploadSigningConfigured && explicitVersionCode == null) {
+        tasks.matching { it.name == "preReleaseBuild" }.configureEach {
+            doFirst {
+                throw GradleException(
+                    "A signed release needs an explicit version code: add -Pmiff.versionCode=N (a whole number higher than the last one sent to Google Play).",
                 )
             }
         }

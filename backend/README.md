@@ -2,23 +2,24 @@
 
 Schéma de données Firestore, règles de sécurité et (plus tard) Cloud Functions, produits par l'agent `backend-data`.
 
-- Projet Firebase : **`miff-3d283`** (région Firestore `europe-west9`, édition Standard, plan **Spark**).
+- Projet Firebase : **`miff-3d283`** (région Firestore `europe-west9`, édition Standard, plan **Blaze** depuis le 2026-11-11, décision du PM : notifications push et premium réel ; avant, Spark).
 - Le projet `ghostrun-app` du même compte Google **ne doit jamais être ciblé**. Toute commande Firebase porte `--project miff-3d283` (ou `--project demo-miff-rules` pour l'émulateur) : `.firebaserc` **ne déclare volontairement aucun projet par défaut** (DUR-3), une commande qui oublie `--project` s'arrête au lieu de viser un projet au hasard. Les tests refusent tout script ou workflow qui ne respecte pas cette règle.
-- **Règles déployées** : DUR-1 et DUR-2 sont déployées sur `miff-3d283` (information du PM, à confirmer dans la console : Firestore > Règles). Aucun agent ne déploie ni ne touche la console : la procédure du PM est dans [`../docs/dev/deploiement-regles.md`](../docs/dev/deploiement-regles.md).
+- **Règles déployées** : DUR-1 et DUR-2 sont déployées sur `miff-3d283`, ainsi que le fichier de `main` du 2026-11-10 (3 lieux gratuits, mode voyage, photo localisée, dernière position, SESS-1 temps 1) : informations du PM, non vérifiables par l'agent, à confirmer dans la console (Firestore > Règles, date de publication). **Non déployé** : SESS-1 temps 2 (`deviceIdRequired() = true`). Aucun agent ne déploie ni ne touche la console : la procédure du PM est dans [`../docs/dev/deploiement-regles.md`](../docs/dev/deploiement-regles.md).
 
 ## Index des fichiers
 
 | Fichier | Rôle |
 |---|---|
 | [`data-model.md`](data-model.md) | Source de vérité pour iOS/Android : collections, champs, statuts, consentement, code secret, limites freemium, ce que chaque client implémente, données sensibles (RGPD), quotas et coûts, Blaze vs Spark, questions ouvertes pour le PM. |
-| [`firestore.rules`](firestore.rules) | Règles de sécurité (tout refusé par défaut). Testées à l'émulateur (CI) ; DUR-1 et DUR-2 déployées (procédure : `../docs/dev/deploiement-regles.md`). |
+| [`firestore.rules`](firestore.rules) | Règles de sécurité (tout refusé par défaut). Testées à l'émulateur (CI) ; fichier de `main` du 2026-11-10 déployé par le PM, hors SESS-1 temps 2 (procédure : `../docs/dev/deploiement-regles.md`). |
 | [`rules-test-plan.md`](rules-test-plan.md) | Cas de test autorisé/refusé (dont attaques) à automatiser avec l'émulateur. |
 | [`package.json`](package.json), [`tests/`](tests/) | Tests automatisés des règles (un test par identifiant du plan), garde-fou projet de démonstration, mesure des lectures de règles. Voir `../README.md` pour les lancer. |
 | [`rules-test-report.md`](rules-test-report.md) | Échecs constatés par les tests des règles (attendu, obtenu, hypothèse), à traiter par `backend-data` et le PM. |
 | [`firestore.indexes.json`](firestore.indexes.json) | Aucun index composite nécessaire ; seulement l'exclusion d'index des champs binaires (avatars, photos) pour limiter le coût d'écriture. |
-| [`firebase.json`](firebase.json), [`.firebaserc`](.firebaserc) | Configuration locale (règles et index). `.firebaserc` est vide **exprès** : avec un seul projet déclaré, la CLI le prend comme projet implicite (constaté le 2026-10-23), donc aucun projet n'y figure et chaque commande nomme le sien. |
+| [`firebase.json`](firebase.json), [`.firebaserc`](.firebaserc) | Configuration locale (règles, index et Cloud Functions). `.firebaserc` est vide **exprès** : avec un seul projet déclaré, la CLI le prend comme projet implicite (constaté le 2026-10-23), donc aucun projet n'y figure et chaque commande nomme le sien. |
+| [`functions/`](functions/) | **Cloud Functions (SRV-1, socle)** : TypeScript, Node 24, 2e génération, région `europe-west9`. Une seule fonction de démonstration (`ping`), **aucune logique métier**. Garde-fous de coût dans `functions/src/options.ts`, testés. Se teste sans compte avec `npm run test:functions:unit` et `npm run test:functions` (émulateur Functions + Firestore, Java 21 requis). Le déploiement est fait **à la main par le PM** : [`../docs/dev/deploiement-functions.md`](../docs/dev/deploiement-functions.md). |
 
-Pas de dossier `functions/` : aucune Cloud Function n'est écrite tant que le PM n'a pas tranché sur Blaze (voir `data-model.md` §13 et question 1).
+**Cloud Functions** : le socle existe (SRV-1) ; les vraies fonctions (notifications, premium réel) viennent par tickets (SRV-4 et suivants, `docs/dev/etude-serveur-notifications-premium.md` §8). Aucune clé de compte de service : les fonctions utilisent l'identité par défaut gérée par Google (`../docs/dev/secrets.md`). `firebase.json` contient une section `functions` en plus de `firestore` ; les règles et index n'ont pas bougé.
 
 ## État d'avancement et prochaines étapes pour l'équipe technique
 
@@ -39,7 +40,7 @@ Rien ne se fait automatiquement. À faire dans https://console.firebase.google.c
 6. **Suivi des quotas** : Firestore > Utilisation, chaque jour de bêta externe. Seuils, ratio lectures par utilisateur actif (> 100 à examiner, > 150 deux jours de suite = signal de bascule), création de comptes anormale, quota de 50 000 lectures atteint : tout est expliqué pour un non-développeur dans [`../docs/dev/surveillance-quotas.md`](../docs/dev/surveillance-quotas.md) (détails chiffrés : `data-model.md` §12).
 7. **Ne pas activer** les sauvegardes / restauration à un instant donné de Firestore sans en parler au PM (elles dupliquent des données sensibles).
 8. **Octroyer le premium à la main à un testeur** (Spark, avant Blaze) : récupérer son UID (Authentication > Utilisateurs), puis Firestore > Données > collection `entitlements` > ajouter un document dont l'ID est cet UID, avec les champs `active` (booléen `true`), `expiresAt` (horodatage dans le futur), `source` (texte `manual`), `updatedAt` (horodatage). Supprimer le document pour retirer le premium.
-9. **Décision Blaze** (question 1, à trancher **avant la première bêta externe**) : si le PM choisit d'activer le plan Blaze, c'est lui qui saisit le moyen de paiement. Avant cela : créer une alerte de budget (Google Cloud > Facturation > Budgets et alertes). Une alerte ne plafonne pas la dépense. Les signaux qui doivent la déclencher sont dans `surveillance-quotas.md`.
+9. **Blaze : activé par le PM le 2026-11-11** (question 1 tranchée). **Alerte de budget à vérifier / créer avant le premier déploiement de fonction** : Google Cloud > Facturation > Budgets et alertes, **5 € par mois**, limitée au projet `miff-3d283`, seuils 50 / 90 / 100 %. Une alerte ne plafonne pas la dépense (plafond Preview possible pour les seules fonctions). Pas à pas : [`../docs/dev/deploiement-functions.md`](../docs/dev/deploiement-functions.md) §1. Les signaux d'usage sont dans `surveillance-quotas.md` (§5 sexies pour les fonctions).
 10. **Clé APNs** (notifications iOS) et **empreinte SHA** Android : déjà notées « à prévoir plus tard » au CLAUDE.md ; nécessaires seulement pour le push et la connexion Google.
 
 ## Garde-fous rappelés

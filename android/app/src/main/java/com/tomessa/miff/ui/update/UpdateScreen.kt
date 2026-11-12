@@ -69,6 +69,7 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -397,6 +398,8 @@ private fun ViewfinderStage(
     val scope = rememberCoroutineScope()
     // A new handle at each opening: the selfie camera is the one the screen starts with, every time.
     val handle = remember { CameraHandle() }
+    // The flash is never kept: out of the screen (background, lock) it is off again on return, until it is switched on again.
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { handle.resetFlash() }
     BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black)) {
         val density = LocalDensity.current
         val aspect =
@@ -439,6 +442,14 @@ private fun ViewfinderStage(
                     .height(110.dp)
                     .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.45f), Color.Transparent))),
             )
+            // Flash: top left, mirror of the switch button (same row, same disc). Only when the active camera has a flash (the front one usually has none).
+            if (handle.flash.visible) {
+                FlashButton(
+                    on = handle.flash.on,
+                    onClick = handle::toggleFlash,
+                    modifier = Modifier.align(Alignment.TopStart).miffTopInsets().padding(Spacing.m),
+                )
+            }
             if (handle.canSwitch) {
                 RoundOverlayButton(
                     icon = R.drawable.ic_update_flip,
@@ -547,6 +558,26 @@ private fun Shutter(onClick: () -> Unit) {
     }
 }
 
+/**
+ * The flash button: the same 48 dp round button as the camera switch. The state is shown by the icon (filled bolt = on, struck-through bolt = off) AND by the
+ * disc (light when on), and said to the screen readers ("Flash", "Flash on" / "Flash off"): never by the colour alone.
+ */
+@Composable
+internal fun FlashButton(
+    on: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    RoundOverlayButton(
+        icon = if (on) R.drawable.ic_update_flash else R.drawable.ic_update_flash_off,
+        description = stringResource(R.string.update_flash_a11y),
+        onClick = onClick,
+        modifier = modifier,
+        stateDescription = stringResource(if (on) R.string.update_flash_state_on else R.string.update_flash_state_off),
+        highlighted = on,
+    )
+}
+
 /** A round button on a photo: 48 dp, a translucent dark disc (a white icon alone vanishes on a light photo), the icon in white. */
 @Composable
 private fun RoundOverlayButton(
@@ -554,6 +585,8 @@ private fun RoundOverlayButton(
     description: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    stateDescription: String? = null,
+    highlighted: Boolean = false,
 ) {
     Box(
         modifier =
@@ -561,14 +594,20 @@ private fun RoundOverlayButton(
                 .size(FlipSize)
                 .clip(CircleShape)
                 .clickable(role = Role.Button, onClick = onClick)
-                .semantics { contentDescription = description },
+                .semantics {
+                    contentDescription = description
+                    if (stateDescription != null) this.stateDescription = stateDescription
+                },
         contentAlignment = Alignment.Center,
     ) {
-        Box(Modifier.size(40.dp).background(colorUpdateScrim, CircleShape), contentAlignment = Alignment.Center) {
+        Box(
+            Modifier.size(40.dp).background(if (highlighted) Color.White else colorUpdateScrim, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
             Icon(
                 painter = painterResource(icon),
                 contentDescription = null,
-                tint = Color.White,
+                tint = if (highlighted) Color.Black else Color.White,
                 modifier = Modifier.size(22.dp),
             )
         }

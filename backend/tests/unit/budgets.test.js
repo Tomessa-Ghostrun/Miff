@@ -45,6 +45,7 @@ test('BUDGET - coût figé de chaque fonction de règles (direct, avec fonctions
     validMiffCreate: [3, 3],
     validMiffUpdate: [2, 2],
     validJoinCodeCreate: [3, 3],
+    validDeviceShape: [1, 1], // SRV-2R : la session du compte (getAfter), seule lecture des jetons d'appareil
     isPremiumOneRead: [1, 1],
     validPlaceCreate: [0, 1],
     validPlaceUpdate: [0, 1],
@@ -55,6 +56,12 @@ test('BUDGET - coût figé de chaque fonction de règles (direct, avec fonctions
     // R-PHOTO-LOC : 0 appel direct, 1 avec positionPublished (pour une photo LOCALISÉE, court-circuit pour un ancien document sans localisation). Pas de targetSharingOn (PM, 2026-11-06).
     // Depuis le resserrage du 2026-11-06 TOUTE photo écrite est localisée : en pratique 1 appel, toujours.
     photoLocationReadable: [0, 1],
+    // LIEU-REQ-A (demande d'ajout d'un lieu, NON DÉPLOYÉ) : fiche du membre non créateur 1 ; compteur écrit dans le lot (getAfter) 1 ; liaison du compteur à la demande par un membre 2 (exists + existsAfter) ;
+    // règle du compteur 3 en borne haute (créateur 1 + membre 2). Aucune de ces fonctions n'est appelée par une règle existante (budgets-demande-lieu.test.js).
+    isPlainMember: [1, 1],
+    requestCounterMoved: [1, 1],
+    memberCounterOk: [2, 2],
+    validRequestCounter: [0, 3],
     validPhoto: [1, 1], // inchangé : la localisation (obligatoire) réutilise le getAfter du consentement déjà lu (aucune lecture de plus à l'écriture)
   });
 });

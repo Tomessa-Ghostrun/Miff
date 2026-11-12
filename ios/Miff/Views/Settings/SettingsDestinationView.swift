@@ -100,6 +100,7 @@ private struct MyInfoHost: View {
         MyInfoView(
             state: profile.state,
             tools: environment.phoneTools,
+            makeViewModel: { environment.makeMyInfoViewModel(current: profile, profile: $0) },
             onBack: onBack,
             onRetry: { profile.retry() }
         )

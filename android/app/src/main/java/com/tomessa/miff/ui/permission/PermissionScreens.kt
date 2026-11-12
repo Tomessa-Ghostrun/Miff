@@ -16,13 +16,13 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -139,94 +139,80 @@ private fun PopInTitle(text: String) {
 // --- Notifications (pop-in 01, decision (b) of the PM) -----------------------------------------------------------------
 
 /**
- * "Te prévenir, seulement quand c'est utile !": the pop-in of the PM with its two examples, an honest line under them (nothing is sent yet:
- * plan Spark) and "Autoriser". NEVER blocking: whatever the system answers, the person goes on.
+ * "Un rappel, seulement quand c'est utile": the pop-in of the PM (maquette 01) with the text of NOTIF-P0 (ticket section 8.3, in the tutoiement): ONE
+ * example, the real reminder N1 that the person would get, an honest body (the alerts about each loved one come later), "Autoriser" and "Plus tard".
+ * "Plus tard" does NOT use up the window of the system. NEVER blocking: whatever the answer, the person goes on.
  */
 @Composable
-fun NotificationsPopIn(onAllow: () -> Unit) {
-    val title = stringResource(R.string.permission_notifications_title)
+fun NotificationsPopIn(
+    onAllow: () -> Unit,
+    onLater: () -> Unit,
+) {
+    val title = stringResource(R.string.notif_prime_title)
     PopIn(
         paneTitle = title,
         footer = {
             MiffButton(
-                text = stringResource(R.string.permission_notifications_action),
+                text = stringResource(R.string.notif_prime_allow),
                 onClick = onAllow,
                 modifier = Modifier.fillMaxWidth(),
             )
+            TextButton(onClick = onLater, modifier = Modifier.heightIn(min = Spacing.minTouchTarget)) {
+                Text(stringResource(R.string.notif_prime_later), style = textBodyBold16, color = colorActionPrimary)
+            }
         },
     ) {
         PopInTitle(title)
         NotificationExample(
-            photo = R.drawable.onboarding_photo_thomas,
-            message = stringResource(R.string.onboarding_sample_msg_1),
-            whenText = stringResource(R.string.onboarding_sample_when_1),
-            unread = true,
-        )
-        NotificationExample(
-            photo = R.drawable.onboarding_photo_amandine,
-            message = stringResource(R.string.onboarding_sample_msg_2),
-            whenText = stringResource(R.string.onboarding_sample_when_2),
-            unread = false,
+            title = stringResource(R.string.notif_n1_title),
+            body = stringResource(R.string.notif_n1_body),
+            whenText = stringResource(R.string.notif_prime_example_when),
         )
         Text(
-            text = stringResource(R.string.permission_notifications_note),
-            style = textBodyCaption,
+            text = stringResource(R.string.notif_prime_body),
+            style = textBodyRegular14,
             color = colorTextDescription,
             textAlign = TextAlign.Center,
         )
     }
 }
 
-/** An example of notification: the photo in a blue ring, the sentence, the time; a yellow-green dot on the corner of the first one. */
+/** An example of notification: the heart of Miff in a blue disc, the two lines of the reminder and the time. */
 @Composable
 private fun NotificationExample(
-    photo: Int,
-    message: String,
+    title: String,
+    body: String,
     whenText: String,
-    unread: Boolean,
 ) {
-    // Decorative sample of what a notification looks like: the screen reader gets the sentence, not the picture.
-    Box(modifier = Modifier.fillMaxWidth().semantics(mergeDescendants = true) {}) {
-        Row(
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .miffShadow(ShadowDefault, ShapeMd)
-                    .clip(ShapeMd)
-                    .background(colorBgSurface)
-                    .border(StrokeHairline, colorActionPrimaryTint10, ShapeMd)
-                    .padding(Spacing.s),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-            verticalAlignment = Alignment.CenterVertically,
+    // Decorative sample of what a notification looks like: the screen reader gets the sentences, not the picture.
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .semantics(mergeDescendants = true) {}
+                .miffShadow(ShadowDefault, ShapeMd)
+                .clip(ShapeMd)
+                .background(colorBgSurface)
+                .border(StrokeHairline, colorActionPrimaryTint10, ShapeMd)
+                .padding(Spacing.s),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier.size(Spacing.minTouchTarget).clip(CircleShape).background(colorActionPrimary),
+            contentAlignment = Alignment.Center,
         ) {
-            Box(
-                Modifier
-                    .size(Spacing.minTouchTarget)
-                    .clip(CircleShape)
-                    .background(colorActionPrimary)
-                    .padding(2.dp),
-            ) {
-                Image(
-                    painter = painterResource(photo),
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().clip(CircleShape),
-                )
-            }
-            Column {
-                Text(text = message, style = textBodyBold14, color = colorTextPrimary)
-                Text(text = whenText, style = textBodyCaption, color = colorTextSecondary)
-            }
-        }
-        if (unread) {
-            Box(
-                Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(end = Spacing.s)
-                    .size(Spacing.s + Spacing.xs)
-                    .clip(CircleShape)
-                    .background(colorBrandPrimary),
+            Icon(
+                painter = painterResource(R.drawable.ic_stat_miff),
+                contentDescription = null,
+                tint = colorBrandPrimary,
+                modifier = Modifier.size(Spacing.l),
             )
+        }
+        Column {
+            Text(text = title, style = textBodyBold14, color = colorTextPrimary)
+            Text(text = body, style = textBodyRegular14, color = colorTextPrimary)
+            Text(text = whenText, style = textBodyCaption, color = colorTextSecondary)
         }
     }
 }
