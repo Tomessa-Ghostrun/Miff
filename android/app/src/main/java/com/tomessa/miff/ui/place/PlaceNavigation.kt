@@ -24,7 +24,11 @@ import com.tomessa.miff.AppContainer
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.analytics.AnalyticsEvent
 import com.tomessa.miff.domain.place.PaywallReason
+import com.tomessa.miff.ui.main.TabsRoute
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
+import com.tomessa.miff.ui.profile.ProfileRequestsViewModel
+import com.tomessa.miff.ui.profile.profileRequestsFactory
+import com.tomessa.miff.ui.profile.profileRequestsKey
 import kotlinx.serialization.Serializable
 import java.util.Locale
 
@@ -33,12 +37,20 @@ import java.util.Locale
  * the offer): never a name, an address or a coordinate.
  */
 
-/** The form: a new place, or the place [placeId] to edit. */
+/** The form: a new place, or the place [placeId] to edit, or (ticket LIEU-REQ) a REQUEST to add a place to the Miff [miffId] ([request] true: a member who is not its creator). */
 @Serializable
 data class PlaceFormRoute(
     val placeId: String? = null,
-    /** The Miff the place is opened from: two different places can share an identifier in two Miffs; for a NEW place, the Miff ticked first (if the person created it). */
+    /** The Miff the place is opened from: two different places can share an identifier in two Miffs; for a NEW place, the Miff ticked first (if the person created it). For a request: the Miff it is for. */
     val miffId: String? = null,
+    val request: Boolean = false,
+)
+
+/** The detail of a pending request ([requestId] is `{uid}_{1..3}`: an identifier, never a name or an address). */
+@Serializable
+data class PlaceRequestDetailRoute(
+    val miffId: String,
+    val requestId: String,
 )
 
 @Serializable
@@ -51,6 +63,8 @@ data class PlaceDetailRoute(
 @Serializable
 data class PlacePaywallRoute(
     val reason: String,
+    /** The offer opened by "Accepter" on a request received (ticket LIEU-REQ-C): the context card says the request stays pending. A flag, nothing else travels. */
+    val request: Boolean = false,
 ) {
     /** An unknown word (never produced by the app) falls back to the danger zone, as before. */
     fun paywallReason(): PaywallReason =
@@ -61,14 +75,17 @@ data class PlacePaywallRoute(
         }
 
     companion object {
-        fun of(reason: PaywallReason) =
-            PlacePaywallRoute(
-                when (reason) {
-                    PaywallReason.LIMIT -> "limit"
-                    PaywallReason.MIFF -> "miff"
-                    PaywallReason.DANGER -> "danger"
-                },
-            )
+        fun of(
+            reason: PaywallReason,
+            request: Boolean = false,
+        ) = PlacePaywallRoute(
+            when (reason) {
+                PaywallReason.LIMIT -> "limit"
+                PaywallReason.MIFF -> "miff"
+                PaywallReason.DANGER -> "danger"
+            },
+            request,
+        )
     }
 }
 
@@ -79,6 +96,13 @@ internal fun paywallTrigger(reason: PaywallReason): AnalyticsEvent.PaywallTrigge
         PaywallReason.MIFF -> AnalyticsEvent.PaywallTrigger.EXTRA_MIFF
         PaywallReason.DANGER -> null
     }
+
+/**
+ * The offer opened by "Accepter" on a request received (ticket LIEU-REQ-C): ONLY after the repository has read the plan on the SERVER and said so ("limit" or
+ * "danger"); the screens that call it never decide from their own copy of the plan. The request is left as it is.
+ */
+fun NavController.openRequestOffer(reason: PaywallReason) =
+    navigate(PlacePaywallRoute.of(reason, request = true)) { launchSingleTop = true }
 
 /** launchSingleTop: two quick taps open one screen, not two. */
 fun NavController.openPlaceRoute(route: Any) = navigate(route) { launchSingleTop = true }
@@ -97,7 +121,7 @@ fun NavGraphBuilder.placeRoutes(
         val goneText = stringResource(R.string.place_gone)
         val viewModel: PlaceFormViewModel =
             viewModel(
-                key = "place-form-${route.placeId.orEmpty()}-${route.miffId.orEmpty()}-$scopeKey",
+                key = "place-form-${route.placeId.orEmpty()}-${route.miffId.orEmpty()}-${route.request}-$scopeKey",
                 factory =
                     viewModelFactory {
                         initializer {
@@ -110,6 +134,8 @@ fun NavGraphBuilder.placeRoutes(
                                 currentUid = { session.currentUid },
                                 notices = container.placeNotices,
                                 language = { if (Locale.getDefault().language == "fr") "fr" else "en" },
+                                request = route.request,
+                                requests = container.placeRequestRepository,
                             )
                         }
                     },
@@ -220,8 +246,28 @@ fun NavGraphBuilder.placeRoutes(
             onRetry = { attempt++ },
         )
     }
+    composable<PlaceRequestDetailRoute> { entry ->
+        val route = entry.toRoute<PlaceRequestDetailRoute>()
+        // The requests live in the view model of the tabs (they are read there, one time, with the list): the detail shares it, it reads nothing of its own.
+        val tabsEntry = remember(entry) { navController.getBackStackEntry(TabsRoute) }
+        val viewModel: ProfileRequestsViewModel =
+            viewModel(
+                viewModelStoreOwner = tabsEntry,
+                key = profileRequestsKey("${session.currentUid}-${session.generation}"),
+                factory = profileRequestsFactory(container),
+            )
+        PlaceRequestDetailHost(
+            route = route,
+            myUid = session.currentUid,
+            viewModel = viewModel,
+            onClose = { navController.popBackStackIfSafe() },
+            // "Accepter" at the limit of the free plan: the offer, with the sentence that says the request stays pending; the request is left as it is.
+            onPaywall = navController::openRequestOffer,
+        )
+    }
     composable<PlacePaywallRoute> { entry ->
-        val reason = entry.toRoute<PlacePaywallRoute>().paywallReason()
+        val paywall = entry.toRoute<PlacePaywallRoute>()
+        val reason = paywall.paywallReason()
         val tracker = container.analyticsTracker
         val trigger = paywallTrigger(reason)
         // The only analytics of the offer: it was shown / closed, with a fixed trigger and nothing else (criterion LIM5).
@@ -230,6 +276,7 @@ fun NavGraphBuilder.placeRoutes(
         }
         PlacePaywallScreen(
             reason = reason,
+            request = paywall.request,
             onClose = {
                 if (trigger != null) tracker.track(AnalyticsEvent.PaywallDismissed(trigger))
                 navController.popBackStackIfSafe()

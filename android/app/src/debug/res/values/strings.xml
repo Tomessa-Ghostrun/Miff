@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug build only (internal diagnostic screen): this folder is not in the release build, nor in releaseLike. Prefix android_ (ignored by the i18n parity check). -->
+<resources>
+    <string name="android_diag_settings_title">Diagnostic</string>
+    <string name="android_diag_settings_subtitle">Test tools, for test builds only</string>
+    <string name="android_diag_access_hint">Test builds only. Open it from Settings > Diagnostic, or by holding one finger down for 10 seconds anywhere in the app.</string>
+    <string name="android_diag_back">Back to the app</string>
+    <string name="android_diag_signed_in_refusal">An account is signed in on this phone: this test would sign it out. Sign out first (Settings > My account), then run the test.</string>
+    <string name="android_diag_privacy_real_warning">Careful: these switches change the real choices of this phone (usage measurement and crash reports), the same ones as in Settings > Privacy.</string>
+</resources>

@@ -53,6 +53,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import com.tomessa.miff.R
 import com.tomessa.miff.ui.components.MiffButton
+import com.tomessa.miff.ui.navigation.holdForDiagnostic
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
@@ -100,7 +101,7 @@ fun ReviewPromptWindow(
             ),
     ) {
         BlurBehindWindow()
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        Box(modifier = Modifier.fillMaxSize().holdForDiagnostic(), contentAlignment = Alignment.Center) {
             ReviewCard {
                 when (stage) {
                     ReviewStage.Question -> QuestionContent(onLove, onBetter, onClose)

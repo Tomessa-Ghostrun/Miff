@@ -25,6 +25,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -94,18 +95,24 @@ import com.tomessa.miff.ui.notification.rememberNotificationPermissionState
 import com.tomessa.miff.ui.place.PlaceDetailRoute
 import com.tomessa.miff.ui.place.PlaceFormRoute
 import com.tomessa.miff.ui.place.PlacePaywallRoute
+import com.tomessa.miff.ui.place.PlaceRequestDetailRoute
 import com.tomessa.miff.ui.place.ProfilePlacesSection
+import com.tomessa.miff.ui.place.openRequestOffer
 import com.tomessa.miff.ui.place.placeRoutes
 import com.tomessa.miff.ui.profile.MiffCarouselHost
 import com.tomessa.miff.ui.profile.ProfileMiffsViewModel
 import com.tomessa.miff.ui.profile.ProfilePlacesViewModel
+import com.tomessa.miff.ui.profile.ProfileRequestsViewModel
 import com.tomessa.miff.ui.profile.ProfileTabScreen
 import com.tomessa.miff.ui.profile.ProfileTabUiState
 import com.tomessa.miff.ui.profile.ProfileTabViewModel
+import com.tomessa.miff.ui.profile.RequestEvent
 import com.tomessa.miff.ui.profile.TravelActions
 import com.tomessa.miff.ui.profile.TravelCard
 import com.tomessa.miff.ui.profile.TravelViewModel
 import com.tomessa.miff.ui.profile.miffOfferRoute
+import com.tomessa.miff.ui.profile.profileRequestsFactory
+import com.tomessa.miff.ui.profile.profileRequestsKey
 import com.tomessa.miff.ui.review.ReviewHost
 import com.tomessa.miff.ui.review.ReviewPromptHost
 import com.tomessa.miff.ui.review.ReviewStage
@@ -384,6 +391,10 @@ private fun MainNavigation(
                         },
                 )
             val profilePlaces by profilePlacesViewModel.state.collectAsStateWithLifecycle()
+            // The pending requests of a member who is not the creator (ticket LIEU-REQ-B): ONE reading of its own requests when the card of the Miff appears.
+            val profileRequestsViewModel: ProfileRequestsViewModel =
+                viewModel(key = profileRequestsKey(scopeKey), factory = profileRequestsFactory(container))
+            val profileRequests by profileRequestsViewModel.state.collectAsStateWithLifecycle()
             val notificationsState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
             val requestNotificationWindow =
                 rememberNotificationPermissionRequest(onAnswered = notificationsViewModel::onSystemWindowAnswered)
@@ -404,6 +415,13 @@ private fun MainNavigation(
             val feedConnection by feedViewModel.connection.collectAsStateWithLifecycle()
             val waiting by container.awaitingAgreement.waiting.collectAsStateWithLifecycle()
             val lostNotices by container.miffDirectory.notice.collectAsStateWithLifecycle()
+            RequestsHost(
+                container = container,
+                viewModel = profileRequestsViewModel,
+                directory = directoryState,
+                onPlacesAdded = profilePlacesViewModel::onRetry,
+                onPaywall = navController::openRequestOffer,
+            )
             MainTabs(
                 tabBar = tabBar,
                 profileState = profileState,
@@ -460,6 +478,8 @@ private fun MainNavigation(
                 review = rememberReviewHost(container, scopeKey),
                 lostAccessNoticeOpen = lostNotices.isNotEmpty(),
                 travelWindowOpen = travelState.picker != null || travelState.confirm != null,
+                // A request to add a place waits for the creator in the list of places: a dot on the Profile tab until the list is seen (ticket LIEU-REQ-C).
+                profileDot = profileRequests.profileDot,
                 profileConnection = profileViewModel.connectionHost(profileConnection),
                 travelContent = { TravelCard(state = travelState, actions = travelActions) },
                 placesContent = {
@@ -481,6 +501,21 @@ private fun MainNavigation(
                                 navController.open(PlaceFormRoute(miffId = miffId))
                             },
                             onRetry = profilePlacesViewModel::onRetry,
+                            requests = profileRequests,
+                            onOpenRequest = { miffId, requestId ->
+                                // The creator may accept it there: the places of the Miff are read again when the list comes back.
+                                val owner = ready.miffs.firstOrNull { it.id == miffId }?.ownerUid
+                                if (PlaceViewerRole.isCreator(owner, myUid)) profilePlacesViewModel.onPlacesMayChange()
+                                navController.open(PlaceRequestDetailRoute(miffId, requestId))
+                            },
+                            onAcceptRequest = profileRequestsViewModel::onAccept,
+                            onDeclineRequest = profileRequestsViewModel::onDecline,
+                            onRequestsSeen = profileRequestsViewModel::onListSeen,
+                            onRequestPlace = { miffId ->
+                                // Whatever happens in the form, the person's requests are read again when the list comes back.
+                                profileRequestsViewModel.onRequestsMayChange()
+                                navController.open(PlaceFormRoute(miffId = miffId, request = true))
+                            },
                         )
                     }
                 },
@@ -490,10 +525,20 @@ private fun MainNavigation(
                         onCardShown = { miffId ->
                             profileMiffsViewModel.onCardShown(miffId)
                             profilePlacesViewModel.onCardShown(miffId)
+                            val owner =
+                                (directoryState as? DirectoryState.Ready)
+                                    ?.miffs
+                                    ?.firstOrNull { it.id == miffId }
+                                    ?.ownerUid
+                            profileRequestsViewModel.onCardShown(
+                                miffId,
+                                creator = PlaceViewerRole.isCreator(owner, container.authGateway.currentUid),
+                            )
                         },
                         onMiffsKnown = { miffIds ->
                             profileMiffsViewModel.retainOnly(miffIds)
                             profilePlacesViewModel.retainOnly(miffIds)
+                            profileRequestsViewModel.retainOnly(miffIds)
                         },
                         onCreate = { navController.open(CreateMiffRoute) },
                         // Same rule and same offer as the selector of the Feed (decision of the PM, 2026-11-08): a free account that already has a Miff.
@@ -752,6 +797,8 @@ fun MainTabs(
     profileConnection: ConnectionHost = ConnectionHost(),
     /** A window of the Travel card (the day picker or its confirmation) is open on the Profile tab: the pop-in "Pas de connexion" waits (never two windows). */
     travelWindowOpen: Boolean = false,
+    /** A request to add a place waits for the creator in the list of places of the Profile (ticket LIEU-REQ-C): a dot on the Profile tab until the list is seen. */
+    profileDot: Boolean = false,
 ) {
     var selected by rememberSaveable { mutableStateOf(MainTab.FEED) }
     // Never two windows at once (docs/tickets/pop-ins-avis.md, C5): the pop-in "Pas de connexion" waits for the lost-access message, the review window and the
@@ -843,6 +890,7 @@ fun MainTabs(
                 modifier = Modifier.miffBottomInsets(),
                 glass = glass,
                 updateStatus = myLevel,
+                profileDot = profileDot,
             )
         },
     ) {
@@ -1099,3 +1147,82 @@ internal fun NavGraphBuilder.restrictedSettingsListRoute(navController: NavHostC
 
 /** The same launch-once navigation as the other hosts, for the entry of the restricted Settings. */
 internal fun NavController.openSettings() = open(SettingsRoute)
+
+/** The wait before the listener of the creator follows a new tracked Miff (the carousel is being swiped). */
+private const val TRACK_DEBOUNCE_MILLIS = 400L
+
+/**
+ * The creator's side of the requests to add a place, wired to the tabs (ticket LIEU-REQ-C): tells the view model which Miff the Feed shows, keeps ONE listener
+ * on the Miff the creator is told about while the app is in front, and says what happened after an answer. Draws nothing.
+ */
+@Composable
+private fun RequestsHost(
+    container: AppContainer,
+    viewModel: ProfileRequestsViewModel,
+    directory: DirectoryState,
+    onPlacesAdded: () -> Unit,
+    onPaywall: (PaywallReason) -> Unit,
+) {
+    val ready = directory as? DirectoryState.Ready
+    val activeId = ready?.activeId
+    val activeOwner = ready?.miffs?.firstOrNull { it.id == activeId }?.ownerUid
+    LaunchedEffect(activeId, activeOwner) {
+        viewModel.onActiveMiff(activeId, PlaceViewerRole.isCreator(activeOwner, container.authGateway.currentUid))
+    }
+    // ONE listener, on the Miff the creator is told about; it lives only while the app is in front (cancelled in the background, attached again on return).
+    val tracked by viewModel.tracked.collectAsStateWithLifecycle()
+    val lifecycleOwner = LocalLifecycleOwner.current
+    LaunchedEffect(tracked) {
+        val miffId = tracked ?: return@LaunchedEffect
+        // Swiping through the carousel changes the tracked Miff at every card: the listener is attached only once the carousel has settled (a new value cancels this wait).
+        delay(TRACK_DEBOUNCE_MILLIS)
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.watch(miffId) }
+    }
+    val context = LocalContext.current
+    val resources = LocalResources.current
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is RequestEvent.Accepted -> {
+                    Toast
+                        .makeText(
+                            context,
+                            resources.getString(R.string.place_request_accepted_toast, event.placeName),
+                            Toast.LENGTH_SHORT,
+                        ).show()
+                    // The new place is in the list at once (criterion C3).
+                    onPlacesAdded()
+                }
+
+                RequestEvent.Declined -> {
+                    Toast.makeText(context, R.string.place_request_declined_toast, Toast.LENGTH_SHORT).show()
+                }
+
+                RequestEvent.Withdrawn -> {
+                    Toast.makeText(context, R.string.place_request_withdrawn, Toast.LENGTH_SHORT).show()
+                }
+
+                is RequestEvent.NeedsPremium -> {
+                    onPaywall(event.reason)
+                }
+
+                RequestEvent.SubscriptionUnknown -> {
+                    Toast.makeText(context, R.string.place_request_subscription_unknown, Toast.LENGTH_LONG).show()
+                }
+
+                RequestEvent.Gone -> {
+                    Toast.makeText(context, R.string.place_request_gone, Toast.LENGTH_LONG).show()
+                }
+
+                is RequestEvent.Failed -> {
+                    Toast
+                        .makeText(
+                            context,
+                            if (event.offline) R.string.miff_message_offline else R.string.miff_message_generic,
+                            Toast.LENGTH_LONG,
+                        ).show()
+                }
+            }
+        }
+    }
+}

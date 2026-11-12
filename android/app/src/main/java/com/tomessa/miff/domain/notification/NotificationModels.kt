@@ -44,10 +44,22 @@ enum class NotificationType(
 
     /** MODE VOYAGE: "Ton mode voyage est terminé", 08:00 local the day after the last day. Never at night, so it has no quiet version. */
     N7("n7", NotificationFamily.REMINDER, NotificationDestination.FEED, quietAtNight = false),
+
+    /**
+     * LIEU-REQ: a member of my Miff asked to add a place. A line of the centre ONLY (the app is in front: there is no server to push to, ticket section 7):
+     * never planned, never shown by the system, no switch in Settings. A tap leads to the list of the places of that Miff (the Profile), handled by the centre.
+     */
+    N8("n8", NotificationFamily.CIRCLE, NotificationDestination.FEED, quietAtNight = true),
     ;
 
     companion object {
         fun fromCode(code: String?): NotificationType? = entries.firstOrNull { it.code == code }
+
+        /**
+         * The notifications of the perimeter: the ones a phone can SHOW, with a switch in Settings and a channel of the system. [N8] is not one of them (a line of
+         * the centre only), so every rule that is about showing, planning, switching or silencing a notification is written over THIS list, never over [entries].
+         */
+        val PERIMETER: List<NotificationType> = entries.filter { it != N8 }
     }
 }
 
@@ -69,11 +81,19 @@ data class NotificationPreferences(
     fun switchOf(type: NotificationType): Boolean =
         when (type) {
             NotificationType.N1 -> n1
+
             NotificationType.N2 -> n2
+
             NotificationType.N3 -> n3
+
             NotificationType.N4 -> n4
+
             NotificationType.N6 -> n6
+
             NotificationType.N7 -> n7
+
+            // In the centre only, no switch of its own: always on.
+            NotificationType.N8 -> true
         }
 
     /** The type may be produced: the general switch AND its own are on. */
@@ -90,6 +110,7 @@ data class NotificationPreferences(
             NotificationType.N4 -> copy(n4 = on)
             NotificationType.N6 -> copy(n6 = on)
             NotificationType.N7 -> copy(n7 = on)
+            NotificationType.N8 -> this
         }
 }
 

@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -16,9 +17,12 @@ import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.data.place.PlaceNotices
 import com.tomessa.miff.domain.place.MiffPlacesView
+import com.tomessa.miff.domain.place.PlaceRequest
 import com.tomessa.miff.domain.place.PlaceViewerRole
+import com.tomessa.miff.domain.place.RequestsView
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.profile.ProfilePlacesState
+import com.tomessa.miff.ui.profile.ProfileRequestsState
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorTextDescription
 import com.tomessa.miff.ui.theme.colorTextForm
@@ -49,8 +53,17 @@ fun ProfilePlacesSection(
     onOpenPlace: (miffId: String, placeId: String) -> Unit,
     onAddPlace: (miffId: String) -> Unit,
     onRetry: () -> Unit,
+    /** The pending requests of the person (a member who is not the creator), by Miff (ticket LIEU-REQ-B). */
+    requests: ProfileRequestsState = ProfileRequestsState(),
+    onOpenRequest: (miffId: String, requestId: String) -> Unit = { _, _ -> },
+    onRequestPlace: (miffId: String) -> Unit = {},
+    /** The CREATOR (ticket LIEU-REQ-C): the requests it received are in the list; it opens one, accepts it, declines it; and tells that the list was seen. */
+    onAcceptRequest: (PlaceRequest) -> Unit = {},
+    onDeclineRequest: (PlaceRequest) -> Unit = {},
+    onRequestsSeen: (miffId: String) -> Unit = {},
 ) {
     val notice by notices.notice.collectAsStateWithLifecycle()
+    val requestNotice by notices.requestNotice.collectAsStateWithLifecycle()
     ConsumeNoticeOnLeave(notices::consume)
     val miff = directory.miffs.firstOrNull { it.id == state.selectedMiffId } ?: return
     val isCreator = PlaceViewerRole.isCreator(ownerUid = miff.ownerUid, myUid = myUid)
@@ -75,6 +88,19 @@ fun ProfilePlacesSection(
 
             is MiffPlacesView.Ready -> {
                 PlacesTitle(miff.name)
+                // The creator's requests: those of people still in the Miff, oldest first, with who asked.
+                val received =
+                    if (isCreator) {
+                        (requests.views[miff.id] as? RequestsView.Ready)
+                            ?.requests
+                            .orEmpty()
+                            .map { ReceivedRequest(it, requests.requester(it)) }
+                    } else {
+                        emptyList()
+                    }
+                // The list is drawn with its requests: they are seen (the dot of the Profile tab and the lines of the centre go).
+                val receivedIds = received.map { it.request.id }
+                LaunchedEffect(miff.id, receivedIds) { if (receivedIds.isNotEmpty()) onRequestsSeen(miff.id) }
                 PlaceRows(
                     ui =
                         PlaceListUi(
@@ -83,8 +109,23 @@ fun ProfilePlacesSection(
                             // The plan only matters to the creator (counter, "Miff+" pill): a member never gets a word about it.
                             premium = if (isCreator) directory.premiumOrNull else null,
                             savedName = if (isCreator) notice?.name else null,
+                            // A member's own pending requests come first; the creator's list never has the ones of a member here.
+                            requests =
+                                if (isCreator) {
+                                    emptyList()
+                                } else {
+                                    (requests.views[miff.id] as? RequestsView.Ready)?.requests.orEmpty()
+                                },
+                            requestNotice = if (isCreator) null else requestNotice,
+                            received = received,
+                            busyRequestId = requests.busyRequestId,
                         ),
+                    onOpenReceived = { request -> onOpenRequest(miff.id, request.id) },
+                    onAcceptRequest = onAcceptRequest,
+                    onDeclineRequest = onDeclineRequest,
                     onOpen = { place -> onOpenPlace(miff.id, place.id) },
+                    onOpenRequest = { request -> onOpenRequest(miff.id, request.id) },
+                    onRequestPlace = { onRequestPlace(miff.id) },
                     // Always the form: it reads the subscription on the SERVER and shows the offer itself when the limit is really reached.
                     // The list only knows a copy of the plan, which may be unknown or stale: it must never close the door on a Miff+ creator.
                     onAdd = { onAddPlace(miff.id) },

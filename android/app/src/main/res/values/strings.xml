@@ -51,7 +51,7 @@
 
     <!-- Test 1 -->
     <string name="diag_test1_title">Test 1 · Reading without signing in</string>
-    <string name="diag_test1_description">Tries to read a Miff without being signed in. The expected answer is a refusal. If you were signed in, you are signed out first.</string>
+    <string name="diag_test1_description">Tries to read a Miff without being signed in. The expected answer is a refusal. Refused if an account is signed in (it would be signed out): sign out first.</string>
     <string name="diag_test1_action">Run test 1</string>
     <string name="diag_test1_running">Test in progress…</string>
     <string name="diag_test1_ok">Rules active: OK</string>
@@ -62,7 +62,7 @@
 
     <!-- Test 2 -->
     <string name="diag_test2_title">Test 2 · Reading with a test account</string>
-    <string name="diag_test2_description">Signs in with the test account created in the Firebase console, reads your profile and plan documents, then signs out. Nothing is written. The details are typed here only: they are never stored.</string>
+    <string name="diag_test2_description">Signs in with the test account created in the Firebase console, reads your profile and plan documents, then signs out. Refused if an account is already signed in. Nothing is written. The details are typed here only: they are never stored.</string>
     <string name="diag_test2_email_label">Test account e-mail</string>
     <string name="diag_test2_password_label">Password</string>
     <string name="diag_test2_action">Sign in and read</string>
@@ -677,6 +677,47 @@
     <string name="place_list_row_type_a11y">%1$s, %2$s</string>
     <string name="place_list_add_action">Add a place</string>
     <string name="place_list_add_premium_a11y">Add a place, part of Miff+</string>
+
+    <!-- LIEU-REQ-B: a member who is not the creator asks to add a place (pending request, seen by the creator alone) -->
+    <string name="place_request_cta_member">Ask to add a place</string>
+    <string name="place_request_form_title">Suggest a place</string>
+    <string name="place_request_form_submit">Send request</string>
+    <string name="place_request_sending">Sending your request…</string>
+    <string name="place_request_form_hint">The Miff\'s creator will see your request and decide whether to add it.</string>
+    <string name="place_request_sent">Request sent. It\'s pending in the list.</string>
+    <string name="place_request_sent_offline">Your request will be sent as soon as you\'re back online.</string>
+    <string name="place_request_badge_pending">Pending</string>
+    <string name="place_request_detail_banner_member">Waiting for a reply.</string>
+    <string name="place_request_withdraw">Withdraw my request</string>
+    <string name="place_request_withdrawn">Request withdrawn.</string>
+    <string name="place_request_limit_member">You already have 3 pending requests. You can suggest more once they\'ve been handled.</string>
+    <string name="place_request_limit_miff">This Miff already has several pending requests. Please try again a little later.</string>
+    <string name="place_request_unavailable">Place requests are not available yet. Please try again a little later.</string>
+    <string name="place_request_gone">This request is no longer pending.</string>
+    <string name="place_request_a11y_pending_mine">Your pending request: %1$s</string>
+
+    <!-- LIEU-REQ-C: the creator receives, accepts or declines a place request -->
+    <string name="notif_n8_title">A place to review</string>
+    <string name="notif_n8_body">A member of your Miff suggested a place. You can accept it or not from your Profile.</string>
+    <string name="place_request_section_title">To review</string>
+    <string name="place_request_by">Requested by %1$s</string>
+    <string name="place_request_by_unknown">Requested by a member</string>
+    <string name="place_request_date">On %1$s</string>
+    <string name="place_request_detail_banner_creator">This place isn\'t in the Miff yet. It will be added if you accept.</string>
+    <string name="place_request_accept">Accept</string>
+    <string name="place_request_decline">Decline</string>
+    <string name="place_request_accept_a11y">Accept the request: %1$s</string>
+    <string name="place_request_decline_a11y">Decline the request: %1$s</string>
+    <string name="place_request_accepted_toast">“%1$s” was added to the Miff.</string>
+    <string name="place_request_declined_toast">Request removed from the list.</string>
+    <string name="place_request_center_one">%1$s suggested a place for “%2$s”</string>
+    <string name="place_request_center_many">%1$s suggested %2$d places for “%3$s”</string>
+    <string name="place_request_paywall_limit">You\'ve reached the free places limit. With Miff+, you can add this one and many more. The request stays pending; you can also decline it.</string>
+    <string name="place_request_paywall_danger">Danger zones are part of Miff+. The request stays pending; you can also decline it.</string>
+    <string name="place_request_subscription_unknown">We can\'t check your subscription right now. Please try again in a moment.</string>
+    <string name="place_request_a11y_pending_card">Pending request: %1$s, requested by %2$s</string>
+    <string name="place_request_a11y_pending_card_unknown">Pending request: %1$s, requested by a member</string>
+    <string name="tabbar_profile_requests_a11y">Profile, a place request to review</string>
     <string name="place_list_row_a11y">%1$s, category %2$s, %3$s</string>
     <string name="place_list_row_noaddress_a11y">%1$s, category %2$s</string>
     <string name="place_detail_title_loading">Place</string>
