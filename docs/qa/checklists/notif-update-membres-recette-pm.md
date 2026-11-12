@@ -6,7 +6,7 @@
 
 ## Ce qui est déjà vérifié sans vous (à l'émulateur, dans la CI)
 
-Les vecteurs V1 à V13 du ticket §19, la forme exacte des messages (Android : données seulement ; iOS : alerte avec clés de texte), l'absence de donnée sensible dans les messages et dans les journaux, le plafond d'une notification par auteur, par Miff et par heure, l'idempotence (même événement rejoué ou en parallèle), la purge d'un jeton refusé, les 2 nouvelles tentatives au plus, les heures calmes, le budget de lectures (8 lectures et 1 écriture pour une Miff de 4), la limite à 20 destinataires. **Un faux client remplace Google/Apple** : la **livraison réelle** n'est vérifiable que par les étapes ci-dessous.
+Les vecteurs V1 à V13 du ticket §19, la forme exacte des messages (Android : données seulement ; iOS : alerte avec clés de texte), l'absence de donnée sensible dans les messages et dans les journaux, le plafond d'une notification par auteur, par Miff et par heure, l'idempotence (même événement rejoué ou en parallèle), la purge d'un jeton refusé, les 2 nouvelles tentatives au plus, les heures calmes, le budget de lectures (12 lectures et 1 écriture pour une Miff de 4 ; 1 lecture pour une update plafonnée ou rejouée), l'envoi à l'appareil de la session active seulement (un téléphone dont le compte s'est déconnecté, ou repris par un autre compte, ne reçoit rien), la limite à 20 destinataires. **Un faux client remplace Google/Apple** : la **livraison réelle** n'est vérifiable que par les étapes ci-dessous.
 
 ## Prérequis (à faire par vous, avec Claude, dans cet ordre ; rien n'est fait par un agent)
 
@@ -30,7 +30,7 @@ Les vecteurs V1 à V13 du ticket §19, la forme exacte des messages (Android : d
 | 3 | Notez le délai entre la publication et la notification | Moins de 2 minutes dans les conditions normales | U1 |
 | 4 | **Inverse** : l'OPPO est verrouillé, app balayée ; le compte 2 publie | Notification reçue sur l'OPPO ; **notez le délai**. Si elle n'arrive pas : voir « Si ça ne marche pas » | U1, R5 |
 | 5 | Le compte 1 publie une **2e update dans l'heure** | **Pas** de 2e notification ; la photo est bien dans le Feed | P1 |
-| 6 | Journaux : `npx firebase functions:log --only notifierUpdate -n 30 --project miff-3d283` | Une ligne `notif.update.bilan` avec `envoyes: 1`, `lectures` autour de 3, `ecritures: 1` ; une ligne `notif.update.ignore` avec `motif: plafond` ; **aucun nom, identifiant, jeton, position** dans le texte | F4, C2 |
+| 6 | Journaux : `npx firebase functions:log --only notifierUpdate -n 30 --project miff-3d283` | Une ligne `notif.update.bilan` avec `envoyes: 1`, `lectures: 6` (2 comptes : 1 contrôle préalable + 2 fiches + 1 téléphone + 1 session + 1 vérification finale), `ecritures: 1` ; une ligne `notif.update.ignore` avec `motif: plafond` et `lectures: 1` ; **aucun nom, identifiant, jeton, position** dans le texte | F4, C2 |
 | 7 | Console Firebase > Firestore : collection `notifState` | Un document pour la Miff de test, avec des **dates** et des identifiants seulement ; règle TTL visible | J5 |
 | 8 | L'iPhone **coupe** « Quand un proche donne des nouvelles » ; 1 h plus tard, le compte 1 publie | Rien sur l'iPhone | U3 |
 | 9 | Le compte 2 **arrête son partage** ; le compte 1 publie (1 h plus tard) | Rien pour le compte 2 | U3 |

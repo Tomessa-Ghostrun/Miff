@@ -34,14 +34,18 @@ export const CLE_TITRE = "notif_circle_update_title";
 export const CLE_CORPS = "notif_circle_update_body";
 export const TYPE_MESSAGE = "circle_update";
 
-// Caracteres de controle et de direction du texte (isolats/surcharges bidirectionnels) : retires du prenom (un nom ne doit pas pouvoir
-// inverser ou masquer le texte de la notification). Le liant de largeur nulle (U+200D) est conserve : il compose les emojis de famille.
-const CARACTERES_INTERDITS = /[\p{Cc}\p{Zl}\p{Zp}؜‎‏‪-‮⁦-⁩]/gu;
+// Caracteres retires du prenom (remplaces par une espace AVANT le recadrage) : controles, separateurs de ligne/paragraphe, TOUS les caracteres de format
+// (Cf : espace de largeur nulle, marques et isolats bidirectionnels, trait d'union conditionnel, balises U+E0000 a U+E007F...) SAUF le liant de largeur nulle
+// U+200D (il compose les emojis de famille), et les "remplisseurs" invisibles (U+3164, U+115F, U+1160, U+FFA0, U+2800). Le selecteur de variation U+FE0F
+// (emoji en couleur) est conserve. Un prenom qui n'a plus AUCUN caractere visible (lettre, chiffre, symbole, ponctuation) est considere vide.
+const CARACTERES_INTERDITS = /(?!\u200D)\p{Cf}|[\p{Cc}\p{Zl}\p{Zp}\u3164\u115F\u1160\uFFA0\u2800\u{E0000}-\u{E007F}]/gu;
+const CARACTERE_VISIBLE = /[\p{L}\p{N}\p{S}\p{P}]/u;
 
 /** Prenom affichable : controles retires, espaces ramenes a un seul, tronque a 20 caracteres (graphemes) dont le "…" final. "" si rien d'affichable. */
 export function prenomAffichable(brut: unknown): string {
   if (typeof brut !== "string") return "";
   const propre = brut.replace(CARACTERES_INTERDITS, " ").replace(/\s+/g, " ").trim();
+  if (!CARACTERE_VISIBLE.test(propre)) return "";
   const graphemes = Array.from(new Intl.Segmenter("fr", { granularity: "grapheme" }).segment(propre), (s) => s.segment);
   if (graphemes.length <= LONGUEUR_PRENOM_MAX) return graphemes.join("");
   return graphemes.slice(0, LONGUEUR_PRENOM_MAX - 1).join("").trimEnd() + "…";
@@ -83,6 +87,19 @@ export interface EntreeMessage {
  * - iOS : notification "alerte" dont le texte est resolu par le systeme depuis des cles + le prenom (pas d'extension de service). Remplacement par
  *   auteur : `apns-collapse-id` et `thread-id`. Nuit : niveau "passif" (ni son, ni ecran allume). Jour : son par defaut du telephone.
  */
+/** Tronque une chaine a N octets UTF-8 sans couper un caractere (apns-collapse-id : 64 octets au plus). */
+export function tronquerOctets(texte: string, max: number): string {
+  let sortie = "";
+  let octets = 0;
+  for (const c of texte) {
+    const n = Buffer.byteLength(c, "utf8");
+    if (octets + n > max) break;
+    sortie += c;
+    octets += n;
+  }
+  return sortie;
+}
+
 export function construireMessage(e: EntreeMessage): Message {
   const expirationS = Math.floor((e.maintenant.getTime() + DUREE_DE_VIE_MS) / 1000);
   if (e.plateforme === "android") {
@@ -100,7 +117,7 @@ export function construireMessage(e: EntreeMessage): Message {
         "apns-push-type": "alert",
         "apns-priority": e.nuit ? "5" : "10",
         "apns-expiration": String(expirationS),
-        "apns-collapse-id": e.auteurUid,
+        "apns-collapse-id": tronquerOctets(e.auteurUid, 64),
       },
       payload: {
         aps: {
@@ -116,9 +133,10 @@ export function construireMessage(e: EntreeMessage): Message {
 
 // --- Erreurs FCM --------------------------------------------------------------------------------------------------------------------
 
-/** Le jeton n'existe plus (appli desinstallee, jeton renouvele) : le document de l'appareil doit etre supprime. `invalid-argument` n'en fait PAS partie
- *  (il peut aussi signaler un defaut de NOTRE message : supprimer sur ce code viderait tous les jetons). */
-export const CODES_JETON_INVALIDE = ["messaging/registration-token-not-registered", "messaging/invalid-registration-token"] as const;
+/** Le jeton n'existe plus (appli desinstallee, jeton renouvele) : le document de l'appareil doit etre supprime. Seul code de purge : l'API FCM v1 renvoie
+ *  `registration-token-not-registered` (UNREGISTERED). `invalid-argument` n'en fait PAS partie (il peut aussi signaler un defaut de NOTRE message : supprimer
+ *  sur ce code viderait tous les jetons) ; l'ancien code `invalid-registration-token` n'est plus emis par le SDK actuel et n'est donc pas traite. */
+export const CODES_JETON_INVALIDE = ["messaging/registration-token-not-registered"] as const;
 /** Erreurs passageres : on retente (2 fois au plus). */
 export const CODES_PASSAGERS = [
   "messaging/internal-error",
@@ -146,7 +164,6 @@ export function categoriser(code: string): CategorieErreur {
 /** Code NUMERIQUE d'une erreur FCM pour les journaux (le journal n'accepte que des nombres, jamais un texte libre). 99 = autre. */
 const CODES_NUMERIQUES: Record<string, number> = {
   "messaging/registration-token-not-registered": 1,
-  "messaging/invalid-registration-token": 2,
   "messaging/internal-error": 3,
   "messaging/server-unavailable": 4,
   "messaging/quota-exceeded": 5,

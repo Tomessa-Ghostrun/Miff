@@ -3,13 +3,16 @@
 // attente sont INJECTES, ce qui permet de la tester a l'emulateur avec un faux client FCM, sans compte ni reseau.
 //
 // Ordre voulu (chaque etape peut s'arreter sans rien ecrire) :
-//   1. garde-fous de l'evenement (photo recente, identifiants sains)                              0 lecture
-//   2. fiches de membres (au plus 30)  -> auteur partageant, destinataires partageant (20 au plus)  1 lecture par fiche
-//   3. appareils (3 au plus) de chaque destinataire, notify.updates == true                         1 a 3 lectures par destinataire
-//   4. reservation transactionnelle dans notifState/{miffId} (deja vu ? plafond horaire ?)           1 lecture, 1 ecriture SEULEMENT si on envoie
-//   5. envoi FCM par appareil (2 nouvelles tentatives au plus), purge des jetons que FCM dit inconnus
-// Pour une Miff de 4 membres dont 3 destinataires avec un appareil : 4 + 3 + 1 = 8 lectures, 1 ecriture (a verifier par test/integration).
-// "Au plus une fois" : la reservation (etape 4) PRECEDE l'envoi ; un plantage entre les deux perd une notification (le Feed la montre), il n'en double jamais.
+//   1. garde-fous de l'evenement (photo recente, identifiants sains)                                  0 lecture
+//   2. PRE-CONTROLE de notifState/{miffId} : deja vu ? plafond horaire ? -> arret, 1 lecture seule      1 lecture
+//   3. fiches de membres (au plus 30) -> auteur partageant, destinataires partageant (20 au plus)      1 lecture par fiche
+//   4. appareils (3 au plus) + SESSION ACTIVE de chaque destinataire ayant un appareil                  1 a 3 lectures + 1 par destinataire
+//      -> envoi UNIQUEMENT a l'appareil dont l'identifiant est celui de la session ; pas de session = pas d'envoi
+//   5. reservation transactionnelle dans notifState/{miffId} (verification finale, meme verdict)        1 lecture, 1 ecriture SEULEMENT si on envoie
+//   6. envoi FCM par appareil (2 nouvelles tentatives au plus), purge des jetons que FCM dit inconnus
+// Budget (Miff de 4 membres, 3 destinataires, 1 appareil chacun) : 1 + 4 + 3 + 3 + 1 = 12 lectures, 1 ecriture. Update plafonnee ou rejouee : 1 lecture, 0 ecriture.
+// "Au plus une fois" : la reservation (etape 5) PRECEDE l'envoi ; un plantage entre les deux, ou une panne de FCM apres la reservation, perd la notification
+// et consomme le plafond de l'heure pour cet auteur (le Feed la montre quand meme) ; la fonction n'en double jamais.
 // Journaux : uniquement des nombres et des mots fixes (journal.ts), jamais d'identifiant, de prenom ni de jeton.
 import { FieldPath, Timestamp, type DocumentReference, type Firestore } from "firebase-admin/firestore";
 import type { Message } from "firebase-admin/messaging";
@@ -65,6 +68,8 @@ export interface Bilan {
   erreursFcm: Record<number, number>;
   lectures: number;
   ecritures: number;
+  /** Une exception non prevue a interrompu le traitement (details volontairement non conserves). */
+  erreur?: boolean;
 }
 
 const IDENTIFIANT = /^[A-Za-z0-9_-]{1,128}$/;
@@ -89,20 +94,19 @@ function enTimestamp(valeur: unknown): Timestamp | null {
 
 interface SessionActive {
   deviceId?: unknown;
-  startedAt?: unknown;
 }
 
-/** Parmi plusieurs jetons d'un meme compte : celui dont l'identifiant est celui de la session active ; a defaut, ceux ecrits depuis le debut de la session. Pas de session = aucun. */
-function appareilsDeLaSession<D extends { id: string; data(): unknown }>(docs: D[], session: SessionActive | null): D[] {
-  if (!session) return [];
-  const identiques = typeof session.deviceId === "string" ? docs.filter((d) => d.id === session.deviceId) : [];
-  if (identiques.length > 0) return identiques;
-  const debut = enTimestamp(session.startedAt);
-  if (!debut) return [];
-  return docs.filter((d) => {
-    const ecrit = enTimestamp((d.data() as { updatedAt?: unknown }).updatedAt);
-    return ecrit !== null && nanos(ecrit) >= nanos(debut);
-  });
+/**
+ * Verdict de notifState/{miffId} pour une publication de l'auteur : "deja_vu" (livraison en double, ou evenement plus ancien que le dernier traite),
+ * "plafond" (moins d'une heure depuis la derniere notification ENVOYEE pour cet auteur dans cette Miff) ou "reserve" (on peut envoyer).
+ * Utilise deux fois : en pre-controle (une simple lecture, pour ne pas lire fiches et appareils d'une update deja ecartee) et dans la transaction finale.
+ */
+function verdictEtat(etat: { get(chemin: FieldPath): unknown }, auteurUid: string, createdAt: Timestamp): "deja_vu" | "plafond" | "reserve" {
+  const vu = enTimestamp(etat.get(new FieldPath("authors", auteurUid, "lastSeenCreatedAt")));
+  const notifie = enTimestamp(etat.get(new FieldPath("authors", auteurUid, "lastNotifiedAt")));
+  if (vu && nanos(createdAt) <= nanos(vu)) return "deja_vu";
+  if (notifie && createdAt.toMillis() - notifie.toMillis() < PLAFOND_FENETRE_MS) return "plafond";
+  return "reserve";
 }
 
 function ecarter(bilan: Bilan, raison: string, n = 1): void {
@@ -114,6 +118,10 @@ export async function traiterPhotoPubliee(dep: Dependances, evenement: Evenement
   const bilan: Bilan = { examines: 0, envoyes: 0, ecartes: {}, purges: 0, erreursFcm: {}, lectures: 0, ecritures: 0 };
   try {
     await executer(dep, evenement, bilan);
+  } catch {
+    // Exception non prevue (Firestore indisponible, bogue...) : on ne journalise AUCUN detail (le message d'une exception peut contenir un chemin, donc un
+    // identifiant) et on ne relance pas (retry desactive : relancer ne ferait que reproduire la meme pile, brute, dans les journaux).
+    bilan.erreur = true;
   } finally {
     journaliserBilan(bilan, dep.maintenant().getTime() - debut);
   }
@@ -134,7 +142,14 @@ async function executer(dep: Dependances, evenement: Evenement, bilan: Bilan): P
   const maintenantMs = maintenant().getTime();
   if (maintenantMs - createdAt.toMillis() > AGE_MAX_EVENEMENT_MS) return arreter("trop_ancien");
 
-  // --- 2. Fiches de membres : l'auteur et les destinataires ---------------------------------------------------------------------
+  // --- 2. Pre-controle : deja vu ? plafond horaire ? (1 lecture ; evite de lire fiches et appareils pour une update deja ecartee) ---------------
+  const refEtat = db.doc(`notifState/${miffId}`);
+  const etatInitial = await refEtat.get();
+  bilan.lectures += 1;
+  const verdictInitial = verdictEtat(etatInitial, auteurUid, createdAt);
+  if (verdictInitial !== "reserve") return arreter(verdictInitial);
+
+  // --- 3. Fiches de membres : l'auteur et les destinataires ---------------------------------------------------------------------
   // Seuls prenom et "partage actif" sont demandes. Si l'auteur n'est pas dans les 30 premieres fiches (Miff hors norme), une lecture de plus.
   const fiches = await db.collection(`miffs/${miffId}/members`).select("firstName", "sharing.enabled").limit(MAX_FICHES).get();
   bilan.lectures += Math.max(1, fiches.size);
@@ -159,16 +174,17 @@ async function executer(dep: Dependances, evenement: Evenement, bilan: Bilan): P
     destinataires = destinataires.slice(0, MAX_DESTINATAIRES);
   }
 
-  // --- 3. Appareils : jeton present, notification "update" activee ----------------------------------------------------------------
+  // --- 4. Appareils : jeton present, notification "update" activee, appareil de la SESSION active ----------------------------------------------------------------
   const cibles: Cible[] = [];
   const lots = await Promise.all(
     destinataires.map(async (d) => {
       const snap = await db.collection(`users/${d.uid}/devices`).limit(MAX_APPAREILS).get();
       bilan.lectures += Math.max(1, snap.size);
-      // Un compte = un appareil (SESS) : le cas normal est UN document, envoye tel quel. Si plusieurs documents subsistent (ancien appareil dont le jeton
-      // n'a pas ete supprime), contrat docs/dev/jetons-appareil-clients.md §7 : on n'envoie qu'a l'appareil de la session active (1 lecture de plus, seulement ici).
-      let session: SessionActive | null | undefined;
-      if (snap.size > 1) {
+      // La session active est TOUJOURS lue (contrat docs/dev/jetons-appareil-clients.md §7) : un jeton reste valide chez FCM meme si son document n'a pas
+      // pu etre supprime (deconnexion hors connexion) ; un autre compte qui s'ouvre ensuite sur le meme telephone recevrait alors le prenom d'un membre d'un
+      // cercle qui n'est pas le sien. On n'envoie donc qu'a l'appareil de la session ACTIVE ; pas de session (deconnexion, suppression) = pas d'envoi.
+      let session: SessionActive | null = null;
+      if (!snap.empty) {
         const s = await db.doc(`users/${d.uid}/session/active`).get();
         bilan.lectures += 1;
         session = s.exists ? (s.data() as SessionActive) : null;
@@ -181,8 +197,8 @@ async function executer(dep: Dependances, evenement: Evenement, bilan: Bilan): P
       ecarter(bilan, "sans_appareil");
       continue;
     }
-    const retenus = session === undefined ? snap.docs : appareilsDeLaSession(snap.docs, session);
-    if (retenus.length < snap.size) ecarter(bilan, "appareil_remplace", snap.size - retenus.length);
+    const retenus = session && typeof session.deviceId === "string" ? snap.docs.filter((doc) => doc.id === session.deviceId) : [];
+    if (retenus.length < snap.size) ecarter(bilan, session ? "appareil_remplace" : "sans_session", snap.size - retenus.length);
     for (const doc of retenus) {
       bilan.examines += 1;
       const d = doc.data() as { token?: unknown; platform?: unknown; tz?: unknown; notify?: { updates?: unknown } };
@@ -197,28 +213,22 @@ async function executer(dep: Dependances, evenement: Evenement, bilan: Bilan): P
   }
   if (cibles.length === 0) return arreter("aucun_destinataire");
 
-  // --- 4. Reservation : deja vu ? plafond horaire ? (transaction sur notifState/{miffId}) -------------------------------------
-  const refEtat = db.doc(`notifState/${miffId}`);
+  // --- 5. Reservation : verification finale dans une transaction sur notifState/{miffId} (deux executions simultanees : une seule passe) -------
   const issue = await db.runTransaction(async (tx) => {
-    const etat = await tx.get(refEtat);
-    const vu = enTimestamp(etat.get(new FieldPath("authors", auteurUid, "lastSeenCreatedAt")));
-    const notifie = enTimestamp(etat.get(new FieldPath("authors", auteurUid, "lastNotifiedAt")));
-    // Deja traite (livraison en double, ou evenement plus ancien que le dernier traite) : abandon silencieux.
-    if (vu && nanos(createdAt) <= nanos(vu)) return "deja_vu" as const;
-    // Fenetre glissante depuis la derniere notification ENVOYEE pour cet auteur dans cette Miff.
-    if (notifie && createdAt.toMillis() - notifie.toMillis() < PLAFOND_FENETRE_MS) return "plafond" as const;
+    const verdict = verdictEtat(await tx.get(refEtat), auteurUid, createdAt);
+    if (verdict !== "reserve") return verdict;
     tx.set(
       refEtat,
       { authors: { [auteurUid]: { lastSeenCreatedAt: createdAt, lastNotifiedAt: createdAt } }, expireAt: Timestamp.fromMillis(maintenantMs + DUREE_ETAT_MS) },
       { merge: true },
     );
-    return "reserve" as const;
+    return verdict;
   });
   bilan.lectures += 1;
   if (issue !== "reserve") return arreter(issue);
   bilan.ecritures += 1;
 
-  // --- 5. Envoi : un message par appareil ---------------------------------------------------------------------------------------
+  // --- 6. Envoi : un message par appareil ---------------------------------------------------------------------------------------
   const instant = maintenant();
   await Promise.all(
     cibles.map(async (cible) => {
@@ -269,6 +279,10 @@ async function purger(cible: Cible, bilan: Bilan): Promise<void> {
 }
 
 function journaliserBilan(bilan: Bilan, dureeMs: number): void {
+  if (bilan.erreur) {
+    journaliser("warn", "notif.update.erreur", { resultat: "erreur", lectures: bilan.lectures, ecritures: bilan.ecritures, dureeMs });
+    return;
+  }
   if (bilan.motif) {
     const champs: ChampsJournal = { resultat: "refuse", motif: bilan.motif, lectures: bilan.lectures, ecritures: bilan.ecritures, dureeMs };
     journaliser("info", "notif.update.ignore", champs);

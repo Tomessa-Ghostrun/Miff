@@ -34,6 +34,16 @@ test('prenom : retours a la ligne, controles et inversion de sens du texte sont 
   assert.equal(R.prenomAffichable(null), '');
 });
 
+test('prenom invisible (M1) : espace de largeur nulle, remplisseurs, balises, selecteur de variation seul, liant seul -> vide ; texte visible conserve', () => {
+  const invisibles = ['\u200B', '\u3164', '\u2800', '\u115F\u1160', '\uFFA0', '\u00AD', '\uFEFF', '\u2060', '\u{E0041}\u{E0042}', '\u200D', '\uFE0F', '\u200B\u200D\uFE0F\u3164'];
+  for (const s of invisibles) assert.equal(R.prenomAffichable(s), '', 'devrait etre vide : ' + JSON.stringify(s));
+  assert.equal(R.prenomAffichable('\u200BTom\u3164essa\u2800'), 'Tom essa');
+  assert.equal(R.prenomAffichable('Zo\u00E9\u{E0041}'), 'Zo\u00E9');
+  // L'emoji en couleur (U+FE0F) et les emojis composes (U+200D) restent intacts.
+  assert.equal(R.prenomAffichable('\u2764\uFE0F'), '\u2764\uFE0F');
+  assert.equal(R.prenomAffichable('\u{1F468}\u200D\u{1F469}'), '\u{1F468}\u200D\u{1F469}');
+});
+
 // --- Heures calmes --------------------------------------------------------------------------------------------------------------------
 
 test('nuit : 22 h - 7 h heure locale du destinataire (21:59 jour, 22:00 nuit, 06:59 nuit, 07:00 jour)', () => {
@@ -124,7 +134,7 @@ test('AUCUNE donnee sensible possible dans un message : aucune cle photo / lieu 
 
 test('erreurs : jeton inconnu / passager / definitive ; invalid-argument ne purge JAMAIS un jeton', () => {
   assert.equal(R.categoriser('messaging/registration-token-not-registered'), 'jeton_invalide');
-  assert.equal(R.categoriser('messaging/invalid-registration-token'), 'jeton_invalide');
+  assert.equal(R.categoriser('messaging/invalid-registration-token'), 'definitive', "code historique, plus emis par le SDK : jamais de purge dessus");
   for (const c of ['messaging/internal-error', 'messaging/server-unavailable', 'messaging/quota-exceeded', 'app/network-error']) assert.equal(R.categoriser(c), 'passager');
   for (const c of ['messaging/invalid-argument', 'messaging/third-party-auth-error', 'inconnu', 'messaging/sender-id-mismatch']) assert.equal(R.categoriser(c), 'definitive');
   assert.equal(R.codeDeErreur({ code: 'messaging/internal-error' }), 'messaging/internal-error');
@@ -132,6 +142,16 @@ test('erreurs : jeton inconnu / passager / definitive ; invalid-argument ne purg
   assert.equal(R.codeDeErreur(null), 'inconnu');
   assert.equal(R.codeNumerique('messaging/registration-token-not-registered'), 1);
   assert.equal(R.codeNumerique('nimporte quoi'), 99);
+  assert.deepEqual([...R.CODES_JETON_INVALIDE], ['messaging/registration-token-not-registered']);
+});
+
+test('apns-collapse-id (M7) : 64 octets au plus, sans couper un caractere ; un identifiant court est inchange', () => {
+  assert.equal(R.tronquerOctets('abc', 64), 'abc');
+  assert.equal(R.tronquerOctets('a'.repeat(100), 64), 'a'.repeat(64));
+  assert.equal(R.tronquerOctets('\u00E9'.repeat(40), 64), '\u00E9'.repeat(32)); // 2 octets chacun
+  const m = R.construireMessage({ ...base, plateforme: 'ios', nuit: false, auteurUid: 'U'.repeat(128) });
+  assert.equal(Buffer.byteLength(m.apns.headers['apns-collapse-id']), 64);
+  assert.equal(m.apns.payload.aps.threadId, 'U'.repeat(128), 'le fil de regroupement garde l identifiant complet');
 });
 
 test('constantes du ticket : plafond 1 h, vie 2 h, age maximal 5 min, 30 fiches, 20 destinataires, 3 appareils, 2 reprises', () => {

@@ -27,15 +27,20 @@ export const notifierUpdate = onDocumentWritten(
       journaliser("info", "notif.update.ignore", { resultat: "refuse", motif: "suppression" });
       return;
     }
-    const app = appAdmin();
-    await traiterPhotoPubliee(
-      {
-        db: getFirestore(app),
-        fcm: creerClientFcm(),
-        maintenant: () => new Date(),
-        attendre: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-      },
-      { miffId: evenement.params.miffId, auteurUid: evenement.params.uid, createdAt: apres.get("createdAt") },
-    );
+    try {
+      const app = appAdmin();
+      await traiterPhotoPubliee(
+        {
+          db: getFirestore(app),
+          fcm: creerClientFcm(),
+          maintenant: () => new Date(),
+          attendre: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+        },
+        { miffId: evenement.params.miffId, auteurUid: evenement.params.uid, createdAt: apres.get("createdAt") },
+      );
+    } catch {
+      // Initialisation impossible : journal fixe, sans le detail de l'exception (il pourrait contenir un chemin, donc un identifiant), et pas de relance.
+      journaliser("warn", "notif.update.erreur", { resultat: "erreur" });
+    }
   },
 );

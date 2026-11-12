@@ -42,6 +42,8 @@ const MIFF = 'MiffDeclencheur';
 async function membre(uid, partage, appareil = true) {
   await db.doc(`miffs/${MIFF}/members/${uid}`).set({ role: 'member', firstName: uid, sharing: { enabled: partage } });
   if (appareil) await db.doc(`users/${uid}/devices/dev0`).set({ token: `jeton-${uid}`, platform: 'android', tz: 'Europe/Paris', notify: { updates: true } });
+  // Session active du compte : la fonction n'envoie qu'a l'appareil de la session (contrat des jetons §7).
+  if (appareil) await db.doc(`users/${uid}/session/active`).set({ deviceId: 'dev0', startedAt: Timestamp.fromMillis(Date.now() - 3_600_000) });
 }
 const photo = () => ({ jpeg: Buffer.from([1, 2, 3]), createdAt: FieldValue.serverTimestamp(), expiresAt: Timestamp.fromMillis(Date.now() + 3_600_000), lat: 48.85661, lng: 2.35222, measuredAt: FieldValue.serverTimestamp() });
 const etatAuteur = async (uid) => (await db.doc(`notifState/${MIFF}`).get()).get(`authors.${uid}`);

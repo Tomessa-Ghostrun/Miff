@@ -209,6 +209,31 @@ test('notifierUpdate : jamais de sujet FCM (topic) ni d\'envoi multiple : un mes
   }
 });
 
+test('M8 : chemins Firestore touchés par la fonction = liste fermée ; écriture SEULEMENT dans notifState (transaction) et suppression d\'un document devices avec précondition', () => {
+  const traitement = code(sources.find((s) => nomDe(s.f) === 'notifTraitement.ts').texte);
+  // Lectures : chemins passés à doc() / collection() dans tout src/.
+  const chemins = sources.flatMap(({ texte }) => [...code(texte).matchAll(/\b(?:doc|collection)\(\s*`([^`]+)`/g)].map((m) => m[1])).sort();
+  assert.deepEqual(chemins, [
+    'miffs/${miffId}/members',
+    'miffs/${miffId}/members/${auteurUid}',
+    'notifState/${miffId}',
+    'users/${d.uid}/devices',
+    'users/${d.uid}/session/active',
+  ]);
+  // Écritures : une seule écriture de document (tx.set sur refEtat = notifState) et une seule suppression (devices, avec précondition sur la version lue).
+  for (const { f, texte } of sources) {
+    const ecritures = code(texte).match(/\.(set|update|create|add|delete|batch|bulkWriter|recursiveDelete)\(/g) ?? [];
+    if (nomDe(f) === 'notifTraitement.ts') assert.deepEqual(ecritures, ['.set(', '.delete('], f);
+    else assert.deepEqual(ecritures, [], `${f} : aucune écriture Firestore hors notifTraitement.ts`);
+  }
+  assert.match(traitement, /const refEtat = db\.doc\(`notifState\/\$\{miffId\}`\);/);
+  assert.match(traitement, /tx\.set\(\s*refEtat,/);
+  assert.equal((traitement.match(/\.runTransaction\(/g) ?? []).length, 1);
+  assert.match(traitement, /await cible\.ref\.delete\(\{ lastUpdateTime: cible\.version \}\);/);
+  // La référence supprimée vient d'une lecture de users/{uid}/devices (doc.ref), jamais construite à la main.
+  assert.match(traitement, /ref: doc\.ref,/);
+});
+
 test("code : pas de fonction HTTP publique (onRequest) ni de onCall hors de appelable.ts (App Check et connexion toujours exigés)", () => {
   for (const { f, texte } of sources) {
     const c = code(texte);

@@ -84,7 +84,7 @@ npx firebase login:list
 2. Clique **Créer un compte de service** (« Create service account »).
 3. **Nom du compte de service** : `notify-update`. L'identifiant qui s'affiche dessous doit être exactement `notify-update` (l'adresse complète sera `notify-update@miff-3d283.iam.gserviceaccount.com` : c'est celle qui est écrite dans le code, une autre adresse serait refusée par les tests).
 4. Description : `Fonction notifierUpdate : lit Firestore et envoie les notifications`.
-5. Clique **Créer et continuer**. **Ignore** l'étape « Accorder l'accès à ce compte » (on s'en occupe à l'étape B) : clique **Continuer**, puis **OK** (sans rien ajouter à l'étape « Accorder aux utilisateurs l'accès »).
+5. Clique **Créer et continuer**. **Ignore** l'étape « Accorder l'accès à ce compte » (on s'en occupe à l'étape B) : clique **Continuer**, puis **Terminé** (« Done » ; sans rien ajouter à l'étape « Accorder aux utilisateurs l'accès »).
 6. **Ne crée aucune clé** (onglet « Clés » du compte : il doit rester vide). Si on te propose de télécharger un fichier `.json`, **refuse**.
 
 **Étape B : lui donner les 4 rôles, et rien d'autre**
@@ -114,8 +114,8 @@ Sur la page IAM, la ligne `notify-update@miff-3d283.iam.gserviceaccount.com` doi
 
 **Étape E : activer la suppression automatique de `notifState` (durée de vie, « TTL »)**
 La fonction note dans la collection `notifState` (accessible à la fonction seulement, jamais à une application) la date de la dernière update traitée par auteur, pour ne jamais notifier deux fois et ne pas dépasser une notification par heure. Ces lignes contiennent des identifiants : elles doivent disparaître seules au bout de 2 jours.
-1. Console Firebase > projet **Miff** > **Firestore Database** > onglet **Time-to-live** (« TTL ») *(libellé non vérifié ; peut aussi se trouver sous Données > Time-to-live)*.
-2. **Créer une règle** (« Create policy ») : groupe de collections `notifState`, champ `expireAt`. **Enregistrer.**
+1. Ouvre la **console Google Cloud** (https://console.cloud.google.com/firestore), projet **`miff-3d283`** > **Firestore** > menu de gauche **Time-to-live** (« TTL » ; la durée de vie est configurée à cet endroit, pas dans la console Firebase) *(libellé non vérifié ; en cas de doute, copie ce que tu vois à Claude)*.
+2. **Créer une règle** (« Create policy ») : **groupe de collections** `notifState`, **champ** `expireAt`. **Enregistrer.**
 3. À savoir : la suppression est « typiquement dans les 24 h » après l'échéance (documentation Google) et n'est pas gratuite à l'usage sur Blaze (négligeable : une suppression par Miff active et par 2 jours). Tant que la règle n'est pas créée, rien ne casse : les lignes restent, voilà tout (quelques centaines d'octets par Miff).
 
 **Étape F : les règles des jetons**
@@ -313,7 +313,7 @@ Ticket : `docs/tickets/notification-update-membres.md`. Recette : `docs/qa/check
 
 Quand un membre **publie une update** (une photo écrite dans `miffs/{miff}/photos/{membre}`), la fonction envoie **une notification discrète aux autres membres de la Miff** : « {Prénom} a donné des nouvelles / Retrouve-les dans ta Miff. » (le texte est composé par l'application ou par le système du téléphone à partir de clés de texte ; le serveur n'envoie que le prénom). Elle part **uniquement** si :
 - la personne qui publie **partage sa position** avec la Miff ;
-- le destinataire est **encore membre**, **partage lui aussi**, a **au moins un téléphone enregistré** (jeton) et n'a pas coupé « Quand un proche donne des nouvelles » ;
+- le destinataire est **encore membre**, **partage lui aussi**, a **au moins un téléphone enregistré** (jeton) **correspondant à sa session active** (un téléphone dont le propriétaire s'est déconnecté, ou dont un autre compte a pris la place, ne reçoit rien) et n'a pas coupé « Quand un proche donne des nouvelles » ;
 - il n'y a pas déjà eu une notification **pour cet auteur dans cette Miff dans l'heure** (les updates suivantes restent visibles dans le Feed, sans notification) ;
 - la publication a **moins de 5 minutes** au moment du traitement.
 
@@ -321,18 +321,17 @@ Quand un membre **publie une update** (une photo écrite dans `miffs/{miff}/phot
 
 **Ce qu'elle écrit** : une seule chose, dans `notifState/{miff}` (collection **réservée au serveur**, refusée à toute application par la règle « tout le reste est refusé ») : pour chaque auteur, l'heure de sa dernière publication traitée et de sa dernière notification, plus une date de suppression automatique à **+2 jours**. Elle **supprime** aussi le document d'un téléphone quand Google répond que son jeton n'existe plus (appli désinstallée). Elle **n'écrit jamais** dans `photos/` (pas de boucle sur elle-même).
 
-**Garanties et limites** : **au plus une fois** (la fonction note qu'elle a traité l'événement **avant** d'envoyer : si elle plante entre les deux, une notification peut être perdue ; elle ne sera jamais doublée). Si Google ou Apple sont en panne passagère : **2 nouvelles tentatives** (0,5 s puis 1,5 s) puis abandon. Si la fonction est indisponible, **rien d'autre ne casse** : la publication réussit et le Feed est à jour.
+**Garanties et limites** : **au plus une fois** (la fonction note qu'elle a traité l'événement **avant** d'envoyer : si elle plante entre les deux, **ou si Google/Apple sont en panne juste après**, la notification est perdue **et le plafond de l'heure est consommé** pour cet auteur dans cette Miff ; elle ne sera jamais doublée). Une exception non prévue est journalisée par un code fixe (`notif.update.erreur`), sans détail, et n'est pas relancée. Si Google ou Apple sont en panne passagère : **2 nouvelles tentatives** (0,5 s puis 1,5 s) puis abandon. Si la fonction est indisponible, **rien d'autre ne casse** : la publication réussit et le Feed est à jour.
 
 ### 11.2 Coût et lectures (comptés par la fonction, vérifiés à l'émulateur)
 
 | Cas | Lectures Firestore | Écritures |
 |---|---|---|
-| Miff de **4 membres**, 3 destinataires avec 1 téléphone chacun | **8** (4 fiches + 3 listes de téléphones + 1 état) | **1** (l'état) |
-| Miff de **15 membres** | **30** | 1 |
-| Miff de **40 membres** | **51** au plus (30 fiches, 20 destinataires, 1 état) | 1 |
-| Update plafonnée (2e de l'heure) ou rejouée | comme ci-dessus (fiches et téléphones sont lus avant le plafond) | **0** |
-| Un destinataire a **plusieurs** téléphones enregistrés (cas anormal : un compte = un appareil) | +1 lecture pour ce destinataire (sa session), l'envoi ne va qu'au téléphone de la session active | 0 |
-| Auteur seul dans sa Miff | **1** | 0 |
+| Miff de **4 membres**, 3 destinataires avec 1 téléphone chacun | **12** (1 contrôle préalable + 4 fiches + 3 listes de téléphones + 3 sessions + 1 vérification finale) | **1** (l'état) |
+| Miff de **15 membres** | **45** | 1 |
+| Miff de **40 membres** | **72** au plus (73 si l'auteur est hors des 30 premières fiches) : 1 + 30 fiches + 20 téléphones + 20 sessions + 1 | 1 |
+| Update plafonnée (2e de l'heure) ou rejouée | **1** (le contrôle préalable arrête tout avant de lire fiches, téléphones et sessions) | **0** |
+| Auteur seul dans sa Miff | **2** | 0 |
 | Événement de plus de 5 min, suppression de photo | **0** | 0 |
 | Jeton invalide purgé | n/a | +1 par jeton |
 
@@ -353,7 +352,7 @@ npx firebase deploy --only functions:notifierUpdate --project miff-3d283
 
 Matériel : **deux comptes de test** dans **une même Miff de test**, les deux avec le partage activé, chacun sur son téléphone (un appareil par compte), notifications autorisées sur celui qui reçoit, réglage « Quand un proche donne des nouvelles » activé. **Pas de vrais proches dans cette Miff.**
 1. Le compte 1 publie une update. Attendu : le compte 2 reçoit « {Prénom} a donné des nouvelles » en quelques secondes (2 minutes au plus), **sans photo ni lieu** ; le compte 1 ne reçoit rien.
-2. Journaux (section 5) : `npx firebase functions:log --only notifierUpdate -n 30 --project miff-3d283`. Attendu : une ligne `notif.update.bilan` avec `envoyes: 1`, `lectures` autour de 3, `ecritures: 1`, **sans aucun nom, identifiant ni jeton**. Une ligne `notif.update.fcm-erreur` avec `code` 8 = clé APNs absente ou refusée côté Apple (ticket §12, étape du PM) ; `code` 1 = jeton inconnu (purgé) ; `code` 3 ou 4 = panne passagère de Google.
+2. Journaux (section 5) : `npx firebase functions:log --only notifierUpdate -n 30 --project miff-3d283`. Attendu : une ligne `notif.update.bilan` avec `envoyes: 1`, `lectures: 6` (2 comptes : 1 contrôle préalable + 2 fiches + 1 téléphone + 1 session + 1 vérification finale), `ecritures: 1`, **sans aucun nom, identifiant ni jeton**. Une ligne `notif.update.fcm-erreur` avec `code` 8 = clé APNs absente ou refusée côté Apple (ticket §12, étape du PM) ; `code` 1 = jeton inconnu (purgé) ; `code` 3 ou 4 = panne passagère de Google.
 3. Le compte 1 publie une 2e update **dans l'heure** : pas de nouvelle notification (`notif.update.ignore`, `motif: plafond`), la photo est visible dans le Feed.
 4. Console Firebase > Firestore : la collection `notifState` contient un document par Miff de test, **sans nom ni jeton** (que des dates) ; la règle TTL est visible.
 5. Console Firebase > Functions : instances maximales 5, mémoire 256 Mio, compte `notify-update@…`.
