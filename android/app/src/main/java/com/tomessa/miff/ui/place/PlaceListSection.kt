@@ -1,5 +1,6 @@
 package com.tomessa.miff.ui.place
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,6 +16,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,9 +32,12 @@ import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import com.tomessa.miff.R
+import com.tomessa.miff.data.place.RequestNotice
 import com.tomessa.miff.domain.place.Place
 import com.tomessa.miff.domain.place.PlaceLimits
 import com.tomessa.miff.domain.place.PlaceQuota
+import com.tomessa.miff.domain.place.PlaceRequest
+import com.tomessa.miff.domain.place.PlaceRequestLimits
 import com.tomessa.miff.domain.place.PlaceType
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -59,7 +66,15 @@ class PlaceListUi(
     val isCreator: Boolean,
     val premium: Boolean? = null,
     val savedName: String? = null,
+    /** A member who is not the creator: its own pending requests (ticket LIEU-REQ-B), newest first; they come BEFORE the places. */
+    val requests: List<PlaceRequest> = emptyList(),
+    /** "Demande envoyée…" / "Ta demande partira dès que tu seras connecté.", shown after the form of a request closed. */
+    val requestNotice: RequestNotice? = null,
 ) {
+    /** A member who already has the 3 pending requests of the ticket: the button says so calmly instead of opening the form (criterion M5). */
+    val atRequestLimit: Boolean
+        get() = !isCreator && requests.size >= PlaceRequestLimits.PER_MEMBER
+
     /** A creator on the free plan who already has 3 places: "Ajouter un lieu" opens the offer instead of the form (criterion LIM1). */
     val atFreeLimit: Boolean
         get() = isCreator && premium == false && PlaceQuota.isAtFreeLimit(false, places.map { it.id }.toSet().size)
@@ -78,9 +93,20 @@ fun PlaceRows(
     onOpen: (Place) -> Unit,
     onAdd: () -> Unit,
     modifier: Modifier = Modifier,
+    /** A member's pending request is opened (its detail). */
+    onOpenRequest: (PlaceRequest) -> Unit = {},
+    /** "Demander l'ajout d'un lieu": a member who is not the creator opens the form of a request. */
+    onRequestPlace: () -> Unit = {},
 ) {
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         ui.savedName?.let { SavedNotice(it) }
+        if (!ui.isCreator) {
+            ui.requestNotice?.let {
+                Notice(
+                    stringResource(if (it.queued) R.string.place_request_sent_offline else R.string.place_request_sent),
+                )
+            }
+        }
         val caption =
             when {
                 !ui.isCreator -> {
@@ -103,9 +129,13 @@ fun PlaceRows(
         if (caption != null) {
             Text(text = caption, style = textBodyRegular14, color = colorTextDescription)
         }
+        // The pending requests of a member come FIRST (decision of the PM, 2026-11-11): what was just asked is what is looked for.
+        if (!ui.isCreator) ui.requests.forEach { PlaceRequestCard(it, onClick = { onOpenRequest(it) }) }
         if (ui.places.isEmpty()) {
             Text(
-                text = stringResource(R.string.miff_places_empty),
+                // A member has nothing to add: a calm "nothing yet" (decision of the PM, 2026-11-11); the creator keeps its sentence.
+                text =
+                    stringResource(if (ui.isCreator) R.string.miff_places_empty else R.string.place_list_empty_member),
                 style = textBodyRegular14,
                 color = colorTextDescription,
                 textAlign = TextAlign.Center,
@@ -124,7 +154,25 @@ fun PlaceRows(
                 ui.places.forEach { place -> PlaceRow(place, onClick = { onOpen(place) }) }
             }
         }
-        if (ui.isCreator) AddPlaceButton(premiumPill = ui.atFreeLimit, onClick = onAdd)
+        if (ui.isCreator) {
+            AddPlaceButton(label = R.string.place_list_add_action, premiumPill = ui.atFreeLimit, onClick = onAdd)
+        } else {
+            // A member does not add a place: it ASKS the creator for one (same button, same design, another sentence).
+            var limitShown by remember { mutableStateOf(false) }
+            AddPlaceButton(
+                label = R.string.place_request_cta_member,
+                premiumPill = false,
+                onClick = { if (ui.atRequestLimit) limitShown = true else onRequestPlace() },
+            )
+            if (limitShown && ui.atRequestLimit) {
+                Text(
+                    text = stringResource(R.string.place_request_limit_member),
+                    style = textBodyRegular14,
+                    color = colorTextDescription,
+                    modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
+                )
+            }
+        }
     }
 }
 
@@ -135,7 +183,7 @@ private fun PlaceRow(
 ) {
     val category = place.category
     val address = place.address
-    val spoken =
+    val described =
         when {
             category != null && !address.isNullOrEmpty() -> {
                 stringResource(R.string.place_list_row_a11y, place.name, stringResource(category.labelRes), address)
@@ -152,6 +200,13 @@ private fun PlaceRow(
             else -> {
                 stringResource(R.string.place_list_row_nocategory_noaddress_a11y, place.name)
             }
+        }
+    // The row is read as ONE block: the visible tag "Zone de danger" must be in it, or a screen reader would hide the type of the place.
+    val spoken =
+        if (place.type == PlaceType.RISK) {
+            stringResource(R.string.place_list_row_type_a11y, described, stringResource(place.type.labelRes))
+        } else {
+            described
         }
     Row(
         modifier =
@@ -184,11 +239,12 @@ private val ROW_ICON = Spacing.xl + Spacing.m - Spacing.xs
 
 @Composable
 private fun AddPlaceButton(
+    @StringRes label: Int,
     premiumPill: Boolean,
     onClick: () -> Unit,
 ) {
     val spoken =
-        stringResource(if (premiumPill) R.string.place_list_add_premium_a11y else R.string.place_list_add_action)
+        stringResource(if (premiumPill) R.string.place_list_add_premium_a11y else label)
     Row(
         modifier =
             Modifier
@@ -208,14 +264,18 @@ private fun AddPlaceButton(
             tint = colorActionPrimary,
             modifier = Modifier.size(Spacing.l),
         )
-        Text(text = stringResource(R.string.place_list_add_action), style = textBodyBold16, color = colorActionPrimary)
+        Text(text = stringResource(label), style = textBodyBold16, color = colorActionPrimary)
         if (premiumPill) PremiumPill()
     }
 }
 
 /** "Le lieu « X » est enregistré. Tes proches le prendront en compte dès qu'ils ouvriront Miff, ou dans les prochaines heures." */
 @Composable
-private fun SavedNotice(name: String) {
+private fun SavedNotice(name: String) = Notice(stringResource(R.string.place_saved_notice, name))
+
+/** A calm confirmation in the family of the one of a saved place (a pale blue card with a check, read politely by the screen reader). */
+@Composable
+private fun Notice(text: String) {
     Row(
         modifier =
             Modifier
@@ -234,7 +294,7 @@ private fun SavedNotice(name: String) {
             modifier = Modifier.size(Spacing.l),
         )
         Text(
-            text = stringResource(R.string.place_saved_notice, name),
+            text = text,
             style = textBodyRegular14,
             color = colorTextPrimary,
         )

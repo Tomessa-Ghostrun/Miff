@@ -31,6 +31,49 @@ Plan `docs/dev/app-check.md` §5 (C1, C5) et §8 (AC-4) ; deux commits (A : inte
 - **Contrôle du jeton (`AppCheckProbe`)** : « jeton manquant » seulement si le SDK répond par sa propre erreur (`FirebaseException`) ; toute autre erreur ou l'absence de réponse en 5 s laisse la phrase d'avant. Tests : `AppCheckProbeTest` (jeton, erreur du SDK, autre erreur, délai dépassé), `StoredAppCheckTokenTest` (la réflexion dit honnêtement si elle a marché).
 - **Côté iOS** : la clé est dans le catalogue, la logique (refus + aucun jeton App Attest → même phrase) reste à faire par `ios-dev`.
 
+## [0.33.0] - 2026-11-11 : un membre demande l'ajout d'un lieu au créateur de la Miff (LIEU-REQ-B)
+
+Décisions du PM du 2026-11-11 (sans maquette ni Notion) ; ticket `docs/tickets/demande-ajout-lieu.md` (critères M1 à M11, L1) ; branche `android/lieu-demande-membre`, PR brouillon, **première des deux PR empilées** (la seconde, `android/lieu-demande-createur`, ajoute le côté du créateur). Cette PR **contient la branche `android/profil-lieux-membres`** (liste des lieux visible par tous les membres, PR en cours d'un autre agent) fusionnée telle quelle : elle disparaît du diff quand cette PR sera fusionnée.
+
+### Ajouté
+- **« Demander l'ajout d'un lieu »** à la place de « Ajouter un lieu » pour un membre qui n'est pas le créateur, sur le Profil, dans la liste des lieux de la Miff du carrousel (même emplacement, même design, un seul bouton). Le créateur garde « Ajouter un lieu » et ne voit jamais le bouton de demande.
+- **Formulaire de demande** : c'est l'écran de création d'un lieu (nom, adresse, périmètre sur la carte, type) avec le titre « Proposer un lieu » et le bouton « Soumettre la demande ». La Miff est fixe (une seule puce, pas de sélecteur), **la catégorie est demandée comme pour un lieu** (la demande la porte, l'acceptation la copie dans le lieu créé : contrat du backend du 2026-11-11), pas de phrase « les membres verront ce lieu » (faux tant que le créateur n'a pas accepté) mais « Le créateur de la Miff verra ta demande et décidera de l'ajouter ou non. ».
+- **Demande en attente** dans SA liste, **avant** les lieux : carte à fond atténué et **contour en pointillés** (jamais de rouge ni d'orange), emoji de la catégorie choisie, pastille « En attente » (en mots), « Zone de danger » en mots pour ce type. Un lecteur d'écran lit un seul bloc : « Ta demande en attente : {lieu} ». On l'ouvre : détail (carte, rayon, type, bandeau « En attente de réponse. ») et **« Retirer ma demande »**.
+- **Plafond de 3 demandes en attente par membre** (emplacements fixes `{uid}_1`, `{uid}_2`, `{uid}_3`) : à la 4e, le bouton affiche « Tu as déjà 3 demandes en attente… » sans ouvrir le formulaire ; le formulaire le dit aussi s'il s'ouvre quand même, sans rien envoyer. **Plafond de 10 par Miff** : tenu par le compteur `meta/placeRequests` (écrit dans le même lot que la demande) ; s'il est atteint le message est « Cette Miff a déjà plusieurs demandes en attente. Réessaie un peu plus tard. » (jamais un mot d'erreur).
+- **Type de lieu** : zone de confiance par défaut ; **zone de danger seulement si le demandeur est Miff+** (même comportement que la création : l'option est marquée Miff+ et ouvre l'offre). Contrôlé avant l'envoi ; les règles le répèteront.
+- **Hors connexion** : si le réseau tombe après le choix de l'adresse, la demande est confiée à la file du téléphone (un lot d'écritures) et part au retour du réseau, même après fermeture de l'app ; message « Ta demande partira dès que tu seras connecté. ». Si les règles la refusent à ce moment-là, elle disparaît simplement de la liste, sans message (décision D3).
+- **Expiration à 30 jours** (côté demandeur) : une demande de plus de 30 jours n'est plus affichée et est supprimée au passage (à l'ouverture du formulaire), ce qui libère son emplacement.
+- **Départ d'un membre** (critère L1) : avant « Quitter la Miff », ses demandes en attente sont retirées une par une (un lot de 2 par demande, 3 au plus). Un échec n'empêche jamais de quitter.
+- Aucun message, notification ni ligne n'est jamais envoyé au demandeur (acceptation, refus, expiration : décisions D3 et D8).
+- **Textes** (fr / en, 15 clés `place_request_*` **partagées avec iOS**, catalogue iOS mis à jour sans écran iOS) : `place_request_cta_member`, `place_request_form_title`, `place_request_form_submit`, `place_request_sending`, `place_request_form_hint`, `place_request_sent`, `place_request_sent_offline`, `place_request_badge_pending`, `place_request_detail_banner_member`, `place_request_withdraw`, `place_request_withdrawn`, `place_request_limit_member`, `place_request_limit_miff`, `place_request_gone`, `place_request_a11y_pending_mine`.
+- Tests : `PlaceRequestsTest` (lecture d'un document, 30 jours exacts, ordre, emplacements, lots d'écriture et clés exactes), `PlaceRequestBookTest` (quand lire, TTL, échec, expiration), `PlaceRequestRepositoryTest` (plafonds avant envoi, zone de danger, hors connexion, refus, réponse perdue, départ), `ProfileRequestsViewModelTest`, `PlaceRequestFormViewModelTest`, `ProfileRequestsSectionTest` (bouton, demandes avant les lieux, plafond, accessibilité).
+
+### Modifié
+- `WriteKind` gagne `MERGE` (un `set` qui garde les autres champs), indispensable pour `increment` sur un compteur qui n'existe peut-être pas encore ; les deux appliqueurs de lots (`MiffStore`, `PhotoStore`) le gèrent.
+- `FirestoreMiffRepository.leave` appelle d'abord `beforeLeave` (retrait des demandes de la personne, jamais bloquant).
+- Le formulaire de lieu gagne un mode `REQUEST` ; `PlaceDetailScreen` accepte le détail d'une demande ; `PlaceRows` accepte les demandes d'un membre.
+
+### Correctif (retour du PM sur l'APK : « On n'arrive pas à ouvrir ce formulaire pour le moment »)
+- **Cause** : à l'ouverture du formulaire de demande, l'app lisait les demandes du membre sur le serveur pour connaître ses emplacements ; tant que les règles de `placeRequests` ne sont pas déployées, cette lecture est refusée et le formulaire se fermait sur le message générique. Rien à voir avec « être créateur d'une Miff » ni avec la lecture des lieux (la liste des lieux s'affichait). **Certitude : forte** (lecture du code et reproduction par test avec une lecture refusée) ; non vérifié sur le téléphone.
+- **Correction** : un refus de cette lecture n'empêche plus d'ouvrir le formulaire (les emplacements ne servent qu'à l'envoi). Une panne réseau reste un échec. À l'**envoi**, si même la lecture est refusée, le message calme **« Les demandes de lieu ne sont pas encore disponibles. Réessaie un peu plus tard. »** (clé `place_request_unavailable`, partagée avec iOS) remplace le faux « Cette Miff a déjà plusieurs demandes en attente ».
+
+### Revue indépendante (corrections)
+- **Suppression de compte** : avant chaque « Quitter » d'une Miff rejointe, les demandes d'ajout de lieu du compte (adresse, coordonnées) sont retirées, au mieux, sans jamais arrêter la suppression (`StoreAccountMiffs.beforeLeave`, contrat du backend 2.7.3).
+- **Fusion** de la branche `android/profil-lieux-membres` à jour (« Ajouter un lieu » présélectionne la Miff de la liste ; le formulaire de demande a déjà sa Miff fixe).
+- **Refus du serveur à l'envoi** : on distingue la zone de danger dont l'abonnement a pris fin entre-temps (offre), la course sur l'emplacement (relecture puis un nouvel envoi dans un emplacement libre) et seulement ensuite la limite de la Miff.
+- **Départ hors connexion** : le retrait des demandes est sauté sans réseau, et limité à une minute au total.
+- **Accessibilité** : la carte de demande lit aussi l'adresse et « Zone de danger », comme les lignes de lieux.
+- **Deux envois hors connexion d'affilée** ne choisissent plus le même emplacement : les emplacements confiés à la file du téléphone comptent (repère gardé 10 minutes ou jusqu'à ce que le serveur montre la demande).
+
+### Choix « économiques »
+- **Un membre ne lit que SES demandes** (requête filtrée sur `requestedBy`, exigée par les règles), **3 documents au plus**, une seule fois par Miff et par 5 minutes (`PlaceRequestBook`), jamais d'écouteur, jamais de lecture pour les autres membres. Ouverture du formulaire : 3 lectures (formule, Miff, ses demandes) puis rien tant qu'il est ouvert.
+- Signal de bascule vers une solution payante : inchangé (`docs/dev/surveillance-quotas.md`). Aucun coût payant : pas de push (il faudrait Blaze), le créateur sera prévenu dans l'app (PR suivante).
+
+### À savoir
+- **Cette fonctionnalité ne marche pas de bout en bout tant que les règles Firestore de la branche `backend/lieu-demande` ne sont pas déployées par le PM** : sans elles, toute écriture dans `placeRequests` est refusée (le membre voit le message calme « Cette Miff a déjà plusieurs demandes en attente. Réessaie un peu plus tard. », à tort). Aucune règle n'est modifiée dans cette PR.
+- **Contrat avec les règles, à vérifier avec l'agent backend** : le document de demande porte les 8 clés du ticket (`requestedBy`, `name`, `type`, `address`, `lat`, `lng`, `radiusM`, `createdAt`) **plus `category`** (contrat `docs/dev/demande-lieu-clients.md` : 9 clés, liste fermée des catégories, obligatoire) ; le compteur est écrit avec `increment(±1)` en fusion (`pending`, `lastReqId` = l'identifiant de la demande, `updatedAt`). Le retrait d'une demande refusé par les règles (compteur remis à 0 par le créateur) est retenté une fois avec `pending: 0` (valeur absolue), comme le contrat du backend le demande.
+- Ce que cette PR ne fait pas : le côté du créateur (réception, acceptation, refus, paywall, centre de notifications, point non lu), l'écran iOS.
+
 ## [0.32.0] - 2026-11-11 : préparation de la release Android : numéro de version, signature par la clé d'envoi, workflow `android-release`, pages de 16 Ko, checklist Play (lot 1 de l'inventaire du 2026-11-11)
 
 Branche `android/release-signature-versions`, PR brouillon. **Rien n'est soumis, aucun compte créé, aucun secret ajouté au dépôt.** Numéro de version : `main` est à 0.31.0 (plusieurs PR ouvertes ont aussi pris 0.31.0) ; 0.32.0 est le premier numéro libre. Le PM doit encore créer la clé d'envoi et 4 secrets GitHub, puis suivre `docs/release/checklist-android.md`.
@@ -104,6 +147,32 @@ Bug du PM (2026-11-10) : « Lorsque j'ouvre l'app sans connexion, le Feed se cha
 - **Textes** : EN « we'll try again » (contraction, comme les autres textes) dans Android et iOS ; les 4 clés `feed_offline_popin_*` sont définies **une seule fois** dans chaque catalogue ; cette PR en est propriétaire, la PR iOS #148 s'alignera sur ces noms.
 - **Pop-in fermée** : le compte à rebours n'est plus publié (aucune recomposition inutile chaque seconde) ; la page Profil dit la même phrase avec « Réessayer » (`ConnectionInline`), comme le Feed.
 - Fusion de `main` (0.29.0) : tous les comportements récents conservés (cloche et carte de seconde chance du Feed, carte « Mode voyage », carrousel de Miffs). Entrée renumérotée 0.30.0 (les doublons de numéros plus bas ne sont pas touchés).
+
+
+## [0.32.0] - 2026-11-11 : Profil, les lieux de la Miff du carrousel sont visibles par tous les membres
+
+Décision du PM du 2026-11-11 (sans maquette ni spec Notion) ; ticket `docs/tickets/lieux-de-confiance.md` (critère PL1b), contrat Android / iOS `docs/contracts/profile-places-members.md` ; branche `android/profil-lieux-membres`, PR brouillon.
+
+### Ajouté
+- **Les lieux de confiance sont visibles par tous les membres de la Miff** (plus seulement par son créateur) : sous le carrousel « Mes Miffs », la liste est celle de **la Miff dont la carte est affichée** (avant : celle du Feed, quoi qu'affiche le carrousel). Titre **« Lieux de confiance de <nom de la Miff> »** (toujours nommée), emoji de catégorie, étiquette « Zone de danger » sans autre mot ; liste vide : **« Aucun lieu de confiance pour l'instant. »** ; liste illisible (hors ligne, refus) : « Les lieux ne sont pas disponibles pour le moment. » avec « Réessayer ».
+- **Un membre qui n'est pas le créateur lit, sans rien pouvoir changer** : il ouvre le détail d'un lieu **sans « Modifier »** (déjà le cas du détail, vérifié), et ne voit **jamais** « Ajouter un lieu », le compteur « n lieux sur 3 avec la formule gratuite » ni la pastille « Miff+ » (le forfait et les quotas ne concernent que le créateur). Le créateur garde Ajouter / Modifier / Supprimer et son compteur, inchangés. Le créateur d'une Miff est le `ownerUid` du document de la Miff, **déjà lu** pour la liste des Miffs (`MiffSummary.ownerUid`, 0 lecture de plus) ; **inconnu = membre** (les boutons du créateur ne s'affichent jamais dans le doute).
+- **Lecteur d'écran** : la ligne d'une zone de danger dit aussi « Zone de danger » (avant, l'étiquette visible était absente de la phrase lue).
+- **Textes** (fr / en, **clés partagées avec iOS**, catalogue iOS mis à jour sans écran iOS) : `place_profile_title_named`, `place_list_empty_member`, `place_profile_unavailable`, `place_list_row_type_a11y`.
+- Tests : `MiffPlacesBookTest` (quand lire, TTL, échec, invalidation), `ProfilePlacesViewModelTest` (lecture unique par Miff, 0 pour la Miff du Feed, relecture après passage du créateur, un membre qui ouvre un lieu ne coûte rien), `PlaceViewerRoleTest`, `ProfilePlacesSectionTest` (bouton, compteur et offre absents pour un membre quel que soit le forfait, état vide, danger, titre qui suit la carte, ordre des blocs : « Mode voyage » en dernier).
+
+### Modifié
+- `ProfilePlacesSection` ne lit plus la Miff en direct : `ProfilePlacesViewModel` + `FirestorePlacesReader` (un seul `get`), même mécanique que les visages du carrousel. `ProfileTravelCardOrderTest` inchangé et vert : la carte « Mode voyage » reste le dernier bloc.
+- `FeedViewModel` expose `readPlaces` (les lieux que le Feed a déjà lus, hors copie du cache non confirmée) ; `MiffSummary` gagne `ownerUid`.
+- `PlaceRows` : un membre dont la liste est vide lit « Aucun lieu de confiance pour l'instant. » (le créateur garde « Pas encore de lieu pour cette Miff. »), aussi sur l'écran de la Miff.
+
+### Choix « économiques »
+- **Une seule lecture par Miff, jamais d'écouteur** (`MiffPlacesBook`, `docs/dev/surveillance-quotas.md`, section « Les lieux de la Miff du carrousel ») : 0 lecture pour la Miff du Feed ; P + 2 pour une autre Miff quand sa carte s'arrête (P lieux, 3 au plus en gratuit), réutilisée 5 minutes ; une relecture quand le créateur est passé par un lieu ou le formulaire. **Ce changement supprime** les 3 écouteurs que l'ancienne liste attachait à la Miff du Feed tant que le Profil était ouvert. **Limite connue** : un lieu changé sur un autre téléphone apparaît chez les membres à leur prochaine relecture (5 minutes au plus). **Signal de bascule** : le ratio du §2 ; levier gratuit : allonger `MiffPlacesBook.TTL_MILLIS`.
+
+### À savoir
+- **Règles Firestore : aucun changement.** `match /places/{placeId}` autorise déjà `get, list` à `isMember(miffId) && miffAlive(miffId)` ; la création, la modification et la suppression restent au créateur (`isOwner`).
+- **« Ajouter un lieu » présélectionne la Miff dont on regarde la liste** (Profil, et écran de la Miff) quand la personne en est la créatrice, pour qu'un lieu ne soit jamais partagé avec le mauvais cercle par surprise ; sinon, le choix habituel du formulaire (dernière Miff rejointe créée par la personne) s'applique (`DefaultMiffChoice.of(..., openedFromId)`).
+- Revue : `PlaceDetailViewModel.canEdit` suit `PlaceViewerRole.isCreator` (jamais vrai si les deux uid sont vides) ; une lecture des lieux lancée avant une invalidation et terminée après n'efface plus la marque « à relire ».
+- Ce que cette PR ne fait pas : l'écran iOS (miroir à faire d'après le contrat).
 
 ## [0.31.0] - 2026-11-11 : la phrase principale de la bulle du Feed reprend exactement le titre `display/headline` (retour du PM)
 

@@ -4,132 +4,119 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.repeatOnLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
-import com.tomessa.miff.AppContainer
 import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
-import com.tomessa.miff.data.miff.MiffRepository
-import com.tomessa.miff.domain.miff.MiffObservation
-import com.tomessa.miff.domain.place.Place
+import com.tomessa.miff.data.place.PlaceNotices
+import com.tomessa.miff.domain.place.MiffPlacesView
+import com.tomessa.miff.domain.place.PlaceViewerRole
+import com.tomessa.miff.domain.place.RequestsView
+import com.tomessa.miff.ui.components.MiffSecondaryButton
+import com.tomessa.miff.ui.profile.ProfilePlacesState
+import com.tomessa.miff.ui.profile.ProfileRequestsState
 import com.tomessa.miff.ui.theme.Spacing
+import com.tomessa.miff.ui.theme.colorTextDescription
 import com.tomessa.miff.ui.theme.colorTextForm
+import com.tomessa.miff.ui.theme.textBodyRegular
 import com.tomessa.miff.ui.theme.textDisplayTitle
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 
 /*
- * SECURITY, for this file: the places (names, addresses) live in memory in this state only: never in a log or an event.
+ * SECURITY, for this file: the places (names, addresses) live in memory in the state given by the host only: never in a log or an event.
  */
 
-/** The places of one Miff, read live, for the Profile tab (the Miff screen reads them with the rest of the Miff). */
-data class MiffPlacesState(
-    val loaded: Boolean = false,
-    val places: List<Place> = emptyList(),
-    val isCreator: Boolean = false,
+/**
+ * "Lieux de confiance de <la Miff>" on the Profile tab (mockup 17; decision of the PM of 2026-11-11): the places of the Miff whose card the carousel
+ * shows, for EVERY member of that Miff.
+ *
+ * - A member only READS: the list, the detail of a place (without "Modifier"), never "Ajouter un lieu", never the counter of the free plan, never an
+ *   offer "Miff+" (those concern the creator alone, who is the one that sets the places). What is drawn follows the role; what is ALLOWED is the
+ *   rules' (`allow create, update, delete: if isOwner(miffId)`).
+ * - Nothing is drawn until the places have been read (no empty flash, no invented absence); a list that cannot be read says so calmly and offers to try again.
+ *
+ * The list is read by [com.tomessa.miff.ui.profile.ProfilePlacesViewModel] (ONE reading per Miff, no listener).
+ */
+@Composable
+fun ProfilePlacesSection(
+    state: ProfilePlacesState,
+    directory: DirectoryState.Ready,
+    myUid: String?,
+    notices: PlaceNotices,
+    onOpenPlace: (miffId: String, placeId: String) -> Unit,
+    onAddPlace: (miffId: String) -> Unit,
+    onRetry: () -> Unit,
+    /** The pending requests of the person (a member who is not the creator), by Miff (ticket LIEU-REQ-B). */
+    requests: ProfileRequestsState = ProfileRequestsState(),
+    onOpenRequest: (miffId: String, requestId: String) -> Unit = { _, _ -> },
+    onRequestPlace: (miffId: String) -> Unit = {},
 ) {
-    override fun toString(): String = "MiffPlacesState(redacted)"
-}
+    val notice by notices.notice.collectAsStateWithLifecycle()
+    val requestNotice by notices.requestNotice.collectAsStateWithLifecycle()
+    ConsumeNoticeOnLeave(notices::consume)
+    val miff = directory.miffs.firstOrNull { it.id == state.selectedMiffId } ?: return
+    val isCreator = PlaceViewerRole.isCreator(ownerUid = miff.ownerUid, myUid = myUid)
+    // Nothing is emitted while the places are being read: not even an empty block (it would still take its margin in the column of the tab).
+    if (state.view == MiffPlacesView.Loading) return
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+        when (val view = state.view) {
+            MiffPlacesView.Loading -> {
+                Unit
+            }
 
-class MiffPlacesViewModel(
-    private val miffId: String,
-    private val repository: MiffRepository,
-    private val currentUid: () -> String?,
-) : ViewModel() {
-    private val mutableState = MutableStateFlow(MiffPlacesState())
-    val uiState: StateFlow<MiffPlacesState> = mutableState.asStateFlow()
+            MiffPlacesView.Unavailable -> {
+                PlacesTitle(miff.name)
+                Text(
+                    text = stringResource(R.string.place_profile_unavailable),
+                    style = textBodyRegular,
+                    color = colorTextDescription,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+                )
+                MiffSecondaryButton(text = stringResource(R.string.auth_retry_action), onClick = onRetry)
+            }
 
-    /** Reads the Miff while the screen is on view (called inside `repeatOnLifecycle(STARTED)`). */
-    suspend fun observe() {
-        repository.observe(miffId).collect { observation ->
-            when (observation) {
-                is MiffObservation.Data -> {
-                    val snapshot = observation.snapshot
-                    mutableState.value =
-                        MiffPlacesState(
-                            loaded = true,
-                            places = snapshot.places,
-                            isCreator = snapshot.miff.ownerUid == currentUid(),
-                        )
-                }
-
-                // A lost access is announced once, over everything, by the host of the tabs; here nothing of that Miff stays.
-                MiffObservation.AccessLost -> {
-                    mutableState.update { MiffPlacesState() }
-                }
-
-                // Loading, or a failure that is not a loss: what is shown stays as it is (a list that cannot be read is not shown).
-                MiffObservation.Loading, MiffObservation.Failed -> {
-                    Unit
-                }
+            is MiffPlacesView.Ready -> {
+                PlacesTitle(miff.name)
+                PlaceRows(
+                    ui =
+                        PlaceListUi(
+                            places = view.places,
+                            isCreator = isCreator,
+                            // The plan only matters to the creator (counter, "Miff+" pill): a member never gets a word about it.
+                            premium = if (isCreator) directory.premiumOrNull else null,
+                            savedName = if (isCreator) notice?.name else null,
+                            // A member's own pending requests come first; the creator's list never has the ones of a member here.
+                            requests =
+                                if (isCreator) {
+                                    emptyList()
+                                } else {
+                                    (requests.views[miff.id] as? RequestsView.Ready)?.requests.orEmpty()
+                                },
+                            requestNotice = if (isCreator) null else requestNotice,
+                        ),
+                    onOpen = { place -> onOpenPlace(miff.id, place.id) },
+                    onOpenRequest = { request -> onOpenRequest(miff.id, request.id) },
+                    onRequestPlace = { onRequestPlace(miff.id) },
+                    // Always the form: it reads the subscription on the SERVER and shows the offer itself when the limit is really reached.
+                    // The list only knows a copy of the plan, which may be unknown or stale: it must never close the door on a Miff+ creator.
+                    onAdd = { onAddPlace(miff.id) },
+                )
             }
         }
     }
 }
 
-/**
- * "Lieux de la Miff" on the Profile tab (mockup 17), for the Miff that the Feed shows. Nothing is drawn until the Miff has been
- * read (no empty flash, no invented place).
- */
 @Composable
-fun ProfilePlacesSection(
-    container: AppContainer,
-    directory: DirectoryState.Ready,
-    scopeKey: String,
-    onOpenPlace: (miffId: String, placeId: String) -> Unit,
-    onAddPlace: () -> Unit,
-) {
-    val active = directory.active ?: return
-    val session = container.sessionManager
-    val viewModel: MiffPlacesViewModel =
-        viewModel(
-            key = "profile-places-${active.id}-$scopeKey",
-            factory =
-                viewModelFactory {
-                    initializer { MiffPlacesViewModel(active.id, container.miffRepository, { session.currentUid }) }
-                },
-        )
-    val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val lifecycleOwner = LocalLifecycleOwner.current
-    LaunchedEffect(viewModel) {
-        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) { viewModel.observe() }
-    }
-    val notice by container.placeNotices.notice.collectAsStateWithLifecycle()
-    ConsumeNoticeOnLeave(container.placeNotices::consume)
-    if (!state.loaded) return
-    val ui = PlaceListUi(state.places, state.isCreator, directory.premiumOrNull, notice?.name)
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        Text(
-            text =
-                if (directory.miffs.size > 1) {
-                    stringResource(R.string.place_list_title_named, active.name)
-                } else {
-                    stringResource(R.string.place_list_title)
-                },
-            style = textDisplayTitle,
-            color = colorTextForm,
-            modifier = Modifier.semantics { heading() },
-        )
-        PlaceRows(
-            ui = ui,
-            onOpen = { place -> onOpenPlace(active.id, place.id) },
-            // Always the form: it reads the subscription on the SERVER and shows the offer itself when the limit is really reached.
-            // The list only knows a copy of the plan, which may be unknown or stale: it must never close the door on a Miff+ creator.
-            onAdd = onAddPlace,
-        )
-    }
+private fun PlacesTitle(miffName: String) {
+    Text(
+        text = stringResource(R.string.place_profile_title_named, miffName),
+        style = textDisplayTitle,
+        color = colorTextForm,
+        modifier = Modifier.semantics { heading() },
+    )
 }
