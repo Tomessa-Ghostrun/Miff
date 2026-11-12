@@ -41,6 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.settings.AppLanguage
+import com.tomessa.miff.navigation.InternalDestinations
 import com.tomessa.miff.ui.components.miffBottomInsets
 import com.tomessa.miff.ui.components.miffTopInsets
 import com.tomessa.miff.ui.theme.ShadowDefault
@@ -266,6 +267,10 @@ fun SettingsScreen(
                 subtitle = stringResource(R.string.settings_subscription_subtitle),
                 onClick = onOpenSubscription,
             )
+        }
+        // Test builds only (debug): the way to the diagnostic screen (PM, 2026-11-12). Nothing is drawn in the release build.
+        InternalDestinations.SettingsEntry { title, subtitle, onClick ->
+            SettingsRow(icon = R.drawable.ic_settings, title = title, subtitle = subtitle, onClick = onClick)
         }
     }
 }

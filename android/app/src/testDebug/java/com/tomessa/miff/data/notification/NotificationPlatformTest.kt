@@ -87,7 +87,7 @@ class NotificationPlatformTest {
     @Test
     fun cancelRemovesOnlyThatType_andCancelAllRemovesEverything() {
         val alarms = AndroidNotificationAlarms(context)
-        NotificationType.entries.filter { it != NotificationType.N6 }.forEachIndexed { i, type ->
+        NotificationType.PERIMETER.filter { it != NotificationType.N6 }.forEachIndexed { i, type ->
             alarms.schedule(type, ScheduledAlarm("k$i", "m", t0 + i))
         }
         // N1, N2, N3, N4 and N7 (the end of a trip) wait for an hour: N6 is immediate.

@@ -43,6 +43,12 @@ sealed interface AppCheckOutcome {
 interface DiagnosticRepository {
     val firebaseProjectId: String?
 
+    /**
+     * A real account is signed in on this phone. Both tests below sign the current session out (test 1 to be anonymous, test 2 to leave
+     * the test account), so the screen REFUSES to run them then, instead of silently signing the real account out.
+     */
+    val hasSession: Boolean get() = false
+
     suspend fun probeRulesUnauthenticated(): RulesProbeOutcome
 
     suspend fun signInAndReadOwnDocuments(
@@ -68,6 +74,8 @@ class FirebaseDiagnosticRepository(
     private val firestore get() = FirebaseFirestore.getInstance()
 
     override val firebaseProjectId: String? get() = FirebaseApp.getInstance().options.projectId
+
+    override val hasSession: Boolean get() = auth.currentUser != null
 
     override suspend fun probeRulesUnauthenticated(): RulesProbeOutcome {
         // Test 1 must really be anonymous: leave any previous session first.

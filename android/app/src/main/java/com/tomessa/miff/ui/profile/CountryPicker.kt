@@ -42,6 +42,7 @@ import com.tomessa.miff.R
 import com.tomessa.miff.domain.profile.PhoneCountry
 import com.tomessa.miff.domain.profile.PhoneNumbers
 import com.tomessa.miff.ui.components.miffBottomInsets
+import com.tomessa.miff.ui.navigation.holdForDiagnostic
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.StrokeHairline
@@ -132,7 +133,12 @@ fun CountryPickerSheet(
     }
     var query by remember { mutableStateOf("") }
     val shown = remember(countries, query) { countries.filter { PhoneNumbers.matchesSearch(it, query) } }
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = colorBgSurface) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = colorBgSurface,
+        modifier = Modifier.holdForDiagnostic(),
+    ) {
         Column(
             modifier = Modifier.miffBottomInsets().padding(horizontal = Spacing.l),
             verticalArrangement = Arrangement.spacedBy(Spacing.s),

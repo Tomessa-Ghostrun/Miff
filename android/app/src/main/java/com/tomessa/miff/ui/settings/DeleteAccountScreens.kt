@@ -70,6 +70,7 @@ import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffDestructiveButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.miff.MiffNotice
+import com.tomessa.miff.ui.navigation.holdForDiagnostic
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.ShapeSm
@@ -367,6 +368,7 @@ fun DeleteAccountConfirmDialog(
         Column(
             modifier =
                 Modifier
+                    .holdForDiagnostic()
                     .widthIn(max = DialogMaxWidth)
                     .fillMaxWidth()
                     .miffShadow(ShadowDefault, ShapeMd)

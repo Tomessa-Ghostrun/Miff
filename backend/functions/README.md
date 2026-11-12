@@ -1,6 +1,6 @@
 # backend/functions/ : Cloud Functions Miff (SRV-1, socle)
 
-TypeScript, **Node 24**, **2e génération**, région **`europe-west9`** (Paris). Une seule fonction pour l'instant : `ping` (témoin, aucune donnée, aucune logique métier). Les vraies fonctions viennent par tickets (`docs/dev/etude-serveur-notifications-premium.md` §8).
+TypeScript, **Node 24**, **2e génération**, région **`europe-west9`** (Paris). Deux fonctions : `ping` (témoin, aucune donnée, aucune logique métier) et **`notifierUpdate`** (SRV-4B : notification aux autres membres quand une update est publiée ; compte de service dédié `notify-update@miff-3d283.iam.gserviceaccount.com`, 5 instances, 256 Mio, jamais déployée par un agent : `docs/dev/deploiement-functions.md` §11). Les autres fonctions viennent par tickets (`docs/dev/etude-serveur-notifications-premium.md` §8).
 
 **Déploiement : jamais par un agent ni par la CI.** Le PM le fait à la main : [`../../docs/dev/deploiement-functions.md`](../../docs/dev/deploiement-functions.md).
 
@@ -22,8 +22,12 @@ npm run test:functions        # + émulateur Functions et Firestore (projet demo
 | `src/appelable.ts` | Fabrique **obligatoire** des fonctions appelables : App Check + connexion exigés, sans CORS. |
 | `src/journal.ts` | Seule porte vers les journaux : liste blanche de champs, **jamais de position, de nom, de jeton ni d'identifiant**. |
 | `src/index.ts` | Liste des fonctions déployées (exporter = déployer). |
+| `src/notifierUpdate.ts` | Déclencheur SRV-4B : création ou remplacement de `miffs/{miff}/photos/{uid}` (un effacement ne fait rien). Ne lit que `createdAt` de la photo. |
+| `src/notifTraitement.ts` | Logique SRV-4B (Firestore, FCM, horloge injectés) : destinataires, plafond d'une notification par auteur, par Miff et par heure, idempotence (`notifState/{miff}`), 2 reprises d'envoi au plus, purge des jetons inconnus, bilan chiffré (lectures, écritures). |
+| `src/notifRegles.ts` | Règles pures : prénom assaini et tronqué à 20 caractères, heures calmes 22 h – 7 h, **forme exacte** des messages Android (données) et iOS (alerte à clés de texte), classement des erreurs FCM. |
+| `src/notifFcm.ts`, `src/appAdmin.ts` | Client FCM réel (désactivé dans l'émulateur : aucun envoi réel possible en test) ; application Admin créée à la demande. |
 | `test/unit/` | Tests rapides (lecture récursive de `src/`) (dont `garde-couts.test.mjs`, qui échoue si une fonction n'a pas région / `maxInstances` / délai / mémoire conformes). |
-| `test/integration/` | Tests à l'émulateur : une requête HTTP réelle sans App Check est refusée (401). |
+| `test/integration/` | Tests à l'émulateur : une requête HTTP réelle sans App Check est refusée (401) ; `notif-update.test.mjs` (vecteurs V1 à V13 du ticket, faux client FCM injecté, budget de lectures) ; `notif-update-declencheur.test.mjs` (le déclencheur de l'émulateur se déclenche à la création et au remplacement d'une photo, pas à son effacement). |
 
 ## Règles pour ajouter une fonction (à relire avant SRV-4)
 

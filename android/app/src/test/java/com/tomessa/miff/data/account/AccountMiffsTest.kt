@@ -38,7 +38,10 @@ class CodeCounter {
 }
 
 /** The real procedures (MIFF-2 deletion, repository) on the double of the server: what the deletion of an account runs against. */
-fun miffsOn(world: AccountWorld): StoreAccountMiffs {
+fun miffsOn(
+    world: AccountWorld,
+    beforeLeave: suspend (String, String) -> Unit = { _, _ -> },
+): StoreAccountMiffs {
     val codes = CodeCounter()
     val repository =
         FirestoreMiffRepository(
@@ -51,7 +54,12 @@ fun miffsOn(world: AccountWorld): StoreAccountMiffs {
             timeoutMillis = 1_000,
             cache = FakeCachePurger(Timeline()),
         )
-    return StoreAccountMiffs(world, MiffDeletion(world, repository, timeoutMillis = 1_000), timeoutMillis = 1_000)
+    return StoreAccountMiffs(
+        world,
+        MiffDeletion(world, repository, timeoutMillis = 1_000),
+        timeoutMillis = 1_000,
+        beforeLeave = beforeLeave,
+    )
 }
 
 /**
@@ -163,6 +171,32 @@ class AccountMiffsTest {
     }
 
     // --- The lot "Quitter" --------------------------------------------------------------------------------------------------
+
+    @Test
+    fun leave_takesBackTheRequestsToAddAPlace_beforeTheLot_andAFailureNeverStopsIt() =
+        runTest {
+            world.addRoom(ROOM_1, owner = "other", others = listOf(me))
+            val seen = mutableListOf<Triple<String, String, Int>>()
+            val withHook =
+                miffsOn(world) { uid, miffId ->
+                    seen += Triple(uid, miffId, world.lots.size)
+                    error("the hook fails")
+                }
+            assertEquals(MiffStep.Done, withHook.leave(me, MembershipRef("free", ROOM_1)))
+            // Called once, with the account and the Miff, BEFORE any lot (the rules allow the author to delete only while a member).
+            assertEquals(listOf(Triple(me, ROOM_1, 0)), seen)
+            assertEquals(1, world.lots.size)
+        }
+
+    @Test
+    fun dropStale_neverTriesToTakeBackRequests_theCardIsAlreadyGone() =
+        runTest {
+            world.addRoom(ROOM_1, owner = "other", others = listOf(me))
+            var called = false
+            val m = miffsOn(world) { _, _ -> called = true }
+            m.dropStale(me, MembershipRef("free", ROOM_1))
+            assertFalse(called)
+        }
 
     @Test
     fun leave_isOneLotOfFiveDeletions_theCodeDoesNotChange_theOthersStay() =

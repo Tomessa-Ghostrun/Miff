@@ -59,6 +59,7 @@ import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.miffScreenInsets
 import com.tomessa.miff.ui.components.miffTopInsets
 import com.tomessa.miff.ui.navigation.googleSourceFor
+import com.tomessa.miff.ui.navigation.holdForDiagnostic
 import com.tomessa.miff.ui.theme.GradientAuthBackground
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -560,6 +561,7 @@ fun DeletionBlockedNotice(session: SessionManager) {
 @Composable
 fun DeletionBlockedDialog(onDismiss: () -> Unit) {
     AlertDialog(
+        modifier = Modifier.holdForDiagnostic(),
         onDismissRequest = onDismiss,
         text = {
             Text(
