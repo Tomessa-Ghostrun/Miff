@@ -587,16 +587,14 @@ Lisible par tous les membres tant que la Miff existe (ils en « héritent »). �
 | `token` | string 1–4096 | Jeton FCM (Android) ou jeton FCM adossé à APNs (iOS). Identifiant d'appareil : **jamais lisible par un autre utilisateur**, jamais journalisé, jamais envoyé à Analytics. |
 | `platform` | `"ios"` \| `"android"` | **Figé** après la création. |
 | `appVersion` | string 1–32 | Version de l'application (ex. `1.0.0 (12)`). Sert au diagnostic (jetons d'une version qui ne gère pas un type de message) ; aucun autre usage. |
-| `locale` | `"fr"` \| `"en"` | Langue de l'application. **Facultative pour le ticket** (« pas de langue stockée », les textes restent dans les apps) mais demandée par le cahier SRV-2 ; candidate à la suppression (minimisation) si le PM tranche que le serveur n'en a pas besoin (questions ouvertes de `docs/dev/jetons-appareil-clients.md` §9). |
-| `notificationsEnabled` | bool | L'appareil peut afficher des notifications (autorisation du système accordée ET interrupteur général de l'app actif). Le client **supprime** le document quand l'utilisateur coupe l'interrupteur général (ticket §6) ; `false` sert de ceinture : le serveur n'envoie jamais à un jeton `false`. |
 | `tz` | string 1–64 | Fuseau IANA de l'appareil (`Europe/Paris`, `America/New_York`, ou `GMT+01:00`) pour les heures calmes 22 h – 7 h du ticket §7. Forme : une lettre puis `[A-Za-z0-9_+:/-]`. Rafraîchi quand il change. |
 | `notify` | map fermée `{ updates: bool }` | Interrupteur « Quand un proche donne des nouvelles » (ticket §6). Un seul booléen en v1 ; un nouveau type de notification = une évolution des règles (clé de plus). Réglage **global**, pas par Miff (ticket Q8). |
 | `updatedAt` | timestamp | **Heure serveur** à chaque écriture. |
 | `createdAt` | timestamp | **Heure serveur** à la création, **figée** ensuite (= `updatedAt` à la création). |
 
-**Exactement ces 9 clés** (ni position, ni nom, ni numéro, ni identifiant publicitaire, ni identifiant de Miff). Exemple :
+**Exactement ces 7 clés** (ni position, ni nom, ni numéro, ni identifiant publicitaire, ni identifiant de Miff, **ni langue, ni état de l'autorisation** : retirés le 2026-11-12, le ticket dit « pas de langue stockée » et supprime le document quand l'autorisation est retirée ; un document présent veut dire « cet appareil peut recevoir »). Exemple :
 ```json
-{ "token": "fcm…", "platform": "android", "appVersion": "1.0.0 (12)", "locale": "fr", "notificationsEnabled": true,
+{ "token": "fcm…", "platform": "android", "appVersion": "1.0.0 (12)",
   "tz": "Europe/Paris", "notify": { "updates": true }, "updatedAt": "…", "createdAt": "…" }
 ```
 
@@ -612,7 +610,7 @@ Lisible par tous les membres tant que la Miff existe (ils en « héritent »). �
 | Moment | Effet sur `devices` |
 |---|---|
 | Autorisation du système accordée + écran d'explication vu | Création (aucun jeton n'est enregistré avant : la politique de confidentialité le promet) |
-| Nouveau jeton FCM, changement de fuseau / de version, ouverture après 24 h | Mise à jour (au plus une par 24 h hors changement de jeton) |
+| Nouveau jeton FCM, changement de fuseau, ouverture après 30 jours sans écriture | Mise à jour (ticket §9 ; au plus une par jour) |
 | Interrupteur « Quand un proche donne des nouvelles » | Mise à jour `notify.updates` |
 | Interrupteur général coupé, autorisation retirée | Suppression du document |
 | Connexion sur un autre appareil (SESS) | Le nouvel appareil crée le sien et supprime les autres, dans le même lot que la session |
@@ -621,11 +619,11 @@ Lisible par tous les membres tant que la Miff existe (ils en « héritent »). �
 | Jeton refusé par FCM (désinstallation) | Suppression par le serveur (SRV-4) |
 | Inactif > 60 jours | Purge par une fonction planifiée (SRV-4, optionnelle ; consomme l'une des 3 tâches planifiées gratuites du compte de facturation) |
 
-**Pour le serveur (SRV-4)** : lire `users/{uid}/devices` avec `limit(3)` pour chaque destinataire ; n'envoyer qu'aux jetons dont l'identifiant est celui de `users/{uid}/session/active` (une lecture de plus) **ou** dont `updatedAt` ≥ `session.startedAt` ; ignorer `notificationsEnabled = false` et `notify.updates = false` ; ne jamais journaliser le jeton ni l'uid.
+**Pour le serveur (SRV-4)** : lire `users/{uid}/devices` avec `limit(3)` pour chaque destinataire ; n'envoyer qu'aux jetons dont l'identifiant est celui de `users/{uid}/session/active` (une lecture de plus) **ou** dont `updatedAt` ≥ `session.startedAt` ; ignorer `notify.updates = false` ; ne jamais journaliser le jeton ni l'uid.
 
 **Budget de lectures de règles** (mesuré, `rules-test-report.md` / `budgets-jetons.test.js`) : création et mise à jour **1** sur 10 ; lecture, liste, suppression **0** ; lot de connexion (session + jeton + N suppressions) **1** sur 20 (mesuré à l'émulateur : 0, la session faisant partie du lot ; borne prudente documentée : 1).
 
-**Coût en écritures (Spark / Blaze)** : par utilisateur actif, **au plus 1 écriture par jour** (rafraîchissement à 24 h) + 1 lecture (la transaction) + 1 lecture de règles, plus les changements de jeton (rares). 1 000 utilisateurs actifs par jour ≈ 1 000 écritures + 2 000 lectures par jour, **sous les quotas gratuits** (20 000 écritures et 50 000 lectures par jour) ; 10 000 ≈ 10 000 écritures par jour, encore sous le quota d'écritures, ≈ 0,5 $/mois au tarif payant si les quotas étaient dépassés (hypothèse de l'étude, non vérifiée au tarif de Paris).
+**Coût en écritures (Spark / Blaze)** : au plus **1 écriture par jour et par utilisateur**, en régime normal environ **1 par mois** (rafraîchissement à 30 jours, ticket §9) plus les changements de jeton ou de fuseau (rares) ; chaque écriture = 1 lecture (la transaction) + 1 lecture de règles. Même à 10 000 utilisateurs actifs par jour : de l'ordre de 2 000 écritures par jour, très loin du quota gratuit (20 000 par jour).
 
 **Données sensibles / RGPD** : le jeton est un identifiant d'appareil (donnée personnelle), le fuseau et la version sont des données techniques ; aucune position ni contenu. Base légale proposée : contrat (fonctionnalité demandée) et consentement à l'autorisation du système, retirable en coupant l'interrupteur ou dans les réglages du téléphone ; **non relue juridiquement : risque assumé par le PM (décision du 2026-10-23)**. Hors UE : FCM et APNs peuvent traiter le jeton hors UE (risque assumé, §11). Déclarer le jeton dans la politique de confidentialité, Data safety et App Privacy (ticket SRV-3) **avant** l'activation de l'envoi.
 
@@ -856,7 +854,7 @@ Légende : `S` = soi-même, `M` = membre de la Miff, `P` = membre qui partage lu
 |---|---|---|---|---|---|
 | `users/{uid}` | S (**le numéro n'est lisible que par S**) | — | S (profil **avec `phone` E.164 obligatoire**, (a) CGU, (b) consentement facultatif ; heure serveur) | S (profil, **`phone` (jamais vidé)**, consentement (b) ; (a) et `createdAt` figés) | S |
 | `users/{uid}/memberships/{key}` | S | S | S (slot) | — | S (si plus membre) |
-| `users/{uid}/devices/{sessionDeviceId}` (SRV-2R, NON DÉPLOYÉ) | S | S (**jamais** par groupe de collections) | S (9 clés, heures serveur, **identifiant = celui de la session**) | S (même forme, `createdAt` et `platform` figés, identifiant = session) | S (sans condition de session) |
+| `users/{uid}/devices/{sessionDeviceId}` (SRV-2R, NON DÉPLOYÉ) | S | S (**jamais** par groupe de collections) | S (7 clés, heures serveur, **identifiant = celui de la session**) | S (même forme, `createdAt` et `platform` figés, identifiant = session) | S (sans condition de session) |
 | `notifState/{miffId}` (SRV-2R, NON DÉPLOYÉ) | **— (serveur seulement)** | **—** | **—** | **—** | **—** |
 | `users/{uid}/session/active` (SESS-1) | **S seul** (ni le créateur, ni un co-membre) | — | S (`{deviceId, startedAt}`, schéma fermé, heure serveur ; remplace la précédente) | S (idem) | S (le client ne supprime que la sienne) |
 | `entitlements/{uid}` | S | — | — (serveur/console) | — | — |
@@ -923,7 +921,7 @@ Ce tableau décrit ce que le modèle implique ; il ne constitue pas une analyse 
 | **État de voyage et date de fin** (`presence = travel`, `travelUntil`, `travelUntilDay`, VOY-B, tous les comptes) | `status` | **Élevée** : révèle une **absence prévue** du domicile et sa durée, visible de tous les membres de la Miff ; en contrepartie le statut n'expose plus lieu de confiance, batterie ni présence pendant le voyage (la position, elle, reste partagée comme d'habitude) | Consentement explicite et révocable (le membre choisit et confirme à l'activation ; désactivable à tout moment) | Jusqu'à la désactivation, la fin du voyage ou la sortie de la Miff ; supprimé avec le statut |
 | Niveau de batterie, permission de localisation du téléphone | `status` | Faible à moyenne | Intérêt légitime / contrat | État courant |
 | **Identifiant de session aléatoire** (SESS-1) et heure de début | `users/{uid}/session/active` ; recopié dans `status` et `positions` (**lisible des membres autorisés**) | Faible (aléatoire, propre à l'application, sans lien avec l'appareil ; change à chaque connexion ; laisse deviner un changement de téléphone) | Contrat (fonctionnement du service : un seul appareil actif) ; non relue juridiquement : risque assumé | Jusqu'à la déconnexion volontaire, la reconnexion ou la suppression du compte |
-| Jetons de notification, fuseau horaire, version de l'application, langue, préférence « un proche donne des nouvelles » (SRV-2R, NON DÉPLOYÉ) | `devices` (propriétaire seul) | Faible à moyenne (identifiant d'appareil ; le fuseau laisse deviner une zone géographique large) | Contrat et consentement à l'autorisation du système (retirable) ; **non relue juridiquement : risque assumé** ; transit possible hors UE par FCM / APNs (risque assumé) | Jusqu'à déconnexion, coupure, suppression de compte ou jeton refusé par FCM |
+| Jetons de notification, fuseau horaire, version de l'application, préférence « un proche donne des nouvelles » (SRV-2R, NON DÉPLOYÉ) | `devices` (propriétaire seul) | Faible à moyenne (identifiant d'appareil ; le fuseau laisse deviner une zone géographique large) | Contrat et consentement à l'autorisation du système (retirable) ; **non relue juridiquement : risque assumé** ; transit possible hors UE par FCM / APNs (risque assumé) | Jusqu'à déconnexion, coupure, suppression de compte ou jeton refusé par FCM |
 | Preuve d'acceptation des CGU (a) et du consentement | `users`, `members` | Faible | Obligation de pouvoir démontrer le consentement | Voir §10 |
 | Consentement (b) aux statistiques d'usage et rapports de plantage (état, date, version, retrait) | `users` (`analyticsConsent`) | Faible en soi (un booléen daté) ; **conditionne** la collecte d'une donnée à caractère personnel (identifiant d'installation, zone déduite de l'IP, journaux de plantage) | Consentement (RGPD art. 6.1.a et 7 : libre, spécifique, retirable aussi facilement que donné) | Tant que le profil existe (§10) |
 | État d'abonnement | `entitlements` | Faible | Contrat | Durée de l'abonnement |

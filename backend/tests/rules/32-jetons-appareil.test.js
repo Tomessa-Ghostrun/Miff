@@ -29,29 +29,29 @@ const count = async (h, uid) => {
   });
   return n;
 };
-const KEYS = ['token', 'platform', 'appVersion', 'locale', 'notificationsEnabled', 'tz', 'notify', 'updatedAt', 'createdAt'];
+const KEYS = ['token', 'platform', 'appVersion', 'tz', 'notify', 'updatedAt', 'createdAt'];
 
 // ---------------------------------------------------------------------------------------------------------------------------
 // Création
 // ---------------------------------------------------------------------------------------------------------------------------
-s.tc('DV1', "bob (session DEVICE_A) crée le jeton de son appareil : 9 clés, heures du serveur ; il le relit (get et liste) ; le document est celui de la session", async (h) => {
+s.tc('DV1', "bob (session DEVICE_A) crée le jeton de son appareil : 7 clés, heures du serveur ; il le relit (get et liste) ; le document est celui de la session", async (h) => {
   await seedSession(h, 'bob');
   await assertSucceeds(put(h, 'bob'));
   const d = await read(h, DEVICE_DOC_PATH('bob'));
-  if (Object.keys(d).sort().join() !== [...KEYS].sort().join()) throw new Error('les 9 clés exactement');
+  if (Object.keys(d).sort().join() !== [...KEYS].sort().join()) throw new Error('les 7 clés exactement');
   if (!(d.updatedAt instanceof Timestamp) || d.updatedAt.toMillis() <= T0.toMillis() || d.createdAt.toMillis() <= T0.toMillis()) throw new Error('heures du serveur attendues');
-  if (d.notify.updates !== true || d.platform !== 'android' || d.locale !== 'fr' || d.tz !== 'Europe/Paris' || d.notificationsEnabled !== true) throw new Error('valeurs mal relues');
+  if (d.notify.updates !== true || d.platform !== 'android' || d.tz !== 'Europe/Paris') throw new Error('valeurs mal relues');
   await assertSucceeds(ref(h, 'bob', 'bob').get());
   const list = await h.db('bob').collection('users/bob/devices').get();
   if (list.size !== 1 || list.docs[0].id !== DEVICE_A) throw new Error('la liste devrait contenir le seul appareil');
-  // Bornes acceptées : jeton de 4096 caractères, version de 32, fuseaux usuels, iOS, anglais, notifications coupées (un `set` sur un document absent = création).
+  // Bornes acceptées : jeton de 4096 caractères, version de 32, fuseaux usuels, iOS, notifications coupées (un `set` sur un document absent = création).
   const fresh = async (over) => {
     await h.admin((f) => f.doc(DEVICE_DOC_PATH('bob')).delete());
     await assertSucceeds(put(h, 'bob', over));
   };
-  await fresh({ token: 'x'.repeat(4096), appVersion: 'v'.repeat(32), tz: 'America/Argentina/Buenos_Aires', platform: 'ios', locale: 'en' });
+  await fresh({ token: 'x'.repeat(4096), appVersion: 'v'.repeat(32), tz: 'America/Argentina/Buenos_Aires', platform: 'ios' });
   for (const tz of ['Etc/GMT+5', 'GMT+01:00', 'UTC', 'Europe/Paris', 'A', 'a'.repeat(64)]) await fresh({ tz });
-  await fresh({ notificationsEnabled: false, notify: { updates: false } });
+  await fresh({ notify: { updates: false } });
 });
 
 s.tc('DV2', "lot de connexion d'un nouvel appareil : [session B + jeton B + suppression du jeton A] en UN lot est accepté (getAfter) ; le jeton A sous la session B est refusé", async (h) => {
@@ -74,7 +74,7 @@ s.tc('DV2', "lot de connexion d'un nouvel appareil : [session B + jeton B + supp
   await assertSucceeds(commit(h.db('bob'), [set(DEVICE_DOC_PATH('bob', DEVICE_B), deviceDoc())]));
 });
 
-s.tc('DV3', 'forme : chacune des 9 clés manquante, clé en trop, ancien gabarit, types et bornes (jeton, plateforme, version, langue, fuseau, notify, booléen, heures) refusés ; contrôle valide', async (h) => {
+s.tc('DV3', 'forme : chacune des 7 clés manquante, clé en trop, ancien gabarit, types et bornes (jeton, plateforme, version, langue, fuseau, notify, booléen, heures) refusés ; contrôle valide', async (h) => {
   await seedSession(h, 'bob');
   for (const key of KEYS) {
     const d = deviceDoc();
@@ -83,17 +83,13 @@ s.tc('DV3', 'forme : chacune des 9 clés manquante, clé en trop, ancien gabarit
   }
   const bad = [
     // clés en trop (aucune donnée de plus : ni position, ni nom, ni identifiant publicitaire)
-    { lat: 48.85 }, { lng: 2.35 }, { name: 'Bob' }, { userAgent: 'x' }, { adid: 'x' }, { deviceId: DEVICE_A }, { installId: 'x' }, { lastSeenAt: serverTs() }, { notifyAll: true },
+    { lat: 48.85 }, { lng: 2.35 }, { name: 'Bob' }, { userAgent: 'x' }, { adid: 'x' }, { deviceId: DEVICE_A }, { installId: 'x' }, { lastSeenAt: serverTs() }, { notifyAll: true }, { locale: 'fr' }, { notificationsEnabled: true }, { language: 'fr' },
     // jeton
     { token: '' }, { token: 'x'.repeat(4097) }, { token: 42 }, { token: null }, { token: ['a'] }, { token: true },
     // plateforme
     { platform: 'web' }, { platform: 'iOS' }, { platform: 'ANDROID' }, { platform: '' }, { platform: null }, { platform: 1 }, { platform: ['ios'] }, { platform: 'ios ' },
     // version de l'application
     { appVersion: '' }, { appVersion: 'v'.repeat(33) }, { appVersion: 12 }, { appVersion: null },
-    // langue
-    { locale: 'de' }, { locale: 'FR' }, { locale: 'fr-FR' }, { locale: '' }, { locale: null }, { locale: 1 }, { locale: ['fr'] },
-    // permission / interrupteur général
-    { notificationsEnabled: 'true' }, { notificationsEnabled: 1 }, { notificationsEnabled: null },
     // fuseau
     { tz: '' }, { tz: 'a'.repeat(65) }, { tz: '/Europe/Paris' }, { tz: '1Europe' }, { tz: 'Europe Paris' }, { tz: 'Europe/Paris\n' }, { tz: 'Europe/é' }, { tz: 'Europe\\Paris' }, { tz: 7 }, { tz: null },
     // préférences
@@ -142,17 +138,16 @@ s.tc('DV5', "sans session, session supprimée, session d'un autre appareil, sess
 // ---------------------------------------------------------------------------------------------------------------------------
 // Mise à jour
 // ---------------------------------------------------------------------------------------------------------------------------
-s.tc('DV6', "mise à jour : jeton, fuseau, version, langue, notify.updates, notificationsEnabled (mises à jour PARTIELLES) acceptés ; createdAt et platform figés ; clés supprimées ou ajoutées refusées", async (h) => {
+s.tc('DV6', "mise à jour : jeton, fuseau, version, notify.updates (mises à jour PARTIELLES) acceptés ; createdAt et platform figés ; clés supprimées ou ajoutées refusées", async (h) => {
   await seedSession(h, 'bob');
   await seedDevice(h, 'bob');
   const r = ref(h, 'bob', 'bob');
   await assertSucceeds(r.update({ token: 'nouveau-jeton', updatedAt: serverTs() }));
-  await assertSucceeds(r.update({ tz: 'America/New_York', appVersion: '1.1.0 (13)', locale: 'en', updatedAt: serverTs() }));
+  await assertSucceeds(r.update({ tz: 'America/New_York', appVersion: '1.1.0 (13)', updatedAt: serverTs() }));
   await assertSucceeds(r.update({ 'notify.updates': false, updatedAt: serverTs() }));
-  await assertSucceeds(r.update({ notificationsEnabled: false, updatedAt: serverTs() }));
-  await assertSucceeds(r.update({ notify: { updates: true }, notificationsEnabled: true, updatedAt: serverTs() }));
+  await assertSucceeds(r.update({ notify: { updates: true }, updatedAt: serverTs() }));
   const d = await read(h, DEVICE_DOC_PATH('bob'));
-  if (d.token !== 'nouveau-jeton' || d.tz !== 'America/New_York' || d.locale !== 'en' || d.notify.updates !== true || !d.createdAt.isEqual(T0)) throw new Error('mise à jour mal relue (createdAt doit rester celui de la création)');
+  if (d.token !== 'nouveau-jeton' || d.tz !== 'America/New_York' || d.notify.updates !== true || !d.createdAt.isEqual(T0)) throw new Error('mise à jour mal relue (createdAt doit rester celui de la création)');
   // Refusés : updatedAt absent ou du client, createdAt modifié, plateforme changée, clé supprimée, clé ajoutée, valeurs invalides.
   await assertFails(r.update({ token: 'autre' })); // updatedAt non rafraîchi
   await assertFails(r.update({ token: 'autre', updatedAt: T0 }));
@@ -166,11 +161,11 @@ s.tc('DV6', "mise à jour : jeton, fuseau, version, langue, notify.updates, noti
   await assertFails(r.update({ lat: 48.85, updatedAt: serverTs() }));
   await assertFails(r.update({ token: 'x'.repeat(4097), updatedAt: serverTs() }));
   await assertFails(r.update({ token: '', updatedAt: serverTs() }));
-  await assertFails(r.update({ locale: 'de', updatedAt: serverTs() }));
+  await assertFails(r.update({ locale: 'fr', updatedAt: serverTs() })); // clé retirée du modèle : inconnue
   await assertFails(r.update({ tz: 'pas un fuseau', updatedAt: serverTs() }));
   await assertFails(r.update({ 'notify.updates': 'oui', updatedAt: serverTs() }));
   await assertFails(r.update({ 'notify.arrival': true, updatedAt: serverTs() }));
-  await assertFails(r.update({ notificationsEnabled: 'non', updatedAt: serverTs() }));
+  await assertFails(r.update({ notificationsEnabled: true, updatedAt: serverTs() }));
   // Un `set` complet sur un document EXISTANT est une mise à jour : createdAt (heure serveur de maintenant) n'est plus celui de la création → refusé.
   // Le client lit d'abord (transaction) : il crée si absent, met à jour si présent (docs/dev/jetons-appareil-clients.md).
   await assertFails(put(h, 'bob'));

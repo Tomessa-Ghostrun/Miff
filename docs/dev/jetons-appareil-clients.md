@@ -15,21 +15,19 @@ En une phrase pour le PM : le téléphone dépose, à un endroit privé de la ba
 - `{uid}` : le compte connecté, **toujours le sien** (les règles refusent tout autre).
 - `{deviceId}` : **l'identifiant de la session** de cet appareil, c'est-à-dire `session/active.deviceId` (SESS : 16 à 64 caractères `[A-Za-z0-9_-]`, aléatoire, généré à la connexion). **Pas** un identifiant d'installation séparé, **pas** `d1`..`d5`. Un compte = un appareil actif = un jeton. Si la session change (autre téléphone), l'ancien identifiant ne peut plus rien écrire.
 
-## 2. Le document (9 clés exactement, aucune autre)
+## 2. Le document (7 clés exactement, aucune autre)
 
 | Champ | Type | Valeur |
 |---|---|---|
 | `token` | string 1–4096 | Jeton FCM (Android) / jeton FCM adossé à APNs (iOS), tel que fourni par le SDK |
 | `platform` | `"android"` \| `"ios"` | Figé après la création |
 | `appVersion` | string 1–32 | Ex. `1.0.0 (12)` (nom de version + numéro de build) |
-| `locale` | `"fr"` \| `"en"` | Langue de l'application (repli : `en` si la langue du téléphone n'est ni `fr` ni `en`) |
-| `notificationsEnabled` | bool | `true` si l'autorisation du système est accordée **et** l'interrupteur général de l'app est actif |
 | `tz` | string 1–64 | Fuseau du téléphone : `TimeZone.getDefault().id` (Android), `TimeZone.current.identifier` (iOS). Forme acceptée : une lettre puis `A-Za-z0-9_+:/-` |
 | `notify` | map `{ updates: bool }` | Interrupteur « Quand un proche donne des nouvelles ». **Exactement** la clé `updates`. Défaut : `true` |
 | `updatedAt` | timestamp | `FieldValue.serverTimestamp()` à **chaque** écriture (jamais une date du téléphone) |
 | `createdAt` | timestamp | `serverTimestamp()` à la **création** seulement ; ne plus jamais l'écrire ensuite (la règle exige qu'il reste inchangé) |
 
-Interdit d'ajouter quoi que ce soit (position, nom, e-mail, numéro, identifiant publicitaire, identifiant de Miff, nom d'appareil) : le document est refusé. **Ne jamais journaliser ni envoyer à Analytics** le jeton ni ce document (`analytics-events.md` : aucun événement sur les notifications).
+Interdit d'ajouter quoi que ce soit (position, nom, e-mail, numéro, identifiant publicitaire, identifiant de Miff, nom d'appareil, **langue**, **état de l'autorisation** : ces deux derniers ont été retirés du modèle, une clé `locale` ou `notificationsEnabled` est refusée) : le document est refusé. **Ne jamais journaliser ni envoyer à Analytics** le jeton ni ce document (`analytics-events.md` : aucun événement sur les notifications).
 
 ## 3. Préconditions : quand il est permis d'écrire un jeton
 
@@ -53,7 +51,7 @@ transaction {
 
 Pourquoi : un `set` complet sur un document **déjà présent** est une mise à jour dont le `createdAt` serait neuf, donc **refusé** (`permission-denied`). Un `update` sur un document absent échoue aussi. La transaction choisit la bonne opération (coût : 1 lecture + 1 écriture).
 
-Les mises à jour peuvent être **partielles** : `update({ token, updatedAt })`, `update({ tz, updatedAt })`, `update({ 'notify.updates': false, updatedAt })`, `update({ notificationsEnabled, updatedAt })`. Ne pas supprimer de clé (`FieldValue.delete()` est refusé).
+Les mises à jour peuvent être **partielles** : `update({ token, updatedAt })`, `update({ tz, updatedAt })`, `update({ 'notify.updates': false, updatedAt })`. Ne pas supprimer de clé (`FieldValue.delete()` est refusé).
 
 ### 4.2 Connexion : le lot [session + jeton + suppression des autres jetons]
 
@@ -71,10 +69,10 @@ Pourquoi supprimer les autres : « un compte, un seul appareil ». L'ancien tél
 
 À l'ouverture de l'app (et quand le SDK fournit un nouveau jeton), exécuter §4.1 **si** :
 - le jeton fourni par le SDK diffère du dernier jeton enregistré, **immédiatement** (rotation FCM : `onNewToken` / `didReceiveRegistrationToken`) ; ou
-- le fuseau, la version de l'app, la langue, ou `notificationsEnabled` ont changé ; ou
-- la dernière écriture date de **plus de 24 h** (garder la date de la dernière écriture réussie en local, pas en base).
+- le fuseau a changé ; ou
+- la dernière écriture date de **plus de 30 jours** (garder la date de la dernière écriture réussie en local, pas en base).
 
-Sinon **ne rien écrire**. Résultat : **au plus une écriture par ouverture, et au plus une par 24 h** hors changement de jeton (le ticket parle de 30 jours ; 24 h donne au serveur une preuve de présence plus fraîche, pour un coût négligeable : voir §6). Pas de rafraîchissement en arrière-plan.
+Sinon **ne rien écrire**. **Décision (ticket §9, relu le 2026-11-12)** : le ticket fixe la péremption à **30 jours** (rafraîchissement « si le document a plus de 30 jours », purge serveur des inactifs à 60 jours) et plafonne à **une écriture par jour** ; ce contrat le suit à la lettre (le coordinateur proposait 7 jours « sauf contrainte du ticket » : le ticket est explicite, c'est donc 30). Résultat : **à l'ouverture, au plus une écriture, et au plus une par jour** ; en régime normal, une écriture par mois et par utilisateur actif en plus des changements de jeton et de fuseau. La version de l'app est écrite avec les autres champs quand une écriture a lieu, elle ne déclenche pas d'écriture à elle seule. Pas de rafraîchissement en arrière-plan.
 
 ### 4.4 Interrupteur « Quand un proche donne des nouvelles »
 
@@ -83,7 +81,7 @@ Sinon **ne rien écrire**. Résultat : **au plus une écriture par ouverture, et
 ### 4.5 Interrupteur général « Recevoir des notifications » coupé, autorisation du système retirée
 
 - **Interrupteur général coupé** dans l'app : **supprimer** le document (`delete`), et invalider le jeton chez FCM (`deleteToken` / `Messaging.messaging().deleteToken`). Réactivé : nouvel enregistrement (§4.1, nouvelle création).
-- **Autorisation du système retirée** (détectée à l'ouverture) : **supprimer** le document (ticket §6). Le champ `notificationsEnabled` reste dans le modèle comme ceinture de sécurité du serveur (« jamais d'envoi à `false` ») ; un client **peut** écrire `notificationsEnabled = false` à la place de la suppression si celle-ci échoue, mais la règle du produit est la suppression (question ouverte n° 2, §9 ci-dessous).
+- **Autorisation du système retirée** (détectée à l'ouverture) : **supprimer** le document (ticket §6) et invalider le jeton chez FCM. Il n'y a plus de champ d'état d'autorisation : un document présent veut dire « cet appareil peut recevoir » ; le serveur n'envoie qu'aux appareils dont le document existe. Si la personne rétablit l'autorisation, nouvel enregistrement (§4.1).
 
 ### 4.6 Déconnexion volontaire
 
@@ -116,16 +114,16 @@ Messages d'erreur côté interface : **aucun** pour ces écritures (ton non anxi
 
 ## 6. Coût en écritures
 
-- **Une écriture par ouverture au plus, et au plus toutes les 24 h**, plus les changements de jeton (rares) et les actions de réglage. En pratique : ≈ **1 écriture + 1 lecture par utilisateur actif et par jour**, plus **1 lecture de règles** à chaque écriture (la session). Suppression et lecture : 0 lecture de règles.
-- **1 000 utilisateurs actifs par jour** ≈ 1 000 écritures et 2 000 lectures par jour : sous les quotas gratuits (20 000 écritures, 50 000 lectures par jour). **10 000** ≈ 10 000 écritures par jour : encore sous le quota d'écritures ; en cas de dépassement, de l'ordre de 0,5 $ par mois (hypothèse, tarif Firestore de l'étude non vérifié pour Paris).
-- **Signal à surveiller** (`docs/dev/surveillance-quotas.md`) : écritures de `devices` > 1 par utilisateur actif et par jour = un client qui réécrit trop (boucle sur `onNewToken`, comparaison de jeton défaillante).
+- **Une écriture par ouverture au plus, une par jour au plus**, en pratique : l'enregistrement initial, un changement de jeton ou de fuseau (rares), le rafraîchissement au bout de 30 jours, et les actions de réglage. ≈ **1 écriture + 1 lecture par utilisateur actif et par mois** en régime normal, plus **1 lecture de règles** à chaque écriture (la session). Suppression et lecture : 0 lecture de règles.
+- Même en comptant un changement de jeton par utilisateur et par semaine, **10 000 utilisateurs actifs** font de l'ordre de 2 000 écritures par jour : très loin du quota gratuit (20 000 par jour). Les écritures de `devices` ne comptent pas parmi les postes de coût du projet (le coût dominant reste la lecture du Feed).
+- **Signal à surveiller** (`docs/dev/surveillance-quotas.md`) : écritures de `devices` > 1 par utilisateur actif et par jour (plafond du contrat) = un client qui réécrit trop (boucle sur `onNewToken`, comparaison de jeton défaillante).
 
 ## 7. Ce que le serveur fait des jetons (contrat pour SRV-4, pour information)
 
 - Lit avec les droits Admin (les règles ne s'appliquent pas) ; `limit(3)` par destinataire.
-- N'envoie qu'au jeton dont l'identifiant est celui de `session/active.deviceId` (ou, à défaut, `updatedAt ≥ session.startedAt`), et seulement si `notificationsEnabled` et `notify.updates` sont à `true`.
+- N'envoie qu'au jeton dont l'identifiant est celui de `session/active.deviceId` (ou, à défaut, `updatedAt ≥ session.startedAt`), et seulement si `notify.updates` est à `true` ; un document présent = un appareil qui peut recevoir.
 - Supprime le document quand FCM répond « jeton inconnu » ; purge optionnelle à 60 jours.
-- Ne journalise ni jeton, ni uid, ni prénom. Utilise `tz` pour les heures calmes (22 h – 7 h). Les textes restent dans les apps (`locale` sert à un éventuel texte serveur ; candidat à suppression, question ouverte).
+- Ne journalise ni jeton, ni uid, ni prénom. Utilise `tz` pour les heures calmes (22 h – 7 h). Les textes restent dans les apps (aucune langue n'est stockée).
 - Ne touche jamais à `notifState` depuis un client : cette collection n'a **aucune règle** (refus total, test DV12).
 
 ## 8. Liste de contrôle pour `android-dev` et `ios-dev`
@@ -134,13 +132,13 @@ Messages d'erreur côté interface : **aucun** pour ces écritures (ton non anxi
 - [ ] Identifiant du document = `session/active.deviceId` (jamais un autre).
 - [ ] Création et mise à jour par **transaction** (lire puis créer ou mettre à jour) ; `createdAt` jamais réécrit ; `platform` jamais modifié.
 - [ ] Lot de connexion : session + jeton + suppression des autres jetons (aucun chemin en double dans le lot).
-- [ ] Au plus une écriture par 24 h hors changement de jeton ; rien en arrière-plan.
+- [ ] Au plus une écriture par jour ; rafraîchissement au changement de jeton ou de fuseau, ou après 30 jours ; rien en arrière-plan.
 - [ ] Suppression : interrupteur général coupé, autorisation retirée, déconnexion (avant `signOut`), suppression de compte (déjà en place), remplacement par un autre appareil (best effort) ; invalidation du jeton chez FCM à chaque fois.
 - [ ] Aucune position, aucun nom, aucun identifiant publicitaire dans le document ; aucun journal ni événement Analytics contenant le jeton.
-- [ ] Tests unitaires : choix créer / mettre à jour, seuils 24 h, changement de jeton, ordre déconnexion (jeton avant `signOut`), lot de connexion.
+- [ ] Tests unitaires : choix créer / mettre à jour, seuils 30 jours / 1 jour, changement de jeton, ordre déconnexion (jeton avant `signOut`), lot de connexion.
 
-## 9. Questions ouvertes (à trancher par le PM, ne pas deviner)
+## 9. Décisions prises (coordinateur, PM ayant validé le ticket tel quel, 2026-11-12)
 
-1. **`locale`** : le ticket dit « pas de langue stockée » (les textes restent dans les apps) ; le cahier SRV-2 la demande. Gardée dans le modèle ; à retirer (minimisation) si le serveur n'en a pas besoin.
-2. **`notificationsEnabled` et suppression** : le ticket supprime le document quand l'autorisation est retirée, ce qui rend `false` presque toujours absent. Garder le champ comme ceinture de sécurité, ou le retirer ?
-3. **Fréquence de rafraîchissement** : 24 h (ce document) ou 30 jours (ticket) ? 24 h coûte ≈ 1 écriture par jour et par utilisateur actif, négligeable ; 30 jours réduit encore le coût mais retarde la détection d'un appareil inactif.
+1. **`locale` et `notificationsEnabled` retirés du registre** : le ticket dit « pas de langue stockée » et supprime le document quand l'autorisation est retirée. Forme à 7 clés.
+2. **Rafraîchissement** : 30 jours (ticket §9) et au plus une écriture par jour, voir §4.3.
+3. **Règle « 30 s entre deux photos »** : non appliquée (analyse dans `backend/data-model.md` §2.17).

@@ -91,7 +91,7 @@ rules_version = '2';
 // 14. Jetons d'appareil pour les notifications push (SRV-2R, ticket docs/tickets/notification-update-membres.md §8, étude docs/dev/etude-serveur-notifications-premium.md §8) — NON DÉPLOYÉ
 //     (le fichier déployé porte encore l'ANCIEN gabarit de `devices` { token ≤ 512, platform, updatedAt } : aucun client ne l'écrit). Document
 //     users/{uid}/devices/{deviceId} : `deviceId` = l'identifiant de la SESSION active (users/{uid}/session/active.deviceId, un compte = un appareil) ;
-//     9 clés exactes (token ≤ 4096, platform, appVersion, locale, notificationsEnabled, tz, notify { updates }, updatedAt = heure serveur, createdAt =
+//     7 clés exactes (token ≤ 4096, platform, appVersion, tz, notify { updates }, updatedAt = heure serveur, createdAt =
 //     heure serveur à la création puis figé) ; propriétaire SEUL pour lire (get et list), écrire et supprimer. L'écriture exige que l'identifiant soit celui de
 //     la session (getAfter : 1 lecture de règles, le lot de connexion peut contenir la session ET le jeton) : un appareil remplacé ne peut plus s'enregistrer.
 //     La suppression ne dépend PAS de la session (déconnexion, suppression de compte : la session est supprimée d'abord). Le plafond « 5 appareils » n'est pas
@@ -715,13 +715,11 @@ service cloud.firestore {
     // et l'écriture est refusée. UNE lecture de règles. Aucune donnée d'un autre utilisateur n'est lue.
     function validDeviceShape(uid, deviceId) {
       let d = request.resource.data;
-      return d.keys().hasOnly(['token', 'platform', 'appVersion', 'locale', 'notificationsEnabled', 'tz', 'notify', 'updatedAt', 'createdAt'])
-        && d.keys().hasAll(['token', 'platform', 'appVersion', 'locale', 'notificationsEnabled', 'tz', 'notify', 'updatedAt', 'createdAt'])
+      return d.keys().hasOnly(['token', 'platform', 'appVersion', 'tz', 'notify', 'updatedAt', 'createdAt'])
+        && d.keys().hasAll(['token', 'platform', 'appVersion', 'tz', 'notify', 'updatedAt', 'createdAt'])
         && isStr(d.token, 1, 4096)
         && d.platform in ['ios', 'android']
         && isStr(d.appVersion, 1, 32)
-        && d.locale in ['fr', 'en']
-        && d.notificationsEnabled is bool
         && isDeviceTz(d.tz)
         && validDeviceNotify(d.notify)
         && d.updatedAt == request.time

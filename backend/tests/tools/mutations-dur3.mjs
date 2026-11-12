@@ -296,7 +296,7 @@ export const DUR3_MUTATIONS = [
   mut('U5-appareil-plateforme', "la plateforme de l'appareil accepte toute valeur",
     [edit("&& d.platform in ['ios', 'android']", '&& true')], ['U5', 'DV3']),
   mut('U5-appareil-cles', "l'appareil accepte des clés inconnues",
-    [edit("return d.keys().hasOnly(['token', 'platform', 'appVersion', 'locale', 'notificationsEnabled', 'tz', 'notify', 'updatedAt', 'createdAt'])", 'return true')], ['U5b', 'DV3']),
+    [edit("return d.keys().hasOnly(['token', 'platform', 'appVersion', 'tz', 'notify', 'updatedAt', 'createdAt'])", 'return true')], ['U5b', 'DV3']),
   mut('U5-appareil-jeton', "le jeton d'appareil peut être vide ou trop long",
     [edit('&& isStr(d.token, 1, 4096)', '&& true')], ['U5b', 'DV3']),
   mut('U5-appareil-updatedAt', "updatedAt de l'appareil peut être une date client",

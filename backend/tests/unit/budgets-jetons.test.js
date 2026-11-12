@@ -45,13 +45,12 @@ test('BUDGET JETONS - confidentialité : lire, lister et supprimer = le proprié
   }
 });
 
-test('BUDGET JETONS - forme : 9 clés exactes, jeton 1 à 4096, version 1 à 32, langue fr / en, plateforme ios / android, fuseau 1 à 64 ; createdAt figé à la mise à jour', () => {
+test('BUDGET JETONS - forme : 7 clés exactes, jeton 1 à 4096, version 1 à 32, plateforme ios / android, fuseau 1 à 64 ; createdAt figé à la mise à jour', () => {
   const body = squash(model.fns.validDeviceShape);
-  const keys = "['token', 'platform', 'appVersion', 'locale', 'notificationsEnabled', 'tz', 'notify', 'updatedAt', 'createdAt']";
+  const keys = "['token', 'platform', 'appVersion', 'tz', 'notify', 'updatedAt', 'createdAt']";
   assert.ok(body.includes(`d.keys().hasOnly(${keys})`));
   assert.ok(body.includes(`d.keys().hasAll(${keys})`));
-  for (const piece of ['isStr(d.token, 1, 4096)', "d.platform in ['ios', 'android']", 'isStr(d.appVersion, 1, 32)', "d.locale in ['fr', 'en']", 'd.notificationsEnabled is bool',
-    'isDeviceTz(d.tz)', 'validDeviceNotify(d.notify)', 'd.updatedAt == request.time', 'isDeviceId(deviceId)']) {
+  for (const piece of ['isStr(d.token, 1, 4096)', "d.platform in ['ios', 'android']", 'isStr(d.appVersion, 1, 32)', 'isDeviceTz(d.tz)', 'validDeviceNotify(d.notify)', 'd.updatedAt == request.time', 'isDeviceId(deviceId)']) {
     assert.ok(body.includes(piece), `validDeviceShape devrait contenir ${piece}`);
   }
   assert.match(squash(model.fns.isDeviceTz), /\{0,63\}\$'/);
