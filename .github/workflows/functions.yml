@@ -1,0 +1,71 @@
+name: functions
+
+# Tests des Cloud Functions (SRV-1) : compilation, tests unitaires (garde-fous de coût), puis tests à l'émulateur Firebase
+# (Functions + Firestore, projet de démonstration demo-miff-functions).
+# Aucun secret requis, aucun compte, aucun accès à un vrai projet Firebase : tout reste dans le runner.
+# CE WORKFLOW NE DÉPLOIE JAMAIS : le déploiement se tape à la main par le PM (docs/dev/deploiement-functions.md).
+# Jamais de pull_request_target.
+on:
+  pull_request:
+    paths:
+      - 'backend/functions/**'
+      - 'backend/firebase.json'
+      - 'backend/package.json'
+      - 'backend/package-lock.json'
+      - '.github/workflows/functions.yml'
+      - '.github/dependabot.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: functions-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  functions-tests:
+    name: Tests des Cloud Functions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      CI: 'true'
+    steps:
+      - name: Début du chronomètre
+        # Avant le checkout, `backend/` n'existe pas encore : on s'exécute à la racine de l'espace de travail.
+        working-directory: .
+        run: echo "JOB_START=$(date +%s)" >> "$GITHUB_ENV"
+      - name: Récupération du dépôt
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Java 21 (Temurin) pour l'émulateur Firestore
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Node.js 24 (même version que le runtime des fonctions)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            backend/package-lock.json
+            backend/functions/package-lock.json
+      - name: Installer les outils de test (CLI Firebase, versions figées par package-lock.json)
+        run: npm ci --ignore-scripts
+      - name: Installer les dépendances des fonctions (versions figées par package-lock.json)
+        working-directory: backend/functions
+        run: npm ci --ignore-scripts
+      - name: Vérification des types (sans écrire de fichier)
+        run: npm --prefix functions run typecheck
+      - name: Tests rapides (garde-fous de coût, journalisation sans donnée personnelle, fonction témoin)
+        run: npm run test:functions:unit
+      - name: Tests à l'émulateur Functions + Firestore (App Check exigé, connexion exigée)
+        # firebase emulators:exec reçoit --project demo-miff-functions (script npm contrôlé par les tests project-guard).
+        run: npm run test:functions
+      - name: Durée du job
+        if: always()
+        run: echo "Durée du job functions-tests = $(( $(date +%s) - JOB_START )) s" >> "$GITHUB_STEP_SUMMARY"

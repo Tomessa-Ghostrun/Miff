@@ -1,6 +1,6 @@
 // Plan de test, section 8 : profil, appareils, suppression de compte (U1 à U8)
 import {
-  ID, CODE, T0, suite, assertFails, assertSucceeds, commit, leaveOps, set, del, serverTs, bytes, userDoc,
+  ID, CODE, T0, suite, assertFails, assertSucceeds, commit, leaveOps, set, del, serverTs, bytes, userDoc, sessionSeed, SESSION_PATH, deviceDoc, deviceSeed, DEVICE_DOC_PATH,
 } from '../helpers/fixtures.js';
 
 const s = suite({ extraProfiles: false });
@@ -27,15 +27,16 @@ s.tc('U4', 'on supprime son propre profil', async ({ db, admin }) => {
   await assertSucceeds(db('eve').doc('users/eve').delete());
 });
 
-s.tc('U5', 'appareil : platform "ios" accepté, "web" refusé', async ({ db }) => {
-  const ref = db('eve').doc('users/eve/devices/d1');
-  await assertSucceeds(ref.set({ token: 'jeton-de-test', platform: 'ios', updatedAt: serverTs() }));
-  await assertFails(ref.set({ token: 'jeton-de-test', platform: 'web', updatedAt: serverTs() }));
+s.tc('U5', "appareil (SRV-2R, jeton de notification) : platform ios accepté, web refusé ; le document porte l'identifiant de la session", async ({ db, admin }) => {
+  await admin((f) => f.doc(SESSION_PATH('eve')).set(sessionSeed()));
+  const ref = db('eve').doc(DEVICE_DOC_PATH('eve'));
+  await assertFails(ref.set(deviceDoc({ platform: 'web' })));
+  await assertSucceeds(ref.set(deviceDoc({ platform: 'ios' })));
 });
 
-s.tc('U6', 'les appareils d\'un autre utilisateur ne sont pas lisibles', async ({ db, admin }) => {
-  await admin((f) => f.doc('users/eve/devices/d1').set({ token: 'jeton-de-test', platform: 'ios', updatedAt: T0 }));
-  await assertFails(db('bob').doc('users/eve/devices/d1').get());
+s.tc('U6', "les appareils d'un autre utilisateur ne sont pas lisibles", async ({ db, admin }) => {
+  await admin((f) => f.doc(DEVICE_DOC_PATH('eve')).set(deviceSeed()));
+  await assertFails(db('bob').doc(DEVICE_DOC_PATH('eve')).get());
 });
 
 s.tc('U7', 'suppression de compte d\'une membre simple : un batch par Miff, puis le profil', async ({ db }) => {
