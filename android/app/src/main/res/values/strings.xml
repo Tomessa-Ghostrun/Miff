@@ -1025,6 +1025,9 @@
     <string name="notif_settings_n6">When I enter a danger zone</string>
     <string name="notif_settings_n7">When my travel mode ends</string>
     <string name="notif_settings_n6_hint">You turn off the notification, not what your Miff sees.</string>
+    <!-- N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de l'auteur, 20 caractères au plus. Clés partagées avec iOS : le serveur envoie ces noms à iOS. -->
+    <string name="notif_circle_update_title">%1$s checked in</string>
+    <string name="notif_circle_update_body">See it in your Miff.</string>
     <string name="notif_settings_night_title">Quiet night</string>
     <string name="notif_settings_night_body">From 10 pm to 7 am, no sound or vibration, except when someone turns red.</string>
     <string name="notif_settings_see_all">See my notifications</string>

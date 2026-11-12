@@ -142,7 +142,7 @@ struct NotificationsPopIn: View {
                 timeId: "onboarding_sample_when_2",
                 unread: false
             )
-            Text("permission_notifications_note")
+            Text("ios_permission_notifications_note")
                 .miffTextStyle(textBodyCaption)
                 .foregroundColor(colorTextDescription.color)
                 .multilineTextAlignment(.center)

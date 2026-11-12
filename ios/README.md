@@ -820,3 +820,7 @@ Dépendances déclarées (versions exactes) : **firebase-ios-sdk 13.1.1** (produ
 | grpc-binary | 1.83.1 | Apache-2.0 |
 
 Outils de build (pas dans l'app) : XcodeGen 2.46.0 (MIT), SwiftLint 0.65.1 (MIT). Pas de CocoaPods.
+
+## Notifications push entre proches (SRV-2I et SRV-4I)
+
+« {Prénom} a donné des nouvelles » : le serveur envoie une alerte à chaque proche de la Miff ; le système l'affiche (clés de texte `notif_circle_update_*`, sans extension de service). Code : `Services/Push`, `Models/Push`, `App/PushServices.swift`, `Services/Firebase/FirebasePushTokenSource.swift` (le SEUL fichier qui importe Firebase Messaging) et `FirestoreDeviceTokenRegistry.swift`. Le téléphone ne dépose son jeton dans `users/{uid}/devices/{deviceId}` qu'avec un compte connecté, une session confirmée, l'autorisation du système et l'accord donné sur la pop-in qui parle de l'identifiant du téléphone ; il le supprime (jeton invalidé en premier) à chaque sortie. Réglages : `FirebaseMessagingAutoInitEnabled = false`, `FirebaseAppDelegateProxyEnabled = false`, `aps-environment`, aucun `UIBackgroundModes`. Toutes les explications, les limites et les étapes du PM : `docs/dev/fcm-ios.md`, `docs/dev/apns-etapes-pm.md`, `docs/qa/checklists/fcm-ios-recette-pm.md`.
