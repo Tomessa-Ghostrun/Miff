@@ -3,9 +3,13 @@
 // Les valeurs de référence viennent de src/options.ts (compilé dans lib/) : un seul endroit pour les décider.
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
-const { LIMITES, FONCTIONS_AVEC_RETRY_AUTORISEES } = require('../../lib/options.js');
+const { LIMITES, FONCTIONS_AVEC_RETRY_AUTORISEES, FONCTIONS_IDENTITE_PAR_DEFAUT_AUTORISEES } = require('../../lib/options.js');
 
 export { LIMITES };
+
+/** Compte de service DEDIE du projet : nom explicite @miff-3d283.iam.gserviceaccount.com ; jamais le compte Compute/App Engine par defaut ni celui de l'Admin SDK. */
+export const COMPTE_DEDIE = /^[a-z][a-z0-9-]{4,28}[a-z0-9]@miff-3d283\.iam\.gserviceaccount\.com$/;
+const COMPTE_INTERDIT = /compute|appspot|adminsdk|editor|owner/i;
 
 /** @returns {string[]} liste des problèmes (vide = conforme) */
 export function problemesDeGardeFous(nom, endpoint) {
@@ -38,6 +42,16 @@ export function problemesDeGardeFous(nom, endpoint) {
   const retry = endpoint.eventTrigger?.retry ?? endpoint.scheduleTrigger?.retryConfig?.retryCount;
   if (retry && !FONCTIONS_AVEC_RETRY_AUTORISEES.includes(nom)) {
     dit('nouvelles tentatives automatiques interdites (sauf liste FONCTIONS_AVEC_RETRY_AUTORISEES de src/options.ts, avec raison)');
+  }
+  const compte = endpoint.serviceAccountEmail;
+  // Le SDK note "valeur par défaut" par un objet ResetValue (et non par undefined) : c'est bien l'identité par défaut du projet.
+  const identiteParDefaut = compte === undefined || compte === null || compte === '' || compte?.constructor?.name === 'ResetValue';
+  if (identiteParDefaut) {
+    if (!FONCTIONS_IDENTITE_PAR_DEFAUT_AUTORISEES.includes(nom)) {
+      dit("identité par défaut du projet interdite pour une fonction métier : compte de service DÉDIÉ obligatoire (option serviceAccount, rôles minimaux)");
+    }
+  } else if (typeof compte !== 'string' || !COMPTE_DEDIE.test(compte) || COMPTE_INTERDIT.test(compte)) {
+    dit(`compte de service ${JSON.stringify(compte)} refusé : seul un compte DÉDIÉ explicite (xxx@miff-3d283.iam.gserviceaccount.com, ni Compute, ni App Engine, ni Admin SDK) est accepté`);
   }
   if (endpoint.secretEnvironmentVariables?.length) {
     dit('secret lié à la fonction : décision de ticket (docs/dev/secrets.md), pas un détail');

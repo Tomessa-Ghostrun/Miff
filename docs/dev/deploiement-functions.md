@@ -8,7 +8,9 @@
 
 **Ce que « déployer » veut dire ici** : envoyer le dossier `backend/functions/` vers le projet Firebase `miff-3d283`. Une fonction envoyée est **en ligne tout de suite** et peut être appelée par n'importe quelle copie de l'application (avec la vérification App Check et la connexion exigées, voir plus bas). On ne déploie donc qu'après un « oui » explicite du PM, CI verte.
 
-**État au moment de ce document (SRV-1, socle)** : le dossier ne contient **qu'une seule fonction de démonstration, `ping`**. Elle ne lit ni n'écrit aucune donnée, ne fait aucune notification, et répond seulement « ok » à une application connectée. Aucune application ne l'appelle encore. Elle sert à vérifier que toute la chaîne (code, déploiement, région, sécurité) fonctionne, avant d'y mettre de vraies fonctions (SRV-4 et suivants). **Premier déploiement attendu : sans risque pour les utilisateurs, coût attendu : 0 €.**
+**État au moment de ce document** : le dossier contient **deux fonctions**.
+- **`ping`** (SRV-1, socle) : fonction de démonstration. Elle ne lit ni n'écrit aucune donnée, ne fait aucune notification, et répond seulement « ok » à une application connectée. Aucune application ne l'appelle encore. Elle sert à vérifier que toute la chaîne (code, déploiement, région, sécurité) fonctionne. **Sans risque pour les utilisateurs, coût attendu : 0 €.**
+- **`notifierUpdate`** (SRV-4B) : la **première vraie fonction**. Quand un membre publie une update, elle envoie une notification discrète aux autres membres de sa Miff (« {Prénom} a donné des nouvelles »). **Elle lit des données (fiches de membres, jetons d'appareil) et envoie des notifications réelles** : sa mise en ligne est l'**interrupteur de mise en service** de la fonctionnalité (section 11). Elle exige un **compte de service dédié** (section 1.4) à créer **avant** son déploiement.
 
 ---
 
@@ -71,6 +73,54 @@ npx firebase login:list
 
 `login:list` doit afficher ton compte Google (sinon : `npx firebase login`).
 
+### 1.4 Créer le compte de service dédié de `notifierUpdate` (obligatoire AVANT son déploiement, 10 minutes)
+
+**Pourquoi** : une fonction s'exécute avec une « identité » Google (un compte de service). Par défaut, c'est un compte du projet qui a souvent le rôle **Éditeur** (il peut presque tout faire dans le projet). Une fonction qui lit les fiches des membres et envoie des notifications ne doit pas avoir ce pouvoir : si elle était détournée, les dégâts seraient limités à ce que son compte a le droit de faire. On lui crée donc **son propre compte**, avec **seulement** les droits utiles. **Aucune clé n'est créée ni téléchargée** : l'identité est gérée par Google (`docs/dev/secrets.md`). Si ce compte n'existe pas au moment du déploiement, la commande **échoue** : c'est le bon comportement, rien n'est mis en ligne.
+
+> Libellés recopiés de la documentation Google (en anglais, parfois traduits) : ils peuvent différer légèrement à l'écran. En cas de doute, **arrête-toi et copie ce que tu vois à Claude**. Vérifie à chaque page, en haut, que le projet affiché est bien **Miff / `miff-3d283`** (jamais Ghostrun).
+
+**Étape A : créer le compte**
+1. Ouvre https://console.cloud.google.com/iam-admin/serviceaccounts et choisis le projet **`miff-3d283`** (sélecteur de projet en haut de la page).
+2. Clique **Créer un compte de service** (« Create service account »).
+3. **Nom du compte de service** : `notify-update`. L'identifiant qui s'affiche dessous doit être exactement `notify-update` (l'adresse complète sera `notify-update@miff-3d283.iam.gserviceaccount.com` : c'est celle qui est écrite dans le code, une autre adresse serait refusée par les tests).
+4. Description : `Fonction notifierUpdate : lit Firestore et envoie les notifications`.
+5. Clique **Créer et continuer**. **Ignore** l'étape « Accorder l'accès à ce compte » (on s'en occupe à l'étape B) : clique **Continuer**, puis **OK** (sans rien ajouter à l'étape « Accorder aux utilisateurs l'accès »).
+6. **Ne crée aucune clé** (onglet « Clés » du compte : il doit rester vide). Si on te propose de télécharger un fichier `.json`, **refuse**.
+
+**Étape B : lui donner les 4 rôles, et rien d'autre**
+1. Ouvre https://console.cloud.google.com/iam-admin/iam (projet `miff-3d283`) et clique **Accorder l'accès** (« Grant access »).
+2. Dans « Nouveaux comptes principaux », colle `notify-update@miff-3d283.iam.gserviceaccount.com`.
+3. Ajoute ces **quatre rôles** (bouton « Ajouter un autre rôle » pour chacun) :
+
+| Rôle (nom affiché, identifiant) | À quoi il sert | Source / réserve |
+|---|---|---|
+| **Utilisateur Cloud Datastore** (`roles/datastore.user`) | Lire et écrire dans Firestore : fiches de membres, jetons d'appareil, et l'état `notifState` | Rôle documenté de Firestore (accès lecture/écriture aux données, pas à la gestion du projet) |
+| **Administrateur de l'API Firebase Cloud Messaging** (`roles/firebasecloudmessaging.admin`) | Envoyer les notifications. C'est le **plus petit rôle prédéfini** documenté qui contient la permission d'envoi `cloudmessaging.messages.create` (le rôle « Firebase Cloud Messaging Service Editor », `roles/cloudmessaging.editor`, a exactement les mêmes permissions) | Documentation IAM de Google, lue le 2026-11-12. Un rôle personnalisé avec cette seule permission serait plus étroit : **non vérifié**, à ne tenter que si Google le confirme ; en cas d'erreur « permission denied » à l'envoi, ne rien élargir sans en parler à Claude |
+| **Récepteur d'événements Eventarc** (`roles/eventarc.eventReceiver`) | Recevoir l'événement « un document photo a été écrit » | Documentation Eventarc (rôle du compte du déclencheur) |
+| **Rédacteur de journaux** (`roles/logging.logWriter`) | Écrire ses journaux (sans donnée personnelle) dans Cloud Logging | Standard |
+
+4. **Enregistrer.**
+5. **N'ajoute jamais** : Éditeur, Propriétaire, Administrateur Firebase, ni un rôle « Admin » de Firestore. Si une erreur au déploiement demande un autre droit pour **ce** compte, copie le message à Claude plutôt que d'ajouter un rôle large.
+
+**Étape C : donner à TON compte le droit d'utiliser ce compte de service**
+Pour déployer une fonction « qui tourne sous » un compte de service, le compte Google qui déploie (le tien) doit avoir le rôle **Utilisateur du compte de service** (« Service Account User », `roles/iam.serviceAccountUser`) **sur ce compte**.
+1. Retourne sur https://console.cloud.google.com/iam-admin/serviceaccounts, clique l'adresse `notify-update@…`.
+2. Onglet **Autorisations** (« Permissions ») > **Accorder l'accès**.
+3. Nouveau compte principal : **ton adresse Google** (`tomessa.mfouka@gmail.com`) ; rôle : **Utilisateur du compte de service**. **Enregistrer.**
+4. Si tu es **Propriétaire** du projet, tu as déjà ce droit : l'ajouter ne fait pas de mal et rend la règle explicite.
+
+**Étape D : vérifier (30 secondes)**
+Sur la page IAM, la ligne `notify-update@miff-3d283.iam.gserviceaccount.com` doit afficher **exactement ces 4 rôles** et aucun autre. Sur la page du compte, l'onglet « Clés » est vide. Note la date dans la conversation avec Claude.
+
+**Étape E : activer la suppression automatique de `notifState` (durée de vie, « TTL »)**
+La fonction note dans la collection `notifState` (accessible à la fonction seulement, jamais à une application) la date de la dernière update traitée par auteur, pour ne jamais notifier deux fois et ne pas dépasser une notification par heure. Ces lignes contiennent des identifiants : elles doivent disparaître seules au bout de 2 jours.
+1. Console Firebase > projet **Miff** > **Firestore Database** > onglet **Time-to-live** (« TTL ») *(libellé non vérifié ; peut aussi se trouver sous Données > Time-to-live)*.
+2. **Créer une règle** (« Create policy ») : groupe de collections `notifState`, champ `expireAt`. **Enregistrer.**
+3. À savoir : la suppression est « typiquement dans les 24 h » après l'échéance (documentation Google) et n'est pas gratuite à l'usage sur Blaze (négligeable : une suppression par Miff active et par 2 jours). Tant que la règle n'est pas créée, rien ne casse : les lignes restent, voilà tout (quelques centaines d'octets par Miff).
+
+**Étape F : les règles des jetons**
+La fonction ne trouve des destinataires que si les **règles Firestore des jetons d'appareil** (branche `backend/jetons-appareil`, SRV-2R) sont **déployées** et que des applications ont enregistré des jetons (SRV-2A / SRV-2I). Procédure : `deploiement-regles.md`. Sans cela, la fonction se déclenche, ne trouve aucun appareil et n'envoie rien (sans erreur).
+
 ---
 
 ## 2. Avant chaque déploiement (checklist)
@@ -83,6 +133,9 @@ npx firebase login:list
 | 4 | Revue de sécurité faite, « oui » du PM écrit | Conversation avec Claude | Un « oui » pour ce commit |
 | 5 | Alerte de budget en place (section 1.1) | Console Google Cloud > Facturation > Budgets et alertes | Le budget `Miff 5 EUR par mois` existe |
 | 6 | Tu notes l'état actuel | Console Firebase > **Functions** : liste des fonctions en ligne | Capture d'écran de la liste (plan B) |
+| 7 | **Pour `notifierUpdate` seulement** : le compte de service dédié existe avec ses 4 rôles et sans clé (section 1.4, étapes A à D) | Google Cloud > IAM | La ligne `notify-update@miff-3d283…` montre exactement 4 rôles |
+| 8 | **Pour `notifierUpdate` seulement** : les règles des jetons d'appareil sont déployées, la suppression automatique `notifState` est activée (sections 1.4 E et F) | `deploiement-regles.md`, console Firestore | Règle TTL visible ; règles publiées |
+| 9 | **Pour `notifierUpdate` seulement** : les textes légaux (SRV-3) sont publiés et aucune fiche de store ne dit encore « pas de notification » (ticket §15/§16, P6) | Conversation avec Claude | « Oui » du PM écrit |
 
 ---
 
@@ -124,7 +177,7 @@ La CLI se termine par `Deploy complete!`. En cas d'erreur, **rien de cassé n'es
 | # | Vérification | Où | OK si |
 |---|---|---|---|
 | 1 | La fonction est en ligne | Console Firebase > projet **Miff** > **Functions** (ou la commande `npx firebase functions:list --project miff-3d283`) | `ping` apparaît, région **europe-west9**, environnement 2e génération, Node.js 24 |
-| 2 | Les limites sont bien appliquées | Cliquer sur `ping` > détails (ou Google Cloud > Cloud Run > service `ping`) | Instances maximales **3**, mémoire **128 Mio**, délai **30 s**, instances minimales **0** |
+| 2 | Les limites sont bien appliquées | Cliquer sur la fonction > détails (ou Google Cloud > Cloud Run > service de la fonction) | `ping` : instances maximales **3**, mémoire **128 Mio**, délai **30 s**, instances minimales **0**. `notifierUpdate` : instances maximales **5**, mémoire **256 Mio**, délai **30 s**, instances minimales **0**, compte de service **`notify-update@miff-3d283…`** (et non le compte « Compute Engine default ») |
 | 3 | Aucune erreur | Onglet **Journaux** de `ping` (section 5) | Aucun message rouge « Error » |
 | 4 | Pas de dépense | Google Cloud > Facturation > Rapports (le lendemain) | 0 € pour Cloud Functions |
 | 5 | Tu notes le déploiement | Date, commit déployé (8 caractères), version précédente | Dans un fichier à toi ou dans la conversation avec Claude |
@@ -207,10 +260,10 @@ Chaque garde-fou ci-dessous est dans `backend/functions/src/options.ts` et **vé
 
 | Choix | Pourquoi (impact) | Limite connue | Signal pour le changer |
 |---|---|---|---|
-| **3 instances au plus** par fonction (`maxInstances`) | Plafonne la dépense en cas d'emballement ou d'abus : c'est le frein principal | Avec 128 Mio chaque instance traite **une** demande à la fois : au plus ~3 demandes simultanées, les suivantes attendent 30 s puis sont refusées (code 429) | Réponses `429` dans les journaux, notifications en retard : relever à 5 pour **cette** fonction (plafond du test : 5) |
-| **Mémoire 128 Mio** | La moins chère possible | Une fonction qui charge le SDK Admin (Firestore, FCM) peut manquer de mémoire | « Memory limit exceeded » dans les journaux : 256 Mio pour **cette** fonction (plafond du test) |
+| **3 instances au plus** par fonction (`maxInstances`) | Plafonne la dépense en cas d'emballement ou d'abus : c'est le frein principal | Avec 128 Mio chaque instance traite **une** demande à la fois : au plus ~3 demandes simultanées, les suivantes attendent 30 s puis sont refusées (code 429) | Réponses `429` dans les journaux, notifications en retard : relever à 5 pour **cette** fonction (plafond du test : 5). **`notifierUpdate` est déjà à 5** (le ticket parlait de 10 ; 5 suffit : 1 demande à la fois par instance, ~0,3 à 1 s par événement, soit plus de 100 000 événements par heure pour une estimation de 20 000 **par jour** à 10 000 utilisateurs actifs par jour). Relever au-delà de 5 (jusqu'à 10) = modifier `LIMITES.maxInstancesPlafond` ET le test, en PR, avec le nombre de `429` qui le justifie |
+| **Mémoire 128 Mio** | La moins chère possible | Une fonction qui charge le SDK Admin (Firestore, FCM) peut manquer de mémoire | « Memory limit exceeded » dans les journaux : 256 Mio pour **cette** fonction (plafond du test). **`notifierUpdate` est déjà à 256 Mio** (SDK Admin Firestore + messagerie ; les événements portent la photo, jusqu'à 150 Ko, en mémoire) |
 | **Délai 30 s** | Une fonction bloquée ne facture pas plus de 30 s | Un traitement long est coupé | Journaux « timeout » : relever (plafond du test : 60 s), ou découper le travail |
-| **Pas de nouvelle tentative automatique** (`retry` désactivé) | Évite la boucle « échec → réessai → échec » qui fait exploser une facture | Un échec passager (service FCM indisponible quelques secondes) = **notification perdue** | Des notifications manquantes avec un `ERROR` transitoire dans les journaux : activer `retry` pour **cette** fonction seulement, la rendre idempotente (sans double envoi) et l'ajouter à la liste `FONCTIONS_AVEC_RETRY_AUTORISEES` avec la raison |
+| **Pas de nouvelle tentative automatique** (`retry` désactivé) | Évite la boucle « échec → réessai → échec » qui fait exploser une facture | Un échec passager (service FCM indisponible quelques secondes) = **notification perdue** (`notifierUpdate` retente elle-même l'envoi 2 fois au plus, dans la même exécution, mais ne relance jamais l'exécution entière) | Des notifications manquantes avec un `ERROR` transitoire dans les journaux : activer `retry` pour **cette** fonction seulement, la rendre idempotente (sans double envoi) et l'ajouter à la liste `FONCTIONS_AVEC_RETRY_AUTORISEES` avec la raison |
 | **Aucune instance permanente** (`minInstances: 0`) | Pas de facture quand personne n'appelle | Le premier appel après une pause est plus lent (démarrage à froid, de l'ordre de la seconde : non mesuré) | Plaintes de lenteur sur les notifications de géofence : 1 instance minimale pour la fonction concernée = coût fixe à chiffrer avec le PM |
 | **Région Paris (europe-west9)**, 2e génération | Même région que la base (délais courts, données en UE) | Paris n'accepte que la 2e génération (c'est celle utilisée). Les déclencheurs Firestore doivent être dans la région de la base : c'est cohérent. FCM et les services de notification d'Apple restent des sous-traitants hors UE possibles (risque RGPD assumé, `data-model.md` §11) | Indisponibilité de la région : repli europe-west1 (Belgique), à décider |
 | **Node.js 24** | Supporté par Firebase jusqu'à fin 2028 (dates affichées par la CLI : abandon annoncé 2028-04-30, arrêt 2028-10-31 ; Node 20 est arrêté depuis le 2026-10-30) | Dépendances à mettre à jour (Dependabot ouvre les PR chaque lundi) | E-mail de Google « runtime déprécié » ou PR Dependabot de changement de Node |
@@ -225,6 +278,83 @@ Chaque garde-fou ci-dessous est dans `backend/functions/src/options.ts` et **vé
 
 - Il faudrait créer une **clé de compte de service** avec le droit de déployer des fonctions (un droit très large), la stocker comme secret GitHub et la renouveler. `docs/dev/secrets.md` interdit d'en créer.
 - Un déploiement automatique sur une fusion supprimerait le « oui » explicite du PM.
-- Les fonctions s'exécutent avec l'**identité par défaut gérée par Google** : aucune clé n'existe, ni côté dépôt, ni côté code.
+- Les fonctions s'exécutent avec une **identité gérée par Google** : aucune clé n'existe, ni côté dépôt, ni côté code. `ping` (qui ne touche à aucune donnée) garde l'identité par défaut du projet ; **toute fonction métier, dont `notifierUpdate`, utilise un compte de service dédié aux droits minimaux** (section 1.4), et un test refuse toute fonction métier sans compte dédié explicite.
 
 Si ce choix change un jour, il se prend par une décision écrite du PM, avec une clé à portée minimale et les tests `project-guard.test.js` / `functions-config.test.js` adaptés en conséquence.
+
+
+---
+
+## 11. La fonction `notifierUpdate` (SRV-4B) : ce qu'elle fait, la mettre en ligne, la tester, l'arrêter
+
+Ticket : `docs/tickets/notification-update-membres.md`. Recette : `docs/qa/checklists/notif-update-membres-recette-pm.md`.
+
+### 11.1 Ce qu'elle fait (en clair)
+
+Quand un membre **publie une update** (une photo écrite dans `miffs/{miff}/photos/{membre}`), la fonction envoie **une notification discrète aux autres membres de la Miff** : « {Prénom} a donné des nouvelles / Retrouve-les dans ta Miff. » (le texte est composé par l'application ou par le système du téléphone à partir de clés de texte ; le serveur n'envoie que le prénom). Elle part **uniquement** si :
+- la personne qui publie **partage sa position** avec la Miff ;
+- le destinataire est **encore membre**, **partage lui aussi**, a **au moins un téléphone enregistré** (jeton) et n'a pas coupé « Quand un proche donne des nouvelles » ;
+- il n'y a pas déjà eu une notification **pour cet auteur dans cette Miff dans l'heure** (les updates suivantes restent visibles dans le Feed, sans notification) ;
+- la publication a **moins de 5 minutes** au moment du traitement.
+
+**Ce qu'elle n'envoie jamais** : la photo, la position, un nom de lieu, le nom de famille, le nom de la Miff, la légende, la batterie, la couleur du statut. Le message contient le **prénom** (20 caractères au plus), l'**identifiant technique de la Miff** et celui de **l'auteur** (pour ouvrir la bonne carte et remplacer l'ancienne notification du même auteur), et, sur Android, un indicateur « nuit ». Il n'est **jamais envoyé à un « sujet »** mais **appareil par appareil**. Durée de vie : **2 heures** (au-delà, le message est abandonné par Google/Apple). **Heures calmes 22 h – 7 h** (heure du destinataire, d'après le fuseau enregistré avec son téléphone ; fuseau inconnu = calme) : Android reçoit l'indicateur et l'application affiche sans son ni vibration ; iOS reçoit une notification de niveau « passif ». Le jour : son et vibration selon la configuration du téléphone (décision du PM du 2026-11-12).
+
+**Ce qu'elle écrit** : une seule chose, dans `notifState/{miff}` (collection **réservée au serveur**, refusée à toute application par la règle « tout le reste est refusé ») : pour chaque auteur, l'heure de sa dernière publication traitée et de sa dernière notification, plus une date de suppression automatique à **+2 jours**. Elle **supprime** aussi le document d'un téléphone quand Google répond que son jeton n'existe plus (appli désinstallée). Elle **n'écrit jamais** dans `photos/` (pas de boucle sur elle-même).
+
+**Garanties et limites** : **au plus une fois** (la fonction note qu'elle a traité l'événement **avant** d'envoyer : si elle plante entre les deux, une notification peut être perdue ; elle ne sera jamais doublée). Si Google ou Apple sont en panne passagère : **2 nouvelles tentatives** (0,5 s puis 1,5 s) puis abandon. Si la fonction est indisponible, **rien d'autre ne casse** : la publication réussit et le Feed est à jour.
+
+### 11.2 Coût et lectures (comptés par la fonction, vérifiés à l'émulateur)
+
+| Cas | Lectures Firestore | Écritures |
+|---|---|---|
+| Miff de **4 membres**, 3 destinataires avec 1 téléphone chacun | **8** (4 fiches + 3 listes de téléphones + 1 état) | **1** (l'état) |
+| Miff de **15 membres** | **30** | 1 |
+| Miff de **40 membres** | **51** au plus (30 fiches, 20 destinataires, 1 état) | 1 |
+| Update plafonnée (2e de l'heure) ou rejouée | comme ci-dessus (fiches et téléphones sont lus avant le plafond) | **0** |
+| Auteur seul dans sa Miff | **1** | 0 |
+| Événement de plus de 5 min, suppression de photo | **0** | 0 |
+| Jeton invalide purgé | n/a | +1 par jeton |
+
+Ces nombres sont **additionnés par la fonction elle-même** (chaque lecture est comptée dans son bilan) et vérifiés par les tests à l'émulateur ; ce ne sont pas des chiffres de facturation Google. Le bilan de chaque exécution figure dans les journaux (`notif.update.bilan`, champs `lectures` et `ecritures`) : tu peux le comparer au rapport de facturation. Les envois FCM sont gratuits. Estimation du ticket : ≈ 0 $ à 100 utilisateurs actifs par jour, ≈ 0,2 $/mois à 1 000, ≈ 2,4 $/mois à 10 000 (hypothèses, pas des mesures).
+
+### 11.3 La mettre en ligne (c'est l'interrupteur de mise en service)
+
+**Prérequis** : section 1.4 (compte de service, TTL, règles des jetons), checklist de la section 2, textes légaux publiés, applications avec jetons distribuées (SRV-2A / SRV-2I). **Le « oui » du PM est écrit dans la conversation avec Claude.** Tant que la fonction n'est pas déployée, les apps enregistrent des jetons mais **rien n'est envoyé**.
+
+```bash
+cd C:\dev\miff-deploy\backend
+npx firebase deploy --only functions:notifierUpdate --project miff-3d283
+```
+
+(`--only functions:notifierUpdate` ne touche pas à `ping`. Les questions possibles sont celles de la section 3.) **Un échec du type « le compte de service n'existe pas » ou « permission `iam.serviceAccounts.actAs` refusée »** veut dire que la section 1.4 (étape A ou C) n'est pas terminée. **Ne contourne pas** en demandant de retirer l'option de compte dans le code : préviens Claude.
+
+### 11.4 La tester après déploiement avec un compte de test
+
+Matériel : **deux comptes de test** dans **une même Miff de test**, les deux avec le partage activé, chacun sur son téléphone (un appareil par compte), notifications autorisées sur celui qui reçoit, réglage « Quand un proche donne des nouvelles » activé. **Pas de vrais proches dans cette Miff.**
+1. Le compte 1 publie une update. Attendu : le compte 2 reçoit « {Prénom} a donné des nouvelles » en quelques secondes (2 minutes au plus), **sans photo ni lieu** ; le compte 1 ne reçoit rien.
+2. Journaux (section 5) : `npx firebase functions:log --only notifierUpdate -n 30 --project miff-3d283`. Attendu : une ligne `notif.update.bilan` avec `envoyes: 1`, `lectures` autour de 3, `ecritures: 1`, **sans aucun nom, identifiant ni jeton**. Une ligne `notif.update.fcm-erreur` avec `code` 8 = clé APNs absente ou refusée côté Apple (ticket §12, étape du PM) ; `code` 1 = jeton inconnu (purgé) ; `code` 3 ou 4 = panne passagère de Google.
+3. Le compte 1 publie une 2e update **dans l'heure** : pas de nouvelle notification (`notif.update.ignore`, `motif: plafond`), la photo est visible dans le Feed.
+4. Console Firebase > Firestore : la collection `notifState` contient un document par Miff de test, **sans nom ni jeton** (que des dates) ; la règle TTL est visible.
+5. Console Firebase > Functions : instances maximales 5, mémoire 256 Mio, compte `notify-update@…`.
+
+Le reste du scénario est dans la recette PM (`docs/qa/checklists/notif-update-membres-recette-pm.md`).
+
+### 11.5 L'arrêter rapidement
+
+| Besoin | Action | Délai |
+|---|---|---|
+| **Arrêt net** (la fonction n'existe plus) | `npx firebase functions:delete notifierUpdate --region europe-west9 --project miff-3d283` (relire le nom avant de confirmer). Les publications continuent de fonctionner ; les apps gardent leurs jetons. Tant que la fonction est dans le code de `main`, un déploiement complet la remettrait en ligne : demander à Claude de la retirer du code (PR) avant de redéployer | 1 à 2 minutes |
+| **Coupure d'urgence sans toucher à la fonction** *(non vérifié, à confirmer dans la console)* | Google Cloud > IAM > retirer le rôle **Administrateur de l'API Firebase Cloud Messaging** du compte `notify-update@…` : la fonction ne peut plus envoyer (elle journalise une erreur) et ne coûte presque rien ; on remet le rôle ensuite | Immédiat |
+| **Limiter le coût** | Plafond de dépense Cloud Functions (section 1.2) ; alerte de budget (section 1.1) | n/a |
+
+### 11.6 Retour arrière
+
+Méthode A ou B de la section 7. Après un retour arrière ou une suppression : les documents `notifState` restants se suppriment seuls sous 2 jours (TTL) ; ils ne contiennent que des identifiants et des dates, et ne servent qu'à la fonction. La fonction ne modifie aucune donnée d'utilisateur (hormis la suppression des jetons que Google déclare inconnus).
+
+### 11.7 Ce qui n'est PAS vérifiable à l'émulateur (à vérifier à la recette)
+
+- La **livraison réelle** par Firebase Cloud Messaging (jeton valide, délai, OPPO/ColorOS, application balayée ou « forcée à l'arrêt »).
+- **APNs** : la clé `.p8` dans la console Firebase, l'environnement de production de TestFlight, le rendu des clés de texte (`notif_circle_update_title` / `_body`) par le système, le niveau « passif », le son du téléphone.
+- Le **rôle FCM** du compte de service (le rôle `roles/firebasecloudmessaging.admin` suffit-il seul ? attendu : oui).
+- Le **déclencheur de production** (Eventarc) avec le compte dédié : droit `eventarc.eventReceiver` ; si les événements n'arrivent pas, copier le message à Claude (un droit `run.invoker` sur le service peut manquer : à confirmer, jamais de rôle large).
+- La **suppression automatique (TTL)** de `notifState`.

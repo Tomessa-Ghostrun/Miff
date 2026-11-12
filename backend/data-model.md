@@ -398,6 +398,7 @@ users/{uid}                              profil privé (soi uniquement)
 entitlements/{uid}                       statut premium (lecture seule côté client)
 joinCodes/{code}                         résolution du code secret -> miffId
 miffsDeleted/{miffId}                    pierre tombale d'une Miff supprimée (jamais lisible par un client)
+notifState/{miffId}                      état de la fonction de notification des updates (SRV-4B) : SERVEUR SEUL, supprimé 2 jours après sa dernière écriture (TTL)
 miffs/{miffId}                           le cercle
   members/{uid}                          profil (copie), rôle, CONSENTEMENT
   status/{uid}                           ÉTAT COURANT (sensible), existe seulement si partage activé
@@ -634,6 +635,25 @@ Un seul document, d'identifiant fixe `active` (tout autre identifiant sous `sess
 
 Lisible du **créateur seul** (`get`, jamais de liste). Écrit par un membre avec `set` + fusion et `increment(±1)` dans le même lot que sa demande ; par le créateur avec une **valeur absolue** (recalage). Supprimé par le créateur avec la Miff. Aucune donnée personnelle.
 
+### 2.16 `notifState/{miffId}` — état de la fonction de notification des updates (SRV-4B, SERVEUR SEUL, NON DÉPLOYÉ)
+**Aucune application n'y accède, jamais** : aucune règle ne la mentionne, elle tombe donc dans « tout le reste est refusé » (lecture et écriture refusées à tout client ; la fonction y accède avec les droits Admin de son compte de service dédié, qui ignorent les règles). Un document par Miff, créé et mis à jour **uniquement par la fonction `notifierUpdate`** (`backend/functions/`, ticket `docs/tickets/notification-update-membres.md` §8.2 et §10).
+| Champ | Type | Note |
+|---|---|---|
+| `authors` | map `{ <uid de l'auteur>: { lastSeenCreatedAt, lastNotifiedAt } }` | Par auteur d'update. `lastSeenCreatedAt` (timestamp) = `createdAt` de la dernière photo pour laquelle un envoi a été **réservé** : sert à l'**idempotence** (livraison « au moins une fois » : un événement déjà vu, ou plus ancien, est abandonné). `lastNotifiedAt` (timestamp) = `createdAt` de la dernière notification envoyée pour cet auteur dans cette Miff : sert au **plafond d'une notification par auteur, par Miff et par heure** (fenêtre de 3 600 s). Écrits ensemble, dans une transaction, **avant** l'envoi (« au plus une fois »). |
+| `expireAt` | timestamp | Heure de la dernière écriture **+ 2 jours**. **Règle TTL Firestore à créer par le PM** sur le groupe de collections `notifState`, champ `expireAt` (`docs/dev/deploiement-functions.md` §1.4 E) : suppression automatique, « typiquement dans les 24 h » après l'échéance (documentation Google), TTL payant à l'usage sur Blaze (négligeable). Sans la règle, les documents restent (quelques centaines d'octets par Miff). |
+
+Contenu : **uniquement des identifiants d'utilisateurs (UID) et des dates** ; ni prénom, ni jeton, ni position. Donnée **sensible par nature** (elle prouve qu'un membre a publié une update à tel moment) : d'où la durée de vie de 2 jours et l'accès serveur seul (RGPD, §11). Une update plafonnée (2e de l'heure) ou rejouée **n'écrit rien**.
+
+**Ce que la fonction lit et écrit, pour une publication** (`photos/{uid}` créée ou remplacée ; un effacement ne déclenche rien ; seul `createdAt` de la photo est lu, jamais le contenu) :
+1. Fiches `miffs/{miffId}/members` (30 au plus, champs `firstName` et `sharing.enabled` seulement) : **1 lecture par fiche**. Destinataire = membre actuel, ≠ auteur, `sharing.enabled == true` (20 au plus) ; l'auteur doit lui-même partager ; `firstName` assaini et tronqué à 20 caractères.
+2. `users/{destinataire}/devices` (3 documents au plus) : **1 à 3 lectures par destinataire** (une requête vide coûte 1). Un appareil reçoit la notification si `notify.updates === true` (booléen strict), si `notificationsEnabled` n'est pas `false` (champ du brouillon de règles des jetons ; ignoré s'il est absent), avec un `token` non vide (≤ 4 096) et `platform` `ios` ou `android` ; `tz` (fuseau IANA) décide des heures calmes 22 h – 7 h (inconnu = calme). Champs `locale`, `appVersion`, `createdAt`, `updatedAt` : non lus.
+3. `notifState/{miffId}` : **1 lecture** (transaction) et **1 écriture** si l'envoi est réservé.
+4. Suppression de `users/{uid}/devices/{deviceId}` **seulement** si FCM répond `registration-token-not-registered` ou `invalid-registration-token`, et seulement si le document n'a pas changé depuis la lecture (précondition sur l'heure de dernière mise à jour) : seule écriture de la fonction hors `notifState`.
+
+**Budget mesuré (compté par la fonction, vérifié à l'émulateur, `backend/functions/test/integration/notif-update.test.mjs`)** : Miff de 4 membres, 3 destinataires avec 1 appareil = **8 lectures, 1 écriture** ; Miff de 15 = **30 lectures**, 1 écriture ; Miff de 40 = **51 lectures** au plus (30 fiches, 20 destinataires, 1 état), 1 écriture ; update plafonnée ou rejouée : mêmes lectures, **0 écriture** ; auteur seul : 1 lecture ; événement de plus de 5 min : 0.
+
+**Message envoyé** (jamais photo, position, lieu, nom de famille, nom de Miff, légende) : Android = message « données » à haute priorité `{ type: "circle_update", miffId, authorUid, firstName, quiet: "0"|"1" }`, durée de vie 2 h ; iOS = notification « alerte » dont le texte est résolu par le système depuis les clés `notif_circle_update_title` (argument : le prénom) et `notif_circle_update_body`, `data { type, miffId, authorUid }`, fil et remplacement par auteur (`thread-id`, `apns-collapse-id` = `authorUid`), niveau « passif » la nuit, son du téléphone le jour, expiration 2 h. Un message par appareil, **jamais de sujet FCM**. Contrat détaillé : `docs/dev/deploiement-functions.md` §11 et ticket §4, §11, §12.
+
 ---
 
 ## 3. Statuts : ce qui est stocké, ce qui est calculé
@@ -793,6 +813,7 @@ Légende : `S` = soi-même, `M` = membre de la Miff, `P` = membre qui partage lu
 | `users/{uid}` | S (**le numéro n'est lisible que par S**) | — | S (profil **avec `phone` E.164 obligatoire**, (a) CGU, (b) consentement facultatif ; heure serveur) | S (profil, **`phone` (jamais vidé)**, consentement (b) ; (a) et `createdAt` figés) | S |
 | `users/{uid}/memberships/{key}` | S | S | S (slot) | — | S (si plus membre) |
 | `users/{uid}/devices/{id}` | S | S | S | S | S |
+| `notifState/{miffId}` (SRV-4B, **serveur seul**) | **—** | **—** | **—** | **—** | **—** (aucune règle : refus par défaut ; accès Admin de la fonction `notifierUpdate`) |
 | `users/{uid}/session/active` (SESS-1) | **S seul** (ni le créateur, ni un co-membre) | — | S (`{deviceId, startedAt}`, schéma fermé, heure serveur ; remplace la précédente) | S (idem) | S (le client ne supprime que la sienne) |
 | `entitlements/{uid}` | S | — | — (serveur/console) | — | — |
 | `joinCodes/{code}` | tout compte connecté qui connaît le code | **—** | O (avec sa Miff) | O (nom) | O |
@@ -834,7 +855,8 @@ Les Cloud Functions / la console (Admin SDK) contournent les règles : c'est ain
 | Preuve d'acceptation (a) (`termsAcceptedAt`, `termsVersion`) et consentement statistiques (b) (`analyticsConsent`) | Tant que le profil existe ; **supprimées avec `users/{uid}`** à la suppression du compte. Conserver la preuve après suppression du compte exigerait un journal séparé sans donnée personnelle (Q13) : non modélisé. Un utilisateur social qui refuse le panneau de consentement n'a **aucun** enregistrement. |
 | Preuve de consentement (`sharing.*`) | Tant que le membre est dans la Miff ; supprimée avec le document membre. Si une conservation de la preuve après départ devenait un jour nécessaire, il faudrait un journal séparé (Q13) ; risque juridique assumé par le PM (décision du 2026-10-23, pas de relecture juridique). |
 | `session` (identifiant aléatoire + heure de début, SESS-1) | Remplacée à chaque connexion ; supprimée à la déconnexion volontaire (transaction) et à la suppression du compte ; peut subsister si l'application est désinstallée sans déconnexion, jusqu'à la prochaine connexion ou la suppression du compte. Le même identifiant est recopié dans le statut et la position (durée de ces documents). |
-| `devices` (jetons) | Supprimés à la déconnexion ; purge des jetons inactifs > 60 jours par fonction (Blaze). |
+| `devices` (jetons) | Supprimés à la déconnexion ; purge des jetons inactifs > 60 jours par fonction (Blaze). **SRV-4B** : la fonction `notifierUpdate` supprime aussi le document d'un appareil quand FCM répond que son jeton n'existe plus. |
+| `notifState` (SRV-4B : UID d'auteur + dates de publication et de notification, par Miff) | **2 jours** après la dernière écriture (règle TTL Firestore, à créer par le PM ; suppression « typiquement dans les 24 h » après l'échéance). Réservé au serveur. Aucune conservation de l'historique des envois. Risque juridique assumé par le PM (décision du 2026-10-23, pas de relecture juridique). |
 | `entitlements` | Durée de l'abonnement ; purge à la suppression du compte (manuelle ou fonction). |
 | Sauvegardes Firestore | Désactivées par défaut. Ne pas activer de sauvegarde/restauration à un instant donné sans décision du PM (elle dupliquerait les données sensibles). |
 
@@ -858,6 +880,7 @@ Ce tableau décrit ce que le modèle implique ; il ne constitue pas une analyse 
 | Niveau de batterie, permission de localisation du téléphone | `status` | Faible à moyenne | Intérêt légitime / contrat | État courant |
 | **Identifiant de session aléatoire** (SESS-1) et heure de début | `users/{uid}/session/active` ; recopié dans `status` et `positions` (**lisible des membres autorisés**) | Faible (aléatoire, propre à l'application, sans lien avec l'appareil ; change à chaque connexion ; laisse deviner un changement de téléphone) | Contrat (fonctionnement du service : un seul appareil actif) ; non relue juridiquement : risque assumé | Jusqu'à la déconnexion volontaire, la reconnexion ou la suppression du compte |
 | Jetons de notification | `devices` | Faible (identifiant d'appareil) | Contrat | Jusqu'à déconnexion |
+| **Notification « un proche a donné des nouvelles » (SRV-4B)** : prénom de l'auteur, identifiants techniques de la Miff et de l'auteur, indicateur de nuit, transmis aux services de notification de Google (FCM) et, pour iOS, d'Apple (APNs) | Message FCM (hors Firestore) ; `notifState` (UID + dates) | Moyenne : révèle à un tiers qui voit l'écran verrouillé un **prénom** (jamais de nom de famille, de lieu, de photo ni de nom de Miff) ; les services de notification peuvent traiter ces données **hors UE** ; l'événement lui-même (« cette personne a publié ») est connu de Google/Apple | Contrat (service demandé) et accord du téléphone aux notifications ; retirable en coupant le réglage ou dans le téléphone ; textes légaux à mettre à jour avant l'activation (SRV-3) ; risque juridique assumé par le PM (décision du 2026-10-23, **aucune relecture juridique**) | Message : 2 h de vie maximum ; `notifState` : 2 jours |
 | Preuve d'acceptation des CGU (a) et du consentement | `users`, `members` | Faible | Obligation de pouvoir démontrer le consentement | Voir §10 |
 | Consentement (b) aux statistiques d'usage et rapports de plantage (état, date, version, retrait) | `users` (`analyticsConsent`) | Faible en soi (un booléen daté) ; **conditionne** la collecte d'une donnée à caractère personnel (identifiant d'installation, zone déduite de l'IP, journaux de plantage) | Consentement (RGPD art. 6.1.a et 7 : libre, spécifique, retirable aussi facilement que donné) | Tant que le profil existe (§10) |
 | État d'abonnement | `entitlements` | Faible | Contrat | Durée de l'abonnement |
@@ -909,6 +932,7 @@ Risques juridiques connus et assumés par le PM (décision du 2026-10-23, pas de
 - Firestore : 1 GiB stockés, **50 000 lectures/jour**, **20 000 écritures/jour**, 20 000 suppressions/jour, 10 GiB/mois de transfert sortant.
 - Authentication : 50 000 utilisateurs actifs mensuels (MAU).
 - **Cloud Functions : non disponible sur Spark** (listé "Not applicable"). **Blaze activé par le PM le 2026-11-11** ; socle SRV-1 écrit (`backend/functions/`, région `europe-west9`, 2e génération, 2 M invocations gratuites par mois, garde-fous de coût testés) ; coûts et choix : `docs/dev/deploiement-functions.md` §8 et §9.
+- **Notifications d'update (SRV-4B, `notifierUpdate`)** : ≈ **8 lectures et 1 écriture par update** pour une Miff de 4 membres (30 lectures pour 15 membres, 51 au plus pour 40 ; 0 écriture si l'update est plafonnée ou rejouée), **comptées par la fonction et vérifiées à l'émulateur** (§2.16). Hypothèse du ticket : 2 updates par utilisateur actif et par jour, soit ≈ +16 lectures et +2 écritures par jour et par utilisateur actif (hypothèse haute) : **cela rajoute environ 20 % aux ~75 lectures estimées par utilisateur actif** et ramène le plafond gratuit de ~650 à ~550 utilisateurs actifs par jour (50 000 lectures) si rien d'autre ne change ; invocations : 60 000 par mois à 1 000 utilisateurs actifs par jour (quota gratuit : 2 millions) ; envois FCM gratuits. Signaux de bascule et surveillance : `docs/dev/surveillance-quotas.md` §5 septies.
 - **Cloud Storage : non disponible sur Spark** (aucune quote gratuite listée en Spark ; un article tiers indique que Storage exige Blaze depuis février 2026 : **à vérifier** dans la console avant de s'y fier).
 - FCM et App Check : sans coût. **Précision (étude du 2026-11-11)** : ce qui exige Blaze, c'est Cloud Functions (un serveur chez Google sans clé à stocker), pas FCM lui-même.
 - Les quotas gratuits sont conservés après passage en Blaze ; au-delà, facturation à l'usage (tarifs de europe-west9 **à vérifier** dans le calculateur ; ordre de grandeur indicatif : quelques centimes pour 100 000 lectures). Une budget alert Blaze prévient mais **ne plafonne pas** la dépense.
@@ -1033,7 +1057,7 @@ Ordre de grandeur de coût à ~2 000 utilisateurs actifs/jour après bascule : q
 
 ## 13. Ce qui exige Blaze (Cloud Functions) et ce qui peut s'en passer
 
-Cloud Functions n'existent pas sur Spark. **Blaze est activé (décision du PM, 2026-11-11)** et le **socle SRV-1** est écrit (`backend/functions/`) : une seule fonction de démonstration `ping`, **aucune fonction métier** (SRV-4 et suivants viendront par tickets). Les tableaux ci-dessous restent la liste de ce que chaque fonction future couvrira. Tableau fonction par fonction :
+Cloud Functions n'existent pas sur Spark. **Blaze est activé (décision du PM, 2026-11-11)** et le **socle SRV-1** est écrit (`backend/functions/`) : la fonction de démonstration `ping` et, depuis **SRV-4B**, la première fonction métier `notifierUpdate` (notification push d'une update aux autres membres, §2.16 ; **jamais déployée par un agent**, déploiement par le PM sur « oui » explicite, `docs/dev/deploiement-functions.md` §11). Les autres fonctions (SRV-4 suite, SRV-6 et suivants) viendront par tickets. Les tableaux ci-dessous restent la liste de ce que chaque fonction future couvrira. Tableau fonction par fonction :
 
 | Fonctionnalité | Sur Spark (sans fonction) | Avec Blaze |
 |---|---|---|
@@ -1042,7 +1066,7 @@ Cloud Functions n'existent pas sur Spark. **Blaze est activé (décision du PM, 
 | Niveau orange/rouge **affiché** | **Oui** (calculé par les clients) | — |
 | Limites freemium (1 Miff / 3 lieux), verrouillage du premium | **Oui** (slots + règles, §6) | Fonction possible pour une application plus stricte |
 | Octroi du premium | **Manuel** par le PM dans la console (testeurs) | Webhook de validation d'achat (RevenueCat ou notifications App Store/Google Play) qui écrit `entitlements` : **indispensable avant tout paywall réel**, sinon on ne peut pas prouver un achat |
-| **Notifications push** aux proches (entrée/sortie de lieu, arrivée dans une Miff) | **Non** : envoyer un push exige des identifiants serveur qu'on ne met jamais dans l'app | Fonction déclenchée à l'écriture de `status` → FCM |
+| **Notifications push** aux proches (entrée/sortie de lieu, arrivée dans une Miff) | **Non** : envoyer un push exige des identifiants serveur qu'on ne met jamais dans l'app | Fonction déclenchée à l'écriture de `status` → FCM. **Fait pour « update publiée » (SRV-4B, `notifierUpdate`, déclenchée à l'écriture de `photos/{uid}`)**, pas encore pour les lieux ni l'absence |
 | **Escalade orange/rouge quand l'app du proche est fermée** | **Non** : le niveau n'est visible que si l'app d'un proche est ouverte | Fonction planifiée (toutes les ~10 min) qui interroge `status` où `escalationDueAt <= maintenant` (ajouter un index de groupe de collections sur ce champ), notifie, puis avance l'échéance |
 | Alerte zone de danger (premium) | Visible dans le feed seulement | Même fonction que le push |
 | Photos hébergées dans Cloud Storage | **Non** (Storage exige Blaze) → photos ≤ 150 Ko dans Firestore | Migration possible : le champ `jpeg` serait remplacé par un chemin |
