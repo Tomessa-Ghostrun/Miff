@@ -164,6 +164,8 @@ final class AppEnvironment {
     let detectionJournal: DetectionJournal
     /// L'Update (UPDATE-3) : la photo du moment, le bouton central coloré, la bulle d'incitation.
     let update: UpdateServices
+    /// Les notifications push entre proches (SRV-2I, SRV-4I) : le registre des appareils, l'interrupteur, la réception.
+    let push: PushServices
     /// La suppression du compte (AUTH-5c) : procédure, contrôleur et retrait de l'autorisation Apple. Construite à la première demande (les
     /// écrans de la suppression), à partir de ce que la session détient déjà ; seul le marqueur local est donné à la session dès le départ.
     lazy var accountDeletion: AccountDeletionServices = AccountDeletionServices.make(self)
@@ -218,6 +220,9 @@ final class AppEnvironment {
         let updateServices = UpdateServices.make(
             gateway: gateway, network: networkMonitor, device: device, tracking: trackingServices, miff: miff
         )
+        let pushServices = PushServices.make(
+            gateway: gateway, device: device, network: networkMonitor, directory: miff.directory
+        )
         let manager = SessionManager(
             SessionDependencies(
                 gateway: gateway,
@@ -229,12 +234,16 @@ final class AppEnvironment {
                 cache: cache,
                 // Le brouillon (noms, photo, numéro) et les Miffs en mémoire partent avec la session. Le suivi des lieux et
                 // les notifications ajouteront leur propre arrêt ici, pour qu'une déconnexion les arrête (ticket §7.6).
-                teardown: Self.teardowns(drafts, miff, places, trackingServices, updateServices),
+                // SRV-2I : la sortie invalide d'abord le jeton de notification (avant tout le reste), puis arrête le reste.
+                teardown: [pushServices.teardown]
+                    + Self.teardowns(drafts, miff, places, trackingServices, updateServices),
                 device: device,
                 network: networkMonitor,
                 drafts: drafts, generationCounter: trackingServices.generation,
                 deletionMarker: AccountDeletionFileMarker(),
-                localData: AccountDeletionServices.localData(updateLedger: updateServices.ledger)
+                localData: AccountDeletionServices.localData(
+                    updateLedger: updateServices.ledger, extra: pushServices.erasers
+                )
             )
         )
         privacySettings = privacy
@@ -255,6 +264,7 @@ final class AppEnvironment {
         tracking = trackingServices.runtime
         detectionJournal = trackingServices.journal
         update = updateServices
+        push = pushServices
         profileDrafts = drafts
         pendingConsent = pending
     }
@@ -335,6 +345,7 @@ final class AppEnvironment {
         let session = self.session
         let directory = miffDirectory
         let repository = miffRepository
+        let push = self.push
         return PermissionGateViewModel(
             dependencies: PermissionGateDependencies(
                 permissions: devicePermissions,
@@ -343,7 +354,10 @@ final class AppEnvironment {
                 currentUid: { session.currentUid },
                 leaver: { uid, miffId in await repository.leave(uid: uid, miffId: miffId) },
                 onLeft: { miffId in await directory.afterOwnDeparture(miffId: miffId) },
-                awaiting: awaitingAgreement
+                awaiting: awaitingAgreement,
+                pushConsent: push.consent,
+                // SRV-2I : l'accord vient d'être donné : le registre est synchronisé TOUT DE SUITE (pas au prochain retour au premier plan).
+                onNotificationsAnswered: { push.sync() }
             ),
             settings: PermissionGateSettings(locationBlocking: LocationBlockingSwitch.current)
         )

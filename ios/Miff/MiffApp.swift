@@ -5,6 +5,8 @@ import UIKit
 @main
 @MainActor
 struct MiffApp: App {
+    /// SRV-2I : seulement pour recevoir le jeton d'APNs (SwiftUI n'a pas d'autre porte). Voir `MiffAppDelegate`.
+    @UIApplicationDelegateAdaptor(MiffAppDelegate.self) private var appDelegate
     private let environment: AppEnvironment
     /// Lu une fois par lancement : le choix « réduire les animations » donne un logo fixe à la place de l'animation.
     private let reduceMotion: Bool
@@ -18,6 +20,8 @@ struct MiffApp: App {
         // faite ici, avant tout autre accès à Firestore.
         environment.privacySettings.pauseCollection()
         environment.session.start()
+        // SRV-2I : branche les récepteurs des notifications push (n'allume aucun service : l'accord de la personne vient d'abord).
+        environment.push.start()
         self.environment = environment
         reduceMotion = UIAccessibility.isReduceMotionEnabled
     }
@@ -44,6 +48,8 @@ struct MiffApp: App {
             }
             // LOC-4b : à l'ouverture et au passage en arrière-plan, le suivi des lieux lit la position (s'il en a le droit).
             .trackingLifecycle(environment.tracking)
+            // SRV-2I : au premier plan et à chaque changement de la session, le registre des appareils est regardé (rien d'écrit si rien n'a changé).
+            .pushLifecycle(environment.push, session: environment.sessionState)
         }
     }
 }

@@ -69,6 +69,8 @@ struct MainShellView<Feed: View>: View {
     private let update: UpdateShell
     private let onOpenMiff: (String) -> Void
     private let onOpenSettings: (SettingsRoute) -> Void
+    /// Monte chaque fois qu'on demande le Feed (toucher sur la notification « un proche a donné des nouvelles ») : l'onglet Feed est alors montré.
+    private let openFeedToken: Int
     private let feed: (FeedShellContext) -> Feed
     @State private var selected: MainTab = .feed
     @State private var keyboardVisible = false
@@ -87,6 +89,7 @@ struct MainShellView<Feed: View>: View {
         update: UpdateShell,
         onOpenMiff: @escaping (String) -> Void,
         onOpenSettings: @escaping (SettingsRoute) -> Void,
+        openFeedToken: Int = 0,
         @ViewBuilder feed: @escaping (FeedShellContext) -> Feed
     ) {
         self.miffs = miffs
@@ -97,6 +100,7 @@ struct MainShellView<Feed: View>: View {
         self.update = update
         self.onOpenMiff = onOpenMiff
         self.onOpenSettings = onOpenSettings
+        self.openFeedToken = openFeedToken
         self.feed = feed
     }
 
@@ -196,6 +200,10 @@ struct MainShellView<Feed: View>: View {
             }
         }
         .onPreferenceChange(TabBarTopPreference.self) { barTopY = $0 }
+        // Un toucher sur une notification du serveur : l'onglet Feed.
+        .onChange(of: openFeedToken) { _ in
+            selected = .feed
+        }
         // La dernière Miff a disparu : on repart du Feed.
         .onChange(of: hasNoMiff) { noMiff in
             if noMiff {

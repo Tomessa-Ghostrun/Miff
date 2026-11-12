@@ -10,8 +10,11 @@ final class AccountLocalStorageGuardTests: XCTestCase {
     private let known: [String: String] = [
         "App/AppEnvironment.swift": "branchement des réglages ; rien de plus",
         "App/AppEnvironment+AccountDeletion.swift": "branchement des effaceurs (AccountLocalData)",
+        "App/PushServices.swift": "branchement des notifications push ; effaceurs : PushServices.erasers",
         "Services/Permission/DevicePermissions.swift": "drapeau par compte : AccountLocalData (notificationAsks)",
         "Services/PrivacySettings.swift": "choix Analytics / plantages : SessionManager (eraseCollectedData)",
+        "Services/Push/PushLocalFileStore.swift": "mémoire de l'enregistrement : PushRegistrar.forget, erasers",
+        "Services/Push/PushPreferenceStores.swift": "accord et interrupteur par compte : PushServices.erasers",
         "Services/Storage/AccountDeletionFileMarker.swift": "le marqueur lui-même : effacé en dernier",
         "Services/Storage/ActiveMiffStore.swift": "Miff active : AccountLocalData (activeMiff)",
         "Services/Storage/DeviceIdFileStore.swift": "session d'appareil : DeviceSession.forget",
