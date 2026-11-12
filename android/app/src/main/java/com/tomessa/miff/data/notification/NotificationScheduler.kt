@@ -436,6 +436,7 @@ class NotificationScheduler(
                     latenessMillis = maxOf(0L, now - news.sentAtMillis),
                     alreadyNotified = NotifiedKeys.contains(keys, centerId, now),
                     maxLatenessMillis = NotificationPolicy.N9_MAX_AGE_MILLIS,
+                    serverQuiet = news.serverQuiet,
                 )
             when (decision) {
                 Delivery.Drop -> {

@@ -213,6 +213,12 @@ class CircleNewsSchedulerTest {
     }
 
     @Test
+    fun aMessageTheServerCalledQuiet_isShownOnTheQuietChannel_evenByDay() {
+        scheduler.onCircleNews("me", CircleNewsPayload("miffAAAA", "author1", "Amandine", now, serverQuiet = true))
+        assertTrue(presenter.shown.single().quiet)
+    }
+
+    @Test
     fun theSameMessageDeliveredTwiceMakesOneNotificationAndOneLine() {
         val message = news()
         scheduler.onCircleNews("me", message)

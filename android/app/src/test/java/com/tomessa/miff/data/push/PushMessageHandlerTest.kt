@@ -10,15 +10,20 @@ import org.junit.Test
 class PushMessageHandlerTest {
     private var uid: String? = "me"
     private val received = mutableListOf<Pair<String, CircleNewsPayload>>()
-    private val handler = PushMessageHandler(currentUid = { uid }, onCircleNews = { u, n -> received += u to n })
+    private val handler =
+        PushMessageHandler(
+            currentUid = { uid },
+            onCircleNews = { u, n -> received += u to n },
+            nowMillis = { 1_800_000_000_000L },
+        )
 
     private val valid =
         mapOf(
-            "type" to "n9_update",
+            "type" to "circle_update",
             "miffId" to "miffAAAA1234",
             "authorUid" to "author1",
-            "authorFirstName" to "Amandine",
-            "sentAt" to "1800000000000",
+            "firstName" to "Amandine",
+            "quiet" to "0",
         )
 
     @Test
@@ -38,8 +43,9 @@ class PushMessageHandlerTest {
     @Test
     fun aMalformedMessageIsIgnored() {
         assertFalse(handler.handle(valid + ("miffId" to "../x")))
-        assertFalse(handler.handle(valid - "sentAt"))
-        assertFalse(handler.handle(valid + ("authorFirstName" to "‮")))
+        assertFalse(handler.handle(valid - "miffId"))
+        assertFalse(handler.handle(valid + ("quiet" to "maybe")))
+        assertFalse(handler.handle(valid + ("firstName" to "‮")))
         assertTrue(received.isEmpty())
     }
 

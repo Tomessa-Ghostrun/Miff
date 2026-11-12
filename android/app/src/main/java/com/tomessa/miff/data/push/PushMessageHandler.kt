@@ -15,12 +15,17 @@ class PushMessageHandler(
     private val currentUid: () -> String?,
     /** Hands a valid "a loved one gave news" to the notifications (they decide: caps, switches, foreground, night). */
     private val onCircleNews: (uid: String, news: CircleNewsPayload) -> Unit,
+    /** The time of reception: the server sends no time. */
+    private val nowMillis: () -> Long = System::currentTimeMillis,
 ) {
     /** Returns true when the message was understood and handed on (it may still show nothing: the notifications decide). */
-    fun handle(data: Map<String, String>): Boolean {
-        // A message with many keys is not ours (the real one has five); no need to look at it.
+    fun handle(
+        data: Map<String, String>,
+        messageId: String? = null,
+    ): Boolean {
+        // A message with many keys is not ours (the real one has five, FCM adds a few of its own); no need to look at it.
         if (data.isEmpty() || data.size > MAX_KEYS) return false
-        val news = CircleNewsParser.parse(data) ?: return false
+        val news = CircleNewsParser.parse(data, receivedAtMillis = nowMillis(), messageId = messageId) ?: return false
         val uid = currentUid() ?: return false
         onCircleNews(uid, news)
         return true

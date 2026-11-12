@@ -14,26 +14,32 @@ import org.junit.Test
 class CircleNewsTest {
     private val sentAt = 1_800_000_000_000L
 
+    /** The server sends no time: the time of reception is given. */
+    private fun parse(
+        data: Map<String, String>,
+        messageId: String? = null,
+    ) = CircleNewsParser.parse(data, receivedAtMillis = sentAt, messageId = messageId)
+
     private fun message(
-        type: String? = "n9_update",
+        type: String? = "circle_update",
         miffId: String? = "AbCdEf0123456789xyZ0",
         authorUid: String? = "uidAuthor1234567890123456789",
         name: String? = "Tomessa",
-        at: String? = sentAt.toString(),
+        quiet: String? = "0",
         extra: Map<String, String> = emptyMap(),
     ): Map<String, String> =
         buildMap {
             type?.let { put("type", it) }
             miffId?.let { put("miffId", it) }
             authorUid?.let { put("authorUid", it) }
-            name?.let { put("authorFirstName", it) }
-            at?.let { put("sentAt", it) }
+            name?.let { put("firstName", it) }
+            quiet?.let { put("quiet", it) }
             putAll(extra)
         }
 
     @Test
     fun aValidMessageIsUnderstood() {
-        val news = CircleNewsParser.parse(message())
+        val news = parse(message())
         assertNotNull(news)
         assertEquals("AbCdEf0123456789xyZ0", news!!.miffId)
         assertEquals("uidAuthor1234567890123456789", news.authorUid)
@@ -42,49 +48,88 @@ class CircleNewsTest {
     }
 
     @Test
+    fun theMessageExactlyAsTheServerBuildsIt_valuesOfTheServerTest() {
+        // backend/functions/test/unit/notif-regles.test.mjs, "Android : message data seulement": the data of `construireMessage`, nothing else.
+        val day =
+            mapOf(
+                "type" to "circle_update",
+                "miffId" to "MIFF123",
+                "authorUid" to "AUTEUR1",
+                "firstName" to "Tomessa",
+                "quiet" to "0",
+            )
+        val night = day + ("quiet" to "1")
+        val a = parse(day)!!
+        assertEquals("MIFF123", a.miffId)
+        assertEquals("AUTEUR1", a.authorUid)
+        assertEquals("Tomessa", a.authorFirstName)
+        assertFalse(a.serverQuiet)
+        assertEquals("no time in the message: the time of reception", sentAt, a.sentAtMillis)
+        assertTrue(parse(night)!!.serverQuiet)
+    }
+
+    @Test
+    fun theQuietFlagIsAbsentOrZeroOrOneNothingElse() {
+        assertFalse(parse(message(quiet = null))!!.serverQuiet)
+        assertFalse(parse(message(quiet = "0"))!!.serverQuiet)
+        assertTrue(parse(message(quiet = "1"))!!.serverQuiet)
+    }
+
+    @Test
+    fun theIdentifierOfTheMessageDedupesARedelivery_andABadOneIsDropped() {
+        val one = parse(message(), messageId = "0:1699999999999999%abc123")!!
+        val two = parse(message(), messageId = "0:1699999999999999%abc123")!!
+        assertEquals(CircleNewsKeys.centerId(one), CircleNewsKeys.centerId(two))
+        val other = parse(message(), messageId = "0:1700000000000000%def456")!!
+        assertTrue(CircleNewsKeys.centerId(one) != CircleNewsKeys.centerId(other))
+        // A shape it does not know (a pipe would break the key) is not used: the time of reception stands in.
+        assertEquals(null, parse(message(), messageId = "a|b")!!.messageId)
+        assertEquals(null, parse(message(), messageId = "x".repeat(81))!!.messageId)
+        assertEquals(CircleNewsKeys.trayTag(one), CircleNewsKeys.trayTagOf(CircleNewsKeys.centerId(one)))
+    }
+
+    @Test
     fun theAuthorIdentifierIsOptional_absentOrEmptyMeansNone_butAMalformedOneRejectsTheMessage() {
-        assertNull(CircleNewsParser.parse(message(authorUid = null))!!.authorUid)
-        assertNull(CircleNewsParser.parse(message(authorUid = ""))!!.authorUid)
-        assertNull(CircleNewsParser.parse(message(authorUid = "a/b")))
-        assertNull(CircleNewsParser.parse(message(authorUid = "x".repeat(129))))
+        assertNull(parse(message(authorUid = null))!!.authorUid)
+        assertNull(parse(message(authorUid = ""))!!.authorUid)
+        assertNull(parse(message(authorUid = "a/b")))
+        assertNull(parse(message(authorUid = "x".repeat(129))))
     }
 
     @Test
     fun anUnknownTypeIsIgnored_aLaterVersionOfTheServerMaySendMore() {
-        assertNull(CircleNewsParser.parse(message(type = "n10_something")))
-        assertNull(CircleNewsParser.parse(message(type = "N9_UPDATE")))
-        assertNull(CircleNewsParser.parse(message(type = "")))
-        assertNull(CircleNewsParser.parse(message(type = null)))
+        assertNull(parse(message(type = "n10_something")))
+        assertNull(parse(message(type = "CIRCLE_UPDATE")))
+        assertNull("the type of the first draft of the contract", parse(message(type = "n9_update")))
+        assertNull(parse(message(type = "")))
+        assertNull(parse(message(type = null)))
     }
 
     @Test
     fun aMissingOrMalformedFieldIgnoresTheWholeMessage() {
-        assertNull(CircleNewsParser.parse(message(miffId = null)))
-        assertNull(CircleNewsParser.parse(message(miffId = "")))
-        assertNull(CircleNewsParser.parse(message(miffId = "../../etc")))
-        assertNull(CircleNewsParser.parse(message(miffId = "miff://open?x=1")))
-        assertNull(CircleNewsParser.parse(message(miffId = "a".repeat(129))))
-        assertNull(CircleNewsParser.parse(message(name = null)))
-        assertNull(CircleNewsParser.parse(message(name = "")))
-        assertNull(CircleNewsParser.parse(message(name = "   ")))
-        assertNull(CircleNewsParser.parse(message(at = null)))
-        assertNull(CircleNewsParser.parse(message(at = "yesterday")))
-        assertNull(CircleNewsParser.parse(message(at = "-5")))
-        assertNull(CircleNewsParser.parse(message(at = "1800000000")))
-        assertNull(CircleNewsParser.parse(message(at = "9".repeat(13))))
-        assertNull(CircleNewsParser.parse(message(at = "1500000000000")))
+        assertNull(parse(message(miffId = null)))
+        assertNull(parse(message(miffId = "")))
+        assertNull(parse(message(miffId = "../../etc")))
+        assertNull(parse(message(miffId = "miff://open?x=1")))
+        assertNull(parse(message(miffId = "a".repeat(129))))
+        assertNull(parse(message(name = null)))
+        assertNull(parse(message(name = "")))
+        assertNull(parse(message(name = "   ")))
+        assertNull(parse(message(quiet = "yes")))
+        assertNull(parse(message(quiet = "2")))
+        assertNull(parse(message(quiet = "")))
     }
 
     @Test
     fun aVeryLongFirstNameIsSuspect_theMessageIsIgnored() {
-        assertNull(CircleNewsParser.parse(message(name = "A".repeat(65))))
-        assertNotNull(CircleNewsParser.parse(message(name = "A".repeat(64))))
+        assertNull(parse(message(name = "A".repeat(65))))
+        assertNotNull(parse(message(name = "A".repeat(64))))
     }
 
     @Test
     fun unknownKeysAreIgnored_theOnesFcmAddsItself() {
         val news =
-            CircleNewsParser.parse(
+            parse(
                 message(extra = mapOf("google.message_id" to "0:123", "from" to "29899146512", "collapse_key" to "x")),
             )
         assertNotNull(news)
@@ -130,7 +175,7 @@ class CircleNewsTest {
 
     @Test
     fun thePayloadNeverPrintsItsContent() {
-        val news = CircleNewsParser.parse(message())!!
+        val news = parse(message())!!
         assertEquals("CircleNewsPayload(redacted)", news.toString())
         assertFalse(news.toString().contains("Tomessa"))
     }
@@ -139,24 +184,24 @@ class CircleNewsTest {
 
     @Test
     fun oneNotificationPerAuthor_evenAcrossTwoMiffs() {
-        val a1 = CircleNewsParser.parse(message(miffId = "miffAAAA"))!!
-        val a2 = CircleNewsParser.parse(message(miffId = "miffBBBB"))!!
+        val a1 = parse(message(miffId = "miffAAAA"))!!
+        val a2 = parse(message(miffId = "miffBBBB"))!!
         assertEquals(CircleNewsKeys.trayTag(a1), CircleNewsKeys.trayTag(a2))
-        val other = CircleNewsParser.parse(message(authorUid = "someoneElse"))!!
+        val other = parse(message(authorUid = "someoneElse"))!!
         assertTrue(CircleNewsKeys.trayTag(a1) != CircleNewsKeys.trayTag(other))
     }
 
     @Test
     fun withoutAnAuthorTheTagIsPerMiff() {
-        val a = CircleNewsParser.parse(message(authorUid = null, miffId = "miffAAAA"))!!
-        val b = CircleNewsParser.parse(message(authorUid = null, miffId = "miffBBBB"))!!
+        val a = parse(message(authorUid = null, miffId = "miffAAAA"))!!
+        val b = parse(message(authorUid = null, miffId = "miffBBBB"))!!
         assertTrue(CircleNewsKeys.trayTag(a) != CircleNewsKeys.trayTag(b))
     }
 
     @Test
     fun theLineOfTheCentreIsUniquePerMessage_andFindsItsNotificationAgain() {
-        val first = CircleNewsParser.parse(message())!!
-        val second = CircleNewsParser.parse(message(at = (sentAt + 3_600_000).toString()))!!
+        val first = parse(message(), messageId = "0:first")!!
+        val second = parse(message(), messageId = "0:other")!!
         assertTrue(CircleNewsKeys.centerId(first) != CircleNewsKeys.centerId(second))
         assertEquals(CircleNewsKeys.trayTag(first), CircleNewsKeys.trayTagOf(CircleNewsKeys.centerId(first)))
         assertTrue(CircleNewsKeys.isCircleNews(CircleNewsKeys.centerId(first)))
@@ -191,6 +236,7 @@ class CircleNewsTest {
         lateness: Long = 0L,
         already: Boolean = false,
         preferences: NotificationPreferences = prefs,
+        serverQuiet: Boolean = false,
     ) = NotificationDelivery.decide(
         type = NotificationType.N9,
         preferences = preferences,
@@ -200,7 +246,19 @@ class CircleNewsTest {
         latenessMillis = lateness,
         alreadyNotified = already,
         maxLatenessMillis = NotificationPolicy.N9_MAX_AGE_MILLIS,
+        serverQuiet = serverQuiet,
     )
+
+    @Test
+    fun whenTheServerSaysQuiet_theQuietChannelIsUsedEvenByDay_ifNuitCalmIsOn() {
+        assertEquals(true, (decide(hour = 14, serverQuiet = true) as Delivery.Show).quiet)
+        assertEquals(false, (decide(hour = 14, serverQuiet = false) as Delivery.Show).quiet)
+        // "Nuit calme" off: the person wants no quiet hours at all, the flag of the server included.
+        assertEquals(
+            false,
+            (decide(hour = 14, serverQuiet = true, preferences = prefs.copy(nightCalm = false)) as Delivery.Show).quiet,
+        )
+    }
 
     @Test
     fun byDayTheNewsIsShownOnTheNormalChannel_atNightOnTheQuietOne() {

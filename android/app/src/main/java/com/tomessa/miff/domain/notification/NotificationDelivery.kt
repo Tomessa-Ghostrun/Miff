@@ -77,14 +77,37 @@ object NotificationDelivery {
         latenessMillis: Long,
         alreadyNotified: Boolean,
         maxLatenessMillis: Long = NotificationPolicy.CATCH_UP_MAX_LATENESS_MILLIS,
+        /** A push says it is the quiet hours of the recipient (the server computed them): quiet too, if "Nuit calme" is on and the type is quiet at night. */
+        serverQuiet: Boolean = false,
     ): Delivery =
         when {
-            alreadyNotified -> Delivery.Drop
-            !preferences.allows(type) -> Delivery.Drop
-            appInForeground -> Delivery.Silent
-            latenessMillis > maxLatenessMillis -> Delivery.Silent
-            !counters.canShow(type) -> Delivery.Silent
-            else -> Delivery.Show(quiet = NightCalm.isQuiet(type, preferences, localHour))
+            alreadyNotified -> {
+                Delivery.Drop
+            }
+
+            !preferences.allows(type) -> {
+                Delivery.Drop
+            }
+
+            appInForeground -> {
+                Delivery.Silent
+            }
+
+            latenessMillis > maxLatenessMillis -> {
+                Delivery.Silent
+            }
+
+            !counters.canShow(type) -> {
+                Delivery.Silent
+            }
+
+            else -> {
+                Delivery.Show(
+                    quiet =
+                        NightCalm.isQuiet(type, preferences, localHour) ||
+                            (serverQuiet && preferences.nightCalm && type.quietAtNight),
+                )
+            }
         }
 }
 

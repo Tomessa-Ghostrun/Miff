@@ -67,7 +67,10 @@ class MiffApplication :
     }
 
     // SRV-2: the messaging service (data/push) reaches the container through this seam.
-    override fun handlePushMessage(data: Map<String, String>): Boolean = container.pushMessageHandler.handle(data)
+    override fun handlePushMessage(
+        data: Map<String, String>,
+        messageId: String?,
+    ): Boolean = container.pushMessageHandler.handle(data, messageId)
 
     override suspend fun onNewPushToken(token: String) = container.onNewPushToken(token)
 

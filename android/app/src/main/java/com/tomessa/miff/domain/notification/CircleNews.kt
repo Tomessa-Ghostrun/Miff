@@ -4,7 +4,7 @@ package com.tomessa.miff.domain.notification
  * N9, "{Prénom} a donné des nouvelles" (ticket docs/tickets/notification-update-membres.md): the notification of a push sent by the SERVER when a member of a Miff
  * publishes an update. Pure rules (no Android class): the validation of the message that comes from the network, and the keys of the notification.
  *
- * PRIVACY: what travels in the message is a type, the identifier of the Miff, the identifier of the author, the first name of the author and a time. Never a photo, a
+ * PRIVACY: what travels in the message (built by the server, backend/functions/src/notifRegles.ts, `construireMessage`) is a type, the identifier of the Miff, the identifier of the author, the first name of the author and a flag "quiet" (the quiet hours of the recipient, computed by the server). The server sends NO time: the time of RECEPTION is used. Never a photo, a
  * caption, a position, a place, an address, the name of the Miff or a family name. The first name is NOT trusted: it is cleaned and cut here (20 characters at most) even
  * though the server already did it, because this is the text that appears on a locked screen.
  */
@@ -16,8 +16,15 @@ class CircleNewsPayload(
     val authorUid: String?,
     /** Cleaned and cut: at most [CircleNewsParser.MAX_FIRST_NAME_CHARS] characters, then "…" when it was longer. Never empty. */
     val authorFirstName: String,
-    /** When the update was published (the server's clock, in milliseconds since 1970). */
+    /**
+     * When this phone RECEIVED the message (milliseconds since 1970): the server sends no time. The rule "a message of more than 2 hours is only a silent line" is therefore
+     * carried by the life of the message at FCM (the server gives it a time to live of 2 hours, `DUREE_DE_VIE_MS`): a message that arrives is at most 2 hours old.
+     */
     val sentAtMillis: Long,
+    /** The server says it is the quiet hours of the recipient (key `quiet` = "1"): the quiet channel, if "Nuit calme" is on. */
+    val serverQuiet: Boolean = false,
+    /** The identifier FCM gave the message, cleaned: the same message delivered twice makes one line. Null when there is none. */
+    val messageId: String? = null,
 ) {
     /** Redacted: a name and identifiers are not for a log. */
     override fun toString(): String = "CircleNewsPayload(redacted)"
@@ -25,13 +32,13 @@ class CircleNewsPayload(
 
 object CircleNewsParser {
     /** The only type of message understood in this version; any other is ignored (a later version of the server may send more). */
-    const val TYPE = "n9_update"
+    const val TYPE = "circle_update"
 
     const val KEY_TYPE = "type"
     const val KEY_MIFF_ID = "miffId"
     const val KEY_AUTHOR_UID = "authorUid"
-    const val KEY_FIRST_NAME = "authorFirstName"
-    const val KEY_SENT_AT = "sentAt"
+    const val KEY_FIRST_NAME = "firstName"
+    const val KEY_QUIET = "quiet"
 
     /** The first name shown: 20 characters (code points) at most, then "…" (ticket section 4). */
     const val MAX_FIRST_NAME_CHARS = 20
@@ -40,17 +47,17 @@ object CircleNewsParser {
     private const val MAX_RAW_FIRST_NAME_CHARS = 64
 
     private val identifier = Regex("^[A-Za-z0-9_-]{1,128}$")
-    private val milliseconds = Regex("^[0-9]{12,13}$")
-
-    /** 2020-01-01 and 2100-01-01 in milliseconds: anything outside is not a time of this century. */
-    private const val EARLIEST_MILLIS = 1_577_836_800_000L
-    private const val LATEST_MILLIS = 4_102_444_800_000L
+    private val messageIdShape = Regex("^[A-Za-z0-9_.:%-]{1,80}$")
 
     /**
      * The message, or null when it must be ignored: unknown type, a missing or malformed field, a first name that is empty once cleaned. Unknown keys (the ones FCM adds
      * itself) are ignored. STRICT on purpose: a message that does not look exactly right shows nothing.
      */
-    fun parse(data: Map<String, String>): CircleNewsPayload? {
+    fun parse(
+        data: Map<String, String>,
+        receivedAtMillis: Long,
+        messageId: String? = null,
+    ): CircleNewsPayload? {
         if (data[KEY_TYPE] != TYPE) return null
         val miffId = data[KEY_MIFF_ID]?.takeIf { identifier.matches(it) } ?: return null
         val authorRaw = data[KEY_AUTHOR_UID]
@@ -64,13 +71,24 @@ object CircleNewsParser {
         val rawName = data[KEY_FIRST_NAME] ?: return null
         if (rawName.length > MAX_RAW_FIRST_NAME_CHARS) return null
         val name = cleanFirstName(rawName) ?: return null
-        val sentAt =
-            data[KEY_SENT_AT]
-                ?.takeIf { milliseconds.matches(it) }
-                ?.toLongOrNull()
-                ?.takeIf { it in EARLIEST_MILLIS..LATEST_MILLIS }
-                ?: return null
-        return CircleNewsPayload(miffId, authorUid, name, sentAt)
+        // "quiet" is "0" or "1" exactly (the server writes nothing else); absent is "not quiet"; any other value ignores the message.
+        val quiet =
+            when (data[KEY_QUIET]) {
+                null, "0" -> false
+                "1" -> true
+                else -> return null
+            }
+        if (receivedAtMillis <= 0L) return null
+        return CircleNewsPayload(
+            miffId,
+            authorUid,
+            name,
+            receivedAtMillis,
+            quiet,
+            messageId?.takeIf {
+                messageIdShape.matches(it)
+            },
+        )
     }
 
     /**
@@ -132,8 +150,8 @@ object CircleNewsKeys {
     fun trayTag(news: CircleNewsPayload): String =
         if (news.authorUid != null) "${PREFIX}u|${news.authorUid}" else "${PREFIX}m|${news.miffId}"
 
-    /** The key of the line of the centre, also the key of deduplication (a message delivered twice makes one line): the tag and the time of the message. */
-    fun centerId(news: CircleNewsPayload): String = "${trayTag(news)}|${news.sentAtMillis}"
+    /** The key of the line of the centre, also the key of deduplication (a message delivered twice makes one line): the tag and the identifier of the message (else the time of reception). */
+    fun centerId(news: CircleNewsPayload): String = "${trayTag(news)}|${news.messageId ?: news.sentAtMillis}"
 
     fun isCircleNews(centerId: String): Boolean = centerId.startsWith(PREFIX)
 

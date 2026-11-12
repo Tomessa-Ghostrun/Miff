@@ -21,12 +21,17 @@ class RecordingPushApplication :
     Application(),
     PushHost {
     val messages = mutableListOf<Map<String, String>>()
+    val messageIds = mutableListOf<String?>()
     val tokens = mutableListOf<String>()
     var failing = false
 
-    override fun handlePushMessage(data: Map<String, String>): Boolean {
+    override fun handlePushMessage(
+        data: Map<String, String>,
+        messageId: String?,
+    ): Boolean {
         if (failing) error("boom")
         messages += data
+        messageIds += messageId
         return true
     }
 
@@ -52,7 +57,7 @@ class MiffMessagingServiceTest {
 
     @Test
     fun theDataOfAMessageReachesTheApplicationUntouched() {
-        val data = mapOf("type" to "n9_update", "miffId" to "m1", "authorFirstName" to "Amandine")
+        val data = mapOf("type" to "circle_update", "miffId" to "m1", "firstName" to "Amandine", "quiet" to "0")
         service().onMessageReceived(message(data))
         assertEquals(listOf(data), app.messages)
     }
@@ -66,7 +71,7 @@ class MiffMessagingServiceTest {
     @Test
     fun aFailureInsideNeverTakesTheServiceDown() {
         app.failing = true
-        service().onMessageReceived(message(mapOf("type" to "n9_update")))
+        service().onMessageReceived(message(mapOf("type" to "circle_update")))
         service().onNewToken("token-xyz")
         assertTrue(app.messages.isEmpty() && app.tokens.isEmpty())
     }

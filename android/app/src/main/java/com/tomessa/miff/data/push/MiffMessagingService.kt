@@ -19,7 +19,10 @@ import kotlinx.coroutines.withTimeoutOrNull
 /** What the messaging service needs from the application (a seam for the tests): the application implements it. */
 interface PushHost {
     /** A DATA message of the server. Returns true when it was understood. */
-    fun handlePushMessage(data: Map<String, String>): Boolean
+    fun handlePushMessage(
+        data: Map<String, String>,
+        messageId: String?,
+    ): Boolean
 
     /** The system gave a new token. */
     suspend fun onNewPushToken(token: String)
@@ -29,7 +32,7 @@ class MiffMessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         val host = application as? PushHost ?: return
         try {
-            host.handlePushMessage(message.data)
+            host.handlePushMessage(message.data, message.messageId)
         } catch (e: Exception) {
             // Dropped without a trace.
         }
