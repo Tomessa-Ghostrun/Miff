@@ -2,6 +2,22 @@
 
 ## Non publié
 
+### Feed : la phrase « Partage ta position pour voir cette photo » ne s'affiche plus à tort (bug remonté par le PM ; miroir de la PR Android #213)
+
+Branche `ios/fix-photo-position-gate` (PR en brouillon). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM : `docs/qa/checklists/feed-photo-gate-ios-recette-pm.md`. Aucun texte, aucune règle Firestore, aucune permission, aucune dépendance, aucun service payant.
+
+Corrigé :
+- **Symptôme** : sur la carte d'un proche sans update en cours, ou dont la photo avait expiré, le Feed affichait la tuile « Partage ta position pour voir cette photo. » alors que la personne partageait bien sa position.
+- **Cause** : un refus de lecture de la photo d'un proche est ambigu (photo expirée, partage arrêté, position à publier). Le Feed le traduisait en phrase dès que la **copie locale du suivi** (`OwnPositionProbe`) ne contenait pas de position publiée : valeur « non » par défaut, vide après une reprise du partage, une réinstallation, ou sans copie locale (état absent, autre compte).
+- **Correction** : la phrase n'apparaît que si **le serveur confirme** que MA position n'est pas publiée. Note locale « publiée » : aucune lecture. Sinon **une lecture** de mon propre `positions/{moi}` (existence seulement, `source: .server`), **mémorisée 30 s par Miff**. Cas incertain (hors connexion, lecture refusée, déconnecté, chargement) : **rien n'est affiché**, jamais la phrase, et la réponse inconnue n'est pas mémorisée. Photo absente, invalide ou autre erreur : pas de verrou. Règle du PM inchangée : position non publiée + photo refusée = verrou ; photo lisible = photo.
+- Un refus déjà connu pour le même statut ne dit la phrase (sans rien lire) que tant que la confirmation du serveur a moins de 30 s ; au-delà, c'est ma position qui est redemandée (1 lecture), pas la photo (3 lectures de règles).
+
+Modifié : `PhotoLoader` (le refus passe par `OwnPositionResolving`), nouveaux `OwnPositionResolver` (testable : note locale, serveur et horloge injectés) et `FirestoreOwnPositionSource`, contrat `OwnPositionServerReading`, `AppEnvironment+FeedPhotos`. Tests : `PhotoGateTests` (partage actif + photo absente = aucune mention ; photo présente = photo ; position non publiée confirmée + refus = verrou ; chargement, inconnu, hors connexion, refus de lecture, déconnecté = jamais la phrase ; coût : 30 s par Miff, lecture partagée entre deux cartes, réponse inconnue non mémorisée, aucune réponse donnée à un autre compte), `PhotoLoaderTests` et `FeedPhotoPrivacyTests` mis à jour.
+
+Coût : au plus **1 lecture facturée** (mon propre document de position) par Miff et par 30 s, **seulement** après un refus de photo quand la note locale ne dit pas « publiée ». Signal de surveillance : aucun nouveau (`docs/dev/surveillance-quotas.md`).
+
+Limite connue (le comportement décidé) : si ma position n'est vraiment pas publiée, la phrase peut aussi s'afficher pour un proche dont la photo vient d'expirer (le serveur ne distingue pas « expirée » de « position à publier »).
+
 ### NOTIF-7I - Notifications, PR C : N6 « Tu es dans une zone de danger de ta Miff »
 
 Branche `ios/notifications-p0-c` (PR en brouillon, **empilée sur la PR B**). Ticket `docs/tickets/notifications.md` §20.7 (vecteurs V1 à V10), décision Q34. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM : `docs/qa/checklists/notifs-ios-recette-pm.md` (partie F). Détail : `ios/README.md`, section « Notifications ». **0 € : notification locale immédiate, aucune lecture ni écriture Firestore, aucun événement Analytics.**
