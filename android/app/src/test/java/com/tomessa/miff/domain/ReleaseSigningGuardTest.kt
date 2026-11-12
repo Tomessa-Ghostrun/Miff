@@ -271,6 +271,8 @@ class ReleaseSigningGuardTest {
             "DETECTIONJOURNAL",
             "REVIEWPROMPTPROBE",
             "STARTUPMETRICSOVERLAY",
+            "DEBUGAPPCHECKOFF",
+            "DIAGNOSTICHOLDGESTURE",
             "PlayCoreDialogWrapperActivity",
             "default_web_client_id",
             "USE_BIOMETRIC",

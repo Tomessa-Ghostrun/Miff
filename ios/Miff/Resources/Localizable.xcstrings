@@ -2263,6 +2263,669 @@
         }
       }
     },
+    "feed_colors_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Miff's colors"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les couleurs de ta Miff"
+          }
+        }
+      }
+    },
+    "feed_colors_intro": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Colors show you at a glance whether your loved ones have shared news recently. They are guideposts, never alarms."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les couleurs te disent, d'un coup d'œil, si tes proches ont donné des nouvelles récemment. Ce sont des repères, jamais des alarmes."
+          }
+        }
+      }
+    },
+    "feed_colors_person_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A person's color"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La couleur d'une personne"
+          }
+        }
+      }
+    },
+    "feed_colors_person_intro": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It's the ring around their photo and the edge of their card."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "C'est l'anneau autour de sa photo et le liseré de sa carte."
+          }
+        }
+      }
+    },
+    "feed_colors_person_green_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Green"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vert"
+          }
+        }
+      }
+    },
+    "feed_colors_person_green_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All is well. The person is in a trusted place, or left one within the last %1$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout va bien. La personne est dans un lieu de confiance, ou elle en est partie depuis %1$@ au plus."
+          }
+        }
+      }
+    },
+    "feed_colors_person_orange_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Orange"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Orange"
+          }
+        }
+      }
+    },
+    "feed_colors_person_orange_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A little quiet. The person left a trusted place and hasn't shared news for more than %1$@ (up to %2$@)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un peu de silence. La personne a quitté un lieu de confiance et n'a pas donné de nouvelles depuis plus de %1$@ (jusqu'à %2$@)."
+          }
+        }
+      }
+    },
+    "feed_colors_person_red_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Red"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rouge"
+          }
+        }
+      }
+    },
+    "feed_colors_person_red_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No news for more than %1$@ after leaving a trusted place. There's often a simple explanation (battery, network…). A quick message can put your mind at ease."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas de nouvelles depuis plus de %1$@ après avoir quitté un lieu de confiance. Il y a souvent une explication simple (batterie, réseau…). Un message suffit parfois à être rassuré."
+          }
+        }
+      }
+    },
+    "feed_colors_person_gray_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gray"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gris"
+          }
+        }
+      }
+    },
+    "feed_colors_person_gray_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing to show: the person hasn't shared news yet, or has stopped sharing. It doesn't mean anything is wrong."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas d'information à afficher : la personne n'a pas encore donné de nouvelles, ou elle a arrêté de partager. Cela ne veut pas dire que quelque chose ne va pas."
+          }
+        }
+      }
+    },
+    "feed_colors_person_travel_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gray, traveling"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gris, en voyage"
+          }
+        }
+      }
+    },
+    "feed_colors_person_travel_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The person turned on travel mode: their card says “Traveling until…” and they don't count toward the Miff's color."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La personne a activé le mode voyage : sa carte indique « En voyage jusqu'au… » et elle ne compte pas dans la couleur de la Miff."
+          }
+        }
+      }
+    },
+    "feed_colors_danger_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danger zone"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone de danger"
+          }
+        }
+      }
+    },
+    "feed_colors_danger_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If your Miff has set a danger zone, the person turns red as soon as they enter it. If they share news after arriving, they turn green for %1$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si ta Miff a défini une zone de danger, la personne passe au rouge dès qu'elle y entre. Si elle donne des nouvelles après son arrivée, elle repasse au vert pendant %1$@."
+          }
+        }
+      }
+    },
+    "feed_colors_changes_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What changes the color"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce qui change la couleur"
+          }
+        }
+      }
+    },
+    "feed_colors_changes_arrive": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arriving at a trusted place: green right away."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arriver dans un lieu de confiance : vert tout de suite."
+          }
+        }
+      }
+    },
+    "feed_colors_changes_leave": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leaving a trusted place: the clock starts."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quitter un lieu de confiance : le temps commence à compter."
+          }
+        }
+      }
+    },
+    "feed_colors_changes_news": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sharing news: the clock starts over."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Donner des nouvelles : le temps repart de zéro."
+          }
+        }
+      }
+    },
+    "feed_colors_changes_time": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time passing without news: orange after %1$@, red after %2$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le temps qui passe sans nouvelles : orange après %1$@, rouge après %2$@."
+          }
+        }
+      }
+    },
+    "feed_colors_changes_pause": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stopping sharing or turning on travel mode: gray."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêter le partage ou activer le mode voyage : gris."
+          }
+        }
+      }
+    },
+    "feed_colors_miff_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Miff's color"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La couleur de la Miff"
+          }
+        }
+      }
+    },
+    "feed_colors_miff_intro": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It's the big bubble at the top of your feed. It sums up everyone's color, yours included."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "C'est la grande bulle en haut du fil. Elle résume la couleur de chacun, y compris la tienne."
+          }
+        }
+      }
+    },
+    "feed_colors_miff_green_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Green"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vert"
+          }
+        }
+      }
+    },
+    "feed_colors_miff_green_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everyone we have news from is green. The bubble says “All good”."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toutes les personnes dont on a des nouvelles sont vertes. La bulle dit « Tout va bien »."
+          }
+        }
+      }
+    },
+    "feed_colors_miff_orange_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Orange"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Orange"
+          }
+        }
+      }
+    },
+    "feed_colors_miff_orange_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At least one person is orange, and no one is red."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Au moins une personne est orange, et personne n'est rouge."
+          }
+        }
+      }
+    },
+    "feed_colors_miff_red_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Red"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rouge"
+          }
+        }
+      }
+    },
+    "feed_colors_miff_red_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "At least one person is red. The bubble tells you who."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Au moins une personne est rouge. La bulle te dit de qui il s'agit."
+          }
+        }
+      }
+    },
+    "feed_colors_miff_gray_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gray"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gris"
+          }
+        }
+      }
+    },
+    "feed_colors_miff_gray_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No one has shared news yet, your loved ones are all traveling, there's no one else in the Miff, or you've stopped sharing."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personne n'a encore donné de nouvelles, tes proches sont tous en voyage, il n'y a personne d'autre dans la Miff, ou tu as arrêté de partager."
+          }
+        }
+      }
+    },
+    "feed_colors_miff_ignored": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "People shown in gray don't count toward the Miff's color."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les personnes en gris ne comptent pas dans la couleur de la Miff."
+          }
+        }
+      }
+    },
+    "feed_colors_not_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "What colors don't tell you"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce que les couleurs ne disent pas"
+          }
+        }
+      }
+    },
+    "feed_colors_not_alert": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It's not an emergency alert. Miff never contacts emergency services: you and your loved ones decide what to do."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce n'est pas une alerte d'urgence. Miff ne prévient jamais les secours : c'est toi et tes proches qui décidez quoi faire."
+          }
+        }
+      }
+    },
+    "feed_colors_not_location": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It's not a live location. A color never shows where someone is."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce n'est pas une position en direct. Une couleur ne montre jamais où se trouve quelqu'un."
+          }
+        }
+      }
+    },
+    "feed_colors_not_verdict": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Orange or red doesn't mean something is wrong, only that there's been no news for a while."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Orange ou rouge ne veut pas dire qu'il y a un problème, seulement qu'on n'a pas eu de nouvelles depuis un moment."
+          }
+        }
+      }
+    },
+    "feed_colors_not_delay": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your phone works out the colors from the latest information received. Without a connection they can lag a little: the feed then shows the time of the latest information."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton téléphone calcule les couleurs à partir des dernières informations reçues. Sans connexion, elles peuvent avoir un peu de retard : le fil indique alors l'heure des dernières informations."
+          }
+        }
+      }
+    },
+    "feed_colors_bubble_action_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Understand the colors"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comprendre les couleurs"
+          }
+        }
+      }
+    },
     "feed_create_action": {
       "extractionState": "manual",
       "localizations": {
@@ -3993,6 +4656,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "le domicile d'un proche"
+          }
+        }
+      }
+    },
+    "ios_notif_debug_counters": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testing: %1$lld false alert(s) out of %2$lld “your Miff has turned” reminder(s) judged. Counted on this phone, never sent."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recette : %1$lld fausse(s) alerte(s) sur %2$lld rappel(s) « ta Miff est passée » jugé(s). Compté sur ce téléphone, jamais envoyé."
           }
         }
       }
@@ -6726,6 +7406,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "On n'arrive pas à afficher cette Miff pour le moment. Réessaie dans un instant."
+          }
+        }
+      }
+    },
+    "notif_n8_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A member of your Miff suggested a place. You can accept it or not from your Profile."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un membre de ta Miff propose un lieu. Tu peux l'accepter ou non depuis ton Profil."
+          }
+        }
+      }
+    },
+    "notif_n8_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A place to review"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un lieu à valider"
           }
         }
       }
@@ -9531,6 +10245,40 @@
         }
       }
     },
+    "place_request_a11y_pending_card": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pending request: %1$@, requested by %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demande en attente : %1$@, demandée par %2$@"
+          }
+        }
+      }
+    },
+    "place_request_a11y_pending_card_unknown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pending request: %@, requested by a member"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demande en attente : %@, demandée par un membre"
+          }
+        }
+      }
+    },
     "place_request_a11y_pending_mine": {
       "extractionState": "manual",
       "localizations": {
@@ -9544,6 +10292,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ta demande en attente : %@"
+          }
+        }
+      }
+    },
+    "place_request_accept": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accept"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accepter"
+          }
+        }
+      }
+    },
+    "place_request_accept_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accept the request: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accepter la demande : %@"
+          }
+        }
+      }
+    },
+    "place_request_accepted_toast": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” was added to the Miff."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "« %@ » a été ajouté à la Miff."
           }
         }
       }
@@ -9565,6 +10364,74 @@
         }
       }
     },
+    "place_request_by": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requested by %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demandé par %@"
+          }
+        }
+      }
+    },
+    "place_request_by_unknown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requested by a member"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demandé par un membre"
+          }
+        }
+      }
+    },
+    "place_request_center_many": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ suggested %2$lld places for “%3$@”"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ a proposé %2$lld lieux pour « %3$@ »"
+          }
+        }
+      }
+    },
+    "place_request_center_one": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ suggested a place for “%2$@”"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ propose un lieu pour « %2$@ »"
+          }
+        }
+      }
+    },
     "place_request_cta_member": {
       "extractionState": "manual",
       "localizations": {
@@ -9578,6 +10445,91 @@
           "stringUnit": {
             "state": "translated",
             "value": "Demander l'ajout d'un lieu"
+          }
+        }
+      }
+    },
+    "place_request_date": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le %@"
+          }
+        }
+      }
+    },
+    "place_request_decline": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decline"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refuser"
+          }
+        }
+      }
+    },
+    "place_request_decline_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decline the request: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refuser la demande : %@"
+          }
+        }
+      }
+    },
+    "place_request_declined_toast": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request removed from the list."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demande retirée de la liste."
+          }
+        }
+      }
+    },
+    "place_request_detail_banner_creator": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This place isn't in the Miff yet. It will be added if you accept."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce lieu n'est pas encore dans la Miff. Il y sera si tu acceptes."
           }
         }
       }
@@ -9701,6 +10653,57 @@
         }
       }
     },
+    "place_request_paywall_danger": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danger zones are part of Miff+. The request stays pending; you can also decline it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les zones de danger font partie de Miff+. La demande reste en attente, tu peux aussi la refuser."
+          }
+        }
+      }
+    },
+    "place_request_paywall_limit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You've reached the free places limit. With Miff+, you can add this one and many more. The request stays pending; you can also decline it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu as atteint la limite de lieux gratuits. Avec Miff+, tu peux ajouter celui-ci et bien d'autres. La demande reste en attente, tu peux aussi la refuser."
+          }
+        }
+      }
+    },
+    "place_request_section_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To review"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À valider"
+          }
+        }
+      }
+    },
     "place_request_sending": {
       "extractionState": "manual",
       "localizations": {
@@ -9748,6 +10751,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ta demande partira dès que tu seras connecté."
+          }
+        }
+      }
+    },
+    "place_request_subscription_unknown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We can't check your subscription right now. Please try again in a moment."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de vérifier ton abonnement pour l'instant. Réessaie dans un instant."
           }
         }
       }
@@ -13223,6 +14243,23 @@
         }
       }
     },
+    "tabbar_profile_requests_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile, a place request to review"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil, une demande de lieu à valider"
+          }
+        }
+      }
+    },
     "tabbar_update_a11y": {
       "extractionState": "manual",
       "localizations": {
@@ -14922,40 +15959,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Connecté avec Apple"
-          }
-        }
-      }
-    },
-    "ios_privacy_notifications_status_on": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Allowed on this phone."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Autorisées sur ce téléphone."
-          }
-        }
-      }
-    },
-    "ios_privacy_notifications_status_off": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Not allowed on this phone yet."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pas encore autorisées sur ce téléphone."
           }
         }
       }
@@ -17978,6 +18981,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "non lu"
+          }
+        }
+      }
+    },
+    "ios_notif_help_link": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How to turn them on?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comment les réactiver ?"
+          }
+        }
+      }
+    },
+    "ios_notif_delete": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer"
           }
         }
       }

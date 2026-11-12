@@ -120,87 +120,75 @@ struct PermissionPinArt: View {
     }
 }
 
-// MARK: - Notifications (pop-in 01, décision (b) du PM)
+// MARK: - Notifications (pop-in 01 CORRIGÉE, ticket Notifications §8.3)
 
-/// « Te prévenir, seulement quand c'est utile ! » : la pop-in du PM avec ses deux exemples, une ligne honnête dessous (rien n'est
-/// envoyé aujourd'hui : plan Spark) et « Autoriser ». JAMAIS bloquante : quelle que soit la réponse du système, la personne continue.
+/// « Un rappel, seulement quand c'est utile » : l'amorce de la phase 0. Elle montre le rappel que la personne recevra (l'exemple de N1),
+/// dit honnêtement ce qui existe (des rappels à elle ; les alertes sur les proches arriveront plus tard) et propose « Autoriser » ou
+/// « Plus tard ». « Plus tard » ne consomme PAS la fenêtre du système. JAMAIS bloquante : quelle que soit la réponse, la personne continue.
 struct NotificationsPopIn: View {
     let onAllow: () -> Void
+    let onLater: () -> Void
 
     var body: some View {
         PermissionPopIn {
-            PopInTitle(text: "permission_notifications_title")
-            NotificationExample(
-                photo: "OnboardingPhotoThomas",
-                messageId: "onboarding_sample_msg_1",
-                timeId: "onboarding_sample_when_1",
-                unread: true
-            )
-            NotificationExample(
-                photo: "OnboardingPhotoAmandine",
-                messageId: "onboarding_sample_msg_2",
-                timeId: "onboarding_sample_when_2",
-                unread: false
-            )
-            Text("permission_notifications_note")
-                .miffTextStyle(textBodyCaption)
-                .foregroundColor(colorTextDescription.color)
+            PopInTitle(text: "notif_prime_title")
+            NotificationExample(titleId: "notif_n1_title", bodyId: "notif_n1_body", timeId: "notif_prime_example_when")
+            Text("notif_prime_body")
+                .miffTextStyle(textBodyRegular)
+                .foregroundColor(colorTextPrimary.color)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         } footer: {
             Button(action: onAllow) {
-                Text("permission_notifications_action")
+                Text("notif_prime_allow")
             }
             .buttonStyle(.miffPrimaryFullWidth)
+            Button(action: onLater) {
+                Text("notif_prime_later")
+                    .miffTextStyle(textBodyBold16)
+                    .foregroundColor(colorActionPrimary.color)
+                    .frame(maxWidth: .infinity, minHeight: Spacing.minTouchTarget)
+            }
         }
     }
 }
 
-/// Un exemple de notification : la photo à anneau bleu, la phrase, l'heure ; un point jaune-vert au coin du premier. Exemple
-/// décoratif : le lecteur d'écran lit la phrase et l'heure, pas l'image.
+/// Un exemple de notification : une cloche à anneau bleu, le titre, la phrase et l'heure. Exemple décoratif du rappel N1 : le lecteur
+/// d'écran lit le texte, pas l'image.
 private struct NotificationExample: View {
-    let photo: String
-    let messageId: String
+    let titleId: String
+    let bodyId: String
     let timeId: String
-    let unread: Bool
 
     var body: some View {
-        ZStack(alignment: .topTrailing) {
-            HStack(spacing: Spacing.sm) {
-                Image(photo)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: Spacing.minTouchTarget, height: Spacing.minTouchTarget)
-                    .clipShape(Circle())
-                    .overlay(Circle().stroke(colorActionPrimary.color, lineWidth: strokeAccent))
-                    .accessibilityHidden(true)
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(verbatim: L10n.string(messageId))
-                        .miffTextStyle(textBodyBold14)
-                        .foregroundColor(colorTextPrimary.color)
-                    Text(verbatim: L10n.string(timeId))
-                        .miffTextStyle(textBodyCaption)
-                        .foregroundColor(colorTextSecondary.color)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
+        HStack(spacing: Spacing.sm) {
+            Image(systemName: "bell.fill")
+                .font(.system(size: Spacing.sectionIcon))
+                .foregroundColor(colorActionPrimary.color)
+                .frame(width: Spacing.minTouchTarget, height: Spacing.minTouchTarget)
+                .overlay(Circle().stroke(colorActionPrimary.color, lineWidth: strokeAccent))
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(verbatim: L10n.string(titleId))
+                    .miffTextStyle(textBodyBold14)
+                    .foregroundColor(colorTextPrimary.color)
+                Text(verbatim: L10n.string(bodyId))
+                    .miffTextStyle(textBodyRegular14)
+                    .foregroundColor(colorTextPrimary.color)
+                Text(verbatim: L10n.string(timeId))
+                    .miffTextStyle(textBodyCaption)
+                    .foregroundColor(colorTextSecondary.color)
             }
-            .padding(Spacing.sm)
-            .background(RoundedRectangle(cornerRadius: radiusMd, style: .continuous).fill(colorBgSurface.color))
-            .overlay(
-                RoundedRectangle(cornerRadius: radiusMd, style: .continuous)
-                    .stroke(colorActionPrimaryTint20.color, lineWidth: strokeHairline)
-            )
-            .miffShadow(shadowSubtle)
-            if unread {
-                Circle()
-                    .fill(colorBrandPrimary.color)
-                    .frame(width: 12, height: 12)
-                    .padding(.trailing, Spacing.sm)
-                    .offset(y: -6)
-                    .accessibilityHidden(true)
-            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
         }
+        .padding(Spacing.sm)
+        .background(RoundedRectangle(cornerRadius: radiusMd, style: .continuous).fill(colorBgSurface.color))
+        .overlay(
+            RoundedRectangle(cornerRadius: radiusMd, style: .continuous)
+                .stroke(colorActionPrimaryTint20.color, lineWidth: strokeHairline)
+        )
+        .miffShadow(shadowSubtle)
         .accessibilityElement(children: .combine)
     }
 }

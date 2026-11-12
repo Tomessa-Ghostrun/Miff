@@ -44,7 +44,7 @@ class ProfileRequestsViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun viewModel(uid: String? = "u2") = ProfileRequestsViewModel(repo, network, { uid }, { now })
+    private fun viewModel(uid: String? = "u2") = ProfileRequestsViewModel(repo, network, { uid }, nowMillis = { now })
 
     private fun collectEvents(
         vm: ProfileRequestsViewModel,

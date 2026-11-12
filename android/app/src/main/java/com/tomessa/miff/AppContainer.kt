@@ -95,6 +95,7 @@ import com.tomessa.miff.data.place.PlaceNotices
 import com.tomessa.miff.data.place.PlaceRepository
 import com.tomessa.miff.data.place.PlaceRequestRepository
 import com.tomessa.miff.data.place.PlaceStore
+import com.tomessa.miff.data.place.RequesterDirectory
 import com.tomessa.miff.data.place.UrlConnectionFetcher
 import com.tomessa.miff.data.privacy.AnalyticsConsentRepository
 import com.tomessa.miff.data.privacy.ConsentWithdrawals
@@ -313,6 +314,8 @@ class AppContainer(
             device = deviceSession,
             cache = cachePurger,
             onSharingChanged = { trackingLooksAgain(TrackingEngine.Reason.SHARING_CHANGED) },
+            // REPRISE DU PARTAGE: the detection hears WHICH Miff was resumed (the status was deleted on stop and rewritten grey on resume), then looks again.
+            onSharingResumed = { miffId -> trackingSharingResumed(miffId) },
             // AC-4: "this device is not recognized" is told apart from a refusal of the rules, only after a refusal.
             appCheck = FirebaseAppCheckProbe(),
             // Offline, the reads that check the server give up quickly (the Feed no longer waits 20 s per read with no network).
@@ -567,6 +570,18 @@ class AppContainer(
     }
 
     /**
+     * The person RESUMED the sharing of a Miff: the detection flags that Miff (it will start its detection again from nothing), then looks at its Miffs again, in this order, in one job.
+     * Only the identifier of the Miff is passed. Never blocks the caller.
+     */
+    fun trackingSharingResumed(miffId: String) {
+        trackingScope.launch {
+            cachePurger.purgeIfPending()
+            trackingEngine.markResumed(miffId)
+            trackingEngine.lookAgain(TrackingEngine.Reason.SHARING_CHANGED)
+        }
+    }
+
+    /**
      * The pause after 5 wrong codes lives as long as the process, not as long as the screen: leaving and coming back does not
      * give a free new series. An aid of the interface, not a protection (ticket Miff 5.3).
      */
@@ -713,20 +728,19 @@ class AppContainer(
      */
     private val placeStore: PlaceStore by lazy { FirestorePlaceStore(miffStore) }
 
+    /** An automatic id of Firestore (20 letters and digits), drawn on the phone and ONCE for all the Miffs of a place. */
+    private val newPlaceId: () -> String = {
+        FirebaseFirestore
+            .getInstance()
+            .collection("miffs")
+            .document()
+            .collection("places")
+            .document()
+            .id
+    }
+
     val placeRepository: PlaceRepository by lazy {
-        FirestorePlaceRepository(
-            store = placeStore,
-            // An automatic id of Firestore (20 letters and digits), drawn on the phone and ONCE for all the Miffs of a place.
-            newId = {
-                FirebaseFirestore
-                    .getInstance()
-                    .collection("miffs")
-                    .document()
-                    .collection("places")
-                    .document()
-                    .id
-            },
-        )
+        FirestorePlaceRepository(store = placeStore, newId = newPlaceId)
     }
 
     /**
@@ -737,9 +751,15 @@ class AppContainer(
         FirestorePlaceRequestRepository(
             store = FirestorePlaceRequestStore(miffStore),
             places = placeStore,
+            // The acceptance of a request applies the limits of a creation: the same reads of the plan, the Miffs and the places.
+            placeRepository = placeRepository,
+            newPlaceId = newPlaceId,
             online = { networkMonitor.isOnline() },
         )
     }
+
+    /** Who asked for a place (first names by Miff and person), shared by the tabs and the centre of notifications: in memory, gone with the session. */
+    val requesterDirectory: RequesterDirectory by lazy { RequesterDirectory() }
 
     /** "Le lieu « X » est enregistré…" shown on the list after a save: in memory only, gone with the session. */
     val placeNotices: PlaceNotices by lazy { PlaceNotices() }
@@ -852,6 +872,7 @@ class AppContainer(
                         SessionTeardown { publishLedger.clear() },
                         SessionTeardown { reviewStateStore.clear() },
                         placeNotices,
+                        requesterDirectory,
                         addressSearch,
                         mapTileCache,
                     ),

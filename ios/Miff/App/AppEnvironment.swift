@@ -157,6 +157,14 @@ final class AppEnvironment {
     /// FEED-5 : les lectures du Feed (statuts en direct, position au toucher, actualisation). Elles ne lisent qu'à l'usage.
     let feedServices = FeedServices.live()
     let notificationAsks: NotificationAskStore = UserDefaultsNotificationAskStore()
+    /// NOTIF-P0 : le centre de notifications local, les choix de Réglages > Notifications, les demandes d'onglet.
+    let notifications: NotificationServices
+    /// La carte « deuxième chance » du Feed : créée à la première demande, comme les autorisations qu'elle lit.
+    lazy var notificationSecondChance: NotificationSecondChanceViewModel = NotificationSecondChanceViewModel(
+        permissions: devicePermissions,
+        store: notifications.localData.secondChance,
+        currentUid: { [weak self] in self?.session.currentUid }
+    )
     /// Le suivi des lieux (LOC-4b) : créé TOUT DE SUITE au démarrage, pour que le système puisse relancer l'app terminée pour un
     /// événement de zone. Il ne fait rien tant que l'accord, « Toujours » et la position exacte ne sont pas là.
     let tracking: TrackingRuntime
@@ -206,8 +214,13 @@ final class AppEnvironment {
         // Un compte, un seul appareil (SESS-3) : l'identifiant de session vit dans un fichier privé, exclu des sauvegardes et effacé
         // avec l'app (jamais dans le Trousseau, qui survit à la désinstallation).
         let device = DeviceSession(remote: FirestoreDeviceSessionRemote(), store: DeviceIdFileStore())
+        // NOTIF-P0 : le centre de notifications, les choix de Réglages > Notifications, les demandes d'onglet et les rappels.
+        let notifs = NotificationServices.make(currentUid: { gateway.currentUid })
         let trackingServices = TrackingServices.make(
-            gateway: gateway, cache: cache, network: networkMonitor, device: device
+            gateway: gateway, cache: cache, network: networkMonitor, device: device,
+            // Un nouveau statut de ma présence détecté par le suivi : les rappels N1 et N2 sont programmés ou annulés aussitôt.
+            // MODE VOYAGE : mon voyage commence, change de date ou se termine : N7 est programmée, déplacée ou annulée aussitôt.
+            notifications: TrackingNotificationHooks(onPresence: notifs.presenceChanged, onTravel: notifs.travelChanged)
         )
         // Un partage ou un lieu qui change : le suivi relit les Miffs et les lieux (depuis n'importe quel fil).
         let miff = MiffServices.make(
@@ -215,21 +228,17 @@ final class AppEnvironment {
             onSharingChanged: trackingServices.sharingChanged
         )
         let places = PlaceServices.make(onChanged: trackingServices.sharingChanged)
+        notifs.connect(directory: miff.directory, awaiting: miff.awaiting)
         let updateServices = UpdateServices.make(
             gateway: gateway, network: networkMonitor, device: device, tracking: trackingServices, miff: miff
         )
         let manager = SessionManager(
             SessionDependencies(
-                gateway: gateway,
-                accounts: FirestoreAccountRepository(),
-                pending: pending,
-                flags: flagStore,
-                privacy: privacy,
-                tracker: tracker,
-                cache: cache,
+                gateway: gateway, accounts: FirestoreAccountRepository(), pending: pending, flags: flagStore,
+                privacy: privacy, tracker: tracker, cache: cache,
                 // Le brouillon (noms, photo, numéro) et les Miffs en mémoire partent avec la session. Le suivi des lieux et
-                // les notifications ajouteront leur propre arrêt ici, pour qu'une déconnexion les arrête (ticket §7.6).
-                teardown: Self.teardowns(drafts, miff, places, trackingServices, updateServices),
+                // les notifications ont leur propre arrêt ici, pour qu'une déconnexion les arrête (ticket §7.6).
+                teardown: Self.teardowns(drafts, miff, places, trackingServices, updateServices) + [notifs.teardown],
                 device: device,
                 network: networkMonitor,
                 drafts: drafts, generationCounter: trackingServices.generation,
@@ -257,6 +266,7 @@ final class AppEnvironment {
         update = updateServices
         profileDrafts = drafts
         pendingConsent = pending
+        notifications = notifs
     }
 
     /// Ce que la fin de session arrête, dans l'ordre : le brouillon (noms, photo, numéro) et les Miffs en mémoire, les suppressions en

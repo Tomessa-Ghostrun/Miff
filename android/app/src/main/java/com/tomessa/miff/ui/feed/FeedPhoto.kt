@@ -70,6 +70,7 @@ import com.tomessa.miff.domain.feed.PositionFix
 import com.tomessa.miff.domain.feed.SaveRoute
 import com.tomessa.miff.domain.update.SharedPhoto
 import com.tomessa.miff.ui.components.miffScreenInsets
+import com.tomessa.miff.ui.navigation.holdForDiagnostic
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.ShapeSm
 import com.tomessa.miff.ui.theme.Spacing
@@ -284,7 +285,13 @@ internal fun PhotoFullScreen(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        Box(Modifier.fillMaxSize().background(Color.Black).miffScreenInsets()) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .holdForDiagnostic()
+                .background(Color.Black)
+                .miffScreenInsets(),
+        ) {
             if (bitmap != null) {
                 Image(
                     bitmap = bitmap,

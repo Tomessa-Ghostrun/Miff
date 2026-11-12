@@ -23,6 +23,14 @@ enum MiffRoute: Hashable {
         self == .settings(.myInfo)
     }
 
+    /// Les écrans des notifications : un compte sans Miff n'en a pas (rien à notifier).
+    var isNotificationScreen: Bool {
+        if case .settings(let screen) = self {
+            return screen.isNotificationScreen
+        }
+        return false
+    }
+
     /// Cet écran dépend de cette Miff : il part avec elle quand son accès est perdu.
     func belongs(to miffId: String) -> Bool {
         switch self {
@@ -170,7 +178,13 @@ struct MiffHomeHost: View {
         _profile = StateObject(
             wrappedValue: ProfileTabViewModel(reader: environment.profileReader, currentUid: { session.currentUid })
         )
-        _updateModel = StateObject(wrappedValue: environment.update.makeViewModel())
+        let reconciler = environment.notifications.reconciler
+        // NOTIF-P0 : une update publiée annule N1 à N4 aussitôt (sans attendre le retour du Feed).
+        _updateModel = StateObject(
+            wrappedValue: environment.update.makeViewModel(onPublishedAt: { at in
+                Task { await reconciler.myUpdatePublished(atMillis: at) }
+            })
+        )
         let engine = environment.tracking.engine
         _travel = StateObject(wrappedValue: TravelViewModel(control: EngineTravelControl(engine: engine)))
     }
@@ -192,6 +206,7 @@ struct MiffHomeHost: View {
                     ),
                     onOpenMiff: { open(.miff($0)) },
                     onOpenSettings: { open(.settings($0)) },
+                    tabRequests: environment.notifications.tabRequests,
                     feed: { context in feedTab(context) }
                 )
                     .toolbar(.hidden, for: .navigationBar)
@@ -222,13 +237,19 @@ struct MiffHomeHost: View {
         // décision du PM du 2026-11-07) ; les autres écrans des Réglages restent où ils sont.
         .onChange(of: MainShellRules.hasNoMiff(directory.state)) { noMiff in
             if noMiff {
-                path.removeAll { $0.isMyInfoScreen }
+                path.removeAll { $0.isMyInfoScreen || $0.isNotificationScreen }
             }
         }
         // Une seule lecture des Miffs par session à l'ouverture (pas une à chaque retour sur l'écran) : le contrôle auprès du
         // serveur que l'accès à chaque Miff existe encore, avant d'en montrer quoi que ce soit (ticket §5.7, critère D2).
         .task {
             await directory.refreshIfNeeded()
+        }
+        // NOTIF-P0 : le centre de notifications et les choix de la personne sont lus depuis l'appareil (aucun réseau) pour que la cloche
+        // dise tout de suite s'il y a du non lu.
+        .task {
+            environment.notifications.center.load()
+            environment.notifications.preferences.reload()
         }
         // Une suppression non terminée est reprise au lancement (critère S4), et une suppression qui se termine pendant que la
         // personne est ailleurs que sur l'écran de cette Miff est dite avec calme.
@@ -274,8 +295,18 @@ struct MiffHomeHost: View {
                 onOpenOffer: { presentPaywall(.extraMiff) },
                 onOpenMiff: { open(.miff($0)) },
                 onSignOut: { signOut() },
-                onOpenSettings: { open(.settings(.settings)) }
+                onOpenSettings: { open(.settings(.settings)) },
+                onOpenNotifications: { open(.settings(.notificationCenter)) }
             )
+        )
+    }
+
+    /// Toucher une ligne du centre de notifications : la pile revient à la coquille et l'onglet demandé s'ouvre (le Feed, ou l'écran
+    /// Update — remplacé par le Feed dans les builds qui n'ont pas le bouton central).
+    private func openNotification(_ destination: NotificationDestination) {
+        path.removeAll()
+        environment.notifications.tabRequests.request(
+            NotificationNavigation.tab(for: destination, showsUpdateButton: TabBarConfig.current.showsUpdateButton)
         )
     }
 
@@ -312,7 +343,8 @@ struct MiffHomeHost: View {
                 profile: profile,
                 restricted: MainShellRules.hasNoMiff(directory.state),
                 navigate: { open(.settings($0)) },
-                onBack: { pop() }
+                onBack: { pop() },
+                onOpenNotification: { openNotification($0) }
             )
         default:
             placeDestination(route)

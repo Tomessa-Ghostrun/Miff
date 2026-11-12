@@ -658,6 +658,66 @@ class MiffRepositoryTest {
             store.sharing = true
             assertEquals(MiffWriteResult.Failed(MiffFailure.OFFLINE), repo().setSharing(MIFF_ID, uid, enabled = false))
         }
+
+    // --- REPRISE DU PARTAGE: the detection hears WHICH Miff was resumed ----------------------------------------------------------------------
+
+    private fun repoTelling(
+        changed: () -> Unit,
+        resumed: ((String) -> Unit)?,
+    ) = FirestoreMiffRepository(
+        store = store,
+        observer = FakeMiffObserver(),
+        location = location,
+        device = device,
+        newMiffId = { MIFF_ID },
+        newCode = { drawn.removeFirstOrNull() ?: CODE },
+        nowMillis = { now },
+        timeoutMillis = 1_000,
+        cache = cache,
+        onSharingChanged = changed,
+        onSharingResumed = resumed,
+    )
+
+    @Test
+    fun setSharing_resume_tellsTheDetectionWhichMiffIsResumed_insteadOfTheGenericChange_andStopDoesNot() =
+        runTest {
+            var changed = 0
+            val resumed = mutableListOf<String>()
+            val repo = repoTelling({ changed++ }, { resumed += it })
+            assertEquals(MiffWriteResult.Done, repo.setSharing(MIFF_ID, uid, enabled = false))
+            assertEquals(1, changed)
+            assertTrue(resumed.isEmpty())
+            assertEquals(MiffWriteResult.Done, repo.setSharing(MIFF_ID, uid, enabled = true))
+            assertEquals(listOf(MIFF_ID), resumed)
+            assertEquals("the generic change is not told twice", 1, changed)
+        }
+
+    @Test
+    fun setSharing_resume_withoutTheSignalWired_isTheGenericChange() =
+        runTest {
+            var changed = 0
+            val repo = repoTelling({ changed++ }, null)
+            assertEquals(MiffWriteResult.Done, repo.setSharing(MIFF_ID, uid, enabled = true))
+            assertEquals(1, changed)
+        }
+
+    @Test
+    fun setSharing_resume_thatFails_tellsNothing_andOneAlreadyResumedElsewhere_stillCounts() =
+        runTest {
+            var changed = 0
+            val resumed = mutableListOf<String>()
+            val repo = repoTelling({ changed++ }, { resumed += it })
+            store.commitFailures = ArrayDeque(listOf(firestoreError(Code.UNAVAILABLE)))
+            store.sharing = false
+            assertEquals(MiffWriteResult.Failed(MiffFailure.OFFLINE), repo.setSharing(MIFF_ID, uid, enabled = true))
+            assertTrue(resumed.isEmpty())
+            assertEquals(0, changed)
+            // Another phone already resumed: the rules refuse the no-op, the wanted state is there, the detection still starts that Miff again.
+            store.commitFailures = ArrayDeque(listOf(firestoreError(Code.PERMISSION_DENIED)))
+            store.sharing = true
+            assertEquals(MiffWriteResult.Done, repo.setSharing(MIFF_ID, uid, enabled = true))
+            assertEquals(listOf(MIFF_ID), resumed)
+        }
 }
 
 /** A store that forwards to [FakeMiffStore] so that one call can be replaced. */

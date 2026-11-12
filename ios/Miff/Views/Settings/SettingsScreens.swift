@@ -6,11 +6,12 @@ struct SettingsActions {
     let onOpenMyInfo: () -> Void
     let onOpenAccount: () -> Void
     let onOpenPrivacy: () -> Void
+    let onOpenNotifications: () -> Void
 }
 
-/// Réglages (maquettes « réglages », ticket Profil / Réglages critère A4) : Mes informations, Mon compte, Langue, Confidentialité.
-/// Rien d'autre : pas de ligne Notifications (rien n'est envoyé encore), pas d'encart Premium ni d'abonnement (rien ne peut être
-/// acheté encore). La ligne « Langue » ouvre les réglages de l'iPhone pour Miff (décision Q4) et dit la langue en cours.
+/// Réglages (maquettes « réglages », ticket Profil / Réglages critère A4) : Mes informations, Mon compte, Notifications (NOTIF-2I, absente
+/// des Réglages restreints), Langue, Confidentialité. Rien d'autre : pas d'encart Premium ni d'abonnement (rien ne peut être acheté
+/// encore). La ligne « Langue » ouvre les réglages de l'iPhone pour Miff (décision Q4) et dit la langue en cours.
 struct SettingsListView: View {
     let actions: SettingsActions
     let build: BuildInfo
@@ -52,6 +53,13 @@ extension SettingsListView {
                 title: L10n.string("settings_account_title"),
                 subtitle: L10n.string("settings_account_subtitle"),
                 action: actions.onOpenAccount
+            )
+        case .notifications:
+            SettingsRow(
+                systemImage: "bell",
+                title: L10n.string("notif_settings_title"),
+                subtitle: L10n.string("notif_settings_subtitle"),
+                action: actions.onOpenNotifications
             )
         case .language:
             SettingsRow(
