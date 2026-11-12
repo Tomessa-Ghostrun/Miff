@@ -28,6 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
@@ -39,6 +40,7 @@ import com.tomessa.miff.domain.place.PlaceQuota
 import com.tomessa.miff.domain.place.PlaceRequest
 import com.tomessa.miff.domain.place.PlaceRequestLimits
 import com.tomessa.miff.domain.place.PlaceType
+import com.tomessa.miff.domain.place.RequesterState
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
@@ -55,6 +57,14 @@ import com.tomessa.miff.ui.theme.miffShadow
 import com.tomessa.miff.ui.theme.textBodyBold16
 import com.tomessa.miff.ui.theme.textBodyRegular14
 
+/** A request the CREATOR received, with who asked (null until the card of the member is read). */
+class ReceivedRequest(
+    val request: PlaceRequest,
+    val requester: RequesterState?,
+) {
+    override fun toString(): String = "ReceivedRequest(redacted)"
+}
+
 /**
  * What the list of places of ONE Miff needs to be drawn.
  *
@@ -70,6 +80,10 @@ class PlaceListUi(
     val requests: List<PlaceRequest> = emptyList(),
     /** "Demande envoyée…" / "Ta demande partira dès que tu seras connecté.", shown after the form of a request closed. */
     val requestNotice: RequestNotice? = null,
+    /** The CREATOR: the requests received (ticket LIEU-REQ-C), oldest first; they come BEFORE the places, in cards that tell them apart from the places. */
+    val received: List<ReceivedRequest> = emptyList(),
+    /** The request being answered: its buttons wait. */
+    val busyRequestId: String? = null,
 ) {
     /** A member who already has the 3 pending requests of the ticket: the button says so calmly instead of opening the form (criterion M5). */
     val atRequestLimit: Boolean
@@ -97,6 +111,10 @@ fun PlaceRows(
     onOpenRequest: (PlaceRequest) -> Unit = {},
     /** "Demander l'ajout d'un lieu": a member who is not the creator opens the form of a request. */
     onRequestPlace: () -> Unit = {},
+    /** The creator opens the detail of a request received, accepts it, or declines it. */
+    onOpenReceived: (PlaceRequest) -> Unit = {},
+    onAcceptRequest: (PlaceRequest) -> Unit = {},
+    onDeclineRequest: (PlaceRequest) -> Unit = {},
 ) {
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
         ui.savedName?.let { SavedNotice(it) }
@@ -131,6 +149,28 @@ fun PlaceRows(
         }
         // The pending requests of a member come FIRST (decision of the PM, 2026-11-11): what was just asked is what is looked for.
         if (!ui.isCreator) ui.requests.forEach { PlaceRequestCard(it, onClick = { onOpenRequest(it) }) }
+        // The CREATOR: the requests received, in first position, under a title, each with who asked and the two answers (criteria C2 to C4).
+        if (ui.isCreator && ui.received.isNotEmpty()) {
+            Text(
+                text = stringResource(R.string.place_request_section_title),
+                style = textBodyBold16,
+                color = colorTextForm,
+                modifier = Modifier.semantics { heading() },
+            )
+            ui.received.forEach { received ->
+                PlaceRequestCard(
+                    request = received.request,
+                    onClick = { onOpenReceived(received.request) },
+                    creator =
+                        RequestCreatorUi(
+                            requester = received.requester,
+                            busy = ui.busyRequestId != null,
+                            onAccept = { onAcceptRequest(received.request) },
+                            onDecline = { onDeclineRequest(received.request) },
+                        ),
+                )
+            }
+        }
         if (ui.places.isEmpty()) {
             Text(
                 // A member has nothing to add: a calm "nothing yet" (decision of the PM, 2026-11-11); the creator keeps its sentence.

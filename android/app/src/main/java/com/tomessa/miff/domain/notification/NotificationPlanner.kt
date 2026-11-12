@@ -320,8 +320,8 @@ object NotificationPlanner {
                 miffLevelAt(input, now) == StatusLevel.RED && !responsibleAt(input, now)
             }
 
-            // N6 is shown at once, N7 handled above, N9 comes from the server (never planned here).
-            NotificationType.N6, NotificationType.N7, NotificationType.N9 -> {
+            // Never planned: N6 and N7 are decided elsewhere, N8 is only a line of the centre, N9 comes from the server.
+            NotificationType.N6, NotificationType.N7, NotificationType.N8, NotificationType.N9 -> {
                 false
             }
         }

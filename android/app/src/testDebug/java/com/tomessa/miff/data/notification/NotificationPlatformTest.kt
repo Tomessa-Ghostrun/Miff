@@ -89,7 +89,7 @@ class NotificationPlatformTest {
     @Test
     fun cancelRemovesOnlyThatType_andCancelAllRemovesEverything() {
         val alarms = AndroidNotificationAlarms(context)
-        NotificationType.entries.filter { it != NotificationType.N6 && it != NotificationType.N9 }.forEachIndexed {
+        NotificationType.PERIMETER.filter { it != NotificationType.N6 && it != NotificationType.N9 }.forEachIndexed {
             i,
             type,
             ->

@@ -99,6 +99,7 @@ import com.tomessa.miff.data.place.PlaceNotices
 import com.tomessa.miff.data.place.PlaceRepository
 import com.tomessa.miff.data.place.PlaceRequestRepository
 import com.tomessa.miff.data.place.PlaceStore
+import com.tomessa.miff.data.place.RequesterDirectory
 import com.tomessa.miff.data.place.UrlConnectionFetcher
 import com.tomessa.miff.data.privacy.AnalyticsConsentRepository
 import com.tomessa.miff.data.privacy.ConsentWithdrawals
@@ -806,20 +807,19 @@ class AppContainer(
      */
     private val placeStore: PlaceStore by lazy { FirestorePlaceStore(miffStore) }
 
+    /** An automatic id of Firestore (20 letters and digits), drawn on the phone and ONCE for all the Miffs of a place. */
+    private val newPlaceId: () -> String = {
+        FirebaseFirestore
+            .getInstance()
+            .collection("miffs")
+            .document()
+            .collection("places")
+            .document()
+            .id
+    }
+
     val placeRepository: PlaceRepository by lazy {
-        FirestorePlaceRepository(
-            store = placeStore,
-            // An automatic id of Firestore (20 letters and digits), drawn on the phone and ONCE for all the Miffs of a place.
-            newId = {
-                FirebaseFirestore
-                    .getInstance()
-                    .collection("miffs")
-                    .document()
-                    .collection("places")
-                    .document()
-                    .id
-            },
-        )
+        FirestorePlaceRepository(store = placeStore, newId = newPlaceId)
     }
 
     /**
@@ -830,9 +830,15 @@ class AppContainer(
         FirestorePlaceRequestRepository(
             store = FirestorePlaceRequestStore(miffStore),
             places = placeStore,
+            // The acceptance of a request applies the limits of a creation: the same reads of the plan, the Miffs and the places.
+            placeRepository = placeRepository,
+            newPlaceId = newPlaceId,
             online = { networkMonitor.isOnline() },
         )
     }
+
+    /** Who asked for a place (first names by Miff and person), shared by the tabs and the centre of notifications: in memory, gone with the session. */
+    val requesterDirectory: RequesterDirectory by lazy { RequesterDirectory() }
 
     /** "Le lieu « X » est enregistré…" shown on the list after a save: in memory only, gone with the session. */
     val placeNotices: PlaceNotices by lazy { PlaceNotices() }
@@ -945,6 +951,7 @@ class AppContainer(
                         SessionTeardown { publishLedger.clear() },
                         SessionTeardown { reviewStateStore.clear() },
                         placeNotices,
+                        requesterDirectory,
                         addressSearch,
                         mapTileCache,
                     ),

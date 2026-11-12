@@ -156,6 +156,11 @@ class PlaceRequestBook(
             )
     }
 
+    /** The access to one Miff was lost: nothing of its requests stays. */
+    fun forget(miffId: String) {
+        entries.remove(miffId)
+    }
+
     /** A Miff that is no longer in the list (left, deleted, access lost) takes its requests with it. */
     fun retainOnly(miffIds: Set<String>) {
         entries.keys.retainAll(miffIds)

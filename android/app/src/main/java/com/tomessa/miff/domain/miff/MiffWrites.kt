@@ -363,6 +363,23 @@ object MiffWrites {
     /** Places per lot when a Miff is deleted: each deletion costs the rules 2 reads of its own, so 5 stay far from the 20. */
     const val PLACES_PER_LOT = 5
 
+    /**
+     * Deleting requests to add a place and, with the last lot, the counter of requests (step 2b of the deletion of a Miff, ticket LIEU-REQ, criterion L3): from
+     * 0 to [PLACES_PER_LOT] requests per lot (each deletion costs the rules 2 reads, so 5 stay far from the 20). Never empty.
+     */
+    fun deletePlaceRequests(
+        miffId: String,
+        requestIds: List<String>,
+        withCounter: Boolean,
+    ): List<DocWrite> {
+        require(requestIds.size <= PLACES_PER_LOT) { "requests per lot" }
+        val writes =
+            requestIds.map { DocWrite("miffs/$miffId/placeRequests/$it", WriteKind.DELETE) } +
+                if (withCounter) listOf(DocWrite("miffs/$miffId/meta/placeRequests", WriteKind.DELETE)) else emptyList()
+        require(writes.isNotEmpty()) { "an empty lot" }
+        return writes
+    }
+
     /** Deleting places (step 2 of the deletion of a Miff): from 1 to [PLACES_PER_LOT] per lot. */
     fun deletePlaces(
         miffId: String,

@@ -48,7 +48,7 @@ class SharedPreferencesNotificationPreferencesStore(
     override fun save(preferences: NotificationPreferences) {
         prefs.edit(commit = true) {
             putBoolean(KEY_ENABLED, preferences.enabled)
-            NotificationType.entries.forEach { putBoolean(it.code, preferences.switchOf(it)) }
+            NotificationType.PERIMETER.forEach { putBoolean(it.code, preferences.switchOf(it)) }
             putBoolean(KEY_NIGHT, preferences.nightCalm)
         }
     }
