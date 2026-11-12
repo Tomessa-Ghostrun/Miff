@@ -40,9 +40,11 @@ import com.tomessa.miff.testsupport.testPlace
 import com.tomessa.miff.ui.main.ColorsInfoRoute
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
 import com.tomessa.miff.ui.theme.MiffTheme
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -51,6 +53,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.time.Instant
 import java.time.ZoneOffset
+import java.util.TimeZone
 
 /**
  * COULEURS-1 (criteria E1 to E5, A2): a touch on the big bubble of the Feed opens "Les couleurs de ta Miff", in the seven variants of the bubble and on every
@@ -64,6 +67,19 @@ import java.time.ZoneOffset
 class BubbleColorsEntryTest {
     @get:Rule
     val composeRule = createComposeRule()
+
+    private var defaultZone: TimeZone = TimeZone.getDefault()
+
+    @Before
+    fun fixTheZone() {
+        defaultZone = TimeZone.getDefault()
+        TimeZone.setDefault(TimeZone.getTimeZone("UTC"))
+    }
+
+    @After
+    fun restoreTheZone() {
+        TimeZone.setDefault(defaultZone)
+    }
 
     private fun context(): Context = ApplicationProvider.getApplicationContext()
 

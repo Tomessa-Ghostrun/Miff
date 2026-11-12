@@ -294,9 +294,9 @@ class ColorsInfoScreenTest {
             composeRule
                 .onNodeWithContentDescription("$title. ${text(R.string.feed_colors_miff_red_body)}")
                 .fetchSemanticsNode()
-                .boundsInRoot
-        val name = composeRule.onAllNodesWithText(title, useUnmergedTree = true)[1].fetchSemanticsNode().boundsInRoot
-        return name.left > row.left + 1f
+                .positionInRoot
+        val name = composeRule.onAllNodesWithText(title, useUnmergedTree = true)[1].fetchSemanticsNode().positionInRoot
+        return name.x > row.x + 1f
     }
 
     @Test
