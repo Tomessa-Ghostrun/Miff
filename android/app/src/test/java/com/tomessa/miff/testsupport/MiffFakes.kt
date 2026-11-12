@@ -155,6 +155,11 @@ class FakeMiffStore : MiffStore {
     var placeIds: MutableList<String> = mutableListOf()
     var placesFailure: Exception? = null
 
+    /** The requests to add a place (ticket LIEU-REQ) and their counter that the Miff still holds, as the SERVER lists them; a failure to throw instead. */
+    var requestIds: MutableList<String> = mutableListOf()
+    var requestCounterExists = false
+    var requestsFailure: Exception? = null
+
     /** Does the document of the CURRENT code exist (what the transaction of a lot reads)? */
     var codeDocumentExists = true
 
@@ -174,6 +179,13 @@ class FakeMiffStore : MiffStore {
         calls += "placeIds"
         placesFailure?.let { throw it }
         return placeIds.toList()
+    }
+
+    override suspend fun readPlaceRequestLeftovers(miffId: String): com.tomessa.miff.data.miff.PlaceRequestLeftovers {
+        calls += "requestLeftovers"
+        requestsFailure?.let { throw it }
+        return com.tomessa.miff.data.miff
+            .PlaceRequestLeftovers(requestIds.toList(), requestCounterExists)
     }
 
     override suspend fun commitWithMiff(
@@ -203,6 +215,15 @@ class FakeMiffStore : MiffStore {
 
                 inMiff && parts[2] == "places" && delete -> {
                     placeIds.remove(parts[3])
+                }
+
+                inMiff && parts[2] == "placeRequests" && delete -> {
+                    requestIds.remove(parts[3])
+                }
+
+                parts.size == 4 && parts[0] == "miffs" && parts[2] == "meta" && parts[3] == "placeRequests" &&
+                    delete -> {
+                    requestCounterExists = false
                 }
 
                 theMiff && write.kind == WriteKind.UPDATE && write.data.containsKey("joinCode") -> {

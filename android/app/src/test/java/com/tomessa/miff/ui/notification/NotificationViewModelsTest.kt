@@ -224,7 +224,9 @@ class NotificationViewModelsTest {
     private fun centreModel(
         phone: Phone,
         names: Map<String, String> = emptyMap(),
-    ) = NotificationCenterViewModel(center, settings, authorization(phone), { names })
+        allNames: Map<String, String> = emptyMap(),
+        firstNames: kotlinx.coroutines.flow.Flow<Map<String, String>> = kotlinx.coroutines.flow.flowOf(emptyMap()),
+    ) = NotificationCenterViewModel(center, settings, authorization(phone), { names }, { allNames }, firstNames)
 
     @Test
     fun theBanner_followsThePermissionAndTheGeneralSwitch() =
@@ -389,5 +391,121 @@ class NotificationViewModelsTest {
             assertFalse(vm.uiState.value.secondChanceVisible)
             assertTrue(prefsStore.saved.enabled)
             assertTrue(asks.systemWindowLaunched)
+        }
+
+    // --- Requests to add a place (ticket LIEU-REQ-C, section 7.1) ------------------------------------------------------------------------------
+
+    private fun requestLine(
+        requestId: String,
+        miff: String = "miff-1",
+        at: Long = now,
+    ) = NotificationItem(
+        "n8|$miff|$requestId",
+        NotificationType.N8,
+        miff,
+        at,
+        state = com.tomessa.miff.domain.notification.ItemState.SILENT,
+    )
+
+    @Test
+    fun theUnreadLinesOfOnePersonInOneMiff_areOneRow_withTheNameMadeNow_neverStored() =
+        runTest(dispatcher) {
+            center.add(requestLine("u2_1", at = now - 3))
+            center.add(requestLine("u2_2", at = now - 2))
+            center.add(requestLine("u2_3", at = now - 1))
+            val first = kotlinx.coroutines.flow.MutableStateFlow(emptyMap<String, String>())
+            val vm =
+                centreModel(
+                    Phone(snap(notifications = true)),
+                    allNames = mapOf("miff-1" to "Famille"),
+                    firstNames = first,
+                )
+            advanceUntilIdle()
+            // The first name is not known yet: the row exists, without a name (the text of the type stands in).
+            val unnamed =
+                vm.uiState.value.rows
+                    .single()
+            assertNull(unnamed.requesterName)
+            assertEquals(3, unnamed.count)
+            first.value = mapOf("miff-1|u2" to "Léa")
+            advanceUntilIdle()
+            val row =
+                vm.uiState.value.rows
+                    .single()
+            assertEquals("Léa", row.requesterName)
+            assertEquals("Famille", row.requestMiffName)
+            assertEquals(3, row.count)
+            assertEquals(listOf("u2_1", "u2_2", "u2_3").toSet(), row.requestIds.toSet())
+            // Nothing of it was written in the centre: the lines keep a type, a Miff and a time.
+            assertTrue(center.items.value.none { it.id.contains("Léa") })
+        }
+
+    @Test
+    fun twoPeople_areTwoRows_andANameIsPerMiff() =
+        runTest(dispatcher) {
+            center.add(requestLine("u2_1"))
+            center.add(requestLine("u3_1"))
+            center.add(requestLine("u2_1", miff = "miff-2"))
+            val vm =
+                centreModel(
+                    Phone(snap(notifications = true)),
+                    allNames = mapOf("miff-1" to "Famille", "miff-2" to "Amis"),
+                    firstNames =
+                        kotlinx.coroutines.flow.flowOf(
+                            mapOf(
+                                "miff-1|u2" to "Léa",
+                                "miff-1|u3" to "Tom",
+                                "miff-2|u2" to "Léa",
+                            ),
+                        ),
+                )
+            advanceUntilIdle()
+            val rows = vm.uiState.value.rows
+            assertEquals(3, rows.size)
+            assertEquals(setOf("Léa", "Tom"), rows.mapNotNull { it.requesterName }.toSet())
+            assertEquals(setOf("Famille", "Amis"), rows.mapNotNull { it.requestMiffName }.toSet())
+        }
+
+    @Test
+    fun aTapOnAGroupedRow_readsEveryLineItStandsFor_andDeleteDeletesThemAll() =
+        runTest(dispatcher) {
+            center.add(requestLine("u2_1"))
+            center.add(requestLine("u2_2"))
+            center.add(NotificationItem("a", NotificationType.N1, null, now - 10))
+            val vm = centreModel(Phone(snap(notifications = true)))
+            advanceUntilIdle()
+            val row =
+                vm.uiState.value.rows
+                    .single { it.type == NotificationType.N8 }
+            vm.onOpen(row)
+            advanceUntilIdle()
+            assertTrue(
+                center.items.value
+                    .filter { it.type == NotificationType.N8 }
+                    .none { it.unread },
+            )
+            assertTrue(
+                center.items.value
+                    .single { it.id == "a" }
+                    .unread,
+            )
+            row.ids.forEach(vm::onDelete)
+            advanceUntilIdle()
+            assertEquals(listOf("a"), center.items.value.map { it.id })
+        }
+
+    @Test
+    fun theLinesThatWereRead_areNoLongerGrouped_andOtherLinesAreUntouched() =
+        runTest(dispatcher) {
+            center.add(requestLine("u2_1", at = now - 3))
+            center.add(requestLine("u2_2", at = now - 2))
+            center.markRead("n8|miff-1|u2_1")
+            center.markRead("n8|miff-1|u2_2")
+            center.add(NotificationItem("a", NotificationType.N1, null, now - 10))
+            val vm = centreModel(Phone(snap(notifications = true)))
+            advanceUntilIdle()
+            val rows = vm.uiState.value.rows
+            assertEquals(3, rows.size)
+            assertTrue(rows.filter { it.type == NotificationType.N8 }.all { it.count == 1 })
         }
 }

@@ -314,7 +314,8 @@ object NotificationPlanner {
                 miffLevelAt(input, now) == StatusLevel.RED && !responsibleAt(input, now)
             }
 
-            NotificationType.N6, NotificationType.N7 -> {
+            // Never planned: N6 and N7 are decided elsewhere, N8 is only a line of the centre.
+            NotificationType.N6, NotificationType.N7, NotificationType.N8 -> {
                 false
             }
         }

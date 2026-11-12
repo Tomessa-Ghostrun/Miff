@@ -61,6 +61,11 @@ data class MembershipRef(
 class MiffSummary(
     val id: String,
     val name: String,
+    /**
+     * The uid of the creator of the Miff, as the document of the Miff says it (already read to build the list: no extra reading); null when it is
+     * not known. It only decides what the Profile DRAWS (the buttons of the places of a creator): the rules of Firestore decide what is allowed.
+     */
+    val ownerUid: String? = null,
 ) {
     override fun toString(): String = "MiffSummary(redacted)"
 }

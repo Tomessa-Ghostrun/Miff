@@ -1,6 +1,7 @@
 package com.tomessa.miff.data.update
 
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
 import com.tomessa.miff.domain.miff.DocWrite
 import com.tomessa.miff.domain.miff.MiffSharingConsent
 import com.tomessa.miff.domain.miff.WriteKind
@@ -95,6 +96,7 @@ class FirestorePhotoStore(
                             WriteKind.SET -> transaction.set(ref, write.data)
                             WriteKind.UPDATE -> transaction.update(ref, write.data)
                             WriteKind.DELETE -> transaction.delete(ref)
+                            WriteKind.MERGE -> transaction.set(ref, write.data, SetOptions.merge())
                         }
                     }
                 }
