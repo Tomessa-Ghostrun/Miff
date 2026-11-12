@@ -25,7 +25,7 @@ enum AvatarDecoding {
             return nil
         }
         let pixels = max(Int(pixelSize.rounded(.up)), 1)
-        let key = "\(jpeg.count)-\(jpeg.hashValue)-\(pixels)" as NSString
+        let key = cacheKey(jpeg, pixelSize: pixelSize)
         if let cached = cache.object(forKey: key) {
             return cached
         }
@@ -34,6 +34,20 @@ enum AvatarDecoding {
         }
         cache.setObject(image, forKey: key)
         return image
+    }
+
+    /// La photo réduite SI elle est déjà en mémoire, sans rien décoder ni attendre (nil sinon). Un rond qui réapparaît (une carte qu'on
+    /// revoit, une rangée reconstruite) montre ainsi sa photo dès la première image, sans repasser par les initiales (clignotement).
+    static func cachedImage(from jpeg: Data?, pixelSize: CGFloat) -> UIImage? {
+        guard let jpeg, !jpeg.isEmpty, jpeg.count <= ProfileDocument.maxAvatarBytes else {
+            return nil
+        }
+        return cache.object(forKey: cacheKey(jpeg, pixelSize: pixelSize))
+    }
+
+    private static func cacheKey(_ jpeg: Data, pixelSize: CGFloat) -> NSString {
+        let pixels = max(Int(pixelSize.rounded(.up)), 1)
+        return "\(jpeg.count)-\(jpeg.hashValue)-\(pixels)" as NSString
     }
 
     /// Comme `image(from:pixelSize:)`, mais HORS du fil principal (lecture de l'en-tête, décodage de la version réduite, clé du cache) : un
