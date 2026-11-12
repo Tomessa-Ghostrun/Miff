@@ -41,3 +41,9 @@
 
 - La CI est **verte** (compilation, formatage, analyse, tests unitaires : arrêt puis reprise, sans signal, voyage, autre Miff sur la même zone).
 - Pas de lecture supplémentaire notable : au plus **une écriture de statut et une écriture de position** de plus par reprise (geste manuel).
+
+## Partie F : sans « Toujours » au moment de la reprise (3 min)
+
+- [ ] Réglages Android > Miff > Position : passez à **« Seulement pendant l'utilisation »**. **Arrêtez** puis **reprenez** le partage d'une Miff (vous êtes dans un lieu de confiance).
+- [ ] Chez le proche, la carte reste **grise** pour l'instant : c'est voulu (rien n'est partagé sans « Toujours » + position précise).
+- [ ] Remettez **« Toujours »** + position précise, puis **ouvrez l'app** : chez le proche, la carte devient **verte** (pas besoin de sortir ni d'entrer dans un lieu).

@@ -117,10 +117,18 @@ class LocalMiff(
 
     /**
      * REPRISE DU PARTAGE: what this phone remembers of the detection of this Miff, forgotten (the server deleted the status, the photo and the last position when the sharing
-     * stopped, and wrote an `unknown` status when it was resumed): the presence, the last position written, the status waiting, the battery, the access and the keys of a trip.
+     * stopped, and wrote an `unknown` status when it was resumed): the presence, the last position written, the status waiting, the battery and the access.
      * The places (and when they were read) stay: they are what the presence is computed from.
+     * MODE VOYAGE: the status that ends a trip ([clearTravel], with the `pending` that carries it) is NOT forgotten: a resume refused as "already resumed elsewhere" leaves the
+     * old status in place with its trip keys, and only that write clears them. The new presence, if there is one, replaces the pending status (the write clears the keys anyway).
      */
-    fun afterResume() = LocalMiff(places = places, readAtMillis = readAtMillis)
+    fun afterResume() =
+        LocalMiff(
+            places = places,
+            readAtMillis = readAtMillis,
+            pending = if (clearTravel) pending else null,
+            clearTravel = clearTravel,
+        )
 
     override fun toString(): String = "LocalMiff(redacted)"
 }

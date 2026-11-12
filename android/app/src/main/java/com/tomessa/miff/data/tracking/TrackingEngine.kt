@@ -355,33 +355,43 @@ class TrackingEngine(
             }
         }
 
-        // REPRISE DU PARTAGE: the Miffs resumed and now known are started again from nothing (the server deleted what the phone thought it had written).
-        val taken = takeResumed(state, synced.verified)
-        state = taken.state
-
         if (state.miffs.isEmpty()) {
-            // Nobody to tell: nothing is watched, nothing is kept (the person shares nowhere with the consent of version 3). Only the flags of a Miff not yet seen (no complete look) stay.
+            // Nobody to tell: nothing is watched, nothing is kept (the person shares nowhere with the consent of version 3). Only the flags of a Miff not yet seen (no complete look) stay: a COMPLETE look that finds no eligible Miff drops them.
             journal.record(JournalKind.NOT_ELIGIBLE)
             runCatchingCancellable { geofences.removeAll() }
             runCatchingCancellable { movement.stop() }
             networkWake.stop()
-            local.save(LocalState(uid, checkedAtMillis = state.checkedAtMillis, resumedMiffs = state.resumedMiffs))
+            local.save(
+                LocalState(
+                    uid,
+                    checkedAtMillis = state.checkedAtMillis,
+                    resumedMiffs = state.resumedMiffs.takeUnless { synced.verified },
+                ),
+            )
             return
         }
         if (!permissions.locationComplete) {
             // "Toujours" + precise are not there: no detection, no position (AUT7). The Miffs are told, once, that the access changed.
+            // The flags of the resumed Miffs STAY (the copy keeps them): the resume is worked out at the pass where the detection can really run, when the access is granted later.
             state = disarm(state)
             state = syncAccess(uid, state, now, gate)
             local.save(state)
             return
         }
 
+        // REPRISE DU PARTAGE: the Miffs resumed and now known are started again from nothing (the server deleted what the phone thought it had written). Only HERE, once the
+        // detection can run: without "Toujours" + precise the flag waits (see above). The flag stays in the copy saved below and is removed only by the save that follows the new
+        // presence: a process killed while the position is awaited (a phone that stops apps in the background) does not lose the resume.
+        val flagsBeforeTake = state.resumedMiffs
+        val taken = takeResumed(state, synced.verified)
+        state = taken.state
+
         // 1. The zones are armed FIRST, without waiting for a position (review I1): a slow start must not cost the arming (a receiver has seconds).
         //    The whole wanted set is registered again at each opening, restart and change of sharing (review B2): what the system lost (forced stop,
         //    cleaning by the phone, location switched off and on, data of Play services erased) comes back; the call is idempotent.
         val fullRegistration = reason == Reason.OPENED || reason == Reason.REARM || reason == Reason.SHARING_CHANGED
         state = armZones(state, state.fix(), fullRegistration)
-        local.save(state)
+        local.save(state.copyWith(resumedMiffs = flagsBeforeTake))
 
         // 2. The position (bounded wait), only if it is recent (review I2).
         val fix = chooseFix(state, suppliedFix, now)

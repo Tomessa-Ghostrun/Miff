@@ -327,7 +327,7 @@ class TrackingEngineResumeTest {
     // --- Same guards as every other status ------------------------------------------------------------------------------------------------
 
     @Test
-    fun withoutAlwaysAndPrecise_nothingIsWritten_andTheCardIsNotInventedWhenTheAccessReturns() =
+    fun withoutAlwaysAndPrecise_nothingIsWritten_theResumeWaits_andIsWorkedOutWhenTheAccessIsGrantedLater() =
         runTest {
             atHome(miffA)
             stopSeenBy(miffA)
@@ -336,14 +336,117 @@ class TrackingEngineResumeTest {
 
             resumeSignal(miffA)
 
-            assertTrue(statusWrites().isEmpty())
+            assertTrue(statusWrites().none { it.data.containsKey("presence") })
             assertTrue(positionWrites().isEmpty())
-            assertNull(local.state!!.resumedMiffs)
+            assertEquals("the resume is not lost: it waits for the access", setOf(miffA), local.state!!.resumedMiffs)
+
+            // The access is granted later (the app is opened again): the presence is worked out and written.
             env.snapshot = fullPermissions()
             engine.refresh(TrackingEngine.Reason.OPENED)
-            // The change of access may be told (a write of `locationAccess` alone), but never a presence: grey until the next signal, never a guess.
-            assertTrue(statusWrites().none { it.data.containsKey("presence") })
+
+            val presence = statusWrites().single { it.data.containsKey("presence") }
+            assertEquals("in_trusted", presence.data["presence"])
+            assertEquals("home", presence.data["placeId"])
+            assertNull(local.state!!.resumedMiffs)
+            assertEquals(listOf("miffs/miffA/positions/uid1"), positionWrites().map { it.path })
         }
+
+    @Test
+    fun aStopSeen_thenAResumeWithoutTheAccessFromTheStart_isWrittenOnceTheAccessIsGranted() =
+        runTest {
+            env.snapshot = whileInUseOnly()
+            share(miffA)
+            engine.refresh(TrackingEngine.Reason.OPENED)
+            stopSeenBy(miffA)
+            resumeSignal(miffA)
+            assertTrue(statusWrites().none { it.data.containsKey("presence") })
+            assertEquals(setOf(miffA), local.state!!.resumedMiffs)
+
+            env.snapshot = fullPermissions()
+            engine.refresh(TrackingEngine.Reason.OPENED)
+
+            assertEquals("in_trusted", statusWrites().single { it.data.containsKey("presence") }.data["presence"])
+        }
+
+    @Test
+    fun theFlagIsRemovedOnlyBySaveThatFollowsTheNewPresence_soAKilledProcessDoesNotLoseTheResume() =
+        runTest {
+            val saves = mutableListOf<LocalState>()
+            val recording =
+                object : TrackingLocalStore {
+                    var current: LocalState? = null
+
+                    override fun load() = current
+
+                    override fun save(state: LocalState) {
+                        saves += state
+                        current = state
+                    }
+
+                    override fun clear() {
+                        current = null
+                    }
+                }
+            val recorded =
+                TrackingEngine(
+                    env,
+                    store,
+                    recording,
+                    position,
+                    geofences,
+                    movement,
+                    wake,
+                    device,
+                    journal,
+                    timeoutMillis = 5_000,
+                    presenceListener = listener,
+                    travelAlarm = alarm,
+                )
+            share(miffA)
+            recorded.refresh(TrackingEngine.Reason.OPENED)
+            store.consents[miffA] = stopped()
+            recorded.refresh(TrackingEngine.Reason.SHARING_CHANGED)
+            store.consents[miffA] = v3()
+            recorded.markResumed(miffA)
+            val from = saves.size
+
+            recorded.refresh(TrackingEngine.Reason.SHARING_CHANGED)
+
+            // Every copy saved before the new presence still carries the flag; the first one without it already holds the presence to write.
+            val firstWithout = saves.drop(from).first { it.resumedMiffs == null }
+            assertEquals(PresenceValue.IN_TRUSTED, firstWithout.miffs[miffA]!!.derived()!!.presence)
+            assertNotNull(firstWithout.miffs[miffA]!!.pending ?: firstWithout.miffs[miffA]!!.derived())
+            assertTrue(saves.drop(from).takeWhile { it !== firstWithout }.all { it.resumedMiffs == setOf(miffA) })
+        }
+
+    @Test
+    fun afterResume_keepsTheStatusThatEndsATrip_butForgetsTheRest() {
+        val waiting = PendingStatus("unknown", null, T0, false)
+        val ended =
+            LocalMiff(
+                presence = "in_trusted",
+                presencePlaceId = "home",
+                pending = waiting,
+                clearTravel = true,
+                batteryPct = 50,
+                batteryAtMillis = T0,
+            )
+        val kept = ended.afterResume()
+        assertTrue(kept.clearTravel)
+        assertNotNull("the status that clears the keys of the trip still waits", kept.pending)
+        assertNull(kept.derived())
+        assertNull(kept.batteryPct)
+
+        val ordinary =
+            LocalMiff(
+                presence = "in_trusted",
+                presencePlaceId = "home",
+                pending = waiting,
+                clearTravel = false,
+            ).afterResume()
+        assertFalse(ordinary.clearTravel)
+        assertNull(ordinary.pending)
+    }
 
     @Test
     fun withTheOldConsentText_nothingIsKept_nothingIsWritten() =
