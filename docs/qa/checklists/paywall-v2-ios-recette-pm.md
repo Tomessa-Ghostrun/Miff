@@ -41,7 +41,7 @@ Pour **chaque** entrée : à l'ouverture, **la croix n'est pas là** (un espace 
 
 ## Partie 4 : ce que cette recette ne couvre pas
 
-- Les **états avec prix** (essai gratuit, annuel / mensuel, chargement, indisponible, achat en cours, erreur, restauration, abonné) : voir les **captures de la CI** (`95c` à `95m`, `99`, `99b`) ; ils ne s'affichent pas sur le téléphone avant **SRV-8**.
+- Les **états avec prix** (essai gratuit, annuel / mensuel, chargement, indisponible, achat en cours, erreur, restauration, abonné) : voir les **captures de la CI** (`95c`, `95e`, `95f`, `95m`, `99`, `99b` ; les autres états en aperçu manuel `-MiffPreview paywall-<état>`) ; ils ne s'affichent pas sur le téléphone avant **SRV-8**.
 - Les **textes et prix des stores**, l'**achat**, la **restauration** : SRV-8A / SRV-8I.
 - La **relecture des règles d'Apple** sur le délai de la croix (risque assumé, `paywall-v2.md` §7) : par `release-manager` avant la soumission.
 

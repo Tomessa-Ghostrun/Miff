@@ -122,25 +122,16 @@ shot 90-fr-lieu-liste-membre 3 "${fr_args[@]}" -MiffPreview place-list-member
 shot 91-fr-lieu-enregistre 3 "${fr_args[@]}" -MiffPreview place-list-saved
 shot 92-fr-lieu-detail 6 "${fr_args[@]}" -MiffPreview place-detail
 shot 93-fr-lieu-detail-danger 6 "${fr_args[@]}" -MiffPreview place-detail-danger
-shot 94-fr-lieu-offre-limite 3 "${fr_args[@]}" -MiffPreview place-paywall-limit
-shot 95-fr-lieu-offre-danger 3 "${fr_args[@]}" -MiffPreview place-paywall-danger
 shot 95b-fr-miff-offre-deuxieme-miff 3 "${fr_args[@]}" -MiffPreview place-paywall-miff
 shot 96-en-lieu-rempli 6 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview place-form-filled
 
-# PAY-UI-I : l'écran d'offre Miff+ (ticket paywall-v2.md), plein écran. Les captures 94, 95 et 95b ci-dessus montrent la variante « sans
+# PAY-UI-I : l'écran d'offre Miff+ (ticket paywall-v2.md), plein écran. La capture 95b ci-dessus montre la variante « sans
 # achat » (la seule de la production) AVANT les 3 secondes : croix absente, emplacement réservé. Les variantes « -cross » ont un délai
 # de 0 (croix présente, comme après 3 secondes). Les états avec offre (essai, deux formules, chargement, erreurs, abonné) ne sont
-# atteints que par ces aperçus : aucun achat n'existe avant SRV-8. Prix de démonstration, jamais ceux d'un store.
+# atteints que par ces aperçus (essai et deux formules capturés ici ; chargement, indisponible, achat en cours, en attente, erreur, abonné : à lancer à la main, `-MiffPreview paywall-loading` etc., pour tenir dans les 15 min de l étape) : aucun achat n existe avant SRV-8. Prix de démonstration.
 shot 95c-fr-offre-sans-achat-croix 3 "${fr_args[@]}" -MiffPreview paywall-soon-cross
-shot 95d-fr-offre-essai 3 "${fr_args[@]}" -MiffPreview paywall-trial
 shot 95e-fr-offre-essai-croix 3 "${fr_args[@]}" -MiffPreview paywall-trial-cross
 shot 95f-fr-offre-deux-formules-croix 3 "${fr_args[@]}" -MiffPreview paywall-plans-cross
-shot 95g-fr-offre-chargement 3 "${fr_args[@]}" -MiffPreview paywall-loading
-shot 95h-fr-offre-indisponible 3 "${fr_args[@]}" -MiffPreview paywall-unavailable
-shot 95i-fr-offre-achat-en-cours 3 "${fr_args[@]}" -MiffPreview paywall-purchasing
-shot 95j-fr-offre-paiement-en-attente 3 "${fr_args[@]}" -MiffPreview paywall-pending-cross
-shot 95k-fr-offre-erreur-calme 3 "${fr_args[@]}" -MiffPreview paywall-failed-cross
-shot 95l-fr-offre-abonne 3 "${fr_args[@]}" -MiffPreview paywall-subscribed
 shot 95m-en-offre-essai-croix 3 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview paywall-trial-cross
 
 # Le vrai parcours de l'app (session, routage) : première ouverture = carrousel, après le splash animé.
