@@ -1,10 +1,27 @@
 # Ticket : Premium réel (Miff+) : achat, validation côté serveur, état d'abonnement (SRV-7, SRV-8A, SRV-8I, SRV-3)
 
-**Statut** : **proposition de l'agent `product-specs`, en attente du GO et des réponses du PM** (§19). Aucun développement lancé, aucun déploiement, aucune écriture Notion, aucune commande Firebase, aucun accès aux consoles des stores.
+**Statut** : **proposition de l'agent `product-specs`, avec les 8 questions du §19 TRANCHÉES par le PM le 2026-11-12 (« Ok pour tes recos ») : voir « Décisions du PM » ci-dessous.** Reste le GO du PM sur le ticket lui-même (porte « ticket validé »). Aucun développement lancé, aucun déploiement, aucune écriture Notion, aucune commande Firebase, aucun accès aux consoles des stores.
 **Rédigé le** : 2026-11-12.
 **Demande du PM** : rédiger le ticket du premium réel maintenant que Blaze est activé (décision du 2026-11-11).
 **Décisions amont** : offre Miff+ décidée le 2026-10-31 (`docs/specs/paywall-premium.md`) ; Blaze adopté le 2026-11-11 (le PM souscrit lui-même, avec alertes de budget) ; étude de référence `docs/dev/etude-serveur-notifications-premium.md` (option A, tickets SRV-7 et SRV-8) ; règles des fonctions `docs/dev/deploiement-functions.md`.
 **Ticket Notion** : à créer ou relier par le PM (je n'écris rien dans Notion). Statut Notion suggéré : « A cadrer ».
+
+## Décisions du PM, 2026-11-12
+
+Réponse du PM aux 8 questions du §19 : **« Ok pour tes recos »**. Les valeurs par défaut recommandées deviennent des **décisions** :
+
+| # | Décision | Précisions |
+|---|---|---|
+| Q1 | **Validation directe côté serveur** (Cloud Functions). **Pas de RevenueCat.** | Pas de clé de compte de service Google, pas de transfert hors UE, un seul secret (clé Apple `.p8`) |
+| Q2 | **Essai de 7 jours sur l'annuel seulement**, **un essai par compte du store** (le store décide) | **Aucun blocage ajouté par Miff** (pas d'identifiant d'appareil, pas de liste noire, pas de marqueur « essai utilisé »). Abus résiduel accepté |
+| Q3 | **Remboursement : accès coupé à la confirmation du store** | Message neutre (« Ton abonnement Miff+ a été remboursé : les avantages ne sont plus actifs »), aucune donnée supprimée sur le moment ; Apple annule le remboursement : accès rétabli |
+| Q4 | **Période de grâce activée** (Google et Apple) | Accès conservé pendant la grâce, puis suspension ; pas de mise en pause volontaire Google ; aucune notification push Miff en v1 |
+| Q5 | **Excédent après expiration : 30 jours de mise en veille avant suppression** | Ticket de suite **PREM-FIN** (`docs/tickets/prem-fin.md`, cadrage bref), **avant l'ouverture publique** ; rien n'est supprimé automatiquement tant qu'il n'est pas livré |
+| Q6 | **Un achat = un compte Miff** | Refus calme sur un autre compte ; transfert manuel par le PM ; Partage en famille / bibliothèque familiale non activés |
+| Q7 | Produits : Google **`miff_plus`** (forfaits `annuel` et `mensuel`) ; Apple **`com.tomessa.miff.plus.annual`** et **`.monthly`**. **Prix annuel : on garde 59,88 € par an / 4,99 € par mois** | Si Apple ne propose pas ce palier, on retient **le palier le plus proche**, **à confirmer en App Store Connect** : c'est à ce moment seulement que la question devient bloquante (et le « presque 30 % » est à recalculer). Le même prix sur les deux stores est recommandé |
+| Q8 | **L'offre ne liste que ce qui est livré** : « **Notifications intelligentes** » est **RETIRÉ** de l'écran d'achat et des fiches des stores tant qu'elles n'existent pas | À réintroduire quand elles sont livrées |
+
+**Règle nouvelle du PM (2026-11-12) : croix de fermeture du paywall différée de 3 secondes à chaque affichage** (assumée comme « dark pattern », risques écrits comme risque assumé) : **voir `docs/tickets/paywall-v2.md` (PAY-UI)**. **Maquettes reçues** : `design/exports/paywall/Paywall.png` et `Paywall-1.png` (la règle du 2026-10-28 est donc satisfaite pour le paywall). **L'écran d'offre est désormais spécifié et livré par PAY-UI-A / PAY-UI-I, avant l'achat réel** ; SRV-8A / SRV-8I n'ont plus qu'à brancher l'achat du store sur cet écran. Ce qui est écrit au §4.3 (conséquences pour la maquette) et au §12 (textes) est **repris et précisé par `paywall-v2.md`** : en cas de différence, `paywall-v2.md` fait foi.
 
 **Convention** : **[Décidé]** = décision du PM déjà écrite (source citée). **[Proposé]** = ma proposition, à valider. **[Vérifié]** = confirmé sur une page officielle lue le 2026-11-12 (lien en §21). **[Non vérifié]** = je n'ai pas pu le confirmer (page illisible, silencieuse, ou connaissance générale) : à contrôler avant de s'y fier. Les passages techniques (§6 à §12) sont des **propositions pour `backend-data`, `android-dev` et `ios-dev`** : ils décrivent ce qui est nécessaire, pas le code.
 
@@ -23,7 +40,7 @@
 3. **Un seul secret côté serveur** : la clé Apple « In-App Purchase » (`.p8`), que **le PM dépose lui-même** dans le gestionnaire de secrets de Google. Côté Google Play, **aucune clé** : la fonction utilise l'identité de son compte de service dédié (à confirmer au premier essai).
 4. **Les stores imposent des corrections à la maquette du paywall** (§4) : le **prix facturé (59,88 €/an) doit être l'élément le plus visible**, le « 4,99 €/mois » ne peut être qu'un complément plus petit (Apple et Google le disent explicitement) ; « pendant 1 an » disparaît ; on ne peut pas annoncer des **« notifications intelligentes » non livrées**.
 5. **Un achat est lié à un compte Miff par un identifiant aléatoire** que le serveur fabrique (jamais l'UID, jamais l'e-mail) : aucune donnée personnelle ne part chez Apple ni chez Google (§5).
-6. **Ce qui reste à décider avant tout** (§19) : validation directe vs RevenueCat, essai de 7 jours et abus, remboursement, période de grâce, **ce qui se passe pour les Miffs et lieux au-delà de la formule gratuite à la fin de l'abonnement** (la décision du 2026-10-24 les supprime : je propose un préavis de 30 jours), partage d'un achat entre comptes, prix Apple, texte de l'offre.
+6. **Décidé le 2026-11-12** (« Ok pour tes recos », §19) : validation directe, essai sur l'annuel un par compte du store, remboursement = accès coupé, période de grâce, 30 jours de mise en veille avant suppression (PREM-FIN), un achat = un compte, noms de produits, offre limitée à ce qui est livré. **Seul point encore à confirmer** : l'existence du palier 59,88 € chez Apple, en App Store Connect (repli : le palier le plus proche).
 7. **Ce que doit faire le PM** (§14, pas à pas) : signer les accords chez Apple et Google, saisir **lui-même** coordonnées bancaires et fiscales, créer les produits, créer la clé Apple, inviter le compte de service dans la Play Console, lancer les déploiements. **Aucun agent ne saisit de coordonnées bancaires ni ne crée de compte.**
 8. **Coût** : 0 € d'outil supplémentaire ; commission des stores de l'ordre de 15 % (programmes à rejoindre, §14) ; fonctions et notifications de Pub/Sub dans les quotas gratuits aux volumes visés (§17).
 9. **Découpage** : SRV-7 (serveur + tests des règles), SRV-8A (Android), SRV-8I (iOS), SRV-3 (textes légaux et déclarations des stores), plus un ticket de suite **PREM-FIN** (conséquences de la fin d'abonnement sur les Miffs et lieux, §9.3) à livrer avant l'ouverture publique (§18).
@@ -98,7 +115,7 @@
 ## 4. L'offre et ce que les stores exigent d'afficher
 
 ### 4.1 L'offre décidée [Décidé, 2026-10-31]
-Nom : **Miff+**. **Annuel** : 59,88 € par an (4,99 € par mois en équivalent), **essai gratuit de 7 jours** (annuel seulement), **reconduit au même tarif**. **Mensuel** : 6,99 €, sans engagement, sans essai. « Économisez 30 % » **conservé** (écart assumé : le calcul réel est 28,6 %).
+Nom : **Miff+**. **Annuel** : 59,88 € par an (4,99 € par mois en équivalent), **essai gratuit de 7 jours** (annuel seulement), **reconduit au même tarif**. **Mensuel** : 6,99 €, sans engagement, sans essai. « Économisez 30 % » **remplacé par « presque 30 % d'économie »** (décision du PM du 2026-11-07 ; le calcul réel est 28,6 %).
 
 ### 4.2 Produits à créer [Proposé]
 Les **identifiants de produit sont définitifs** une fois créés (Google : « ne peuvent être ni modifiés ni réutilisés » [Vérifié] ; Apple : à traiter de même). Proposition de noms (à valider, voir Q7) :
@@ -111,13 +128,14 @@ Les **identifiants de produit sont définitifs** une fois créés (Google : « n
 ### 4.3 Règles d'affichage imposées par les stores (écart avec la maquette)
 - **Apple** : le **montant facturé doit être l'élément de prix le plus visible** ; une équivalence mensuelle ou une économie peut figurer, **en position et en taille subordonnées** [Vérifié]. L'écran d'inscription doit montrer : nom et durée de l'abonnement et ce qu'il contient, **prix de renouvellement complet, lisible et localisé**, un moyen de **restaurer les achats** [Vérifié]. Pour un essai : **durée de l'essai et prix facturé ensuite** [Vérifié]. Les **liens vers les conditions d'utilisation et la politique de confidentialité** doivent figurer dans l'app **et** dans les métadonnées de l'App Store [Vérifié].
 - **Google Play** : les conditions, le coût et la fréquence de facturation doivent être indiqués clairement ; **« les forfaits annuels ne doivent pas mettre principalement en avant un prix mensuel équivalent »** ; l'essai doit dire sa durée, expliquer qu'il **bascule automatiquement vers un abonnement payant**, son prix, et **comment annuler avant la bascule** ; il doit être montré que le contenu est **accessible sans essai** quand c'est le cas ; l'app doit donner accès à **un moyen facile d'annuler en ligne** (un lien vers le centre d'abonnements Google Play suffit) [Vérifié].
-- **Conséquences pour la maquette (`reglages-0`, paywall)** [Proposé, à faire valider par maquette PNG avant le dev] :
+- **Conséquences pour la maquette (`reglages-0`, paywall)** [Proposé ; **reprises et précisées par `docs/tickets/paywall-v2.md` §4 à partir des maquettes reçues le 2026-11-12, qui fait foi**] :
   1. Afficher **« 59,88 € par an »** (prix lu dans le store, jamais écrit en dur) en grand ; « soit 4,99 €/mois » plus petit.
   2. Remplacer « puis 4,99 €/mois pendant 1 an » par « Essai gratuit 7 jours, puis {prix annuel} par an, reconduit chaque année tant que tu ne l'annules pas ».
   3. La pastille « Annulable à tout moment » devient « Annulable à tout moment : tu gardes l'accès jusqu'à la fin de la période payée » (le remboursement de la période en cours n'est pas la règle par défaut de Google Play [Vérifié]).
   4. Garder **« Continuer avec la version gratuite »** visible (exigence Google ci-dessus).
   5. Ne lister que ce qui est livré (Q8) : « notifications intelligentes » n'existent pas aujourd'hui.
-  6. Le « Économisez 30 % » est maintenu par décision du PM : risque de mention inexacte, y compris sur les fiches des stores (R8).
+  6. « Économisez 30 % » devient « presque 30 % d'économie » (décision du 2026-11-07) ; à recalculer si les prix du store changent (R8).
+  8. **Nouveau (2026-11-12)** : la croix de fermeture n'apparaît que 3 secondes après chaque affichage du paywall (`paywall-v2.md` §6).
   7. Les écrans `reglages-6/8/9/13` (« Prochain paiement », « Changer d'abonnement », « Arrêter l'abonnement », dialogue de perte des Miffs) sont **à reprendre** : l'arrêt et le changement se font **chez le store** en v1 ; le texte de perte des Miffs est remplacé (Q5).
 - **Prix : toujours lus dans les stores** (prix localisé et devise de chaque pays), jamais écrits en dur ni stockés dans Firestore. **Point d'attention** : Apple ne propose que des **niveaux de prix prédéfinis** ; **59,88 € n'existe peut-être pas** (le 4,99 × 12 est un calcul) : à vérifier dans App Store Connect avant de créer le produit (repli à discuter : 59,99 €) [Non vérifié] (Q7).
 
@@ -286,7 +304,7 @@ Dans `backend/functions/` (région `europe-west9`, 2e génération, Node 24 ; la
 
 ---
 
-## 12. Textes obligatoires de l'écran d'achat (modèle, à valider par maquette)
+## 12. Textes obligatoires de l'écran d'achat (modèle ; **repris et précisés par `docs/tickets/paywall-v2.md` §5.4 et §5.5, qui fait foi**)
 
 À composer avec les prix fournis par le store ; une phrase complète par cas et par plateforme (clés `ios_` / `android_` pour les différences) :
 
@@ -360,7 +378,7 @@ Créer le compte de service et ses rôles, le sujet Pub/Sub, le secret Apple, la
 - **Politique de confidentialité** : ajouter l'identifiant d'achat, le lien achat-compte, les identifiants de transaction (hors positions et paiements), Apple et Google comme sous-traitants de paiement, la durée de conservation (30 jours après suppression du compte), et l'absence de transmission d'informations d'identité aux stores. Le tableau « Abonnement Miff+ » existe (état, date de fin, origine).
 - **Mentions légales / éditeur** : l'éditeur actuel est une personne physique (décision provisoire du 2026-10-24). **Vendre des abonnements de façon habituelle peut impliquer un statut professionnel à déclarer et le statut de « trader » exigé par les stores dans l'UE** : sujet à traiter par le PM auprès des organismes compétents ; **non vérifié ici, hors périmètre technique** (R12).
 - **Page de suppression de compte** (AUTH-5-W) : ajouter le rappel d'abonnement non résilié.
-- **Fiches des stores** : « abonnement avec essai », liens CGU/politique, retrait de toute mention de gratuité totale ; ne rien promettre de non livré (Q8) ; « Économisez 30 % » (écart assumé, R8).
+- **Fiches des stores** : « abonnement avec essai », liens CGU/politique, retrait de toute mention de gratuité totale ; ne rien promettre de non livré (Q8 : **pas de « notifications intelligentes »**) ; « presque 30 % d'économie » (R8) ; notes pour les relecteurs sur la croix différée de 3 s (`paywall-v2.md` §7).
 
 ---
 
@@ -442,12 +460,13 @@ Créer le compte de service et ses rôles, le sujet Pub/Sub, le secret Apple, la
 
 | PR | Contenu | Prérequis |
 |---|---|---|
-| **PREM-0** (docs) | Ce ticket + mises à jour de `docs/specs/paywall-premium.md` (statut), `docs/specs/README.md`, `data-model.md` (§2.3, §10, nouveaux §9.2), `premium-manuel.md` (règle « ne pas modifier un document store ») | GO du PM |
+| **PREM-0** (docs) | Ce ticket + mises à jour de `docs/specs/paywall-premium.md` (statut), `docs/specs/README.md`, `data-model.md` (§2.3, §10, nouveaux §9.2), `premium-manuel.md` (règle « ne pas modifier un document store ») ; tickets `paywall-v2.md` et `prem-fin.md` | GO du PM |
+| **PAY-UI-A** (Android) puis **PAY-UI-I** (iOS) | **Écran d'offre fidèle aux maquettes, états, variante sans achat, croix différée de 3 s** : `docs/tickets/paywall-v2.md`. **Livrés avant SRV-7/8** (aucune dépendance au serveur) | `paywall-v2.md` validé ; maquettes `design/exports/paywall/` |
 | **SRV-7** (backend) | Cinq fonctions, tests (fixtures, émulateur), tests de règles `billing*`, `garde-couts`, procédure du compte de service, du sujet, du secret et de la règle de durée de vie dans `deploiement-functions.md`, journaux | Réponses Q1 à Q6 ; actions PM de §14.1 (7, 8) et §14.2 (3, 4, 5) |
-| **SRV-8A** (Android) | Billing Library, paywall branché, écran Abonnement, restauration, rappel de suppression de compte ; textes FR/EN ; clés de traduction `paywall_` / `settings_subscription_*` | SRV-7 déployé sur « oui » ; exports PNG des maquettes demandés au PM (règle du 2026-10-28) |
+| **SRV-8A** (Android) | Billing Library, **achat branché sur l'écran de PAY-UI-A** (pas de nouvel écran d'offre), écran Abonnement, restauration, rappel de suppression de compte ; textes FR/EN ; clés de traduction `settings_subscription_*` | SRV-7 déployé sur « oui » ; **PAY-UI-A livré** ; maquettes du paywall reçues (règle du 2026-10-28) ; maquettes de l'écran Abonnement à demander au PM |
 | **SRV-8I** (iOS) | StoreKit 2, mêmes écrans, `Transaction.updates`, restauration par action | SRV-8A (parité), compte sandbox, TestFlight |
 | **SRV-3** (textes) | CGU art. 9, politique, pages web, déclarations des stores | Q5, Q8 ; parallèle à SRV-8 |
-| **PREM-FIN** (suite) | Mise en veille, préavis, choix de ce qu'on garde, suppression des excédents, « Prévenir mes proches » (`miff.md` R9) | Q5 ; **avant l'ouverture publique** |
+| **PREM-FIN** (suite) | Mise en veille de **30 jours** (décidée), préavis, choix de ce qu'on garde, suppression des excédents, « Prévenir mes proches » (`miff.md` R9) : cadrage dans `docs/tickets/prem-fin.md` | Q5 tranchée ; **avant l'ouverture publique** |
 
 Process par ticket (CLAUDE.md) : challenge, validation PM, dev Android puis iOS (une branche et une PR par plateforme, jamais de push sur `main`), revue de code en contexte neuf + revue sécurité, QA, recette PM, merge sur « oui ». Statuts Notion changés par Claude selon la décision du PM du 2026-11-06.
 
@@ -455,28 +474,30 @@ Process par ticket (CLAUDE.md) : challenge, validation PM, dev Android puis iOS 
 
 ## 19. Questions pour le PM (8) avec valeur par défaut recommandée
 
-**Q1. Validation des achats : directe (Cloud Functions) ou RevenueCat ?**
+**TOUTES TRANCHÉES le 2026-11-12 : « Ok pour tes recos » : voir « Décisions du PM, 2026-11-12 » en tête du ticket.** Les textes ci-dessous sont conservés comme justification ; chaque valeur par défaut recommandée est maintenant une décision.
+
+**Q1. Validation des achats : directe (Cloud Functions) ou RevenueCat ?** — **TRANCHÉE : directe.**
 *Défaut recommandé : directe.* RevenueCat exige une clé JSON de compte de service Google et la clé Apple, stocke les données aux États-Unis, et n'évite pas la fonction serveur (§3). Gain de RevenueCat : moins de code. Si vous préférez RevenueCat, il faut une **dérogation écrite** à `secrets.md` et un accord sur les transferts hors UE.
 
-**Q2. Essai de 7 jours : qui y a droit, et comment limiter les abus ?**
+**Q2. Essai de 7 jours : qui y a droit, et comment limiter les abus ?** — **TRANCHÉE : annuel seulement, un par compte du store, aucun blocage ajouté.**
 *Défaut recommandé :* annuel seulement (déjà décidé) ; **un essai par compte Apple (groupe d'abonnement) et par compte Google**, c'est **le store qui décide** ; Miff n'ajoute aucun blocage (pas d'identifiant d'appareil, pas de liste noire), et ne stocke pas « essai déjà utilisé ». Abus résiduel accepté : ouvrir un nouveau compte Apple/Google pour un nouvel essai ; coût pour Miff quasi nul. Se réinscrire sur Miff avec le même compte du store ne redonne pas d'essai.
 
-**Q3. Remboursement : que fait l'app ?**
+**Q3. Remboursement : que fait l'app ?** — **TRANCHÉE : accès coupé à la confirmation du store, message neutre.**
 *Défaut recommandé :* **accès coupé tout de suite** quand le store confirme (Google : révocation/achat annulé ; Apple : remboursement/révocation), message neutre (« Ton abonnement Miff+ a été remboursé : les avantages ne sont plus actifs »), **aucune donnée supprimée sur le moment** (même traitement que l'expiration, Q5) ; si Apple annule le remboursement, l'accès revient.
 
-**Q4. Paiement refusé : période de grâce et suspension ?**
+**Q4. Paiement refusé : période de grâce et suspension ?** — **TRANCHÉE : période de grâce activée.**
 *Défaut recommandé :* **activer la période de grâce** chez les deux stores (Google : valeur par défaut, à lire dans la console, 7 jours attendus [Non vérifié] ; Apple : durée proposée par la console) : **accès conservé** pendant la grâce, message sobre ; puis **suspension** (accès coupé) tant que le paiement n'est pas réglé ; ne pas activer la mise en pause volontaire de Google. Aucune notification push Miff en v1 (les stores relancent eux-mêmes la personne).
 
-**Q5. À la fin de l'abonnement, que devient ce qui dépasse la formule gratuite (Miffs au-delà de 1, lieux au-delà de 3, zones de danger) ?**
+**Q5. À la fin de l'abonnement, que devient ce qui dépasse la formule gratuite (Miffs au-delà de 1, lieux au-delà de 3, zones de danger) ?** — **TRANCHÉE : 30 jours de mise en veille avant suppression (ticket PREM-FIN).**
 *Défaut recommandé :* la décision du 2026-10-24 (**suppression des derniers ajoutés**) est **conservée**, mais **avec 30 jours de mise en veille** avant suppression : pendant ces 30 jours, rien n'est supprimé ; les lieux en excédent ne déclenchent plus de statut (grisés « Miff+ nécessaire »), la Miff en excédent est en lecture seule, un message calme propose de **choisir ce qu'on garde** et de **prévenir ses proches** ; si la personne se réabonne, tout est rétabli. Suppression ensuite (ticket **PREM-FIN**, avant l'ouverture publique). **Tant que PREM-FIN n'existe pas, rien n'est supprimé automatiquement** (comportement actuel). Impact : CGU art. 9 et politique à aligner (le délai de 30 jours n'y figure pas). Alternative moins radicale : ne jamais supprimer, seulement mettre en lecture seule.
 
-**Q6. Un achat pour plusieurs comptes Miff, ou pour la famille ?**
+**Q6. Un achat pour plusieurs comptes Miff, ou pour la famille ?** — **TRANCHÉE : un achat = un compte Miff.**
 *Défaut recommandé :* **un achat = un compte Miff** ; une seconde tentative avec un autre compte Miff reçoit un refus calme et le contact du support ; transfert fait **à la main par le PM** pour l'instant. **Partage en famille d'Apple et bibliothèque familiale de Google : non activés** (Apple : irréversible une fois activé). À reconsidérer si un usage « un abonnement pour toute la famille » ressort des tests.
 
-**Q7. Prix et identifiants : valider les noms de produits et le prix annuel côté Apple.**
+**Q7. Prix et identifiants : valider les noms de produits et le prix annuel côté Apple.** — **TRANCHÉE : noms validés ; prix 59,88 € / 4,99 € conservés ; si Apple n'a pas ce palier, palier le plus proche à confirmer en App Store Connect (seul point qui deviendrait bloquant, à ce moment-là).**
 *Défaut recommandé :* identifiants `miff_plus` (Google, forfaits `annuel` et `mensuel`) et `com.tomessa.miff.plus.annual` / `.monthly` (Apple), **définitifs** une fois créés ; vérifier si **59,88 €** existe chez Apple avant de créer le produit ; sinon, **choisir entre 59,99 € côté Apple (et 59,88 € côté Google ?) ou 59,99 € partout** : je recommande le **même prix partout** pour ne pas créer deux offres différentes, et de reporter l'écart dans la spec Paywall et dans « Économisez 30 % » (le calcul réel change légèrement).
 
-**Q8. Que liste-t-on dans l'offre au moment de l'achat ?**
+**Q8. Que liste-t-on dans l'offre au moment de l'achat ?** — **TRANCHÉE : seulement ce qui est livré ; « Notifications intelligentes » retiré.**
 *Défaut recommandé :* **seulement ce qui est livré** : Miffs illimitées, lieux de confiance illimités, zones de danger (qui s'affichent en rouge pour les proches mais sans notification aujourd'hui, CGU art. 6). **Retirer « notifications intelligentes »** de l'écran d'achat et des fiches des stores tant qu'elles n'existent pas (les stores exigent de décrire ce que la personne obtient pour le prix ; la promesse d'une fonction absente est un risque de rejet et de défiance). À ajouter quand elles seront livrées.
 
 ---
@@ -489,10 +510,11 @@ Process par ticket (CLAUDE.md) : challenge, validation PM, dev Android puis iOS 
 | R2 | `billing-sync` ignore les règles Firestore (accès à toute la base) | Détournement de la fonction = accès aux données | Code court, entrées bornées, compte dédié sans clé, tests, revue sécurité ; granularité par collection à rechercher (étude §3.4) |
 | R3 | Point d'entrée public (notifications Apple) | Appels abusifs, coût | Rejet précoce, `maxInstances`, alertes |
 | R4 | Notification perdue ou en retard | Accès éteint à tort ou maintenu trop longtemps | Nouvelles tentatives des stores, synchronisation à chaque ouverture, bouton Actualiser/Restaurer |
-| R5 | Prix Apple 59,88 € inexistant | Offre différente de la décision | Q7 |
+| R5 | Prix Apple 59,88 € inexistant | Offre différente de la décision | Q7 tranchée : palier le plus proche, à confirmer en App Store Connect |
 | R6 | Maquette non conforme aux règles de prix des stores | Rejet de la revue | §4.3, maquettes PNG avant dev |
 | R7 | Promesse de fonctions non livrées | Rejet, défiance, litige | Q8 |
-| R8 | « Économisez 30 % » (28,6 % réel) | Mention publicitaire inexacte | Écart assumé par le PM ; à reprendre si un store ou une autorité le demande |
+| R8 | Pourcentage d'économie (28,6 % réel) | Mention publicitaire inexacte | Remplacé par « presque 30 % d'économie » (2026-11-07) ; à recalculer si les prix du store changent (Q7) |
+| R21 | Croix du paywall différée de 3 s (décision du PM, 2026-11-12) | Rejet à la revue, avis négatifs, perception de pratique trompeuse | **Risque assumé par le PM** ; parades et détail dans `docs/tickets/paywall-v2.md` §7 |
 | R9 | Abus de l'essai (plusieurs comptes de store) | Quelques essais gratuits | Q2 : accepté |
 | R10 | Un seul projet Firebase : les achats de test (bac à sable, testeurs) accordent un vrai Miff+ en base | Accès gratuit aux testeurs externes | Marque `test` ; le projet de développement séparé (décision déjà prise) permettra de refuser les achats de test en production |
 | R11 | Suppression de Miffs à la fin de l'abonnement | Des proches perdent leur cercle | Q5 : mise en veille, préavis, choix, « Prévenir mes proches » ; PREM-FIN avant l'ouverture publique |
