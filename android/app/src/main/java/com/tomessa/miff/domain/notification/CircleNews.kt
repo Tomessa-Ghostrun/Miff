@@ -150,18 +150,44 @@ object CircleNewsParser {
         return cleaned.substring(0, ends[MAX_FIRST_NAME_CHARS - 2]).trimEnd() + ELLIPSIS
     }
 
-    /** The end offset of each grapheme of [text] (the system's rules of the characters seen as one: accents, emoji sequences, flags). */
+    /**
+     * The end offset of each grapheme of [text]: what a person sees as ONE character. Written here, not taken from the system, so that the answer is the same on every phone and
+     * every JVM (the rules of the JDK before 20 split emoji sequences). Simplified rules, enough for first names: a character, then its combining marks and variation selectors,
+     * emoji skin tones, a joiner U+200D with the character it joins (family, person with a job), and a pair of regional indicators (a flag).
+     */
     private fun graphemeEnds(text: String): List<Int> {
-        val boundaries = java.text.BreakIterator.getCharacterInstance()
-        boundaries.setText(text)
         val ends = mutableListOf<Int>()
-        var end = boundaries.next()
-        while (end != java.text.BreakIterator.DONE) {
-            ends += end
-            end = boundaries.next()
+        var index = 0
+        while (index < text.length) {
+            var codePoint = text.codePointAt(index)
+            index += Character.charCount(codePoint)
+            if (isRegionalIndicator(codePoint) && index < text.length && isRegionalIndicator(text.codePointAt(index))) {
+                index += Character.charCount(text.codePointAt(index))
+            }
+            while (index < text.length) {
+                codePoint = text.codePointAt(index)
+                if (codePoint == ZERO_WIDTH_JOINER) {
+                    index += Character.charCount(codePoint)
+                    if (index < text.length) index += Character.charCount(text.codePointAt(index))
+                } else if (extendsGrapheme(codePoint)) {
+                    index += Character.charCount(codePoint)
+                } else {
+                    break
+                }
+            }
+            ends += index
         }
         return ends
     }
+
+    private fun isRegionalIndicator(codePoint: Int) = codePoint in 0x1F1E6..0x1F1FF
+
+    /** A combining mark, a variation selector, an emoji skin tone: part of the character before it. */
+    private fun extendsGrapheme(codePoint: Int): Boolean =
+        when (Character.getType(codePoint).toByte()) {
+            Character.NON_SPACING_MARK, Character.ENCLOSING_MARK, Character.COMBINING_SPACING_MARK -> true
+            else -> codePoint in 0x1F3FB..0x1F3FF
+        }
 
     private const val ZERO_WIDTH_JOINER = 0x200D
 
