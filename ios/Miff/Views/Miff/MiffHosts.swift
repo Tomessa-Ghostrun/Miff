@@ -118,8 +118,6 @@ struct MiffOnboardingHost: View {
 
     /// Deux touchers rapprochés ouvrent un seul écran, pas deux.
     private func open(_ route: MiffRoute) {
-        // Un créateur entre dans un lieu ou dans le formulaire d'un nouveau : les listes de lieux du Profil seront relues à leur retour.
-        profilePlaces.routeOpened(route) { isCreator(of: $0) }
         if path.last != route {
             path.append(route)
         }
@@ -129,11 +127,6 @@ struct MiffOnboardingHost: View {
         if !path.isEmpty {
             path.removeLast()
         }
-    }
-
-    /// La personne connectée a-t-elle créé cette Miff ? (le champ `ownerUid` de l'annuaire ; inconnu : non.)
-    private func isCreator(of miffId: String) -> Bool {
-        PlaceViewerRole.isCreator(ownerUid: directory.state.ownerUid(of: miffId), myUid: environment.session.currentUid)
     }
 
     private func signOut() {
@@ -460,6 +453,8 @@ struct MiffHomeHost: View {
     }
 
     private func open(_ route: MiffRoute) {
+        // Un créateur entre dans un lieu ou dans le formulaire d'un nouveau : les listes de lieux du Profil seront relues à leur retour.
+        profilePlaces.routeOpened(route) { isCreator(of: $0) }
         // L'écran d'une Miff s'ouvre : ses membres ont pu changer, la carte du Profil la relira à sa prochaine apparition (voir `invalidate`).
         if case .miff(let miffId) = route {
             memberPreviews.invalidate(miffId: miffId)
@@ -473,6 +468,11 @@ struct MiffHomeHost: View {
         if !path.isEmpty {
             path.removeLast()
         }
+    }
+
+    /// La personne connectée a-t-elle créé cette Miff ? (le champ `ownerUid` de l'annuaire ; inconnu : non.)
+    private func isCreator(of miffId: String) -> Bool {
+        PlaceViewerRole.isCreator(ownerUid: directory.state.ownerUid(of: miffId), myUid: environment.session.currentUid)
     }
 
     private func signOut() {
