@@ -174,6 +174,8 @@ Un membre qui n'est pas le créateur propose un lieu ; le créateur l'accepte ou
 - **Compteur `meta/placeRequests`** (plafond de 10 par Miff) : peut dériver si un lot du créateur échoue en route ; le créateur le réécrit au nombre réel de demandes qu'il lit à chaque réponse. Signal : un membre bloqué par « Cette Miff a déjà plusieurs demandes… » alors que le créateur en voit moins de 10.
 - **Rafales** (créer, retirer, recréer en boucle) : non limitables en règles sur Spark ; au plus 3 demandes simultanées par membre ; App Check à activer.
 
+**iOS (mêmes chiffres, mêmes règles)** : le membre lit ses demandes par `PlaceRequestBook` (une lecture par Miff et par 5 minutes, 30 s d'attente après un échec) ; le créateur est écouté par `ProfileRequestsWatcher` (UN écouteur, annulé quand l'app quitte le premier plan) et lit la fiche de chaque demandeur UNE fois par session (`ProfileRequestsViewModel`). Une demande faite sans réseau est gardée par le téléphone (`WriteBatch` non attendu) : elle coûte ses 2 écritures au retour du réseau, jugées par les règles à ce moment-là. **Signal propre à iOS** : une demande envoyée hors ligne puis refusée au retour du réseau disparaît sans un mot (risque R10) ; si des testeurs disent « ma demande a disparu », regarder d'abord le plafond de 10 de la Miff.
+
 ## 5. Journal de relevé (modèle à recopier)
 
 Une ligne par jour de bêta externe, dans un fichier à toi (ou dans une conversation avec Claude) :

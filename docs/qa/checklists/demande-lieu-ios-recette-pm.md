@@ -1,14 +1,14 @@
-# Recette iOS : demander l'ajout d'un lieu (membre) — parcours pour le PM
+# Recette iOS : demander l'ajout d'un lieu (membre) et l'accepter ou la refuser (créateur) — parcours pour le PM
 
 **Pour qui** : vous, sur votre iPhone 11 Pro (iOS 26.5.2), avec le build TestFlight de la PR.
 **Il vous faut** : **deux comptes dans la même Miff** : le **créateur** (compte A) et un **membre** (compte B), deux téléphones ou un seul qui change de compte ; idéalement un **troisième compte Miff+** (accordé à la main) pour la zone de danger.
-**Durée** : environ 15 minutes pour cette partie. **Source** : décisions du PM du 2026-11-11 (pas de maquette, pas de Notion), ticket `docs/tickets/demande-ajout-lieu.md` (critères M1 à M11, L1), miroir de la recette Android `docs/qa/checklists/demande-lieu-android-recette-pm.md` (validée).
+**Durée** : environ 25 minutes. **Source** : décisions du PM du 2026-11-11 (pas de maquette, pas de Notion), ticket `docs/tickets/demande-ajout-lieu.md` (critères M1 à M11, L1), miroir de la recette Android `docs/qa/checklists/demande-lieu-android-recette-pm.md` (validée).
 
 ## À savoir avant de commencer
 
 - **Les règles Firestore des demandes sont déployées depuis le 2026-11-12** : la recette peut se faire de bout en bout.
 - Le créateur **n'est pas prévenu quand l'app est fermée** (pas de notification « push » dans ce ticket).
-- Cette partie ne couvre que le **membre**. La réception, l'acceptation et le refus par le créateur sont dans la partie B (PR suivante).
+- La partie A est celle du **membre**, la partie B celle du **créateur** (réception, acceptation, refus).
 - Un défaut : capture d'écran + numéro de l'étape, puis étape suivante.
 
 ## Partie A : le MEMBRE demande un lieu (compte B)
@@ -28,15 +28,37 @@
 13. [ ] Le membre ne reçoit **jamais** de message, notification ni ligne quand le créateur accepte, refuse ou laisse expirer : sa carte disparaît simplement, et si le lieu a été accepté il est dans la liste de la Miff.
 14. [ ] Un **membre** ouvre l'**écran de la Miff** (carte « Mes Miffs ») : la liste des lieux y reste en **lecture seule**, sans bouton de demande (les demandes se font depuis le Profil).
 
-## Partie B : lecteur d'écran, texte, thèmes
+## Partie B : le CRÉATEUR reçoit, accepte ou refuse (compte A, plan gratuit puis Miff+)
 
-15. [ ] **VoiceOver** : la carte d'une demande est lue d'un bloc (« Ta demande en attente : <lieu>, <adresse>, Zone de danger » pour une zone de danger) ; « Demander l'ajout d'un lieu », « Soumettre la demande », « Retirer ma demande » sont annoncés comme des boutons ; le message « Demande envoyée… » est annoncé.
-16. [ ] **Grand texte** (Réglages > Accessibilité > Taille du texte, au maximum) : rien n'est coupé, les boutons restent touchables, le pied du formulaire défile avec le formulaire.
-17. [ ] **Anglais** : « Ask to add a place », « Suggest a place », « Send request », « Pending », « Waiting for a reply. », « Withdraw my request ».
-18. [ ] Ton : aucun mot « refusé », « rejeté » ou « échec » côté membre ; aucun rouge ni orange sur les cartes de demande ; mode sombre et mode clair lisibles.
+15. [ ] Avec une demande en attente, **ouvrez l'app** (depuis la fermeture complète) : un **point** apparaît sur l'onglet **Profil** (pas de nombre). VoiceOver lit « Profil, une demande de lieu à valider ». *(La cloche du Feed et la ligne du centre de notifications ne sont pas encore sur iPhone : voir « Ce qui n'est volontairement pas fait ».)*
+16. [ ] Onglet Profil : un bloc **« À valider »** **en première position de la liste**, **avant** les lieux acceptés, avec une carte **distincte** (fond pâle, pointillés, « Demandé par <Prénom> » avec la photo ou les initiales) et deux boutons **Refuser** / **Accepter** de même taille. Le point de l'onglet s'éteint une fois la liste vue. L'encart **« Mode voyage » reste tout en bas** du Profil.
+17. [ ] **Accepter** depuis la liste : message « « <lieu> » a été ajouté à la Miff. », la demande disparaît, le **lieu apparaît dans la liste** (nom, adresse, type, rayon comme demandés ; catégorie choisie par le membre, modifiable ensuite avec « Modifier »).
+18. [ ] **Refuser** depuis la liste : message « Demande retirée de la liste. », la demande disparaît ; **côté membre : rien** (pas de message), la demande disparaît simplement de sa liste (à sa prochaine lecture).
+19. [ ] Touchez une carte de demande : le **détail** montre la carte, l'adresse, le rayon, le type, le bandeau « Ce lieu n'est pas encore dans la Miff. Il y sera si tu acceptes. », **« Demandé par <Prénom> »** + la date, et **Refuser** / **Accepter** (mêmes effets qu'en liste, puis retour à la liste).
+20. [ ] **Plan gratuit avec 3 lieux déjà créés** : vous **recevez** quand même les demandes ; **Accepter** ouvre l'**offre Miff+** avec « Tu as atteint la limite de lieux gratuits… La demande reste en attente, tu peux aussi la refuser. » ; fermez : la demande est toujours là ; **Refuser** marche.
+21. [ ] **Demande de zone de danger** (membre Miff+) et créateur gratuit : **Accepter** ouvre l'offre avec « Les zones de danger font partie de Miff+. La demande reste en attente… » ; **Refuser** marche.
+22. [ ] **Abonnement illisible** (mode avion, puis « Accepter ») : message calme « Impossible de vérifier ton abonnement pour l'instant. Réessaie dans un instant. », pas d'offre à tort.
+23. [ ] Une demande **traitée sur un autre téléphone** (ou retirée par le membre) alors que l'écran est ouvert : elle disparaît de la liste ; si on ouvrait son détail : retour à la liste avec « Cette demande n'est plus en attente. ».
+24. [ ] Le créateur d'une Miff peut avoir **jusqu'à 10 demandes** ; la 11e est refusée au membre avec « Cette Miff a déjà plusieurs demandes en attente. Réessaie un peu plus tard. ».
+25. [ ] **Un membre retiré** de la Miff par le créateur : ses demandes disparaissent de la liste du créateur (puis sont supprimées).
+26. [ ] **Supprimer la Miff** (créateur) avec des demandes en attente : la suppression va au bout (les demandes et le compteur partent avec).
+27. [ ] **Plusieurs Miffs** (compte Miff+ créateur de deux Miffs) : le point suit la **carte du carrousel** regardée ; les demandes de l'autre Miff apparaissent quand on y arrive.
+28. [ ] **Mettre l'app en arrière-plan** puis la rouvrir : l'écoute reprend (une demande arrivée entre-temps apparaît) ; l'app fermée ne prévient pas (voir plus bas).
+
+## Partie C : lecteur d'écran, texte, thèmes (membre, puis créateur)
+
+29. [ ] **VoiceOver** : la carte d'une demande est lue d'un bloc (« Ta demande en attente : <lieu>, <adresse>, Zone de danger » pour une zone de danger) ; « Demander l'ajout d'un lieu », « Soumettre la demande », « Retirer ma demande » sont annoncés comme des boutons ; le message « Demande envoyée… » est annoncé.
+30. [ ] **Grand texte** (Réglages > Accessibilité > Taille du texte, au maximum) : rien n'est coupé, les boutons restent touchables, le pied du formulaire défile avec le formulaire.
+31. [ ] **Anglais** : « Ask to add a place », « Suggest a place », « Send request », « Pending », « Waiting for a reply. », « Withdraw my request ».
+32. [ ] Ton : aucun mot « refusé », « rejeté » ou « échec » côté membre ; aucun rouge ni orange sur les cartes de demande ; mode sombre et mode clair lisibles.
+33. [ ] **VoiceOver** : la carte d'une demande est lue d'un bloc (« Demande en attente : <lieu>, demandée par <Prénom>, <adresse> ») ; « Refuser la demande : <lieu> » et « Accepter la demande : <lieu> » sont annoncés comme des boutons ; le titre « À valider » comme un titre.
+34. [ ] **Grand texte** : les deux boutons passent l'un sous l'autre, rien n'est coupé.
+35. [ ] **Anglais** : « To review », « Requested by … », « Accept », « Decline », « Request removed from the list. ».
+36. [ ] Ton : aucun mot « refusé », « rejeté » ou « échec » n'apparaît côté membre ; aucun rouge ni orange sur les cartes de demande (« Refuser » n'est pas rouge).
 
 ## Ce qui n'est volontairement pas fait (à confirmer)
 
 - Pas de notification quand l'app est fermée (plan Blaze et FCM : autre ticket) ; pas de rappel au créateur.
 - Le demandeur ne peut pas modifier une demande (il la retire et la refait).
 - Les expirations (30 jours) se font quand une app rencontre la demande : pas de suppression automatique côté serveur.
+- **Pas de ligne dans le centre de notifications, pas de point sur la cloche du Feed** : ni la cloche ni le centre n'existent dans `main` sur iPhone (pile NOTIF-P0 non fusionnée). À reprendre juste après sa fusion (critère C1 du ticket). En attendant, le créateur a le point de l'onglet Profil et la demande en tête de liste.
