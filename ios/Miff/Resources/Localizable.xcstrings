@@ -14773,40 +14773,6 @@
         }
       }
     },
-    "ios_privacy_notifications_status_on": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Allowed on this phone."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Autorisées sur ce téléphone."
-          }
-        }
-      }
-    },
-    "ios_privacy_notifications_status_off": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Not allowed on this phone yet."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pas encore autorisées sur ce téléphone."
-          }
-        }
-      }
-    },
     "ios_detection_help_intro": {
       "extractionState": "manual",
       "localizations": {
@@ -17825,6 +17791,40 @@
           "stringUnit": {
             "state": "translated",
             "value": "non lu"
+          }
+        }
+      }
+    },
+    "ios_notif_help_link": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How to turn them on?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comment les réactiver ?"
+          }
+        }
+      }
+    },
+    "ios_notif_delete": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer"
           }
         }
       }

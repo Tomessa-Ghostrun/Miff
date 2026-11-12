@@ -70,6 +70,8 @@ struct MainShellView<Feed: View>: View {
     private let onOpenMiff: (String) -> Void
     private let onOpenSettings: (SettingsRoute) -> Void
     private let feed: (FeedShellContext) -> Feed
+    /// NOTIF-6I : un toucher sur une ligne du centre de notifications demande un onglet (le Feed, ou l'écran Update).
+    @ObservedObject private var tabRequests: TabRequests
     @State private var selected: MainTab = .feed
     @State private var keyboardVisible = false
     @State private var nowMillis = Int(Date().timeIntervalSince1970 * 1000)
@@ -87,6 +89,7 @@ struct MainShellView<Feed: View>: View {
         update: UpdateShell,
         onOpenMiff: @escaping (String) -> Void,
         onOpenSettings: @escaping (SettingsRoute) -> Void,
+        tabRequests: TabRequests,
         @ViewBuilder feed: @escaping (FeedShellContext) -> Feed
     ) {
         self.miffs = miffs
@@ -97,6 +100,7 @@ struct MainShellView<Feed: View>: View {
         self.update = update
         self.onOpenMiff = onOpenMiff
         self.onOpenSettings = onOpenSettings
+        _tabRequests = ObservedObject(wrappedValue: tabRequests)
         self.feed = feed
     }
 
@@ -200,6 +204,12 @@ struct MainShellView<Feed: View>: View {
         .onChange(of: hasNoMiff) { noMiff in
             if noMiff {
                 selected = .feed
+            }
+        }
+        // Une ligne du centre de notifications a été touchée : l'onglet demandé s'ouvre.
+        .onChange(of: tabRequests.latest) { request in
+            if let request {
+                selected = request.tab
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in

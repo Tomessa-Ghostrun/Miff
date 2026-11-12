@@ -213,6 +213,35 @@ final class PermissionGateViewModelTests: XCTestCase {
         XCTAssertEqual(rig.model.state.screen, .none)
     }
 
+    func testLaterNeverConsumesTheSystemWindowAndTheScreenDoesNotComeBack() async {
+        let asks = FakeAsks()
+        let rig = makeRig(snap(.always, notifications: .notDetermined), asks: asks)
+        await rig.model.start()
+        XCTAssertEqual(rig.model.state.screen, .notifications)
+
+        await rig.model.onNotificationsLaterTapped()
+
+        XCTAssertEqual(rig.permissions.notificationRequests, 0, "« Plus tard » ne demande rien au système")
+        XCTAssertTrue(asks.shown.contains(uid), "l'amorce n'est montrée qu'une fois par compte")
+        XCTAssertEqual(rig.model.state.screen, .none, "jamais bloquant")
+        // Au lancement suivant : toujours pas d'amorce, et la fenêtre du système peut encore s'afficher plus tard.
+        let again = makeRig(snap(.always, notifications: .notDetermined), asks: asks)
+        await again.model.start()
+        XCTAssertEqual(again.model.state.screen, .none)
+        XCTAssertEqual(again.permissions.notificationRequests, 0)
+    }
+
+    func testLaterIsIgnoredWhenTheNotificationScreenIsNotTheOneShown() async {
+        let asks = FakeAsks()
+        let rig = makeRig(snap(.always, notifications: .authorized), asks: asks)
+        await rig.model.start()
+
+        await rig.model.onNotificationsLaterTapped()
+
+        XCTAssertTrue(asks.shown.isEmpty)
+        XCTAssertEqual(rig.permissions.notificationRequests, 0)
+    }
+
     // MARK: - La localisation, de la fenêtre aux Réglages
 
     func testLocationBlocksTheWindowThenTheSettingsAndClosesOnlyWhenAlwaysIsGiven() async {

@@ -103,7 +103,7 @@ struct AccountView: View {
 }
 
 /// Réglages > Confidentialité (ticket Profil / Réglages, critère B5) : ce que Miff fait de la localisation, l'état des autorisations du
-/// téléphone (lu ici, jamais demandé) avec un accès aux réglages de l'iPhone, les notifications (« bientôt »), l'aide à la détection,
+/// téléphone (lu ici, jamais demandé) avec un accès aux réglages de l'iPhone, l'état des notifications, l'aide à la détection,
 /// les textes légaux et le contact. L'état est relu à chaque retour dans l'app : la personne change une autorisation dans les
 /// réglages de l'iPhone puis revient.
 ///
@@ -163,7 +163,8 @@ struct PrivacyView: View {
     @ViewBuilder
     private var notifications: some View {
         SettingsSectionTitle(key: "settings_privacy_notifications_title")
-        SettingsBody(text: L10n.string("settings_privacy_notifications_body"))
+        // NOTIF-P0 : les rappels existent (l'ancien texte « arrivent bientôt, rien n'est envoyé » est devenu faux). Texte commun avec Android.
+        SettingsBody(text: L10n.string("notif_privacy_body"))
         if let permission {
             SettingsBody(text: L10n.string(permission.notificationsStatusKey))
         }
