@@ -3487,6 +3487,23 @@
         }
       }
     },
+    "feed_bubble_contact_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contact %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contacter %1$@"
+          }
+        }
+      }
+    },
     "feed_bubble_danger": {
       "extractionState": "manual",
       "localizations": {
@@ -3636,23 +3653,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Tes proches n'ont pas eu de tes nouvelles depuis %1$@"
-          }
-        }
-      }
-    },
-    "feed_bubble_contact_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Contact %1$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Contacter %1$@"
           }
         }
       }

@@ -157,6 +157,19 @@ Changé :
 
 **Limites connues** : « Pendant l'utilisation » seul reste bloquant pour publier une photo (le suivi, donc la position partagée, exige « Toujours ») et la phrase générique « localisation éteinte ou plus autorisée » s'applique alors ; une phrase dédiée « Choisis Toujours » est une décision de texte pour le PM. Android (`UpdateViewModel.kt`) n'est pas touché ici : à vérifier s'il a les mêmes causes.
 
+### Feed : bulle sans symbole, bouton « Contacter », titre au style des autres écrans (décisions du PM, 2026-11-10 et 2026-11-11 ; miroir d'Android PR #160)
+
+Branche `ios/feed-bulle-police-contacter` (PR en brouillon). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.**
+
+Modifié :
+- **Phrase principale de la bulle** (« Tout va bien », « Pas encore de nouvelles », titre d'une alerte) : **exactement le style des titres des autres écrans** (`textDisplayHeadline`, Baloo Thambi 2 Regular 24 / 30, `.title2`, `text/primary`, centrée) : la taille 30 / 36 puis la police ExtraBold prévues d'abord sont abandonnées (décisions du PM du 2026-11-11) ; aucun style propre à la bulle, aucune nouvelle police. La bulle grandit en hauteur avec un grand texte.
+- **Plus aucun symbole dans la bulle**, quelle que soit sa couleur : le filigrane (horloge, point d'exclamation, sablier) et le pictogramme de bouton disparaissent. Code retiré : `BubbleLayout.pictogram` et `symbol*`, `BubbleWatermark`, constantes de mouvement `star*`.
+- **Bouton de la bulle** : libellé **« Contacter »** (EN « Contact ») au lieu de « Envoyer un message » (clé `feed_bubble_message_action` conservée, valeur changée ; à aligner si l'agent Android renomme la clé) ; texte seul, un peu plus petit (14 pt, marges réduites), zone de toucher d'au moins 44 pt ; VoiceOver lit « Contacter {prénom} » (clé `feed_bubble_contact_a11y`, la même qu'Android).
+- **Grand texte** : à très grand texte les marges latérales de la bulle diminuent et la phrase peut rétrécir jusqu'à 50 % (6 lignes au plus) : aucun mot n'est coupé.
+
+Ajouté : tests de typographie (`testTheBubbleHeadlineIsTheDisplayHeadlineStyle`), absence de symbole et zone de toucher (`BubbleLayoutTests`). Les emoji des étiquettes iOS sont dans #145 (pas ici).
+
+
 ### Mode voyage, Feed (VOY-3I, miroir d'Android VOY-3A, PR #155)
 
 Troisième des trois PR empilées (base : `ios/mode-voyage-profil`, VOY-2I). Ticket `docs/tickets/mode-voyage.md` §6 (décisions du PM du 2026-11-10 : ouvert à TOUS ; la position reste partagée ; le voyageur n'a **aucun impact** sur la couleur ni sur le « n sur m »). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM : `docs/qa/checklists/voyage-ios-recette-pm.md`. Détail : `ios/README.md` (« Mode voyage »).
@@ -214,6 +227,7 @@ Ne change pas : aucune règle Firestore, aucun événement Analytics, aucun jour
 - **Détection « nouvel appareil »** : `checkedAtMillis == 0` (aucune relecture vérifiée du serveur) ; une copie locale déjà vérifiée n'est jamais relue (testé : une seule lecture de MON statut par Miff, puis une de plus après une déconnexion).
 - **À suivre dans les PR de notifications** : #129 devra gérer `.travel` dans `StatusColor.changeInstants` (liste vide : un voyageur est neutre et n'a aucun instant de changement) quand elle sera fusionnée avec cette PR ; sans cela le `switch` exhaustif ne compile plus.
 - Coût : 0 € ; signal de bascule : voir ci-dessus.
+
 
 ### Photo Google à l'inscription et retour par geste (retours du PM après TestFlight, 2026-11-08)
 
