@@ -14,10 +14,11 @@ enum PhotoSafeArea {
             return EdgeInsets()
         }
         #endif
+        // Horizontal : le lecteur seul (la fenêtre donne gauche/droite, pas début/fin : faux en droite-à-gauche).
         let window = windowInsets()
         return EdgeInsets(
             top: max(proxy.top, window.top),
-            leading: proxy.leading, // horizontal : le lecteur seul (la fenêtre donne gauche/droite, pas début/fin : faux en droite-à-gauche)
+            leading: proxy.leading,
             bottom: max(proxy.bottom, window.bottom),
             trailing: proxy.trailing
         )
