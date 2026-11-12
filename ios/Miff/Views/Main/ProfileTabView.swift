@@ -10,11 +10,18 @@ struct ProfileTabActions {
     let onCreateMiff: () -> Void
 }
 
+/// Ce que l'onglet Profil sait de la personne et des gestes pour la liste des lieux sous le carrousel.
+struct ProfilePlacesContext {
+    /// La personne connectée : elle est comparée au créateur de la Miff pour savoir quels boutons dessiner.
+    var myUid: String?
+    var actions = ProfilePlacesActions.none
+}
+
 /// L'onglet Profil (maquette « profil », ticket Onboarding §6.8 et décision Q2 du ticket Feed / Profil / Réglages) : la photo (ou les
 /// initiales), « Prénom Nom », « C'est toi » et l'engrenage qui ouvre les Réglages ; en dessous, « Mes Miffs » : un carrousel, une carte
 /// par Miff (nom, nombre de membres, miniatures des membres ; elle ouvre l'écran de la Miff) et, en dernier, « Créer une Miff ». Un
 /// toucher sur la photo ou le nom ouvre « Mes informations ». Aucune donnée inventée : pas de « Famille » par défaut.
-/// Les lieux de la Miff restent dans l'écran de la Miff (ticket Lieux iOS), pas ici.
+/// Sous le carrousel, les lieux de confiance de la Miff dont la carte est montrée, visibles par TOUS ses membres (décision du PM, 2026-11-11).
 struct ProfileTabView: View {
     let state: ProfileTabState
     let miffs: DirectoryState
@@ -26,6 +33,10 @@ struct ProfileTabView: View {
     var initialCarouselPage: Int?
     /// MODE VOYAGE (VOY-2I) : la carte « Mode voyage », en DERNIÈRE position de l'écran (après tous les autres blocs), ouverte à tous les comptes.
     @ObservedObject var travel: TravelViewModel
+    /// Les lieux de la Miff du carrousel (lus une fois par Miff, sans écouteur) et le message calme d'un geste.
+    @ObservedObject var placesModel: ProfilePlacesViewModel
+    @ObservedObject var placeNotices: PlaceNotices
+    let placesContext: ProfilePlacesContext
     let actions: ProfileTabActions
 
     var body: some View {
@@ -39,6 +50,7 @@ struct ProfileTabView: View {
                 }
                 .padding(.horizontal, Spacing.lg)
                 miffCards
+                placesSection
                 // MODE VOYAGE : l'encart est le DERNIER bloc de l'écran (décision du PM après la recette du build 26).
                 TravelCardView(model: travel)
             }
@@ -47,6 +59,17 @@ struct ProfileTabView: View {
         .background(gradientProfileHeader.ignoresSafeArea())
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("profile_tab_pane_a11y"))
+        // Retour d'un lieu ou d'un formulaire : la liste regardée est relue si elle est périmée. Départ de l'onglet : le message calme s'en va.
+        .onAppear {
+            if isActive {
+                placesContext.actions.onAppear()
+            }
+        }
+        .onChange(of: isActive) { active in
+            if !active {
+                placesContext.actions.onLeave()
+            }
+        }
     }
 
     private var header: some View {
@@ -131,10 +154,33 @@ struct ProfileTabView: View {
                     ),
                     previews: previews,
                     isActive: isActive,
-                    actions: ProfileCarouselActions(onOpenMiff: actions.onOpenMiff, onCreate: actions.onCreateMiff)
+                    actions: ProfileCarouselActions(
+                        onOpenMiff: actions.onOpenMiff,
+                        onCreate: actions.onCreateMiff,
+                        onMiffShown: { placesModel.onCardShown(miffId: $0) },
+                        onMiffsKnown: { placesModel.retainOnly($0) }
+                    )
                 )
                 .padding(.horizontal, Spacing.lg)
             }
+        }
+    }
+
+    /// Les lieux de la Miff du carrousel, pour tous ses membres. Rien n'est dessiné (pas même une marge) tant qu'ils n'ont pas été lus.
+    @ViewBuilder
+    private var placesSection: some View {
+        if case .ready(let ready) = miffs,
+           let presentation = ProfilePlacesPresentation.make(
+               state: placesModel.state, miffs: ready.miffs, myUid: placesContext.myUid
+           ) {
+            ProfilePlacesSection(
+                presentation: presentation,
+                // Miff+ n'est affirmé (ou nié) que s'il a été LU auprès du serveur : sinon nil, et la liste n'affirme rien de la formule gratuite.
+                premium: ready.premiumKnown ? ready.premium : nil,
+                notice: placeNotices.notice,
+                actions: placesContext.actions
+            )
+            .padding(.horizontal, Spacing.lg)
         }
     }
 }

@@ -219,4 +219,14 @@ enum DefaultMiffChoice {
         }
         return owned.min { $0.joinedAtMillis < $1.joinedAtMillis }?.id
     }
+
+    /// La Miff d'où le formulaire d'un NOUVEAU lieu s'est ouvert : cochée en premier quand la personne l'a créée (la liste qu'elle regardait
+    /// nomme cette Miff, donc un lieu ne part pas vers un autre cercle par surprise : revue de la PR, 2026-11-11). Une Miff qu'elle n'a pas
+    /// créée, ou aucune : le choix habituel de `of(owned:lastJoinedId:)`.
+    static func of(owned: [OwnedMiff], lastJoinedId: String?, openedFromId: String?) -> String? {
+        if let openedFromId, owned.contains(where: { $0.id == openedFromId }) {
+            return openedFromId
+        }
+        return of(owned: owned, lastJoinedId: lastJoinedId)
+    }
 }
