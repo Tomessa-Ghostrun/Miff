@@ -908,9 +908,9 @@ Risques juridiques connus et assumés par le PM (décision du 2026-10-23, pas de
 **Quotas Spark vérifiés le 2026-10-16** sur https://firebase.google.com/pricing (Firestore édition Standard) :
 - Firestore : 1 GiB stockés, **50 000 lectures/jour**, **20 000 écritures/jour**, 20 000 suppressions/jour, 10 GiB/mois de transfert sortant.
 - Authentication : 50 000 utilisateurs actifs mensuels (MAU).
-- **Cloud Functions : non disponible sur Spark** (listé "Not applicable").
+- **Cloud Functions : non disponible sur Spark** (listé "Not applicable"). **Blaze activé par le PM le 2026-11-11** ; socle SRV-1 écrit (`backend/functions/`, région `europe-west9`, 2e génération, 2 M invocations gratuites par mois, garde-fous de coût testés) ; coûts et choix : `docs/dev/deploiement-functions.md` §8 et §9.
 - **Cloud Storage : non disponible sur Spark** (aucune quote gratuite listée en Spark ; un article tiers indique que Storage exige Blaze depuis février 2026 : **à vérifier** dans la console avant de s'y fier).
-- FCM et App Check : sans coût, mais l'envoi de push exige un serveur (donc Blaze).
+- FCM et App Check : sans coût. **Précision (étude du 2026-11-11)** : ce qui exige Blaze, c'est Cloud Functions (un serveur chez Google sans clé à stocker), pas FCM lui-même.
 - Les quotas gratuits sont conservés après passage en Blaze ; au-delà, facturation à l'usage (tarifs de europe-west9 **à vérifier** dans le calculateur ; ordre de grandeur indicatif : quelques centimes pour 100 000 lectures). Une budget alert Blaze prévient mais **ne plafonne pas** la dépense.
 - Au dépassement d'un quota Spark, les requêtes sont refusées jusqu'à la réinitialisation quotidienne : l'app « casse » pour tous (heure exacte de réinitialisation : à vérifier).
 
@@ -1033,7 +1033,7 @@ Ordre de grandeur de coût à ~2 000 utilisateurs actifs/jour après bascule : q
 
 ## 13. Ce qui exige Blaze (Cloud Functions) et ce qui peut s'en passer
 
-Cloud Functions n'existent pas sur Spark. Aucune fonction n'est écrite à ce stade (décision du PM requise, Q1). Tableau fonction par fonction :
+Cloud Functions n'existent pas sur Spark. **Blaze est activé (décision du PM, 2026-11-11)** et le **socle SRV-1** est écrit (`backend/functions/`) : une seule fonction de démonstration `ping`, **aucune fonction métier** (SRV-4 et suivants viendront par tickets). Les tableaux ci-dessous restent la liste de ce que chaque fonction future couvrira. Tableau fonction par fonction :
 
 | Fonctionnalité | Sur Spark (sans fonction) | Avec Blaze |
 |---|---|---|
