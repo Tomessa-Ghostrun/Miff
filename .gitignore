@@ -111,3 +111,6 @@ desktop.ini
 
 # Captures d'écran locales de la prévisualisation du site web (jamais commitées)
 .preview/
+
+# --- Cloud Functions (SRV-1) : sortie de compilation TypeScript (régénérée par `npm run build`) -------------
+backend/functions/lib/
