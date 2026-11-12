@@ -15,6 +15,9 @@ enum WriteKind: Equatable {
     case set
     case update
     case delete
+    /// Un `set` avec fusion (`merge: true`) : crée le document s'il n'existe pas, sinon ne touche que les clés données. Nécessaire pour le
+    /// compteur des demandes de lieu, qui s'incrémente avec `FieldValueSpec.increment` qu'il existe déjà ou non.
+    case merge
 }
 
 /// Une écriture d'un lot : le chemin du document, ce qu'il faut faire, les champs (vides pour une suppression). Du Swift

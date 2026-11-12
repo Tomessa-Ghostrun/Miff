@@ -842,6 +842,30 @@ Trois PR empilées : **VOY-1I** le moteur (modèle, statut Firestore, suivi), **
 - **Accessibilité** : l'avion est décoratif ; la carte reste UN bloc lu (« Thomas, En voyage jusqu'au 15 nov., Depuis le 7 nov. ») ; la bulle annonce son titre puis la ligne ajoutée ; « Modifier » est un bouton de 44 pt nommé.
 - **Coût** : aucun (aucune lecture ni écoute de plus : le statut est déjà écouté).
 
+## Demande d'ajout d'un lieu (LIEU-REQ-B, miroir d'Android PR #184)
+
+Ticket `docs/tickets/demande-ajout-lieu.md` (décisions D1 à D9 du PM, 2026-11-11), contrat des écritures `docs/dev/demande-lieu-clients.md`, recette `docs/qa/checklists/demande-lieu-ios-recette-pm.md`. Les règles Firestore (`placeRequests`, `meta/placeRequests`) sont **déployées en production depuis le 2026-11-12**. **Rien n'est compilé en local** : la CI fait foi.
+
+Un membre qui n'est PAS le créateur d'une Miff **demande** l'ajout d'un lieu ; il n'écrit jamais un lieu. Sur l'onglet Profil, sous le carrousel, dans la liste « Lieux de confiance de <Miff> » : le bouton **« Demander l'ajout d'un lieu »** remplace « Ajouter un lieu » (même emplacement, même dessin, un seul exemplaire) ; il ouvre le formulaire de création (titre « Proposer un lieu », une seule Miff, type, catégorie, rayon, adresse) dont le bouton est **« Soumettre la demande »**. La demande apparaît **en première position** de SA liste, dans une carte à fond atténué et bord en pointillés avec la pastille **« En attente »** (jamais de rouge ni d'orange), et peut être **retirée**.
+
+| Chemin | Rôle |
+|---|---|
+| `Models/Place/PlaceRequests.swift` | `PlaceRequest` (lecture d'un document sans croire le réseau : identifiant `{uid}_{1..3}`, auteur forgé refusé, bornes), `PlaceRequestDraft`, ordre, emplacements, et **les lots** (`PlaceRequestWrites` : 9 clés, `createdAt` du serveur, compteur fusionné avec `increment` et `lastReqId`, retrait, repli à `pending: 0`) |
+| `Models/Place/PlaceRequestBook.swift` | Quand lire : **une lecture par Miff et par 5 minutes**, 30 s d'attente après un échec, jamais pendant un écouteur ; expiration à 30 jours (masquée) |
+| `Services/Contracts/PlaceRequestContracts.swift` | `PlaceRequestStore` (lectures filtrées, `commit` = transaction, `enqueue` = file du téléphone) et `PlaceRequestRepository` |
+| `Services/Place/PlaceRequestRepository.swift` | La logique : limites AVANT d'écrire (3 par membre, zone de danger = Miff+ du demandeur), réponse perdue vérifiée sur le serveur, refus expliqué (limite de la Miff / course sur l'emplacement / formule terminée / demandes non disponibles), reprise des demandes avant « Quitter » |
+| `Services/Firebase/FirestorePlaceRequestStore.swift` | Les opérations Firestore (requête FILTRÉE sur `requestedBy`, que les règles exigent) |
+| `ViewModels/PlaceFormViewModel+Request.swift` | Le formulaire en mode demande (`PlaceFormMode.request`) |
+| `ViewModels/ProfileRequestsViewModel.swift` | Les demandes sous la liste du Profil (lecture à l'apparition de la carte, retrait) |
+| `Views/Place/PlaceRequestUi.swift`, `PlaceRequestDetailView.swift`, `PlaceRequestRouteView.swift` | La carte « En attente », le détail (« En attente de réponse. », « Retirer ma demande »), les deux routes |
+| `Views/Main/ProfileRequestsWiring.swift` | Le branchement à l'onglet Profil et à l'hôte de navigation |
+
+- **Écritures** : `WriteKind.merge` et `FieldValueSpec.increment` ajoutés (un `set` sans fusion remplacerait `pending` au lieu de l'incrémenter). Tout lot passe par la **transaction** existante de `FirestoreMiffStore` (garde `SessionWriteGuard` inchangé), SAUF la demande faite **sans réseau** : `FirestoreMiffStore.enqueue` confie un lot au téléphone, qui l'envoie au retour du réseau (critère M11) ; les règles le jugent alors, un refus fait disparaître la demande sans un mot (risque R10).
+- **Hors connexion** : le formulaire ne s'ouvre pas sans réseau (ses emplacements se lisent sur le serveur) ; une demande envoyée au moment où le réseau tombe est mise en file (« Ta demande partira dès que tu seras connecté. »). Les emplacements en file sont retenus 10 minutes (`QueuedRequestMarks`) pour que deux demandes d'affilée ne prennent pas la même place.
+- **Quitter** une Miff, et **supprimer son compte** : les demandes en attente de la personne dans cette Miff sont reprises AVANT le lot « Quitter » (`MiffRepositoryRules.beforeLeave`, `StoreAccountMiffs.beforeLeave`), une minute au plus, sans jamais bloquer le départ.
+- **Coût** (`docs/dev/surveillance-quotas.md`) : un membre lit ses propres demandes (3 documents au plus), une fois par Miff et par 5 minutes, sans écouteur.
+- **Écarts avec Android** : (1) pas de toast : le message calme du dernier geste est une carte bleu pâle en tête de la liste (annoncée par VoiceOver) ; (2) l'écran de la Miff garde sa liste de lecture seule pour un membre (les demandes ne se font que depuis le Profil, comme le demande le ticket).
+
 ## Lieux de la Miff du carrousel, visibles par tous les membres (décision du PM, 2026-11-11 ; miroir d'Android PR #181)
 
 Sans maquette ni spec Notion. Contrat partagé : `docs/contracts/profile-places-members.md` ; recette : `docs/qa/checklists/profil-lieux-membres-ios-recette-pm.md`. **Branche partie de `ios/profil-carrousel-emoji-lieux3` (PR #145, pas encore fusionnée)** : le carrousel n'est pas dans `main`. **Rien n'est compilé en local.**

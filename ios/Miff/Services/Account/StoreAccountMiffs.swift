@@ -17,11 +17,21 @@ final class StoreAccountMiffs: AccountMiffs {
     private let store: MiffStore
     private let deleter: MiffDeleter
     private let timeoutSeconds: TimeInterval
+    /// Appelé avant le lot « Quitter » d'une Miff que le compte a seulement rejointe (LIEU-REQ) : les demandes d'ajout d'un lieu qu'il y a faites
+    /// sont reprises (elles portent une adresse et des coordonnées : elles ne restent pas orphelines une fois le compte parti, les règles ne
+    /// permettent à leur auteur de les supprimer que tant qu'il est membre). Ne bloque jamais la suppression du compte.
+    private let beforeLeave: (_ uid: String, _ miffId: String) async -> Void
 
-    init(store: MiffStore, deleter: MiffDeleter, timeoutSeconds: TimeInterval = 20) {
+    init(
+        store: MiffStore,
+        deleter: MiffDeleter,
+        timeoutSeconds: TimeInterval = 20,
+        beforeLeave: @escaping (_ uid: String, _ miffId: String) async -> Void = { _, _ in }
+    ) {
         self.store = store
         self.deleter = deleter
         self.timeoutSeconds = timeoutSeconds
+        self.beforeLeave = beforeLeave
     }
 
     func inventory(uid: String) async -> MiffsRead {
@@ -115,7 +125,8 @@ final class StoreAccountMiffs: AccountMiffs {
     }
 
     func leave(uid: String, ref: MembershipRef) async -> MiffStep {
-        await leaveOrDropIndex(uid: uid, ref: ref)
+        await beforeLeave(uid, ref.miffId)
+        return await leaveOrDropIndex(uid: uid, ref: ref)
     }
 
     /// Le lot « Quitter » ; si le serveur le refuse (la fiche est déjà partie : le créateur a retiré la personne, ou supprime la Miff),

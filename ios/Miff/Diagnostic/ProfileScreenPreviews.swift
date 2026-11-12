@@ -16,11 +16,14 @@ struct ProfileScreenPreview: View {
     /// Les lieux de la Miff regardée (démonstration, sans lecture) : Miff A = créatrice (« Ajouter un lieu »), Miff B = membre (lecture seule).
     @StateObject private var places: ProfilePlacesViewModel
     @StateObject private var placeNotices = PlaceNotices()
+    /// Les demandes d'ajout d'un lieu (démonstration) : la Miff B (membre) montre une demande en attente de la personne.
+    @StateObject private var requests: ProfileRequestsViewModel
 
     init(name: String) {
         self.name = name
         let shown = ProfileScreenPreview.shownMiff(for: name)
         _places = StateObject(wrappedValue: ProfileScreenPreview.demoPlaces(selecting: shown))
+        _requests = StateObject(wrappedValue: ProfileScreenPreview.demoRequests(selecting: shown))
     }
 
 
@@ -63,6 +66,7 @@ struct ProfileScreenPreview: View {
             offlineRetry: offlineRetry,
             placesModel: places,
             placeNotices: placeNotices,
+            requestsModel: requests,
             placesContext: ProfilePlacesContext(myUid: Self.me),
             actions: ProfileTabActions(
                 onOpenMyInfo: {},
@@ -97,6 +101,13 @@ struct ProfileScreenPreview: View {
         return model
     }
 
+    @MainActor
+    private static func demoRequests(selecting miffId: String) -> ProfileRequestsViewModel {
+        let model = ProfileRequestsViewModel(repository: DemoRequestRepository(), network: DemoNetwork(), myUid: { me })
+        model.onCardShown(miffId: miffId, creator: miffId == miffA)
+        return model
+    }
+
     private static func demoMember(_ uid: String, _ first: String, _ last: String) -> MiffMember {
         MiffMember(uid: uid, firstName: first, lastName: last, avatarJpeg: nil, role: .member, sharingEnabled: true)
     }
@@ -127,6 +138,54 @@ struct ProfileScreenPreview: View {
         func end() async -> Bool {
             false
         }
+    }
+
+    private struct DemoNetwork: NetworkMonitor {
+        func isOnline() -> Bool {
+            true
+        }
+
+        func onlineChanges() -> AsyncStream<Bool> {
+            AsyncStream { continuation in
+                continuation.yield(true)
+                continuation.finish()
+            }
+        }
+    }
+
+    /// Un membre (la personne) a UNE demande en attente dans la Miff B ; rien n'est lu ni écrit.
+    private struct DemoRequestRepository: PlaceRequestRepository {
+        func prepare(uid: String, miffId: String) async -> RequestContextLoad {
+            .unavailable
+        }
+
+        func submit(
+            uid: String,
+            miffId: String,
+            draft: PlaceRequestDraft,
+            context: RequestContext,
+            online: Bool
+        ) async -> RequestSubmitResult {
+            .failed(.unknown)
+        }
+
+        func withdraw(_ request: PlaceRequest) async -> RequestWithdrawResult {
+            .failed(.unknown)
+        }
+
+        func readMine(uid: String, miffId: String) async -> MineRead {
+            guard miffId == ProfileScreenPreview.miffB else {
+                return .loaded([])
+            }
+            let request = PlaceRequest(
+                id: "\(uid)_1", miffId: miffId, requestedBy: uid, name: "Club de judo", type: .trusted,
+                address: "12 rue des Écoles, 21000 Dijon, France", lat: 47.32, lng: 5.04, radiusM: 100,
+                category: .sport, createdAtMillis: nil
+            )
+            return .loaded([request])
+        }
+
+        func withdrawAllMine(uid: String, miffId: String) async {}
     }
 
     private struct DemoPlacesReader: PlacesReader {

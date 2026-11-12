@@ -38,6 +38,8 @@ struct ProfileTabView: View {
     /// Les lieux de la Miff du carrousel (lus une fois par Miff, sans écouteur) et le message calme d'un geste.
     @ObservedObject var placesModel: ProfilePlacesViewModel
     @ObservedObject var placeNotices: PlaceNotices
+    /// Les demandes d'ajout d'un lieu (LIEU-REQ) : celles du membre, lues avec la liste (un membre ne lit que les siennes).
+    @ObservedObject var requestsModel: ProfileRequestsViewModel
     let placesContext: ProfilePlacesContext
     let actions: ProfileTabActions
 
@@ -161,13 +163,24 @@ struct ProfileTabView: View {
                     actions: ProfileCarouselActions(
                         onOpenMiff: actions.onOpenMiff,
                         onCreate: actions.onCreateMiff,
-                        onMiffShown: { placesModel.onCardShown(miffId: $0) },
-                        onMiffsKnown: { placesModel.retainOnly($0) }
+                        onMiffShown: { miffId in
+                            placesModel.onCardShown(miffId: miffId)
+                            requestsModel.onCardShown(miffId: miffId, creator: isCreator(of: miffId))
+                        },
+                        onMiffsKnown: { miffIds in
+                            placesModel.retainOnly(miffIds)
+                            requestsModel.retainOnly(miffIds: miffIds)
+                        }
                     )
                 )
                 .padding(.horizontal, Spacing.lg)
             }
         }
+    }
+
+    /// La personne connectée a-t-elle créé cette Miff ? (le champ `ownerUid` de l'annuaire ; inconnu : non, donc un membre.)
+    private func isCreator(of miffId: String) -> Bool {
+        PlaceViewerRole.isCreator(ownerUid: miffs.ownerUid(of: miffId), myUid: placesContext.myUid)
     }
 
     /// Les lieux de la Miff du carrousel, pour tous ses membres. Rien n'est dessiné (pas même une marge) tant qu'ils n'ont pas été lus.
@@ -182,7 +195,14 @@ struct ProfileTabView: View {
                 // Miff+ n'est affirmé (ou nié) que s'il a été LU auprès du serveur : sinon nil, et la liste n'affirme rien de la formule gratuite.
                 premium: ready.premiumKnown ? ready.premium : nil,
                 notice: placeNotices.notice,
-                actions: placesContext.actions
+                actions: placesContext.actions,
+                requests: ProfileRequestsContent.make(
+                    state: requestsModel.state,
+                    miffId: presentation.miffId,
+                    isCreator: presentation.isCreator,
+                    sentNotice: placeNotices.requestNotice,
+                    kind: requestsModel.notice
+                )
             )
             .padding(.horizontal, Spacing.lg)
         }

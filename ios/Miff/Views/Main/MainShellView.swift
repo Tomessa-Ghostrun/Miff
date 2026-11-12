@@ -25,6 +25,8 @@ private struct TabLayer<Content: View>: View {
 struct ProfilePlacesShell {
     let model: ProfilePlacesViewModel
     let notices: PlaceNotices
+    /// Les demandes d'ajout d'un lieu (LIEU-REQ), sous la même liste.
+    let requests: ProfileRequestsViewModel
     let context: ProfilePlacesContext
 }
 
@@ -207,6 +209,7 @@ struct MainShellView<Feed: View>: View {
                         offlineRetry: profile.offlineRetry,
                         placesModel: places.model,
                         placeNotices: places.notices,
+                        requestsModel: places.requests,
                         placesContext: places.context,
                         actions: ProfileTabActions(
                             onOpenMyInfo: { onOpenSettings(.myInfo) },

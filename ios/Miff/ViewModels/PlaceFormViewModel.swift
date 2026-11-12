@@ -14,6 +14,8 @@ struct PlaceFormDependencies {
     let network: NetworkMonitor
     let currentUid: () -> String?
     let notices: PlaceNotices
+    /// Les demandes d'ajout d'un lieu (LIEU-REQ-B) : seulement pour le formulaire d'une demande (nil ailleurs).
+    var requests: PlaceRequestRepository?
     /// La pause avant une recherche, après la dernière frappe (ticket ADR1) ; courte dans les tests.
     var debounceMillis = PlaceLimits.suggestionDebounceMillis
     /// Une recherche ne fait jamais attendre un écran pour toujours.
@@ -36,18 +38,23 @@ final class PlaceFormViewModel: ObservableObject {
     /// La Miff d'où le lieu a été ouvert (deux lieux différents peuvent avoir le même identifiant dans deux Miffs).
     let miffId: String?
     let dependencies: PlaceFormDependencies
+    /// Vrai : le formulaire d'une DEMANDE (un membre qui n'est pas le créateur propose un lieu à la Miff `miffId`).
+    let isRequest: Bool
     var context: PlaceContext?
+    /// Demande : qui est la personne (Miff+ ou non), la Miff, les demandes qu'elle a déjà.
+    var requestContext: RequestContext?
     var original: PlaceGroup?
     var searchTask: Task<Void, Never>?
     var resolveTask: Task<Void, Never>?
     private var loadTask: Task<Void, Never>?
 
-    init(placeId: String?, miffId: String?, dependencies: PlaceFormDependencies) {
+    init(placeId: String?, miffId: String?, dependencies: PlaceFormDependencies, isRequest: Bool = false) {
         self.placeId = placeId
         self.miffId = miffId
         self.dependencies = dependencies
+        self.isRequest = isRequest
         var first = PlaceFormState()
-        first.mode = placeId == nil ? .create : .edit
+        first.mode = isRequest ? .request : (placeId == nil ? .create : .edit)
         state = first
         load()
     }
@@ -92,6 +99,10 @@ final class PlaceFormViewModel: ObservableObject {
                 $0.loading = false
                 $0.loadFailed = .offline
             }
+            return
+        }
+        if isRequest {
+            await loadRequest(uid: uid)
             return
         }
         switch await dependencies.repository.prepare(uid: uid) {
