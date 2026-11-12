@@ -1,5 +1,7 @@
-// Journalisation SANS donnee personnelle (SRV-1) : c'est la seule porte vers les journaux Cloud Logging.
-// Interdit dans les journaux : position (latitude/longitude), prenom/nom, jeton (notification, authentification, App Check),
+// Journalisation SANS donnee personnelle (SRV-1) : c'est la seule porte vers les journaux APPLICATIFS de nos fonctions.
+// Les journaux TECHNIQUES de la plateforme Google (Cloud Run / Cloud Logging) ne passent pas par ici : ils gardent l'adresse IP et
+// le user-agent de l'appelant (donnee personnelle a citer dans la politique de confidentialite).
+// Interdit dans nos journaux applicatifs : position (latitude/longitude), prenom/nom, jeton (notification, authentification, App Check),
 // adresse e-mail, texte saisi par un utilisateur et, par prudence, les identifiants (uid, code de Miff, id de document).
 // Principe : liste BLANCHE de champs (types fermes : nombres, booleens, quelques mots fixes) ; tout le reste est remplace par
 // "[omis]". Le test `test/unit/journal.test.mjs` verifie ce comportement ; `garde-couts.test.mjs` interdit `console.*` et

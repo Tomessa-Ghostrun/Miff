@@ -71,6 +71,13 @@ test('ping : refusé sans connexion même avec un jeton App Check', async () => 
   assert.equal(r.json?.error?.status, 'UNAUTHENTICATED');
 });
 
+test('ping : refusé pour une connexion anonyme, même avec App Check', async () => {
+  const anonyme = jetonFactice({ aud: projet, iss: `https://securetoken.google.com/${projet}`, sub: 'anonyme-test', user_id: 'anonyme-test', iat: maintenant, exp: maintenant + 3600, firebase: { sign_in_provider: 'anonymous' } });
+  const r = await appeler('ping', { 'X-Firebase-AppCheck': jetonAppCheck, Authorization: `Bearer ${anonyme}` });
+  assert.equal(r.statut, 401, r.texte);
+  assert.equal(r.json?.error?.status, 'UNAUTHENTICATED');
+});
+
 test('ping : répond { ok: true } avec App Check ET connexion, et ne renvoie rien de ce qu\'on lui envoie', async () => {
   const r = await appeler('ping', { 'X-Firebase-AppCheck': jetonAppCheck, Authorization: `Bearer ${jetonConnexion}` }, { latitude: 48.85, nom: 'x' });
   assert.equal(r.statut, 200, r.texte);

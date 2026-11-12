@@ -34,6 +34,18 @@ export const LIMITES = {
  */
 export const FONCTIONS_AVEC_RETRY_AUTORISEES: readonly string[] = [];
 
+/**
+ * Types de declencheurs autorises : fonction appelable (callableTrigger) et evenement (eventTrigger, ex. ecriture Firestore).
+ * Tout autre type (HTTP public sans App Check, planifie, file de taches, blocage d'authentification) exige un ticket qui
+ * l'ajoute ICI et dans le test, avec sa raison (ex. SRV-6 : fonction planifiee).
+ */
+export const DECLENCHEURS_AUTORISES: readonly string[] = ["callableTrigger", "eventTrigger"];
+
+// Identite d'execution : par defaut, le compte "Compute" par defaut du projet, qui a SOUVENT le role Editeur (tres large).
+// AVANT toute fonction qui touche Firestore ou FCM (SRV-4), creer un compte de service DEDIE aux roles minimaux et le brancher
+// avec l'option `serviceAccount` (nom du compte dedie, JAMAIS une cle, JAMAIS le compte par defaut). Voir docs/dev/secrets.md.
+// Le test garde-couts.test.mjs n'accepte `serviceAccount` que sous cette forme.
+
 setGlobalOptions({
   region: LIMITES.region,
   maxInstances: LIMITES.maxInstances,
