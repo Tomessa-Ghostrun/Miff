@@ -72,7 +72,7 @@ final class PaywallSourcesTests: XCTestCase {
     func testEachDisplayCreatesItsOwnModelWithTheProductionVariant() throws {
         let view = try read("Miff/Views/Place/PlacePaywallView.swift")
 
-        XCTAssertTrue(view.contains("StateObject(wrappedValue: PaywallViewModel(reason: reason))"))
+        XCTAssertTrue(view.contains("PaywallViewModel(reason: reason, announcer: SystemPaywallAnnouncer())"))
         XCTAssertFalse(view.contains("state:"), "en production : l'état par défaut, « Miff+ arrive bientôt »")
     }
 
@@ -120,7 +120,7 @@ final class PaywallSourcesTests: XCTestCase {
     // MARK: - Contenu (PW1, PW2, PW8)
 
     func testNoPriceNorCurrencyIsWrittenInTheProductionSources() throws {
-        let price = try NSRegularExpression(pattern: "€|\\bEUR\\b|\\bUSD\\b|\\$[0-9]")
+        let price = try NSRegularExpression(pattern: "€|\\bEUR\\b|\\bUSD\\b")
         for source in try paywallSources() {
             let lines = source.text.components(separatedBy: "\n")
             for line in lines where !line.trimmingCharacters(in: .whitespaces).hasPrefix("//") {

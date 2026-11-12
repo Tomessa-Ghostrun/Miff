@@ -49,7 +49,8 @@ final class PaywallTextsTests: XCTestCase {
         let forbidden = try NSRegularExpression(pattern: "€|\\$|\\beur\\b|\\busd\\b|premium", options: .caseInsensitive)
         for key in keys.keys {
             for language in ["fr", "en"] {
-                let text = try value(key, language)
+                // Les valeurs insérées (`%1$@`, `%1$lld`) ne sont pas un signe de dollar : on les retire avant de chercher.
+                let text = try value(key, language).replacingOccurrences(of: "%1$", with: "")
                 let range = NSRange(text.startIndex..., in: text)
                 XCTAssertNil(forbidden.firstMatch(in: text, range: range), "\(key) \(language) : prix ou Premium")
             }

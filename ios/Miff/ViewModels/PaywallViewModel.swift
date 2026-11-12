@@ -7,8 +7,6 @@ protocol PaywallAnnouncing {
 }
 
 struct SystemPaywallAnnouncer: PaywallAnnouncing {
-    nonisolated init() {}
-
     func announce(_ text: String) {
         Announcer.announce(text)
     }
@@ -35,7 +33,7 @@ final class PaywallViewModel: ObservableObject {
         state: PaywallState = .comingSoon,
         closeDelay: TimeInterval = PaywallTiming.closeDelay,
         clock: any PaywallClock = SystemPaywallClock(),
-        announcer: any PaywallAnnouncing = SystemPaywallAnnouncer()
+        announcer: any PaywallAnnouncing
     ) {
         self.reason = reason
         self.state = state

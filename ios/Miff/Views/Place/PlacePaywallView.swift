@@ -19,7 +19,7 @@ struct PlacePaywallView: View {
         self.reason = reason
         self.tracker = tracker
         self.onClose = onClose
-        _model = StateObject(wrappedValue: PaywallViewModel(reason: reason))
+        _model = StateObject(wrappedValue: PaywallViewModel(reason: reason, announcer: SystemPaywallAnnouncer()))
     }
 
     var body: some View {

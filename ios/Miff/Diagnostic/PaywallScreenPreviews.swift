@@ -38,7 +38,12 @@ struct PaywallScreenPreview: View {
         let parts = name.components(separatedBy: "-").dropFirst()
         let reason: PaywallReason = parts.contains("danger") ? .danger : (parts.contains("miff") ? .extraMiff : .limit)
         let delay: TimeInterval = parts.contains("cross") ? 0 : 3600
-        return PaywallViewModel(reason: reason, state: state(parts.first ?? "soon"), closeDelay: delay)
+        return PaywallViewModel(
+            reason: reason,
+            state: state(parts.first ?? "soon"),
+            closeDelay: delay,
+            announcer: SystemPaywallAnnouncer()
+        )
     }
 
     private static func state(_ key: String) -> PaywallState {
