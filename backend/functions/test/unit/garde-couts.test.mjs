@@ -230,8 +230,8 @@ test('M8 : chemins Firestore touchés par la fonction = liste fermée ; écritur
   assert.match(traitement, /tx\.set\(\s*refEtat,/);
   assert.equal((traitement.match(/\.runTransaction\(/g) ?? []).length, 1);
   assert.match(traitement, /await cible\.ref\.delete\(\{ lastUpdateTime: cible\.version \}\);/);
-  // La référence supprimée vient d'une lecture de users/{uid}/devices (doc.ref), jamais construite à la main.
-  assert.match(traitement, /ref: doc\.ref,/);
+  // La référence supprimée vient de la lecture directe de users/{uid}/devices/{session.deviceId} (appareil.ref), jamais construite à la main.
+  assert.match(traitement, /ref: appareil\.ref,/);
 });
 
 test("code : pas de fonction HTTP publique (onRequest) ni de onCall hors de appelable.ts (App Check et connexion toujours exigés)", () => {
