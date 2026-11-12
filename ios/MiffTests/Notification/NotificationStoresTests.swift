@@ -65,7 +65,7 @@ final class NotificationStoresTests: XCTestCase {
     }
 
     func testThereIsNoSwitchForTheAbandonedNotificationFive() {
-        XCTAssertEqual(NotificationType.allCases.map { $0.rawValue }, ["n1", "n2", "n3", "n4", "n6"])
+        XCTAssertEqual(NotificationType.allCases.map { $0.rawValue }, ["n1", "n2", "n3", "n4", "n6", "n7"])
     }
 
     func testTheChoicesAreKeptPerAccountAndForgottenForAll() {
