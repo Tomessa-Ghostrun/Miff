@@ -64,6 +64,7 @@ import com.tomessa.miff.ui.components.ConnectionHost
 import com.tomessa.miff.ui.components.LocalBottomOverlayPadding
 import com.tomessa.miff.ui.components.miffBottomInsets
 import com.tomessa.miff.ui.components.miffKeyboardVisible
+import com.tomessa.miff.ui.feed.ColorsInfoScreen
 import com.tomessa.miff.ui.feed.FeedActions
 import com.tomessa.miff.ui.feed.FeedHost
 import com.tomessa.miff.ui.feed.FeedMe
@@ -186,6 +187,10 @@ data object PrivacyRoute
 /** LOC-2b: the help for the phones that stop the apps in the background (opened from Settings > Confidentialité). */
 @Serializable
 data object DetectionHelpRoute
+
+/** COULEURS-1: the page "Les couleurs de ta Miff", opened by a touch on the bubble of the Feed (static, no argument). */
+@Serializable
+data object ColorsInfoRoute
 
 /**
  * The app once the onboarding is done (a Miff exists): the three tabs, and, over them, the Settings screens (which hide the
@@ -435,6 +440,7 @@ private fun MainNavigation(
                 onJoinMiff = { navController.open(JoinMiffRoute) },
                 onMiffOffer = { navController.open(PlacePaywallRoute.of(PaywallReason.MIFF)) },
                 onOpenMiff = { navController.open(MiffRoute(it)) },
+                onOpenColors = { navController.open(ColorsInfoRoute) },
                 agreement = AgreementUi(waiting, container.awaitingAgreement::requestReview),
                 feed =
                     FeedHost(
@@ -546,6 +552,10 @@ private fun MainNavigation(
                     ),
                 onProfileMiffOpened = profileMiffsViewModel::onMiffOpened,
             )
+        }
+        composable<ColorsInfoRoute> {
+            // COULEURS-1: static page (no view model, no reading, nothing kept): the Feed is found again as it was.
+            ColorsInfoScreen(onBack = { navController.popBackStackIfSafe() })
         }
         composable<SettingsRoute> {
             // ABO-1: ONE read of entitlements/{uid} per opening of the Settings; the line exists only for an active Miff+.
@@ -779,6 +789,8 @@ fun MainTabs(
     /** A free account that already has a Miff asked for another one from the selector of the Feed: the offer opens (decision of the PM, 2026-11-08). */
     onMiffOffer: () -> Unit = {},
     onOpenMiff: (String) -> Unit,
+    /** COULEURS-1: the bubble of the Feed opens the page "Les couleurs de ta Miff" (a pushed screen, without the tab bar). */
+    onOpenColors: () -> Unit = {},
     agreement: AgreementUi = AgreementUi(),
     feed: FeedHost = FeedHost(),
     placesContent: @Composable () -> Unit = {},
@@ -922,6 +934,7 @@ fun MainTabs(
                                             onResumeSharing = onOpenMiff,
                                             onRetryFeed = feed.onRetry,
                                             onRefresh = feed.onRefresh,
+                                            onOpenColors = onOpenColors,
                                         ),
                                     )
                                 FeedScreen(

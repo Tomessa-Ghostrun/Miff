@@ -116,6 +116,8 @@ class FeedActions(
     val onRetryFeed: () -> Unit = {},
     /** Pull to refresh and the TalkBack action "Actualiser": ONE fresh reading from the server (bounded: see FeedViewModel.onRefresh). */
     val onRefresh: () -> Unit = {},
+    /** COULEURS-1: a touch on the bubble of the Miff opens the page "Les couleurs de ta Miff" (static: no reading, nothing is kept). */
+    val onOpenColors: () -> Unit = {},
 )
 
 /**
@@ -161,6 +163,7 @@ fun rememberSystemFeedActions(base: FeedActions): FeedActions {
             onResumeSharing = base.onResumeSharing,
             onRetryFeed = base.onRetryFeed,
             onRefresh = base.onRefresh,
+            onOpenColors = base.onOpenColors,
         )
     }
 }
@@ -504,6 +507,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.readyItems(
             onMessage = actions.onMessage,
             onResumeSharing = { actions.onResumeSharing(content.miffId) },
             travelNote = content.travelNote,
+            onOpenColors = actions.onOpenColors,
         )
     }
     items(content.cards, key = { it.member.uid }) { card ->
