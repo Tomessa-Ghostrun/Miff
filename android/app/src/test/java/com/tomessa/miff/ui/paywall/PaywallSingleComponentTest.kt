@@ -62,6 +62,23 @@ class PaywallSingleComponentTest {
     }
 
     @Test
+    fun theScreenHasOneContent_itNeverKnowsWhereItWasOpenedFrom() {
+        // Decision of the PM (2026-11-12): no sentence of context, no card highlighted by entry. The entry only travels to the analytics trigger.
+        val screen = File(root, "ui/paywall/PaywallScreen.kt").readText()
+        assertFalse(screen.contains("PaywallReason"))
+        assertFalse(screen.contains("ContextCard"))
+        listOf(
+            "place_paywall_limit_",
+            "place_paywall_danger_",
+            "feed_selector_paywall_",
+            "place_request_paywall_",
+            "place_paywall_soon_body",
+        ).forEach {
+            assertFalse(it, screen.contains(it))
+        }
+    }
+
+    @Test
     fun theOfferHasNoWayOutButTheCross_noLaterButton_noContinueForFree() {
         val screen = File(root, "ui/paywall/PaywallScreen.kt").readText()
         assertFalse(screen.contains("place_paywall_later"))

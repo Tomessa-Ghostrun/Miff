@@ -1202,25 +1202,22 @@ class ScreenInsetsTest {
         )
 
     @Composable
-    private fun Offer(
-        reason: PaywallReason,
-        state: PaywallUiState = PaywallUiState.PRODUCTION,
-    ) = PaywallScreen(reason, remember { PaywallViewModel(MonotonicClock { 0L }) }, state, PaywallActions(onClose = {}))
+    private fun Offer(state: PaywallUiState = PaywallUiState.PRODUCTION) =
+        PaywallScreen(remember { PaywallViewModel(MonotonicClock { 0L }) }, state, PaywallActions(onClose = {}))
 
     @Test
-    fun placeOffer_isInsideTheSafeArea() = assertScreenIsSafe("place-offer") { Offer(PaywallReason.LIMIT) }
+    fun placeOffer_isInsideTheSafeArea() = assertScreenIsSafe("place-offer") { Offer() }
 
     @Test
-    fun placeOffer_inLandscapeWithACutout_staysInsideIt() =
-        assertScreenIsSafeInLandscape { Offer(PaywallReason.DANGER) }
+    fun placeOffer_inLandscapeWithACutout_staysInsideIt() = assertScreenIsSafeInLandscape { Offer() }
 
     @Test
     fun placeOffer_withThePurchaseZone_isInsideTheSafeArea() =
-        assertScreenIsSafe("place-offer-trial") { Offer(PaywallReason.MIFF, trialOffer) }
+        assertScreenIsSafe("place-offer-trial") { Offer(trialOffer) }
 
     @Test
     fun placeOffer_withThePurchaseZone_inLandscapeWithACutout_staysInsideIt() =
-        assertScreenIsSafeInLandscape { Offer(PaywallReason.LIMIT, trialOffer) }
+        assertScreenIsSafeInLandscape { Offer(trialOffer) }
 
     // --- Helpers ---------------------------------------------------------------------------------------------------------------------
 

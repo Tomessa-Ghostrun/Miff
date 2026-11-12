@@ -138,6 +138,14 @@ class PaywallEntryPointsTest {
         assertTrue("the offer is on screen", onPaywall())
         assertEquals(trigger, shownEvents().single().params["trigger"])
         cross().assertCountEquals(0)
+        // The same content whatever the entry: the title, no sentence about the limit that was hit.
+        composeRule.onAllNodesWithText(text(R.string.place_paywall_headline)).assertCountEquals(1)
+        composeRule.onAllNodesWithText(text(R.string.paywall_soon_body)).assertCountEquals(1)
+        listOf(
+            R.string.place_paywall_limit_title,
+            R.string.place_paywall_danger_title,
+            R.string.feed_selector_paywall_title,
+        ).forEach { composeRule.onAllNodesWithText(text(it)).assertCountEquals(0) }
 
         // Before the end: back does nothing, a touch where the cross will be does nothing.
         pass(1_500)
@@ -173,14 +181,14 @@ class PaywallEntryPointsTest {
     @Test
     fun entry_aSecondMiff_fromTheCardOfTheCarouselOfTheProfile() = entryBehaves(miffOfferRoute(), "extra_miff")
 
-    // "Accepter" on a place request received (LIEU-REQ-C): the same route with the request flag, through `openRequestOffer`.
+    // "Accepter" on a place request received (LIEU-REQ-C): the same offer, through `openRequestOffer`.
     @Test
     fun entry_acceptingARequest_atTheLimit() =
-        entryBehaves(PlacePaywallRoute.of(PaywallReason.LIMIT, request = true), "extra_trusted_place")
+        entryBehaves(PlacePaywallRoute.of(PaywallReason.LIMIT), "extra_trusted_place")
 
     @Test
     fun entry_acceptingARequest_forADangerZone() =
-        entryBehaves(PlacePaywallRoute.of(PaywallReason.DANGER, request = true), "danger_zone")
+        entryBehaves(PlacePaywallRoute.of(PaywallReason.DANGER), "danger_zone")
 
     @Test
     fun entry_aDangerZone() = entryBehaves(PlacePaywallRoute.of(PaywallReason.DANGER), "danger_zone")

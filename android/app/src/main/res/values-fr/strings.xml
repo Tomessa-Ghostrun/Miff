@@ -1100,6 +1100,7 @@
     <string name="notif_center_enable_action">Activer les notifications</string>
 
     <!-- PAY-UI : ecran d'offre Miff+ (ticket paywall-v2.md) ; cles ajoutees par la PR iOS pour la parite, a reprendre par PAY-UI-A -->
+    <string name="paywall_soon_body">Cette option n\'est pas encore ouverte.</string>
     <string name="paywall_cta_trial">Commencer l\'essai gratuit (7 jours)</string>
     <string name="paywall_trial_then">Puis %1$s par an</string>
     <string name="paywall_monthly_equivalent">soit %1$s par mois</string>

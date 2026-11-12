@@ -18,10 +18,10 @@
 Pour **chacune** des quatre entrées (étapes 1 à 4), contrôlez la même chose, dans l'ordre :
 **(a)** à l'ouverture, **aucune croix** en haut à gauche (l'emplacement est vide) ; **(b)** le bouton **Retour** du téléphone (ou le geste) **ne fait rien** pendant les 3 secondes, sans message ; **(c)** après environ **3 secondes**, la croix **apparaît en fondu** (disque gris foncé avec une croix blanche), sans que le reste de l'écran bouge ; **(d)** à partir de là, la croix **ferme** l'écran, et le Retour du téléphone **aussi**.
 
-1. [ ] **4e lieu** : Profil, « Ajouter un lieu » avec 3 lieux déjà créés (ou le formulaire d'un lieu) : l'écran d'offre s'ouvre avec la phrase « Tu as atteint 3 lieux ». Contrôles (a) à (d).
-2. [ ] **2e Miff, sélecteur du Feed** : Feed, touchez le sélecteur de Miff puis « Créer une Miff » ou « Rejoindre une Miff » : phrase « Une seule Miff avec la formule gratuite ». Contrôles (a) à (d).
+1. [ ] **4e lieu** : Profil, « Ajouter un lieu » avec 3 lieux déjà créés (ou le formulaire d'un lieu) : l'écran d'offre s'ouvre. Contrôles (a) à (d).
+2. [ ] **2e Miff, sélecteur du Feed** : Feed, touchez le sélecteur de Miff puis « Créer une Miff » ou « Rejoindre une Miff » . Contrôles (a) à (d).
 3. [ ] **2e Miff, carte du carrousel du Profil** : Profil, dernière carte du carrousel « Mes Miffs » : même écran. Contrôles (a) à (d).
-4. [ ] **Zone de danger** : formulaire d'un lieu, type « Zone de danger » puis enregistrer : phrase « Les zones de danger font partie de Miff+ ». Contrôles (a) à (d).
+4. [ ] **Zone de danger** : formulaire d'un lieu, type « Zone de danger » puis enregistrer. Contrôles (a) à (d).
 5. [ ] **Nouvel affichage = nouveau départ** : fermez l'offre (après la croix), rouvrez-la **tout de suite** (même 1 seconde plus tard, même depuis une autre entrée) : la croix est **de nouveau absente pendant 3 secondes**.
 6. [ ] **Pas d'autre sortie** : pendant les 3 secondes, il n'y a **aucun** bouton « Plus tard » ni « Continuer en gratuit » ; en touchant l'emplacement vide de la croix, rien ne se passe.
 
@@ -41,9 +41,10 @@ Pour **chacune** des quatre entrées (étapes 1 à 4), contrôlez la même chose
 
 ## Partie D : contenu de l'écran « Miff+ arrive bientôt » (5 min)
 
-15. [ ] **Fidélité aux maquettes** : fond en dégradé clair, logo Miff en haut, titre en deux lignes bleu-vert, **trois** cartes blanches avec pastille bleue (lieux, Miffs, zones de danger). Comparez avec `Paywall.png` (les écarts sont listés dans la PR).
+15. [ ] **Contenu unique (décision du 2026-11-12)** : l'écran est **identique depuis les cinq entrées**, sans aucune phrase qui dise quelle limite a été atteinte (ni « Tu as atteint 3 lieux », ni « Une seule Miff… », ni « Les zones de danger font partie de Miff+ », ni « La demande reste en attente ») et sans carte mise en avant.
+15 bis. [ ] **Fidélité aux maquettes** : fond en dégradé clair, logo Miff en haut, titre en deux lignes bleu-vert, **trois** cartes blanches avec pastille bleue (lieux, Miffs, zones de danger). Comparez avec `Paywall.png` (les écarts sont listés dans la PR).
 16. [ ] **« Notifications intelligentes » n'apparaît nulle part.**
-17. [ ] **Aucun prix, aucun « € », aucun bouton « Commencer l'essai », aucun « Économisez » / « presque 30 % », aucun bouton « Plus tard », aucun lien « Restaurer »** : seulement « Miff+ arrive bientôt » et la phrase calme (« Tes lieux actuels restent en place. » ou « Ta Miff actuelle reste en place. »).
+17. [ ] **Aucun prix, aucun « € », aucun bouton « Commencer l'essai », aucun « Économisez » / « presque 30 % », aucun bouton « Plus tard », aucun lien « Restaurer »** : seulement « Miff+ arrive bientôt » et la phrase « Cette option n'est pas encore ouverte. ».
 18. [ ] **Ton** : tutoiement partout, rien d'alarmant ; essayez l'anglais.
 
 ## Partie E : analytique (facultatif, développeur)

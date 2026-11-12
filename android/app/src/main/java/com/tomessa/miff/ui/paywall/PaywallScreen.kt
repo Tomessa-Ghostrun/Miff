@@ -74,7 +74,6 @@ import com.tomessa.miff.domain.paywall.PaywallOffer
 import com.tomessa.miff.domain.paywall.PaywallPrice
 import com.tomessa.miff.domain.paywall.PaywallProgress
 import com.tomessa.miff.domain.paywall.PaywallUiState
-import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.domain.place.PlaceLimits
 import com.tomessa.miff.ui.auth.LegalLinks
 import com.tomessa.miff.ui.components.MiffButton
@@ -133,7 +132,8 @@ internal fun currentPaywallState(): PaywallUiState = PaywallUiState.PRODUCTION
 /**
  * THE offer screen (ticket docs/tickets/paywall-v2.md, PAY-UI-A): the same composable for every entry (a 3rd place, a danger zone, a 2nd Miff from
  * the selector of the Feed or from the carousel of the Profile), faithful to design/exports/paywall/ (list of the differences in the pull request).
- * Nothing is written by this screen: leaving it changes nothing.
+ * ONE content, with no variant by entry (decision of the PM, 2026-11-12: no sentence saying which limit was hit): the title, the three cards, the offer. Nothing is
+ * written by this screen: leaving it changes nothing.
  *
  * THE RULE OF THE PM (2026-11-12), at EVERY display: the close cross is ABSENT for [com.tomessa.miff.domain.paywall.PaywallCloseDelay.MILLIS], then
  * appears with a fade (at once if animations are off). Absent = not drawn, so not in the accessibility tree, not focusable, not touchable; its
@@ -141,18 +141,15 @@ internal fun currentPaywallState(): PaywallUiState = PaywallUiState.PRODUCTION
  *
  * "Notifications intelligentes" is NOT listed: no notification is sent yet (never promise what does not exist).
  *
- * @param request the offer opened by "Accepter" on a place request received (LIEU-REQ-C): the context card says the request stays pending.
  * @param onShown called ONCE per display, when the screen is really on view (the `paywall_shown` event).
  * @param announce says a sentence to a screen reader without moving its focus; null = the system announcement.
  * @param reduceMotion animations turned off by the person: the cross appears at once.
  */
 @Composable
 fun PaywallScreen(
-    reason: PaywallReason,
     model: PaywallViewModel,
     state: PaywallUiState,
     actions: PaywallActions,
-    request: Boolean = false,
     onShown: () -> Unit = {},
     announce: ((String) -> Unit)? = null,
     reduceMotion: Boolean = ReduceMotion.isRequested(LocalContext.current),
@@ -229,7 +226,6 @@ fun PaywallScreen(
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
             if (offer !is PaywallOffer.Subscribed) {
-                ContextCard(reason, request)
                 Text(
                     text = stringResource(R.string.place_paywall_headline),
                     style = textTitleBold24Gradient,
@@ -240,22 +236,19 @@ fun PaywallScreen(
                     R.drawable.ic_loc_pin,
                     R.string.place_paywall_feature_places,
                     R.string.place_paywall_feature_places_desc,
-                    highlighted = reason == PaywallReason.LIMIT,
                 )
                 Feature(
                     R.drawable.ic_group,
                     R.string.place_paywall_feature_miffs,
                     R.string.place_paywall_feature_miffs_desc,
-                    highlighted = reason == PaywallReason.MIFF,
                 )
                 Feature(
                     R.drawable.ic_loc_warning,
                     R.string.place_paywall_feature_danger,
                     R.string.place_paywall_feature_danger_desc,
-                    highlighted = reason == PaywallReason.DANGER,
                 )
             }
-            ScrollingOffer(reason = reason, offer = offer, showAll = showAll, onRestore = actions.onRestore)
+            ScrollingOffer(offer = offer, showAll = showAll, onRestore = actions.onRestore)
         }
         PurchaseZone(state = state, showAll = showAll, onShowAll = { showAll = true }, actions = actions)
     }
@@ -330,7 +323,6 @@ private fun TopBar(
 
 @Composable
 private fun ScrollingOffer(
-    reason: PaywallReason,
     offer: PaywallOffer,
     showAll: Boolean,
     onRestore: () -> Unit,
@@ -346,15 +338,7 @@ private fun ScrollingOffer(
                 modifier = Modifier.fillMaxWidth(),
             )
             Text(
-                // "Your places stay as they are" would be wrong for a Miff: each reason says what stays in place.
-                text =
-                    stringResource(
-                        if (reason == PaywallReason.MIFF) {
-                            R.string.feed_selector_paywall_soon_body
-                        } else {
-                            R.string.place_paywall_soon_body
-                        },
-                    ),
+                text = stringResource(R.string.paywall_soon_body),
                 style = textBodyRegular,
                 color = colorTextDescription,
                 textAlign = TextAlign.Center,
@@ -759,117 +743,13 @@ private fun Bubble(
     )
 }
 
-// --- The cards (reused as they were: design 14 and 15) ---------------------------------------------------------------------------
-
-/** The calm box at the top: why the offer shows (design 14 and 15). */
-@Composable
-private fun ContextCard(
-    reason: PaywallReason,
-    request: Boolean,
-) {
-    val limit = reason == PaywallReason.LIMIT
-    Row(
-        modifier =
-            Modifier
-                .fillMaxWidth()
-                .miffShadow(ShadowDefault, ShapeMd)
-                .clip(ShapeMd)
-                .background(colorBgSurface)
-                .border(StrokeAccent, colorBorderAction, ShapeMd)
-                .padding(Spacing.m),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.m),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (reason == PaywallReason.MIFF) {
-            Box(
-                modifier =
-                    Modifier
-                        .size(
-                            Spacing.xl + Spacing.xs,
-                        ).clip(CircleShape)
-                        .background(colorActionPrimaryTint20),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_group),
-                    contentDescription = null,
-                    tint = colorActionPrimary,
-                    modifier = Modifier.size(Spacing.l),
-                )
-            }
-        } else if (limit) {
-            Row(horizontalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-                Dot()
-                Dot()
-                Dot()
-            }
-        } else {
-            Box(
-                modifier = Modifier.size(Spacing.xl + Spacing.xs).clip(CircleShape).background(colorStatusDangerTint),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_loc_warning),
-                    contentDescription = null,
-                    tint = colorTextError,
-                    modifier = Modifier.size(Spacing.l),
-                )
-            }
-        }
-        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-            Text(
-                text =
-                    stringResource(
-                        when {
-                            reason == PaywallReason.MIFF -> R.string.feed_selector_paywall_title
-                            limit -> R.string.place_paywall_limit_title
-                            else -> R.string.place_paywall_danger_title
-                        },
-                    ),
-                style = textBodyBold16,
-                color = colorTextPrimary,
-                modifier = Modifier.semantics { heading() },
-            )
-            Text(
-                text =
-                    stringResource(
-                        when {
-                            reason == PaywallReason.MIFF -> R.string.feed_selector_paywall_body
-                            request && limit -> R.string.place_request_paywall_limit
-                            request -> R.string.place_request_paywall_danger
-                            limit -> R.string.place_paywall_limit_body
-                            else -> R.string.place_paywall_danger_body
-                        },
-                    ),
-                style = textBodyRegular,
-                color = colorTextDescription,
-            )
-        }
-    }
-}
-
-/** One of the three pastilles of the limit: a place that exists. */
-@Composable
-private fun Dot() {
-    Box(
-        modifier = Modifier.size(Spacing.l + Spacing.s).clip(ShapeFull).background(colorActionPrimary),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(
-            painter = painterResource(R.drawable.ic_loc_pin),
-            contentDescription = null,
-            tint = colorBgSurface,
-            modifier = Modifier.size(Spacing.m),
-        )
-    }
-}
+// --- The three cards (the same whatever the entry) ---------------------------------------------------------------------------
 
 @Composable
 private fun Feature(
     icon: Int,
     title: Int,
     description: Int,
-    highlighted: Boolean,
 ) {
     Row(
         modifier =
@@ -877,11 +757,8 @@ private fun Feature(
                 .fillMaxWidth()
                 .clip(ShapeMd)
                 .background(colorBgSurface)
-                .border(
-                    if (highlighted) StrokeAccent else StrokeHairline,
-                    if (highlighted) colorBorderAction else colorBorderDefault,
-                    ShapeMd,
-                ).padding(Spacing.m)
+                .border(StrokeHairline, colorBorderDefault, ShapeMd)
+                .padding(Spacing.m)
                 .heightIn(min = Spacing.minTouchTarget)
                 .semantics(mergeDescendants = true) {},
         horizontalArrangement = Arrangement.spacedBy(Spacing.m),

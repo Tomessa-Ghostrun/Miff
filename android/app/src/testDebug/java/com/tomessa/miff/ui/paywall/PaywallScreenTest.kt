@@ -53,7 +53,6 @@ import com.tomessa.miff.domain.paywall.PaywallOffer
 import com.tomessa.miff.domain.paywall.PaywallPrice
 import com.tomessa.miff.domain.paywall.PaywallProgress
 import com.tomessa.miff.domain.paywall.PaywallUiState
-import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.ui.theme.MiffTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -120,13 +119,11 @@ class PaywallScreenTest {
             )
 
     private fun host(
-        reason: PaywallReason = PaywallReason.LIMIT,
         state: PaywallUiState = soon,
         model: PaywallViewModel = PaywallViewModel(clock),
         fontScale: Float? = null,
         reduceMotion: Boolean = false,
         owner: LifecycleOwner? = null,
-        request: Boolean = false,
     ): PaywallViewModel {
         composeRule.setContent {
             val density = LocalDensity.current
@@ -138,8 +135,6 @@ class PaywallScreenTest {
                     Box(Modifier.fillMaxSize()) {
                         val content: @Composable () -> Unit = {
                             PaywallScreen(
-                                reason = reason,
-                                request = request,
                                 model = model,
                                 state = state,
                                 actions = actions,
@@ -315,7 +310,6 @@ class PaywallScreenTest {
             MiffTheme {
                 if (visible.value) {
                     PaywallScreen(
-                        reason = PaywallReason.MIFF,
                         model = model,
                         state = soon,
                         actions = actions,
@@ -350,7 +344,7 @@ class PaywallScreenTest {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = scale.floatValue)) {
                 MiffTheme {
-                    PaywallScreen(PaywallReason.DANGER, model, soon, actions, onShown = { shown++ }, announce = {
+                    PaywallScreen(model, soon, actions, onShown = { shown++ }, announce = {
                         announced +=
                             it
                     })
@@ -507,62 +501,79 @@ class PaywallScreenTest {
     // --- The offer, without a purchase (PW1, PW3, PW8, P6) --------------------------------------------------------------------------
 
     @Test
-    fun comingSoon_limit_hasThreeCards_aSentenceOfContext_noPrice_noTrial_noLater() {
-        host(PaywallReason.LIMIT, soon)
-        shoot("paywall-arrive-bientot-limite")
-        composeRule.onNodeWithText(text(R.string.place_paywall_limit_title)).assertIsDisplayed()
+    fun comingSoon_hasTheTitleAndThreeCards_noPrice_noTrial_noLater() {
+        host(state = soon)
+        shoot("paywall-arrive-bientot")
         composeRule.onNodeWithText(text(R.string.place_paywall_headline)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.place_paywall_feature_places)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.place_paywall_feature_miffs)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.place_paywall_feature_danger)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.place_paywall_soon)).performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.place_paywall_soon_body)).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.paywall_soon_body)).performScrollTo().assertIsDisplayed()
         // Never promise what does not exist: no "Notifications intelligentes"; nothing is sold: no price, no trial, no percentage, no word "Premium".
         nothingToBuy()
         // The old "Plus tard" button is gone: the cross is the only way out.
         composeRule.onAllNodesWithText(text(R.string.place_paywall_later)).assertCountEquals(0)
     }
 
-    @Test
-    fun comingSoon_danger_saysWhy() {
-        host(PaywallReason.DANGER, soon)
-        shoot("paywall-arrive-bientot-danger")
-        composeRule.onNodeWithText(text(R.string.place_paywall_danger_title)).assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.place_paywall_danger_body)).assertIsDisplayed()
-        nothingToBuy()
+    // Decision of the PM (2026-11-12): ONE content, whatever the entry. No sentence says which limit was hit, no card is highlighted, no sentence is
+    // about "your places" or "your Miff": the screen does not even know where it was opened from.
+    private fun assertNoContextSentence() {
+        listOf(
+            R.string.place_paywall_limit_title,
+            R.string.place_paywall_limit_body,
+            R.string.place_paywall_danger_title,
+            R.string.place_paywall_danger_body,
+            R.string.feed_selector_paywall_title,
+            R.string.feed_selector_paywall_body,
+            R.string.feed_selector_paywall_soon_body,
+            R.string.place_paywall_soon_body,
+            R.string.place_request_paywall_limit,
+            R.string.place_request_paywall_danger,
+        ).forEach { composeRule.onAllNodesWithText(text(it)).assertCountEquals(0) }
+        composeRule.onAllNodesWithText("Tu as atteint", substring = true).assertCountEquals(0)
+        composeRule.onAllNodesWithText("reste en place", substring = true).assertCountEquals(0)
     }
 
     @Test
-    fun comingSoon_aRequestAccepted_saysTheRequestStaysPending() {
-        host(PaywallReason.LIMIT, soon, request = true)
-        composeRule.onNodeWithText(text(R.string.place_request_paywall_limit)).assertIsDisplayed()
-        composeRule.onAllNodesWithText(text(R.string.place_paywall_limit_body)).assertCountEquals(0)
-        nothingToBuy()
+    fun noContextSentence_comingSoon() {
+        host(state = soon)
+        assertNoContextSentence()
     }
 
     @Test
-    fun comingSoon_aRequestAcceptedForADangerZone_saysTheRequestStaysPending() {
-        host(PaywallReason.DANGER, soon, request = true)
-        composeRule.onNodeWithText(text(R.string.place_request_paywall_danger)).assertIsDisplayed()
-        pass(3_300)
-        assertCrossThere()
+    fun noContextSentence_trial() {
+        host(state = trial)
+        assertNoContextSentence()
+        composeRule.onNodeWithText(text(R.string.place_paywall_headline)).assertIsDisplayed()
     }
 
     @Test
-    fun comingSoon_secondMiff_hasItsOwnSentences_notThoseOfThePlaces() {
-        host(PaywallReason.MIFF, soon)
-        shoot("paywall-arrive-bientot-2e-miff")
-        composeRule.onNodeWithText(text(R.string.feed_selector_paywall_title)).assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.feed_selector_paywall_body)).assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.feed_selector_paywall_soon_body)).performScrollTo().assertIsDisplayed()
-        composeRule.onAllNodesWithText(text(R.string.place_paywall_soon_body)).assertCountEquals(0)
-        composeRule.onAllNodesWithText(text(R.string.place_paywall_limit_title)).assertCountEquals(0)
-        nothingToBuy()
+    fun noContextSentence_plans() {
+        host(state = plans)
+        assertNoContextSentence()
+    }
+
+    @Test
+    fun theThreeCardsAreAllDrawnTheSame_noneIsHighlighted() {
+        host(state = soon)
+        val bounds =
+            listOf(
+                R.string.place_paywall_feature_places,
+                R.string.place_paywall_feature_miffs,
+                R.string.place_paywall_feature_danger,
+            ).map {
+                composeRule
+                    .onNodeWithText(text(it))
+                    .fetchSemanticsNode()
+                    .boundsInRoot.width
+            }
+        assertEquals(1, bounds.toSet().size)
     }
 
     @Test
     fun comingSoon_hasNoPurchaseButtonAndNoRestoreLink() {
-        host(PaywallReason.LIMIT, soon)
+        host(soon)
         composeRule.onAllNodesWithText(text(R.string.paywall_restore)).assertCountEquals(0)
         composeRule.onAllNodesWithText(text(R.string.paywall_terms_link)).assertCountEquals(0)
         composeRule.onAllNodesWithText(text(R.string.paywall_cta_trial)).assertCountEquals(0)
@@ -577,7 +588,7 @@ class PaywallScreenTest {
 
     @Test
     fun trial_showsTheButton_theBilledPriceBiggest_theBubble_andTheLink() {
-        host(PaywallReason.LIMIT, trial)
+        host(trial)
         shoot("paywall-essai-gratuit")
         composeRule.onNodeWithText(text(R.string.paywall_cta_trial)).assertIsDisplayed().assertIsEnabled()
         composeRule.onNodeWithText(text(R.string.paywall_cancel_anytime)).assertIsDisplayed()
@@ -599,7 +610,7 @@ class PaywallScreenTest {
 
     @Test
     fun trial_theInformationBlockIsComplete_andReachable() {
-        host(PaywallReason.LIMIT, trial)
+        host(trial)
         composeRule.onNodeWithText(text(R.string.paywall_info_trial, "59,88 €")).performScrollTo().assertIsDisplayed()
         composeRule
             .onNodeWithText(
@@ -622,14 +633,14 @@ class PaywallScreenTest {
 
     @Test
     fun trial_theButtonStartsTheTrial() {
-        host(PaywallReason.LIMIT, trial)
+        host(trial)
         composeRule.onNodeWithText(text(R.string.paywall_cta_trial)).performClick()
         assertEquals(1, started)
     }
 
     @Test
     fun trial_seeAllOffers_opensTheTwoPlans_withoutATrialButton() {
-        host(PaywallReason.LIMIT, trial)
+        host(trial)
         composeRule.onNodeWithText(text(R.string.paywall_see_all_offers)).performClick()
         shoot("paywall-toutes-les-offres")
         composeRule.onNodeWithText(text(R.string.paywall_plan_annual_title, "59,88 €")).assertIsDisplayed()
@@ -648,7 +659,7 @@ class PaywallScreenTest {
 
     @Test
     fun plans_showTheTwoPlans_noTrialMention_theSavingsLabel_theBilledPriceBiggest() {
-        host(PaywallReason.DANGER, plans)
+        host(plans)
         shoot("paywall-annuel-mensuel")
         val annualTitle = composeRule.onNodeWithText(text(R.string.paywall_plan_annual_title, "59,88 €"))
         annualTitle.assertIsDisplayed()
@@ -676,7 +687,7 @@ class PaywallScreenTest {
 
     @Test
     fun loading_hasPlaceholders_theButtonAsleep_noPrice() {
-        host(PaywallReason.LIMIT, PaywallUiState(PaywallOffer.Loading))
+        host(PaywallUiState(PaywallOffer.Loading))
         shoot("paywall-chargement")
         composeRule.onNodeWithText(text(R.string.paywall_loading)).assertIsDisplayed().assertIsNotEnabled()
         composeRule.onAllNodesWithText("€", substring = true).assertCountEquals(0)
@@ -686,7 +697,7 @@ class PaywallScreenTest {
 
     @Test
     fun unavailable_isCalm_noPrice_noPurchaseButton_andCanBeRetried() {
-        host(PaywallReason.MIFF, PaywallUiState(PaywallOffer.Unavailable))
+        host(PaywallUiState(PaywallOffer.Unavailable))
         shoot("paywall-indisponible")
         composeRule.onNodeWithText(text(R.string.paywall_unavailable)).assertIsDisplayed()
         composeRule.onAllNodesWithText("€", substring = true).assertCountEquals(0)
@@ -698,7 +709,7 @@ class PaywallScreenTest {
 
     @Test
     fun purchasing_buttonsAreAsleep_andItSaysItIsWorking() {
-        host(PaywallReason.LIMIT, PaywallUiState(trial.offer, PaywallProgress.PURCHASING))
+        host(PaywallUiState(trial.offer, PaywallProgress.PURCHASING))
         composeRule.onNodeWithText(text(R.string.paywall_working)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.paywall_cta_trial)).assertIsNotEnabled()
         // The cross rule goes on: closing does not cancel the purchase (its result is taken into account when it arrives).
@@ -708,14 +719,14 @@ class PaywallScreenTest {
 
     @Test
     fun purchasing_thePlansAreAsleepToo() {
-        host(PaywallReason.LIMIT, PaywallUiState(plans.offer, PaywallProgress.PURCHASING))
+        host(PaywallUiState(plans.offer, PaywallProgress.PURCHASING))
         composeRule.onNodeWithText(text(R.string.paywall_plan_annual_title, "59,88 €")).assertIsNotEnabled()
         composeRule.onNodeWithText(text(R.string.paywall_plan_monthly_title, "6,99 €")).assertIsNotEnabled()
     }
 
     @Test
     fun pending_saysItIsBeingConfirmed_andGrantsNothing() {
-        host(PaywallReason.LIMIT, PaywallUiState(trial.offer, notice = PaywallNotice.PENDING))
+        host(PaywallUiState(trial.offer, notice = PaywallNotice.PENDING))
         shoot("paywall-en-attente")
         composeRule.onNodeWithText(text(R.string.paywall_pending)).assertIsDisplayed()
         composeRule.onAllNodesWithText(text(R.string.paywall_subscribed)).assertCountEquals(0)
@@ -724,7 +735,7 @@ class PaywallScreenTest {
 
     @Test
     fun error_isCalm_noExclamationMark_noCode_withRetryAndRestore() {
-        host(PaywallReason.LIMIT, PaywallUiState(trial.offer, notice = PaywallNotice.ERROR))
+        host(PaywallUiState(trial.offer, notice = PaywallNotice.ERROR))
         shoot("paywall-erreur-calme")
         val sentence = text(R.string.paywall_error_calm)
         composeRule.onNodeWithText(sentence).assertIsDisplayed()
@@ -738,7 +749,7 @@ class PaywallScreenTest {
 
     @Test
     fun restoreNothingFound_namesGooglePlay() {
-        host(PaywallReason.LIMIT, PaywallUiState(trial.offer, notice = PaywallNotice.RESTORE_NONE))
+        host(PaywallUiState(trial.offer, notice = PaywallNotice.RESTORE_NONE))
         val sentence = text(R.string.paywall_restore_none, "Google Play")
         composeRule.onNodeWithText(sentence).assertIsDisplayed()
         assertTrue(sentence.contains("Google Play"))
@@ -748,14 +759,14 @@ class PaywallScreenTest {
 
     @Test
     fun restoring_saysItIsWorking() {
-        host(PaywallReason.LIMIT, PaywallUiState(trial.offer, PaywallProgress.RESTORING))
+        host(PaywallUiState(trial.offer, PaywallProgress.RESTORING))
         composeRule.onNodeWithText(text(R.string.paywall_working)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.paywall_cta_trial)).assertIsNotEnabled()
     }
 
     @Test
     fun theRestoreLink_asksForARestoration() {
-        host(PaywallReason.LIMIT, trial)
+        host(trial)
         composeRule.onNodeWithText(text(R.string.paywall_restore)).performScrollTo().performClick()
         assertEquals(1, restored)
     }
@@ -764,7 +775,7 @@ class PaywallScreenTest {
 
     @Test
     fun subscribed_showsNoOffer_continueIsActiveAtOnce_andSoIsTheCross() {
-        host(PaywallReason.LIMIT, PaywallUiState(PaywallOffer.Subscribed))
+        host(PaywallUiState(PaywallOffer.Subscribed))
         shoot("paywall-abonne")
         composeRule.onNodeWithText(text(R.string.paywall_subscribed)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.paywall_subscribed_detail)).assertIsDisplayed()
@@ -781,7 +792,7 @@ class PaywallScreenTest {
 
     @Test
     fun legalLinks_openThePublicPagesInTheBrowser() {
-        host(PaywallReason.LIMIT, trial)
+        host(trial)
         composeRule.onNodeWithText(text(R.string.paywall_terms_link)).performScrollTo().performClick()
         val first: Intent = shadowOf(context() as Application).nextStartedActivity
         assertEquals(Intent.ACTION_VIEW, first.action)
@@ -798,7 +809,7 @@ class PaywallScreenTest {
 
     @Test
     fun largestFont_trial_nothingIsCut_theInformationIsReachable_theBubbleSitsAboveTheButton() {
-        host(PaywallReason.LIMIT, trial, fontScale = 2f)
+        host(trial, fontScale = 2f)
         shoot("paywall-grande-police-essai")
         composeRule.onNodeWithText(text(R.string.paywall_cta_trial)).assertIsDisplayed().assertIsEnabled()
         composeRule.onNodeWithText(text(R.string.paywall_cancel_anytime)).assertIsDisplayed()
@@ -814,7 +825,7 @@ class PaywallScreenTest {
 
     @Test
     fun largestFont_plans_bothButtonsAreThere_andTheInformationIsReachable() {
-        host(PaywallReason.MIFF, plans, fontScale = 2f)
+        host(plans, fontScale = 2f)
         shoot("paywall-grande-police-offres")
         composeRule.onNodeWithText(text(R.string.paywall_plan_annual_title, "59,88 €")).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.paywall_plan_monthly_title, "6,99 €")).assertIsDisplayed()
@@ -828,7 +839,7 @@ class PaywallScreenTest {
 
     @Test
     fun normalFont_theBubbleOverlapsTheCornerOfTheButton_likeTheMockup() {
-        host(PaywallReason.LIMIT, trial)
+        host(trial)
         val bubble = composeRule.onNodeWithText(text(R.string.paywall_cancel_anytime)).fetchSemanticsNode().boundsInRoot
         val button = composeRule.onNodeWithText(text(R.string.paywall_cta_trial)).fetchSemanticsNode().boundsInRoot
         // It sits on the top corner at the end side, above the first letter of the text of the button.
@@ -841,7 +852,7 @@ class PaywallScreenTest {
 
     @Test
     fun theScreenIsNamedForAScreenReader() {
-        host(PaywallReason.LIMIT, soon)
+        host(soon)
         val node = composeRule.onRoot().fetchSemanticsNode()
 
         fun find(n: androidx.compose.ui.semantics.SemanticsNode): String? =
