@@ -82,6 +82,18 @@ Le PM voyait, sur son iPhone 11 Pro, la légende vers le milieu-bas avec ~350 px
 - **Voile plus léger** : noir à 70 % (au lieu de 78 %) ; contraste du texte blanc toujours ≥ 4,5:1 sur le pire cas (~8,5:1).
 - Tests : `PhotoFullScreenLayoutTests` (un seul GeometryReader, surimpressions, marge basse, ancrage en bas, quand la légende défile) ; captures CI 150 à 152.
 
+### Feed : le haut de la bulle n'est plus coupé par l'en-tête (cause réelle trouvée avec les captures de la CI, v2)
+
+Branche `ios/feed-header-v2` (PR #193 en brouillon, reprend #176). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi** ; les captures `90` à `93` de la CI montrent le Feed réel (aperçu `-MiffPreview feed-green|feed-orange|feed-red`).
+
+Corrigé :
+- **Cause réelle** : la vue de défilement du Feed commence tout en haut de l'ÉCRAN (sous la barre d'état) alors que l'en-tête est posé DANS la zone sûre ; la marge haute de la liste ne valait que la hauteur de l'en-tête, sans la zone sûre (une cinquantaine de points) : le contenu démarrait trop haut, sous l'en-tête, et le haut de la bulle était coupé en ligne droite. La lecture du défilement de #176 n'y pouvait rien.
+- **Correctif** : la marge haute est tirée de MESURES (`FeedTopInset`) : le bas de l'en-tête au repos (mesuré par un conteneur fixe, dans la fenêtre) moins l'endroit où la vue de défilement place son contenu (`ScrollDistanceReader`, haut de la vue + marge automatique). Le haut de la liste tombe exactement au bas de l'en-tête, avec ou sans marge automatique de la vue de défilement (pas de double compte).
+- Mise en page extraite dans `FeedCollapsingLayout` (l'écran réel et l'aperçu de la CI passent par le même code).
+
+Ajouté : `FeedTopInset` (+ tests : cas des captures, pas de double compte, repli, jamais négatif), aperçu `FeedScreenPreview` et captures CI `90` à `93`.
+
+
 ### Corrigé et changé : photo de proche en plein écran, enregistrement DIRECT dans la galerie, photo qui remplit la zone (retours du PM sur le build 25, 2026-11-11)
 
 - **Enregistrement direct dans la galerie** (décision du PM, **remplace** « sans permission / feuille de partage » : la feuille ne proposait pas « Enregistrer l'image ») : le toucher de l'icône en haut à droite enregistre la photo dans Photos, **sans feuille de partage**. `PHPhotoLibrary` en autorisation **`.addOnly`** (jamais de lecture de la galerie), demandée **au premier toucher** (clé **`NSPhotoLibraryAddUsageDescription`**, FR + EN : « Miff enregistre la photo dans ta galerie uniquement quand tu touches « Enregistrer cette photo ». Miff ne lit jamais tes photos ni ta galerie. »), puis `PHAssetCreationRequest.forAsset()` avec un JPEG **ré-encodé depuis les pixels** (`PhotoExport` : aucun EXIF, aucun GPS, aucune donnée de lieu ; testé avec une source qui porte un GPS). **Aucune écriture automatique** : seulement au toucher. Refus : message calme + « Ouvrir les réglages » (jamais culpabilisant) ; appareil restreint et échec : messages calmes ; confirmation « Photo enregistrée. ». Voile des applications récentes conservé.
@@ -114,6 +126,21 @@ Modifié : `docs/tickets/update.md` (le flash n'est plus « absent » ; V4 mis �
 Coût : aucun (AVFoundation, aucun service ni quota). Sécurité : aucune permission, aucun journal, aucun événement Analytics, rien n'est stocké.
 
 Écarts : aucun écran de maquette ne montre le flash (`design/exports/update/claude/03-viseur-et-apercu.png`) ; l'emplacement et le style suivent le bouton de bascule voisin ; pictogrammes du système faute d'export vectoriel du PM. Le bouton n'est pas grisé mais masqué quand il est impossible (choix calme : pas de bouton qui ne sert à rien). Limite à vérifier sur l'iPhone : l'apparition du bouton juste après le démarrage de la caméra (le matériel répond une fois la session lancée).
+
+### Feed : l'en-tête qui se masque au défilement, la bulle jamais dessous (retour du PM sur le build 27)
+
+Branche `ios/feed-header-scroll` (PR en brouillon). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Même comportement que l'en-tête d'Android (`CollapsingHeader.kt`, « enter always »).
+
+Modifié :
+- **Lecture directe du défilement** : l'en-tête suit désormais la distance défilée lue sur la vue de défilement elle-même (`ScrollDistanceReader`, `contentOffset` + marge ajustée), au lieu de deviner la position de repos du contenu ; c'est cette position de repos mal devinée qui pouvait laisser la première carte (la bulle) sous l'en-tête. L'ancienne lecture (position du contenu) reste en repli si aucune vue de défilement n'est trouvée.
+- **Règles pures** (`CollapsingHeaderState`) : l'en-tête suit le doigt point pour point dans les deux sens et revient dès qu'on remonte ; jamais plus caché que le défilement près du haut (seuil = sa hauteur, inclus) ; un déplacement de moins de 0,5 pt est ignoré (l'en-tête ne vibre pas) ; verrouillé (chargement, hors connexion, VoiceOver ou Contrôle de sélection, sélecteur ouvert) : il reste là.
+- **La bulle et le contenu ne passent jamais sous la barre d'état** : une bande fixe de la couleur du fond couvre la zone sûre du haut ; l'en-tête qui monte est coupé à la zone sûre (comme Android) et garde son ombre.
+- **Retour animé** (logo, verrouillage) : 0,2 s, immédiat avec « Réduire les animations ».
+
+Ajouté : `FeedHeaderScrollTests` (distance défilée, retour au premier mouvement vers le haut, seuil près du haut, hystérésis de 0,5 pt, verrouillage, repli, animation courte et « Réduire les animations »).
+
+Accessibilité : avec VoiceOver ou Contrôle de sélection l'en-tête ne se masque jamais (il est toujours dans l'arbre d'accessibilité, lu en premier).
+
 
 ### Mes informations modifiable (ticket `docs/tickets/modifier-infos-perso.md`, décision du PM du 2026-11-11)
 
@@ -207,6 +234,8 @@ Ajouté :
 - **Tests** : `OfflineRetryModelTests` (grâce de 1,5 s, délai 8 s, compte à rebours, minuterie de 10 s, plafond de 3 essais et reprise par « Réessayer », retour du réseau, fermeture, deux touchers, sortie de l'écran, pas de minuterie doublée, pas de clignotement pendant une relecture), `FeedOfflinePopinTests` (dont le rejeu d'une relecture commencée hors connexion), `ProfileOfflinePopinTests`, `MiffRepositoryOfflineReadTests`. Les attentes sont toutes commandées par `ManualSleeper` (qui sait aussi « céder la main » : plus aucun `Task.sleep` réel dans ces tests).
 
 Limites connues : l'onboarding du profil et le démarrage de session ont déjà leurs délais bornés (15 s) et leur écran « Réessayer » : non modifiés. Les Réglages > Mes informations n'ont pas leur propre pop-in. Un Feed avec la Miff en cache mais sans statuts attend toujours au plus 15 s son squelette. **Choix économiques** : aucune dépendance, 0 €, moins de lectures (aucune lecture serveur sans réseau). Limite connue du plafond de 3 essais : un essai rattache les écoutes de l'écran (quelques dizaines de lectures Firestore au plus) ; signal de bascule : si le quota de lectures du plan gratuit approche (`docs/dev/surveillance-quotas.md`), baisser d'abord `OfflinePopinTimings.maxAutomaticAttemptsOnline`.
+
+
 
 ### Mode voyage, Feed (VOY-3I, miroir d'Android VOY-3A, PR #155)
 

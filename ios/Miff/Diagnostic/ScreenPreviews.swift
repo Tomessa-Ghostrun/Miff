@@ -58,6 +58,9 @@ struct ScreenPreview: View {
         case _ where name.hasPrefix("profile-carousel"):
             // L'onglet Profil et son carrousel de Miffs : voir `ProfileScreenPreview`.
             ProfileScreenPreview(name: name)
+        case _ where name.hasPrefix("feed-"):
+            // Le Feed (en-tête, bulle, cartes) : voir `FeedScreenPreview`.
+            FeedScreenPreview(name: name)
         case _ where name.hasPrefix("miff-"):
             // Le flux Miff (créer, rejoindre, écran d'une Miff, accueil, perte d'accès) : voir `MiffScreenPreview`.
             MiffScreenPreview(name: name)

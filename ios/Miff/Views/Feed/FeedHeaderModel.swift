@@ -11,9 +11,27 @@ final class FeedHeaderModel: ObservableObject {
     /// La position du contenu au repos (la première lue) : le défilement est mesuré depuis elle.
     private var baseline: CGFloat?
     private var lastScrolled: CGFloat = 0
+    /// Vrai dès que le défilement est lu DIRECTEMENT sur la vue de défilement (`scrolled(to:)`) : la lecture par la position du contenu
+    /// (`contentMoved`, repli) est alors ignorée.
+    private var readsScrollDirectly = false
+
+    /// La distance DIRECTE défilée depuis le repos du haut de la liste (`contentOffset` + marge de la vue de défilement) : exacte, sans
+    /// position de repos à deviner (c'est une position de repos mal devinée qui faisait passer la première carte sous l'en-tête).
+    func scrolled(to distance: CGFloat) {
+        readsScrollDirectly = true
+        var next = state
+        next.scrolled(from: lastScrolled, to: distance)
+        lastScrolled = distance
+        if next != state {
+            state = next
+        }
+    }
 
     /// La position actuelle du haut du contenu dans la zone de défilement (diminue quand on descend dans la liste).
     func contentMoved(to position: CGFloat) {
+        guard !readsScrollDirectly else {
+            return
+        }
         guard let baseline else {
             baseline = position
             lastScrolled = 0
@@ -37,6 +55,7 @@ final class FeedHeaderModel: ObservableObject {
             // La marge haute de la liste change avec la hauteur de l'en-tête : la position de repos est relue au prochain mouvement.
             if next.height != state.height {
                 resetBaseline()
+                // La marge haute de la liste a changé : la distance défilée est relue au prochain mouvement.
             }
             state = next
         }
