@@ -200,6 +200,14 @@ class PushRegistrar(
     }
 
     /**
+     * The session is OPEN AGAIN with the same account and the same identifier (a deletion of the account that was cancelled, a restore after a failed step): [close] must not
+     * keep it shut for ever. A real sign-in has a new identifier and needs no such call.
+     */
+    fun reopen() {
+        closedFor = null
+    }
+
+    /**
      * The sign-out, the loss of the session, the deletion of the account: the document is deleted if the account can still be reached (bounded wait: the sign-out must not
      * be held up), the token is invalidated with Google, everything remembered is erased. Never throws.
      */

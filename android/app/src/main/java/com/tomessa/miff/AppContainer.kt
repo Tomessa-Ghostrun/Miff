@@ -437,7 +437,11 @@ class AppContainer(
 
     /** Looks at the registry of devices now, off the main thread (a consent was just given, a switch just changed). */
     private fun pushSyncSoon() {
-        notificationScope.launch { pushRegistrar.sync() }
+        notificationScope.launch {
+            // The purge of a Firestore cache left by a failed sign-out comes before any other access to Firestore.
+            cachePurger.purgeIfPending()
+            pushRegistrar.sync()
+        }
     }
 
     /** What the messaging service hands each DATA message to: validated, then given to the notifications (no read of Firestore). */
@@ -951,6 +955,11 @@ class AppContainer(
                 onAccountResolved = consentWithdrawals::resume,
                 deletionMarker = accountDeletionMarker,
                 localData = localDataErasers,
+                // SRV-2: the session is open again with the same identifier (deletion of the account cancelled): the registration of the push, shut by the teardown, opens again.
+                onSessionReopened = {
+                    pushRegistrar.reopen()
+                    pushSyncSoon()
+                },
             )
         }
     }

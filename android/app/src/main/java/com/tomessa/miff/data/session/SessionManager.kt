@@ -157,6 +157,11 @@ class SessionManager(
     private val deletionMarker: AccountDeletionMarker? = null,
     /** Preferences kept for one account, erased when that account is deleted (AUTH-5, ticket 5.10). */
     private val localData: List<LocalDataEraser> = emptyList(),
+    /**
+     * The session of this phone is OPEN AGAIN with the same account and the same identifier (a deletion of the account that was cancelled, a start): what the end of a session
+     * shut and does not reopen by itself (the registration of the push, SRV-2) must open again. A real sign-in makes a new identifier and needs no such call.
+     */
+    private val onSessionReopened: () -> Unit = {},
 ) : AccountDeletionSession {
     private val mutableState = MutableStateFlow<SessionState>(SessionState.Loading)
     val state: StateFlow<SessionState> = mutableState.asStateFlow()
@@ -604,6 +609,7 @@ class SessionManager(
         // No deletion of THIS account is under way (it would have been resolved above): a "closed" marker left on the disk by a deletion that was cancelled while
         // the process died (AUTH-5b) must not keep this phone silent for ever.
         device.reopen()
+        onSessionReopened()
         // Off until the account has been read (also at "Réessayer"), but the previous crash report is kept for now.
         privacy.pauseCollection()
         mutableState.value = SessionState.Loading
@@ -666,6 +672,7 @@ class SessionManager(
         // If the write fails, the watcher writes one itself as soon as the server answers (no identifier here + no session there).
         device.begin(uid)
         device.watch(uid)
+        onSessionReopened()
     }
 
     /**
@@ -724,6 +731,7 @@ class SessionManager(
             mutableDeletionBlocked.value = true
             // The account is kept (SESS-2): this phone is the active one again; its session is verified (and written back if the step that deleted it ran).
             device.reopen()
+            onSessionReopened()
             resolveCurrent()
         }
     }

@@ -494,6 +494,30 @@ class PushRegistrarTest {
         }
 
     @Test
+    fun aDeletionCancelled_theSessionKeepsItsIdentifier_reopenLetsTheRegistrationWorkAgain() =
+        runTest {
+            registrar.sync()
+            registry.calls.clear()
+            // The deletion of the account begins (teardown: shut, document deleted, token invalidated), then a Miff shows up and it is cancelled: same account, SAME session.
+            val steps =
+                NotificationTeardownSteps(
+                    closePush = registrar::close,
+                    local = emptyList(),
+                    forgetPush = registrar::forget,
+                )
+            steps.stop()
+            registry.calls.clear()
+            registrar.sync()
+            assertTrue("still shut: nothing is written for a session that was ended", registry.calls.isEmpty())
+            registrar.reopen()
+            registrar.sync()
+            assertEquals(listOf("deleteOthers", "upsert"), registry.kinds())
+            assertEquals("dev1", registry.calls.last().deviceId)
+            assertTrue(local.on)
+            assertEquals("dev1", local.record?.deviceId)
+        }
+
+    @Test
     fun forgetAfterTheAccountIsGone_stillInvalidatesTheTokenAndErases_withoutReachingTheServer() =
         runTest {
             registrar.sync()
