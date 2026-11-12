@@ -49,6 +49,10 @@ import com.tomessa.miff.domain.miff.MiffMember
 import com.tomessa.miff.domain.miff.MiffRole
 import com.tomessa.miff.domain.miff.MiffSummary
 import com.tomessa.miff.domain.navigation.TabBarConfig
+import com.tomessa.miff.domain.paywall.MonotonicClock
+import com.tomessa.miff.domain.paywall.PaywallOffer
+import com.tomessa.miff.domain.paywall.PaywallPrice
+import com.tomessa.miff.domain.paywall.PaywallUiState
 import com.tomessa.miff.domain.place.AddressSuggestion
 import com.tomessa.miff.domain.place.OwnedMiff
 import com.tomessa.miff.domain.place.PaywallReason
@@ -85,6 +89,9 @@ import com.tomessa.miff.ui.miff.MiffChoiceScreen
 import com.tomessa.miff.ui.miff.MiffScreenState
 import com.tomessa.miff.ui.miff.MiffScreenStatus
 import com.tomessa.miff.ui.onboarding.WelcomeCarouselScreen
+import com.tomessa.miff.ui.paywall.PaywallActions
+import com.tomessa.miff.ui.paywall.PaywallScreen
+import com.tomessa.miff.ui.paywall.PaywallViewModel
 import com.tomessa.miff.ui.place.LocalPlaceMapRenderer
 import com.tomessa.miff.ui.place.PlaceDetailScreen
 import com.tomessa.miff.ui.place.PlaceDetailState
@@ -93,7 +100,6 @@ import com.tomessa.miff.ui.place.PlaceFormActions
 import com.tomessa.miff.ui.place.PlaceFormMode
 import com.tomessa.miff.ui.place.PlaceFormScreen
 import com.tomessa.miff.ui.place.PlaceFormState
-import com.tomessa.miff.ui.place.PlacePaywallScreen
 import com.tomessa.miff.ui.profile.CropState
 import com.tomessa.miff.ui.profile.OnboardingMode
 import com.tomessa.miff.ui.profile.PhoneStepScreen
@@ -1186,13 +1192,34 @@ class ScreenInsetsTest {
         assertAllContentInsideSafeArea(phone)
     }
 
+    private val trialOffer =
+        PaywallUiState(
+            PaywallOffer.TrialEligible(
+                annual = PaywallPrice("59,88 €", 59_880_000L, "EUR"),
+                monthly = PaywallPrice("6,99 €", 6_990_000L, "EUR"),
+            ),
+        )
+
+    @Composable
+    private fun Offer(
+        reason: PaywallReason,
+        state: PaywallUiState = PaywallUiState.PRODUCTION,
+    ) = PaywallScreen(reason, PaywallViewModel(MonotonicClock { 0L }), state, PaywallActions(onClose = {}))
+
     @Test
-    fun placeOffer_isInsideTheSafeArea() =
-        assertScreenIsSafe("place-offer") { PlacePaywallScreen(PaywallReason.LIMIT, {}) }
+    fun placeOffer_isInsideTheSafeArea() = assertScreenIsSafe("place-offer") { Offer(PaywallReason.LIMIT) }
 
     @Test
     fun placeOffer_inLandscapeWithACutout_staysInsideIt() =
-        assertScreenIsSafeInLandscape { PlacePaywallScreen(PaywallReason.DANGER, {}) }
+        assertScreenIsSafeInLandscape { Offer(PaywallReason.DANGER) }
+
+    @Test
+    fun placeOffer_withThePurchaseZone_isInsideTheSafeArea() =
+        assertScreenIsSafe("place-offer-trial") { Offer(PaywallReason.MIFF, trialOffer) }
+
+    @Test
+    fun placeOffer_withThePurchaseZone_inLandscapeWithACutout_staysInsideIt() =
+        assertScreenIsSafeInLandscape { Offer(PaywallReason.LIMIT, trialOffer) }
 
     // --- Helpers ---------------------------------------------------------------------------------------------------------------------
 

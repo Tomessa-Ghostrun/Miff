@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -23,9 +24,16 @@ import androidx.navigation.toRoute
 import com.tomessa.miff.AppContainer
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.analytics.AnalyticsEvent
+import com.tomessa.miff.domain.analytics.AnalyticsTracker
+import com.tomessa.miff.domain.paywall.MonotonicClock
+import com.tomessa.miff.domain.paywall.PaywallUiState
 import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.ui.main.TabsRoute
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
+import com.tomessa.miff.ui.paywall.PaywallActions
+import com.tomessa.miff.ui.paywall.PaywallScreen
+import com.tomessa.miff.ui.paywall.PaywallViewModel
+import com.tomessa.miff.ui.paywall.currentPaywallState
 import com.tomessa.miff.ui.profile.ProfileRequestsViewModel
 import com.tomessa.miff.ui.profile.profileRequestsFactory
 import com.tomessa.miff.ui.profile.profileRequestsKey
@@ -84,12 +92,12 @@ data class PlacePaywallRoute(
     }
 }
 
-/** The trigger of the analytics for an offer: a fixed value of the contract; none exists yet for the danger zone (open point of the places PR). */
-internal fun paywallTrigger(reason: PaywallReason): AnalyticsEvent.PaywallTrigger? =
+/** The trigger of the analytics for an offer: a fixed value of the contract (never a place, a name or a position). */
+internal fun paywallTrigger(reason: PaywallReason): AnalyticsEvent.PaywallTrigger =
     when (reason) {
         PaywallReason.LIMIT -> AnalyticsEvent.PaywallTrigger.EXTRA_TRUSTED_PLACE
         PaywallReason.MIFF -> AnalyticsEvent.PaywallTrigger.EXTRA_MIFF
-        PaywallReason.DANGER -> null
+        PaywallReason.DANGER -> AnalyticsEvent.PaywallTrigger.DANGER_ZONE
     }
 
 /** launchSingleTop: two quick taps open one screen, not two. */
@@ -246,20 +254,58 @@ fun NavGraphBuilder.placeRoutes(
             )
         PlaceRequestDetailHost(route = route, viewModel = viewModel, onClose = { navController.popBackStackIfSafe() })
     }
+    paywallRoute(container.analyticsTracker, container.paywallClock, navController)
+}
+
+/**
+ * THE offer (paywall): the single destination of every entry (a 3rd place, a danger zone, a 2nd Miff from the selector of the Feed or from the carousel of
+ * the Profile: they all open a [PlacePaywallRoute]), so that the rule of the close cross (3 seconds, at every display) lives in ONE place. A test checks it for
+ * each entry (PaywallEntryPointsTest).
+ */
+fun NavGraphBuilder.paywallRoute(
+    tracker: AnalyticsTracker,
+    clock: MonotonicClock,
+    navController: NavController,
+) {
     composable<PlacePaywallRoute> { entry ->
-        val reason = entry.toRoute<PlacePaywallRoute>().paywallReason()
-        val tracker = container.analyticsTracker
-        val trigger = paywallTrigger(reason)
-        // The only analytics of the offer: it was shown / closed, with a fixed trigger and nothing else (criterion LIM5).
-        LaunchedEffect(reason) {
-            if (trigger != null) tracker.track(AnalyticsEvent.PaywallShown(trigger))
-        }
-        PlacePaywallScreen(
-            reason = reason,
-            onClose = {
-                if (trigger != null) tracker.track(AnalyticsEvent.PaywallDismissed(trigger))
-                navController.popBackStackIfSafe()
-            },
+        PaywallDestination(
+            reason = entry.toRoute<PlacePaywallRoute>().paywallReason(),
+            tracker = tracker,
+            clock = clock,
+            state = currentPaywallState(),
+            onClose = { navController.popBackStackIfSafe() },
         )
     }
+}
+
+/** One DISPLAY of the offer: its own [PaywallViewModel] (scoped to the navigation entry), so that nothing is shared between two displays. */
+@Composable
+internal fun PaywallDestination(
+    reason: PaywallReason,
+    tracker: AnalyticsTracker,
+    clock: MonotonicClock,
+    state: PaywallUiState,
+    onClose: () -> Unit,
+) {
+    val model: PaywallViewModel = viewModel(factory = viewModelFactory { initializer { PaywallViewModel(clock) } })
+    val trigger = paywallTrigger(reason)
+    // Two quick taps on the cross close ONE display: one `paywall_dismissed`.
+    var closing by remember { mutableStateOf(false) }
+    // The only analytics of the offer: it was shown (when it is really on view) and closed, with a fixed trigger and nothing else (criteria LIM5, CR14).
+    PaywallScreen(
+        reason = reason,
+        model = model,
+        state = state,
+        actions =
+            PaywallActions(
+                onClose = {
+                    if (!closing) {
+                        closing = true
+                        tracker.track(AnalyticsEvent.PaywallDismissed(trigger))
+                        onClose()
+                    }
+                },
+            ),
+        onShown = { tracker.track(AnalyticsEvent.PaywallShown(trigger)) },
+    )
 }

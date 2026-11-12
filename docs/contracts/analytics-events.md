@@ -24,12 +24,13 @@ Seuls des gestes déjà prévus par les specs (`docs/specs/`). Rien n'est ajout�
 | `miff_created` | Une Miff vient d'être créée | `is_first_miff` : bool |
 | `miff_joined` | Une Miff vient d'être rejointe avec un code | `is_first_miff` : bool |
 | `onboarding_completed` | Premier moment où l'utilisateur a créé ou rejoint une Miff (fin d'onboarding) | `via` : string (`created`, `joined`) |
-| `paywall_shown` | Le paywall s'affiche | `trigger` : string (`extra_miff`, `extra_trusted_place`) |
-| `paywall_dismissed` | Le paywall est fermé sans achat | `trigger` : string (`extra_miff`, `extra_trusted_place`) |
+| `paywall_shown` | Le paywall s'affiche | `trigger` : string (`extra_miff`, `extra_trusted_place`, `danger_zone`) |
+| `paywall_dismissed` | Le paywall est fermé sans achat | `trigger` : string (`extra_miff`, `extra_trusted_place`, `danger_zone`) |
 | `analytics_diagnostic_test` | Bouton de test de l'écran de diagnostic (builds debug / TestFlight uniquement) | aucun |
 
 Notes :
 - `extra_trusted_place` nomme la limite gratuite atteinte (3 lieux de confiance gratuits depuis le 2026-11-10, 2 du 2026-11-01 au 2026-11-10), pas un lieu : aucun nom, type ni emplacement n'est transmis.
+- `danger_zone` (ajouté le 2026-11-12 par PAY-UI, `docs/tickets/paywall-v2.md` §6.5, Q-PAY5) : le compte gratuit a voulu faire d'un lieu une zone de danger (réservée à Miff+). Même règle : aucun nom, type ni emplacement. Aucun paramètre de durée (délai de la croix) n'est ajouté.
 - Aucun événement d'achat n'est défini ici : le paiement n'existe pas encore (voir ticket, décisions du PM). Ils s'ajouteront avec le ticket Paywall.
 - Aucun événement sur les lieux de confiance, le feed, les mises à jour de statut, les notifications ou les réglages : non spécifiés ici, et ils frôlent la localisation. À proposer plus tard, un par un, avec avis du PM.
 
