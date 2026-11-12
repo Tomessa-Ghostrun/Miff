@@ -695,6 +695,29 @@
     <string name="place_request_unavailable">Place requests are not available yet. Please try again a little later.</string>
     <string name="place_request_gone">This request is no longer pending.</string>
     <string name="place_request_a11y_pending_mine">Your pending request: %1$s</string>
+
+    <!-- LIEU-REQ-C: the creator receives, accepts or declines a place request -->
+    <string name="notif_n8_title">A place to review</string>
+    <string name="notif_n8_body">A member of your Miff suggested a place. You can accept it or not from your Profile.</string>
+    <string name="place_request_section_title">To review</string>
+    <string name="place_request_by">Requested by %1$s</string>
+    <string name="place_request_by_unknown">Requested by a member</string>
+    <string name="place_request_date">On %1$s</string>
+    <string name="place_request_detail_banner_creator">This place isn\'t in the Miff yet. It will be added if you accept.</string>
+    <string name="place_request_accept">Accept</string>
+    <string name="place_request_decline">Decline</string>
+    <string name="place_request_accept_a11y">Accept the request: %1$s</string>
+    <string name="place_request_decline_a11y">Decline the request: %1$s</string>
+    <string name="place_request_accepted_toast">“%1$s” was added to the Miff.</string>
+    <string name="place_request_declined_toast">Request removed from the list.</string>
+    <string name="place_request_center_one">%1$s suggested a place for “%2$s”</string>
+    <string name="place_request_center_many">%1$s suggested %2$d places for “%3$s”</string>
+    <string name="place_request_paywall_limit">You\'ve reached the free places limit. With Miff+, you can add this one and many more. The request stays pending; you can also decline it.</string>
+    <string name="place_request_paywall_danger">Danger zones are part of Miff+. The request stays pending; you can also decline it.</string>
+    <string name="place_request_subscription_unknown">We can\'t check your subscription right now. Please try again in a moment.</string>
+    <string name="place_request_a11y_pending_card">Pending request: %1$s, requested by %2$s</string>
+    <string name="place_request_a11y_pending_card_unknown">Pending request: %1$s, requested by a member</string>
+    <string name="tabbar_profile_requests_a11y">Profile, a place request to review</string>
     <string name="place_list_row_a11y">%1$s, category %2$s, %3$s</string>
     <string name="place_list_row_noaddress_a11y">%1$s, category %2$s</string>
     <string name="place_detail_title_loading">Place</string>

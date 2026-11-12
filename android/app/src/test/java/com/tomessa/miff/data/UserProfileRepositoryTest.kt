@@ -293,7 +293,7 @@ class UserProfileRepositoryTest {
         val source = File("src/main/java/com/tomessa/miff/AppContainer.kt").readText()
         // The profile kept in memory (ONB-3a), the withdrawals of consent (ONB-3b), the Miffs kept in memory (MIFF-1), and the
         // confirmation of a saved place and the cache of address searches (LOC-1), the detection and the Miffs that wait for the agreement
-        // (LOC-2b), the centre and the choices of the notifications (NOTIF-P0), the photos read and the ledger of the Update (UPDATE-1, FEED-4), and the state of the review window go with the session too, next to the draft.
+        // (LOC-2b), the centre and the choices of the notifications (NOTIF-P0), the photos read and the ledger of the Update (UPDATE-1, FEED-4), the state of the review window and the first names of the people who asked for a place (LIEU-REQ) go with the session too, next to the draft.
         // Whitespace does not matter (the formatter may put the list on several lines).
         val flat =
             source
@@ -304,7 +304,7 @@ class UserProfileRepositoryTest {
         assertTrue(
             flat.contains(
                 "teardown = listOf(profileDrafts.asTeardown(), currentProfile, consentWithdrawals, miffDirectory, " +
-                    "trackingEngine, awaitingAgreement, notificationTeardown, photoCache, SessionTeardown { publishLedger.clear() }, SessionTeardown { reviewStateStore.clear() }, placeNotices, addressSearch, mapTileCache)",
+                    "trackingEngine, awaitingAgreement, notificationTeardown, photoCache, SessionTeardown { publishLedger.clear() }, SessionTeardown { reviewStateStore.clear() }, placeNotices, requesterDirectory, addressSearch, mapTileCache)",
             ),
         )
         assertTrue(source.contains("drafts = profileDrafts"))
