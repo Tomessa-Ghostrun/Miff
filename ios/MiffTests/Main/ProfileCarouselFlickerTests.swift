@@ -19,7 +19,9 @@ private final class FlickerReader: MemberPreviewReader {
 @MainActor
 final class ProfileCarouselFlickerTests: XCTestCase {
     private func member(_ uid: String) -> MiffMember {
-        MiffMember(uid: uid, firstName: "Alex", lastName: "Martin", avatarJpeg: nil, role: .member, sharingEnabled: true)
+        MiffMember(
+            uid: uid, firstName: "Alex", lastName: "Martin", avatarJpeg: nil, role: .member, sharingEnabled: true
+        )
     }
 
     private func preview(_ count: Int) -> MemberPreview {
@@ -99,11 +101,11 @@ final class ProfileCarouselFlickerTests: XCTestCase {
         let parts = try source("Miff/Views/Main/ProfileCarouselParts.swift")
 
         // Une carte = sa position (0..<count) : ni identifiant dérivé de la page montrée, ni `.id(` qui recréerait une vue.
-        XCTAssertTrue(carousel.contains("ForEach(0..<count, id: \.self)"))
+        XCTAssertTrue(carousel.contains(#"ForEach(0..<count, id: \.self)"#))
         XCTAssertFalse(carousel.contains(".id("), "aucune identité forcée")
         XCTAssertFalse(carousel.contains("UUID()"), "aucune identité aléatoire")
         // Les pastilles de membres sont identifiées par le membre, pas par leur position.
-        XCTAssertTrue(parts.contains("id: \.uid"))
+        XCTAssertTrue(parts.contains(#"id: \.uid"#))
         XCTAssertFalse(parts.contains("UUID()"))
     }
 
