@@ -62,6 +62,8 @@ struct ProfileMiffCarousel: View {
     @State private var exceededSlop = false
     @State private var opened = false
     @State private var cardHeight: CGFloat = 0
+    /// La taille du texte avec laquelle `cardHeight` a été mesurée (la hauteur ne rétrécit pas tant qu'elle ne change pas).
+    @State private var measuredTypeSize: DynamicTypeSize?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -105,7 +107,15 @@ struct ProfileMiffCarousel: View {
                 CarouselDots(count: count, current: current, select: go(to:))
             }
         }
-        .onPreferenceChange(CardHeightKey.self) { cardHeight = $0 }
+        .onPreferenceChange(CardHeightKey.self) { measured in
+            let next = CarouselCardHeight.next(
+                current: cardHeight, measured: measured, sameTextSize: measuredTypeSize == typeSize
+            )
+            if next != cardHeight {
+                cardHeight = next
+            }
+            measuredTypeSize = typeSize
+        }
         .task(id: CarouselLoadKey(isActive: isActive, page: current, miffIds: miffs.map { $0.id })) {
             await loadVisibleCard()
         }
