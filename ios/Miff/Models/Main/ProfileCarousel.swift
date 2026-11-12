@@ -173,3 +173,12 @@ enum ProfileCarouselRules {
         return .openFlow
     }
 }
+
+/// La hauteur commune des cartes du carrousel. Elle ne RÉTRÉCIT pas tant que la taille du texte reste la même : une carte dont le contenu
+/// change pendant un balayage (la phrase d'aide qui devient « 4 membres », des pastilles qui deviennent des photos) ne fait plus sauter
+/// ce qui est dessous (clignotement). Elle suit la taille du texte quand celle-ci change (réglages d'accessibilité).
+enum CarouselCardHeight {
+    static func next(current: CGFloat, measured: CGFloat, sameTextSize: Bool) -> CGFloat {
+        sameTextSize ? max(current, measured) : measured
+    }
+}

@@ -216,9 +216,11 @@ struct MiffAvatar: View {
     @State private var decoded: UIImage?
 
     var body: some View {
+        // La photo déjà en mémoire est dessinée dès la première image : jamais d'initiales qui clignotent avant elle.
+        let shown = decoded ?? AvatarDecoding.cachedImage(from: jpeg, pixelSize: size * displayScale)
         ZStack {
-            if let decoded {
-                Image(uiImage: decoded)
+            if let shown {
+                Image(uiImage: shown)
                     .resizable()
                     .scaledToFill()
             } else {

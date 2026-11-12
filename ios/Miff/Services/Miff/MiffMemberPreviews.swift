@@ -64,7 +64,7 @@ final class MiffMemberPreviews: ObservableObject {
             known[miffId] = preview
         }
         stamps[miffId] = Stamp(at: clock(), fromFeed: true)
-        unavailable.remove(miffId)
+        dropUnavailable(miffId)
     }
 
     // MARK: - Ce que la carte demande
@@ -108,9 +108,12 @@ final class MiffMemberPreviews: ObservableObject {
         readThisOpening.insert(miffId)
         let preview = await reader.read(miffId: miffId)
         if let preview = preview.map({ withMyFace($0) }) {
-            known[miffId] = preview
+            // Rien n'est republié quand la relecture rapporte la même chose (une carte ne se redessine pas pour rien).
+            if known[miffId] != preview {
+                known[miffId] = preview
+            }
             stamps[miffId] = Stamp(at: clock(), fromFeed: false)
-            unavailable.remove(miffId)
+            dropUnavailable(miffId)
         } else if known[miffId] == nil {
             unavailable.insert(miffId)
         }
@@ -149,12 +152,22 @@ final class MiffMemberPreviews: ObservableObject {
         return MemberPreview(count: preview.count, thumbs: thumbs)
     }
 
+    /// Retire l'indication « illisible » seulement si elle était là (retirer ce qui n'y est pas republierait quand même).
+    private func dropUnavailable(_ miffId: String) {
+        if unavailable.contains(miffId) {
+            unavailable.remove(miffId)
+        }
+    }
+
     /// Une Miff a disparu de l'annuaire (quittée, supprimée, accès perdu) : ses photos ne sont pas gardées.
     func retain(only miffIds: Set<String>) {
         for miffId in known.keys where !miffIds.contains(miffId) {
             known[miffId] = nil
             stamps[miffId] = nil
         }
-        unavailable.formIntersection(miffIds)
+        let kept = unavailable.intersection(miffIds)
+        if kept != unavailable {
+            unavailable = kept
+        }
     }
 }
