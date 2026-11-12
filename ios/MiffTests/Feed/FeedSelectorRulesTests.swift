@@ -103,21 +103,16 @@ final class FeedSelectorRulesTests: XCTestCase {
 
     // MARK: - L'offre d'une 2e Miff
 
-    func testThePaywallOfASecondMiffKeepsItsComingSoonTextInBothLanguages() {
-        let reason = PaywallReason.extraMiff
+    func testTheComingSoonTextIsTheSameFromEveryEntryPoint() {
+        let text = L10n.string("paywall_soon_body")
 
-        XCTAssertNotEqual(L10n.string(reason.soonBodyKey), reason.soonBodyKey, "\(reason.soonBodyKey) n'a pas de texte")
-        XCTAssertEqual(reason.soonBodyKey, "feed_selector_paywall_soon_body")
-    }
-
-    func testTheOtherReasonsKeepTheirComingSoonText() {
-        XCTAssertEqual(PaywallReason.limit.soonBodyKey, "place_paywall_soon_body")
-        XCTAssertEqual(PaywallReason.danger.soonBodyKey, "place_paywall_soon_body")
+        XCTAssertNotEqual(text, "paywall_soon_body", "le texte existe dans le catalogue")
+        XCTAssertFalse(text.contains("lieux"), "aucune mention propre à une entrée")
     }
 
     func testNoTextOfTheOfferSaysPremiumNorShowsAPrice() {
         for key in [
-            "feed_selector_paywall_soon_body", "feed_selector_join", "feed_selector_create", "feed_selector_a11y"
+            "paywall_soon_body", "feed_selector_join", "feed_selector_create", "feed_selector_a11y"
         ] {
             let text = L10n.string(key).lowercased()
             XCTAssertFalse(text.contains("premium"), "\(key) : jamais « Premium » dans un texte affiché")

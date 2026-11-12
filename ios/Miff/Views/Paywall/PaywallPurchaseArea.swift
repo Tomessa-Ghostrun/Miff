@@ -20,7 +20,7 @@ struct PaywallPurchaseArea: View {
     var body: some View {
         switch model.state {
         case .comingSoon:
-            PaywallComingSoon(reason: model.reason)
+            PaywallComingSoon()
         case .loading:
             PaywallLoadingArea()
         case .unavailable:
@@ -59,10 +59,8 @@ struct PaywallPurchaseArea: View {
 }
 
 /// « Miff+ arrive bientôt » : la variante SANS achat, la seule visible en production. Aucun prix, aucun bouton d'essai, aucun bouton
-/// qui ne fait rien : seulement la phrase qui dit où l'on en est et ce qui reste en place.
+/// qui ne fait rien : le même texte depuis tous les points d'entrée (retour du PM du 2026-11-12, comme Android).
 struct PaywallComingSoon: View {
-    let reason: PaywallReason
-
     var body: some View {
         VStack(spacing: Spacing.xs) {
             Text("place_paywall_soon")
@@ -70,7 +68,7 @@ struct PaywallComingSoon: View {
                 .foregroundColor(colorTextPrimary.color)
                 .multilineTextAlignment(.center)
                 .accessibilityAddTraits(.isHeader)
-            Text(verbatim: L10n.string(reason.soonBodyKey))
+            Text("paywall_soon_body")
                 .miffTextStyle(textBodyRegular)
                 .foregroundColor(colorTextDescription.color)
                 .multilineTextAlignment(.center)

@@ -8005,6 +8005,23 @@
         }
       }
     },
+    "paywall_soon_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This option isn't open yet."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette option n'est pas encore ouverte."
+          }
+        }
+      }
+    },
     "paywall_cta_trial": {
       "extractionState": "manual",
       "localizations": {

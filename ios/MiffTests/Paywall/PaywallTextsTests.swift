@@ -84,9 +84,8 @@ final class PaywallTextsTests: XCTestCase {
         }
     }
 
-    func testTheComingSoonTextOfEveryEntryPointNeverMentionsAPriceOrPremium() {
-        for reason in [PaywallReason.limit, .danger, .extraMiff] {
-            let key = reason.soonBodyKey
+    func testTheComingSoonTextNeverMentionsAPriceOrPremium() {
+        for key in ["paywall_soon_body", "place_paywall_soon"] {
             let text = L10n.string(key).lowercased()
             XCTAssertNotEqual(text, key, "\(key) n'a pas de texte")
             XCTAssertFalse(text.contains("premium") || text.contains("€"), "\(key) : PW3")

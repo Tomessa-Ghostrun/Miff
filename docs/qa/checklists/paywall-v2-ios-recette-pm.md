@@ -16,7 +16,7 @@
 
 1. [ ] Ouvrez l'offre par **un lieu au-delà de la limite gratuite** (Miff > « Ajouter un lieu » ; aujourd'hui **2 lieux sur iPhone**, voir « Écarts »). L'écran s'ouvre **en plein écran** (il monte depuis le bas, sans barre de navigation).
 2. [ ] Le **fond en dégradé clair**, le **logo Miff** en haut, **aucune phrase de contexte** (décision du PM du 2026-11-12 : le même contenu quel que soit le point d'entrée), le **titre sur deux lignes en dégradé bleu-vert** (« Débloque l'ensemble des fonctionnalités de Miff ! »), puis **trois cartes** blanches à pastille bleue : **Lieux de confiance illimités**, **Nombre de Miffs illimité**, **Zones de danger**. **Il n'y a PAS de carte « Notifications intelligentes »** (décision du 2026-11-12 : elles ne sont pas livrées).
-3. [ ] Sous les cartes : **« Miff+ arrive bientôt »** et « Cette option n'est pas encore ouverte. Tes lieux actuels restent en place. » **Aucun prix, aucun bouton d'essai, aucun bouton « Plus tard »**, aucun lien « Restaurer ». Le tutoiement partout.
+3. [ ] Sous les cartes : **« Miff+ arrive bientôt »** et « Cette option n'est pas encore ouverte. » (**le même texte** depuis toutes les entrées, comme sur Android) **Aucun prix, aucun bouton d'essai, aucun bouton « Plus tard »**, aucun lien « Restaurer ». Le tutoiement partout.
 4. [ ] Changez la langue du téléphone en **anglais** : les mêmes textes en anglais (« Miff+ is coming soon »).
 
 ## Partie 2 : la croix de 3 secondes, aux quatre points d'entrée (8 min)

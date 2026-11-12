@@ -34,6 +34,8 @@ class AnalyticsContractTest {
                 "onboarding_completed" to mapOf("via" to "joined"),
                 "paywall_shown" to mapOf("trigger" to "extra_miff"),
                 "paywall_dismissed" to mapOf("trigger" to "extra_trusted_place"),
+                "paywall_shown" to mapOf("trigger" to "danger_zone"),
+                "paywall_dismissed" to mapOf("trigger" to "danger_zone"),
             ) + if (BuildConfig.DEBUG) listOf("analytics_diagnostic_test" to emptyMap()) else emptyList()
         accepted.forEach { (name, params) ->
             assertEquals("$name $params", AnalyticsValidation.Allowed, AnalyticsContract.validate(name, params))
@@ -120,6 +122,17 @@ class AnalyticsContractTest {
     fun refusesValuesOutsideTheClosedLists() {
         assertEquals(RefusalReason.VALUE_NOT_ALLOWED, reason("sign_up_completed", mapOf("method" to "sms")))
         assertEquals(RefusalReason.VALUE_NOT_ALLOWED, reason("paywall_shown", mapOf("trigger" to "Grand Place")))
+        // The offer carries NO duration and no other parameter: the delay of the close cross is never measured (ticket paywall-v2, section 6.5).
+        assertEquals(
+            RefusalReason.UNKNOWN_PARAM,
+            reason(
+                "paywall_shown",
+                mapOf(
+                    "trigger" to "danger_zone",
+                    "duration_ms" to 3000,
+                ),
+            ),
+        )
         assertEquals(RefusalReason.VALUE_NOT_ALLOWED, reason("onboarding_completed", mapOf("via" to "48.85,2.35")))
         assertEquals(RefusalReason.VALUE_NOT_ALLOWED, reason("onboarding_cta_tapped", mapOf("slide_index" to 3)))
         assertEquals(RefusalReason.VALUE_NOT_ALLOWED, reason("sign_in_completed", mapOf("method" to "x".repeat(101))))
@@ -147,6 +160,8 @@ class AnalyticsContractTest {
             AnalyticsEvent.OnboardingCompleted(AnalyticsEvent.OnboardingVia.CREATED),
             AnalyticsEvent.PaywallShown(AnalyticsEvent.PaywallTrigger.EXTRA_MIFF),
             AnalyticsEvent.PaywallDismissed(AnalyticsEvent.PaywallTrigger.EXTRA_TRUSTED_PLACE),
+            AnalyticsEvent.PaywallShown(AnalyticsEvent.PaywallTrigger.DANGER_ZONE),
+            AnalyticsEvent.PaywallDismissed(AnalyticsEvent.PaywallTrigger.DANGER_ZONE),
         ).forEach { event ->
             assertEquals(event.name, AnalyticsValidation.Allowed, AnalyticsContract.validate(event.name, event.params))
         }

@@ -59,15 +59,6 @@ enum PlacePaywall {
     }
 }
 
-/// Le texte de la mention « bientôt » de la variante sans achat, par
-/// raison. Des clés du catalogue : le texte lui-même est dans les deux langues.
-extension PaywallReason {
-    /// « Cette option n'est pas encore ouverte. » + ce qui reste en place (les lieux, ou la Miff actuelle).
-    var soonBodyKey: String {
-        self == .extraMiff ? "feed_selector_paywall_soon_body" : "place_paywall_soon_body"
-    }
-}
-
 /// Compte l'offre une fois par apparition : « ouverte » à la première apparition, « fermée » quand l'écran disparaît (croix, « Plus
 /// tard » ou geste retour), jamais deux fois, et jamais « fermée » sans avoir été « ouverte ».
 final class PlacePaywallTracking {
