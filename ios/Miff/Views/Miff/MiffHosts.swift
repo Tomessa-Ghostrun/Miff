@@ -212,20 +212,8 @@ struct MiffHomeHost: View {
                 memberPreviews.replaceFace(uid: uid, initials: mine.initials, jpeg: mine.avatarJpeg)
             }
         }
-        // « Accepter » sur une demande reçue, formule gratuite pleine ou zone de danger : l'offre s'ouvre, la demande reste en attente.
-        .onChange(of: profileRequests.paywall) { reason in
-            if let reason {
-                profileRequests.consumePaywall()
-                open(.placeRequestPaywall(reason))
-            }
-        }
-        // Une demande acceptée : le lieu est dans la Miff, la liste des lieux du Profil est relue (sans attendre les 5 minutes).
-        .onAppear {
-            profileRequests.onAccepted = { miffId in
-                profilePlaces.onPlacesMayChange()
-                profilePlaces.onCardShown(miffId: miffId)
-            }
-        }
+        // « Accepter » sur une demande reçue : l'offre s'ouvre si besoin ; un lieu accepté fait relire la liste des lieux du Profil.
+        .profileRequestsEffects(profileRequests, places: profilePlaces) { open(.placeRequestPaywall($0)) }
         // Une seule lecture des Miffs par session à l'ouverture (pas une à chaque retour sur l'écran) : le contrôle auprès du
         // serveur que l'accès à chaque Miff existe encore, avant d'en montrer quoi que ce soit (ticket §5.7, critère D2).
         .task {
@@ -362,15 +350,8 @@ struct MiffHomeHost: View {
             )
         case .placePaywall(let reason):
             PlacePaywallView(reason: reason, tracker: environment.analyticsTracker, onClose: { pop() })
-        case .placeRequestPaywall(let reason):
-            PlacePaywallView(
-                reason: reason,
-                tracker: environment.analyticsTracker,
-                onClose: { pop() },
-                fromRequest: true
-            )
-        case .placeRequestForm, .placeRequestDetail:
-            // Une demande d'ajout d'un lieu (LIEU-REQ) : le formulaire, ou le détail d'une demande en attente.
+        case .placeRequestForm, .placeRequestDetail, .placeRequestPaywall:
+            // Une demande d'ajout d'un lieu (LIEU-REQ) : le formulaire, le détail d'une demande, ou l'offre ouverte par « Accepter ».
             PlaceRequestRouteView(
                 route: route,
                 environment: environment,

@@ -39,6 +39,42 @@ struct ProfileRequestsContent: Equatable, CustomStringConvertible {
     }
 }
 
+/// Ce que l'hôte de navigation fait des événements des demandes (LIEU-REQ-C) : « Accepter » qui doit ouvrir l'offre (formule gratuite pleine,
+/// ou zone de danger : la demande reste en attente), et un lieu accepté qui fait relire la liste des lieux du Profil sans attendre les 5 minutes.
+struct ProfileRequestsHostEffects: ViewModifier {
+    @ObservedObject var requests: ProfileRequestsViewModel
+    let places: ProfilePlacesViewModel
+    let openPaywall: (PaywallReason) -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: requests.paywall) { reason in
+                if let reason {
+                    requests.consumePaywall()
+                    openPaywall(reason)
+                }
+            }
+            .onAppear {
+                let places = self.places
+                requests.onAccepted = { miffId in
+                    places.onPlacesMayChange()
+                    places.onCardShown(miffId: miffId)
+                }
+            }
+    }
+}
+
+extension View {
+    /// Les événements des demandes pour l'hôte de navigation (`ProfileRequestsHostEffects`).
+    func profileRequestsEffects(
+        _ requests: ProfileRequestsViewModel,
+        places: ProfilePlacesViewModel,
+        openPaywall: @escaping (PaywallReason) -> Void
+    ) -> some View {
+        modifier(ProfileRequestsHostEffects(requests: requests, places: places, openPaywall: openPaywall))
+    }
+}
+
 extension AppEnvironment {
     /// Le view model des demandes d'ajout d'un lieu, créé avec la session de l'hôte (un par compte et par session).
     func makeProfileRequestsViewModel() -> ProfileRequestsViewModel {

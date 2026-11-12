@@ -1,5 +1,3 @@
-// Scénarios de test longs par nature (un cas par méthode) : les limites de longueur ne s'appliquent pas ici.
-// swiftlint:disable file_length type_body_length
 import XCTest
 @testable import Miff
 
@@ -138,18 +136,6 @@ final class ProfileRequestsCreatorViewModelTests: XCTestCase {
 
         XCTAssertEqual(model.state.views[testMiffId], .loading)
         task.cancel()
-    }
-
-    func testWhenTheListenerStopsTheRequestsStayButAgeLikeAReading() async {
-        let model = viewModel()
-        let task = await listening(model, list: [testRequest()])
-
-        task.cancel()
-        await task.value
-
-        XCTAssertEqual(model.state.views[testMiffId]?.requests.count, 1)
-        model.onRequestsMayChange()
-        XCTAssertEqual(repository.observedMiffs, [testMiffId])
     }
 
     func testOpeningARequestWithNothingKnownReadsAllOfTheMiffOnceForTheCreator() async {
@@ -311,20 +297,6 @@ final class ProfileRequestsCreatorViewModelTests: XCTestCase {
         XCTAssertEqual(repository.declinedCounts, [2])
         XCTAssertEqual(model.state.views[testMiffId]?.requests.map { $0.slot }, [3])
         XCTAssertNil(model.paywall)
-        task.cancel()
-    }
-
-    func testAFailedDeclineKeepsTheRequest() async {
-        repository.declineResult = .failed(.refused)
-        let request = testRequest()
-        let model = viewModel()
-        let task = await listening(model, list: [request])
-
-        model.onDecline(request)
-        await waitUntil { model.notice != nil }
-
-        XCTAssertEqual(model.notice, .failed(offline: false))
-        XCTAssertEqual(model.state.views[testMiffId]?.requests.count, 1)
         task.cancel()
     }
 

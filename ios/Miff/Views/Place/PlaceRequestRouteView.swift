@@ -32,6 +32,14 @@ struct PlaceRequestRouteView: View {
                 ),
                 isRequest: true
             )
+        case .placeRequestPaywall(let reason):
+            // L'offre ouverte par « Accepter » (formule gratuite pleine, ou zone de danger) : la demande reste en attente.
+            PlacePaywallView(
+                reason: reason,
+                tracker: environment.analyticsTracker,
+                onClose: actions.onBack,
+                fromRequest: true
+            )
         case .placeRequestDetail(let miffId, let requestId):
             PlaceRequestDetailView(
                 model: model,
