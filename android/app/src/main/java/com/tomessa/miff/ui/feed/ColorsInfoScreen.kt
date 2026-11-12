@@ -26,9 +26,9 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
-import com.tomessa.miff.domain.feed.ColorsInfoDurations
-import com.tomessa.miff.domain.feed.WholeDuration
+import com.tomessa.miff.domain.tracking.ColorsInfoDurations
 import com.tomessa.miff.domain.tracking.StatusLevel
+import com.tomessa.miff.domain.tracking.WholeDuration
 import com.tomessa.miff.ui.settings.SettingsScaffold
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorTextDescription

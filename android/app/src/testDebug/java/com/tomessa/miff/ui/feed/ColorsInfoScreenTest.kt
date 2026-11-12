@@ -28,9 +28,9 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.tomessa.miff.R
-import com.tomessa.miff.domain.feed.ColorsInfoDurations
-import com.tomessa.miff.domain.feed.WholeDuration
+import com.tomessa.miff.domain.tracking.ColorsInfoDurations
 import com.tomessa.miff.domain.tracking.StatusThresholds
+import com.tomessa.miff.domain.tracking.WholeDuration
 import com.tomessa.miff.ui.theme.MiffTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

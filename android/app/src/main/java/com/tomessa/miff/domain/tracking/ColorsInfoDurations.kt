@@ -1,6 +1,4 @@
-package com.tomessa.miff.domain.feed
-
-import com.tomessa.miff.domain.tracking.StatusThresholds
+package com.tomessa.miff.domain.tracking
 
 /**
  * The durations the screen "Les couleurs de ta Miff" talks about (ticket COULEURS-INFO, D7): READ from [StatusThresholds], never written in a text.
