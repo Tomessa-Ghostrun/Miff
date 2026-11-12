@@ -176,6 +176,8 @@ Un membre qui n'est pas le créateur propose un lieu ; le créateur l'accepte ou
 
 **iOS (mêmes chiffres, mêmes règles)** : le membre lit ses demandes par `PlaceRequestBook` (une lecture par Miff et par 5 minutes, 30 s d'attente après un échec) ; le créateur est écouté par `ProfileRequestsWatcher` (UN écouteur, annulé quand l'app quitte le premier plan) et lit la fiche de chaque demandeur UNE fois par session (`ProfileRequestsViewModel`). Une demande faite sans réseau est gardée par le téléphone (`WriteBatch` non attendu) : elle coûte ses 2 écritures au retour du réseau, jugées par les règles à ce moment-là. **Signal propre à iOS** : une demande envoyée hors ligne puis refusée au retour du réseau disparaît sans un mot (risque R10) ; si des testeurs disent « ma demande a disparu », regarder d'abord le plafond de 10 de la Miff.
 
+**iOS (même décision, même principe)** : `FirestorePlacesReader` (un seul `getDocuments` de `miffs/{id}/places`, jamais d'écouteur), règles de réutilisation dans `MiffPlacesBook` (testées, mêmes chiffres : 5 minutes, 30 s après un échec), `ProfilePlacesViewModel`. La Miff du Feed est reprise sans lecture (`FeedDependencies.onPlaces`, seulement une réponse confirmée par le serveur). **Différence avec Android** : la liste n'existait pas encore sur le Profil iOS, donc ce changement n'ajoute aucun écouteur et n'en supprime aucun ; pour un compte gratuit (une seule Miff, celle du Feed) il ajoute **0 lecture**. Une copie du téléphone VIDE est traitée comme un échec (jamais « aucun lieu » inventé hors ligne). **Levier gratuit** : `MiffPlacesBook.freshMillis`.
+
 ## 5. Journal de relevé (modèle à recopier)
 
 Une ligne par jour de bêta externe, dans un fichier à toi (ou dans une conversation avec Claude) :

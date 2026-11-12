@@ -206,7 +206,7 @@ struct ProfileScreenPreview: View {
     }
 
     private struct DemoPlacesReader: PlacesReader {
-        func read(miffId: String) async -> PlacesRead {
+        func read(miffId: String) async -> PlacesReadResult {
             .failed
         }
     }

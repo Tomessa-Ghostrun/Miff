@@ -3,10 +3,10 @@ import XCTest
 
 /// Une lecture des lieux d'une Miff : double en mémoire qui compte les lectures (le COÛT Firestore est ce qu'on prouve ici).
 private final class FakePlacesReader: PlacesReader {
-    var answers: [String: PlacesRead] = [:]
+    var answers: [String: PlacesReadResult] = [:]
     private(set) var reads: [String] = []
 
-    func read(miffId: String) async -> PlacesRead {
+    func read(miffId: String) async -> PlacesReadResult {
         reads.append(miffId)
         return answers[miffId] ?? .failed
     }
@@ -171,6 +171,23 @@ final class ProfilePlacesViewModelTests: XCTestCase {
         await waitUntil { model.state.view == .ready(self.places(["p1", "p2"], miffId: "A")) }
 
         XCTAssertEqual(reader.reads, ["A"])
+    }
+
+    func testBackAtTheRootReadsAgainOnlyWhenACreatorTouchedAPlaceInTheMeantime() async {
+        let model = makeModel()
+        model.seedFromFeed(miffId: "A", places: places(["p1"], miffId: "A"))
+        model.onCardShown(miffId: "A")
+
+        model.onReturnedToRoot()
+        XCTAssertTrue(reader.reads.isEmpty, "rien ne change : rien n'est lu")
+
+        reader.answers["A"] = .loaded(places(["p1", "p2"], miffId: "A"))
+        model.onPlacesMayChange()
+        model.onReturnedToRoot()
+        await waitUntil { model.state.view == .ready(self.places(["p1", "p2"], miffId: "A")) }
+        model.onReturnedToRoot()
+
+        XCTAssertEqual(reader.reads, ["A"], "une seule relecture par changement")
     }
 
     // MARK: - Une Miff qui disparaît

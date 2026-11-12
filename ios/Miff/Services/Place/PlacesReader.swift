@@ -4,20 +4,20 @@ import Foundation
 // `description` ne montre rien.
 
 /// Ce qu'une lecture des lieux d'une Miff a donné.
-enum PlacesRead: Equatable, CustomStringConvertible {
+enum PlacesReadResult: Equatable, CustomStringConvertible {
     case loaded([Place])
     /// Refusée, hors ligne sans copie, trop lente, ou toute autre cause : la liste le dit calmement et réessaiera plus tard.
     case failed
 
     var description: String {
-        "PlacesRead(redacted)"
+        "PlacesReadResult(redacted)"
     }
 }
 
 /// La lecture unique derrière les lieux de l'onglet Profil : UN `get` de `miffs/{id}/places`, jamais un écouteur. Derrière un protocole
 /// pour que `ProfilePlacesViewModel` soit testé avec un double. La vraie lecture est `FirestorePlacesReader`.
 protocol PlacesReader {
-    func read(miffId: String) async -> PlacesRead
+    func read(miffId: String) async -> PlacesReadResult
 }
 
 extension Place {
