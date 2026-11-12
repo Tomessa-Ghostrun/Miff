@@ -8,6 +8,7 @@ import com.tomessa.miff.domain.tracking.MemberStatusFacts
 import com.tomessa.miff.domain.tracking.PresenceValue
 import com.tomessa.miff.domain.tracking.StatusColor
 import com.tomessa.miff.domain.tracking.StatusLevel
+import com.tomessa.miff.domain.travel.TravelView
 import com.tomessa.miff.domain.update.UpdatePrompt
 import java.time.ZoneId
 
@@ -107,6 +108,15 @@ object FeedBuilder {
                 }
             }
         val bubble = bubble(input, cards, hidden, mySharing, latestUpdate, miffLevel, nowMillis, zone)
+        // MODE VOYAGE: the other members on a trip, as a line under the usual bubble (the bubble of the travellers already says it).
+        val travelNote =
+            if (bubble is Bubble.Travelers || hidden ||
+                !mySharing
+            ) {
+                null
+            } else {
+                travelNote(cards.filter { !it.isMe })
+            }
         return FeedContent(
             miffId = input.miffId,
             miffName = input.miffName,
@@ -125,7 +135,23 @@ object FeedBuilder {
                     ?.takeIf {
                         mySharing && !input.waitingAgreement
                     }?.let { MyPhotoFacts(it.hasPhoto, it.lastUpdateAtMillis) },
+            travelNote = travelNote,
         )
+    }
+
+    /** The members of [others] whose trip is on: one by name, several by number; null when none. */
+    private fun travelNote(others: List<MemberCard>): TravelNote? {
+        val travellers = others.filter { it.traveling }
+        val only = travellers.singleOrNull()
+        val label = only?.label as? StateLabel.Traveling
+        return when {
+            travellers.isEmpty() -> null
+
+            only != null && label != null -> TravelNote.One(only.member.callName, label.until)
+
+            // "Tes proches sont en voyage" only when EVERY other member is: with one who has no news, it is "{n} proches sont en voyage".
+            else -> TravelNote.Many(travellers.size, all = travellers.size == others.size)
+        }
     }
 
     /**
@@ -165,9 +191,29 @@ object FeedBuilder {
     ): MemberCard {
         val facts =
             status?.let {
-                MemberStatusFacts(member.sharingEnabled, it.presence, it.presenceAtMillis, it.lastUpdateAtMillis)
+                MemberStatusFacts(
+                    member.sharingEnabled,
+                    it.presence,
+                    it.presenceAtMillis,
+                    it.lastUpdateAtMillis,
+                    it.travelUntilMillis,
+                )
             }
         val level = StatusColor.level(facts, now)
+        // MODE VOYAGE: read when the status is read (a Miff whose news is hidden, or a person who stopped sharing, shows no trip).
+        val shown = member.sharingEnabled && !(hidden && !isMe) && !(isMe && input.waitingAgreement)
+        val travel =
+            if (shown) {
+                TravelView.of(
+                    status?.presence,
+                    status?.travelUntilMillis,
+                    status?.travelUntilDay,
+                    now,
+                    zone,
+                )
+            } else {
+                null
+            }
         val label =
             when {
                 isMe && input.waitingAgreement -> {
@@ -182,13 +228,22 @@ object FeedBuilder {
                     StateLabel.NewsHidden
                 }
 
+                travel is TravelView.Active -> {
+                    StateLabel.Traveling(travel.until, mine = isMe)
+                }
+
+                travel == TravelView.Ended -> {
+                    StateLabel.TravelEnded
+                }
+
                 level == StatusLevel.NEUTRAL || status == null -> {
                     StateLabel.NoNews
                 }
 
                 status.presence == PresenceValue.IN_TRUSTED -> {
                     StateLabel.At(
-                        placeRef(status.placeId, places, trusted = true),
+                        place = placeRef(status.placeId, places, trusted = true),
+                        category = status.placeId?.let { places[it] }?.category,
                     )
                 }
 
@@ -205,15 +260,31 @@ object FeedBuilder {
             isMe = isMe,
             level = level,
             label = label,
-            time = timeLine(level, status, now, zone),
-            battery = status?.let { battery(it, now) },
-            limitedLocation =
-                status?.locationAccess in LIMITED_ACCESS,
+            time =
+                when {
+                    travel is TravelView.Active && status?.presenceAtMillis != null -> {
+                        TimeLine.TravelSince(
+                            status.presenceAtMillis,
+                        )
+                    }
+
+                    travel != null -> {
+                        TimeLine.None
+                    }
+
+                    else -> {
+                        timeLine(level, status, now, zone)
+                    }
+                },
+            // A traveller measures nothing: no battery level, no "Localisation limitée" (the access is not told either).
+            battery = if (travel != null) null else status?.let { battery(it, now) },
+            limitedLocation = travel == null && status?.locationAccess in LIMITED_ACCESS,
             phone = member.phone.takeIf { !isMe },
             // Ticket 5.6: another member whose sharing is on, while mine is on and the statuses are REALLY read (the rules ask for my own status
             // to be published): even with no known status. "No position yet" is one of the calm answers of the sheet.
             canLocate = !isMe && mySharing && !hidden && member.sharingEnabled && input.statuses is StatusesView.Loaded,
             photo = photoSlot(status, member.sharingEnabled && !(hidden && !isMe), now),
+            traveling = travel is TravelView.Active,
         )
     }
 
@@ -339,6 +410,13 @@ object FeedBuilder {
         val others = cards.filter { !it.isMe }
         if (others.isEmpty()) return Bubble.Alone
         val knownOthers = others.filter { it.level != StatusLevel.NEUTRAL }
+        // MODE VOYAGE: nobody known, and somebody on a trip: the bubble says so (never "Pas encore de nouvelles" for a traveller).
+        val travellers = others.filter { it.traveling }
+        if (!hidden && knownOthers.isEmpty() && travellers.isNotEmpty()) {
+            return Bubble.Travelers(
+                travelNote(others) ?: TravelNote.Many(travellers.size, all = travellers.size == others.size),
+            )
+        }
         if (hidden || knownOthers.isEmpty()) return Bubble.NoNews
         // No alert, so every known member is green. The "latest news" is the most recent of the OTHERS (my own update never reassures).
         val latest =
@@ -346,12 +424,14 @@ object FeedBuilder {
                 .mapNotNull { statuses[it.member.uid]?.referenceMillis }
                 .maxOrNull()
                 ?.let { Age.of(it, now, zone) }
-        val known = cards.count { it.level != StatusLevel.NEUTRAL }
-        val someSilent = known < cards.size
+        // MODE VOYAGE: a traveller is not "silent": out of the count "n sur m".
+        val counted = cards.filter { !it.traveling }
+        val known = counted.count { it.level != StatusLevel.NEUTRAL }
+        val someSilent = known < counted.size
         return Bubble.AllGood(
             latestNews = latest,
             answered = if (someSilent) known else null,
-            total = if (someSilent) cards.size else null,
+            total = if (someSilent) counted.size else null,
         )
     }
 

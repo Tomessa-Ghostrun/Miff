@@ -23,6 +23,22 @@ updates:
     commit-message:
       prefix: "backend"
 
+  # Cloud Functions (SRV-1) : son propre package.json / lockfile, donc sa propre entrée (Dependabot ne descend pas
+  # dans les sous-dossiers). firebase-functions et firebase-admin sont mis à jour ensemble (versions compatibles entre elles).
+  - package-ecosystem: "npm"
+    directory: "/backend/functions"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "backend"
+    groups:
+      firebase-sdk:
+        patterns:
+          - "firebase-functions"
+          - "firebase-admin"
+
   - package-ecosystem: "gradle"
     directory: "/android"
     schedule:

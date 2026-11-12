@@ -43,7 +43,7 @@ Cette section remplace « aucune animation » pour la **bulle de la Miff en haut
 | Rouge, ancienneté | Pas de nouvelles de {Prénom} depuis 16 h 02 | No news from {Name} since 4:02 PM |
 | Rouge, zone de danger | {Prénom} est dans une zone de danger / Depuis 16 h 02 | {Name} is in a danger zone / Since 4:02 PM |
 | Seconde ligne, zone de danger (proches) **[proposé]** | Une zone définie par ta Miff | A zone set by your Miff |
-| Action | Envoyer un message | Send a message |
+| Action | Contacter | Contact |
 | Moi, orange | Tu as quitté {lieu} à 16 h 40 | You left {place} at 4:40 PM |
 | Moi, rouge d'ancienneté | Tes proches n'ont pas eu de tes nouvelles depuis 16 h 02 | Your loved ones haven't heard from you since 4:02 PM |
 | Moi, zone de danger (Q3, recommandation) | Tu es dans une zone de danger de ta Miff / Depuis 16 h 02 | You're in a danger zone of your Miff / Since 4:02 PM |
@@ -55,7 +55,7 @@ Cette section remplace « aucune animation » pour la **bulle de la Miff en haut
 ## États
 - **Un seul repère de temps** par bulle (« Dernière nouvelle » **ou** l'heure de l'alerte), jamais les deux. « Dernière nouvelle » = le plus récent des repères des **autres** membres au statut connu (jamais le mien).
 - **Carrousel** (03 D, E, 05) : une page par membre concerné ; rouges d'abord, puis oranges ; à niveau égal, le repère le plus ancien d'abord. **Pastilles seulement s'il y a plusieurs pages** : 8 pt, la page courante est une pastille **allongée** de 22 pt, teinte foncée du niveau. Balayage horizontal ; **aucun défilement automatique** ; une alerte qui disparaît retire sa page, les pastilles s'adaptent sans saut.
-- **Bouton « Envoyer un message »** : sur une alerte concernant un **autre** membre, jamais sur ma page ; ouvre le SMS du système vers le numéro de la fiche ; **absent** si le membre n'a pas de numéro.
+- **Bouton « Contacter »** (EN « Contact » ; décision du PM du 2026-11-11, clé `feed_bubble_message_action`, lu « Contacter {prénom} » par le lecteur d'écran, clé `feed_bubble_contact_a11y`) : sur une alerte concernant un **autre** membre, jamais sur ma page ; ouvre le SMS du système vers le numéro de la fiche ; **absent** si le membre n'a pas de numéro.
 - **Hors connexion, partage arrêté, publication en cours, en attente d'accord** : voir `etats-du-feed.md` (maquette 10).
 - **Chargement** : squelette (maquette 11 A).
 
@@ -81,7 +81,7 @@ Fichier `android/app/src/main/java/com/tomessa/miff/ui/feed/FeedBubble.kt` ; jet
 - Tache : fond = teinte 30 % du niveau (`StatusLevel.tint()`), forme libre à dix points (`BubbleShape`), **hauteur minimale 176 dp**, marges intérieures **40 dp (début) / 56 dp (fin) / 40 dp (haut) / 46 dp (bas)**, espace de 8 dp entre les lignes.
 - Titre : `textDisplayHeadline` (Baloo Thambi 2, **24 / 30**), noir, marqué titre pour le lecteur d'écran ; ligne 2 : `textBodyRegular14`, noir ; ligne 3 : `textBodyCaption`, `colorTextDescription`.
 - Pictogramme : disque de **40 dp** blanc à 70 % en bas à droite (marges 40 dp), icône de 24 dp ; teinte foncée du niveau (`onTint()`), grise pour le sablier.
-- Bouton « Envoyer un message » / « Reprendre le partage » : hauteur minimale 48 dp, forme `ShapeMd` (10 dp), fond `colorBgSurface`, contour `StrokeAccent` (2 dp) `colorBorderAction`, texte `textBodyBold16` en `colorActionPrimary`, icône de 20 dp.
+- Bouton « Contacter » / « Reprendre le partage » (décision du PM du 2026-11-11 : plus petit, **sans icône**) : dessin de 36 dp de haut au minimum, forme `ShapeMd` (10 dp), fond `colorBgSurface`, contour `StrokeAccent` (2 dp) `colorBorderAction`, marges latérales 12 dp, texte `textBodyBold14` (14 / 20, gras) en `colorActionPrimary` ; **zone de toucher de 48 dp de haut et de large au moins** (marge invisible autour du dessin).
 - Pastilles du carrousel : 8 x 8 dp, la page courante **22 x 8 dp** en teinte foncée du niveau, les autres en `colorStatusNeutral` ; espace de 8 dp entre la tache et les pastilles.
 - Annonce : région polie dans un nœud de 1 dp à part, clé = niveau (ou ensemble d'alertes).
 
@@ -92,3 +92,7 @@ Fichier `android/app/src/main/java/com/tomessa/miff/ui/feed/FeedBubble.kt` ; jet
 | 2 | Pictogramme « disque clair » sans taille dans la fiche ; code : 40 dp, blanc à 70 % | `FeedBubble.kt` | Documenté ci-dessus |
 | 3 | **Mouvement : la précision du PM (étirement / écrasement déphasés entre les axes, déplacement vertical, amplitude « visible ») n'est pas dans le code de `main`** (échelle uniforme ±1,2 %, dérive ±2 dp, cycles 6,5 s et 7,5 s) et **n'est pas dans la PR #105** (qui ne touche pas à `BubbleMotion.kt`) ; les plafonds D40 (≤ 1,5 %, ≤ 3 dp) peuvent ne plus être valables | `BubbleMotion.kt`, `docs/tickets/feed.md` D40 | **Non tranché ici** : valeurs finales à fixer par le PM ou le dev, puis ticket et critère B7 à aligner |
 | 4 | Les PNG 02 à 05 ne montrent aucun mouvement (images fixes) | `design/exports/feed/claude/` | Normal ; le mouvement se juge sur appareil |
+
+## Mise à jour du 2026-11-11 (PM) : aucun symbole dans la bulle
+
+**Aucun pictogramme dans la bulle, quelle que soit la couleur** : plus de symbole en filigrane (étoile, horloge, « ! », sablier), plus d'icône dans le bouton, et **pas non plus d'avion de voyage** (mode voyage : la couleur et les mots suffisent). Les passages de ce document qui parlent d'un pictogramme (contraste, droite-à-gauche) ne s'appliquent plus à la bulle. La phrase principale reste en `textDisplayHeadline` (Baloo Thambi 2 Regular, **24 / 30**), comme le titre des autres écrans : la version agrandie essayée les 2026-11-10 et 2026-11-11 est abandonnée (PM, 2026-11-11).

@@ -2365,6 +2365,74 @@
         }
       }
     },
+    "feed_offline_popin_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check your connection, we'll try again in a moment."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérifie ta connexion, on réessaie dans un instant."
+          }
+        }
+      }
+    },
+    "feed_offline_popin_countdown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trying again in %lld s"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouvel essai dans %lld s"
+          }
+        }
+      }
+    },
+    "feed_offline_popin_retry": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réessayer"
+          }
+        }
+      }
+    },
+    "feed_offline_popin_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No connection"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas de connexion"
+          }
+        }
+      }
+    },
     "feed_pane_a11y": {
       "extractionState": "manual",
       "localizations": {
@@ -2909,19 +2977,36 @@
         }
       }
     },
+    "feed_bubble_contact_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contact %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contacter %1$@"
+          }
+        }
+      }
+    },
     "feed_bubble_message_action": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Send a message"
+            "value": "Contact"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Envoyer un message"
+            "value": "Contacter"
           }
         }
       }
@@ -5655,6 +5740,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Pas encore d'autre proche dans cette Miff."
+          }
+        }
+      }
+    },
+    "miff_message_device_not_recognized": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This device isn't recognized for now. Update Miff from the store, then try again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cet appareil n'est pas reconnu pour le moment. Mets Miff à jour depuis le store, puis réessaie."
           }
         }
       }
@@ -13957,19 +14059,19 @@
         }
       }
     },
-    "ios_myinfo_edit_soon": {
+    "ios_myinfo_save_failed_later": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You will be able to edit your details in an upcoming update."
+            "value": "It still isn't going through. Your information stays here: try again a little later."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu pourras modifier tes informations dans une prochaine mise à jour."
+            "value": "Ça ne passe toujours pas. Tes informations restent ici : réessaie un peu plus tard."
           }
         }
       }
@@ -14484,6 +14586,57 @@
         }
       }
     },
+    "update_flash_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flash"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flash"
+          }
+        }
+      }
+    },
+    "update_flash_state_on": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flash on"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flash activé"
+          }
+        }
+      }
+    },
+    "update_flash_state_off": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flash off"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flash désactivé"
+          }
+        }
+      }
+    },
     "update_flip_a11y": {
       "extractionState": "manual",
       "localizations": {
@@ -14994,6 +15147,40 @@
         }
       }
     },
+    "ios_feed_photo_download_denied": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To save this photo, allow Miff to add photos to your library in Settings."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour enregistrer cette photo, autorise Miff à ajouter des photos à ta galerie dans les Réglages."
+          }
+        }
+      }
+    },
+    "ios_feed_photo_download_restricted": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This device doesn’t allow saving photos to the library."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cet appareil n’autorise pas l’enregistrement dans la galerie."
+          }
+        }
+      }
+    },
     "feed_photo_download": {
       "extractionState": "manual",
       "localizations": {
@@ -15092,6 +15279,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ta position n'est pas accessible : la localisation du téléphone est éteinte, ou Miff n'a plus le droit de l'utiliser. Tu peux la rallumer dans les réglages, puis réessayer."
+          }
+        }
+      }
+    },
+    "ios_update_notice_location_precise": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on precise location for this feature. You can do it in the settings, then try again."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active la position précise pour cette fonction. Tu peux le faire dans les réglages, puis réessayer."
           }
         }
       }
@@ -15228,6 +15432,465 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ouvre une page qui explique ce qui sera supprimé. Rien n’est supprimé tout de suite."
+          }
+        }
+      }
+    },
+    "voyage_card_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Travel mode"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mode voyage"
+          }
+        }
+      }
+    },
+    "voyage_card_off_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your card turns grey for your circle, without changing the Miff's colour. Your circle still sees your location."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta carte devient grise pour tes proches, sans changer la couleur de la Miff. Tes proches continuent de voir ta position."
+          }
+        }
+      }
+    },
+    "voyage_card_on_status": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Traveling until %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En voyage jusqu'au %1$@"
+          }
+        }
+      }
+    },
+    "voyage_card_end_label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End date"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Date de fin"
+          }
+        }
+      }
+    },
+    "voyage_card_end_change_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change the end date"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Changer la date de fin"
+          }
+        }
+      }
+    },
+    "voyage_card_explain": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your circle still sees your location. While you travel, your card turns grey with “Traveling until %1$@” and no longer affects the Miff's colour. Miff stops sending your battery level and your arrivals and departures. You can still check in with a photo. Your status resumes on its own at the end."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tes proches continuent de voir ta position. Pendant ton voyage, ta carte devient grise avec « En voyage jusqu'au %1$@ » et n'influence plus la couleur de la Miff. Miff n'envoie plus ta batterie ni tes arrivées et départs de lieux. Tu peux toujours donner des nouvelles avec une photo. Ton statut reprend tout seul à la fin."
+          }
+        }
+      }
+    },
+    "voyage_card_state_on_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On, until %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activé, jusqu'au %1$@"
+          }
+        }
+      }
+    },
+    "voyage_card_state_off_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Désactivé"
+          }
+        }
+      }
+    },
+    "voyage_confirm_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on travel mode?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activer le mode voyage ?"
+          }
+        }
+      }
+    },
+    "voyage_confirm_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your card will turn grey with “Traveling until %1$@” and will no longer affect the Miff's colour. Your circle still sees your location. You can stop it whenever you like."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta carte deviendra grise avec « En voyage jusqu'au %1$@ » et n'influencera plus la couleur de la Miff. Tes proches continuent de voir ta position. Tu peux l'arrêter quand tu veux."
+          }
+        }
+      }
+    },
+    "voyage_confirm_action": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activer"
+          }
+        }
+      }
+    },
+    "voyage_confirm_cancel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annuler"
+          }
+        }
+      }
+    },
+    "voyage_picker_confirm": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuer"
+          }
+        }
+      }
+    },
+    "voyage_off_done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your status is resuming."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton statut reprend."
+          }
+        }
+      }
+    },
+    "voyage_offline_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your circle will see your trip as soon as you're online."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tes proches verront ton voyage dès que tu seras en ligne."
+          }
+        }
+      }
+    },
+    "voyage_error_refused": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Travel mode couldn't be turned on. You can try again later."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le mode voyage n'a pas pu être activé. Tu peux réessayer plus tard."
+          }
+        }
+      }
+    },
+    "voyage_feed_label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Traveling until %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En voyage jusqu'au %1$@"
+          }
+        }
+      }
+    },
+    "voyage_feed_label_ended": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trip ended"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Voyage terminé"
+          }
+        }
+      }
+    },
+    "voyage_feed_since": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Since %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Depuis le %1$@"
+          }
+        }
+      }
+    },
+    "voyage_feed_mine": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Travel mode until %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mode voyage jusqu'au %1$@"
+          }
+        }
+      }
+    },
+    "voyage_feed_mine_edit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modifier"
+          }
+        }
+      }
+    },
+    "voyage_feed_mine_edit_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit travel mode"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modifier le mode voyage"
+          }
+        }
+      }
+    },
+    "voyage_bubble_one": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ is traveling until %2$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ est en voyage jusqu'au %2$@."
+          }
+        }
+      }
+    },
+    "voyage_bubble_many": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld loved ones are traveling."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld proches sont en voyage."
+          }
+        }
+      }
+    },
+    "voyage_bubble_all": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your loved ones are traveling."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tes proches sont en voyage."
+          }
+        }
+      }
+    },
+    "voyage_error_update_refused": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Travel mode couldn't be updated. Your end date hasn't changed; you can try again later."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le mode voyage n'a pas pu être mis à jour. Ta date de fin n'a pas changé, tu peux réessayer plus tard."
+          }
+        }
+      }
+    },
+    "voyage_picker_validate": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Confirm"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valider"
           }
         }
       }
@@ -15425,13 +16088,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "If you forget to check in, Miff gently reminds you. You choose what you get in the settings. Alerts about your circle will come later."
+            "value": "If you forget to check in, Miff gently reminds you, and lets you know when your Miff changes status. You choose what you get in the settings."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Si tu oublies de donner de tes nouvelles, Miff te le rappelle doucement. Tu choisis ce que tu reçois dans les réglages. Les alertes sur tes proches arriveront plus tard."
+            "value": "Si tu oublies de donner de tes nouvelles, Miff te le rappelle doucement, et te dit quand ta Miff change d'état. Tu choisis ce que tu reçois dans les réglages."
           }
         }
       }
@@ -16435,23 +17098,6 @@
         }
       }
     },
-    "notif_center_enable_action": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Turn on notifications"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Activer les notifications"
-          }
-        }
-      }
-    },
     "notif_center_unread_a11y": {
       "extractionState": "manual",
       "localizations": {
@@ -16503,461 +17149,70 @@
         }
       }
     },
-    "voyage_card_title": {
+    "notif_center_enable_action": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Travel mode"
+            "value": "Turn on notifications"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mode voyage"
+            "value": "Activer les notifications"
           }
         }
       }
     },
-    "voyage_card_off_body": {
+    "notif_n7_title": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your card turns grey for your circle, without changing the Miff's colour. Your circle still sees your location."
+            "value": "Your travel mode has ended"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ta carte devient grise pour tes proches, sans changer la couleur de la Miff. Tes proches continuent de voir ta position."
+            "value": "Ton mode voyage est terminé"
           }
         }
       }
     },
-    "voyage_card_on_status": {
+    "notif_n7_body": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Traveling until %1$@"
+            "value": "Open Miff so your card gets its usual colours back. Welcome back!"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "En voyage jusqu'au %1$@"
+            "value": "Ouvre Miff pour que ta carte reprenne ses couleurs. Bon retour !"
           }
         }
       }
     },
-    "voyage_card_end_label": {
+    "notif_settings_n7": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "End date"
+            "value": "When my travel mode ends"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Date de fin"
-          }
-        }
-      }
-    },
-    "voyage_card_end_change_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Change the end date"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Changer la date de fin"
-          }
-        }
-      }
-    },
-    "voyage_card_explain": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your circle still sees your location. While you travel, your card turns grey with “Traveling until %1$@” and no longer affects the Miff's colour. Miff stops sending your battery level and your arrivals and departures. You can still check in with a photo. Your status resumes on its own at the end."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tes proches continuent de voir ta position. Pendant ton voyage, ta carte devient grise avec « En voyage jusqu'au %1$@ » et n'influence plus la couleur de la Miff. Miff n'envoie plus ta batterie ni tes arrivées et départs de lieux. Tu peux toujours donner des nouvelles avec une photo. Ton statut reprend tout seul à la fin."
-          }
-        }
-      }
-    },
-    "voyage_card_state_on_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "On, until %1$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Activé, jusqu'au %1$@"
-          }
-        }
-      }
-    },
-    "voyage_card_state_off_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Off"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Désactivé"
-          }
-        }
-      }
-    },
-    "voyage_confirm_title": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Turn on travel mode?"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Activer le mode voyage ?"
-          }
-        }
-      }
-    },
-    "voyage_confirm_body": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your card will turn grey with “Traveling until %1$@” and will no longer affect the Miff's colour. Your circle still sees your location. You can stop it whenever you like."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ta carte deviendra grise avec « En voyage jusqu'au %1$@ » et n'influencera plus la couleur de la Miff. Tes proches continuent de voir ta position. Tu peux l'arrêter quand tu veux."
-          }
-        }
-      }
-    },
-    "voyage_confirm_action": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Turn on"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Activer"
-          }
-        }
-      }
-    },
-    "voyage_confirm_cancel": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Cancel"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Annuler"
-          }
-        }
-      }
-    },
-    "voyage_picker_confirm": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Continue"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Continuer"
-          }
-        }
-      }
-    },
-    "voyage_off_done": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your status is resuming."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ton statut reprend."
-          }
-        }
-      }
-    },
-    "voyage_offline_note": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your circle will see your trip as soon as you're online."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tes proches verront ton voyage dès que tu seras en ligne."
-          }
-        }
-      }
-    },
-    "voyage_error_refused": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Travel mode couldn't be turned on. You can try again later."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Le mode voyage n'a pas pu être activé. Tu peux réessayer plus tard."
-          }
-        }
-      }
-    },
-    "voyage_feed_label": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Traveling until %1$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "En voyage jusqu'au %1$@"
-          }
-        }
-      }
-    },
-    "voyage_feed_label_ended": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Trip ended"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Voyage terminé"
-          }
-        }
-      }
-    },
-    "voyage_feed_since": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Since %1$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Depuis le %1$@"
-          }
-        }
-      }
-    },
-    "voyage_feed_mine": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Travel mode until %1$@"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Mode voyage jusqu'au %1$@"
-          }
-        }
-      }
-    },
-    "voyage_feed_mine_edit": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Edit"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Modifier"
-          }
-        }
-      }
-    },
-    "voyage_feed_mine_edit_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Edit travel mode"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Modifier le mode voyage"
-          }
-        }
-      }
-    },
-    "voyage_bubble_one": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ is traveling until %2$@."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ est en voyage jusqu'au %2$@."
-          }
-        }
-      }
-    },
-    "voyage_bubble_many": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld loved ones are traveling."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$lld proches sont en voyage."
-          }
-        }
-      }
-    },
-    "voyage_bubble_all": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your loved ones are traveling."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tes proches sont en voyage."
-          }
-        }
-      }
-    },
-    "voyage_error_update_refused": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Travel mode couldn't be updated. Your end date hasn't changed; you can try again later."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Le mode voyage n'a pas pu être mis à jour. Ta date de fin n'a pas changé, tu peux réessayer plus tard."
-          }
-        }
-      }
-    },
-    "voyage_picker_validate": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Confirm"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Valider"
+            "value": "Quand mon mode voyage se termine"
           }
         }
       }

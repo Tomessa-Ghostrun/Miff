@@ -48,6 +48,16 @@ class DiagnosticViewModelTest {
         }
 
         override suspend fun fetchAppCheckToken(): AppCheckOutcome = AppCheckOutcome.NoToken
+
+        /** What was stored for the next launch, and what the current launch does (not changed by the screen). */
+        var storedOff = false
+        override var appCheckOffInEffect: Boolean = false
+
+        override fun appCheckOffRequested(): Boolean = storedOff
+
+        override fun setAppCheckOffRequested(enabled: Boolean) {
+            storedOff = enabled
+        }
     }
 
     private class MemoryStore : BooleanStore {
@@ -200,5 +210,46 @@ class DiagnosticViewModelTest {
             assertTrue(state.crashReportsEnabled)
             assertEquals(true, store.values[PrivacySettings.KEY_ANALYTICS])
             assertEquals(true, store.values[PrivacySettings.KEY_CRASH])
+        }
+
+    @Test
+    fun theAppCheckSwitchIsOffByDefaultAndIsStoredForTheNextLaunchOnly() =
+        runTest(UnconfinedTestDispatcher()) {
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
+            assertFalse(viewModel.uiState.value.appCheckOffRequested)
+            assertFalse(viewModel.uiState.value.appCheckOffInEffect)
+
+            viewModel.setAppCheckOff(true)
+            // Stored now, but THIS launch is unchanged: the provider is chosen once, when the app starts.
+            assertTrue(repository.storedOff)
+            assertTrue(viewModel.uiState.value.appCheckOffRequested)
+            assertFalse(viewModel.uiState.value.appCheckOffInEffect)
+
+            viewModel.setAppCheckOff(false)
+            assertFalse(repository.storedOff)
+            assertFalse(viewModel.uiState.value.appCheckOffRequested)
+        }
+
+    @Test
+    fun aLaunchStartedWithTheSwitchOnSaysSoEvenAfterTheSwitchWasTurnedOff() =
+        runTest(UnconfinedTestDispatcher()) {
+            repository.storedOff = true
+            repository.appCheckOffInEffect = true
+            val relaunched =
+                DiagnosticViewModel(
+                    repository = repository,
+                    privacy = privacy,
+                    tracker = AnalyticsTracker(sink) { privacy.analyticsEnabled.value },
+                )
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { relaunched.uiState.collect {} }
+            assertTrue(relaunched.uiState.value.appCheckOffRequested)
+            assertTrue(relaunched.uiState.value.appCheckOffInEffect)
+
+            relaunched.setAppCheckOff(false)
+            assertFalse(relaunched.uiState.value.appCheckOffRequested)
+            assertTrue(
+                "this launch still sends no token until the app is restarted",
+                relaunched.uiState.value.appCheckOffInEffect,
+            )
         }
 }

@@ -157,18 +157,18 @@ final class NotificationCenterServiceTests: XCTestCase {
     }
 
     func testTheCentreIsLockedOnlyWhenNotificationsCannotArrive() async {
-        let cases: [(NotificationAuthorization, NotificationCenterLock?, Bool)] = [
-            (.authorized, nil, true), (.denied, .off, false), (.notDetermined, .notAsked, false)
+        let cases: [(NotificationAuthorization, NotificationCenterLock?)] = [
+            (.authorized, nil), (.denied, .off), (.notDetermined, .notAsked)
         ]
-        for (authorization, expected, showsContent) in cases {
+        for (authorization, expected) in cases {
             let screen = makeScreen(authorization).model
             XCTAssertNil(screen.lock, "rien tant que l'état n'est pas lu")
             XCTAssertFalse(screen.showsContent, "tant que l'état n'est pas lu, aucune vraie ligne")
 
             await screen.onAppear()
 
-            XCTAssertEqual(screen.lock, expected, "\(authorization)")
-            XCTAssertEqual(screen.showsContent, showsContent, "\(authorization)")
+            XCTAssertEqual(screen.lock, expected, "(authorization)")
+            XCTAssertEqual(screen.showsContent, authorization == .authorized, "(authorization)")
         }
     }
 

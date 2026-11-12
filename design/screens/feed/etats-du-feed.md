@@ -53,3 +53,7 @@ Accès perdu en cours d'affichage, plusieurs alertes disparaissant, lieu supprim
 
 ## Plateformes
 Identique. Android : bandeaux en `Column` au-dessus de la liste, annonces `liveRegion` ; iOS : `accessibilityAddTraits(.updatesFrequently)` évité (annonce unique seulement) ; `TimelineView` pour la minute.
+
+## Pop-in « Pas de connexion » (décision du PM, 2026-11-10)
+
+Quand le Feed (ou l'onglet Profil) n'a **rien à montrer** (ni contenu ni copie du cache) et qu'il n'y a pas de réseau (après 1,5 s) ou pas de réponse (après 8 s) : pop-in calme, titre **« Pas de connexion »**, phrase **« Vérifie ta connexion, on réessaie dans un instant. »**, bouton **« Réessayer »** (relance immédiate) et, discret, **« Nouvel essai dans N s »**. Nouvel essai automatique **toutes les 10 s** ; au retour du réseau une relecture tout de suite et la pop-in disparaît d'elle-même ; elle disparaît aussi dès que le contenu arrive ou que l'écran est quitté. « Retour » la ferme : la page montre alors la phrase `feed_offline_note` et le même bouton à la place du squelette. **S'il y a une copie du cache : pas de pop-in**, le bandeau « Dernières informations de… » reste le comportement. Clés `feed_offline_popin_title|body|retry|countdown` (FR/EN, iOS identique). Aucune lecture hors connexion ; 3 essais automatiques au plus avec un réseau qui ne répond pas. Valeurs : `ConnectionGate` (`android/app/src/main/java/com/tomessa/miff/ui/components/ConnectionGate.kt`).

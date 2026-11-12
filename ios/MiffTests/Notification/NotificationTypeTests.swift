@@ -62,6 +62,14 @@ final class NotificationTypeTests: XCTestCase {
                     "You're in a danger zone of your Miff",
                     "While you're there, your circle sees a different status."
                 )
+            ),
+            ExpectedTexts(
+                type: .n7,
+                french: ("Ton mode voyage est terminé", "Ouvre Miff pour que ta carte reprenne ses couleurs. Bon retour !"),
+                english: (
+                    "Your travel mode has ended",
+                    "Open Miff so your card gets its usual colours back. Welcome back!"
+                )
             )
         ]
         for item in expected {
@@ -84,7 +92,8 @@ final class NotificationTypeTests: XCTestCase {
                     XCTAssertNil(hour, sentence)
                     XCTAssertEqual(sentence, sentence.trimmingCharacters(in: .whitespaces))
                     XCTAssertNil(sentence.range(of: "[A-ZÉ]{3,}", options: .regularExpression), "pas de cris")
-                    XCTAssertFalse(sentence.contains("!"), sentence)
+                    // Seul N7 garde le « Bon retour ! » de la spec (mode voyage) ; les autres n'ont jamais de point d'exclamation.
+                    XCTAssertTrue(type == .n7 || !sentence.contains("!"), sentence)
                 }
             }
         }
@@ -146,12 +155,14 @@ final class NotificationTypeTests: XCTestCase {
         XCTAssertEqual(NotificationType.n3.destination, .feed)
         XCTAssertEqual(NotificationType.n4.destination, .feed)
         XCTAssertEqual(NotificationType.n6.destination, .feed, "en zone de danger publier ne ramène pas au vert")
+        XCTAssertEqual(NotificationType.n7.destination, .feed, "N7 : le Feed (mode voyage, ticket §9.1)")
     }
 
     func testAtNightOnlyTheRedOnesKeepTheirSound() {
         XCTAssertEqual(NotificationType.allCases.filter { $0.silentAtNight }, [.n1, .n3, .n6])
         XCTAssertFalse(NotificationType.n2.silentAtNight)
         XCTAssertFalse(NotificationType.n4.silentAtNight)
+        XCTAssertFalse(NotificationType.n7.silentAtNight, "N7 part à 8 h")
     }
 
     // MARK: - Navigation

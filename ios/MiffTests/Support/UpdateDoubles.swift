@@ -111,10 +111,18 @@ final class FakePhotoStore: PhotoStore {
 final class FakePhotoPosition: PhotoPositionSource {
     var result: PhotoPosition = .found(Fix(lat: 48.85661, lng: 2.35222, measuredAtMillis: 0))
     private(set) var calls = 0
+    /// Ce que les autorisations empêchent (nil = rien).
+    var blocker: PhotoPosition?
+    private(set) var blockerAsks: [Bool] = []
 
     func measure() async -> PhotoPosition {
         calls += 1
         return result
+    }
+
+    func blocker(needsBackground: Bool) async -> PhotoPosition? {
+        blockerAsks.append(needsBackground)
+        return blocker
     }
 }
 
@@ -176,7 +184,17 @@ final class UpdateRig {
     var uid: String? = updateUid
     var miffIds = [testMiffId]
     var published: (String) -> Bool = { _ in true }
-    private(set) var positionMissingCalls = 0
+    /// Les positions remises au « suivi » par l'Update (au toucher de « Publier »).
+    private(set) var handedOver: [Fix] = []
+    /// Ce que fait le « suivi » quand on lui remet une position : par défaut rien (il ne publie pas).
+    var onHandOver: (Fix) -> Void = { _ in }
+    /// Le « suivi » connaît-il la Miff ? (journal de diagnostic seulement)
+    var trackingKnows: (String) -> Bool = { _ in true }
+    let journal = RecordingJournal()
+    /// Le « suivi » est occupé : la remise ne rend la main qu'après ce temps (secondes), ses effets étant déjà faits.
+    var handOverBusySeconds = 0.0
+    /// Le délai de la remise côté Update, pour les tests (nil : celui de l'app).
+    var handOverTimeout: Double?
 
     init() {
         position.result = .found(UpdateFixtures.fix())
@@ -202,7 +220,18 @@ final class UpdateRig {
             environment: environment
         )
         dependencies.isPositionPublished = { [unowned self] in self.published($0) }
-        dependencies.onPositionMissing = { [unowned self] in self.positionMissingCalls += 1 }
+        dependencies.trackingKnowsMiff = { [unowned self] in self.trackingKnows($0) }
+        dependencies.journal = journal
+        if let handOverTimeout {
+            dependencies.handOverTimeoutSeconds = handOverTimeout
+        }
+        dependencies.handOver = { [unowned self] fix in
+            self.handedOver.append(fix)
+            self.onHandOver(fix)
+            if self.handOverBusySeconds > 0 {
+                try? await Task.sleep(nanoseconds: UInt64(self.handOverBusySeconds * 1_000_000_000))
+            }
+        }
         return UpdatePublisher(dependencies)
     }
 

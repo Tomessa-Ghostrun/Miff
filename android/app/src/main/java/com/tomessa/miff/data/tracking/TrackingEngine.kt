@@ -80,6 +80,8 @@ class TrackingEngine(
      * written, even by a receiver of the system that wakes a COLD process (the memory of [stop] is gone there). Another account's marker does not count.
      */
     private val suspended: () -> Boolean = { false },
+    /** NOTIF-4A: told, locally and at once, when MY presence changes in a Miff (a departure, an arrival): the reminders follow without waiting for the Feed. */
+    private val presenceListener: PresenceListener = PresenceListener.None,
     /** MODE VOYAGE: the alarm that ends a trip while the app is closed (none by default: tests). */
     private val travelAlarm: TravelAlarm = NoTravelAlarm,
 ) : SessionTeardown {
@@ -195,7 +197,15 @@ class TrackingEngine(
                 networkWake.stop()
                 return@withLock
             }
-            val synced = syncMiffs(uid, state, Reason.NETWORK_BACK, env.nowMillis())
+            // BATT-4: a complete look made less than 5 minutes ago is trusted (nothing is read again, the waiting status is NOT held back); otherwise the
+            // look is made in full, as before. An incomplete look (no answer) is never counted: it is tried again at the next return of the network.
+            val now = env.nowMillis()
+            val synced =
+                if (verifiedRecently(state, now)) {
+                    Synced(state, verified = true)
+                } else {
+                    syncMiffs(uid, state, Reason.NETWORK_BACK, now)
+                }
             if (synced.state.miffs.isEmpty() && synced.verified) {
                 runCatchingCancellable { geofences.removeAll() }
                 runCatchingCancellable { movement.stop() }
@@ -326,6 +336,7 @@ class TrackingEngine(
                 val paused = pauseStatuses(adopted)
                 local.save(paused)
                 publishTravel(paused.travel?.period())
+                paused.travel?.let { tellTravelSet(uid, it.untilMillis) }
                 doTravelPass(uid, paused, reason, suppliedFix)
                 return
             }
@@ -412,6 +423,19 @@ class TrackingEngine(
         val state: LocalState,
         val verified: Boolean = false,
     )
+
+    /**
+     * True when the last COMPLETE look at the server is less than [TrackingLimits.NETWORK_REREAD_MIN_INTERVAL_MILLIS] old (BATT-4). Never true for a copy that
+     * was never read (0), for the artificial date left by [recheckSoon] (a refusal: the look WANTED is not recent), or for a date in the future (clock changed).
+     */
+    private fun verifiedRecently(
+        state: LocalState,
+        now: Long,
+    ): Boolean {
+        if (state.checkedAtMillis == 0L) return false
+        val age = now - state.checkedAtMillis
+        return age in 0 until TrackingLimits.NETWORK_REREAD_MIN_INTERVAL_MILLIS
+    }
 
     /**
      * The server is read again (the Miffs of the person, my consent in each, the places of each eligible Miff) when it is due: a change of sharing, a
@@ -594,6 +618,9 @@ class TrackingEngine(
                     }
                 }
             if (fact != null) {
+                tellPresence(miffId, fact.presence, fact.presenceAtMillis, fact.setLastUpdate)
+                // "Already inside at the arming" (DET3): an arrival is what "already there" means; a presence that was already in_risk gives no fact, so no second N6.
+                tellDanger(state.uid, miffId, last, DerivedPresence(fact.presence, fact.placeId), fact.presenceAtMillis)
                 journal.record(
                     if (fact.presence ==
                         PresenceValue.UNKNOWN
@@ -612,6 +639,61 @@ class TrackingEngine(
             }
         }
         return state.copyWith(miffs = miffs, inside = inside)
+    }
+
+    /** The notifications are told that my presence changed; whatever they do, it never reaches the detection (a failure here is swallowed, nothing is logged). */
+    private fun tellPresence(
+        miffId: String,
+        presence: PresenceValue,
+        atMillis: Long,
+        setLastUpdate: Boolean,
+    ) {
+        try {
+            presenceListener.onMyPresence(miffId, presence, atMillis, setLastUpdate)
+        } catch (e: Exception) {
+            // A reminder that cannot be planned must never stop the detection of the arrivals and departures.
+        }
+    }
+
+    /** N6: told only for a REAL entry in a danger zone (the previous presence of this Miff was not in_risk). Swallowed like [tellPresence]. */
+    private fun tellDanger(
+        uid: String,
+        miffId: String,
+        previous: DerivedPresence?,
+        now: DerivedPresence,
+        atMillis: Long,
+    ) {
+        if (now.presence != PresenceValue.IN_RISK || previous?.presence == PresenceValue.IN_RISK) return
+        val placeId = now.placeId ?: return
+        try {
+            presenceListener.onEnteredDanger(uid, miffId, placeId, atMillis)
+        } catch (e: Exception) {
+            // A notification that cannot be shown must never stop the detection.
+        }
+    }
+
+    /** MODE VOYAGE (VOY-4A): my trip is on and ends at [untilMillis] (N7 and the cut of the reminders follow). Swallowed like [tellPresence]. */
+    private fun tellTravelSet(
+        uid: String,
+        untilMillis: Long,
+    ) {
+        try {
+            presenceListener.onTravelSet(uid, untilMillis)
+        } catch (e: Exception) {
+            // A notification that cannot be planned must never stop the trip.
+        }
+    }
+
+    /** My trip is over: [early] = I turned it off before its end. Swallowed like [tellPresence]. */
+    private fun tellTravelEnded(
+        uid: String,
+        early: Boolean,
+    ) {
+        try {
+            presenceListener.onTravelEnded(uid, early)
+        } catch (e: Exception) {
+            // Same.
+        }
     }
 
     // --- The 20 zones ---------------------------------------------------------------------------------------------------------------------
@@ -694,6 +776,7 @@ class TrackingEngine(
             placeId,
             env.batteryPct(),
         )
+        val alreadyInside = kind == TransitionKind.ENTER && zoneKey in state.inside
         val inside =
             when (kind) {
                 TransitionKind.ENTER -> {
@@ -717,6 +800,11 @@ class TrackingEngine(
                 PresenceMachine.onTransition(kind, zoneKey, at ?: now, zonesOf(state, miffId), inside, miff.derived())
                     ?: continue
             val (derived, fact) = result
+            tellPresence(miffId, derived.presence, at ?: now, fact.setLastUpdate)
+            // I ENTERED a danger zone (the previous presence of this Miff was not already in_risk): N6, once, before the status is even written. Entering a danger zone
+            // while in a trusted one gives no result here (the trusted zone wins); leaving the trusted one while staying in the danger one does.
+            // An event too old for the rules (no time to write) is not told: it is no longer the present.
+            if (at != null) tellDanger(uid, miffId, miff.derived(), derived, at)
             if (at == null) {
                 // Too old for the rules to accept: given up (no loop), but the local state moves on.
                 journal.record(JournalKind.STATUS_GIVEN_UP, derived.placeId)
@@ -726,13 +814,34 @@ class TrackingEngine(
                 miffs[miffId] = miff.copyWith(derived = derived, pending = PendingStatus.of(fact))
             }
         }
+        // BATT-2 (as iOS does): an entry seen again for a zone the person is ALREADY in (the system reports it again when the zones are registered again at
+        // each opening, or answers a request of state) is nothing new: no position read, no position write, no full pass. A real return is never here: it
+        // follows a departure that took the key out of `inside`. An event that would change a status (the derived presence differs from the one kept: a
+        // restart that left no status yet, a zone of another kind) is NOT "nothing new" and goes on as before. What the skipped pass also did (reading the
+        // server again when due, arming what is missing) is done by the next opening, move, restart or return of the network.
+        val nothingNew = alreadyInside && miffs.all { (id, miff) -> miff === state.miffs[id] }
+        if (nothingNew && state.miffs.values.none { it.pending != null }) {
+            resumeMovementIfNeeded(state)
+            return
+        }
         var next = state.copyWith(miffs = miffs, inside = inside)
         local.save(next)
         next = flushPending(uid, next, WriteGate(recheck = false))
         local.save(next)
         updateNetworkWake(next)
+        if (nothingNew) {
+            // A status was still waiting: it was sent above as before; only the full pass is spared.
+            resumeMovementIfNeeded(next)
+            return
+        }
         // "À chaque entrée détectée dans une zone, la liste est recalculée" (ticket 6.5), and the position is read again.
         if (kind == TransitionKind.ENTER) doRefresh(Reason.ZONE_ENTERED, null)
+    }
+
+    /** The request of moves of more than 250 m that never started (refused by the system earlier) is made again: what the full pass of an entry used to retry. */
+    private suspend fun resumeMovementIfNeeded(state: LocalState) {
+        if (state.updatesArmed) return
+        local.save(state.copyWith(updatesArmed = movement.start()))
     }
 
     // --- Writes ----------------------------------------------------------------------------------------------------------------------------
@@ -927,16 +1036,26 @@ class TrackingEngine(
                 journal.record(JournalKind.BREAKER_POSITION)
                 continue
             }
-            if (!env.isOnline()) continue
+            if (!env.isOnline()) {
+                journal.record(JournalKind.POSITION_SKIPPED_OFFLINE)
+                continue
+            }
             // SESS-2: a position never leaves a phone that does not hold the session (it would tell the loved ones where the OLD phone is).
-            val deviceId = gate.deviceId() ?: continue
+            val deviceId = gate.deviceId()
+            if (deviceId == null) {
+                journal.record(JournalKind.POSITION_SKIPPED_SESSION)
+                continue
+            }
             if (gate.ended()) break
             served = miffId
             val outcome =
                 guardedCall(timeoutMillis) {
                     store.commit(listOf(TrackingWrites.position(miffId, uid, fix.lat, fix.lng, measuredAt, deviceId)))
                 }
-            if (outcome is Guarded.Failed && outcome.failure == MiffFailure.REFUSED) gate.refused()
+            if (outcome is Guarded.Failed && outcome.failure == MiffFailure.REFUSED) {
+                journal.record(JournalKind.POSITION_REFUSED)
+                gate.refused()
+            }
             state =
                 when (outcome) {
                     is Guarded.Value -> {
@@ -1179,6 +1298,7 @@ class TrackingEngine(
         local.save(state)
         travelAlarm.schedule(travel.untilMillis)
         publishTravel(travel.period())
+        tellTravelSet(uid, travel.untilMillis)
         updateNetworkWake(state)
         return if (travelToTell(state)) TravelResult.DoneOffline else TravelResult.Done
     }
@@ -1242,6 +1362,9 @@ class TrackingEngine(
         val travel = start.travel ?: return
         val now = env.nowMillis()
         publishTravel(travel.period())
+        // A trip found again at a wake-up (begun before this version, or after a restart): the notifications know it (idempotent, nothing changes when they already did; a trip
+        // that is over is told too, so that N7 still waits for its 08:00 even if the notifications never heard of it).
+        tellTravelSet(uid, travel.untilMillis)
         if (travel.period().isOver(now)) {
             finishTravel(uid, start, now)
             return
@@ -1396,8 +1519,10 @@ class TrackingEngine(
         start: LocalState,
         now: Long,
     ) {
-        if (start.travel == null) return
+        val ended = start.travel ?: return
         travelAlarm.cancel()
+        // Told BEFORE the writes: N7 waits for 08:00 after a natural end (even if the network is down), and is cancelled after an early one.
+        tellTravelEnded(uid, early = !ended.period().isOver(now))
         val fact = PresenceMachine.unknown(now)
         var state =
             start.copyWith(

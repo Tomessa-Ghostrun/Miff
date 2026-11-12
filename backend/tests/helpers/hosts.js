@@ -33,4 +33,18 @@ export const H = {
   positionsUpdate: { match: 'match /positions/{uid} {', method: 'update' },
   positionsDelete: { match: 'match /positions/{uid} {', method: 'delete' },
   membersUpdate: { match: 'match /members/{uid} {', method: 'update' },
+  // LIEU-REQ-A : demandes d'ajout d'un lieu et compteur des demandes en attente.
+  requestsGet: { match: 'match /placeRequests/{reqId} {', method: 'get' },
+  requestsList: { match: 'match /placeRequests/{reqId} {', method: 'list' },
+  requestsCreate: { match: 'match /placeRequests/{reqId} {', method: 'create' },
+  requestsDelete: { match: 'match /placeRequests/{reqId} {', method: 'delete' },
+  requestCounterCreate: { match: 'match /meta/placeRequests {', method: 'create' },
+  requestCounterUpdate: { match: 'match /meta/placeRequests {', method: 'update' },
+  // SRV-2R : jetons d'appareil et session (la session est écrite dans le même lot à la connexion).
+  devicesGet: { match: 'match /devices/{deviceId} {', method: 'get' },
+  devicesList: { match: 'match /devices/{deviceId} {', method: 'list' },
+  devicesCreate: { match: 'match /devices/{deviceId} {', method: 'create' },
+  devicesUpdate: { match: 'match /devices/{deviceId} {', method: 'update' },
+  devicesDelete: { match: 'match /devices/{deviceId} {', method: 'delete' },
+  sessionUpdate: { match: 'match /session/active {', method: 'update' },
 };

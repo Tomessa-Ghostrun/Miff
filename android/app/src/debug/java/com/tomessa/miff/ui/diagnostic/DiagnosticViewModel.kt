@@ -78,6 +78,9 @@ data class DiagnosticUiState(
     val analyticsEnabled: Boolean = false,
     val crashReportsEnabled: Boolean = false,
     val eventFeedback: EventFeedback? = null,
+    /** AC-4: the stored choice "without App Check" (applied at the next launch) and what the current launch does. */
+    val appCheckOffRequested: Boolean = false,
+    val appCheckOffInEffect: Boolean = false,
 )
 
 private data class LocalState(
@@ -85,6 +88,7 @@ private data class LocalState(
     val test2: Test2State = Test2State.Idle,
     val appCheck: AppCheckState = AppCheckState.Idle,
     val eventFeedback: EventFeedback? = null,
+    val appCheckOffRequested: Boolean = false,
 )
 
 class DiagnosticViewModel(
@@ -92,7 +96,7 @@ class DiagnosticViewModel(
     private val privacy: PrivacySettings,
     private val tracker: AnalyticsTracker,
 ) : ViewModel() {
-    private val local = MutableStateFlow(LocalState())
+    private val local = MutableStateFlow(LocalState(appCheckOffRequested = repository.appCheckOffRequested()))
 
     val uiState: StateFlow<DiagnosticUiState> =
         combine(local, privacy.analyticsEnabled, privacy.crashReportsEnabled) { l, analytics, crash ->
@@ -104,6 +108,8 @@ class DiagnosticViewModel(
                 analyticsEnabled = analytics,
                 crashReportsEnabled = crash,
                 eventFeedback = l.eventFeedback,
+                appCheckOffRequested = l.appCheckOffRequested,
+                appCheckOffInEffect = repository.appCheckOffInEffect,
             )
         }.stateIn(
             scope = viewModelScope,
@@ -113,6 +119,8 @@ class DiagnosticViewModel(
                     firebaseProjectId = repository.firebaseProjectId,
                     analyticsEnabled = privacy.analyticsEnabled.value,
                     crashReportsEnabled = privacy.crashReportsEnabled.value,
+                    appCheckOffRequested = repository.appCheckOffRequested(),
+                    appCheckOffInEffect = repository.appCheckOffInEffect,
                 ),
         )
 
@@ -150,6 +158,12 @@ class DiagnosticViewModel(
             val outcome = repository.fetchAppCheckToken()
             local.update { it.copy(appCheck = AppCheckState.Done(outcome)) }
         }
+    }
+
+    /** AC-4: stored now, applied at the next launch (the provider is chosen once, when the app starts). */
+    fun setAppCheckOff(enabled: Boolean) {
+        repository.setAppCheckOffRequested(enabled)
+        local.update { it.copy(appCheckOffRequested = repository.appCheckOffRequested()) }
     }
 
     fun setAnalyticsEnabled(enabled: Boolean) = privacy.setAnalyticsEnabled(enabled)

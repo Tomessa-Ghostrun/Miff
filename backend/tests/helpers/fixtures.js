@@ -81,6 +81,16 @@ export const sessionDoc = (deviceId = DEVICE_A, over = {}) => ({ deviceId, start
 /** Session déjà enregistrée (état injecté avec les règles désactivées). */
 export const sessionSeed = (deviceId = DEVICE_A, over = {}) => ({ deviceId, startedAt: T0, ...over });
 export const SESSION_PATH = (uid) => `users/${uid}/session/active`;
+
+// SRV-2R (jetons d'appareil, NON DÉPLOYÉ) : users/{uid}/devices/{deviceId}, où deviceId = identifiant de la session active.
+/** Jeton tel qu'un client l'écrit à la création : 7 clés, les deux heures sont celles du serveur. */
+export const deviceDoc = (over = {}) => ({
+  token: 'jeton-de-test-factice', platform: 'android', appVersion: '1.0.0 (12)', tz: 'Europe/Paris',
+  notify: { updates: true }, updatedAt: serverTs(), createdAt: serverTs(), ...over,
+});
+/** Jeton déjà enregistré (état injecté avec les règles désactivées). */
+export const deviceSeed = (over = {}) => deviceDoc({ updatedAt: T0, createdAt: T0, ...over });
+export const DEVICE_DOC_PATH = (uid, deviceId = DEVICE_A) => `users/${uid}/devices/${deviceId}`;
 /**
  * TEMPS 2 du déploiement (SESS-1) : bascule deviceIdRequired() à true dans le texte des règles (une seule ligne). Refuse de continuer si le
  * motif n'est pas trouvé exactement une fois (les tests du temps 2 ne doivent jamais rejouer les règles du temps 1 sans le savoir).
@@ -205,12 +215,15 @@ export const userWithConsent = (uid, analyticsConsent, phone = PHONE) =>
 export const set = (path, data) => ({ type: 'set', path, data });
 export const update = (path, data) => ({ type: 'update', path, data });
 export const del = (path) => ({ type: 'delete', path });
+/** `set` avec fusion (SetOptions.merge) : le client écrit ainsi le compteur des demandes de lieu (increment + création éventuelle, LIEU-REQ). */
+export const setMerge = (path, data) => ({ type: 'setMerge', path, data });
 
 export function commit(db, ops) {
   const batch = db.batch();
   for (const op of ops) {
     const ref = db.doc(op.path);
     if (op.type === 'set') batch.set(ref, op.data);
+    else if (op.type === 'setMerge') batch.set(ref, op.data, { merge: true });
     else if (op.type === 'update') batch.update(ref, op.data);
     else batch.delete(ref);
   }

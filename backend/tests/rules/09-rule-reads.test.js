@@ -9,11 +9,14 @@ import {
   consentOnNow, consentRevokeNow, consentOnSeed, userWithConsent, userDoc,
   ID, CODE, commit, createMiffOps, joinOps, leaveOps, removeMemberOps, leaveWithPositionOps, removeMemberWithPositionOps, set, update, del, statusDoc, placeInput, placeSeed, photoDoc,
   serverTs, sharingOnNow, T0, createShareOps, joinShareOps, PHONE_B, positionDoc, positionSeed, sharingOnNowV3, CONSENT_POSITION,
-  statusInitial, DEVICE_A, sessionSeed, SESSION_PATH, inMs, photoLegacyDoc, Timestamp,
+  statusInitial, DEVICE_A, DEVICE_B, sessionDoc, sessionSeed, SESSION_PATH, inMs, photoLegacyDoc, Timestamp, deviceDoc, deviceSeed, DEVICE_DOC_PATH,
 } from '../helpers/fixtures.js';
 import { measureReads, measureLot, writeReadsReport } from '../helpers/measure.js';
 import { probeEmulatorLimits, EXPECTED_LIMITS } from '../helpers/calibration.js';
 import { H } from '../helpers/hosts.js';
+import {
+  requestInput, createRequestOps, withdrawRequestOps, declineRequestOps, acceptRequestOps, seedRequests, addPremiumMember,
+} from '../helpers/requests.js';
 
 const M1 = `miffs/${ID.M1}`;
 
@@ -62,6 +65,9 @@ const seedSessions = (...uids) => (env) =>
   env.withSecurityRulesDisabled(async (ctx) => {
     for (const uid of uids) await ctx.firestore().doc(SESSION_PATH(uid)).set(sessionSeed(DEVICE_A));
   });
+
+// LIEU-REQ-A : demandes de lieu déjà en base (règles désactivées) avec un compteur cohérent ; `list` = [[uid, k], ...].
+const seedReqEnv = (list, opts) => (env) => seedRequests({ admin: (cb) => env.withSecurityRulesDisabled((ctx) => cb(ctx.firestore())) }, list, opts);
 
 // `lot: true` : plusieurs écritures dans un lot. `hosts` = UNE règle hôte par écriture du lot (mesure par écriture puis lot entier).
 // Sinon : une seule opération (get, liste, écriture simple), `hosts` = la règle mesurée.
@@ -624,6 +630,165 @@ const scenarios = [
         set(`${M1}/positions/carol`, positionDoc({ deviceId: DEVICE_A })),
         set(`${M1}/photos/carol`, photoDoc({ lat: 48.85661, lng: 2.35222, measuredAt: inMs(-60_000) })),
       ]),
+  },
+  // SRV-2R (jetons d'appareil, NON DÉPLOYÉ) : lot de connexion d'un nouvel appareil [session + jeton + suppression de 4 anciens jetons], rafraîchissement,
+  // suppression, lecture et liste. Le jeton lit la session du compte (getAfter) : 1 lecture de règles à l'écriture, 0 à la lecture et à la suppression.
+  {
+    id: 'READS-dev-login',
+    title: "SRV-2R : lot de connexion d'un nouvel appareil (session + jeton + 4 suppressions de jetons précédents)",
+    name: 'Connexion : session + jeton + 4 suppressions (batch de 6)',
+    lot: true,
+    hosts: [H.sessionUpdate, H.devicesCreate, H.devicesDelete],
+    prepare: async (env) => {
+      await seedSessions('bob')(env);
+      await env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(DEVICE_DOC_PATH('bob', DEVICE_A)).set(deviceSeed()));
+    },
+    run: (env) =>
+      commit(db(env, 'bob'), [
+        set(SESSION_PATH('bob'), sessionDoc(DEVICE_B)),
+        set(DEVICE_DOC_PATH('bob', DEVICE_B), deviceDoc()),
+        del(DEVICE_DOC_PATH('bob', DEVICE_A)),
+        del(DEVICE_DOC_PATH('bob', 'OldDevice1111111111111')),
+        del(DEVICE_DOC_PATH('bob', 'OldDevice2222222222222')),
+        del(DEVICE_DOC_PATH('bob', 'OldDevice3333333333333')),
+      ]),
+    maxReads: 1,
+  },
+  {
+    id: 'READS-dev-refresh',
+    title: 'SRV-2R : rafraîchissement du jeton (mise à jour partielle, une écriture)',
+    name: 'Jeton : rafraîchissement (1 écriture)',
+    limit: 10,
+    hosts: [H.devicesUpdate],
+    prepare: async (env) => {
+      await seedSessions('bob')(env);
+      await env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(DEVICE_DOC_PATH('bob')).set(deviceSeed()));
+    },
+    run: (env) => db(env, 'bob').doc(DEVICE_DOC_PATH('bob')).update({ token: 'nouveau-jeton', tz: 'Europe/Paris', updatedAt: serverTs() }),
+    maxReads: 1,
+  },
+  {
+    id: 'READS-dev-create',
+    title: 'SRV-2R : premier enregistrement du jeton (une écriture, session déjà posée)',
+    name: 'Jeton : création (1 écriture)',
+    limit: 10,
+    hosts: [H.devicesCreate],
+    prepare: seedSessions('bob'),
+    run: (env) => db(env, 'bob').doc(DEVICE_DOC_PATH('bob')).set(deviceDoc()),
+    maxReads: 1,
+  },
+  {
+    id: 'READS-dev-delete',
+    title: "SRV-2R : suppression du jeton (déconnexion) - aucune lecture de règles",
+    name: 'Jeton : suppression (déconnexion)',
+    limit: 10,
+    hosts: [H.devicesDelete],
+    prepare: async (env) => {
+      await env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(DEVICE_DOC_PATH('bob')).set(deviceSeed()));
+    },
+    run: (env) => db(env, 'bob').doc(DEVICE_DOC_PATH('bob')).delete(),
+    maxReads: 0,
+  },
+  {
+    id: 'READS-dev-read',
+    title: 'SRV-2R : lecture du jeton par son propriétaire (get) - aucune lecture de règles',
+    name: 'Jeton : lecture (get)',
+    limit: 10,
+    hosts: [H.devicesGet],
+    prepare: async (env) => {
+      await env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(DEVICE_DOC_PATH('bob')).set(deviceSeed()));
+    },
+    run: (env) => db(env, 'bob').doc(DEVICE_DOC_PATH('bob')).get(),
+    maxReads: 0,
+  },
+  // LIEU-REQ-A (demande d'ajout d'un lieu, NON DÉPLOYÉ) : lots du demandeur et du créateur, lectures. Une règle hôte par écriture du lot.
+  {
+    id: 'READS-req-create',
+    title: "LIEU-REQ-A : demande de lieu 'trusted' (batch de 2 : demande + compteur à créer)",
+    name: 'Demande de lieu trusted (batch de 2, compteur créé)',
+    lot: true,
+    hosts: [H.requestsCreate, H.requestCounterCreate],
+    run: (env) => commit(db(env, 'bob'), all(createRequestOps({ uid: 'bob' }))),
+  },
+  {
+    id: 'READS-req-create-counter-exists',
+    title: "LIEU-REQ-A : demande de lieu 'trusted' avec un compteur existant (batch de 2 : demande + compteur en mise à jour)",
+    name: 'Demande de lieu trusted (batch de 2, compteur existant)',
+    lot: true,
+    hosts: [H.requestsCreate, H.requestCounterUpdate],
+    prepare: seedReqEnv([['carol', 1]]),
+    run: (env) => commit(db(env, 'bob'), all(createRequestOps({ uid: 'bob' }))),
+  },
+  {
+    id: 'READS-req-create-risk',
+    title: "LIEU-REQ-A : demande de zone de danger par un demandeur Miff+ (batch de 2 : + lecture du droit Miff+)",
+    name: 'Demande de lieu risk (batch de 2)',
+    lot: true,
+    hosts: [H.requestsCreate, H.requestCounterUpdate],
+    prepare: async (env) => {
+      await seedReqEnv([['carol', 1]])(env);
+      await addPremiumMember({ admin: (cb) => env.withSecurityRulesDisabled((ctx) => cb(ctx.firestore())) });
+    },
+    run: (env) => commit(db(env, 'dave'), all(createRequestOps({ uid: 'dave', data: requestInput('dave', { type: 'risk' }) }))),
+  },
+  {
+    id: 'READS-req-withdraw',
+    title: 'LIEU-REQ-A : retrait de sa demande par le demandeur (batch de 2 : suppression + compteur)',
+    name: 'Retrait de sa demande de lieu (batch de 2)',
+    lot: true,
+    hosts: [H.requestsDelete, H.requestCounterUpdate],
+    prepare: seedReqEnv([['bob', 1]]),
+    run: (env) => commit(db(env, 'bob'), all(withdrawRequestOps({ uid: 'bob' }))),
+  },
+  {
+    id: 'READS-req-decline',
+    title: 'LIEU-REQ-A : refus par le créateur (batch de 2 : suppression + compteur)',
+    name: 'Refus de demande de lieu (batch de 2)',
+    lot: true,
+    hosts: [H.requestsDelete, H.requestCounterUpdate],
+    prepare: seedReqEnv([['bob', 1]]),
+    run: (env) => commit(db(env, 'alice'), all(declineRequestOps({ from: 'bob', left: 0 }))),
+  },
+  {
+    id: 'READS-req-accept',
+    title: 'LIEU-REQ-A : acceptation par une créatrice gratuite (batch de 3 : lieu p2 + suppression + compteur)',
+    name: 'Acceptation de demande de lieu, gratuit (batch de 3)',
+    lot: true,
+    hosts: [H.placesCreate, H.requestsDelete, H.requestCounterUpdate],
+    prepare: seedReqEnv([['bob', 1]]),
+    run: (env) => commit(db(env, 'alice'), all(acceptRequestOps({ from: 'bob', placeId: 'p2', left: 0 }))),
+  },
+  {
+    id: 'READS-req-accept-premium',
+    title: 'LIEU-REQ-A : acceptation de zone de danger par un créateur Miff+ (batch de 3 : lieu libre + suppression + compteur, + lecture du droit Miff+)',
+    name: 'Acceptation de demande de lieu, Miff+ (batch de 3)',
+    lot: true,
+    hosts: [H.placesCreate, H.requestsDelete, H.requestCounterUpdate],
+    prepare: async (env) => {
+      await seedDaveMiff(env);
+      await seedReqEnv([['bob', 1]], { miffId: ID.M3 })(env);
+    },
+    run: (env) => commit(db(env, 'dave'), all(acceptRequestOps({ owner: 'dave', from: 'bob', miffId: ID.M3, placeId: 'Q'.repeat(20), place: { type: 'risk' }, left: 0 }))),
+  },
+  {
+    id: 'READS-req-list-owner',
+    title: 'LIEU-REQ-A : le créateur liste les demandes de sa Miff (requête)',
+    name: 'Liste des demandes de lieu (créateur)',
+    limit: 20,
+    docLimit: 10,
+    hosts: [H.requestsList],
+    prepare: seedReqEnv([['bob', 1], ['carol', 1]]),
+    run: (env) => db(env, 'alice').collection(`${M1}/placeRequests`).get(),
+  },
+  {
+    id: 'READS-req-list-member',
+    title: 'LIEU-REQ-A : le demandeur liste SES demandes (requête filtrée sur requestedBy)',
+    name: 'Liste de ses demandes de lieu (demandeur)',
+    limit: 20,
+    docLimit: 10,
+    hosts: [H.requestsList],
+    prepare: seedReqEnv([['bob', 1], ['carol', 1]]),
+    run: (env) => db(env, 'bob').collection(`${M1}/placeRequests`).where('requestedBy', '==', 'bob').get(),
   },
   {
     id: 'READS-code-lookup',

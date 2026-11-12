@@ -437,6 +437,7 @@ private fun JoinCodeStep(
             JoinProblem.OFFLINE -> MiffNotice(actionMessageText(ActionMessage.OFFLINE))
             JoinProblem.GENERIC -> MiffNotice(actionMessageText(ActionMessage.GENERIC))
             JoinProblem.ONE_MIFF -> MiffNotice(actionMessageText(ActionMessage.ONE_MIFF))
+            JoinProblem.DEVICE_NOT_RECOGNIZED -> MiffNotice(actionMessageText(ActionMessage.DEVICE_NOT_RECOGNIZED))
             else -> Unit
         }
         state.alreadyMember?.let { member ->

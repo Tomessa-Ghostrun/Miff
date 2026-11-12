@@ -51,9 +51,19 @@ interface DiagnosticRepository {
     ): Test2Result
 
     suspend fun fetchAppCheckToken(): AppCheckOutcome
+
+    /** AC-4: the choice stored on the phone (taken into account at the next launch). */
+    fun appCheckOffRequested(): Boolean
+
+    fun setAppCheckOffRequested(enabled: Boolean)
+
+    /** AC-4: what THIS launch really does (the choice that was stored when the app started). */
+    val appCheckOffInEffect: Boolean
 }
 
-class FirebaseDiagnosticRepository : DiagnosticRepository {
+class FirebaseDiagnosticRepository(
+    private val appCheckSetting: DebugAppCheckSetting,
+) : DiagnosticRepository {
     private val auth get() = FirebaseAuth.getInstance()
     private val firestore get() = FirebaseFirestore.getInstance()
 
@@ -175,10 +185,17 @@ class FirebaseDiagnosticRepository : DiagnosticRepository {
         }
     }
 
+    override fun appCheckOffRequested(): Boolean = appCheckSetting.isOffRequested()
+
+    override fun setAppCheckOffRequested(enabled: Boolean) = appCheckSetting.setOffRequested(enabled)
+
+    override val appCheckOffInEffect: Boolean get() = SharedPreferencesDebugAppCheckSetting.offInEffect
+
     override suspend fun fetchAppCheckToken(): AppCheckOutcome =
         try {
             withTimeout(NETWORK_TIMEOUT_MS) {
-                FirebaseAppCheck.getInstance().getAppCheckToken(false).await()
+                // With the switch on, the token is asked from the provider again (never served from the SDK's memory).
+                FirebaseAppCheck.getInstance().getAppCheckToken(appCheckOffInEffect).await()
             }
             AppCheckOutcome.TokenObtained
         } catch (e: CancellationException) {

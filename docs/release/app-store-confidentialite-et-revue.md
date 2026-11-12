@@ -25,7 +25,7 @@ Tracking : **Non** (`NSPrivacyTracking = false`, aucun domaine de suivi, ni AdSu
 | Contact Info > **Name** | Oui | Oui | Non | App Functionality | Prénom, nom |
 | Contact Info > **Email Address** | Oui | Oui | Non | App Functionality | |
 | Contact Info > **Phone Number** | Oui | Oui | Non | App Functionality | Obligatoire à la création du profil, visible des membres de la Miff |
-| User Content > **Photos or Videos** | Oui (facultatives) | Oui | Non | App Functionality | Photo de profil ; photo de mise à jour (24 h) |
+| User Content > **Photos or Videos** | Oui (facultatives) | Oui | Non | App Functionality | Photo de profil (y compris la photo Google reprise à l'inscription) ; photo de mise à jour (24 h). « Enregistrer cette photo » : ajout local à la galerie, rien n'est envoyé ni collecté |
 | User Content > **Other User Content** | Oui | Oui | Non | App Functionality | Le petit texte de mise à jour (140 caractères, facultatif) **et, depuis LOC-3, le nom des lieux de confiance** (« Maison du père de Nathan »), visibles des membres de la Miff |
 | Contact Info > **Physical Address** | **Oui, depuis LOC-3** (adresse postale de chaque lieu de confiance, écrite dans Firestore, avec ses coordonnées) | Oui (rattachée au compte du créateur de la Miff) | Non | App Functionality | **Écart signalé** : ce tableau (et l'§3) ne mentionnait pas les lieux ; ajouté par la PR iOS LOC-3 (`PrivacyInfo.xcprivacy`). L'adresse peut être celle d'une **tierce personne** (« Maison du père de Nathan ») : risque R4 du ticket Lieux. Les **coordonnées du lieu** sont celles de l'adresse choisie, pas celles de l'appareil : **classification « Precise Location » à confirmer** (si Apple la juge nécessaire, la ligne « Precise Location » ci-dessus couvre déjà le cas, liée au compte, App Functionality) |
 | Identifiers > **User ID** | Oui | Oui | Non | App Functionality | Identifiant de compte Firebase |
@@ -72,6 +72,15 @@ Ils remplacent les textes du ticket Lieux §11, **devenus faux** depuis la déci
 | Français | « Miff utilise ta position pour savoir quand tu arrives dans un lieu de confiance ou que tu le quittes, et pour que les membres de ta Miff qui partagent aussi voient ta dernière position connue, avec l'heure. » |
 | English | "Miff uses your location to know when you arrive at or leave a trusted place, and so that the members of your Miff who also share can see your last known location, with the time." |
 
+**`NSPhotoLibraryAddUsageDescription`** (ajout seulement, « Enregistrer cette photo », décision du 2026-11-11 ; PR iOS #158, non fusionnée à la date de rédaction : **à relire à la fusion de #158**)
+
+| Langue | Texte |
+|---|---|
+| Français | « Miff enregistre la photo dans ta galerie uniquement quand tu touches « Enregistrer cette photo ». Miff ne lit jamais tes photos ni ta galerie. » |
+| English | "Miff saves the photo to your library only when you tap “Save this photo”. Miff never reads your photos or your library." |
+
+La clé de **lecture** (`NSPhotoLibraryUsageDescription`) ne doit **jamais** être déclarée.
+
 À savoir : (1) `NSLocationAlwaysUsageDescription` (ancien) n'est pas nécessaire avec iOS 16 comme version minimale ; (2) ces textes décrivent les **décisions du 2026-11-01** : si le PM modifie la visibilité de la position, ils changent aussi ; (3) cohérence obligatoire avec `docs/legal/consentement-localisation-v3.md`, la politique de confidentialité et l'écran d'autorisation (`design/screens/lieux/permission-localisation-ios.md`).
 
 ## 5. Note de revue Apple (champ « Notes » d'App Store Connect > Informations de revue de l'app), en anglais
@@ -85,6 +94,10 @@ Ils remplacent les textes du ticket Lieux §11, **devenus faux** depuis la déci
 > **Why "Always" is required.** Arrivals and departures happen while the app is closed and the phone is in a pocket. Miff uses Core Location region monitoring and significant-location-change monitoring, which wake the app on those events. With "While Using" access the single feature of the app cannot work: there would be nothing for the app to do. We are aware of guideline 5.1.2(i). We believe this is a case where the system functionality is the core of the service itself (as with family location apps), and we explain it to the user before the system prompt (screen "Know that you're okay!") in plain language. If Apple considers that the app must remain usable without "Always", we have prepared a build setting that relaxes the requirement (a "Later" link on the permission screen) and will ship it on request.
 >
 > **What is collected.** Only the **last known location** (latitude, longitude, time of measurement), stored on our servers (Firebase, Paris region), replacing the previous one. **No history of trips.** It is visible only to the members of the same Miff whose sharing is active and who also share theirs; the Miff creator has no extra rights. It is erased when the user stops sharing, leaves the Miff, is removed, or deletes the Miff or the account. After 24 hours the app shows it hidden, with its date. It is never sent to analytics or crash-reporting, never used for advertising, never sold. App Privacy answers reflect this (Precise Location, linked to the user, App Functionality; no tracking).
+>
+> **Profile photo from Google sign-in.** If the user signs up with Google, the app downloads the Google profile photo once, over HTTPS, from a Google image server (`googleusercontent.com`) and offers it as a pre-filled profile photo that the user can change or remove before saving the profile. Google's image server therefore receives the device's IP address, as for any image loaded from a server. The photo is then resized and stored without metadata with the profile, like any profile photo, and is visible to the members of the user's Miffs.
+>
+> **Saving a received photo (if shipped).** In the full-screen view of a photo shared by a member of the user's Miff, a "Save this photo" button adds the photo to the user's photo library only when tapped (add-only access, `NSPhotoLibraryAddUsageDescription`; the app never reads the library). The saved file contains no metadata and no location. Nothing is ever saved automatically, and nothing is sent anywhere.
 >
 > **Consent.** The user agrees separately for each Miff on a screen that states the data shared and that it works even when the app is closed (consent text version 2026-11-v03). Sharing can be stopped at any time in the app. Account deletion is available in the app (Settings).
 >
