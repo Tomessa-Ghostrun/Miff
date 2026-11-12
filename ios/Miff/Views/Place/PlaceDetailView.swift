@@ -169,6 +169,7 @@ struct PlaceDetailBody: View {
             chosen: ResolvedAddress(label: address, lat: place.lat, lng: place.lng),
             radiusM: place.radiusM,
             isDanger: place.type == .risk,
+            emoji: place.category?.emoji,
             height: 210
         )
         if !address.isEmpty {
@@ -266,9 +267,14 @@ struct PlaceDetailBody: View {
     @ViewBuilder
     private var categoryValue: some View {
         if let category = place.category {
-            Text(verbatim: category.label)
-                .miffTextStyle(textBodyRegular)
-                .foregroundColor(colorTextPrimary.color)
+            HStack(spacing: Spacing.xs) {
+                Text(verbatim: category.emoji)
+                    .miffTextStyle(textBodyRegular)
+                    .accessibilityHidden(true)
+                Text(verbatim: category.label)
+                    .miffTextStyle(textBodyRegular)
+                    .foregroundColor(colorTextPrimary.color)
+            }
         }
     }
 

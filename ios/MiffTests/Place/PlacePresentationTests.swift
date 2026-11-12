@@ -9,11 +9,11 @@ final class PlacePresentationTests: XCTestCase {
 
     // MARK: - La liste (PL1, PL10, LIM1)
 
-    func testACreatorOnTheFreePlanWithTwoPlacesIsAtTheLimit() {
-        let ui = PlaceListUi(places: places(["p1", "p2"]), isCreator: true, premium: false, notice: nil)
+    func testACreatorOnTheFreePlanWithThreePlacesIsAtTheLimit() {
+        let ui = PlaceListUi(places: places(["p1", "p2", "p3"]), isCreator: true, premium: false, notice: nil)
 
         XCTAssertTrue(ui.atFreeLimit)
-        XCTAssertEqual(ui.distinctCount, 2)
+        XCTAssertEqual(ui.distinctCount, 3)
     }
 
     private func list(_ ids: [String], isCreator: Bool, premium: Bool?) -> PlaceListUi {
@@ -21,10 +21,11 @@ final class PlacePresentationTests: XCTestCase {
     }
 
     func testTheLimitIsNeverClaimedWhenThePlanIsUnknownPremiumOrTheOneWhoLooksIsAMember() {
-        XCTAssertFalse(list(["p1", "p2"], isCreator: true, premium: nil).atFreeLimit)
-        XCTAssertFalse(list(["p1", "p2"], isCreator: true, premium: true).atFreeLimit)
-        XCTAssertFalse(list(["p1", "p2"], isCreator: false, premium: false).atFreeLimit)
-        XCTAssertFalse(list(["p1"], isCreator: true, premium: false).atFreeLimit)
+        XCTAssertFalse(list(["p1", "p2", "p3"], isCreator: true, premium: nil).atFreeLimit)
+        XCTAssertFalse(list(["p1", "p2", "p3"], isCreator: true, premium: true).atFreeLimit)
+        XCTAssertFalse(list(["p1", "p2", "p3"], isCreator: false, premium: false).atFreeLimit)
+        // 2 lieux sur 3 : il reste une place.
+        XCTAssertFalse(list(["p1", "p2"], isCreator: true, premium: false).atFreeLimit)
     }
 
     func testTheFreeCounterIsOnlyForACreatorWhoseFreePlanIsKnown() {
