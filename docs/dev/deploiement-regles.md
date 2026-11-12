@@ -66,7 +66,7 @@ La CLI affiche « Deploy complete! » en cas de succès. En cas d'erreur de synt
 | # | Vérification | OK si |
 |---|---|---|
 | 1 | Console Firebase > Firestore Database > **Règles** | La date et l'heure de publication ont changé (nouvelle version) ; le texte correspond à `backend/firestore.rules` (compare le début du fichier : l'en-tête et les premières fonctions) |
-| 2 | Attendre quelques minutes (propagation) puis ouvrir l'application de test | L'écran de diagnostic indique « Règles actives : OK » (écran prévu par le ticket d'initialisation technique ; tant qu'il n'existe pas, passer à l'étape suivante) |
+| 2 | Attendre quelques minutes (propagation) puis ouvrir l'application de test, puis le diagnostic (Réglages > Diagnostic, ou appui continu de 10 s, voir `acces-diagnostic.md`) ; le test 1 est refusé si un compte est connecté | L'écran de diagnostic indique « Règles actives : OK » (écran prévu par le ticket d'initialisation technique ; tant qu'il n'existe pas, passer à l'étape suivante) |
 | 3 | Parcours rapide avec **deux comptes de test** : créer une Miff, la rejoindre avec le code, activer le partage, lire le statut de l'autre | Tout fonctionne ; aucun message de refus inattendu |
 | 4 | Pour une règle sensible (DUR-1, DUR-2) : rejouer à la main les attaques H1c (recréer l'identifiant d'une Miff supprimée) et H4c (rejoindre avec l'ancien code après un retrait) | Elles sont **refusées**. À faire sur le projet de développement dès qu'il existe (décision du PM : avant les premiers testeurs externes), pas sur la production |
 | 5 | Le lendemain : Firestore Database > **Utilisation** | Pas d'explosion du nombre de lectures (voir `surveillance-quotas.md`) |

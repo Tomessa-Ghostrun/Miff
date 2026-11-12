@@ -121,11 +121,13 @@ test('WORKFLOWS - la durée de chaque job est consignée dans le résumé', () =
   }
 });
 
-test('DEPENDABOT - github-actions et npm (backend) déclarés ; gradle / swift dès qu\'un manifeste existe', () => {
+test('DEPENDABOT - github-actions et npm (backend et backend/functions) déclarés ; gradle / swift dès qu\'un manifeste existe', () => {
   const doc = load(`${root}.github/dependabot.yml`);
-  const ecosystems = Object.fromEntries(doc.updates.map((u) => [u['package-ecosystem'], u.directory]));
+  const ecosystems = Object.fromEntries(doc.updates.filter((u) => u['package-ecosystem'] !== 'npm').map((u) => [u['package-ecosystem'], u.directory]));
   assert.equal(ecosystems['github-actions'], '/');
-  assert.equal(ecosystems.npm, '/backend');
+  // Plusieurs entrées npm : un package.json par dossier (Dependabot ne descend pas dans les sous-dossiers).
+  const npmDirectories = doc.updates.filter((u) => u['package-ecosystem'] === 'npm').map((u) => u.directory).sort();
+  assert.deepEqual(npmDirectories, ['/backend', '/backend/functions']);
   // Une entrée vers un dossier sans manifeste fait échouer Dependabot ; à l'inverse, un manifeste sans entrée
   // n'est pas surveillé. Ce test oblige à ajouter l'entrée au moment où android/ ou ios/ reçoivent leur manifeste.
   const has = (dir, names) => existsSync(`${root}${dir}`) && readdirSync(`${root}${dir}`).some((f) => names.includes(f));
