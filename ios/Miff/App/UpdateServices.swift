@@ -129,14 +129,15 @@ struct UpdateServices {
     }
 
     /// Le view model de l'écran Update, créé pour la session.
-    func makeViewModel() -> UpdateViewModel {
+    func makeViewModel(onPublishedAt: @escaping (Int) -> Void = { _ in }) -> UpdateViewModel {
         UpdateViewModel(
             UpdateViewModelDependencies(
                 publisher: publisher,
                 cleaner: cleaner,
                 ledger: ledger,
                 permission: permission,
-                sharingStopped: sharingStopped
+                sharingStopped: sharingStopped,
+                onPublishedAt: onPublishedAt
             )
         )
     }

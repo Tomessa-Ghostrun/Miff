@@ -1014,9 +1014,11 @@ class FeedScreenTest {
                 .onAllNodesWithText("Pas encore de nouvelles", useUnmergedTree = true)[0]
                 .fetchSemanticsNode()
                 .boundsInRoot
+        // The unmerged tree: since COULEURS-1 the whole bubble is ONE node for the screen reader (the touch that opens the page of the colours), so its text
+        // is found by its own node.
         val body =
             composeRule
-                .onNodeWithText(text(R.string.feed_bubble_no_news_body))
+                .onAllNodesWithText(text(R.string.feed_bubble_no_news_body), useUnmergedTree = true)[0]
                 .fetchSemanticsNode()
                 .boundsInRoot
         val root = composeRule.onRoot().fetchSemanticsNode().boundsInRoot

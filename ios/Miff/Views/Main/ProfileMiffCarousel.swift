@@ -26,26 +26,11 @@ struct ProfileCarouselContent {
     }
 }
 
-/// Le suivi d'un glissement : où est le doigt (déjà freiné au bout du carrousel) et l'axe décidé au premier mouvement. Un `@GestureState` :
-/// il revient SEUL à zéro quand le geste se termine OU est annulé (appel, notification, geste du système), la carte ne reste jamais décalée.
-private struct DragTrack {
-    var translation: CGFloat = 0
-    var horizontal: Bool?
-}
-
 /// Ce qui relance la lecture paresseuse : la page montrée, la liste des Miffs, et le Profil à l'écran ou non.
 private struct CarouselLoadKey: Equatable {
     let isActive: Bool
     let page: Int
     let miffIds: [String]
-}
-
-/// La hauteur d'une carte (la plus grande gagne : toutes les cartes ont la même hauteur, quelle que soit la taille du texte).
-private struct CardHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = max(value, nextValue())
-    }
 }
 
 /// « Mes Miffs » : un carrousel horizontal, une carte par Miff (nom, nombre de membres, miniatures des membres), et en DERNIER la carte
@@ -60,7 +45,13 @@ struct ProfileMiffCarousel: View {
     let actions: ProfileCarouselActions
 
     @State private var page: Int
-    @GestureState private var track = DragTrack()
+    /// Le décalage de la rangée sous le doigt (déjà freiné au bout du carrousel). Un `@State` simple, remis à zéro AVEC le changement de page
+    /// dans UNE seule transaction à la fin du geste : la carte ne revient jamais en arrière avant de glisser vers sa nouvelle place.
+    @State private var dragX: CGFloat = 0
+    /// L'axe décidé au premier mouvement du doigt (il ne change plus jusqu'à la fin du geste).
+    @State private var axis = CarouselTouch.Phase.undecided
+    /// Vrai pendant qu'un geste est en cours ; son retour à faux SANS fin de geste (appel, notification, geste du système) remet la rangée en place.
+    @GestureState private var dragging = false
     @State private var prefetched: Int?
     /// Le doigt a dépassé le seuil pendant le geste en cours (même s'il est revenu) : ce n'est pas un toucher.
     @State private var exceededSlop = false
@@ -118,10 +109,19 @@ struct ProfileMiffCarousel: View {
             if next != cardHeight {
                 cardHeight = next
             }
-            measuredTypeSize = typeSize
+            if measuredTypeSize != typeSize {
+                measuredTypeSize = typeSize
+            }
         }
         .task(id: CarouselLoadKey(isActive: isActive, page: current, miffIds: miffs.map { $0.id })) {
             await loadVisibleCard()
+        }
+        // Un geste interrompu (appel, notification, geste du système) ne passe pas par `onEnded` : la rangée revient en place.
+        .onChange(of: dragging) { active in
+            if !active {
+                axis = .undecided
+                settleBack()
+            }
         }
     }
 
@@ -130,18 +130,13 @@ struct ProfileMiffCarousel: View {
     private var pager: some View {
         GeometryReader { proxy in
             let width = proxy.size.width
-            HStack(alignment: .top, spacing: gap) {
-                ForEach(0..<count, id: \.self) { index in
-                    card(at: index)
-                        .frame(width: width)
-                        // Seule la carte montrée est lue par VoiceOver ; les autres sont hors de l'écran.
-                        .accessibilityHidden(index != current)
-                }
-            }
-            .offset(x: -CGFloat(current) * (width + gap) + track.translation)
-            .frame(width: width, alignment: .leading)
-            .contentShape(Rectangle())
-            .simultaneousGesture(dragGesture(pageWidth: width))
+            // La rangée est comparée à elle-même (`.equatable()`) : pendant un balayage, seul le décalage change, jamais les cartes.
+            row(width: width)
+                .equatable()
+                .offset(x: -CGFloat(current) * (width + gap) + dragX)
+                .frame(width: width, alignment: .leading)
+                .contentShape(Rectangle())
+                .simultaneousGesture(dragGesture(pageWidth: width))
         }
         // Avant la première mesure : une hauteur de départ (la carte la remplace dès qu'elle est mesurée).
         .frame(height: cardHeight > 0 ? cardHeight : Spacing.minTouchTarget * 2)
@@ -149,30 +144,20 @@ struct ProfileMiffCarousel: View {
         .clipShape(Rectangle().inset(by: -shadowMargin))
     }
 
-    private func card(at index: Int) -> some View {
-        // « Carte 2 sur 3 » : la position est dite avec la carte, un lecteur d'écran n'a pas à la deviner.
-        let position = L10n.format("profile_tab_carousel_page_a11y", index + 1, count)
-        return Group {
-            if index < miffs.count {
-                MiffPagerCard(
-                    name: miffs[index].name,
-                    members: previews.state(for: miffs[index].id),
-                    maxVisible: typeSize.isAccessibilitySize ? MemberStack.maxVisibleLargeText : MemberStack.maxVisible,
-                    position: position,
-                    action: { actions.onOpenMiff(miffs[index].id) }
-                )
-            } else {
-                CreateMiffCard(position: position, action: actions.onCreate)
-            }
-        }
-        // La carte prend sa hauteur naturelle (jamais tronquée), mesurée ; puis toutes prennent la plus grande.
-        .fixedSize(horizontal: false, vertical: true)
-        .background(
-            GeometryReader { proxy in
-                Color.clear.preference(key: CardHeightKey.self, value: proxy.size.height)
-            }
+    private func row(width: CGFloat) -> CarouselCardsRow {
+        CarouselCardsRow(
+            miffIds: miffs.map { $0.id },
+            names: miffs.map { $0.name },
+            members: miffs.map { previews.state(for: $0.id) },
+            count: count,
+            current: current,
+            width: width,
+            gap: gap,
+            cardHeight: cardHeight,
+            maxVisible: typeSize.isAccessibilitySize ? MemberStack.maxVisibleLargeText : MemberStack.maxVisible,
+            onOpenMiff: actions.onOpenMiff,
+            onCreate: actions.onCreate
         )
-        .frame(minHeight: cardHeight, alignment: .top)
     }
 
     // MARK: - Le geste
@@ -182,43 +167,49 @@ struct ProfileMiffCarousel: View {
     /// de carte) ou un défilement de la page (vertical : rien ici). `simultaneousGesture` : le défilement vertical de l'écran continue de marcher.
     private func dragGesture(pageWidth: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 0)
-            .updating($track) { value, state, _ in
-                if state.horizontal == nil {
-                    switch CarouselTouch.phase(translation: value.translation) {
-                    case .horizontal:
-                        state.horizontal = true
-                    case .vertical:
-                        state.horizontal = false
-                    case .undecided:
-                        break
-                    }
-                }
-                if state.horizontal == true {
-                    state.translation = resisted(value.translation.width)
+            .updating($dragging) { _, state, _ in
+                if !state {
+                    state = true
                 }
             }
             .onChanged { value in
                 // Premier événement d'un nouveau geste (le doigt vient de se poser) : un geste précédent annulé ne laisse rien derrière lui.
                 if value.translation == .zero {
                     exceededSlop = false
+                    axis = .undecided
                 }
                 let phase = CarouselTouch.phase(translation: value.translation)
-                if phase != .undecided {
+                if phase != .undecided && !exceededSlop {
                     exceededSlop = true
+                }
+                // L'axe est décidé au premier mouvement au-delà du seuil et ne change plus jusqu'à la fin du geste.
+                if axis == .undecided && phase != .undecided {
+                    axis = phase
+                }
+                if axis == .horizontal {
+                    let next = resisted(value.translation.width)
+                    if next != dragX {
+                        dragX = next
+                    }
                 }
                 if phase == .horizontal {
                     prefetchNeighbour(translation: value.translation.width)
                 }
             }
             .onEnded { value in
-                prefetched = nil
+                if prefetched != nil {
+                    prefetched = nil
+                }
                 let moved = exceededSlop
                 exceededSlop = false
+                axis = .undecided
                 if CarouselTouch.isTap(translation: value.translation, exceededSlop: moved) {
+                    settleBack()
                     activateCurrentCard()
                     return
                 }
                 guard CarouselTouch.phase(translation: value.translation) == .horizontal else {
+                    settleBack()
                     return
                 }
                 let target = CarouselPaging.settle(
@@ -228,10 +219,21 @@ struct ProfileMiffCarousel: View {
                     pageWidth: pageWidth,
                     count: count
                 )
+                // UNE seule transaction : la nouvelle page ET le retour du décalage à zéro (jamais de retour en arrière avant de glisser).
                 animate {
                     page = target
+                    dragX = 0
                 }
             }
+    }
+
+    /// Le décalage revient à zéro (un toucher, ou un geste vertical) ; sans effet s'il est déjà à zéro.
+    private func settleBack() {
+        if dragX != 0 {
+            animate {
+                dragX = 0
+            }
+        }
     }
 
     /// Le toucher : ouvre la carte montrée (la Miff, ou « Créer une Miff »).
@@ -303,137 +305,5 @@ struct ProfileMiffCarousel: View {
         // dernière Miff regardée).
         actions.onMiffShown(miff.id)
         await previews.loadIfNeeded(miffId: miff.id, isActive: miff.id == activeId)
-    }
-}
-
-// MARK: - Les cartes
-
-/// Le fond d'une carte : blanc, arrondi, avec l'ombre des cartes du Profil.
-private struct CardSurface: ViewModifier {
-    func body(content: Content) -> some View {
-        content
-            .padding(.horizontal, Spacing.md)
-            .padding(.vertical, Spacing.md)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .frame(minHeight: Spacing.minTouchTarget)
-            // L'ombre est celle du FOND seulement : posée sur toute la carte, elle doublerait aussi le texte et les miniatures.
-            .background(
-                RoundedRectangle(cornerRadius: radiusMd, style: .continuous)
-                    .fill(colorBgSurface.color)
-                    .miffShadow(shadowDefault)
-            )
-            .contentShape(Rectangle())
-    }
-}
-
-/// La pastille bleue pâle à gauche d'une carte (le pictogramme « proches » de la maquette).
-private struct CardTile: View {
-    let symbol: String
-    @ScaledMetric(relativeTo: .body) private var scaled: CGFloat = 40
-
-    /// Grandit avec le texte, jusqu'à 60 pt : la pastille ne mange pas la place du nom.
-    private var side: CGFloat {
-        min(scaled, 60)
-    }
-
-    var body: some View {
-        Image(systemName: symbol)
-            .font(.system(size: side * 0.5, weight: .regular))
-            .foregroundColor(colorActionPrimary.color)
-            .frame(width: side, height: side)
-            .background(
-                RoundedRectangle(cornerRadius: radiusMd, style: .continuous).fill(colorActionPrimaryTint20.color)
-            )
-            .accessibilityHidden(true)
-    }
-}
-
-/// La carte d'une Miff : son nom, « N membres » (en bleu), les miniatures des membres, la flèche. Ouvre l'écran de la Miff.
-private struct MiffPagerCard: View {
-    let name: String
-    let members: MiffCardMembers
-    let maxVisible: Int
-    let position: String
-    let action: () -> Void
-
-    private var memberCount: Int? {
-        if case .known(let preview) = members {
-            return preview.count
-        }
-        return nil
-    }
-
-    private var spokenLabel: String {
-        let open = L10n.format("profile_tab_miff_open_a11y", name)
-        guard let memberCount else {
-            return "\(open), \(position)"
-        }
-        return "\(open), \(L10n.plural("profile_tab_miff_members", count: memberCount)), \(position)"
-    }
-
-    var body: some View {
-        // Aucun `Button` : le toucher est décidé par le geste unique du carrousel (voir `dragGesture`). VoiceOver ouvre la carte par
-        // l'action par défaut (double toucher).
-        HStack(spacing: Spacing.md) {
-            CardTile(symbol: "person.2")
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text(verbatim: name)
-                    .miffTextStyle(textBodyBold16)
-                    .foregroundColor(colorTextForm.color)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                subtitle
-                MemberThumbsRow(members: members, maxVisible: maxVisible)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            Image(systemName: "chevron.forward")
-                .foregroundColor(colorTextDescription.color)
-                .accessibilityHidden(true)
-        }
-        .modifier(CardSurface())
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: spokenLabel))
-        .accessibilityAddTraits(.isButton)
-        .accessibilityAction(.default, action)
-    }
-
-    /// « 4 membres » quand on le sait ; sinon (lecture en cours ou impossible) la courte aide d'avant : jamais un message d'erreur.
-    @ViewBuilder
-    private var subtitle: some View {
-        if let memberCount {
-            Text(verbatim: L10n.plural("profile_tab_miff_members", count: memberCount))
-                .miffTextStyle(textBodyRegular14)
-                .foregroundColor(colorActionPrimary.color)
-        } else {
-            Text("profile_tab_miff_hint")
-                .miffTextStyle(textBodyRegular14)
-                .foregroundColor(colorTextDescription.color)
-        }
-    }
-}
-
-/// La dernière carte : « Créer une Miff ». Pour un compte gratuit qui a déjà une Miff, l'hôte ouvre l'offre au lieu du parcours.
-private struct CreateMiffCard: View {
-    let position: String
-    let action: () -> Void
-
-    var body: some View {
-        // Aucun `Button` (voir `MiffPagerCard`) : jamais d'ouverture au relâchement d'un glissement.
-        HStack(spacing: Spacing.md) {
-            CardTile(symbol: "plus")
-            Text("profile_tab_miff_create")
-                .miffTextStyle(textBodyBold16)
-                .foregroundColor(colorTextForm.color)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            Image(systemName: "chevron.forward")
-                .foregroundColor(colorTextDescription.color)
-                .accessibilityHidden(true)
-        }
-        .modifier(CardSurface())
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: "\(L10n.string("profile_tab_miff_create")), \(position)"))
-        .accessibilityAddTraits(.isButton)
-        .accessibilityAction(.default, action)
     }
 }
