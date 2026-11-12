@@ -41,6 +41,7 @@ import com.tomessa.miff.domain.travel.TravelDay
 import com.tomessa.miff.domain.travel.TravelPlan
 import com.tomessa.miff.ui.miff.MiffConfirmDialog
 import com.tomessa.miff.ui.miff.MiffNotice
+import com.tomessa.miff.ui.navigation.holdForDiagnostic
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
@@ -296,6 +297,7 @@ private fun DayPicker(
             selectableDates = selectable,
         )
     DatePickerDialog(
+        modifier = Modifier.holdForDiagnostic(),
         onDismissRequest = actions.onPickerDismissed,
         confirmButton = {
             TextButton(

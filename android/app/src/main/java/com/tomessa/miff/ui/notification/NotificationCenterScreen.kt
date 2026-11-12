@@ -50,6 +50,7 @@ import com.tomessa.miff.domain.notification.NotificationSections
 import com.tomessa.miff.domain.notification.NotificationType
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.miff.MiffConfirmDialog
+import com.tomessa.miff.ui.navigation.holdForDiagnostic
 import com.tomessa.miff.ui.settings.SettingsScaffold
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -183,7 +184,12 @@ private fun BoxScope.CenterMenu(
                 tint = colorActionPrimary,
             )
         }
-        DropdownMenu(expanded = open, onDismissRequest = { onOpenChange(false) }, containerColor = colorBgSurface) {
+        DropdownMenu(
+            expanded = open,
+            onDismissRequest = { onOpenChange(false) },
+            containerColor = colorBgSurface,
+            modifier = Modifier.holdForDiagnostic(),
+        ) {
             DropdownMenuItem(
                 text = {
                     Text(
@@ -481,7 +487,12 @@ private fun CenterRowView(
                 Text(text = meta, style = textBodyCaption, color = colorTextSecondary)
             }
         }
-        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }, containerColor = colorBgSurface) {
+        DropdownMenu(
+            expanded = menuOpen,
+            onDismissRequest = { menuOpen = false },
+            containerColor = colorBgSurface,
+            modifier = Modifier.holdForDiagnostic(),
+        ) {
             DropdownMenuItem(
                 text = { Text(deleteLabel, style = textBodyRegular14, color = colorTextForm) },
                 onClick = {

@@ -36,7 +36,7 @@ Cochez chaque case. En cas de doute : capture d'écran + numéro de l'étape.
 
 ### Étape 2 — Premier lancement (1 min)
 
-- [ ] L'app s'ouvre **sans se fermer toute seule** sur un écran au fond clair intitulé **Diagnostic interne**.
+- [ ] L'app s'ouvre **sans se fermer toute seule**. *(Depuis la 0.36.0 elle démarre comme en production ; l'écran au fond clair intitulé **Diagnostic interne** s'ouvre par **Réglages > Diagnostic** ou par un appui continu de 10 secondes, voir `docs/qa/checklists/diagnostic-acces-android-recette-pm.md`.)*
 - [ ] Sous « Version installée », vous lisez : **Version : 0.1.0 (build 1)**, **Configuration : debug**, **Application : com.tomessa.miff**, **Android 13 (API 33)**.
 - [ ] **Projet Firebase : miff-3d283**, suivi de la phrase **« C'est bien le projet Miff attendu. »** Si vous voyez à la place « Projet inattendu » : **arrêtez-vous, capture d'écran, prévenez Claude** (ce serait un bloquant).
 - [ ] **Langue : fr-…** et **Sens du texte : de gauche à droite**.

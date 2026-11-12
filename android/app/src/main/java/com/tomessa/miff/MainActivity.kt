@@ -27,6 +27,7 @@ import com.tomessa.miff.startup.StartupMetricsOverlay
 import com.tomessa.miff.startup.StartupTrace
 import com.tomessa.miff.ui.components.ProvideSystemBarsFallback
 import com.tomessa.miff.ui.navigation.MiffNavHost
+import com.tomessa.miff.ui.navigation.holdForDiagnostic
 import com.tomessa.miff.ui.splash.ReduceMotion
 import com.tomessa.miff.ui.splash.SplashHost
 import com.tomessa.miff.ui.theme.MiffTheme
@@ -59,7 +60,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             MiffTheme {
                 ProvideSystemBarsFallback {
-                    Box(modifier = Modifier.fillMaxSize()) {
+                    // The whole window, splash included: the 10 s hold to the diagnostic screen (test builds only; nothing in release).
+                    Box(modifier = Modifier.fillMaxSize().holdForDiagnostic()) {
                         SplashHost(
                             reduceMotion = reduceMotion,
                             // The session is read once the first image of the animation is on screen, not before: reading it

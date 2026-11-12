@@ -21,7 +21,7 @@
 
 L'app n'a pas encore d'écran « Créer ou rejoindre une Miff » : sans Miff, vous restez sur l'écran provisoire (c'est voulu, sans barre d'onglets).
 
-- [ ] Ouvrez l'app, **Ouvrir l'application** (écran de diagnostic), connectez-vous avec le compte de test.
+- [ ] Ouvrez l'app (elle démarre sur le parcours normal depuis la 0.36.0 : le diagnostic ne s'affiche plus au démarrage), connectez-vous avec le compte de test.
 - [ ] Vous arrivez sur l'écran « Prochaine étape : créer ou rejoindre une Miff » **sans barre d'onglets**.
 - [ ] Touchez **Aperçu interne : ouvrir les onglets et les Réglages** (ce bouton n'existe que dans la version de test).
 - **Résultat attendu** : la barre d'onglets apparaît en bas (carte blanche arrondie) avec trois icônes : maison avec un cœur (sélectionnée, fond bleu pâle), un rond jaune-vert un peu atténué (**désactivé**), une silhouette.

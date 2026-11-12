@@ -46,6 +46,35 @@ Ticket `docs/tickets/notification-update-membres.md` (§4 à §13 ; décisions d
 - **OPPO / ColorOS** : voir `docs/dev/fcm-android.md`. Non mesuré ; la mesure sur l'OPPO du PM est dans la recette.
 - **Écarts avec le ticket** : le ticket dit « discret » dans plusieurs passages ; la décision du PM du 2026-11-12 prime (son et vibration le jour, calme la nuit). Pas de regroupement explicite par le système (« {n} nouvelles dans ta Miff ») dans ce lot : Android regroupe de lui-même au-delà de quatre notifications d'une même app ; un résumé explicite reste à faire si le PM le veut. Pas de défilement vers la carte de l'auteur : l'appui ouvre le Feed de la bonne Miff.
 - **Côté iOS** : tout reste à faire (clé APNs, capacité Push) ; les clés de texte ci-dessus sont dans cette entrée.
+## [0.36.0] - 2026-11-12 : l'app ne démarre plus sur le diagnostic ; accès par Réglages ou par un appui de 10 secondes
+
+Demande du PM du 2026-11-12 ; branche `android/debug-acces-reglages-appui-long`, PR brouillon. Pas de maquette (résultat direct demandé). Numéro de version : `main` est à 0.
+
+### Modifié
+- **Le démarrage est celui de la production, dans tous les builds** : splash, puis carrousel / connexion / Feed selon l'état. L'écran de diagnostic n'est plus la destination de départ des APK de debug (`MiffNavHost` démarre toujours sur `AppRoute`).
+- Le bouton de l'écran de diagnostic s'appelle « Retour à l'application » et **revient où l'on était, telle quelle** : le diagnostic s'ouvre **dans une fenêtre au-dessus de l'app**, qui reste en place dessous (fenêtres ouvertes, textes saisis, bandeaux conservés) ; ce n'est pas une destination de navigation. Le geste retour fait de même. Il passe aussi au-dessus d'une fenêtre de l'app restée ouverte.
+- **Tests 1 et 2 du diagnostic refusés si un compte est connecté** (ils déconnectaient la vraie session) : message clair, aucune déconnexion. La carte Confidentialité dit que ses interrupteurs changent les vrais réglages du téléphone. Libellés dans `src/debug/res` (absents du release) ; textes des tests 1 et 2 ajustés (clés partagées avec iOS inchangées).
+
+### Ajouté
+- **Porte 1 : Réglages > « Diagnostic »**, ligne en bas des Réglages (liste complète et liste réduite sans Miff). Build **debug seulement**.
+- **Porte 2 : appui continu de 10 secondes, n'importe où**, un seul doigt, immobile (tolérance 20 dp ; lever le doigt, bouger davantage ou poser un second doigt annule), avec un retour haptique bref à l'ouverture. Le détecteur (`Modifier.pointerInput`, phase **Initial**, ne consomme rien) est posé sur la **fenêtre entière** dans `MainActivity` (splash, carrousel, connexion, inscription, onboarding, permissions, Miff, Feed, Update) **et** sur la carte de chaque fenêtre ou feuille de l'app (une fenêtre est une fenêtre Android séparée : 13 emplacements, confirmations, sélecteurs, photo en plein écran, fenêtre d'avis ; et les 4 menus déroulants). Build **debug seulement**.
+- Règles pures `HoldGestureTracker` / `HoldGestureRules` (10 s, 20 dp, annulations) ; canal `DiagnosticRequests` (sans rejeu : une ancienne demande n'ouvre jamais l'écran plus tard).
+- `InternalDestinations` (debug et release) expose `SettingsEntry`, `holdModifier` et `Overlay` ; la version **release est vide** (ni geste, ni ligne, ni route).
+- Tests : `HoldGestureTrackerTest` (durée, tolérance, annulations), `DiagnosticHoldDetectorTest` (Robolectric, écran d'exemple : ouverture à 10 s et pas avant, tremblement toléré, glissement et second doigt annulent, un toucher et un défilement normaux ne sont pas gênés), `DiagnosticAccessTest` (ligne de Réglages, fenêtre au-dessus de l'app dont l'état est conservé à la fermeture), `DiagnosticViewModelTest` (tests 1 et 2 refusés avec un compte connecté), `DiagnosticAccessGuardTest` (démarrage sur l'app, détecteur absent du code commun et release).
+- Documentation : `docs/dev/acces-diagnostic.md`, recette PM `docs/qa/checklists/diagnostic-acces-android-recette-pm.md` ; les recettes qui disaient « l'app démarre sur le diagnostic » sont corrigées.
+
+### Sécurité
+- **Absent de tout build distribuable** : le code est dans `src/debug` seulement. La CI cherche maintenant aussi le marqueur `DIAGNOSTICHOLDGESTURE` dans le dex du bundle release (`android/ci/check-release-bundle.sh` et `.github/workflows/android.yml`) et dans l'APK `releaseLike`. Le script du bundle cherche aussi désormais `DEBUGAPPCHECKOFF` (déjà cherché par `android.yml`, oublié dans le script : les deux sont de nouveau d'accord, gardés par `ReleaseSigningGuardTest`).
+- Aucune donnée personnelle affichée (jeton, position, compte) ; le champ de connexion du test 2 est saisi à la main, jamais gardé ; le test de position envoie lat 0 / lng 0 refusé d'avance. Le geste n'envoie aucun événement. Contrôle **positif** ajouté dans `android.yml` (le marqueur est bien dans l'APK debug).
+
+### Choix « économiques »
+- **Aucun** : aucun service, aucune dépendance ajoutée.
+
+### À savoir
+- **`releaseLike` n'a ni la ligne ni le geste** (il est construit avec les sources release, c'est son but : mesurer la diffusion). Le diagnostic n'est donc dans que l'APK debug.
+- **Pas de test avec le vrai `AppRoot`** : il exige le conteneur complet (Firebase, session) qui ne se monte pas sur la JVM ; l'état conservé est prouvé avec un écran d'exemple et la même fenêtre. À vérifier à la main (recette, partie C).
+- Limites du geste : les fenêtres du système (demande d'autorisation, sélecteur de fichiers) ne passent pas par l'app ; la zone sombre autour d'une fenêtre de l'app ne déclenche pas le geste (seule la carte le fait).
+
 ## [0.36.0] - 2026-11-12 : reprise du partage d'une Miff, la carte ne reste plus grise (même défaut que sur iOS, PR #190)
 
 Branche `android/reprise-partage-statut`, PR brouillon. Numéro de version : `main` est à 0.35.0 et deux PR ouvertes prennent 0.33.0 et 0.34.0 ; celui-ci prend le prochain libre, 0.36.0 (à renuméroter au merge si l'ordre change). Aucune donnée, aucune règle, aucune permission, aucune dépendance, aucun service payant, rien modifié sur `miff-3d283`.
