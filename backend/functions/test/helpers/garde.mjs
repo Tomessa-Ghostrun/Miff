@@ -3,7 +3,7 @@
 // Les valeurs de référence viennent de src/options.ts (compilé dans lib/) : un seul endroit pour les décider.
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
-const { LIMITES, FONCTIONS_AVEC_RETRY_AUTORISEES, DECLENCHEURS_AUTORISES } = require('../../lib/options.js');
+const { LIMITES, FONCTIONS_AVEC_RETRY_AUTORISEES, FONCTIONS_IDENTITE_PAR_DEFAUT_AUTORISEES, DECLENCHEURS_AUTORISES } = require('../../lib/options.js');
 
 export { LIMITES, DECLENCHEURS_AUTORISES };
 
@@ -54,6 +54,14 @@ export function problemesDeGardeFous(nom, endpoint) {
   const compteNonDefini = compte == null || JSON.stringify(compte) === 'null';
   if (!compteNonDefini && !compteDeServiceValide(compte)) {
     dit('compte de service : seul un compte DÉDIÉ explicite est permis (jamais le compte par défaut / Éditeur)');
+  }
+  // SRV-4B : toute fonction METIER (qui lit ou ecrit des donnees) declare un compte dedie ; l'identite par defaut est reservee a la liste de options.ts.
+  if (compteNonDefini && !FONCTIONS_IDENTITE_PAR_DEFAUT_AUTORISEES.includes(nom)) {
+    dit('identité par défaut du projet interdite pour une fonction métier : compte de service DÉDIÉ obligatoire (option serviceAccount)');
+  }
+  // Un compte dedie doit appartenir au projet Miff : jamais un compte d'un autre projet du meme compte Google (Ghostrun).
+  if (typeof compte === 'string' && compte.includes('@') && !compte.endsWith('@miff-3d283.iam.gserviceaccount.com')) {
+    dit("compte de service d'un autre projet que miff-3d283");
   }
   const retry = endpoint.eventTrigger?.retry ?? endpoint.scheduleTrigger?.retryConfig?.retryCount;
   if (retry && !FONCTIONS_AVEC_RETRY_AUTORISEES.includes(nom)) {

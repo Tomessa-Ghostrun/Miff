@@ -17,7 +17,8 @@ import com.tomessa.miff.domain.session.DeviceIds
  * position ("avant ou avec" the first build that writes one).
  */
 
-enum class WriteKind { SET, UPDATE, DELETE }
+/** [MERGE] is a set that keeps the other fields of an existing document (needed for `FieldValue.increment` on a counter that may not exist yet). */
+enum class WriteKind { SET, UPDATE, DELETE, MERGE }
 
 /** One write of a lot: the path of the document, what to do, the fields (empty for a deletion). */
 class DocWrite(
