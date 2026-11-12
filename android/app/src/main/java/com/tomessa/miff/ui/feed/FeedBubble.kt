@@ -1,8 +1,11 @@
 package com.tomessa.miff.ui.feed
 
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -74,7 +77,7 @@ import kotlinx.coroutines.launch
  */
 
 /** A soft organic blob (a smooth closed curve through ten points), like the stain of the PM's mockups. Symmetric in right-to-left. */
-private object BubbleShape : Shape {
+internal object BubbleShape : Shape {
     private val points =
         listOf(
             Offset(0.50f, 0.02f),
@@ -122,6 +125,8 @@ fun BubbleView(
     modifier: Modifier = Modifier,
     /** MODE VOYAGE: the line "{Prénom} est en voyage…" under the usual bubble (null: none). */
     travelNote: TravelNote? = null,
+    /** COULEURS-1: a touch on the blob (not on its button) opens the page "Les couleurs de ta Miff". */
+    onOpenColors: () -> Unit = {},
 ) {
     // What the screen reader says is fixed when the LEVEL (or the set of alerts) changes, not each minute when "il y a 2 min" changes.
     val announcement =
@@ -132,7 +137,7 @@ fun BubbleView(
     // The slow movement of the blob (null = still: animations removed by the person, or the screen not started). One for all the pages.
     val phases = rememberBubblePhases()
     Box(modifier = modifier.fillMaxWidth()) {
-        CompositionLocalProvider(LocalBubblePhases provides phases) {
+        CompositionLocalProvider(LocalBubblePhases provides phases, LocalOpenColors provides onOpenColors) {
             when (bubble) {
                 is Bubble.Alerts -> AlertCarousel(bubble.pages, texts, onMessage, travelNote)
                 else -> CalmBubble(bubble, texts, onResumeSharing, travelNote)
@@ -293,12 +298,21 @@ private fun AlertPageBubble(
 /** The movement of the bubble, given to every blob below [BubbleView] (null = still). */
 private val LocalBubblePhases = compositionLocalOf<BubblePhases?> { null }
 
+/** COULEURS-1: what a touch on the blob does (opens the page of the colours). */
+private val LocalOpenColors = compositionLocalOf<() -> Unit> { {} }
+
 @Composable
 private fun BubbleBlob(
     level: StatusLevel,
     content: @Composable () -> Unit,
 ) {
     val phases = LocalBubblePhases.current
+    val openColors = LocalOpenColors.current
+    // COULEURS-1: the WHOLE blob is the entry of the page "Les couleurs de ta Miff" (decision of the PM). NO visual hint is added (no "i", no arrow, no link:
+    // decisions of 2026-11-10 and 2026-11-11); the screen reader announces the action "Comprendre les couleurs". The press feedback is the usual ripple, drawn
+    // on the SHAPE below (so it never makes a square on the corners). "Contacter" and "Reprendre le partage" are clickable themselves and win over this touch;
+    // being clickable they also stay separate nodes for the screen reader.
+    val pressSource = remember { MutableInteractionSource() }
     Box(
         modifier =
             Modifier
@@ -308,7 +322,12 @@ private fun BubbleBlob(
                 // margin moves, no touch area moved by more than the drift itself).
                 .graphicsLayer {
                     if (phases != null) translationY = BubbleMotion.driftDp(phases.blob.value) * density
-                },
+                }.clickable(
+                    interactionSource = pressSource,
+                    indication = null,
+                    onClickLabel = stringResource(R.string.feed_colors_bubble_action_a11y),
+                    onClick = openColors,
+                ),
     ) {
         // The SHAPE only is deformed (squashed and stretched out of phase, a fraction of a degree of tilt, decision D45): the text and the button
         // in front of it are not scaled nor rotated. A layer of the GPU, read in the draw phase: no recomposition, no layout.
@@ -324,7 +343,8 @@ private fun BubbleBlob(
                             rotationZ = BubbleMotion.tiltDegrees(phase)
                         }
                     }.clip(BubbleShape)
-                    .background(level.tint()),
+                    .background(level.tint())
+                    .indication(pressSource, LocalIndication.current),
         )
         // NO pictogram, whatever the colour (decision of the PM, 2026-11-11: the watermark of the clock, the "!" and the hourglass is removed; the
         // words of the bubble say it). Not even a travel plane may be added here.

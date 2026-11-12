@@ -14,6 +14,9 @@ struct UpdateViewModelDependencies {
     /// traité à l'écriture.) Une lecture auprès du serveur à l'ouverture de l'écran ; faux quand elle ne répond pas.
     let sharingStopped: () async -> Bool
     var nowMillis: () -> Int = { Int(Date().timeIntervalSince1970 * 1000) }
+    /// NOTIF-P0 : appelé à la confirmation d'une publication, avec l'heure : les rappels N1 à N4 sont annulés aussitôt (et reprogrammés avec
+    /// le nouveau repère s'il y a lieu).
+    var onPublishedAt: (Int) -> Void = { _ in }
 }
 
 @MainActor
@@ -29,6 +32,7 @@ final class UpdateViewModel: ObservableObject {
     private let permission: CameraPermissionProviding
     private let sharingStopped: () async -> Bool
     private let nowMillis: () -> Int
+    private let onPublishedAt: (Int) -> Void
     private var publishTask: Task<Void, Never>?
     private var cleanTask: Task<Void, Never>?
     private var openingTask: Task<Void, Never>?
@@ -42,6 +46,7 @@ final class UpdateViewModel: ObservableObject {
         permission = dependencies.permission
         sharingStopped = dependencies.sharingStopped
         nowMillis = dependencies.nowMillis
+        onPublishedAt = dependencies.onPublishedAt
     }
 
     // MARK: - Ouverture
@@ -217,6 +222,7 @@ final class UpdateViewModel: ObservableObject {
         if case .published(let count) = result {
             // Publiée : plus rien en mémoire, et la confirmation est dite même si l'écran a été quitté pendant l'envoi.
             stage = .idle
+            onPublishedAt(nowMillis())
             onPublished?(count)
             return
         }

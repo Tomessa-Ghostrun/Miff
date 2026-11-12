@@ -9,6 +9,17 @@ enum SettingsRoute: Hashable, CaseIterable {
     case deleteAccount
     case privacy
     case detectionHelp
+    /// NOTIF-P0 : Réglages > Notifications, le centre de notifications (aussi atteint par la cloche du Feed) et l'aide « notifications
+    /// coupées ».
+    case notifications
+    case notificationCenter
+    case notificationsHelp
+
+    /// Les écrans des notifications n'existent pas pour un compte sans Miff : rien à notifier (l'état de l'autorisation reste visible
+    /// dans Confidentialité).
+    var isNotificationScreen: Bool {
+        self == .notifications || self == .notificationCenter || self == .notificationsHelp
+    }
 }
 
 /// Les lignes de la liste des Réglages, et ce qu'un compte SANS Miff en voit. Décision du PM du 2026-11-07 (qui révise la décision Q13 « ni
@@ -18,6 +29,8 @@ enum SettingsRoute: Hashable, CaseIterable {
 enum SettingsListRow: Equatable, CaseIterable {
     case myInfo
     case account
+    /// Absente des Réglages restreints d'un compte sans Miff.
+    case notifications
     case language
     case privacy
 }
@@ -33,7 +46,7 @@ enum SettingsAccess {
         guard restricted else {
             return true
         }
-        return route != .myInfo
+        return route != .myInfo && !route.isNotificationScreen
     }
 
     /// Les écrans qu'ouvre un écran des Réglages (la liste ouvre les trois premiers, Mon compte ouvre la suppression, Confidentialité
@@ -41,12 +54,16 @@ enum SettingsAccess {
     static func children(of route: SettingsRoute) -> [SettingsRoute] {
         switch route {
         case .settings:
-            return [.myInfo, .account, .privacy]
+            return [.myInfo, .account, .notifications, .privacy]
         case .account:
             return [.deleteAccount]
         case .privacy:
             return [.detectionHelp]
-        case .myInfo, .deleteAccount, .detectionHelp:
+        case .notifications:
+            return [.notificationCenter, .notificationsHelp]
+        case .notificationCenter:
+            return [.notificationsHelp]
+        case .myInfo, .deleteAccount, .detectionHelp, .notificationsHelp:
             return []
         }
     }
@@ -114,17 +131,21 @@ enum ContactLinks {
 struct PrivacyPermissionState: Equatable {
     let locationComplete: Bool
     let notificationsAuthorized: Bool
+    let notifications: NotificationAuthorization
 
     init(snapshot: PermissionSnapshot) {
         locationComplete = snapshot.locationComplete
         notificationsAuthorized = snapshot.notifications == .authorized
+        notifications = snapshot.notifications
     }
 
     var locationStatusKey: String {
         locationComplete ? "settings_privacy_location_status_ok" : "settings_privacy_location_status_todo"
     }
 
+    /// « Autorisées par ton téléphone », « Coupées dans ton téléphone » ou « Pas encore activées » : les mêmes mots que Réglages >
+    /// Notifications (une seule source de vérité de l'état).
     var notificationsStatusKey: String {
-        notificationsAuthorized ? "ios_privacy_notifications_status_on" : "ios_privacy_notifications_status_off"
+        notifications.stateTextKey
     }
 }

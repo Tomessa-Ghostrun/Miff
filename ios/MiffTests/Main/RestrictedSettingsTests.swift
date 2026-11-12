@@ -9,14 +9,41 @@ final class RestrictedSettingsTests: XCTestCase {
     }
 
     func testAnAccountWithMiffsSeesEveryRow() {
-        XCTAssertEqual(SettingsAccess.rows(restricted: false), [.myInfo, .account, .language, .privacy])
+        XCTAssertEqual(
+            SettingsAccess.rows(restricted: false),
+            [.myInfo, .account, .notifications, .language, .privacy]
+        )
     }
 
-    func testMyInformationIsTheOnlyScreenARestrictedAccountCannotOpen() {
+    func testMyInformationAndTheNotificationScreensAreTheOnlyOnesARestrictedAccountCannotOpen() {
         for route in SettingsRoute.allCases {
-            XCTAssertEqual(SettingsAccess.isAllowed(route, restricted: true), route != .myInfo, "\(route)")
+            let forbidden = route == .myInfo || route.isNotificationScreen
+            XCTAssertEqual(SettingsAccess.isAllowed(route, restricted: true), !forbidden, "\(route)")
             XCTAssertTrue(SettingsAccess.isAllowed(route, restricted: false), "\(route)")
         }
+        XCTAssertEqual(
+            SettingsRoute.allCases.filter { $0.isNotificationScreen },
+            [.notifications, .notificationCenter, .notificationsHelp]
+        )
+    }
+
+    func testTheNotificationsRowIsAbsentFromTheRestrictedSettings() {
+        XCTAssertFalse(SettingsAccess.rows(restricted: true).contains(.notifications))
+        XCTAssertFalse(SettingsAccess.reachable(restricted: true).contains(.notifications))
+        XCTAssertFalse(SettingsAccess.reachable(restricted: true).contains(.notificationCenter))
+        XCTAssertFalse(SettingsAccess.reachable(restricted: true).contains(.notificationsHelp))
+    }
+
+    func testTheNotificationScreensAreReachedThroughTheSettingsListAndLeaveWithTheLastMiff() {
+        XCTAssertTrue(SettingsAccess.children(of: .settings).contains(.notifications))
+        XCTAssertEqual(SettingsAccess.children(of: .notifications), [.notificationCenter, .notificationsHelp])
+        var path: [MiffRoute] = [
+            .settings(.settings), .settings(.notifications), .settings(.notificationCenter), .miff("abc")
+        ]
+
+        path.removeAll { $0.isMyInfoScreen || $0.isNotificationScreen }
+
+        XCTAssertEqual(path, [.settings(.settings), .miff("abc")])
     }
 
     func testAnAccountWithoutMiffReachesTheDeletionThroughMyAccountOnly() {

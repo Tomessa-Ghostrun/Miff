@@ -73,6 +73,8 @@ struct MainShellView<Feed: View>: View {
     private let onCreateMiff: () -> Void
     private let onOpenSettings: (SettingsRoute) -> Void
     private let feed: (FeedShellContext) -> Feed
+    /// NOTIF-6I : un toucher sur une ligne du centre de notifications demande un onglet (le Feed, ou l'écran Update).
+    @ObservedObject private var tabRequests: TabRequests
     @State private var selected: MainTab = .feed
     @State private var keyboardVisible = false
     @State private var nowMillis = Int(Date().timeIntervalSince1970 * 1000)
@@ -92,6 +94,7 @@ struct MainShellView<Feed: View>: View {
         onOpenMiff: @escaping (String) -> Void,
         onCreateMiff: @escaping () -> Void,
         onOpenSettings: @escaping (SettingsRoute) -> Void,
+        tabRequests: TabRequests,
         @ViewBuilder feed: @escaping (FeedShellContext) -> Feed
     ) {
         self.miffs = miffs
@@ -104,6 +107,7 @@ struct MainShellView<Feed: View>: View {
         self.onOpenMiff = onOpenMiff
         self.onCreateMiff = onCreateMiff
         self.onOpenSettings = onOpenSettings
+        _tabRequests = ObservedObject(wrappedValue: tabRequests)
         self.feed = feed
     }
 
@@ -210,6 +214,18 @@ struct MainShellView<Feed: View>: View {
         .onChange(of: hasNoMiff) { noMiff in
             if noMiff {
                 selected = .feed
+            }
+        }
+        // Une ligne du centre de notifications ou une notification a été touchée : l'onglet demandé s'ouvre (une seule fois, même si la
+        // demande est arrivée avant que la coquille existe).
+        .onChange(of: tabRequests.latest) { _ in
+            if let request = tabRequests.takePending() {
+                selected = request.tab
+            }
+        }
+        .onAppear {
+            if let request = tabRequests.takePending() {
+                selected = request.tab
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in

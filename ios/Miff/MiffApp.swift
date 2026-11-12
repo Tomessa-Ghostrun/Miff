@@ -44,6 +44,8 @@ struct MiffApp: App {
             }
             // LOC-4b : à l'ouverture et au passage en arrière-plan, le suivi des lieux lit la position (s'il en a le droit).
             .trackingLifecycle(environment.tracking)
+            // NOTIF-P0 : au retour au premier plan, à un changement d'heure ou de langue, les rappels sont réconciliés avec le système.
+            .notificationLifecycle(environment.notifications.reconciler)
         }
     }
 }
