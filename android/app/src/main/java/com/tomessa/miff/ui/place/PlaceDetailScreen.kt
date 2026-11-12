@@ -193,7 +193,19 @@ private fun Content(
     ) {
         if (state.fromCache) MiffNotice(stringResource(R.string.place_detail_cache_notice))
         // The place is not in the Miff yet: the first thing said is what it is (the requester's wait), in the calm tone of the app.
-        if (request != null) InfoCard(stringResource(R.string.place_request_detail_banner_member))
+        if (request != null) {
+            InfoCard(
+                stringResource(
+                    if (request.creator != null) {
+                        R.string.place_request_detail_banner_creator
+                    } else {
+                        R.string.place_request_detail_banner_member
+                    },
+                ),
+            )
+        }
+        // The creator sees WHO asks (photo or initials, first name) and since when, in the detail as in the list (criterion C2).
+        request?.creator?.let { RequesterDetailRow(it) }
         PlaceMapBox(
             spec =
                 PlaceMapSpec(
@@ -428,8 +440,18 @@ private fun RequestFoot(request: RequestDetailUi) {
                 .background(colorBgCanvas)
                 .padding(horizontal = Spacing.l, vertical = Spacing.s),
     ) {
+        val creator = request.creator
+        if (creator != null) {
+            AnswerButtons(
+                requestName = request.placeName,
+                busy = request.busy,
+                onAccept = creator.onAccept,
+                onDecline = creator.onDecline,
+            )
+            return@Column
+        }
         OutlinedButton(
-            onClick = request.onWithdraw,
+            onClick = request.onWithdraw ?: {},
             enabled = !request.busy,
             shape = ShapeMd,
             border =
@@ -446,5 +468,26 @@ private fun RequestFoot(request: RequestDetailUi) {
         ) {
             Text(stringResource(R.string.place_request_withdraw), style = textBodyBold16)
         }
+    }
+}
+
+/** "Demandé par Léa" and the date, in a card of the family of the facts: the creator knows who asks before answering. */
+@Composable
+private fun RequesterDetailRow(creator: RequestCreatorDetail) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .miffShadow(ShadowDefault, ShapeMd)
+                .clip(ShapeMd)
+                .background(colorBgSurface)
+                .border(StrokeHairline, colorBorderDefault, ShapeMd)
+                .padding(horizontal = Spacing.m, vertical = Spacing.s)
+                .semantics(mergeDescendants = true) {},
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        RequesterLine(creator.requester)
+        creator.dateText?.let { Text(text = it, style = textBodyRegular14, color = colorTextDescription) }
     }
 }

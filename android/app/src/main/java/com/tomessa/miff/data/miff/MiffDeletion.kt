@@ -99,6 +99,44 @@ class MiffDeletion(
             if (deleted is Guarded.Failed) return MiffDeletionResult.Paused(deleted.failure)
         }
 
+        // (2b) The requests to add a place and their counter (ticket LIEU-REQ, criterion L3), 5 per lot at most, BEFORE the last lot (nothing of them stays once the
+        // Miff is gone). A refusal means the rules do not know them (not deployed yet): there is nothing of that kind to delete and the deletion goes on.
+        val leftovers =
+            when (val read = guardedCall(timeoutMillis) { store.readPlaceRequestLeftovers(miffId) }) {
+                is Guarded.Value -> {
+                    read.value
+                }
+
+                is Guarded.Failed -> {
+                    if (read.failure ==
+                        MiffFailure.REFUSED
+                    ) {
+                        PlaceRequestLeftovers(emptyList(), false)
+                    } else {
+                        return MiffDeletionResult.Paused(read.failure)
+                    }
+                }
+            }
+        val chunks =
+            leftovers.requestIds.chunked(MiffWrites.PLACES_PER_LOT).ifEmpty {
+                if (leftovers.counterExists) listOf(emptyList()) else emptyList()
+            }
+        for ((index, chunk) in chunks.withIndex()) {
+            val lot =
+                MiffWrites.deletePlaceRequests(
+                    miffId,
+                    chunk,
+                    withCounter =
+                        leftovers.counterExists && index == chunks.lastIndex,
+                )
+            val deleted = guardedCall(timeoutMillis) { store.commit(lot) }
+            if (deleted is Guarded.Failed &&
+                deleted.failure != MiffFailure.REFUSED
+            ) {
+                return MiffDeletionResult.Paused(deleted.failure)
+            }
+        }
+
         // (3) The last lot. The key of the index is found by its FIELD miffId.
         val key =
             when (val read = guardedCall(timeoutMillis) { store.readMemberships(uid, fromServer = true) }) {

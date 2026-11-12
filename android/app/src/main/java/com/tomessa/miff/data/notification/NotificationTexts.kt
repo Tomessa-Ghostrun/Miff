@@ -19,6 +19,7 @@ object NotificationTexts {
             NotificationType.N4 -> R.string.notif_n4_title
             NotificationType.N6 -> R.string.notif_n6a_title
             NotificationType.N7 -> R.string.notif_n7_title
+            NotificationType.N8 -> R.string.notif_n8_title
         }
 
     @StringRes
@@ -30,6 +31,7 @@ object NotificationTexts {
             NotificationType.N4 -> R.string.notif_n4_body
             NotificationType.N6 -> R.string.notif_n6a_body
             NotificationType.N7 -> R.string.notif_n7_body
+            NotificationType.N8 -> R.string.notif_n8_body
         }
 
     /** The label of the switch of the type in Settings > Notifications. */
@@ -37,10 +39,18 @@ object NotificationTexts {
     fun switchLabel(type: NotificationType): Int =
         when (type) {
             NotificationType.N1 -> R.string.notif_settings_n1
+
             NotificationType.N2 -> R.string.notif_settings_n2
+
             NotificationType.N3 -> R.string.notif_settings_n3
+
             NotificationType.N4 -> R.string.notif_settings_n4
+
             NotificationType.N6 -> R.string.notif_settings_n6
+
+            // No switch of its own (a line of the centre only): the label is never drawn, the one of the family stands in.
             NotificationType.N7 -> R.string.notif_settings_n7
+
+            NotificationType.N8 -> R.string.notif_settings_n3
         }
 }

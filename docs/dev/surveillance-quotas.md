@@ -150,6 +150,30 @@ Ouvrir le **détail** d'un lieu garde son écoute en direct de la Miff (3 écout
 
 **Limite connue** : un lieu ajouté ou retiré par le créateur sur un autre téléphone n'apparaît chez les membres qu'à leur prochaine relecture (au plus 5 minutes sur le Profil, ou à leur retour sur le Feed qui écoute à nouveau). Les lieux changent rarement et la détection est lente par conception (« dans les prochaines heures », ticket Lieux). **Signal** : celui du §2 ; **levier gratuit** : allonger `MiffPlacesBook.TTL_MILLIS`.
 
+### Les demandes d'ajout d'un lieu (LIEU-REQ, décision du PM du 2026-11-11) : ce que ça coûte
+
+Un membre qui n'est pas le créateur propose un lieu ; le créateur l'accepte ou non. **Aucune notification quand l'app est fermée** (il faudrait un serveur : plan Blaze, pas pour l'instant) : le créateur le découvre à l'ouverture de l'app.
+
+| Qui | Quand | Lectures | Écritures |
+|---|---|---|---|
+| Membre | La carte d'une Miff dont il n'est pas le créateur s'affiche dans le carrousel du Profil | **1 requête sur SES demandes** (3 documents au plus), **au plus une fois par Miff et par 5 minutes** ; jamais d'écouteur | 0 |
+| Membre | Il ouvre le formulaire de demande | 3 lectures de départ (formule, Miff, ses demandes) puis rien tant qu'il est ouvert | 0 |
+| Membre | Il envoie ou retire une demande | 0 à 1 (vérification si la réponse a été perdue) | **2** (la demande + le compteur) |
+| Membre | Il quitte la Miff | jusqu'à 1 + 3 | jusqu'à 6 (3 demandes + 3 compteurs) avant le lot « Quitter » |
+| Créateur | L'app est devant et le créateur a créé la Miff suivie | **1 écouteur** sur `placeRequests` de **cette seule Miff** : 1 lecture par demande (10 au plus) au branchement, puis 1 par demande nouvelle ou modifiée ; **détaché en arrière-plan** | 0 |
+| Créateur | Une demande apparaît | **1 lecture par personne qui demande, une fois par session** (sa fiche de membre : prénom, photo) | 0 |
+| Créateur | Il accepte | formule + Miffs + lieux (comme la création d'un lieu) + 1 pour vérifier que la demande existe encore | **3** en un lot (le lieu, la suppression de la demande, le compteur) |
+| Créateur | Il refuse | 0 à 1 | **2** (suppression + compteur) |
+| Créateur | Demandes de plus de 30 jours, ou d'une personne qui a quitté la Miff | 0 de plus | 2 à 5 par lot de 4 suppressions (jamais de suppression automatique côté serveur) |
+
+**Ordre de grandeur.** Pour un créateur : de +1 à +12 lectures par ouverture de l'app (10 demandes en attente au pire, 0 à 2 le plus souvent), plus 1 lecture par nouveau demandeur. Pour un membre : +1 requête de 3 documents au plus par Miff regardée, sans compter les relectures dans les 5 minutes. Les lots existants (créer, rejoindre, quitter, retirer un membre, supprimer) ne grossissent pas, sauf le départ d'un membre (jusqu'à 3 lots de 2 avant le lot « Quitter ») et la suppression d'une Miff (5 demandes par lot + le compteur, **avant** le dernier lot).
+
+**Limites connues et signaux de bascule.**
+- **Seule la Miff suivie est écoutée** (celle de la carte du Profil, sinon la Miff active du Feed). Un créateur Miff+ qui a plusieurs Miffs ne verra pas le point sur le Profil pour les autres avant de les ouvrir. Signal : un créateur qui dit découvrir une demande « longtemps après ». Levier gratuit : un écouteur par Miff créée (coût linéaire en nombre de Miffs créées).
+- **Pas de rappel ni de notification fermée** : levier = Blaze + FCM (une fonction par demande, négligeable face aux quotas gratuits), décision du PM.
+- **Compteur `meta/placeRequests`** (plafond de 10 par Miff) : peut dériver si un lot du créateur échoue en route ; le créateur le réécrit au nombre réel de demandes qu'il lit à chaque réponse. Signal : un membre bloqué par « Cette Miff a déjà plusieurs demandes… » alors que le créateur en voit moins de 10.
+- **Rafales** (créer, retirer, recréer en boucle) : non limitables en règles sur Spark ; au plus 3 demandes simultanées par membre ; App Check à activer.
+
 ## 5. Journal de relevé (modèle à recopier)
 
 Une ligne par jour de bêta externe, dans un fichier à toi (ou dans une conversation avec Claude) :
