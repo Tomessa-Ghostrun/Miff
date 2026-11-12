@@ -223,4 +223,17 @@ class PlaceRulesTest {
         assertEquals("a", DefaultMiffChoice.of(owned, lastJoinedId = null))
         assertNull(DefaultMiffChoice.of(emptyList(), lastJoinedId = "x"))
     }
+
+    @Test
+    fun default_openedFromTheListOfAMiffTheyCreated_isThatMiff() {
+        val owned = listOf(miff("a", 10), miff("b", 20))
+        assertEquals("a", DefaultMiffChoice.of(owned, lastJoinedId = "b", openedFromId = "a"))
+    }
+
+    @Test
+    fun default_openedFromAMiffTheyDidNotCreate_orNone_isTheUsualChoice() {
+        val owned = listOf(miff("a", 10), miff("b", 20))
+        assertEquals("b", DefaultMiffChoice.of(owned, lastJoinedId = "b", openedFromId = "someone-elses"))
+        assertEquals("b", DefaultMiffChoice.of(owned, lastJoinedId = "b", openedFromId = null))
+    }
 }

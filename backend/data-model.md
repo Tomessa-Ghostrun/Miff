@@ -619,7 +619,7 @@ Lisible par tous les membres tant que la Miff existe (ils en « héritent »). �
 | Jeton refusé par FCM (désinstallation) | Suppression par le serveur (SRV-4) |
 | Inactif > 60 jours | Purge par une fonction planifiée (SRV-4, optionnelle ; consomme l'une des 3 tâches planifiées gratuites du compte de facturation) |
 
-**Pour le serveur (SRV-4)** : lire `users/{uid}/devices` avec `limit(3)` pour chaque destinataire ; n'envoyer qu'aux jetons dont l'identifiant est celui de `users/{uid}/session/active` (une lecture de plus) **ou** dont `updatedAt` ≥ `session.startedAt` ; ignorer `notify.updates = false` ; ne jamais journaliser le jeton ni l'uid.
+**Pour le serveur (SRV-4)** : pour chaque destinataire, lire `users/{uid}/session/active` puis **`users/{uid}/devices/{session.deviceId}` en `get` direct** (pas de liste, pas de `limit(3)` : un seul jeton est concerné, 2 lectures) ; **session absente = aucun envoi à aucun jeton de ce compte** (les documents `devices` restants sont inertes) ; ignorer `notify.updates = false` ; supprimer le document si FCM refuse le jeton ; ne jamais journaliser le jeton ni l'uid.
 
 **Budget de lectures de règles** (mesuré, `rules-test-report.md` / `budgets-jetons.test.js`) : création et mise à jour **1** sur 10 ; lecture, liste, suppression **0** ; lot de connexion (session + jeton + N suppressions) **1** sur 20 (mesuré à l'émulateur : 0, la session faisant partie du lot ; borne prudente documentée : 1).
 

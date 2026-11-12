@@ -52,6 +52,7 @@ import com.tomessa.miff.domain.feed.StateLabel
 import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
 import com.tomessa.miff.domain.place.PaywallReason
+import com.tomessa.miff.domain.place.PlaceViewerRole
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.review.ReviewSituation
 import com.tomessa.miff.domain.subscription.SubscriptionInfo
@@ -97,6 +98,7 @@ import com.tomessa.miff.ui.place.ProfilePlacesSection
 import com.tomessa.miff.ui.place.placeRoutes
 import com.tomessa.miff.ui.profile.MiffCarouselHost
 import com.tomessa.miff.ui.profile.ProfileMiffsViewModel
+import com.tomessa.miff.ui.profile.ProfilePlacesViewModel
 import com.tomessa.miff.ui.profile.ProfileTabScreen
 import com.tomessa.miff.ui.profile.ProfileTabUiState
 import com.tomessa.miff.ui.profile.ProfileTabViewModel
@@ -366,6 +368,22 @@ private fun MainNavigation(
                             }
                         },
                 )
+            // The places under that carousel (every member sees them, decision of the PM, 2026-11-11): the Miff the Feed read is reused, the others are read
+            // one time when their card appears; no listener.
+            val profilePlacesViewModel: ProfilePlacesViewModel =
+                viewModel(
+                    key = "profile-places-$scopeKey",
+                    factory =
+                        viewModelFactory {
+                            initializer {
+                                ProfilePlacesViewModel(
+                                    reader = container.placesReader,
+                                    feedPlaces = feedViewModel.readPlaces,
+                                )
+                            }
+                        },
+                )
+            val profilePlaces by profilePlacesViewModel.state.collectAsStateWithLifecycle()
             val notificationsState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
             val requestNotificationWindow =
                 rememberNotificationPermissionRequest(onAnswered = notificationsViewModel::onSystemWindowAnswered)
@@ -446,20 +464,37 @@ private fun MainNavigation(
                 travelContent = { TravelCard(state = travelState, actions = travelActions) },
                 placesContent = {
                     (directoryState as? DirectoryState.Ready)?.let { ready ->
+                        val myUid = container.authGateway.currentUid
                         ProfilePlacesSection(
-                            container = container,
+                            state = profilePlaces,
                             directory = ready,
-                            scopeKey = scopeKey,
-                            onOpenPlace = { miffId, placeId -> navController.open(PlaceDetailRoute(miffId, placeId)) },
-                            onAddPlace = { navController.open(PlaceFormRoute()) },
+                            myUid = myUid,
+                            notices = container.placeNotices,
+                            onOpenPlace = { miffId, placeId ->
+                                // Only the creator can change a place there: its list is read again when it comes back (a member's detail is read-only, no reading to redo).
+                                val owner = ready.miffs.firstOrNull { it.id == miffId }?.ownerUid
+                                if (PlaceViewerRole.isCreator(owner, myUid)) profilePlacesViewModel.onPlacesMayChange()
+                                navController.open(PlaceDetailRoute(miffId, placeId))
+                            },
+                            onAddPlace = { miffId ->
+                                profilePlacesViewModel.onPlacesMayChange()
+                                navController.open(PlaceFormRoute(miffId = miffId))
+                            },
+                            onRetry = profilePlacesViewModel::onRetry,
                         )
                     }
                 },
                 profileMiffs =
                     MiffCarouselHost(
                         faces = profileFaces,
-                        onCardShown = profileMiffsViewModel::onCardShown,
-                        onMiffsKnown = profileMiffsViewModel::retainOnly,
+                        onCardShown = { miffId ->
+                            profileMiffsViewModel.onCardShown(miffId)
+                            profilePlacesViewModel.onCardShown(miffId)
+                        },
+                        onMiffsKnown = { miffIds ->
+                            profileMiffsViewModel.retainOnly(miffIds)
+                            profilePlacesViewModel.retainOnly(miffIds)
+                        },
                         onCreate = { navController.open(CreateMiffRoute) },
                         // Same rule and same offer as the selector of the Feed (decision of the PM, 2026-11-08): a free account that already has a Miff.
                         onOffer = { navController.open(miffOfferRoute()) },
