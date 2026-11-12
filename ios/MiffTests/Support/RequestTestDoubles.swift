@@ -257,31 +257,37 @@ final class FakePlaceRequestRepository: PlaceRequestRepository {
     }
 
     func readAll(miffId: String) async -> MineRead {
-        readAllCalls.append(miffId)
+        locked { readAllCalls.append(miffId) }
         return readAllResult
     }
 
     func readRequester(miffId: String, uid: String) async -> RequesterState {
-        requesterCalls.append(uid)
+        locked { requesterCalls.append(uid) }
         return requesterResults[uid] ?? .unknown
     }
 
     func accept(uid: String, request: PlaceRequest, knownCount: Int) async -> RequestAcceptResult {
-        accepted.append(request)
-        acceptedCounts.append(knownCount)
+        locked {
+            accepted.append(request)
+            acceptedCounts.append(knownCount)
+        }
         await gate?.wait()
         return acceptResult
     }
 
     func decline(_ request: PlaceRequest, knownCount: Int) async -> RequestDeclineResult {
-        declined.append(request)
-        declinedCounts.append(knownCount)
+        locked {
+            declined.append(request)
+            declinedCounts.append(knownCount)
+        }
         await gate?.wait()
         return declineResult
     }
 
     func purge(miffId: String, requestIds: [String], remaining: Int) async {
-        purged.append(requestIds)
-        purgedRemaining.append(remaining)
+        locked {
+            purged.append(requestIds)
+            purgedRemaining.append(remaining)
+        }
     }
 }
