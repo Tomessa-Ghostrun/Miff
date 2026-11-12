@@ -88,6 +88,13 @@ struct FeedTab: View {
                     await model.observe(miffId: key.miffId)
                 }
             }
+            // La pop-in « Pas de connexion » suit le réseau tant que le Feed est à l'écran : annulée dès que l'onglet change ou que l'app
+            // part en arrière-plan (plus de pop-in ni d'essai automatique). Indépendante de « Réessayer » : un essai ne la remet pas à zéro.
+            .task(id: key.running) {
+                if key.running {
+                    await model.watchConnectivity()
+                }
+            }
             .overlay(alignment: .bottom) {
                 if noticeVisible {
                     FeedActionNotice()

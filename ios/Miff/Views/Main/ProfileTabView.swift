@@ -26,6 +26,8 @@ struct ProfileTabView: View {
     var initialCarouselPage: Int?
     /// MODE VOYAGE (VOY-2I) : la carte « Mode voyage », en DERNIÈRE position de l'écran (après tous les autres blocs), ouverte à tous les comptes.
     @ObservedObject var travel: TravelViewModel
+    /// La pop-in « Pas de connexion » du Profil : fermée par la personne, la page dit la même chose à la place de l'indicateur.
+    @ObservedObject var offlineRetry: OfflineRetryModel
     let actions: ProfileTabActions
 
     var body: some View {
@@ -35,6 +37,8 @@ struct ProfileTabView: View {
                     header
                     if state == .unavailable {
                         unavailable
+                    } else if state == .loading && offlineRetry.isInlineVisible {
+                        OfflineInlineNote(model: offlineRetry)
                     }
                 }
                 .padding(.horizontal, Spacing.lg)

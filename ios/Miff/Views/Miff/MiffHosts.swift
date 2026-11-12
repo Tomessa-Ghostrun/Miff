@@ -164,7 +164,11 @@ struct MiffHomeHost: View {
         _placeNotices = ObservedObject(wrappedValue: environment.placeNotices)
         let session = environment.session
         _profile = StateObject(
-            wrappedValue: ProfileTabViewModel(reader: environment.profileReader, currentUid: { session.currentUid })
+            wrappedValue: ProfileTabViewModel(
+                reader: environment.profileReader,
+                currentUid: { session.currentUid },
+                network: environment.network
+            )
         )
         _memberPreviews = StateObject(wrappedValue: MiffMemberPreviews(reader: environment.memberPreviewReader))
         _updateModel = StateObject(wrappedValue: environment.update.makeViewModel())
