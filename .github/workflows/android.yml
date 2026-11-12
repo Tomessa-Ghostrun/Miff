@@ -225,6 +225,11 @@ jobs:
             echo "::error title=Marqueur de la fenetre d'avis absent du debug::L'APK debug ne contient pas REVIEWPROMPTPROBE : la fenetre d'avis a disparu du debug ou son marqueur a change (ReviewPromptWindow.kt, ReviewPromptReleaseTest)."
             exit 1
           fi
+          # Same positive control for the 10 s hold to the diagnostic screen (DIAGNOSTICHOLDGESTURE): present in the debug APK, so that the absence checks below mean something.
+          if ! unzip -p "$debug" 'classes*.dex' | grep -a -c 'DIAGNOSTICHOLDGESTURE' | grep -q -v '^0$'; then
+            echo "::error title=Marqueur du geste de diagnostic absent du debug::L'APK debug ne contient pas DIAGNOSTICHOLDGESTURE : le geste d'appui de 10 s a disparu du debug ou son marqueur a change (HoldGestureRules.kt, DiagnosticAccessGuardTest)."
+            exit 1
+          fi
           bundle=app/build/outputs/bundle/release/app-release.aab
           test -f "$bundle" || { echo "::error::Bundle release introuvable : $bundle"; exit 1; }
           dex_count=$(unzip -Z1 "$bundle" | grep -c '^base/dex/.*\.dex$' || true)

@@ -491,7 +491,12 @@ private fun MemberMenu(
                 tint = if (enabled) colorTextPrimary else colorTextDescription,
             )
         }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = colorBgSurface) {
+        DropdownMenu(
+            expanded = open,
+            onDismissRequest = { open = false },
+            containerColor = colorBgSurface,
+            modifier = Modifier.holdForDiagnostic(),
+        ) {
             DropdownMenuItem(
                 text = {
                     Text(

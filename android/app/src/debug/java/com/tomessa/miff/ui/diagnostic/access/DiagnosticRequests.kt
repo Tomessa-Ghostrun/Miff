@@ -1,18 +1,22 @@
 package com.tomessa.miff.ui.diagnostic.access
 
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
- * "Open the diagnostic screen": sent by the hold detector and by the Settings line, received once by the navigation graph (MiffNavHost).
- * No data travels: no replay (an old request never opens the screen later), and a request made while nobody listens is simply dropped.
+ * "The diagnostic screen is open": set by the hold detector and by the Settings line, shown by [DiagnosticOverlay] (MiffNavHost), cleared by its
+ * back button or the back gesture. One boolean, nothing else: no data travels, and it starts closed at every launch of the app.
  */
 object DiagnosticRequests {
-    private val mutableEvents = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-    val events: SharedFlow<Unit> = mutableEvents.asSharedFlow()
+    private val mutableIsOpen = MutableStateFlow(false)
+    val isOpen: StateFlow<Boolean> = mutableIsOpen.asStateFlow()
 
     fun request() {
-        mutableEvents.tryEmit(Unit)
+        mutableIsOpen.value = true
+    }
+
+    fun close() {
+        mutableIsOpen.value = false
     }
 }

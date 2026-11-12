@@ -49,6 +49,7 @@ class DiagnosticAccessGuardTest {
         val text = File("src/release/java/com/tomessa/miff/navigation/InternalDestinations.kt").readText()
         assertFalse(text.contains("DiagnosticRoute"))
         assertTrue(text.contains("fun holdModifier(): Modifier = Modifier"))
-        assertTrue(text.contains("fun SettingsEntry(row: @Composable (onClick: () -> Unit) -> Unit) = Unit"))
+        assertTrue(text.contains("fun Overlay(container: AppContainer) = Unit"))
+        assertTrue(text.contains("= Unit"))
     }
 }

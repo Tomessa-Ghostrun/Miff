@@ -8,25 +8,27 @@ Demande du PM du 2026-11-12 ; branche `android/debug-acces-reglages-appui-long`,
 
 ### Modifié
 - **Le démarrage est celui de la production, dans tous les builds** : splash, puis carrousel / connexion / Feed selon l'état. L'écran de diagnostic n'est plus la destination de départ des APK de debug (`MiffNavHost` démarre toujours sur `AppRoute`).
-- Le bouton de l'écran de diagnostic s'appelle « Retour à l'application » et **revient où l'on était** (le diagnostic s'ouvre par-dessus l'app, il ne la remplace plus) ; le geste retour fait de même.
+- Le bouton de l'écran de diagnostic s'appelle « Retour à l'application » et **revient où l'on était, telle quelle** : le diagnostic s'ouvre **dans une fenêtre au-dessus de l'app**, qui reste en place dessous (fenêtres ouvertes, textes saisis, bandeaux conservés) ; ce n'est pas une destination de navigation. Le geste retour fait de même. Il passe aussi au-dessus d'une fenêtre de l'app restée ouverte.
+- **Tests 1 et 2 du diagnostic refusés si un compte est connecté** (ils déconnectaient la vraie session) : message clair, aucune déconnexion. La carte Confidentialité dit que ses interrupteurs changent les vrais réglages du téléphone. Libellés dans `src/debug/res` (absents du release) ; textes des tests 1 et 2 ajustés (clés partagées avec iOS inchangées).
 
 ### Ajouté
 - **Porte 1 : Réglages > « Diagnostic »**, ligne en bas des Réglages (liste complète et liste réduite sans Miff). Build **debug seulement**.
-- **Porte 2 : appui continu de 10 secondes, n'importe où**, un seul doigt, immobile (tolérance 20 dp ; lever le doigt, bouger davantage ou poser un second doigt annule), avec un retour haptique bref à l'ouverture. Le détecteur (`Modifier.pointerInput`, phase **Initial**, ne consomme rien) est posé sur la **fenêtre entière** dans `MainActivity` (splash, carrousel, connexion, inscription, onboarding, permissions, Miff, Feed, Update) **et** sur la carte de chaque fenêtre ou feuille de l'app (une fenêtre est une fenêtre Android séparée : 13 emplacements, confirmations, sélecteurs, photo en plein écran, fenêtre d'avis). Build **debug seulement**.
+- **Porte 2 : appui continu de 10 secondes, n'importe où**, un seul doigt, immobile (tolérance 20 dp ; lever le doigt, bouger davantage ou poser un second doigt annule), avec un retour haptique bref à l'ouverture. Le détecteur (`Modifier.pointerInput`, phase **Initial**, ne consomme rien) est posé sur la **fenêtre entière** dans `MainActivity` (splash, carrousel, connexion, inscription, onboarding, permissions, Miff, Feed, Update) **et** sur la carte de chaque fenêtre ou feuille de l'app (une fenêtre est une fenêtre Android séparée : 13 emplacements, confirmations, sélecteurs, photo en plein écran, fenêtre d'avis ; et les 4 menus déroulants). Build **debug seulement**.
 - Règles pures `HoldGestureTracker` / `HoldGestureRules` (10 s, 20 dp, annulations) ; canal `DiagnosticRequests` (sans rejeu : une ancienne demande n'ouvre jamais l'écran plus tard).
-- `InternalDestinations` (debug et release) expose `SettingsEntry`, `holdModifier` et `OpenOnRequest` ; la version **release est vide** (ni geste, ni ligne, ni route).
-- Tests : `HoldGestureTrackerTest` (durée, tolérance, annulations), `DiagnosticHoldDetectorTest` (Robolectric, écran d'exemple : ouverture à 10 s et pas avant, tremblement toléré, glissement et second doigt annulent, un toucher et un défilement normaux ne sont pas gênés), `DiagnosticAccessTest` (ligne de Réglages, navigation par-dessus l'app et retour, sans empilement double), `DiagnosticAccessGuardTest` (démarrage sur l'app, détecteur absent du code commun et release).
+- `InternalDestinations` (debug et release) expose `SettingsEntry`, `holdModifier` et `Overlay` ; la version **release est vide** (ni geste, ni ligne, ni route).
+- Tests : `HoldGestureTrackerTest` (durée, tolérance, annulations), `DiagnosticHoldDetectorTest` (Robolectric, écran d'exemple : ouverture à 10 s et pas avant, tremblement toléré, glissement et second doigt annulent, un toucher et un défilement normaux ne sont pas gênés), `DiagnosticAccessTest` (ligne de Réglages, fenêtre au-dessus de l'app dont l'état est conservé à la fermeture), `DiagnosticViewModelTest` (tests 1 et 2 refusés avec un compte connecté), `DiagnosticAccessGuardTest` (démarrage sur l'app, détecteur absent du code commun et release).
 - Documentation : `docs/dev/acces-diagnostic.md`, recette PM `docs/qa/checklists/diagnostic-acces-android-recette-pm.md` ; les recettes qui disaient « l'app démarre sur le diagnostic » sont corrigées.
 
 ### Sécurité
 - **Absent de tout build distribuable** : le code est dans `src/debug` seulement. La CI cherche maintenant aussi le marqueur `DIAGNOSTICHOLDGESTURE` dans le dex du bundle release (`android/ci/check-release-bundle.sh` et `.github/workflows/android.yml`) et dans l'APK `releaseLike`. Le script du bundle cherche aussi désormais `DEBUGAPPCHECKOFF` (déjà cherché par `android.yml`, oublié dans le script : les deux sont de nouveau d'accord, gardés par `ReleaseSigningGuardTest`).
-- Aucune donnée personnelle dans l'écran ni dans le geste ; aucun événement d'analyse.
+- Aucune donnée personnelle affichée (jeton, position, compte) ; le champ de connexion du test 2 est saisi à la main, jamais gardé ; le test de position envoie lat 0 / lng 0 refusé d'avance. Le geste n'envoie aucun événement. Contrôle **positif** ajouté dans `android.yml` (le marqueur est bien dans l'APK debug).
 
 ### Choix « économiques »
 - **Aucun** : aucun service, aucune dépendance ajoutée.
 
 ### À savoir
 - **`releaseLike` n'a ni la ligne ni le geste** (il est construit avec les sources release, c'est son but : mesurer la diffusion). Le diagnostic n'est donc dans que l'APK debug.
+- **Pas de test avec le vrai `AppRoot`** : il exige le conteneur complet (Firebase, session) qui ne se monte pas sur la JVM ; l'état conservé est prouvé avec un écran d'exemple et la même fenêtre. À vérifier à la main (recette, partie C).
 - Limites du geste : les fenêtres du système (demande d'autorisation, sélecteur de fichiers) ne passent pas par l'app ; la zone sombre autour d'une fenêtre de l'app ne déclenche pas le geste (seule la carte le fait).
 
 ## [0.35.0] - 2026-11-11 : App Check, interrupteur de debug « sans App Check » (AC-4) et message « appareil non reconnu »

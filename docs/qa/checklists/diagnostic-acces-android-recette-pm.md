@@ -27,7 +27,9 @@ Posez **un doigt** et ne bougez plus.
 - [ ] Sur le **carrousel de bienvenue** (déconnecté), appui continu de 10 secondes sur une zone vide : vibration brève, le diagnostic s'ouvre.
 - [ ] Même chose sur l'écran de **connexion**, l'**inscription**, une étape de l'**onboarding**, l'écran des **permissions**, un écran de la **Miff**, le **Feed**, l'**Update** (caméra) : le diagnostic s'ouvre à chaque fois. (Inutile de tous les faire si vous êtes pressé : au moins un écran avant connexion et deux après.)
 - [ ] Dans une **fenêtre de l'app** (par exemple « Se déconnecter ? » dans Réglages > Mon compte, ou la photo en plein écran dans le Feed) : appui de 10 secondes **sur la carte** de la fenêtre : le diagnostic s'ouvre.
-- [ ] « Retour à l'application » : vous êtes exactement là où vous étiez.
+- [ ] « Retour à l'application » : vous êtes exactement là où vous étiez, **y compris** une fenêtre de l'app restée ouverte ou un texte à moitié saisi.
+- [ ] Ouvrez le diagnostic **depuis l'intérieur d'une fenêtre de l'app** (appui de 10 s sur la carte) : il s'affiche **au-dessus** de la fenêtre, pas derrière.
+- [ ] Dans un **menu déroulant** de l'app (le menu « ⋮ » d'un proche, le sélecteur de Miff du Feed) : appui de 10 s sur le menu, le diagnostic s'ouvre.
 
 ### Annulations (rien ne doit s'ouvrir)
 
@@ -41,6 +43,11 @@ Posez **un doigt** et ne bougez plus.
 - [ ] Les boutons répondent à un simple toucher, le Feed et les listes défilent normalement, le clavier et les champs de texte fonctionnent, la caméra de l'Update fonctionne.
 - [ ] Un appui long **plus court** (2 à 3 secondes) sur un élément se comporte comme avant (rien de nouveau).
 
+## Partie C bis : compte connecté (tests du diagnostic)
+
+- [ ] Connecté, ouvrez le diagnostic et touchez **Test 1** puis **Test 2** : chacun répond que **un compte est connecté et que le test le déconnecterait** ; **vous restez connecté** (retour à l'app : toujours dans votre compte).
+- [ ] La carte **Confidentialité** rappelle que ses deux interrupteurs changent les **vrais** réglages du téléphone.
+
 ## Partie D : APK de diffusion (releaseLike)
 
 - [ ] Installez l'APK **releaseLike** (artefact de la PR). Il démarre normalement.
@@ -50,4 +57,4 @@ Posez **un doigt** et ne bougez plus.
 ## Limites connues (pas des défauts)
 
 - Les fenêtres **du système Android** (demande d'autorisation de localisation ou de notifications, sélecteur de fichiers) ne laissent pas passer le geste : appuyez à nouveau sur l'écran de l'app, ou passez par Réglages.
-- Le geste ne fonctionne pas sur la zone sombre autour d'une fenêtre de l'app, seulement sur la carte de la fenêtre.
+- Le geste ne fonctionne pas sur la zone sombre autour d'une fenêtre de l'app, seulement sur la carte de la fenêtre (ou le menu).

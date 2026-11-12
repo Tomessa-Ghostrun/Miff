@@ -269,13 +269,8 @@ fun SettingsScreen(
             )
         }
         // Test builds only (debug): the way to the diagnostic screen (PM, 2026-11-12). Nothing is drawn in the release build.
-        InternalDestinations.SettingsEntry { onClick ->
-            SettingsRow(
-                icon = R.drawable.ic_settings,
-                title = stringResource(R.string.android_diag_settings_title),
-                subtitle = stringResource(R.string.android_diag_settings_subtitle),
-                onClick = onClick,
-            )
+        InternalDestinations.SettingsEntry { title, subtitle, onClick ->
+            SettingsRow(icon = R.drawable.ic_settings, title = title, subtitle = subtitle, onClick = onClick)
         }
     }
 }

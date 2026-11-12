@@ -108,8 +108,9 @@ fun DiagnosticScreen(
             modifier = Modifier.semantics { heading() },
         )
         Text(stringResource(R.string.diag_subtitle), style = textBodyRegular14, color = colorTextDescription)
+        Text(stringResource(R.string.android_diag_access_hint), style = textBodyRegular14, color = colorTextDescription)
         TextButton(onClick = onBack) {
-            Text(stringResource(R.string.diag_open_home), style = textBodyBold14, color = colorActionPrimary)
+            Text(stringResource(R.string.android_diag_back), style = textBodyBold14, color = colorActionPrimary)
         }
 
         InsetsDiagnosticCard()
@@ -133,6 +134,7 @@ fun DiagnosticScreen(
                 LiveResult {
                     when (val t = state.test1) {
                         Test1State.Idle -> Unit
+                        Test1State.RefusedSignedIn -> Warning(stringResource(R.string.android_diag_signed_in_refusal))
                         Test1State.Running -> Body(stringResource(R.string.diag_test1_running))
                         is Test1State.Done -> Test1Result(t.outcome)
                     }
@@ -173,6 +175,7 @@ fun DiagnosticScreen(
                 LiveResult {
                     when (val t = state.test2) {
                         Test2State.Idle -> Unit
+                        Test2State.RefusedSignedIn -> Warning(stringResource(R.string.android_diag_signed_in_refusal))
                         Test2State.Running -> Body(stringResource(R.string.diag_test2_running))
                         is Test2State.InputProblem -> Warning(inputProblemText(t.problem))
                         is Test2State.Done -> Test2ResultView(t.result)
@@ -233,6 +236,7 @@ fun DiagnosticScreen(
 
             SectionCard(stringResource(R.string.diag_privacy_title)) {
                 Body(stringResource(R.string.diag_privacy_description))
+                Body(stringResource(R.string.android_diag_privacy_real_warning))
                 SwitchRow(
                     label = stringResource(R.string.diag_switch_analytics),
                     checked = state.analyticsEnabled,

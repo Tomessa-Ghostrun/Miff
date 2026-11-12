@@ -11,8 +11,8 @@
 
     <!-- Écran de diagnostic : en-tête et identité du build -->
     <string name="diag_title">Diagnostic interne</string>
-    <string name="diag_subtitle">Écran interne, réservé aux versions de test (Réglages > Diagnostic, ou appui de 10 s n\'importe où). Rien de ceci n\'est visible du public.</string>
-    <string name="diag_open_home">Retour à l\'application</string>
+    <string name="diag_subtitle">Écran interne, réservé aux versions de test. Rien de ceci n\'est visible du public.</string>
+    <string name="diag_open_home">Ouvrir l\'application</string>
     <string name="diag_build_title">Version installée</string>
     <string name="diag_build_version">Version : %1$s (build %2$d)</string>
     <string name="diag_build_type">Configuration : %1$s</string>
@@ -29,7 +29,7 @@
 
     <!-- Test 1 -->
     <string name="diag_test1_title">Test 1 · Lecture sans être connecté</string>
-    <string name="diag_test1_description">Essaie de lire une Miff sans être connecté. La réponse attendue est un refus. Si vous étiez connecté, vous êtes d\'abord déconnecté.</string>
+    <string name="diag_test1_description">Essaie de lire une Miff sans être connecté. La réponse attendue est un refus. Refusé si un compte est connecté (il serait déconnecté) : déconnectez-vous d\'abord.</string>
     <string name="diag_test1_action">Lancer le test 1</string>
     <string name="diag_test1_running">Test en cours…</string>
     <string name="diag_test1_ok">Règles actives : OK</string>
@@ -40,7 +40,7 @@
 
     <!-- Test 2 -->
     <string name="diag_test2_title">Test 2 · Lecture avec un compte de test</string>
-    <string name="diag_test2_description">Se connecte avec le compte de test créé dans la console Firebase, lit le profil et l\'offre de ce compte, puis se déconnecte. Rien n\'est écrit. Les identifiants sont saisis ici uniquement : ils ne sont jamais conservés.</string>
+    <string name="diag_test2_description">Se connecte avec le compte de test créé dans la console Firebase, lit le profil et l\'offre de ce compte, puis se déconnecte. Refusé si un compte est déjà connecté. Rien n\'est écrit. Les identifiants sont saisis ici uniquement : ils ne sont jamais conservés.</string>
     <string name="diag_test2_email_label">E-mail du compte de test</string>
     <string name="diag_test2_password_label">Mot de passe</string>
     <string name="diag_test2_action">Se connecter et lire</string>
@@ -1045,8 +1045,6 @@
     <string name="voyage_bubble_many">%1$d proches sont en voyage.</string>
     <string name="voyage_bubble_all">Tes proches sont en voyage.</string>
     <!-- Debug build only (diagnostic screen): ignored by the parity check (prefix android_). -->
-    <string name="android_diag_settings_title">Diagnostic</string>
-    <string name="android_diag_settings_subtitle">Outils de test, réservés aux versions de test</string>
     <string name="android_diag_review_title">Fenêtre d\'avis (essai)</string>
     <string name="android_diag_review_force">Afficher la fenêtre au prochain retour dans l\'app</string>
     <string name="android_diag_review_force_armed">Prête : mets l\'app en arrière-plan puis rouvre-la (la fenêtre ne couvre jamais l\'Update).</string>
