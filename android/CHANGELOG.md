@@ -2,6 +2,28 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.37.0] - 2026-11-12 : toucher la bulle du Feed ouvre l'écran « Les couleurs de ta Miff » (COULEURS-1)
+
+Demande du PM (2026-11-12), ticket complet et décidé sur délégation du PM : `docs/tickets/couleurs-info.md` ; recette `docs/qa/checklists/couleurs-info-android-recette-pm.md` ; branche `android/couleurs-info`, PR brouillon. Numéro de version : le dernier de `main` est 0.36.0 (deux entrées), celui-ci prend le suivant, 0.37.0 (à renuméroter au merge si une autre PR l'a pris). Aucune donnée, aucune règle Firestore, aucune permission, aucune dépendance, aucun service payant.
+
+### Ajouté
+- **Écran « Les couleurs de ta Miff »** (`ColorsInfoScreen`) : ce que signifient le vert, l'orange, le rouge et le gris pour **une personne** (anneau de la photo, liseré de la carte) et pour **la Miff** (la bulle), ce qui fait changer la couleur, et ce que les couleurs **ne disent pas** (pas une alerte d'urgence, pas une position en direct). Poussé **plein écran sans barre d'onglets**, avec la flèche de retour (`SettingsScaffold`), contenu qui défile ; un double toucher rapide n'ouvre qu'un écran, le retour ramène au Feed dans le même état.
+- **Point d'entrée : toute la bulle de la Miff**, ses sept variantes (tout va bien, alertes orange ou rouge, pas encore de nouvelles, personne d'autre, partage arrêté, accord en attente, voyageurs) et **chaque page** d'un carrousel d'alertes. « Contacter » et « Reprendre le partage » **gardent leur comportement** (leur toucher gagne sur celui de la bulle) ; balayage, pastilles et « Alerte précédente / suivante » inchangés. **Aucun indice visuel ajouté** sur la bulle (décisions du PM des 2026-11-10 et 2026-11-11) : seulement l'onde d'appui habituelle, dessinée dans la forme de la tache.
+- **Lecteur d'écran** : la bulle propose l'action **« Comprendre les couleurs »** ; le bouton « Contacter » / « Reprendre le partage » reste un élément à part. Sur l'écran, le titre et les quatre sections sont des titres ; chaque ligne de couleur est lue d'un seul bloc (« Vert. Tout va bien. … ») ; les pastilles sont décoratives.
+- **Durées jamais écrites dans les textes** (règle STA9) : « 2 heures », « 4 heures », « 1 heure » sont lues dans `StatusThresholds` (`ColorsInfoDurations`) et écrites par le formateur du système (`MeasureFormat`), dans la langue du téléphone. Si le PM change un seuil, l'écran suit.
+- **Textes** : 39 clés `feed_colors_*` (38 de contenu + `feed_colors_bubble_action_a11y` pour l'accessibilité : le tableau du ticket en liste 39), français et anglais, **identiques dans le catalogue iOS `Localizable.xcstrings`** (textes seulement, aucun code Swift : c'est ce qui garde le contrôle de parité vert ; l'écran iOS est COULEURS-2). Illustrations : l'avatar de statut du Feed (pastille et anneau, sans pictogramme) et une mini-tache à la forme de la bulle ; aucune image importée.
+- Tests : `ColorsInfoScreenTest` (blocs dans l'ordre, textes français et anglais, durées lues dans les seuils et changeant avec eux, titres, lignes lues d'un bloc, aucune action hors le retour, très grande police, parité des 39 clés, aucun nombre d'heures écrit dans un catalogue, ton calme), `BubbleColorsEntryTest` (les sept variantes et les deux pages d'un carrousel ouvrent l'écran, « Contacter » et « Reprendre le partage » non, action d'accessibilité, aucun texte ajouté, zone d'au moins 48 dp, navigation poussée / retour / double ouverture).
+
+### Modifié
+- `BubbleView` gagne `onOpenColors` ; `FeedActions` gagne `onOpenColors` ; `MainTabs` gagne `onOpenColors` ; nouvelle route `ColorsInfoRoute` dans `MainShell`. `BubbleShape` devient visible dans le module (la mini-tache de l'écran a la forme de la bulle).
+- Lecture de la bulle par TalkBack : la bulle est désormais **un seul élément** (titre, ligne et compteur lus ensemble, puis l'action) au lieu de plusieurs ; son annonce de changement de niveau est inchangée.
+
+### À savoir
+- **Aucun événement Analytics** (contrat `analytics-events.md`, ligne 34, décision D16 du ticket Feed) : on ne saura pas combien de personnes ouvrent l'écran. Si le PM veut le mesurer : un événement `colors_info_opened` sans paramètre, par PR sur le contrat.
+- **Découverte** (risque R1 du ticket) : rien n'indique que la bulle se touche, choix assumé du PM ; à juger en recette.
+- La zone tactile est le **rectangle** de la bulle (les petits coins transparents répondent aussi) ; elle suit la dérive lente de la bulle, qui n'est pas modifiée.
+- Coût d'infrastructure : 0 (écran statique, aucune lecture, aucun appel réseau).
+
 ## [0.36.0] - 2026-11-12 : l'app ne démarre plus sur le diagnostic ; accès par Réglages ou par un appui de 10 secondes
 
 Demande du PM du 2026-11-12 ; branche `android/debug-acces-reglages-appui-long`, PR brouillon. Pas de maquette (résultat direct demandé). Numéro de version : `main` est à 0.
@@ -67,28 +89,6 @@ Branche `android/reprise-partage-statut`, PR brouillon. Numéro de version : `ma
 - Après un arrêt vu par le suivi, l'heure d'arrivée dans le lieu n'est plus connue (la zone avait cessé d'être surveillée) : la carte porte l'heure de la reprise.
 - **Non vérifié sur un téléphone** : parcours dédié dans `docs/qa/checklists/reprise-partage-android-recette-pm.md` (arrêter puis reprendre, vérifier chez un proche).
 
-
-## [0.36.0] - 2026-11-12 : toucher la bulle du Feed ouvre l'écran « Les couleurs de ta Miff » (COULEURS-1)
-
-Demande du PM (2026-11-12), ticket complet et décidé sur délégation du PM : `docs/tickets/couleurs-info.md` ; recette `docs/qa/checklists/couleurs-info-android-recette-pm.md` ; branche `android/couleurs-info`, PR brouillon. Numéro de version : le dernier de `main` est 0.35.0, celui-ci prend le suivant (à renuméroter au merge si une autre PR a pris 0.36.0). Aucune donnée, aucune règle Firestore, aucune permission, aucune dépendance, aucun service payant.
-
-### Ajouté
-- **Écran « Les couleurs de ta Miff »** (`ColorsInfoScreen`) : ce que signifient le vert, l'orange, le rouge et le gris pour **une personne** (anneau de la photo, liseré de la carte) et pour **la Miff** (la bulle), ce qui fait changer la couleur, et ce que les couleurs **ne disent pas** (pas une alerte d'urgence, pas une position en direct). Poussé **plein écran sans barre d'onglets**, avec la flèche de retour (`SettingsScaffold`), contenu qui défile ; un double toucher rapide n'ouvre qu'un écran, le retour ramène au Feed dans le même état.
-- **Point d'entrée : toute la bulle de la Miff**, ses sept variantes (tout va bien, alertes orange ou rouge, pas encore de nouvelles, personne d'autre, partage arrêté, accord en attente, voyageurs) et **chaque page** d'un carrousel d'alertes. « Contacter » et « Reprendre le partage » **gardent leur comportement** (leur toucher gagne sur celui de la bulle) ; balayage, pastilles et « Alerte précédente / suivante » inchangés. **Aucun indice visuel ajouté** sur la bulle (décisions du PM des 2026-11-10 et 2026-11-11) : seulement l'onde d'appui habituelle, dessinée dans la forme de la tache.
-- **Lecteur d'écran** : la bulle propose l'action **« Comprendre les couleurs »** ; le bouton « Contacter » / « Reprendre le partage » reste un élément à part. Sur l'écran, le titre et les quatre sections sont des titres ; chaque ligne de couleur est lue d'un seul bloc (« Vert. Tout va bien. … ») ; les pastilles sont décoratives.
-- **Durées jamais écrites dans les textes** (règle STA9) : « 2 heures », « 4 heures », « 1 heure » sont lues dans `StatusThresholds` (`ColorsInfoDurations`) et écrites par le formateur du système (`MeasureFormat`), dans la langue du téléphone. Si le PM change un seuil, l'écran suit.
-- **Textes** : 39 clés `feed_colors_*` (38 de contenu + `feed_colors_bubble_action_a11y` pour l'accessibilité : le tableau du ticket en liste 39), français et anglais, **identiques dans le catalogue iOS `Localizable.xcstrings`** (textes seulement, aucun code Swift : c'est ce qui garde le contrôle de parité vert ; l'écran iOS est COULEURS-2). Illustrations : l'avatar de statut du Feed (pastille et anneau, sans pictogramme) et une mini-tache à la forme de la bulle ; aucune image importée.
-- Tests : `ColorsInfoScreenTest` (blocs dans l'ordre, textes français et anglais, durées lues dans les seuils et changeant avec eux, titres, lignes lues d'un bloc, aucune action hors le retour, très grande police, parité des 39 clés, aucun nombre d'heures écrit dans un catalogue, ton calme), `BubbleColorsEntryTest` (les sept variantes et les deux pages d'un carrousel ouvrent l'écran, « Contacter » et « Reprendre le partage » non, action d'accessibilité, aucun texte ajouté, zone d'au moins 48 dp, navigation poussée / retour / double ouverture).
-
-### Modifié
-- `BubbleView` gagne `onOpenColors` ; `FeedActions` gagne `onOpenColors` ; `MainTabs` gagne `onOpenColors` ; nouvelle route `ColorsInfoRoute` dans `MainShell`. `BubbleShape` devient visible dans le module (la mini-tache de l'écran a la forme de la bulle).
-- Lecture de la bulle par TalkBack : la bulle est désormais **un seul élément** (titre, ligne et compteur lus ensemble, puis l'action) au lieu de plusieurs ; son annonce de changement de niveau est inchangée.
-
-### À savoir
-- **Aucun événement Analytics** (contrat `analytics-events.md`, ligne 34, décision D16 du ticket Feed) : on ne saura pas combien de personnes ouvrent l'écran. Si le PM veut le mesurer : un événement `colors_info_opened` sans paramètre, par PR sur le contrat.
-- **Découverte** (risque R1 du ticket) : rien n'indique que la bulle se touche, choix assumé du PM ; à juger en recette.
-- La zone tactile est le **rectangle** de la bulle (les petits coins transparents répondent aussi) ; elle suit la dérive lente de la bulle, qui n'est pas modifiée.
-- Coût d'infrastructure : 0 (écran statique, aucune lecture, aucun appel réseau).
 
 ## [0.32.0] - 2026-11-11 : Profil, les lieux de la Miff du carrousel sont visibles par tous les membres
 
