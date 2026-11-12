@@ -101,6 +101,8 @@ class StoreAccountMiffs(
     private val store: MiffStore,
     private val deleter: MiffDeleter,
     private val timeoutMillis: Long = com.tomessa.miff.data.miff.FirestoreMiffRepository.TIMEOUT_MS,
+    /** Called before the lot "Quitter" of a Miff the account only joined (never blocking): the requests to add a place that the account made there are taken back. */
+    private val beforeLeave: suspend (uid: String, miffId: String) -> Unit = { _, _ -> },
 ) : AccountMiffs {
     override suspend fun inventory(uid: String): MiffsRead {
         val refs =
@@ -169,7 +171,18 @@ class StoreAccountMiffs(
     override suspend fun leave(
         uid: String,
         ref: MembershipRef,
-    ): MiffStep = leaveOrDropIndex(uid, ref)
+    ): MiffStep {
+        // The requests carry an address and coordinates: they must not stay orphaned in a Miff once the account is gone (the rules allow their author to delete them
+        // only while a member). A failure never stops the deletion of the account.
+        try {
+            beforeLeave(uid, ref.miffId)
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // Never stops the deletion of the account.
+        }
+        return leaveOrDropIndex(uid, ref)
+    }
 
     /**
      * The lot "Quitter"; if the server refuses it (the card is already gone: the creator removed the person, or is deleting the Miff), the index alone

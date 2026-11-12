@@ -197,4 +197,14 @@ object DefaultMiffChoice {
     ): String? =
         owned.firstOrNull { it.id == lastJoinedId }?.id
             ?: owned.minByOrNull { it.joinedAtMillis }?.id
+
+    /**
+     * The Miff the form of a NEW place opened from: ticked first when the person created it (the list they were looking at names that Miff, so a place
+     * must not go to another circle by surprise: review of the PR, 2026-11-11). A Miff they did not create, or none, falls back on [of].
+     */
+    fun of(
+        owned: List<OwnedMiff>,
+        lastJoinedId: String?,
+        openedFromId: String?,
+    ): String? = owned.firstOrNull { it.id == openedFromId }?.id ?: of(owned, lastJoinedId)
 }

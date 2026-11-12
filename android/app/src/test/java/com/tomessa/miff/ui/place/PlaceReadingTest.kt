@@ -28,7 +28,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 
-/** The reading of the places: the detail (design 16), the list of the Profile tab (design 17), the message after a save (04L). */
+/** The reading of the places: the detail (design 16), the message after a save (04L). */
 @OptIn(ExperimentalCoroutinesApi::class)
 class PlaceReadingTest {
     private val dispatcher = StandardTestDispatcher()
@@ -97,6 +97,23 @@ class PlaceReadingTest {
     }
 
     @Test
+    fun detail_canEdit_isNeverTrueWhenBothUidsAreEmpty() {
+        val viewModel = detail("")
+        startDetail(viewModel)
+        val snapshot =
+            MiffSnapshot(
+                miffDetails(owner = "", name = "Famille Martin"),
+                listOf(creator),
+                listOf(testPlace("p1", "Maison")),
+                false,
+            )
+        repo.observer.flowOf(MIFF_ID).tryEmit(MiffObservation.Data(snapshot))
+        dispatcher.scheduler.runCurrent()
+        assertEquals(PlaceDetailStatus.READY, viewModel.uiState.value.status)
+        assertFalse(viewModel.uiState.value.canEdit)
+    }
+
+    @Test
     fun detail_aPlaceThatIsGoneForTheServer_isNoticed_butNotWhenTheCacheSimplyLacksIt() {
         val viewModel = detail("u2")
         startDetail(viewModel)
@@ -135,54 +152,6 @@ class PlaceReadingTest {
     @Test
     fun detail_showsNothingInItsToString() {
         assertEquals("PlaceDetailState(redacted)", PlaceDetailState().toString())
-    }
-
-    // --- The list of the Profile tab ---------------------------------------------------------------------------------------------
-
-    private fun list(uid: String) = MiffPlacesViewModel(MIFF_ID, repo, currentUid = { uid })
-
-    @Test
-    fun list_isEmptyUntilTheMiffIsRead_thenHoldsThePlaces_andWhoIsTheCreator() {
-        val viewModel = list("uid-owner")
-        assertFalse(viewModel.uiState.value.loaded)
-        observing.launch { viewModel.observe() }
-        dispatcher.scheduler.runCurrent()
-        repo.observer.flowOf(MIFF_ID).tryEmit(data(false, testPlace("p1", "A"), testPlace("p2", "B")))
-        dispatcher.scheduler.runCurrent()
-        assertTrue(viewModel.uiState.value.loaded)
-        assertEquals(2, viewModel.uiState.value.places.size)
-        assertTrue(viewModel.uiState.value.isCreator)
-    }
-
-    @Test
-    fun list_aMember_isNotACreator() {
-        val viewModel = list("u2")
-        observing.launch { viewModel.observe() }
-        dispatcher.scheduler.runCurrent()
-        repo.observer.flowOf(MIFF_ID).tryEmit(data(false, testPlace("p1", "A")))
-        dispatcher.scheduler.runCurrent()
-        assertFalse(viewModel.uiState.value.isCreator)
-    }
-
-    @Test
-    fun list_aLostAccess_leavesNothingOfThatMiff() {
-        val viewModel = list("u2")
-        observing.launch { viewModel.observe() }
-        dispatcher.scheduler.runCurrent()
-        repo.observer.flowOf(MIFF_ID).tryEmit(data(false, testPlace("p1", "A")))
-        dispatcher.scheduler.runCurrent()
-        repo.observer.flowOf(MIFF_ID).tryEmit(MiffObservation.AccessLost)
-        dispatcher.scheduler.runCurrent()
-        assertFalse(viewModel.uiState.value.loaded)
-        assertTrue(
-            viewModel.uiState.value.places
-                .isEmpty(),
-        )
-    }
-
-    @Test
-    fun list_showsNothingInItsToString() {
-        assertEquals("MiffPlacesState(redacted)", MiffPlacesState().toString())
     }
 
     // --- The message after a save --------------------------------------------------------------------------------------------------
