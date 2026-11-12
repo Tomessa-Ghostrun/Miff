@@ -49,7 +49,8 @@ struct PhotoFullScreen: View {
         GeometryReader { proxy in
             let insets = proxy.safeAreaInsets
             let size = PhotoFullScreenLayout.screenSize(
-                visible: proxy.size, top: insets.top, bottom: insets.bottom, leading: insets.leading, trailing: insets.trailing
+                visible: proxy.size, top: insets.top, bottom: insets.bottom,
+                leading: insets.leading, trailing: insets.trailing
             )
             ZStack {
                 Color.black

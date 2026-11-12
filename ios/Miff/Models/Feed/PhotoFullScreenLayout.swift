@@ -38,7 +38,9 @@ enum PhotoFullScreenLayout {
 
     /// La taille de l'écran ENTIER : la zone visible (celle qu'un lecteur de géométrie qui respecte les zones sûres annonce) plus les zones sûres
     /// (haut, bas, côtés). Le contenu qui ignore les zones sûres a cette taille.
-    static func screenSize(visible: CGSize, top: CGFloat, bottom: CGFloat, leading: CGFloat, trailing: CGFloat) -> CGSize {
+    static func screenSize(
+        visible: CGSize, top: CGFloat, bottom: CGFloat, leading: CGFloat, trailing: CGFloat
+    ) -> CGSize {
         CGSize(
             width: visible.width + leading + trailing,
             height: visible.height + top + bottom
