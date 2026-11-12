@@ -672,7 +672,6 @@ class SessionManager(
         // If the write fails, the watcher writes one itself as soon as the server answers (no identifier here + no session there).
         device.begin(uid)
         device.watch(uid)
-        onSessionReopened()
     }
 
     /**

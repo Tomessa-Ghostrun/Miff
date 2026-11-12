@@ -440,11 +440,8 @@ class AppContainer(
 
     /** Looks at the registry of devices now, off the main thread (a consent was just given, a switch just changed). */
     private fun pushSyncSoon() {
-        notificationScope.launch {
-            // The purge of a Firestore cache left by a failed sign-out comes before any other access to Firestore.
-            cachePurger.purgeIfPending()
-            pushRegistrar.sync()
-        }
+        // NO purge of the Firestore cache here: this is called from the sign-in screens and the consent panel, where a purge flag may be set for a flow that is not over.
+        notificationScope.launch { pushRegistrar.sync() }
     }
 
     /** What the messaging service hands each DATA message to: validated, then given to the notifications (no read of Firestore). */

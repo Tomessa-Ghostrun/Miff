@@ -14,7 +14,7 @@ class CircleNewsPayload(
     val miffId: String,
     /** The author, when the server gave it: the notification of one author replaces the previous one. Null: replaced per Miff. */
     val authorUid: String?,
-    /** Cleaned and cut: at most [CircleNewsParser.MAX_FIRST_NAME_CHARS] characters, then "…" when it was longer. Never empty. */
+    /** Cleaned and cut: at most [CircleNewsParser.MAX_FIRST_NAME_CHARS] graphemes (the "…" included). Never empty. */
     val authorFirstName: String,
     /**
      * When this phone RECEIVED the message (milliseconds since 1970): the server sends no time. The rule "a message of more than 2 hours is only a silent line" is therefore
@@ -40,11 +40,17 @@ object CircleNewsParser {
     const val KEY_FIRST_NAME = "firstName"
     const val KEY_QUIET = "quiet"
 
-    /** The first name shown: 20 characters (code points) at most, then "…" (ticket section 4). */
+    /**
+     * The first name shown: 20 GRAPHEMES at most, the final "…" included (what the server does: 19 and "…"; ticket section 4). A grapheme is what a person sees as one
+     * character: an emoji of a family (several code points joined by U+200D) counts for ONE.
+     */
     const val MAX_FIRST_NAME_CHARS = 20
 
-    /** What the server may send for the first name (it cuts at 20 and adds "…"): beyond this the message is suspect and is ignored. */
-    private const val MAX_RAW_FIRST_NAME_CHARS = 64
+    /**
+     * What the server may send for the first name, in UTF-16 units: 20 graphemes can be long (a family emoji is 11 units, with skin tones about 25), so the limit is wide; the data of
+     * a message is 4 KB at most anyway. Beyond this the message is suspect and is ignored.
+     */
+    private const val MAX_RAW_FIRST_NAME_CHARS = 512
 
     private val identifier = Regex("^[A-Za-z0-9_-]{1,128}$")
     private val messageIdShape = Regex("^[A-Za-z0-9_.:%-]{1,80}$")
@@ -92,8 +98,8 @@ object CircleNewsParser {
     }
 
     /**
-     * The first name as it may appear on a locked screen: control, format (direction marks that could reorder the sentence), separator, private and unassigned
-     * characters are removed, every run of spaces becomes one, then it is cut at [MAX_FIRST_NAME_CHARS] characters with "…". Null when nothing is left.
+     * The first name as it may appear on a locked screen: control, format (direction marks that could reorder the sentence, but not the joiner of emojis), separator, private and unassigned
+     * characters are removed, every run of spaces becomes one, then it is cut at [MAX_FIRST_NAME_CHARS] graphemes with "…". Null when nothing is left.
      * Idempotent: a name already cut by the server (20 characters and "…") comes out unchanged.
      */
     fun cleanFirstName(raw: String): String? {
@@ -108,12 +114,18 @@ object CircleNewsParser {
                     pendingSpace = kept.isNotEmpty()
                 }
 
+                // U+200D (zero width joiner) is KEPT, like the server does: it joins the parts of an emoji of a family or of a person with a job (never alone at the start).
+                Character.FORMAT -> {
+                    if (codePoint == ZERO_WIDTH_JOINER && kept.isNotEmpty() && !pendingSpace) {
+                        kept.appendCodePoint(codePoint)
+                    }
+                }
+
                 Character.CONTROL -> {
                     // Tab, line feed and carriage return count as a space; every other control character is dropped.
                     if (codePoint == 0x09 || codePoint == 0x0A || codePoint == 0x0D) pendingSpace = kept.isNotEmpty()
                 }
 
-                Character.FORMAT,
                 Character.LINE_SEPARATOR,
                 Character.PARAGRAPH_SEPARATOR,
                 Character.SURROGATE,
@@ -132,11 +144,26 @@ object CircleNewsParser {
         }
         val cleaned = kept.toString()
         if (cleaned.isEmpty()) return null
-        val count = cleaned.codePointCount(0, cleaned.length)
-        if (count <= MAX_FIRST_NAME_CHARS) return cleaned
-        val end = cleaned.offsetByCodePoints(0, MAX_FIRST_NAME_CHARS)
-        return cleaned.substring(0, end).trimEnd() + ELLIPSIS
+        val ends = graphemeEnds(cleaned)
+        if (ends.size <= MAX_FIRST_NAME_CHARS) return cleaned
+        // Like the server: the first 19 graphemes, then "…" (20 in all). A name already cut by the server (19 and "…") has 20 graphemes and comes out unchanged.
+        return cleaned.substring(0, ends[MAX_FIRST_NAME_CHARS - 2]).trimEnd() + ELLIPSIS
     }
+
+    /** The end offset of each grapheme of [text] (the system's rules of the characters seen as one: accents, emoji sequences, flags). */
+    private fun graphemeEnds(text: String): List<Int> {
+        val boundaries = java.text.BreakIterator.getCharacterInstance()
+        boundaries.setText(text)
+        val ends = mutableListOf<Int>()
+        var end = boundaries.next()
+        while (end != java.text.BreakIterator.DONE) {
+            ends += end
+            end = boundaries.next()
+        }
+        return ends
+    }
+
+    private const val ZERO_WIDTH_JOINER = 0x200D
 
     /** What is cut at the end of a long first name. */
     const val ELLIPSIS = "…"

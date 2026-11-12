@@ -61,6 +61,37 @@ class PushPrivacyTest {
     }
 
     @Test
+    fun theReopeningOfTheSessionTriggersNoPurgeOfTheCache_noCodeOfThePushPurgesAnything() {
+        // data/push never touches the cache of Firestore (terminate / clearPersistence / purge).
+        val offenders =
+            pushFiles.flatMap { f ->
+                codeLines(f).filter {
+                    Regex(
+                        """purge|CachePurger|terminate\(|clearPersistence""",
+                        RegexOption.IGNORE_CASE,
+                    ).containsMatchIn(it)
+                }
+            }
+        assertEquals(emptyList<String>(), offenders)
+        // The call that follows a reopened session (a sign-in screen, the consent panel: a purge flag may be set for a flow that is not over) purges nothing.
+        val container = File(main, "AppContainer.kt").readText()
+        val sync =
+            container
+                .substringAfter("private fun pushSyncSoon()")
+                .substringBefore("\n    }\n")
+                .lines()
+                .filterNot { it.trimStart().startsWith("//") }
+                .joinToString("\n")
+        assertTrue(sync.contains("pushRegistrar.sync()"))
+        assertFalse("pushSyncSoon must not purge: $sync", sync.contains("purge", ignoreCase = true))
+        // The hook is called from the end of a cancelled deletion and from the resolution of the session, nowhere else (not from the restore after a refused panel).
+        val manager = File(main, "data/session/SessionManager.kt").readText()
+        assertEquals(2, Regex("""\n\s+onSessionReopened\(\)""").findAll(manager).count())
+        val restore = manager.substringAfter("private suspend fun restoreDeviceSession()").substringBefore("\n    }\n")
+        assertFalse(restore.contains("onSessionReopened"))
+    }
+
+    @Test
     fun theDocumentOfTheRegistryHoldsTheSevenKeysOfTheContractAndNothingElse() {
         val code = codeLines(File(pushDir, "DeviceDocuments.kt")).joinToString("\n")
         val written = Regex(""""([A-Za-z]+)" to """).findAll(code).map { it.groupValues[1] }.toSet()

@@ -122,8 +122,8 @@ class CircleNewsTest {
 
     @Test
     fun aVeryLongFirstNameIsSuspect_theMessageIsIgnored() {
-        assertNull(parse(message(name = "A".repeat(65))))
-        assertNotNull(parse(message(name = "A".repeat(64))))
+        assertNull(parse(message(name = "A".repeat(513))))
+        assertNotNull(parse(message(name = "A".repeat(512))))
     }
 
     @Test
@@ -136,25 +136,46 @@ class CircleNewsTest {
     }
 
     @Test
-    fun theFirstNameIsCutAtTwentyCharactersWithAnEllipsis_neverTheFamilyName() {
+    fun theFirstNameIsCutAtTwentyGraphemesTheEllipsisIncluded_likeTheServer_neverTheFamilyName() {
         assertEquals("Tomessa", CircleNewsParser.cleanFirstName("Tomessa"))
         assertEquals("A".repeat(20), CircleNewsParser.cleanFirstName("A".repeat(20)))
-        assertEquals("A".repeat(20) + "…", CircleNewsParser.cleanFirstName("A".repeat(21)))
-        assertEquals("A".repeat(20) + "…", CircleNewsParser.cleanFirstName("A".repeat(50)))
+        // The server keeps 19 and adds the ellipsis: 20 in all.
+        assertEquals("A".repeat(19) + "…", CircleNewsParser.cleanFirstName("A".repeat(21)))
+        assertEquals("A".repeat(19) + "…", CircleNewsParser.cleanFirstName("A".repeat(50)))
     }
 
     @Test
     fun theCutIsIdempotent_aNameAlreadyCutByTheServerComesOutUnchanged() {
-        val cutByServer = "B".repeat(20) + "…"
+        val cutByServer = "B".repeat(19) + "…"
         assertEquals(cutByServer, CircleNewsParser.cleanFirstName(cutByServer))
     }
 
     @Test
-    fun theCutCountsCharactersNotUtf16Units_anEmojiIsNotSplit() {
+    fun theCutCountsGraphemes_anEmojiIsNotSplit() {
         val name = "😀".repeat(25)
         val cut = CircleNewsParser.cleanFirstName(name)!!
-        assertEquals("😀".repeat(20) + "…", cut)
-        assertEquals(21, cut.codePointCount(0, cut.length))
+        assertEquals("😀".repeat(19) + "…", cut)
+    }
+
+    private val family = "\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67\u200D\uD83D\uDC66"
+
+    @Test
+    fun theJoinerOfComposedEmojisIsKept_likeTheServer_aFamilyIsOneGrapheme() {
+        assertEquals(family, CircleNewsParser.cleanFirstName(family))
+        assertEquals("Léa $family", CircleNewsParser.cleanFirstName("Léa $family"))
+        // 19 families and the ellipsis, exactly what the server sends for a 20-grapheme limit: valid, long in UTF-16 units, and unchanged.
+        val fromServer = family.repeat(19) + "…"
+        assertTrue(fromServer.length > 64)
+        assertNotNull(parse(message(name = fromServer)))
+        assertEquals(fromServer, parse(message(name = fromServer))!!.authorFirstName)
+        // More than 20 families: cut at 19 and the ellipsis, no family is split.
+        assertEquals(family.repeat(19) + "…", CircleNewsParser.cleanFirstName(family.repeat(25)))
+    }
+
+    @Test
+    fun aJoinerAloneOrAtTheStartIsNothing() {
+        assertEquals("Anna", CircleNewsParser.cleanFirstName("\u200DAnna"))
+        assertNull(CircleNewsParser.cleanFirstName("\u200D\u200D"))
     }
 
     @Test
