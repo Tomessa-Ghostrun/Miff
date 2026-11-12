@@ -15,10 +15,9 @@ export const DUREE_DE_VIE_MS = 2 * 60 * 60 * 1000;
 export const PLAFOND_FENETRE_MS = 60 * 60 * 1000;
 /** Un evenement dont la photo a plus de 5 min au moment du traitement n'envoie rien (pas de notification tardive apres un incident). */
 export const AGE_MAX_EVENEMENT_MS = 5 * 60 * 1000;
-/** Bornes de cout : fiches de membres lues, destinataires, appareils lus par destinataire. */
+/** Bornes de cout : fiches de membres lues, destinataires (un seul appareil par destinataire : celui de la session active). */
 export const MAX_FICHES = 30;
 export const MAX_DESTINATAIRES = 20;
-export const MAX_APPAREILS = 3;
 /** Nouvelles tentatives d'envoi FCM (erreur passagere) : au plus 2, delai croissant, dans la meme execution. */
 export const DELAIS_REPRISE_MS = [500, 1500] as const;
 /** notifState/{miffId} est supprime automatiquement 2 jours apres sa derniere ecriture (TTL Firestore, a activer par le PM). */

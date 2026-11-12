@@ -327,10 +327,10 @@ Quand un membre **publie une update** (une photo écrite dans `miffs/{miff}/phot
 
 | Cas | Lectures Firestore | Écritures |
 |---|---|---|
-| Miff de **4 membres**, 3 destinataires avec 1 téléphone chacun | **12** (1 contrôle préalable + 4 fiches + 3 listes de téléphones + 3 sessions + 1 vérification finale) | **1** (l'état) |
+| Miff de **4 membres**, 3 destinataires avec 1 téléphone chacun | **12** (1 contrôle préalable + 4 fiches + 3 × 2 [session puis téléphone de la session] + 1 vérification finale) | **1** (l'état) |
 | Miff de **15 membres** | **45** | 1 |
-| Miff de **40 membres** | **72** au plus (73 si l'auteur est hors des 30 premières fiches) : 1 + 30 fiches + 20 téléphones + 20 sessions + 1 | 1 |
-| Update plafonnée (2e de l'heure) ou rejouée | **1** (le contrôle préalable arrête tout avant de lire fiches, téléphones et sessions) | **0** |
+| Miff de **40 membres** | **72** au plus (73 si l'auteur est hors des 30 premières fiches) : 1 + 30 fiches + 20 × 2 [session + téléphone] + 1 | 1 |
+| Update plafonnée (2e de l'heure) ou rejouée | **1** (le contrôle préalable arrête tout avant de lire fiches, sessions et téléphones) | **0** |
 | Auteur seul dans sa Miff | **2** | 0 |
 | Événement de plus de 5 min, suppression de photo | **0** | 0 |
 | Jeton invalide purgé | n/a | +1 par jeton |

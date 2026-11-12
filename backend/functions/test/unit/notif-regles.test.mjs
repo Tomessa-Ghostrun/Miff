@@ -154,13 +154,12 @@ test('apns-collapse-id (M7) : 64 octets au plus, sans couper un caractere ; un i
   assert.equal(m.apns.payload.aps.threadId, 'U'.repeat(128), 'le fil de regroupement garde l identifiant complet');
 });
 
-test('constantes du ticket : plafond 1 h, vie 2 h, age maximal 5 min, 30 fiches, 20 destinataires, 3 appareils, 2 reprises', () => {
+test('constantes du ticket : plafond 1 h, vie 2 h, age maximal 5 min, 30 fiches, 20 destinataires, 2 reprises', () => {
   assert.equal(R.PLAFOND_FENETRE_MS, 3_600_000);
   assert.equal(R.DUREE_DE_VIE_MS, 7_200_000);
   assert.equal(R.AGE_MAX_EVENEMENT_MS, 300_000);
   assert.equal(R.MAX_FICHES, 30);
   assert.equal(R.MAX_DESTINATAIRES, 20);
-  assert.equal(R.MAX_APPAREILS, 3);
   assert.equal(R.DELAIS_REPRISE_MS.length, 2);
   assert.equal(R.DUREE_ETAT_MS, 172_800_000);
 });

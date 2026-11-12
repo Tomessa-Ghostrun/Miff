@@ -217,7 +217,7 @@ test('M8 : chemins Firestore touchés par la fonction = liste fermée ; écritur
     'miffs/${miffId}/members',
     'miffs/${miffId}/members/${auteurUid}',
     'notifState/${miffId}',
-    'users/${d.uid}/devices',
+    'users/${d.uid}/devices/${deviceId}',
     'users/${d.uid}/session/active',
   ]);
   // Écritures : une seule écriture de document (tx.set sur refEtat = notifState) et une seule suppression (devices, avec précondition sur la version lue).

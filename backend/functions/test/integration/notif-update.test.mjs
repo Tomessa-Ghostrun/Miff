@@ -127,7 +127,7 @@ test('V1 : A publie à 14:00 -> B, C, D notifiés, A non ; message de forme exac
   assert.deepEqual(jetonsEnvoyes(c), ['jeton-B-0', 'jeton-C-0', 'jeton-D-0']);
   assert.equal(bilan.envoyes, 3);
   assert.equal(bilan.motif, undefined);
-  assert.equal(bilan.lectures, 12, '1 pré-contrôle + 4 fiches + 3 appareils + 3 sessions + 1 état (transaction)');
+  assert.equal(bilan.lectures, 12, '1 pré-contrôle + 4 fiches + 3 destinataires x (session + appareil) + 1 état (transaction)');
   assert.equal(bilan.ecritures, 1, "1 écriture : l'état de la Miff");
 
   const parJeton = Object.fromEntries(c.fcm.messages.map((m) => [m.token, m]));
@@ -164,7 +164,7 @@ test('V2 : un membre qui a arrêté son partage (sharing.enabled = false) ne re�
   const bilan = await publier(c);
   assert.deepEqual(jetonsEnvoyes(c), ['jeton-B-0', 'jeton-D-0']);
   assert.equal(bilan.ecartes.sans_partage, 1);
-  assert.equal(bilan.lectures, 10, "1 + 4 fiches + 2 appareils + 2 sessions (C n'est pas lu) + 1");
+  assert.equal(bilan.lectures, 10, "1 + 4 fiches + 2 destinataires x (session + appareil) (C n'est pas lu) + 1");
 });
 
 test('V3 : notify.updates = false -> pas de notification pour cet appareil (les autres sont notifiés)', async () => {
@@ -195,7 +195,7 @@ test("V4 : un membre sans aucun appareil enregistré n'est pas notifié, les aut
   const c = contexte();
   const bilan = await publier(c);
   assert.deepEqual(jetonsEnvoyes(c), ['jeton-C-0', 'jeton-D-0']);
-  assert.equal(bilan.ecartes.sans_appareil, 1);
+  assert.equal(bilan.ecartes.sans_session, 1, 'B : ni session ni appareil');
 });
 
 test("I1 : plusieurs jetons chez un même compte -> seul l'appareil de la SESSION active est notifié", async () => {
@@ -206,8 +206,8 @@ test("I1 : plusieurs jetons chez un même compte -> seul l'appareil de la SESSIO
   const c = contexte();
   const bilan = await publier(c);
   assert.deepEqual(jetonsEnvoyes(c), ['jeton-B-1', 'jeton-C-0', 'jeton-D-0']);
-  assert.equal(bilan.ecartes.appareil_remplace, 2);
-  assert.equal(bilan.lectures, 1 + 4 + (3 + 1 + 1) + 3 + 1, 'pré-contrôle + 4 fiches + appareils (B 3, C 1, D 1) + 3 sessions + état');
+  assert.equal(c.fcm.messages.length, 3, 'les autres documents devices de B ne sont ni lus ni utilisés');
+  assert.equal(bilan.lectures, 1 + 4 + 3 * 2 + 1, 'pré-contrôle + 4 fiches + 3 destinataires x (session + get direct de l appareil) + état : plus de liste, quel que soit le nombre de jetons');
 });
 
 test("I1 : un seul document mais d'une AUTRE session (déconnexion échouée puis autre compte sur le même téléphone) -> aucun envoi ; pas de session -> aucun envoi", async () => {
@@ -218,7 +218,7 @@ test("I1 : un seul document mais d'une AUTRE session (déconnexion échouée pui
   const c = contexte();
   const bilan = await publier(c);
   assert.deepEqual(jetonsEnvoyes(c), ['jeton-D-0']);
-  assert.equal(bilan.ecartes.appareil_remplace, 1);
+  assert.equal(bilan.ecartes.sans_appareil, 1, "B : la session pointe un document devices qui n'existe pas");
   assert.equal(bilan.ecartes.sans_session, 1);
 });
 

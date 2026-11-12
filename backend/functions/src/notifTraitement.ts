@@ -6,11 +6,11 @@
 //   1. garde-fous de l'evenement (photo recente, identifiants sains)                                  0 lecture
 //   2. PRE-CONTROLE de notifState/{miffId} : deja vu ? plafond horaire ? -> arret, 1 lecture seule      1 lecture
 //   3. fiches de membres (au plus 30) -> auteur partageant, destinataires partageant (20 au plus)      1 lecture par fiche
-//   4. appareils (3 au plus) + SESSION ACTIVE de chaque destinataire ayant un appareil                  1 a 3 lectures + 1 par destinataire
-//      -> envoi UNIQUEMENT a l'appareil dont l'identifiant est celui de la session ; pas de session = pas d'envoi
+//   4. SESSION ACTIVE de chaque destinataire, puis get DIRECT de devices/{session.deviceId}                2 lectures par destinataire (1 sans session)
+//      -> envoi UNIQUEMENT a l'appareil de la session ; pas de session ou pas de document = pas d'envoi
 //   5. reservation transactionnelle dans notifState/{miffId} (verification finale, meme verdict)        1 lecture, 1 ecriture SEULEMENT si on envoie
 //   6. envoi FCM par appareil (2 nouvelles tentatives au plus), purge des jetons que FCM dit inconnus
-// Budget (Miff de 4 membres, 3 destinataires, 1 appareil chacun) : 1 + 4 + 3 + 3 + 1 = 12 lectures, 1 ecriture. Update plafonnee ou rejouee : 1 lecture, 0 ecriture.
+// Budget (Miff de 4 membres, 3 destinataires, 1 appareil chacun) : 1 + 4 + 3 x 2 + 1 = 12 lectures, 1 ecriture. Update plafonnee ou rejouee : 1 lecture, 0 ecriture.
 // "Au plus une fois" : la reservation (etape 5) PRECEDE l'envoi ; un plantage entre les deux, ou une panne de FCM apres la reservation, perd la notification
 // et consomme le plafond de l'heure pour cet auteur (le Feed la montre quand meme) ; la fonction n'en double jamais.
 // Journaux : uniquement des nombres et des mots fixes (journal.ts), jamais d'identifiant, de prenom ni de jeton.
@@ -21,7 +21,6 @@ import {
   AGE_MAX_EVENEMENT_MS,
   DELAIS_REPRISE_MS,
   DUREE_ETAT_MS,
-  MAX_APPAREILS,
   MAX_DESTINATAIRES,
   MAX_FICHES,
   PLAFOND_FENETRE_MS,
@@ -61,7 +60,7 @@ export interface Bilan {
   /** Appareils examines (documents `devices` lus). */
   examines: number;
   envoyes: number;
-  /** Appareils ou destinataires ecartes, par raison (sans_partage, sans_appareil, notification_coupee, au_dela_limite, jeton_illisible). */
+  /** Appareils ou destinataires ecartes, par raison (sans_partage, sans_session, sans_appareil, notification_coupee, au_dela_limite, jeton_illisible). */
   ecartes: Record<string, number>;
   purges: number;
   /** Erreurs d'envoi par code numerique (notifRegles.codeNumerique). */
@@ -174,41 +173,40 @@ async function executer(dep: Dependances, evenement: Evenement, bilan: Bilan): P
     destinataires = destinataires.slice(0, MAX_DESTINATAIRES);
   }
 
-  // --- 4. Appareils : jeton present, notification "update" activee, appareil de la SESSION active ----------------------------------------------------------------
+  // --- 4. Session active puis appareil de la session (contrat docs/dev/jetons-appareil-clients.md §7) ----------------------------------------------
+  // Pour chaque destinataire : (a) users/{uid}/session/active ; absente = AUCUN envoi a ce compte ; (b) lecture DIRECTE (get) de users/{uid}/devices/{session.deviceId},
+  // jamais une liste : les jetons d'autres identifiants (appareil remplace, deconnexion hors connexion restee sans suppression) ne sont ni lus ni utilises.
+  // Raison : un jeton reste valide chez FCM meme si son document n'a pas pu etre supprime ; un autre compte qui s'ouvre ensuite sur le meme telephone recevrait
+  // sinon le prenom d'un membre d'un cercle qui n'est pas le sien. Document absent = aucun envoi. 1 lecture sans session, 2 lectures avec.
   const cibles: Cible[] = [];
   const lots = await Promise.all(
     destinataires.map(async (d) => {
-      const snap = await db.collection(`users/${d.uid}/devices`).limit(MAX_APPAREILS).get();
-      bilan.lectures += Math.max(1, snap.size);
-      // La session active est TOUJOURS lue (contrat docs/dev/jetons-appareil-clients.md §7) : un jeton reste valide chez FCM meme si son document n'a pas
-      // pu etre supprime (deconnexion hors connexion) ; un autre compte qui s'ouvre ensuite sur le meme telephone recevrait alors le prenom d'un membre d'un
-      // cercle qui n'est pas le sien. On n'envoie donc qu'a l'appareil de la session ACTIVE ; pas de session (deconnexion, suppression) = pas d'envoi.
-      let session: SessionActive | null = null;
-      if (!snap.empty) {
-        const s = await db.doc(`users/${d.uid}/session/active`).get();
-        bilan.lectures += 1;
-        session = s.exists ? (s.data() as SessionActive) : null;
-      }
-      return { uid: d.uid, snap, session };
+      const s = await db.doc(`users/${d.uid}/session/active`).get();
+      bilan.lectures += 1;
+      const deviceId = s.exists ? (s.data() as SessionActive).deviceId : undefined;
+      if (typeof deviceId !== "string" || !IDENTIFIANT.test(deviceId)) return { uid: d.uid, appareil: null, sansSession: true };
+      const appareil = await db.doc(`users/${d.uid}/devices/${deviceId}`).get();
+      bilan.lectures += 1;
+      return { uid: d.uid, appareil, sansSession: false };
     }),
   );
-  for (const { uid, snap, session } of lots) {
-    if (snap.empty) {
+  for (const { uid, appareil, sansSession } of lots) {
+    if (sansSession) {
+      ecarter(bilan, "sans_session");
+      continue;
+    }
+    if (!appareil || !appareil.exists) {
       ecarter(bilan, "sans_appareil");
       continue;
     }
-    const retenus = session && typeof session.deviceId === "string" ? snap.docs.filter((doc) => doc.id === session.deviceId) : [];
-    if (retenus.length < snap.size) ecarter(bilan, session ? "appareil_remplace" : "sans_session", snap.size - retenus.length);
-    for (const doc of retenus) {
-      bilan.examines += 1;
-      const d = doc.data() as { token?: unknown; platform?: unknown; tz?: unknown; notify?: { updates?: unknown } };
-      if (d.notify?.updates !== true) {
-        ecarter(bilan, "notification_coupee");
-      } else if (typeof d.token !== "string" || d.token.length === 0 || d.token.length > 4096 || (d.platform !== "android" && d.platform !== "ios")) {
-        ecarter(bilan, "jeton_illisible");
-      } else {
-        cibles.push({ uid, token: d.token, plateforme: d.platform, fuseau: d.tz, ref: doc.ref, version: doc.updateTime });
-      }
+    bilan.examines += 1;
+    const d = appareil.data() as { token?: unknown; platform?: unknown; tz?: unknown; notify?: { updates?: unknown } };
+    if (d.notify?.updates !== true) {
+      ecarter(bilan, "notification_coupee");
+    } else if (typeof d.token !== "string" || d.token.length === 0 || d.token.length > 4096 || (d.platform !== "android" && d.platform !== "ios")) {
+      ecarter(bilan, "jeton_illisible");
+    } else {
+      cibles.push({ uid, token: d.token, plateforme: d.platform, fuseau: d.tz, ref: appareil.ref, version: appareil.updateTime as Timestamp });
     }
   }
   if (cibles.length === 0) return arreter("aucun_destinataire");
