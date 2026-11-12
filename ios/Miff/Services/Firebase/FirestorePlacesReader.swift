@@ -14,7 +14,7 @@ final class FirestorePlacesReader: PlacesReader {
     /// Attente maximale d'une lecture, en secondes : hors ligne le SDK répond de lui-même, ceci n'est qu'un plafond.
     static let timeoutSeconds: TimeInterval = 15
 
-    func read(miffId: String) async -> PlacesRead {
+    func read(miffId: String) async -> PlacesReadResult {
         // L'identifiant est vérifié avant de devenir une partie d'un chemin (même forme que les règles).
         guard FirebaseBootstrap.isConfigured, MiffId.isValid(miffId) else {
             return .failed

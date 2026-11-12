@@ -107,7 +107,7 @@ final class ProfilePlacesViewModel: ObservableObject {
         publish()
     }
 
-    private func finishReading(miffId: String, answer: PlacesRead) {
+    private func finishReading(miffId: String, answer: PlacesReadResult) {
         if let known = knownMiffIds, !known.contains(miffId) {
             return
         }

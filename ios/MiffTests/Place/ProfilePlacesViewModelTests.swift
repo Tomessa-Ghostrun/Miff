@@ -3,10 +3,10 @@ import XCTest
 
 /// Une lecture des lieux d'une Miff : double en mémoire qui compte les lectures (le COÛT Firestore est ce qu'on prouve ici).
 private final class FakePlacesReader: PlacesReader {
-    var answers: [String: PlacesRead] = [:]
+    var answers: [String: PlacesReadResult] = [:]
     private(set) var reads: [String] = []
 
-    func read(miffId: String) async -> PlacesRead {
+    func read(miffId: String) async -> PlacesReadResult {
         reads.append(miffId)
         return answers[miffId] ?? .failed
     }
