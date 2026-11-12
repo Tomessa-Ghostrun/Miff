@@ -61,12 +61,14 @@ import com.tomessa.miff.data.notification.AndroidNotificationPresenter
 import com.tomessa.miff.data.notification.AndroidNotificationTray
 import com.tomessa.miff.data.notification.AppVisibility
 import com.tomessa.miff.data.notification.FeedNotificationLink
+import com.tomessa.miff.data.notification.KnownMiffs
 import com.tomessa.miff.data.notification.NotificationAuthorization
 import com.tomessa.miff.data.notification.NotificationCenter
 import com.tomessa.miff.data.notification.NotificationChannels
 import com.tomessa.miff.data.notification.NotificationScheduler
 import com.tomessa.miff.data.notification.NotificationSettings
 import com.tomessa.miff.data.notification.NotificationTray
+import com.tomessa.miff.data.notification.SharedPreferencesKnownMiffs
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationCenterStore
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationLedger
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationPreferencesStore
@@ -335,7 +337,9 @@ class AppContainer(
      */
     val devicePermissions: DevicePermissions by lazy { AndroidDevicePermissions(context) }
 
-    val notificationAsks: NotificationAskStore by lazy { SharedPreferencesNotificationAskStore(context) }
+    val notificationAsks: NotificationAskStore by lazy {
+        SharedPreferencesNotificationAskStore(context, onPushConsent = ::pushSyncSoon)
+    }
 
     /**
      * NOTIF-P0 (ticket docs/tickets/notifications.md, section 20): notifications that need NO server. Everything here is LOCAL to the phone: the choices of
@@ -378,8 +382,15 @@ class AppContainer(
             presenter = AndroidNotificationPresenter(context),
             appInForeground = { AppVisibility.inForeground },
             reader = FirestoreCircleStatusReader(),
+            isMyMiff = knownMiffs::contains,
         )
     }
+
+    /**
+     * The Miffs of the account signed in, remembered on the phone (identifiers only) so that a push is checked against them even on a cold start (contract 4.9, SRV-2).
+     * Refreshed each time the directory reads the list, erased with the session.
+     */
+    val knownMiffs: KnownMiffs by lazy { SharedPreferencesKnownMiffs(context) }
 
     /**
      * SRV-2, push notifications ("Un proche a donné des nouvelles", ticket docs/tickets/notification-update-membres.md). The registrar keeps the document of THIS device
@@ -408,6 +419,11 @@ class AppContainer(
             },
             appVersion = { DeviceAppVersion.of(BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE) },
         )
+    }
+
+    /** Looks at the registry of devices now, off the main thread (a consent was just given, a switch just changed). */
+    private fun pushSyncSoon() {
+        notificationScope.launch { pushRegistrar.sync() }
     }
 
     /** What the messaging service hands each DATA message to: validated, then given to the notifications (no read of Firestore). */
@@ -487,6 +503,15 @@ class AppContainer(
                 notificationScope.launch {
                     miffDirectory.state.collect { state ->
                         if (state is DirectoryState.Ready) {
+                            authGateway.currentUid?.let {
+                                knownMiffs.remember(
+                                    it,
+                                    state.miffs
+                                        .map { m ->
+                                            m.id
+                                        }.toSet(),
+                                )
+                            }
                             notificationScheduler.onMiffsKnown(
                                 state.miffs.map { it.id }.toSet(),
                             )
@@ -505,6 +530,7 @@ class AppContainer(
         SessionTeardown {
             // SRV-2: FIRST, while the account is still signed in (the sign-out comes after the teardown): the document of this device goes, the token is invalidated.
             pushRegistrar.forget()
+            knownMiffs.clear()
             notificationScheduler.clearAll()
             notificationCenter.purge()
             notificationSettings.reset()
@@ -725,6 +751,7 @@ class AppContainer(
     /** After a voluntary "Quitter" the server confirmed: no message of lost access for it, purge of the cache, fresh list of Miffs. */
     suspend fun onMiffLeft(miffId: String) {
         miffDirectory.expectDeparture(miffId)
+        authGateway.currentUid?.let { knownMiffs.forget(it, miffId) }
         notificationScope.launch { notificationScheduler.onMiffGone(miffId) }
         cachePurger.markPurgePending()
         cachePurger.purge()

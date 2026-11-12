@@ -91,25 +91,18 @@ class FirestoreDeviceTokenRegistry(
         val ref = devices(db, uid).document(deviceId)
         db
             .runTransaction { transaction ->
-                val changing =
-                    mapOf(
-                        "token" to entry.token,
-                        "appVersion" to entry.appVersion,
-                        "tz" to entry.timeZoneId,
-                        "notify" to mapOf("updates" to entry.notifyUpdates),
-                        "updatedAt" to FieldValue.serverTimestamp(),
-                    )
                 if (transaction.get(ref).exists()) {
-                    transaction.update(ref, changing)
+                    transaction.update(ref, DeviceDocuments.forUpdate(entry).toFirestore())
                 } else {
-                    transaction.set(
-                        ref,
-                        changing + mapOf("platform" to entry.platform, "createdAt" to FieldValue.serverTimestamp()),
-                    )
+                    transaction.set(ref, DeviceDocuments.forCreate(entry).toFirestore())
                 }
                 Unit
             }.await()
     }
+
+    // [ServerTime] becomes the time of the server, at the writing.
+    private fun Map<String, Any>.toFirestore(): Map<String, Any> =
+        mapValues { if (it.value === ServerTime) FieldValue.serverTimestamp() else it.value }
 
     override suspend fun deleteOthers(
         uid: String,

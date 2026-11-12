@@ -161,6 +161,7 @@ class CircleNewsSchedulerTest {
     private var foreground = false
     private var permission = true
     private var session = true
+    private var mine = setOf("miffAAAA", "miffBBBB")
     private val ledger = MemoryLedger()
     private val presenter = Presenter()
     private val server = NoServer()
@@ -181,6 +182,7 @@ class CircleNewsSchedulerTest {
             presenter = presenter,
             appInForeground = { foreground },
             reader = server,
+            isMyMiff = { uid, miff -> uid == "me" && miff in mine },
             nowMillis = { now },
             zone = { paris },
         )
@@ -338,6 +340,40 @@ class CircleNewsSchedulerTest {
         scheduler.onCircleNews("me", news(name = "A".repeat(20) + "…"))
         assertEquals(21, lines().single().who!!.length)
         assertEquals("NotificationItem(redacted)", lines().single().toString())
+    }
+
+    @Test
+    fun aMiffTheAccountIsNotIn_isIgnoredWholly_noNotificationNoLineOfTheCentreNoMemory() {
+        scheduler.onCircleNews("me", news(miff = "someoneElsesMiff"))
+        assertTrue(presenter.shown.isEmpty())
+        assertTrue("no line of the centre", lines().isEmpty())
+        assertTrue("not even remembered as handled", ledger.keys.isEmpty())
+        assertEquals(0, ledger.counters.count(NotificationType.N9))
+    }
+
+    @Test
+    fun whenTheListOfMiffsIsUnknown_nothingIsShown_unknownMeansNo() {
+        mine = emptySet()
+        scheduler.onCircleNews("me", news())
+        assertTrue(presenter.shown.isEmpty() && lines().isEmpty())
+    }
+
+    @Test
+    fun aMessageForAnotherAccountOfThisPhone_isIgnored_theMiffIsNotThisAccounts() {
+        scheduler.onCircleNews("someoneElse", news())
+        assertTrue(presenter.shown.isEmpty() && lines().isEmpty())
+    }
+
+    @Test
+    fun withoutAnAuthorIdentifier_theMessageIsStillShown_onlyTheSelfFilterIsSkipped() {
+        scheduler.onCircleNews("me", news(author = null))
+        assertEquals(1, presenter.shown.size)
+        assertTrue(
+            presenter.shown
+                .single()
+                .tag
+                .startsWith("n9|m|"),
+        )
     }
 
     @Test

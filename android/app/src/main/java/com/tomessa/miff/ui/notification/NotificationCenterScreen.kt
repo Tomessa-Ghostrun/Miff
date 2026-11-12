@@ -238,6 +238,7 @@ private fun Banner(
             style = textBodyRegular14,
             color = colorTextDescription,
         )
+        PushIdentifierNote()
         MiffButton(
             text = stringResource(R.string.notif_center_off_action),
             onClick = onAction,
@@ -360,6 +361,7 @@ private fun LockedPreview(
                 color = colorTextDescription,
                 textAlign = TextAlign.Center,
             )
+            PushIdentifierNote(textAlign = TextAlign.Center)
             MiffButton(
                 text = stringResource(R.string.notif_center_enable_action),
                 onClick = onEnable,

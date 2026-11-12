@@ -3,6 +3,7 @@ package com.tomessa.miff.data
 import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.tomessa.miff.data.notification.SharedPreferencesKnownMiffs
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationCenterStore
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationPreferencesStore
 import com.tomessa.miff.data.permission.SharedPreferencesNotificationAskStore
@@ -109,6 +110,36 @@ class NotificationAskStoreTest {
         assertTrue("a new instance finds it again", SharedPreferencesNotificationAskStore(context).pushConsent("uid-1"))
         store().forget("uid-1")
         assertFalse(store().pushConsent("uid-1"))
+    }
+
+    @Test
+    fun theMiffsOfTheAccount_surviveAColdStart_areForOneAccountOnly_andGoWithTheSession() {
+        val known = SharedPreferencesKnownMiffs(context)
+        assertFalse("nothing remembered: unknown means no", known.contains("u1", "m1"))
+        known.remember("u1", setOf("m1", "m2"))
+        val cold = SharedPreferencesKnownMiffs(context)
+        assertTrue(cold.contains("u1", "m1"))
+        assertFalse(cold.contains("u1", "zz"))
+        assertFalse("another account has none of them", cold.contains("u2", "m1"))
+        cold.forget("u1", "m1")
+        assertFalse(cold.contains("u1", "m1"))
+        assertTrue(cold.contains("u1", "m2"))
+        cold.forget("u2", "m2")
+        assertTrue("forgetting for another account changes nothing", cold.contains("u1", "m2"))
+        known.remember("u2", setOf("m9"))
+        assertFalse("the list of the previous account is replaced", known.contains("u1", "m2"))
+        known.clear()
+        assertFalse(known.contains("u2", "m9"))
+    }
+
+    @Test
+    fun theConsentTellsWhoListens_soTheFirstRegistrationDoesNotWait() {
+        var calls = 0
+        val asks = SharedPreferencesNotificationAskStore(context, onPushConsent = { calls++ })
+        assertEquals(0, calls)
+        asks.markPushConsent("uid-1")
+        assertEquals(1, calls)
+        assertTrue(asks.pushConsent("uid-1"))
     }
 
     @Test

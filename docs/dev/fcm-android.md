@@ -37,6 +37,13 @@ Document `users/{uid}/devices/{deviceId}` (contrat final du backend, 7 clés) : 
 
 Aucune lecture Firestore par message. Registre : une écriture par changement ou tous les 30 jours et par utilisateur actif (`RegistrationRules.REFRESH_AFTER_MILLIS`, 30 jours comme le ticket). FCM est gratuit.
 
+## 4 bis. Contrôles de la revue indépendante (PR #201)
+
+- **Un message sur une Miff qui n’est pas celle du compte est ignoré en entier** (contrat §4.9) : ni notification, ni ligne du centre, ni navigation, ni mémoire de message traité. La liste des Miffs du compte est **gardée sur le téléphone** (`KnownMiffs` : identifiants seulement, un seul compte à la fois, préférences privées hors sauvegarde), mise à jour à chaque lecture de la liste par l’annuaire, retirée quand on quitte une Miff, **effacée à la déconnexion**. Au démarrage à froid par un message, c’est cette liste qui répond ; **liste inconnue ou autre compte = ignoré** (jamais affiché par défaut). Un message sans `authorUid` est traité (seul le filtre « pas pour soi-même » ne peut pas s’appliquer).
+- **Le consentement n’est enregistré que depuis un écran qui porte la phrase sur l’identifiant du téléphone** : l’amorce (texte corrigé), Réglages > Notifications (sous l’interrupteur général), la carte de seconde chance du Feed et le bandeau / l’aperçu du centre (`PushIdentifierNote`). Chaque « oui » déclenche aussitôt une synchronisation du registre (le premier enregistrement n’attend pas un retour au premier plan).
+- **Déconnexion hors connexion** : `PushRegistrar.forget()` invalide le jeton et éteint le service **avant** de prendre le verrou ; chaque appel au serveur du registre est borné à 15 s.
+- **Manifeste fusionné vérifié (release, 2026-11-12)** : le seul composant de la bibliothèque FCM exporté est `FirebaseInstanceIdReceiver`, protégé par la permission `com.google.android.c2dm.permission.SEND` (que seuls les services de Google détiennent) ; le `FirebaseMessagingService` de la bibliothèque est non exporté, comme le nôtre (`MiffMessagingService`). Les composants exportés d’Auth (`GenericIdpActivity`, `RecaptchaActivity`) existaient déjà.
+/
 ## 5. Sécurité
 
 Service non exporté ; jeton jamais écrit sur le disque (empreinte SHA-256 seulement), jamais journalisé ni envoyé comme événement (tous les `toString` sont expurgés, `PushPrivacyTest` surveille les sources) ; message validé champ par champ, prénom assaini ; identifiant de Miff d'un appui vérifié (l'activité de lancement est exportée : un autre logiciel peut construire l'intention) ; consentement par compte ; aucun secret côté client.

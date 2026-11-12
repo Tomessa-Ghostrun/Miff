@@ -933,7 +933,7 @@
     <string name="notif_n7_title">Ton mode voyage est terminé</string>
     <string name="notif_n7_body">Ta carte reprend ses couleurs chez tes proches. Bon retour !</string>
     <string name="notif_prime_title">Un rappel, seulement quand c\'est utile</string>
-    <string name="notif_prime_body">Si tu oublies de donner de tes nouvelles, Miff te le rappelle doucement, et te prévient quand un proche donne des siennes. Pour cela, Miff enregistre un identifiant de ton téléphone. Tu choisis ce que tu reçois dans les réglages.</string>
+    <string name="notif_prime_body">Si tu oublies de donner de tes nouvelles, Miff te le rappelle doucement, et te prévient quand un proche donne des siennes. Pour t\'envoyer ces notifications, Miff enregistre un identifiant technique de ton téléphone, fourni par Google. Tu choisis ce que tu reçois dans les réglages.</string>
     <string name="notif_prime_allow">Autoriser</string>
     <string name="notif_prime_later">Plus tard</string>
     <string name="notif_prime_example_when">Il y a 2 min</string>
@@ -966,6 +966,7 @@
     <string name="notif_settings_section_loved_ones">Pour tes proches</string>
     <string name="notif_settings_circle_update">Quand un proche donne des nouvelles</string>
     <string name="notif_settings_circle_update_hint">Une notification quand un proche de ta Miff publie une update.</string>
+    <string name="android_notif_push_identifier_note">Pour t\'envoyer ces notifications, Miff enregistre un identifiant technique de ton téléphone, fourni par Google.</string>
     <string name="android_notif_channel_updates">Nouvelles des proches</string>
     <string name="android_notif_channel_updates_desc">Quand un proche de ta Miff donne des nouvelles en publiant une update.</string>
     <string name="android_notif_channel_updates_quiet">Nouvelles des proches (nuit calme)</string>

@@ -1,6 +1,10 @@
 package com.tomessa.miff.data.push
 
 import com.tomessa.miff.domain.push.RegistrationRecord
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -26,11 +30,15 @@ class PushRegistrarTest {
         val calls = mutableListOf<Call>()
         var failing = false
 
+        /** The server does not answer (offline with a connection that hangs): the write waits for ever. */
+        var hang = false
+
         override suspend fun upsert(
             uid: String,
             deviceId: String,
             entry: DeviceEntry,
         ) {
+            if (hang) awaitCancellation()
             if (failing) throw IOException("offline")
             calls += Call("upsert", uid, deviceId, entry)
         }
@@ -334,6 +342,46 @@ class PushRegistrarTest {
             assertNull(local.record)
             assertFalse(local.on)
             assertNull(local.clearedFor)
+        }
+
+    @Test
+    fun offline_theTokenIsInvalidatedAtOnce_evenWhileARegistrationIsStuckOnTheServer() =
+        runTest {
+            registrar.sync()
+            registry.calls.clear()
+            now += 31L * 24 * 3_600_000L
+            registry.hang = true
+            val stuck = launch { registrar.sync() }
+            runCurrent()
+            val signingOut = launch { registrar.forget() }
+            runCurrent()
+            assertEquals("invalidated BEFORE the lock is free, not after the wait", 1, tokens.disabled)
+            advanceTimeBy(15_001L)
+            runCurrent()
+            stuck.join()
+            signingOut.join()
+            assertNull(local.record)
+            assertFalse(local.on)
+            assertEquals("not invalidated a second time", 1, tokens.disabled)
+        }
+
+    @Test
+    fun aWriteThatTheServerNeverAnswersIsGivenUpAfterFifteenSeconds_andTriedAgainLater() =
+        runTest {
+            registry.hang = true
+            val first = launch { registrar.sync() }
+            runCurrent()
+            advanceTimeBy(15_001L)
+            runCurrent()
+            first.join()
+            assertNull("not recorded: nothing confirmed", local.record)
+            registry.hang = false
+            now += 60_000L
+            registrar.sync()
+            assertTrue("within ten minutes: not tried again", registry.calls.none { it.kind == "upsert" })
+            now += 10 * 60_000L
+            registrar.sync()
+            assertTrue(registry.calls.any { it.kind == "upsert" })
         }
 
     @Test

@@ -47,6 +47,11 @@ class NotificationScheduler(
     private val presenter: NotificationPresenter,
     private val appInForeground: () -> Boolean,
     private val reader: CircleStatusReader,
+    /**
+     * Does [miffId] belong to the account [uid] (the list remembered on the phone, see [KnownMiffs])? Asked for every push (contract 4.9): a message about a Miff the
+     * account is not in is ignored. Unknown means NO: the default shows nothing.
+     */
+    private val isMyMiff: (uid: String, miffId: String) -> Boolean = { _, _ -> false },
     private val nowMillis: () -> Long = System::currentTimeMillis,
     private val zone: () -> ZoneId = { ZoneId.systemDefault() },
 ) {
@@ -412,6 +417,8 @@ class NotificationScheduler(
     ) {
         synchronized(lock) {
             if (!permissionAllowed() || !sessionValid(myUid)) return
+            // Contract 4.9: nothing at all (no notification, no line of the centre, no navigation) for a Miff that is not one of this account.
+            if (!isMyMiff(myUid, news.miffId)) return
             if (news.authorUid == myUid) return
             val now = nowMillis()
             val centerId = CircleNewsKeys.centerId(news)

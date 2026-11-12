@@ -88,16 +88,24 @@ class PushRegistrar(
             if (wish == lastTriedWish && !RegistrationRules.mayRetry(failedAtMillis, now)) return
             lastTriedWish = wish
             try {
-                registry.upsert(
-                    uid,
-                    deviceId,
-                    DeviceEntry(
-                        token = token,
-                        timeZoneId = wish.timeZoneId,
-                        notifyUpdates = wish.notifyUpdates,
-                        appVersion = appVersion(),
-                    ),
-                )
+                // Bounded: the mutex is held during this call, and the sign-out (forget) must never wait long behind a server that does not answer.
+                val done =
+                    withTimeoutOrNull(WRITE_WAIT_MILLIS) {
+                        registry.upsert(
+                            uid,
+                            deviceId,
+                            DeviceEntry(
+                                token = token,
+                                timeZoneId = wish.timeZoneId,
+                                notifyUpdates = wish.notifyUpdates,
+                                appVersion = appVersion(),
+                            ),
+                        )
+                    }
+                if (done == null) {
+                    failedAtMillis = now
+                    return
+                }
                 local.saveRecord(
                     RegistrationRecord(
                         uid,
@@ -130,7 +138,10 @@ class PushRegistrar(
         val now = nowMillis()
         if (!RegistrationRules.mayRetry(cleaningFailedAtMillis, now)) return
         try {
-            registry.deleteOthers(uid, deviceId)
+            if (withTimeoutOrNull(WRITE_WAIT_MILLIS) { registry.deleteOthers(uid, deviceId) } == null) {
+                cleaningFailedAtMillis = now
+                return
+            }
             local.setOthersClearedFor(deviceId)
             cleaningFailedAtMillis = null
         } catch (e: CancellationException) {
@@ -149,7 +160,7 @@ class PushRegistrar(
         if (record == null && !local.serviceOn()) return
         if (record != null && record.uid == uid) {
             try {
-                registry.delete(uid, record.deviceId)
+                withTimeoutOrNull(WRITE_WAIT_MILLIS) { registry.delete(uid, record.deviceId) }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -168,6 +179,12 @@ class PushRegistrar(
      * be held up), the token is invalidated with Google, everything remembered is erased. Never throws.
      */
     suspend fun forget() {
+        // FIRST, before waiting for the lock: a registration under way holds it while it talks to the server, and offline that can last. The token is invalidated at once and the
+        // service switched off in memory; the rest (the document, the memory of the phone) follows under the lock.
+        if (local.record() != null || local.serviceOn()) {
+            tokens.disable()
+            local.setServiceOn(false)
+        }
         mutex.withLock {
             val record = local.record()
             if (record != null && currentUid() == record.uid) {
@@ -179,7 +196,8 @@ class PushRegistrar(
                     // Offline or already gone: see withdraw().
                 }
             }
-            if (record != null || local.serviceOn()) tokens.disable()
+            // A registration that was under way may have switched the service on again meanwhile: off again.
+            if (local.serviceOn()) tokens.disable()
             local.clear()
             lastTriedWish = null
             failedAtMillis = null
@@ -190,5 +208,8 @@ class PushRegistrar(
     private companion object {
         /** The sign-out waits at most this long for the server to confirm the deletion of the document. */
         const val FORGET_WAIT_MILLIS = 4_000L
+
+        /** One call to the registry (write, clearing of the others, deletion) is given up after this long. */
+        const val WRITE_WAIT_MILLIS = 15_000L
     }
 }

@@ -115,6 +115,8 @@ class NotificationCenterViewModel(
     /** "Les réactiver" when only the general switch of the app is off. */
     fun onEnableInApp() {
         settings.setEnabled(true)
+        // The band that offers it carries the sentence about the identifier of the phone: this yes is the consent to register it (SRV-2).
+        authorization.markConsentGiven()
         permission.value = authorization.state()
     }
 

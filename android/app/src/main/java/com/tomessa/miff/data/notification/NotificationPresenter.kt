@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -162,14 +163,21 @@ class AndroidNotificationPresenter(
                 .putExtra(NotificationIntents.EXTRA_DESTINATION, NotificationDestination.FEED.name)
                 .putExtra(NotificationIntents.EXTRA_KEY, centerId)
                 .putExtra(NotificationIntents.EXTRA_MIFF_ID, news.miffId)
-                .addFlags(
+                // The data makes the intent of one author differ from another's (extras do not): no two taps can share a PendingIntent, whatever the request code.
+                .setData(
+                    Uri
+                        .Builder()
+                        .scheme("miff-notification")
+                        .authority("news")
+                        .appendPath(tag)
+                        .build(),
+                ).addFlags(
                     Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP,
                 )
-        // One request code per author: a shared one would make the system rewrite the extras of the other authors' taps (extras are not part of what tells two intents apart).
         val tap =
             PendingIntent.getActivity(
                 context,
-                CIRCLE_NEWS_REQUEST_BASE + Math.floorMod(tag.hashCode(), CIRCLE_NEWS_REQUEST_RANGE),
+                CIRCLE_NEWS_REQUEST,
                 open,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
             )
@@ -190,9 +198,8 @@ class AndroidNotificationPresenter(
     }
 
     private companion object {
-        /** Request codes of the taps of N9, above the ones of the other types (their ordinal). */
-        const val CIRCLE_NEWS_REQUEST_BASE = 1000
-        const val CIRCLE_NEWS_REQUEST_RANGE = 100_000
+        /** Request code of the taps of N9, above the ones of the other types (their ordinal); the data of the intent tells the authors apart. */
+        const val CIRCLE_NEWS_REQUEST = 1000
 
         /** The blue of the actions of the design system (colorActionPrimary), as the system wants a colour: an Int, not a Compose colour. */
         val ACTION_BLUE = 0xFF043CD1.toInt()

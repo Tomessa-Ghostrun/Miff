@@ -86,6 +86,8 @@ interface NotificationAskStore {
 /** A flag per account in private preferences (no secret, no position). The preference file is not part of any backup (see backup_rules.xml). */
 class SharedPreferencesNotificationAskStore(
     context: Context,
+    /** Called right after a consent to be notified was written (SRV-2): the first registration must not wait for the next return to the front. */
+    private val onPushConsent: () -> Unit = {},
 ) : NotificationAskStore {
     private val prefs =
         context.applicationContext.getSharedPreferences(
@@ -113,6 +115,7 @@ class SharedPreferencesNotificationAskStore(
 
     override fun markPushConsent(uid: String) {
         prefs.edit().putBoolean(pushConsentKey(uid), true).commit()
+        onPushConsent()
     }
 
     private fun pushConsentKey(uid: String) = "push_consent:$uid"

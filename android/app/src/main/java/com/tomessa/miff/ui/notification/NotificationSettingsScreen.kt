@@ -74,7 +74,8 @@ fun NotificationSettingsScreen(
 
         SwitchRow(
             title = stringResource(R.string.notif_settings_general),
-            body = null,
+            // SRV-2: this switch is a yes to being notified, so it carries what registering means (the identifier of the phone).
+            body = stringResource(R.string.android_notif_push_identifier_note),
             checked = state.generalChecked,
             enabled = state.generalEnabled,
             onCheckedChange = actions.onGeneralToggled,

@@ -9,7 +9,7 @@
 - **L'essai de bout en bout (parties 3 à 7) est impossible tant que vous n'avez pas déployé, sur un « oui » explicite de votre part, DEUX choses sur le projet `miff-3d283` et rien d'autre** : (1) les **règles Firestore** étendues du registre d'appareils (`tz`, `notify` : branche `backend/jetons-appareil`) ; (2) les **fonctions Cloud** d'envoi (la fonction « update publiée », SRV-4B). Aucun agent ne déploie. Tant que (1) n'est pas fait, l'app **n'enregistre rien** (les règles actuelles refusent le nouveau document, sans message à l'écran) ; tant que (2) n'est pas fait, un jeton peut être enregistré mais **aucune notification n'arrive**.
 - Les parties **0 à 2** se font **sans aucun déploiement** : elles vérifient le consentement, les réglages et l'affichage d'une notification de test.
 - L'APK à installer est celui **signé par la CI** (artefact `miff-debug-apk` de la PR). Désinstallez l'ancienne version d'abord.
-- **Les testeurs qui avaient autorisé les notifications avant cette version ne sont pas enregistrés** : l'ancienne explication ne parlait pas de l'identifiant du téléphone. Pour tester, soit un compte neuf, soit couper puis rallumer « Recevoir des notifications » dans Réglages > Notifications.
+- **Les testeurs qui avaient déjà autorisé les notifications avant cette version ne sont PAS enregistrés, et devront rallumer l’interrupteur** : dans Réglages > Notifications, couper puis rallumer « Recevoir des notifications » (l’ancienne explication ne parlait pas de l’identifiant du téléphone ; le consentement est enregistré au moment où l’on rallume, sur un écran qui porte la phrase). Sinon, utiliser un compte neuf. Aucun écran ne le rappelle aux testeurs : à leur dire.
 - **Console** : toute vérification dans la console Firebase se fait dans le projet **Miff (`miff-3d283`)**, jamais celui de Ghostrun.
 - Les textes sont à **relire à voix haute** : notez toute phrase qui vous semble trop dure ou anxiogène.
 
@@ -91,3 +91,11 @@ Aucun moyen sûr de simuler à la main un message de Google : l'affichage (texte
 - Toute phrase trop dure ou anxiogène.
 - Toute notification qui n'aurait pas dû arriver, ou qui contient plus que le prénom et la phrase fixe.
 - Dans la console : le **nombre d'invocations** et d'**erreurs** de la fonction, et le coût du jour (doit rester dans la fourchette du ticket §14).
+
+## Partie 8 : les deux contrôles de la revue indépendante
+
+| # | Étape | Résultat attendu |
+|---|---|---|
+| 8.1 | Regardez les quatre endroits où l’on dit « oui » aux notifications : l’amorce de fin d’onboarding, Réglages > Notifications (sous « Recevoir des notifications »), la carte du Feed « Un rappel si tu oublies… ? » (après « Plus tard » puis une première update), le centre quand les notifications sont coupées. | **Chacun porte la phrase** « … Miff enregistre un identifiant technique de ton téléphone, fourni par Google » (réglages : « Pour t’envoyer ces notifications, … »). Aucun « oui » sans cette phrase sous les yeux. |
+| 8.2 | Avec deux comptes dans deux Miffs différentes (A dans la Miff 1, B dans la Miff 2) sur le même téléphone, l’un après l’autre : connectez A, notez la Miff 1 ; déconnectez, connectez B. Un proche de la Miff 1 publie. | B ne reçoit **rien** (ni notification, ni ligne dans le centre) : un message sur une Miff dont le compte n’est pas membre est ignoré. C’est aussi vrai si l’app était **fermée** (démarrage à froid). |
+| 8.3 | Quittez une Miff (Premium) puis un proche de cette Miff publie. | Rien pour vous. |

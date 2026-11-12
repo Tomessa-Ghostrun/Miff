@@ -90,8 +90,8 @@ class NotificationSettingsViewModel(
 
             NotificationPermissionState.ALLOWED -> {
                 // Turning them ON by hand is the person's yes (SRV-2): the identifier of the phone may be registered for this account.
-                if (on) authorization.markConsentGiven()
                 settings.setEnabled(on)
+                if (on) authorization.markConsentGiven()
                 refresh()
             }
         }
