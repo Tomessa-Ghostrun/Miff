@@ -47,6 +47,7 @@ import com.tomessa.miff.R
 import com.tomessa.miff.data.notification.NotificationTexts
 import com.tomessa.miff.domain.notification.ItemSection
 import com.tomessa.miff.domain.notification.NotificationSections
+import com.tomessa.miff.domain.notification.NotificationType
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.miff.MiffConfirmDialog
 import com.tomessa.miff.ui.settings.SettingsScaffold
@@ -74,6 +75,7 @@ class NotificationCenterActions(
     val onBack: () -> Unit = {},
     /** A tap on a line: it is marked read and the screen it leads to opens (Update for N1 and N2, the Feed for the others; never an error). */
     val onOpen: (CenterRow) -> Unit = {},
+    /** Deletes ONE line by its key (a row of grouped requests deletes each of its lines). */
     val onDelete: (String) -> Unit = {},
     val onMarkAllRead: () -> Unit = {},
     val onClearAll: () -> Unit = {},
@@ -136,7 +138,7 @@ fun NotificationCenterScreen(
                         nowMillis = nowMillis,
                         older = section == ItemSection.OLDER,
                         onOpen = { actions.onOpen(row) },
-                        onDelete = { actions.onDelete(row.id) },
+                        onDelete = { row.ids.forEach(actions.onDelete) },
                     )
                 }
             }
@@ -408,7 +410,18 @@ private fun CenterRowView(
     onDelete: () -> Unit,
 ) {
     val context = LocalContext.current
-    val title = stringResource(NotificationTexts.title(row.type))
+    val title =
+        if (row.type == NotificationType.N8 && row.requesterName != null && row.requestMiffName != null) {
+            // "Léa propose un lieu pour « Famille »" (one request), "Léa a proposé 3 lieux pour « Famille »" (several, all unread): made now from the first name
+            // the app knows; the centre itself keeps no name.
+            if (row.count > 1) {
+                stringResource(R.string.place_request_center_many, row.requesterName, row.count, row.requestMiffName)
+            } else {
+                stringResource(R.string.place_request_center_one, row.requesterName, row.requestMiffName)
+            }
+        } else {
+            stringResource(NotificationTexts.title(row.type))
+        }
     val body = stringResource(NotificationTexts.body(row.type))
     val time =
         remember(row.createdAtMillis, older) {

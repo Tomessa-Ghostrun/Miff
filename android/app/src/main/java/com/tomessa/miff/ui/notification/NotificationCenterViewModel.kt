@@ -5,13 +5,17 @@ import androidx.lifecycle.viewModelScope
 import com.tomessa.miff.data.notification.NotificationAuthorization
 import com.tomessa.miff.data.notification.NotificationCenter
 import com.tomessa.miff.data.notification.NotificationSettings
+import com.tomessa.miff.data.place.RequesterDirectory
 import com.tomessa.miff.domain.notification.NotificationItem
 import com.tomessa.miff.domain.notification.NotificationPermissionState
 import com.tomessa.miff.domain.notification.NotificationType
+import com.tomessa.miff.domain.notification.PlaceRequestLines
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 
 /*
@@ -27,7 +31,19 @@ class CenterRow(
     val miffName: String?,
     val createdAtMillis: Long,
     val unread: Boolean,
+    /** The keys of the lines this row stands for: one, or several unread requests of the same person in the same Miff ("Léa a proposé 3 lieux"). */
+    val ids: List<String> = listOf(id),
+    /** A line about a request to add a place (N8): the Miff, ALWAYS named in its sentence. Null for every other line. */
+    val requestMiffId: String? = null,
+    val requestMiffName: String? = null,
+    /** The first name of the person who asked, as the app knows it NOW (never stored in the centre); null when it is not known yet. */
+    val requesterName: String? = null,
+    /** The requests (identifiers) the row stands for: a tap on it tells if none of them is pending any more. */
+    val requestIds: List<String> = emptyList(),
 ) {
+    /** How many requests the row stands for (1 for every other line). */
+    val count: Int get() = ids.size
+
     override fun toString(): String = "CenterRow(redacted)"
 }
 
@@ -61,14 +77,26 @@ class NotificationCenterViewModel(
     private val authorization: NotificationAuthorization,
     /** The names of the Miffs by identifier, only when the account has several (the name tells which one a line is about). Empty otherwise. */
     private val miffNames: () -> Map<String, String>,
+    /** The names of ALL the Miffs: the line about a request to add a place always says which Miff it is for ("Léa propose un lieu pour « Famille »"). */
+    private val allMiffNames: () -> Map<String, String> = { emptyMap() },
+    /** The first names of the people who asked for a place, by Miff and person (memory only: the centre stores no name, the words are made here). */
+    requesterNames: Flow<Map<String, String>> = flowOf(emptyMap()),
 ) : ViewModel() {
     private val permission = MutableStateFlow(authorization.state())
 
     val uiState: StateFlow<NotificationCenterUiState> =
-        combine(center.items, settings.preferences, permission) { items, preferences, state ->
+        combine(
+            center.items,
+            settings.preferences,
+            permission,
+            requesterNames,
+        ) { items, preferences, state, firstNames ->
             val names = miffNames()
+            val everyName = allMiffNames()
             NotificationCenterUiState(
-                rows = items.map { it.toRow(names) },
+                rows =
+                    items.filter { it.type != NotificationType.N8 }.map { it.toRow(names) } +
+                        PlaceRequestLines.entriesOf(items).map { it.toRow(everyName, firstNames) },
                 banner =
                     when {
                         state == NotificationPermissionState.OFF -> CenterBanner.OFF
@@ -93,6 +121,30 @@ class NotificationCenterViewModel(
             unread = unread,
         )
 
+    /** A line about requests: the unread ones of a person in a Miff are ONE row; the words are made from what is known now. */
+    private fun PlaceRequestLines.Entry.toRow(
+        miffNames: Map<String, String>,
+        firstNames: Map<String, String>,
+    ) = CenterRow(
+        id = ids.first(),
+        type = NotificationType.N8,
+        miffName = null,
+        createdAtMillis = createdAtMillis,
+        unread = unread,
+        ids = ids,
+        requestMiffId = miffId,
+        requestMiffName = miffId?.let(miffNames::get),
+        requesterName =
+            if (miffId != null &&
+                requesterUid != null
+            ) {
+                firstNames[RequesterDirectory.key(miffId, requesterUid)]
+            } else {
+                null
+            },
+        requestIds = ids.mapNotNull { id -> id.split('|', limit = 3).getOrNull(2) },
+    )
+
     /** The screen is in front again (the permission may have changed in the settings of the phone). */
     fun onResumed() {
         permission.value = authorization.state()
@@ -101,6 +153,9 @@ class NotificationCenterViewModel(
     fun onOpen(id: String) = center.markRead(id)
 
     fun onDelete(id: String) = center.delete(id)
+
+    /** A tap on a row: every line it stands for is read (one line, or the requests of one person that were grouped). */
+    fun onOpen(row: CenterRow) = row.ids.forEach(::onOpen)
 
     fun onMarkAllRead() = center.markAllRead()
 

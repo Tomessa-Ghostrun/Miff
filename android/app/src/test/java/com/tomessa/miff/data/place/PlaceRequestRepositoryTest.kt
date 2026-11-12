@@ -8,6 +8,7 @@ import com.tomessa.miff.domain.miff.WriteKind
 import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.domain.place.PlaceRequestLimits
 import com.tomessa.miff.domain.place.PlaceType
+import com.tomessa.miff.testsupport.FakePlaceRepository
 import com.tomessa.miff.testsupport.FakePlaceRequestStore
 import com.tomessa.miff.testsupport.FakePlaceStore
 import com.tomessa.miff.testsupport.MIFF_ID
@@ -30,7 +31,11 @@ class PlaceRequestRepositoryTest {
     private val now = 10_000_000_000L
     private val requests = FakePlaceRequestStore()
     private val places = FakePlaceStore()
-    private val repo = FirestorePlaceRequestRepository(requests, places, nowMillis = { now })
+    private val placeRepository = FakePlaceRepository()
+    private val repo =
+        FirestorePlaceRequestRepository(requests, places, placeRepository, newPlaceId = {
+            "NEWPLACE0000000001"
+        }, nowMillis = { now })
     private val uid = "u2"
 
     init {
@@ -422,7 +427,7 @@ class PlaceRequestRepositoryTest {
             assertTrue(fourth is RequestSubmitResult.MemberLimit)
             var clock = now
             val later =
-                FirestorePlaceRequestRepository(requests, places, nowMillis = { clock })
+                FirestorePlaceRequestRepository(requests, places, placeRepository, { "X" }, nowMillis = { clock })
             later.submit(uid, MIFF_ID, testRequestDraft(), loaded, online = false)
             clock += 11 * 60_000L
             later.submit(uid, MIFF_ID, testRequestDraft(), loaded, online = false)
@@ -436,7 +441,14 @@ class PlaceRequestRepositoryTest {
     fun withdrawAllMine_withNoNetwork_readsAndWritesNothing() =
         runTest {
             val offline =
-                FirestorePlaceRequestRepository(requests, places, nowMillis = { now }, online = { false })
+                FirestorePlaceRequestRepository(
+                    requests,
+                    places,
+                    placeRepository,
+                    { "X" },
+                    nowMillis = { now },
+                    online = { false },
+                )
             requests.mine = listOf(testRequest(uid = uid, slot = 1, createdAtMillis = now))
             offline.withdrawAllMine(uid, MIFF_ID)
             assertTrue(requests.reads.isEmpty())
