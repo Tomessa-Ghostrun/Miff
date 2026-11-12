@@ -85,7 +85,7 @@ export const SESSION_PATH = (uid) => `users/${uid}/session/active`;
 // SRV-2R (jetons d'appareil, NON DÉPLOYÉ) : users/{uid}/devices/{deviceId}, où deviceId = identifiant de la session active.
 /** Jeton tel qu'un client l'écrit à la création : 9 clés, les deux heures sont celles du serveur. */
 export const deviceDoc = (over = {}) => ({
-  token: 'fcm-jeton-de-test-0123456789', platform: 'android', appVersion: '1.0.0 (12)', locale: 'fr', notificationsEnabled: true, tz: 'Europe/Paris',
+  token: 'jeton-de-test-factice', platform: 'android', appVersion: '1.0.0 (12)', locale: 'fr', notificationsEnabled: true, tz: 'Europe/Paris',
   notify: { updates: true }, updatedAt: serverTs(), createdAt: serverTs(), ...over,
 });
 /** Jeton déjà enregistré (état injecté avec les règles désactivées). */

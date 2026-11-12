@@ -227,7 +227,7 @@ s.tc('DV9', "usurpation : personne n'écrit, ne modifie ni ne supprime le jeton 
   await seedSession(h, 'carol', DEVICE_B);
   await assertFails(ref(h, 'eve', 'carol', DEVICE_B).set(deviceDoc()));
   await assertFails(ref(h, 'alice', 'carol', DEVICE_B).set(deviceDoc()));
-  if ((await read(h, DEVICE_DOC_PATH('bob'))).token !== 'fcm-jeton-de-test-0123456789') throw new Error('le jeton de bob ne devait pas changer');
+  if ((await read(h, DEVICE_DOC_PATH('bob'))).token !== 'jeton-de-test-factice') throw new Error('le jeton de bob ne devait pas changer');
   if ((await read(h, DEVICE_DOC_PATH('carol', DEVICE_B))) !== null) throw new Error('aucun jeton ne devait être créé pour carol');
   await assertSucceeds(ref(h, 'bob', 'bob').update({ token: 'le-sien', updatedAt: serverTs() })); // contrôle : le propriétaire le peut
 });
