@@ -27,7 +27,26 @@ enum NotificationPlanner {
     /// Le plan pour cet instant. Vide quand une garde ne passe pas (pas de session, pas de Miff active, interrupteur général coupé,
     /// autorisation absente, mon partage arrêté ou mon accord attendu).
     static func plan(_ input: NotificationPlanInput) -> NotificationPlan {
-        guard let snapshot = input.snapshot,
+        var result = reminderPlan(input)
+        guard let travel = travelEndPlanned(input) else {
+            return result
+        }
+        // MODE VOYAGE : N7 est hors plafonds du jour (ni limitée, ni comptée) et ne dépend d'aucune Miff.
+        switch travel.timing {
+        case .scheduled:
+            result.scheduled.append(travel.planned)
+        case .catchUp:
+            result.catchUp.append(travel.planned)
+        case .silent:
+            result.silent.append(travel.planned)
+        }
+        return result
+    }
+
+    /// N1 à N4 (les rappels). Vide pendant MON voyage (décision D4 / Q7 du ticket mode-voyage §9.2 : en voyage, la liste est N7 seul).
+    private static func reminderPlan(_ input: NotificationPlanInput) -> NotificationPlan {
+        guard !input.isTravelling,
+              let snapshot = input.snapshot,
               input.sessionUid == snapshot.myUid,
               input.activeMiffId == snapshot.miffId,
               input.authorization.isAllowed,
@@ -58,8 +77,14 @@ enum NotificationPlanner {
         _ type: NotificationType,
         snapshot: NotificationPlanSnapshot,
         atMillis: Int,
-        responsibility: NotificationResponsibility = .current
+        responsibility: NotificationResponsibility = .current,
+        myTravelUntilMillis: Int? = nil
     ) -> Bool {
+        // MODE VOYAGE : pendant MON voyage, aucun rappel ni aucune nouvelle de ma Miff n'est vrai (ils sont retirés de l'écran).
+        if TravelEndNotice.isTravelling(untilMillis: myTravelUntilMillis, nowMillis: atMillis),
+           [.n1, .n2, .n3, .n4].contains(type) {
+            return false
+        }
         let timeline = Timeline(members: snapshot.members, myUid: snapshot.myUid)
         switch type {
         case .n1:
@@ -72,8 +97,8 @@ enum NotificationPlanner {
         case .n4:
             return timeline.miffLevel(at: atMillis) == .red
                 && !timeline.isResponsible(at: atMillis, mode: responsibility)
-        case .n6:
-            // N6 est immédiate et ne s'annule pas : rien à retirer.
+        case .n6, .n7:
+            // N6 est immédiate et ne s'annule pas : rien à retirer. N7 ne dépend d'aucune couleur (voir `travelEndStillWanted`).
             return true
         }
     }
@@ -167,7 +192,7 @@ enum NotificationPlanner {
             return left.type.rawValue < right.type.rawValue
         }
         var counts = DayCounts(calendar: input.calendar)
-        for record in input.shown where record.type != .n6 {
+        for record in input.shown where record.type != .n6 && record.type != .n7 {
             counts.add(type: record.type, atMillis: record.atMillis)
         }
         var plan = NotificationPlan()

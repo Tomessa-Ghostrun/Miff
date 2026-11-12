@@ -24,6 +24,9 @@ struct DangerZoneInput {
     /// L'app est au premier plan : le système n'affiche rien, le centre garde une entrée silencieuse.
     var isForeground = false
     var calendar = Calendar.current
+    /// MODE VOYAGE : la fin (instant absolu) de MON voyage, ou nil. Pendant MON voyage aucune N6, même si une position dans une zone de danger
+    /// est mesurée (valeur par défaut de la spec, Q7 à reconfirmer par le PM ; miroir d'Android).
+    var myTravelUntilMillis: Int?
 }
 
 /// Ce que la décision rend.
@@ -55,7 +58,8 @@ enum NotificationDangerZone {
     static func decide(_ input: DangerZoneInput) -> DangerZoneDecision {
         guard input.sessionUid != nil,
               input.preferences.isEnabled(.n6),
-              input.authorization.isAllowed else {
+              input.authorization.isAllowed,
+              !TravelEndNotice.isTravelling(untilMillis: input.myTravelUntilMillis, nowMillis: input.nowMillis) else {
             return .skip
         }
         let eventKey = key(miffId: input.miffId, placeId: input.placeId, enteredAtMillis: input.enteredAtMillis)

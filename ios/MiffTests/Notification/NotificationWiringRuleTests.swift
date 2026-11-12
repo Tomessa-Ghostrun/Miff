@@ -87,3 +87,5 @@ final class NotificationWiringRuleTests: XCTestCase {
         XCTAssertFalse(locked.contains("service.history"), "le flou ne lit jamais les vraies lignes")
     }
 }
+
+// swiftlint:enable line_length

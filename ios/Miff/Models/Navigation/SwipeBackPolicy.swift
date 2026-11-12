@@ -22,8 +22,11 @@ enum SwipeBackScreen: Equatable {
     case placeDetail
     case placeForm(isBusy: Bool)
     case placePaywall
-    /// Liste des Réglages, Mes informations, Mon compte, Confidentialité, aide à la détection.
+    /// Liste des Réglages, Mon compte, Confidentialité, aide à la détection.
     case settings
+    /// Mes informations : verrouillé pendant l'envoi et tant que des changements ne sont pas enregistrés (la flèche, qui demande confirmation, est alors la seule
+    /// sortie : ils ne partent jamais sans que la personne l'ait voulu).
+    case myInfo(hasUnsavedWork: Bool)
     case deleteAccount(isBusy: Bool)
 
     var allowsSwipeBack: Bool {
@@ -38,6 +41,8 @@ enum SwipeBackScreen: Equatable {
             return !isBusy
         case .deleteAccount(let isBusy):
             return !isBusy
+        case .myInfo(let hasUnsavedWork):
+            return !hasUnsavedWork
         case .createMiffReady, .joinMiffConfirm:
             return false
         }

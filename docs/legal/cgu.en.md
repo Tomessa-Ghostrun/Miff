@@ -45,7 +45,7 @@ You must use Miff having the legal capacity to commit yourself, or with the agre
 
 ## 4. Your account
 
-- You can create an account with an e-mail address and a password, with Google, or with Apple (on iOS).
+- You can create an account with an e-mail address and a password, with Google, or with Apple (on iOS). If you sign up with Google, your Google photo is taken as a pre-filled profile photo: you can change or remove it before saving your profile, then at any time. Once saved, it is a profile photo like any other, visible to the members of your Miffs.
 - Give true information (first name, last name, phone number) so your loved ones recognise you and can reach you. Do not use another person's identity.
 - Keep your password confidential. You are responsible for what happens with your account. If you think it was used without your consent, write to us.
 - An account is personal: do not share it.
@@ -57,7 +57,7 @@ You must use Miff having the legal capacity to commit yourself, or with the agre
 - The creator of a Miff manages the places: **only they create, edit and delete them**, danger zones included (reserved for Miff+). The same place can be linked to several Miffs they created; deleting it deletes it in all those Miffs. They can also renew the code or remove a member. When a member is removed, the code is renewed: the old code no longer works.
 - **A Miff's places are visible to all its members, address included.** Only save addresses you have the right to save: another person's address (their home, for example) must not be saved without their agreement.
 - You can leave a Miff whenever you want.
-- With the free version, you can be in **one Miff at a time** and use **2 trusted places**. Miff+ removes these limits (see article 9).
+- With the free version, you can be in **one Miff at a time** and use **3 trusted places**. Miff+ removes these limits (see article 9).
 
 ## 6. Sharing your location: your choice
 
@@ -65,7 +65,7 @@ The core of Miff is sharing your status related to trusted places. Here are our 
 
 - **It is never automatic without your knowledge.** Sharing with a Miff only starts after your explicit consent, given Miff by Miff, separate from your click on "Join". Nobody can turn it on for you.
 - **You can stop it at any time**, without justification, in the app settings. Stopping deletes your status, your photo (with its place) and your last known location for that Miff. Your loved ones then simply see "sharing turned off", without any alert message.
-- **What your loved ones see.** If you share, the members of your Miff see your status (for example "at home") and **your last known location, with the time**. **Miff only keeps that last location** (latitude, longitude, time of the measurement), **with no history of trips**: each new location replaces the previous one. This is not live tracking.
+- **What your loved ones see.** If you share, the members of your Miff see your status (for example "at home") and **your last known location, with the time**. **Miff only keeps that last location** (latitude, longitude, time of the measurement) **and, if you publish a photo, the place where it was taken for 24 hours**, **with no history of trips**: each new location replaces the previous one. This is not live tracking.
 - **Your photo and its place.** If you publish a photo, it is **always published with the place where it was taken**, measured by your phone at that moment (with the time of that measurement). This place stays attached to the photo for 24 hours, even if your last known location changes in the meantime, and it does not tell where you are now.
 - **Who sees it**: only the members of the same Miff whose sharing is on, and only if they also share theirs. This also applies to the place of your photo: a member who does not share their location cannot open your photo. The creator of the Miff has no extra rights.
 - **Erasure**: your location, your photo and its place are erased when you stop sharing, leave the Miff, are removed from the Miff, or when the Miff or your account is deleted. After 24 hours, your location is only shown hidden, with its date, and your photo can no longer be read (they stay stored until they are replaced or erased). Details are in the Privacy Policy.
@@ -91,19 +91,19 @@ You agree not to:
 - You remain the owner of your content (profile photo, photos you publish). You only authorise us to host it and display it to the members of your Miffs, in order to run the service.
 - **How it works.** A "Share news" photo is taken live with the app's camera (never from your gallery), with no text, and published with the place where it was taken. It is only visible to the members of your Miffs. **It is no longer visible after 24 hours** and is deleted afterwards (see the Privacy Policy).
 - **Respect others**: do not post a photo showing a person without their agreement, and do not post a photo of a child over whom you do not have parental authority. You are responsible for the content you send.
-- A member of a Miff can record what they see (a screenshot, for example). We cannot prevent it: only send what you are comfortable showing your circle.
+- A member of a Miff can keep a copy of what they see: by taking a screenshot, or by tapping "Save this photo" in the full-screen view of a photo (they only do so if they choose to). A saved copy is a file on their phone, outside Miff. We cannot prevent it, nor erase these copies: only send what you are comfortable showing your circle.
 - **Reporting content or behaviour.** Write to us at **tomessa.mfouka@gmail.com**, stating the Miff and the first name of the member concerned. We check this address at least once a week. Miff is not an emergency service: if a photo shows someone in danger, call the emergency services (112).
 - **What we do, and do not do.** We do not analyse photos automatically: we only look at them if someone reports them. We may remove content that does not comply with these terms, and suspend or delete the account of its author (article 12).
 - **If someone makes you uncomfortable**, you can leave the Miff at any time, and the creator of a Miff can remove a member (article 5).
 
 ## 9. Free Miff and Miff+
 
-- **Free**: one Miff at a time and **2 trusted places**.
+- **Free**: one Miff at a time and **3 trusted places**.
 - **Miff+ (paid subscription)**: several Miffs, an unlimited number of trusted places and danger zones, plus the other options presented in the app at the time of purchase (for example smart notifications, depending on availability). The exact content, price, duration and any trial period are **shown in the app and on the store before you subscribe**.
 - **Purchase is made through the App Store (Apple) or Google Play**, not directly with us. Payment, billing, automatic renewal, cancellation and refunds are handled by Apple or Google, under their terms.
 - **Cancelling**: in your Apple account settings (iPhone) or in Google Play (Android), before the end of the current period, to avoid the next renewal. Deleting the app or your Miff account **does not** automatically cancel the subscription: it must be cancelled with the store.
 - **Refunds**: ask Apple or Google, under their rules. If you are a consumer, the rights the law gives you (for example the right of withdrawal, under the conditions set by law and by the store's terms) still apply.
-- **End of subscription**: you go back to the free version. Items that go beyond the limits of the free plan (one Miff, 2 trusted places and no danger zone) are then deleted, along with the data linked to them: the most recently added ones are deleted, your first items remain. If you have several Miffs or several places, remember to check what you want to keep before your subscription ends.
+- **End of subscription**: you go back to the free version. Items that go beyond the limits of the free plan (one Miff, 3 trusted places and no danger zone) are then deleted, along with the data linked to them: the most recently added ones are deleted, your first items remain. If you have several Miffs or several places, remember to check what you want to keep before your subscription ends.
 - **During the test phase (beta)**, the Miff team may grant Miff+ access free of charge to some testers. This access may be withdrawn at the end of the beta.
 - We may change offers and prices for the future. A price change does not affect a period you have already paid and is announced in line with the store's rules.
 

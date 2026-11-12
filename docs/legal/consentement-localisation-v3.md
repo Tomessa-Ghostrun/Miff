@@ -4,7 +4,7 @@ Proposé le 2026-11-04 par l'agent `release-manager`, **amendé le 2026-11-06** 
 
 ## 1. Pourquoi une version 3
 
-La décision du PM du 2026-11-01 remplace « la position reste sur le téléphone » par « la dernière position connue est **stockée côté serveur** et lisible des membres de la Miff ». Le texte `2026-10-v2` ne le dit pas : il ne couvre donc **pas** l'écriture de la position. Les règles Firestore préparées (branche `backend/regles-position`, **non déployées**, voir `backend/data-model.md` de cette branche) refusent toute écriture de position tant que le consentement du membre n'est pas de **version 3 ou plus récente**. Les comptes déjà consentis (`2026-10-v1`, `2026-10-v2`) doivent donc **re-consentir** avant la première écriture de position.
+La décision du PM du 2026-11-01 remplace « la position reste sur le téléphone » par « la dernière position connue est **stockée côté serveur** et lisible des membres de la Miff ». Le texte `2026-10-v2` ne le dit pas : il ne couvre donc **pas** l'écriture de la position. Les règles Firestore (PR `backend/regles-position`, **déployées** : 2026-11-04 d'après l'en-tête de `backend/firestore.rules`, fichier de `main` redéployé par le PM le 2026-11-10, information du PM non vérifiable par l'agent ; voir `backend/data-model.md`) refusent toute écriture de position tant que le consentement du membre n'est pas de **version 3 ou plus récente**. Les comptes déjà consentis (`2026-10-v1`, `2026-10-v2`) doivent donc **re-consentir** avant la première écriture de position.
 
 ## 1 bis. Amendement du 2026-11-06 : la photo localisée, et le plan « version 4 »
 
@@ -75,7 +75,7 @@ Affiché **avant toute écriture de position**, une fois par Miff concernée (ou
 | Bouton principal | « J'accepte » | "I agree" |
 | Lien (si O1 le permet) | « Pas maintenant » | "Not now" |
 
-Écriture : renouvellement du consentement d'un partage actif (règle R-LIEU-3 de `backend/regles-position`, **non déployée**) : `consentedAt` = heure serveur, `consentVersion` = `2026-11-v03`, sans arrêter le partage.
+Écriture : renouvellement du consentement d'un partage actif (règle R-LIEU-3 de `backend/regles-position`, **déployée** : 2026-11-04 d'après l'en-tête de `backend/firestore.rules`, fichier de `main` redéployé par le PM le 2026-11-10, information du PM non vérifiable par l'agent) : `consentedAt` = heure serveur, `consentVersion` = `2026-11-v03`, sans arrêter le partage.
 
 ## 5. Les textes d'autorisation du système
 

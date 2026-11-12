@@ -34,6 +34,7 @@ extension NotificationReconciler {
         input.shownToday = shownToday(now: now, calendar: calendar)
         input.isForeground = deps.isForeground()
         input.calendar = calendar
+        input.myTravelUntilMillis = deps.plans.loadTravelEnd(uid: uid)
         let decision = NotificationDangerZone.decide(input)
         guard decision != .skip else {
             return

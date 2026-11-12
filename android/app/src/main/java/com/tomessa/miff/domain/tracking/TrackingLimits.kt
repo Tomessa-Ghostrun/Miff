@@ -60,6 +60,14 @@ object TrackingLimits {
     const val RECHECK_AFTER_REFUSAL_MILLIS = 5L * 60L * 1000L
 
     /**
+     * BATT-4: at the return of the network, while a status waits, the server is read again IN FULL (Miffs, consent, places) at most once per this time. A
+     * Wi-Fi that drops and comes back several times in a row would otherwise repeat the same reads (and keep the radio busy) at each return. Within this time
+     * the last complete look is trusted (the consent it read is at most this old), the waiting status is written at once, and the session is still verified.
+     * Same value as the one of iOS for its re-arming (`rearmMinIntervalMillis`). To lengthen only with a measure (docs/dev/optimisation-batterie.md).
+     */
+    const val NETWORK_REREAD_MIN_INTERVAL_MILLIS = 5L * 60L * 1000L
+
+    /**
      * Circuit breaker, battery refresh (opening / leaving the app): writes of `status/{moi}` a day and per phone that only carry the battery level,
      * counted per document written (one per Miff). It is a DEDICATED counter, not the 60 of [MAX_STATUS_WRITES_PER_DAY]: a battery refresh must never eat the
      * budget of the arrivals and departures (the heart of the product). With the limits below a normal day is a handful of writes (5 to 10 passes at most,

@@ -1,6 +1,6 @@
 # Update (photo « Donner des nouvelles ») : ce qu'il faudra déclarer et justifier aux stores
 
-Préparé le 2026-11-06 par `release-manager`, à partir du ticket `docs/tickets/update.md` (décisions D16 à D26), de la règle R-PHOTO-LOC (fusionnée, **non déployée** : `backend/data-model.md`, en-tête, §2.8 et §11) et des dossiers de stores déjà préparés dans ce dossier. **Mis à jour le 2026-11-06 après les réponses du PM aux points P1 à P8** (§1.2, tous « décidés ») : les textes légaux de `docs/legal/` sont alignés (§9, PR `docs/legal-photo-localisee`).
+Préparé le 2026-11-06 par `release-manager`, à partir du ticket `docs/tickets/update.md` (décisions D16 à D26), de la règle R-PHOTO-LOC (fusionnée, **déployée** depuis le 2026-11-06, fichier de `main` redéployé par le PM le 2026-11-10 : information du PM, non vérifiable par l'agent ; `backend/data-model.md`, en-tête, §2.8 et §11) et des dossiers de stores déjà préparés dans ce dossier. **Mis à jour le 2026-11-06 après les réponses du PM aux points P1 à P8** (§1.2, tous « décidés ») : les textes légaux de `docs/legal/` sont alignés (§9, PR `docs/legal-photo-localisee`).
 
 **Rien n'est soumis, rien n'est rempli dans une console, rien n'est publié ni déployé** (aucun déploiement Firebase Hosting : les textes légaux sont modifiés dans le dépôt, pas en ligne). L'Update n'est **pas développée** : tout ce qui suit décrit l'app **telle qu'elle sera** si le ticket est livré tel quel, et doit être revérifié contre le code livré. Rien n'est « prêt à soumettre » : la checklist QA de sortie `docs/qa/release-checklist.md` n'existe pas encore. Ces textes n'ont **pas été relus par un juriste** (décision du PM du 2026-10-23, risque assumé) et ne doivent jamais être présentés comme tels.
 
@@ -58,7 +58,7 @@ Décisions D24 à D26 du 2026-11-06 (viseur plein écran, aperçu un peu plus pe
 
 | Fait | Valeur | Source |
 |---|---|---|
-| Prise de vue | Caméra intégrée (CameraX / AVFoundation), **en direct uniquement** ; aucune photo de galerie ; aucune permission de photothèque ni de stockage ; la photo vit en mémoire jusqu'à la publication (jamais dans un fichier ni dans la photothèque de l'app ; **iOS** : le cache local du SDK Firestore peut ensuite en garder une copie, chiffrée par la protection des données d'iOS, purgée à la déconnexion et à la suppression du compte) | ticket §5.3, §5.6, P4 |
+| Prise de vue | Caméra intégrée (CameraX / AVFoundation), **en direct uniquement** ; aucune photo de galerie ; aucune permission de photothèque ni de stockage ; la photo vit en mémoire jusqu'à la publication (jamais dans un fichier ni dans la photothèque de l'app **par l'auteur** (le destinataire peut enregistrer une photo reçue par un geste explicite : §16) ; **iOS** : le cache local du SDK Firestore peut ensuite en garder une copie, chiffrée par la protection des données d'iOS, purgée à la déconnexion et à la suppression du compte) | ticket §5.3, §5.6, P4 |
 | Métadonnées | JPEG **ré-encodé depuis les pixels** : ni EXIF, ni GPS, ni date, ni modèle (**à prouver par un test d'octets**, critère V3 du ticket) | ticket §5.6 |
 | Taille | ≤ 150 000 octets, portrait 3:4, côté long ≤ 1 024 px | `firestore.rules` `validPhoto`, ticket V7 |
 | Hébergement | Octets dans Firestore (`miffs/{id}/photos/{uid}`), région Paris (europe-west9), **sans Cloud Storage** ; une copie par Miff où la personne partage ; **chaque photo écrase la précédente** | `data-model.md` §2.8 |
@@ -71,7 +71,7 @@ Décisions D24 à D26 du 2026-11-06 (viseur plein écran, aperçu un peu plus pe
 | Analyse du contenu | **Aucune** (pas de détection de visage, pas d'IA) | ticket §5.6 |
 | Texte libre avec la photo | **Aucun en v1** (`updateText = null`) | ticket C4 |
 | Notification | **Aucune** | ticket D10 |
-| Limite assumée | Un proche peut faire une capture d'écran : « illisible après 24 h » vaut pour l'app, pas pour la capture | ticket R5, CGU art. 8 |
+| Limite assumée | Un proche peut faire une capture d'écran **ou enregistrer la photo avec « Enregistrer cette photo » (seulement s'il le choisit, §16)** : « illisible après 24 h » vaut pour l'app, pas pour une capture ni pour une photo enregistrée | ticket R5, CGU art. 8 |
 
 ---
 
@@ -105,7 +105,7 @@ Le nom du bouton est celui du nom parlé du ticket (« Donner des nouvelles » /
 | Français | « Quand tu publies une photo, l'endroit où tu l'as prise y est joint, visible pendant 24 h des membres qui partagent aussi leur position. » |
 | English | "When you publish a photo, the place where you took it is attached to it, visible for 24 hours to the members who also share their location." |
 
-**Autres clés à ne PAS ajouter** : `NSPhotoLibraryUsageDescription`, `NSPhotoLibraryAddUsageDescription` (l'app n'écrit jamais dans la galerie), `NSMicrophoneUsageDescription` (aucun son). `ios/ci/check-binaries.sh` doit **vérifier leur absence** et la **présence** de la clé caméra (aujourd'hui il vérifie l'absence de `NSLocation*`, et le ticket note qu'aucun contrôle `NSCamera*` n'existe).
+**Autres clés à ne PAS ajouter** : `NSPhotoLibraryUsageDescription` (lecture de la galerie : Miff ne la lit jamais), `NSMicrophoneUsageDescription` (aucun son). **Mise à jour du 2026-11-11 : `NSPhotoLibraryAddUsageDescription` (ajout seulement) est désormais EXIGÉE sur iPhone** pour « Enregistrer cette photo » (§16) ; ce n'est pas la caméra qui l'utilise. `ios/ci/check-binaries.sh` doit **vérifier leur absence** et la **présence** de la clé caméra (aujourd'hui il vérifie l'absence de `NSLocation*`, et le ticket note qu'aucun contrôle `NSCamera*` n'existe).
 
 **Manifeste de confidentialité** (`PrivacyInfo.xcprivacy`) : ajouter les types collectés « photos ou vidéos » (clé `NSPrivacyCollectedDataTypePhotosorVideos` d'après des documentations de SDK tiers ; **l'orthographe exacte est à vérifier dans Xcode** car la page d'Apple n'était pas accessible) avec Linked = vrai, Tracking = faux, finalité `NSPrivacyCollectedDataTypePurposeAppFunctionality`. La position précise y est déjà prévue (`app-store-confidentialite-et-revue.md` §3).
 
@@ -127,7 +127,7 @@ Apple écrit : « Apps must respect the user's permission settings and not attem
 
 **Paragraphe à ajouter à la note de revue Apple** (anglais) et à reprendre dans « App access » côté Google si nécessaire :
 
-> **Photo and its location ("Share news").** The "Share news" button opens an in-app camera (live capture only: no photo library access, nothing is saved to the device gallery). The user previews the photo and publishes it; it is then visible for 24 hours only to the members of the user's Miffs, and replaces the previous one. Every photo is published with the place where it was taken: Miff takes a single foreground location measurement at the moment of the shot and attaches the coordinates and the measurement time to the photo (the user has accepted the location consent text, which mentions this). The location of a photo can be opened only by members who also share their own location, and is deleted with the photo (24 hours, or when sharing stops, the user leaves, or the account is deleted). The camera is never started in the background or remotely, and photos are not analysed. A member who does not share their own location cannot open a photo: the app then shows "Share your position to see this photo", which is expected behaviour, not a defect.
+> **Photo and its location ("Share news").** The "Share news" button opens an in-app camera (live capture only: no photo library reading, and nothing is ever saved to the device gallery automatically: a received photo is saved only if the person taps "Save this photo" in its full-screen view, with add-only access on iPhone and no permission on Android). The user previews the photo and publishes it; it is then visible for 24 hours only to the members of the user's Miffs, and replaces the previous one. Every photo is published with the place where it was taken: Miff takes a single foreground location measurement at the moment of the shot and attaches the coordinates and the measurement time to the photo (the user has accepted the location consent text, which mentions this). The location of a photo can be opened only by members who also share their own location, and is deleted with the photo (24 hours, or when sharing stops, the user leaves, or the account is deleted). The camera is never started in the background or remotely, and photos are not analysed. A member who does not share their own location cannot open a photo: the app then shows "Share your position to see this photo", which is expected behaviour, not a defect.
 
 **Pourquoi la dernière phrase** : un relecteur qui teste avec un compte qui n'a pas publié sa position verra un message à la place de la photo et pourrait croire que l'app est cassée. Le **compte de démonstration** (README du dossier, action 7) doit donc avoir **deux comptes** dans la même Miff, **chacun avec sa position publiée** (position simulée).
 
@@ -145,7 +145,7 @@ Définitions lues le 2026-11-06 (aide Google, 10787469) : « collecter » = tran
 | Localisation | **Localisation précise** | Déjà **collectée, obligatoire** (« Toujours »). Le lieu de la photo est **la même catégorie** ; aucune ligne de plus. Mentionner dans les notes : « jointe aussi à la photo (24 h) » | Notes de la ligne existante à compléter |
 | Messages | « Autres messages dans l'app » (petit texte de 140 caractères) | **À retirer** si l'Update est livrée sans texte (ticket C4 : `updateText = null`). Garder la ligne **uniquement** si un texte est effectivement livré | **La ligne actuelle est inexacte avec le ticket Update** : une sous- ou sur-déclaration est un écart avec l'app |
 | Audio | — | **Non collecté** (aucun micro, pas de `RECORD_AUDIO`) | à confirmer par `android-dev` |
-| Fichiers et documents | — | **Non** : aucune écriture dans la galerie ni lecture de fichiers (le repli système utilise un fichier du cache privé, supprimé aussitôt) | à confirmer |
+| Fichiers et documents | — | **Non** : aucune lecture de fichiers ; l'écriture d'une photo reçue dans la galerie n'a lieu que sur le geste « Enregistrer cette photo » (local, rien n'est envoyé : pas une collecte, §16) ; le repli système utilise un fichier du cache privé, supprimé aussitôt | à confirmer |
 | Activité dans l'app, plantages | Analytics, Crashlytics | Inchangé. **Vérifier** que ni la photo ni les coordonnées ne figurent dans un événement, un journal ou un rapport (D12, critère U6) | contrôle V1 élargi |
 
 **Formulaire « Contenu de l'application »** : « Classification du contenu » (questionnaire IARC), « Public cible » : voir §8. Google précise (page de la classification, lue) : « Misrepresentation of your app's content may result in its removal or suspension » : répondre à ce qui sera livré, pas à ce qui est prévu. La classification doit être refaite si l'app change (aide Google, relevée par recherche).
@@ -383,14 +383,14 @@ Principe : on ne livre **rien** de plus tant qu'un store n'a pas refusé (décis
 | 5 | Préparer **deux comptes de démonstration** dans la même Miff (e-mail + mot de passe, sans double authentification), positions publiées (position simulée), pour la revue | à la soumission |
 | 6 | Enregistrer la **vidéo Apple** (≤ 60 s) et prendre les **captures** du §10 (sans signalement ni blocage) | quand l'Update (UPDATE-1, UPDATE-1b, FEED-4) est livrée et recettée |
 | 7 | Refaire / vérifier les **formulaires** à partir des §5 et §6 : Data safety, App Privacy, classification, public cible (réponses identiques partout) | à la soumission |
-| 8 | Après le déploiement de R-PHOTO-LOC (ton « oui », `docs/dev/deploiement-regles.md`) : ordre **règles d'abord, builds ensuite** | avant UPDATE-1b |
+| 8 | Après le déploiement de R-PHOTO-LOC (fait le 2026-11-06 puis fichier de `main` redéployé le 2026-11-10 : information du PM, non vérifiable par l'agent ; `docs/dev/deploiement-regles.md`) : ordre **règles d'abord, builds ensuite** | avant UPDATE-1b |
 | 9 | Si un store refuse en citant la guideline 1.2 / la politique UGC : **me prévenir**, on suit le plan de repli du §11 bis (étape 1 d'abord) | au rejet |
 
 ---
 
-## 13 bis. Changement de posture : « Enregistrer la photo » d'un proche (FEED-8, décision du PM du 2026-11-08)
+## 13 bis. Changement de posture : « Enregistrer cette photo » d'un proche (FEED-8, décision du PM du 2026-11-08, REMPLACÉE le 2026-11-11)
 
-**Ce qui change.** Dans le **plein écran** de la photo d'un proche (Feed, **à cet endroit seulement** : ni l'aperçu de la carte, ni l'Update), un bouton **« Enregistrer la photo »** confie la photo à la **feuille de partage du système** (iPhone : `UIActivityViewController` avec une image, qui propose « Enregistrer l'image », « Copier », AirDrop… ; Android : à décider par `android-dev`, mêmes clés de texte `feed_photo_download*`). **Aucune permission, aucune clé `NSPhotoLibrary*`** (V11 et `check-binaries.sh` inchangés), aucune écriture de l'app dans un fichier ni dans la photothèque : c'est le système, sur choix de la personne, qui écrit. L'image donnée à la feuille est des pixels (aucune métadonnée, aucun lieu).
+**Ce qui change (version du 2026-11-11, qui REMPLACE « sans permission / feuille de partage » : la feuille ne proposait pas « Enregistrer l'image »).** Dans le **plein écran** de la photo d'un proche (Feed, **à cet endroit seulement** : ni l'aperçu de la carte, ni l'Update), une icône **« Enregistrer cette photo »** **enregistre la photo DIRECTEMENT dans la galerie**, au toucher. **iPhone** : `PHPhotoLibrary` en autorisation **`.addOnly`** (ajout seul : Miff ne lit **jamais** la galerie), demandée au premier toucher, `PHAssetCreationRequest.forAsset()` avec un JPEG **ré-encodé depuis les pixels** (aucun EXIF, aucun GPS, **aucune donnée de lieu** dans le fichier), **aucune écriture automatique**. **Android** : aucune permission nécessaire (mêmes clés de texte `feed_photo_download*`, non touché). **Nouvelle posture de permission (iOS)** : une demande **« ajout à la galerie »** existe désormais : clé **`NSPhotoLibraryAddUsageDescription`** (FR : « Miff enregistre la photo dans ta galerie uniquement quand tu touches « Enregistrer cette photo ». Miff ne lit jamais tes photos ni ta galerie. » ; EN équivalent), **jamais** `NSPhotoLibraryUsageDescription` (lecture) ; V11 et `ios/ci/check-binaries.sh` exigent désormais EXACTEMENT la clé d'ajout. **App Store Connect / App Privacy : toujours aucune collecte** (l'enregistrement est local à la personne, rien n'est envoyé) ; la fiche n'a rien à déclarer de plus, mais le relecteur Apple verra la demande d'autorisation : la note de revue peut dire « ajout seul, au toucher d'une icône, jamais de lecture ».
 
 **Posture avant / après.**
 | Avant | Après |
@@ -405,10 +405,10 @@ Principe : on ne livre **rien** de plus tant qu'un store n'a pas refusé (décis
 3. **Écran d'explication de la caméra et ligne de visibilité de l'aperçu** (ticket Update §7) : « Ta photo est visible 24 h par ton cercle » devient « … et ton cercle peut l'enregistrer ».
 4. **Consentement à la localisation v3 / v4** (`consentement-localisation-v3.md`) : vérifier la mention « une copie est possible » (capture d'écran) ; l'image enregistrée ne contient pas le lieu.
 5. **§2 (faits) de ce document** : lignes « Limite assumée » et « Prise de vue » (« jamais dans un fichier ni dans la photothèque » vaut pour **la prise de vue de l'auteur**, pas pour le destinataire).
-6. **Fiches des stores et pages web** : ne jamais écrire « la photo disparaît », « personne ne peut la garder » (R15) ; `aso-marketing` à prévenir. **App Store Connect / Data safety** : aucune permission nouvelle ; les déclarations « Photos » ne changent pas (collectée : oui ; **pas de nouvelle collecte** : l'enregistrement est local à la personne).
-7. **Textes d'usage** (`InfoPlist.xcstrings`, `project.yml`) : **aucun changement** (pas de `NSPhotoLibraryAddUsageDescription`) ; le commentaire de `project.yml` et le message de `ios/ci/check-binaries.sh` (« la photo n'est jamais écrite dans la photothèque ») parlent de l'**app** : exacts, à préciser « par l'app » à la prochaine retouche.
+6. **Fiches des stores et pages web** : ne jamais écrire « la photo disparaît », « personne ne peut la garder » (R15) ; `aso-marketing` à prévenir. **App Store Connect / Data safety** : **une permission nouvelle sur iPhone (ajout à la galerie, ajout seul)**, aucune sur Android ; les déclarations « Photos » ne changent pas (collectée : oui ; **pas de nouvelle collecte** : l'enregistrement est local à la personne).
+7. **Textes d'usage** (`InfoPlist.xcstrings`, `project.yml`) : **un ajout** : `NSPhotoLibraryAddUsageDescription` (ajout seul, FR + EN, texte ci-dessus), **jamais** `NSPhotoLibraryUsageDescription` ; le commentaire de `project.yml`, `ios/ci/check-binaries.sh` et les tests de configuration l'exigent. Le texte d'usage de la **caméra** (« Rien n'est enregistré dans ta photothèque ») reste exact pour la photo que TU prends ; la note de revue Apple peut préciser la différence.
 
-**Risque ajouté, écrit comme assumé (décision PM, pas de relecture juridique)** : une photo localisée de proche (visage, lieu) peut être copiée **plus facilement** et diffusée hors de Miff ; le mineur est le cas le plus sensible (§8). Parade existante : durée de 24 h côté app, cercle restreint, retrait d'un membre, quitter la Miff. **Nouveau contrôle V22** : le bouton n'existe qu'au plein écran de la photo d'un proche, la feuille de partage ne reçoit qu'une image, aucune clé `NSPhotoLibrary*` n'est déclarée (test `PhotoSaveTests`, `check-binaries.sh`).
+**Risque ajouté, écrit comme assumé (décision PM, pas de relecture juridique)** : une photo localisée de proche (visage, lieu) peut être copiée **plus facilement** et diffusée hors de Miff ; le mineur est le cas le plus sensible (§8). Parade existante : durée de 24 h côté app, cercle restreint, retrait d'un membre, quitter la Miff. **Nouveau contrôle V22** : le bouton n'existe qu'au plein écran de la photo d'un proche, l'ajout à la galerie est en autorisation `.addOnly` au toucher seulement, l'image enregistrée est ré-encodée sans métadonnée ni lieu, seule la clé `NSPhotoLibraryAddUsageDescription` est déclarée (jamais de lecture) (test `PhotoSaveTests`, `check-binaries.sh`).
 
 ---
 
@@ -468,3 +468,50 @@ Ajouté le 2026-11-08 par `android-dev` (PR « Android : sélecteur de Miff avec
 ### 15.3 Contrôles dans le code (ajoutés par cette PR)
 
 `PhotoDownloadRuleTest` (Android) lit les sources : seul `data/media/PhotoSaver.kt` écrit dans les images ou un document ; seul le plein écran du Feed y accède ; l'écriture part d'un toucher (jamais d'un `LaunchedEffect`) ; aucune permission de stockage dans le manifeste ; rien n'est envoyé à un journal, à Analytics ou au presse-papiers ; le nom du fichier ne reçoit qu'un instant et un fuseau. `UpdatePrivacyRuleTest` continue de garantir que **le viseur et la publication** n'écrivent aucun fichier.
+
+---
+
+## 16. « Enregistrer cette photo » et photo Google : modalités décidées par le PM (2026-11-11), alignées par la PR `docs/aligner-decisions-publication`
+
+**Ce § remplace, pour les modalités, la « feuille de partage du système, sans permission » des §13 bis et 15.1** (elle ne proposait pas « Enregistrer l'image » sur iPhone). Il se lit avec `docs/release/alignement-decisions-2026-11-11.md`. Rien n'est soumis, rempli ni publié ; ces textes ne sont **pas** relus par un juriste (risque assumé par le PM).
+
+### 16.1 Ce que fait l'app
+
+Dans le **plein écran de la photo d'un proche** (Feed, **ce seul endroit** : ni l'aperçu de la carte, ni l'Update), l'icône **« Enregistrer cette photo »** (en haut à droite du plein écran sur Android) enregistre la photo **par un geste explicite, jamais automatiquement**.
+
+| Plateforme | Comportement | Permission |
+|---|---|---|
+| **Android** (PR #156, fusionnée) | Android 10 et plus : la photo est ajoutée au dossier `Pictures/Miff` de la galerie (MediaStore) au toucher. Android 9 et moins : le sélecteur de documents du système (la personne choisit où). Fichier sans métadonnée, nom neutre | **Aucune** (la CI refuse toute permission de stockage ou de photothèque) |
+| **iPhone** (PR #158, **brouillon, non fusionnée à la date de rédaction : à relire à la fusion de #158**) | Enregistrement **direct dans la galerie** au toucher, par une autorisation **« ajout seulement »** (`PHPhotoLibrary` `.addOnly`, demandée au premier toucher), JPEG ré-encodé depuis les pixels (ni EXIF ni lieu) | **`NSPhotoLibraryAddUsageDescription`** (nouvelle) ; **jamais** `NSPhotoLibraryUsageDescription` (lecture) |
+
+Jamais « jamais enregistrée » : la formule exacte est **« seulement si tu choisis de l'enregistrer »**. Une copie enregistrée est un fichier du téléphone du membre, **hors de Miff** (les 24 heures et la suppression du compte ne s'y appliquent pas) ; l'image enregistrée ne contient ni EXIF ni lieu.
+
+### 16.2 Liste des permissions à déclarer (à lire avec V10 et V11 du `README.md`)
+
+| Plateforme | Permission ou clé | Statut |
+|---|---|---|
+| Android | `CAMERA` | Déclarée (Update) |
+| Android | Stockage, photothèque, micro | **Aucune** (V10) ; l'enregistrement d'une photo reçue n'en demande pas |
+| Android | Localisation (premier plan, arrière-plan) | Voir `google-play-localisation-arriere-plan.md` |
+| iOS | `NSCameraUsageDescription` (FR, EN) | Déclarée (Update) |
+| iOS | **`NSPhotoLibraryAddUsageDescription` (FR, EN)** | **Nouvelle (2026-11-11), ajout seulement** |
+| iOS | `NSPhotoLibraryUsageDescription`, `NSMicrophone*` | **Interdites** (V11) |
+| iOS | `NSLocation*UsageDescription` | Voir `app-store-confidentialite-et-revue.md` §4 |
+
+**Texte d'usage iOS** (tel que dans la PR #158, `InfoPlist.xcstrings`) : FR « Miff enregistre la photo dans ta galerie uniquement quand tu touches « Enregistrer cette photo ». Miff ne lit jamais tes photos ni ta galerie. » ; EN "Miff saves the photo to your library only when you tap “Save this photo”. Miff never reads your photos or your library."
+
+### 16.3 Déclarations des stores
+
+- **Google Play, Data safety** : aucune ligne de plus. « Collecté » = transmis hors de l'appareil : un enregistrement local n'en est pas un. « Fichiers et documents » reste **Non**. La ligne « Photos » (photo de profil, photo de mise à jour) est déjà déclarée.
+- **App Store, App Privacy** : aucune collecte de plus (l'enregistrement est local, rien n'est envoyé). Le relecteur Apple verra la demande d'ajout à la galerie : la note de revue l'explique (`app-store-confidentialite-et-revue.md` §5).
+- **Photo de profil Google** (décision du 2026-11-08) : la ligne « Photos » est déjà déclarée ; **aucune nouvelle déclaration**. Elle est téléchargée **une fois**, en HTTPS, depuis `googleusercontent.com` : **l'adresse IP de l'appareil est exposée à Google** (écrit dans la politique, art. 3, 5 et 6).
+
+**Remplace la phrase de la note de revue du §4 (ligne « Photo and its location »)** : « nothing is saved to the device gallery » devient **« nothing is ever saved to the gallery automatically; a received photo is saved only if the person taps “Save this photo” in its full-screen view (iPhone: add-only photo library permission; Android: no permission) »**.
+
+### 16.4 Textes déjà alignés (PR du 2026-11-11)
+
+Politique de confidentialité FR/EN (résumé point 7 ; art. 3 « Caméra et photo », « Ce que Miff ne collecte pas », ligne « Profil » ; art. 4 ; art. 5 ; art. 6 ; art. 7 ; art. 10 ; art. 11) et CGU FR/EN (art. 4 et 8), détail dans `docs/legal/README.md` §8. **Restent à faire à la main** : écran d'explication de la caméra et ligne de visibilité de l'aperçu (« … et ton cercle peut l'enregistrer »), qui sont du code des applications ; `docs/tickets/update.md`.
+
+### 16.5 Contrôle ajouté
+
+**V22** (voir `README.md`) : le bouton n'existe qu'au plein écran de la photo d'un proche ; l'écriture part d'un toucher (jamais d'un effet automatique) ; Android : aucune permission de stockage ; iOS : seule la clé d'ajout est déclarée, jamais la clé de lecture ; le fichier enregistré n'a ni métadonnée ni lieu.

@@ -26,7 +26,7 @@
 ## Partie B — Réglages > Notifications (PR A) — 8 min
 
 - [ ] Profil > Réglages : une ligne **Notifications** (cloche) apparaît entre Mon compte et Langue. **Un compte sans Miff ne l'a pas** (Réglages restreints : seulement Mon compte et Confidentialité).
-- [ ] Autorisées : « **Autorisées par ton téléphone** », l'interrupteur « Recevoir des notifications » est allumé, puis **Pour toi** (« Quand je passe orange », « Quand je passe rouge », « Quand j'entre dans une zone de danger » + la phrase « Couper cette notification ne change rien à ce que ta Miff voit de toi. »), **Pour ta Miff** (« Quand ma Miff passe orange / rouge »), **Nuit calme**. **Aucun interrupteur « zone de danger d'un proche »** (abandonné).
+- [ ] Autorisées : « **Autorisées par ton téléphone** », l'interrupteur « Recevoir des notifications » est allumé, puis **Pour toi** (« Quand je passe orange », « Quand je passe rouge », « Quand j'entre dans une zone de danger » + « Quand mon mode voyage se termine » (N7, actif par défaut) + la phrase « Couper cette notification ne change rien à ce que ta Miff voit de toi. »), **Pour ta Miff** (« Quand ma Miff passe orange / rouge »), **Nuit calme**. **Aucun interrupteur « zone de danger d'un proche »** (abandonné).
 - [ ] Éteignez l'interrupteur général : les cinq interrupteurs et la nuit calme sont **grisés mais gardent leur valeur** ; rallumez : tout est revenu comme avant.
 - [ ] Coupez les notifications dans Réglages iOS puis revenez : « **Coupées dans ton téléphone** », interrupteur **grisé et éteint** (il ne prétend jamais autoriser), bouton « Ouvrir les réglages du téléphone » (ouvre Réglages iOS > Miff) et lien « Comment les réactiver ? » (page « Notifications coupées », trois étapes, ton calme).
 - [ ] Installation neuve avec « Plus tard » : « **Pas encore activées** », interrupteur éteint ; l'allumer ouvre **l'amorce** (puis la fenêtre du système si « Autoriser »).
@@ -54,7 +54,6 @@
 - [ ] **N2** : « **Tu es passé rouge** / Indique à ta Miff que tout va bien. » arrive 2 h après N1 (ou, avec l'astuce, à la minute prévue), toucher ouvre l'écran Update. **Une seule N1 et une seule N2 par épisode** : rien ne se répète.
 - [ ] **Annulation** : juste après avoir programmé N1 (avant son heure), **publiez une update** (ou rentrez dans un lieu de confiance). Au retour au premier plan, la notification ne part pas ; si elle était déjà affichée, elle **disparaît du tiroir** à l'ouverture de l'app.
 - [ ] **Zone de danger** : un compte dans une zone de danger (créée par un créateur Premium) ne reçoit **ni N1 ni N2**.
-- [ ] **Mode voyage** : activez le mode voyage sur l'iPhone (Profil), puis laissez passer l'heure prévue de N1 (ou utilisez l'astuce : `presence` = `out` ancien, puis activez le voyage) : **ni N1 ni N2** n'arrive, et un rappel déjà programmé est retiré au plus tard au prochain retour de l'app au premier plan (à noter si ce n'est pas le cas). Un voyageur est toujours neutre.
 - [ ] **Nuit calme** (22 h à 7 h) : N1 arrive **sans son ni vibration** (dans le tiroir, sans bannière) ; N2 garde son niveau normal. Pour l'essayer sans attendre la nuit, ajustez le `presenceAt` pour que l'heure prévue tombe la nuit.
 - [ ] **Réglages > Notifications** : éteindre « Quand je passe orange » annule N1 **immédiatement** (rien n'arrive) ; éteindre « Recevoir des notifications » annule tout **et retire** les notifications Miff du tiroir.
 - [ ] **Plafond** : pas plus de 2 par type et 6 au total par jour ; au-delà, rien n'est affiché mais le centre garde une entrée discrète.
@@ -73,7 +72,6 @@
 - [ ] **Si B donne de ses nouvelles avant l'heure** et que vous rouvrez l'app (ou qu'elle était ouverte) : la notification est **annulée** ; si elle était déjà affichée elle **disparaît du tiroir** à l'ouverture.
 - [ ] **Si B donne de ses nouvelles pendant que l'app est fermée** : N3 s'affiche quand même (limite iOS acceptée) ; à l'ouverture le Feed dit la vérité et la notification est retirée. **Notez chaque fausse alerte** : en bas de Réglages > Notifications (builds Debug et Internal) un compteur dit « x fausse(s) alerte(s) sur y ».
 - [ ] **Compte seul dans la Miff** : jamais de N3 ni N4. **Miff de deux personnes dont vous êtes la cause** : pas de N3 / N4 non plus (vous avez N1 / N2).
-- [ ] **Un proche en voyage** (mode voyage actif chez B, qui était `out` depuis longtemps) : **ni N3 ni N4** à cause de lui (un voyageur est ignoré dans la couleur de la Miff). Quand son voyage se termine, il ne déclenche rien de lui-même.
 - [ ] **Autre Miff active** (Premium) : changer de Miff active annule les rappels de l'ancienne.
 - [ ] Les mêmes vérifications que la partie D pour : nuit calme (N3 sans son, N4 normale), interrupteurs (« Quand ma Miff passe orange / rouge »), plafonds, centre, premier plan.
 
@@ -89,8 +87,26 @@
 - [ ] **App ouverte** : aucune bannière, une ligne discrète dans le centre.
 - [ ] **Interrupteurs** : « Quand j'entre dans une zone de danger » éteint (ou « Recevoir des notifications » éteint) : **aucune N6**, mais ce que votre Miff voit de vous ne change pas (la phrase sous l'interrupteur le dit).
 - [ ] Vous avez eu N1 / N2 programmées (vous étiez sorti d'un lieu) : en entrant en zone de danger elles sont **annulées** (plus de rappel « à toi » en zone de danger).
+- [ ] **Mode voyage actif** : en entrant dans une zone de danger pendant votre voyage, **aucune N6** n'arrive (valeur par défaut, question Q7 à reconfirmer). Voyage terminé ou désactivé : N6 reprend à l'entrée suivante.
 - [ ] **Plusieurs Miffs** (Premium) : la N6 est reçue pour **n'importe laquelle** de vos Miffs (pas seulement la Miff affichée) ; le centre montre le **nom de la Miff**.
 - [ ] Notez la **durée** entre l'entrée réelle et la notification, et tout cas où elle manque (app fermée de force, mode économie d'énergie, Actualisation en arrière-plan coupée) : ce sont les limites d'iOS à documenter.
+
+## Partie G — Mode voyage : N7 « Ton mode voyage est terminé » et rappels coupés pendant un voyage (PR B) — 15 min
+
+**Préparation** : le mode voyage (Profil > carte « Mode voyage ») est livré ; les notifications sont **autorisées** ; un compte A (l'iPhone) dans une Miff avec un second compte B. Pour ne pas attendre plusieurs jours, choisissez comme date de fin **aujourd'hui** : le voyage finit ce soir à minuit et N7 part à **8 h demain matin**. **Limite iOS acceptée** : iOS ne peut pas finir le voyage app fermée ; N7 dit donc « Ouvre Miff pour que ta carte reprenne ses couleurs. Bon retour ! » et la fin est traitée à l'ouverture de l'app (ou au toucher de N7).
+
+- [ ] **N7 programmée** : A active le voyage (fin = aujourd'hui). Le lendemain à **8 h** : « **Ton mode voyage est terminé** / Ouvre Miff pour que ta carte reprenne ses couleurs. Bon retour ! » arrive (**sonore**, jamais silencieuse : elle n'arrive pas la nuit). Toucher ouvre le **Feed**, la carte de A reprend ses couleurs.
+- [ ] **Une seule fois** : N7 n'arrive qu'**une** fois par voyage (jamais deux), même si l'app est ouverte et fermée plusieurs fois.
+- [ ] **Désactivation anticipée** : A active le voyage puis le **désactive** à la main avant minuit : **aucune** N7 le lendemain.
+- [ ] **Changement de date** : A active le voyage jusqu'à après-demain puis **change la date** pour demain : N7 arrive à 8 h le lendemain de la **nouvelle** date (une seule fois).
+- [ ] **Interrupteur** : Réglages > Notifications > « **Quand mon mode voyage se termine** » (section « Pour toi », actif par défaut). Coupé avant 8 h : aucune N7 ; rallumé **avant** 8 h : elle revient. Il suit l'interrupteur général (grisé, avec sa valeur gardée).
+- [ ] **Sans Miff** : un compte sans Miff où il partage peut quand même recevoir N7 (un voyage n'a besoin d'aucune Miff).
+- [ ] **Pendant MON voyage, N1 à N4 coupées** : A est **sorti d'un lieu** et active le voyage : les rappels « Tu es passé orange / rouge » et « Ta Miff est passée en orange / rouge » **n'arrivent pas** ; ceux déjà programmés sont retirés (au plus tard au prochain retour de l'app au premier plan, à noter si ce n'est pas le cas). **Aucune N6** non plus (valeur par défaut de la spec, question Q7 à reconfirmer).
+- [ ] **Quand le voyage finit** : le plan normal reprend (si A est de nouveau sorti d'un lieu, N1 / N2 repartent) et N7 attend ses 8 h.
+- [ ] **Un proche en voyage** (mode voyage actif chez B, qui était « sorti » depuis longtemps) : **ni N3 ni N4** à cause de lui (un voyageur est neutre et ignoré dans la couleur de la Miff), **même longtemps après la fin de son voyage**. Une N3 qui reposait sur lui avant son départ en voyage est annulée.
+- [ ] **Déconnexion** de A pendant son voyage : aucune N7 sur le téléphone ensuite ; le **centre** contient la ligne N7 (sans nom de Miff) après son envoi, toucher = Feed.
+- [ ] **Console Firestore (Utilisation)** : **aucune lecture ni écriture de plus** à cause de N7.
+- [ ] Aucun texte ne dit que la **position** s'arrête (critère P5).
 
 ## Ce que le PM décide ensuite
 

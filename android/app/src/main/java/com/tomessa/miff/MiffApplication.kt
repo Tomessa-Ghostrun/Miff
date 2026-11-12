@@ -2,6 +2,7 @@ package com.tomessa.miff
 
 import android.app.Application
 import com.tomessa.miff.data.AppCheckInstaller
+import com.tomessa.miff.data.notification.AppVisibility
 import com.tomessa.miff.data.tracking.ForegroundObserver
 import com.tomessa.miff.data.tracking.TrackingEngine
 import com.tomessa.miff.domain.startup.StartupMark
@@ -34,7 +35,7 @@ class MiffApplication : Application() {
         super.onCreate()
         StartupTrace.section("Miff.Application.onCreate") {
             // Firebase is already initialized by its content provider at this point.
-            StartupTrace.section("Miff.AppCheck.install") { AppCheckInstaller.install() }
+            StartupTrace.section("Miff.AppCheck.install") { AppCheckInstaller.install(this) }
             // Nothing is built yet: every member of the container is created on first use.
             container = AppContainer(this)
             // The manifest starts with "collect nothing" and the stored device choice is deliberately NOT re-applied here:
@@ -46,10 +47,16 @@ class MiffApplication : Application() {
             registerActivityLifecycleCallbacks(
                 ForegroundObserver(
                     onForeground = {
+                        AppVisibility.inForeground = true
                         container.trackingLooksAgain(TrackingEngine.Reason.OPENED)
                         container.foregroundTicks.arrived()
+                        // NOTIF-1A / 4A: the channels follow the language of the app, and the reminders are brought in line with the plan.
+                        container.notificationsLookAgain()
                     },
-                    onBackground = { container.trackingLooksAgain(TrackingEngine.Reason.BACKGROUNDED) },
+                    onBackground = {
+                        AppVisibility.inForeground = false
+                        container.trackingLooksAgain(TrackingEngine.Reason.BACKGROUNDED)
+                    },
                 ),
             )
         }

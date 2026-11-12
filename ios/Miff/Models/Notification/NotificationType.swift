@@ -11,7 +11,7 @@ enum NotificationDestination: Equatable {
     case feed
 }
 
-/// Les cinq notifications de la phase 0. N5 (prévenir les autres membres d'une entrée en zone de danger) est ABANDONNÉE : elle exige
+/// Les notifications de la phase 0 (N1 à N4, N6, et N7 du mode voyage). N5 (prévenir les autres membres d'une entrée en zone de danger) est ABANDONNÉE : elle exige
 /// un serveur, elle n'existe ni ici, ni dans les réglages, ni dans les textes.
 enum NotificationType: String, CaseIterable, Codable, Equatable {
     /// Je passe orange (hors zone de danger).
@@ -24,6 +24,8 @@ enum NotificationType: String, CaseIterable, Codable, Equatable {
     case n4
     /// J'entre dans une zone de danger de ma Miff.
     case n6
+    /// MODE VOYAGE : « Ton mode voyage est terminé » (locale, 08:00 le lendemain du dernier jour ; ticket mode-voyage §9.1).
+    case n7
 
     var titleKey: String {
         switch self {
@@ -38,6 +40,8 @@ enum NotificationType: String, CaseIterable, Codable, Equatable {
         case .n6:
             // Variante A du PM (Q34) : « Tu es dans une zone de danger de ta Miff ».
             return "notif_n6a_title"
+        case .n7:
+            return "notif_n7_title"
         }
     }
 
@@ -53,6 +57,8 @@ enum NotificationType: String, CaseIterable, Codable, Equatable {
             return "notif_n4_body"
         case .n6:
             return "notif_n6a_body"
+        case .n7:
+            return "notif_n7_body"
         }
     }
 
@@ -69,6 +75,8 @@ enum NotificationType: String, CaseIterable, Codable, Equatable {
             return "notif_settings_n4"
         case .n6:
             return "notif_settings_n6"
+        case .n7:
+            return "notif_settings_n7"
         }
     }
 
@@ -78,7 +86,7 @@ enum NotificationType: String, CaseIterable, Codable, Equatable {
         switch self {
         case .n1, .n2:
             return .update
-        case .n3, .n4, .n6:
+        case .n3, .n4, .n6, .n7:
             return .feed
         }
     }
@@ -88,7 +96,8 @@ enum NotificationType: String, CaseIterable, Codable, Equatable {
         switch self {
         case .n1, .n3, .n6:
             return true
-        case .n2, .n4:
+        case .n2, .n4, .n7:
+            // N7 part à 8 h : jamais la nuit, donc rien à adoucir.
             return false
         }
     }

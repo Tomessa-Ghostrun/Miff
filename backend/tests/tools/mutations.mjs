@@ -7,12 +7,14 @@
 // equivalent : raison pour laquelle aucun test ne PEUT voir la mutation (mutant équivalent, protection redondante).
 
 import { DUR3_MUTATIONS } from './mutations-dur3.mjs';
+import { REQUEST_MUTATIONS } from './mutations-demande-lieu.mjs';
 import { ONBB_MUTATIONS } from './mutations-onbb.mjs';
 import { PHOTO_MUTATIONS } from './mutations-photo.mjs';
 import { POSITION_MUTATIONS } from './mutations-position.mjs';
 import { SESSION_MUTATIONS } from './mutations-session.mjs';
 import { STATUS_TIME_MUTATIONS } from './mutations-statut.mjs';
 import { VOYAGE_MUTATIONS } from './mutations-voyage.mjs';
+import { DEVICE_MUTATIONS } from './mutations-jetons.mjs';
 
 const DB = '/databases/$(database)/documents';
 const edit = (find, replace, nth = 1, of = 1) => ({ find, replace, nth, of });
@@ -124,7 +126,7 @@ export const MUTATIONS = [
   {
     id: 'C8-index-modifiable',
     why: 'un slot memberships existant peut être réécrit (update autorisé)',
-    edits: [edit('allow update: if false;', 'allow update: if isSelf(uid);')],
+    edits: [edit('allow update: if false;', 'allow update: if isSelf(uid);', 1, 2)],
     tests: ['C8', 'J10'],
   },
   {
@@ -710,4 +712,8 @@ export const MUTATIONS = [
   ...STATUS_TIME_MUTATIONS,
   // --- Mode voyage (VOY-B, validTravel) : voir mutations-voyage.mjs ---
   ...VOYAGE_MUTATIONS,
+  // --- Demande d'ajout d'un lieu (LIEU-REQ-A, placeRequests et compteur) : voir mutations-demande-lieu.mjs ---
+  ...REQUEST_MUTATIONS,
+  // --- Jetons d'appareil (SRV-2R, devices et notifState) : voir mutations-jetons.mjs ---
+  ...DEVICE_MUTATIONS,
 ];

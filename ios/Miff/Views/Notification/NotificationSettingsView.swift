@@ -113,6 +113,8 @@ struct NotificationSettingsView: View {
         typeRow(.n6)
         // Couper N6 coupe la notification, jamais ce que la Miff voit : c'est dit ici.
         SettingsBody(text: L10n.string("notif_settings_n6_hint"))
+        // MODE VOYAGE : la fin du voyage (N7, locale, 8 h le lendemain du dernier jour).
+        typeRow(.n7)
     }
 
     @ViewBuilder

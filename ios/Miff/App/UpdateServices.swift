@@ -42,8 +42,12 @@ struct UpdateServices {
                 TravelStatusRules.battery(await system.batteryPct(), local: local.load(), uid: gateway.currentUid)
             }
         )
+        // Repli quand la mesure fraîche échoue : la dernière position que le suivi a gardée pour CE compte, de moins de 10 minutes.
+        let keptFix: () -> Fix? = {
+            Self.keptFix(uid: gateway.currentUid, local: local, nowMillis: Int(Date().timeIntervalSince1970 * 1000))
+        }
         let photoPosition = TrackingPhotoPositionSource(
-            position: tracking.location, permissions: { await permissions.snapshot() }
+            position: tracking.location, permissions: { await permissions.snapshot() }, keptFix: keptFix
         )
         var publisherDependencies = UpdatePublisherDependencies(
             store: photoStore,
@@ -53,15 +57,7 @@ struct UpdateServices {
             ledger: ledger,
             environment: environment
         )
-        // Contrat du modèle de données : une photo n'est écrite que là où MA position est publiée (lue sur la copie locale du suivi).
-        publisherDependencies.isPositionPublished = { miffId in
-            guard let uid = gateway.currentUid, let state = local.load(), state.uid == uid else {
-                return false
-            }
-            return state.miffs[miffId]?.positionAtMillis != nil
-        }
-        // Aucune Miff n'a encore ma position : la détection est invitée à l'écrire.
-        publisherDependencies.onPositionMissing = tracking.sharingChanged
+        Self.connectPosition(&publisherDependencies, uid: { gateway.currentUid }, local: local, tracking: tracking)
         let photoCache = PhotoCache()
         publisherDependencies.onPhotoPublished = { photoCache.putOwn($0) }
         var cleanerDependencies = PhotoCleanerDependencies(
@@ -82,6 +78,46 @@ struct UpdateServices {
             sharingStopped: sharingStopped,
             photoCache: photoCache
         )
+    }
+
+    /// Le lien entre l'Update et le suivi pour MA position (la fonction `make` reste courte).
+    private static func connectPosition(
+        _ dependencies: inout UpdatePublisherDependencies,
+        uid: @escaping () -> String?,
+        local: TrackingLocalStore,
+        tracking: TrackingServices
+    ) {
+        // Contrat du modèle de données : une photo n'est écrite que là où MA position est publiée (lue sur la copie locale du suivi).
+        dependencies.isPositionPublished = { miffId in
+            guard let current = uid(), let state = local.load(), state.uid == current else {
+                return false
+            }
+            return state.miffs[miffId]?.positionAtMillis != nil
+        }
+        // Pour le journal de diagnostic seulement : le suivi connaît-il cette Miff (éligible dans sa copie locale) ?
+        dependencies.trackingKnowsMiff = { miffId in
+            guard let current = uid(), let state = local.load(), state.uid == current else {
+                return false
+            }
+            return state.miffs[miffId] != nil
+        }
+        dependencies.journal = tracking.journal
+        // Le suivi n'a pas ma position dans une Miff : l'Update lui remet celle qu'il vient de mesurer (au toucher de « Publier ») et le suivi
+        // la publie lui-même, avec toutes ses garanties (l'Update n'écrit jamais `positions/{moi}`, critère U8).
+        let runtime = tracking.runtime
+        dependencies.handOver = { fix in
+            await runtime.publishPosition(supplied: fix)
+        }
+    }
+
+    /// La dernière position que le suivi a gardée sur le téléphone, seulement si elle est celle de CE compte et a moins de 10 minutes (la
+    /// copie d'un autre compte ou une vieille position ne sert jamais de repli).
+    static func keptFix(uid: String?, local: TrackingLocalStore, nowMillis: Int) -> Fix? {
+        guard let uid, let state = local.load(), state.uid == uid, let fix = state.fix,
+              nowMillis - fix.measuredAtMillis <= TrackingLimits.fixMaxAgeMillis else {
+            return nil
+        }
+        return fix
     }
 
     /// Les identifiants des Miffs de la personne, tels que l'annuaire les connaît (vide tant qu'il ne les a pas lues).

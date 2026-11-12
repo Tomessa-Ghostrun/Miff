@@ -153,6 +153,14 @@ struct NotificationPlanInput {
     /// N3 / N4 ne sont programmées que si `F - savedAt` ne dépasse pas cet horizon (parade iOS n° 4 : le système ne peut pas vérifier
     /// avant d'afficher, donc on ne programme pas trop loin d'une donnée fraîche).
     var horizonMillis = NotificationPlanner.iosHorizonMillis
+    /// MODE VOYAGE : la fin (instant absolu) de MON voyage, ou nil. Tant que `nowMillis` est avant elle, je suis en voyage : ni N1 à N4. N7
+    /// est programmée tant qu'une fin est connue, même sans Miff (un voyage n'en a pas besoin).
+    var myTravelUntilMillis: Int?
+
+    /// Je suis en voyage à cet instant.
+    var isTravelling: Bool {
+        TravelEndNotice.isTravelling(untilMillis: myTravelUntilMillis, nowMillis: nowMillis)
+    }
 }
 
 /// Une notification que le planificateur veut voir apparaître.

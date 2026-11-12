@@ -2,10 +2,17 @@ import Foundation
 
 /// Où l'instantané et le registre des rappels sont gardés (un double en mémoire dans les tests). Un seul compte à la fois sur le téléphone.
 protocol NotificationPlanStoring: AnyObject {
+    private var travelEndURL: URL {
+        directory.appendingPathComponent("travel-end.json")
+    }
+
     func loadSnapshot(uid: String) -> NotificationPlanSnapshot?
     func saveSnapshot(_ snapshot: NotificationPlanSnapshot, uid: String)
     func loadLedger(uid: String) -> NotificationLedger
     func saveLedger(_ ledger: NotificationLedger, uid: String)
+    /// MODE VOYAGE : la fin (instant) de MON voyage, ou nil. Un compte et un instant, rien d'autre : N7 n'a besoin d'aucune Miff.
+    func loadTravelEnd(uid: String) -> Int?
+    func saveTravelEnd(_ untilMillis: Int?, uid: String)
     func clear()
 }
 
@@ -22,6 +29,11 @@ final class NotificationPlanFileStore: NotificationPlanStoring {
     private struct StoredLedger: Codable {
         let uid: String
         let ledger: NotificationLedger
+    }
+
+    private struct StoredTravelEnd: Codable {
+        let uid: String
+        let untilMillis: Int
     }
 
     private let directory: URL
@@ -73,6 +85,27 @@ final class NotificationPlanFileStore: NotificationPlanStoring {
 
     func saveLedger(_ ledger: NotificationLedger, uid: String) {
         write(StoredLedger(uid: uid, ledger: ledger), to: ledgerURL)
+    }
+
+    func loadTravelEnd(uid: String) -> Int? {
+        queue.sync {
+            guard let data = try? Data(contentsOf: travelEndURL),
+                  let stored = try? JSONDecoder().decode(StoredTravelEnd.self, from: data),
+                  stored.uid == uid else {
+                return nil
+            }
+            return stored.untilMillis
+        }
+    }
+
+    func saveTravelEnd(_ untilMillis: Int?, uid: String) {
+        guard let untilMillis else {
+            queue.sync {
+                try? FileManager.default.removeItem(at: travelEndURL)
+            }
+            return
+        }
+        write(StoredTravelEnd(uid: uid, untilMillis: untilMillis), to: travelEndURL)
     }
 
     func clear() {

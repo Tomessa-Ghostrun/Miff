@@ -47,6 +47,16 @@ final class NotificationDangerZoneDecisionTests: XCTestCase {
         XCTAssertEqual(NotificationDangerZone.decide(input { $0.sessionUid = nil }), .skip)
     }
 
+    func testDuringMyTripNoN6EvenIfAPositionInADangerZoneIsMeasured() {
+        let tripEnd = midnight + 24 * hour
+        let travelling = input { $0.myTravelUntilMillis = tripEnd }
+        let ended = input(atHour: 14) { $0.myTravelUntilMillis = midnight + 14 * hour - 1 }
+
+        XCTAssertEqual(NotificationDangerZone.decide(travelling), .skip, "Q7 : en voyage, aucune N6")
+        XCTAssertEqual(NotificationDangerZone.decide(ended), .show(quiet: false), "le voyage est fini : N6 reprend")
+        XCTAssertEqual(NotificationDangerZone.decide(input()), .show(quiet: false))
+    }
+
     func testTurningN1OffDoesNotTurnN6Off() {
         let value = input { $0.preferences = NotificationPreferences().setting(.n1, to: false) }
 

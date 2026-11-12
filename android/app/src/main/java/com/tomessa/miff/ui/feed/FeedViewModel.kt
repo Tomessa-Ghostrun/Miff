@@ -11,16 +11,21 @@ import com.tomessa.miff.data.feed.StatusObserver
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.data.miff.MiffDirectory
 import com.tomessa.miff.data.miff.MiffRepository
+import com.tomessa.miff.data.notification.FeedNotificationLink
 import com.tomessa.miff.domain.feed.FeedBuilder
 import com.tomessa.miff.domain.feed.FeedContent
 import com.tomessa.miff.domain.feed.FeedInput
 import com.tomessa.miff.domain.feed.Locate
 import com.tomessa.miff.domain.feed.LocateResult
+import com.tomessa.miff.domain.feed.MemberStatus
 import com.tomessa.miff.domain.feed.PositionLookup
 import com.tomessa.miff.domain.feed.StatusesView
 import com.tomessa.miff.domain.miff.MiffObservation
 import com.tomessa.miff.domain.miff.MiffSnapshot
+import com.tomessa.miff.domain.notification.SnapshotMember
 import com.tomessa.miff.domain.profile.ReadMembers
+import com.tomessa.miff.ui.components.ConnectionGate
+import com.tomessa.miff.ui.components.ConnectionPopInState
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
@@ -55,6 +60,8 @@ import java.time.ZoneId
  * - the listeners exist ONLY while the Feed is on screen (the screen calls [observe] inside repeatOnLifecycle(STARTED), and only while the tab
  *   is the one in use): nothing listens to a Miff nobody is looking at, and only for the Miff shown;
  * - the colour is computed at the time of the reading, again each minute, from the clock: no reading of the server for it.
+ * - COST of the pop-in "Pas de connexion" (bug of 2026-11-10): while the Feed has nothing to show, an attempt every 10 s starts again ONLY if a network is there (with
+ *   none, the timer reads nothing); with a network that answers nothing, 3 automatic attempts at most, then the button and the return of the network only.
  */
 
 /** What the Feed shows for the active Miff. */
@@ -143,6 +150,13 @@ class FeedViewModel(
     private val minRefreshIntervalMillis: Long = MIN_REFRESH_INTERVAL_MILLIS,
     /** The indicator of "Actualiser" ends after this time at the latest (8 s), with the honest mention "Dernières informations de…". */
     private val refreshTimeoutMillis: Long = REFRESH_TIMEOUT_MILLIS,
+    /**
+     * The pop-in "Pas de connexion" and its automatic attempts every 10 s (bug of 2026-11-10): only while the Feed has NOTHING to show; it reads again only
+     * when a network is there, and stops with the screen (see [ConnectionGate]).
+     */
+    private val connectionGate: ConnectionGate = ConnectionGate(network),
+    /** NOTIF-4A: told what the Feed read (the snapshot the reminders are planned from) and the choice of another Miff. Local; nothing is read or written because of it. */
+    private val notifications: FeedNotificationLink = FeedNotificationLink.None,
 ) : ViewModel() {
     val directoryState: StateFlow<DirectoryState> = directory.state
 
@@ -208,14 +222,42 @@ class FeedViewModel(
 
     private var lostReported = false
 
+    private var refreshJob: Job? = null
+    private var refreshAgain = false
+
     init {
         refresh()
     }
 
-    /** At the opening of the tab, and "Réessayer". */
+    /** The pop-in "Pas de connexion": shown only while the Feed has nothing to show (neither content nor a copy of the cache). */
+    val connection: StateFlow<ConnectionPopInState> = connectionGate.state
+
+    /**
+     * At the opening of the tab, and "Réessayer". One reading of the Miffs at a time: a tap (or an automatic attempt) that comes while one is under way
+     * asks for ONE more after it, never a pile of them waiting (cost: no reading multiplied by impatient taps).
+     */
     fun refresh() {
-        viewModelScope.launch { directory.refresh() }
+        if (refreshJob?.isActive == true) {
+            refreshAgain = true
+            return
+        }
+        refreshJob =
+            viewModelScope.launch {
+                do {
+                    refreshAgain = false
+                    directory.refresh()
+                } while (refreshAgain)
+            }
     }
+
+    /** "Réessayer" of the pop-in: the reading starts again at once and the countdown of the next automatic attempt starts again from 10 s. */
+    fun onConnectionRetry() {
+        connectionGate.restartCountdown()
+        retry()
+    }
+
+    /** The pop-in was closed (back): the page says it itself, the automatic attempts go on. */
+    fun onConnectionDismissed() = connectionGate.dismiss()
 
     /** "Réessayer" on the Feed itself: the Miffs are read again and the listeners attached again. */
     fun retry() {
@@ -225,7 +267,43 @@ class FeedViewModel(
     }
 
     /** Premium: another Miff was chosen in the selector. */
-    fun onSelect(miffId: String) = directory.select(miffId)
+    fun onSelect(miffId: String) {
+        try {
+            notifications.onActiveMiff(miffId)
+        } catch (e: Exception) {
+            // The reminders never get in the way of the selector.
+        }
+        directory.select(miffId)
+    }
+
+    /**
+     * The Feed knows the statuses of the Miff shown (or that I do not share, so that there is nothing to read): the notifications keep a snapshot of the facts
+     * (identifier, does he share, keyword of the presence, two times: nothing else) and plan from it. A failure there never reaches the Feed.
+     */
+    private fun tellNotifications(
+        miffId: String,
+        byUid: Map<String, MemberStatus>,
+    ) {
+        val data = piece.value as? MiffPiece.Data ?: return
+        if (data.miffId != miffId) return
+        val me = currentUid() ?: return
+        val members =
+            data.snapshot.members.map { member ->
+                val status = byUid[member.uid]
+                SnapshotMember(
+                    member.uid,
+                    member.sharingEnabled,
+                    status?.presence,
+                    status?.presenceAtMillis,
+                    status?.lastUpdateAtMillis,
+                )
+            }
+        try {
+            notifications.onStatuses(miffId, me, members)
+        } catch (e: Exception) {
+            // The reminders never get in the way of the Feed.
+        }
+    }
 
     private fun compute(
         dir: DirectoryState,
@@ -286,6 +364,27 @@ class FeedViewModel(
             coroutineScope {
                 launch { network.onlineChanges().collect { online -> offline.value = !online } }
                 launch { tickEachMinute() }
+                // No network (or no answer for a while) and nothing to show: the pop-in and the attempts every 10 s. Stops with the screen.
+                launch {
+                    connectionGate.run(
+                        loading =
+                            combine(uiState, directory.state) { ui, dir ->
+                                when (dir) {
+                                    DirectoryState.Loading -> true
+
+                                    DirectoryState.Unavailable -> false
+
+                                    // No Miff at all: the page invites to create one, nothing waits. Otherwise the skeleton is what is shown.
+                                    is DirectoryState.Ready -> dir.miffs.isNotEmpty() && ui is FeedUiState.Loading
+                                }
+                            },
+                        unavailable =
+                            combine(uiState, directory.state) { ui, dir ->
+                                dir is DirectoryState.Unavailable || ui is FeedUiState.Unavailable
+                            },
+                        retry = ::retry,
+                    )
+                }
                 launch {
                     combine(
                         directory.state.map { (it as? DirectoryState.Ready)?.activeId }.distinctUntilChanged(),
@@ -380,6 +479,8 @@ class FeedViewModel(
             .collectLatest { (shouldRead, _) ->
                 if (!shouldRead) {
                     statusView.value = StatusesView.Off
+                    // I do not share (or my agreement is waited for): no reminder concerns me, the snapshot says so and what waited is cancelled.
+                    tellNotifications(miffId, emptyMap())
                 } else {
                     // What is already shown stays (a refresh that attaches the listener again must not bring the skeleton back, nor hide
                     // "Partage de ton statut en cours…"): only a screen that showed nothing of the statuses waits.
@@ -422,6 +523,7 @@ class FeedViewModel(
                                 staleAfterRefresh.value = false
                             }
                             statusView.value = StatusesView.Loaded(feed.byUid, feed.fromCache)
+                            tellNotifications(miffId, feed.byUid)
                         }
 
                         StatusFeed.Ended -> {}
@@ -492,6 +594,7 @@ class FeedViewModel(
                 if (fresh != null) {
                     // What the server just said, confirmed: the mode "copie du cache" is left, the colours are recomputed from it.
                     statusView.value = StatusesView.Loaded(fresh, fromCache = false)
+                    tellNotifications(miffId, fresh)
                     if (!listening) {
                         cacheGraceOver.value = true
                         statusRestarts.value = statusRestarts.value + 1

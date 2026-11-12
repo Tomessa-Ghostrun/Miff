@@ -63,6 +63,9 @@ import com.tomessa.miff.domain.feed.FeedBanner
 import com.tomessa.miff.domain.feed.FeedContent
 import com.tomessa.miff.domain.feed.PositionFix
 import com.tomessa.miff.domain.tracking.StatusLevel
+import com.tomessa.miff.ui.components.ConnectionHost
+import com.tomessa.miff.ui.components.ConnectionInline
+import com.tomessa.miff.ui.components.ConnectionPopIn
 import com.tomessa.miff.ui.components.LocalBottomOverlayPadding
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
@@ -73,6 +76,8 @@ import com.tomessa.miff.ui.miff.AgreementUi
 import com.tomessa.miff.ui.miff.AwaitingAgreementCard
 import com.tomessa.miff.ui.miff.MiffNotice
 import com.tomessa.miff.ui.miff.MiffSharing
+import com.tomessa.miff.ui.notification.FeedNotifications
+import com.tomessa.miff.ui.notification.NotificationSecondChanceCard
 import com.tomessa.miff.ui.splash.ReduceMotion
 import com.tomessa.miff.ui.theme.ShapeFull
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -130,6 +135,10 @@ class FeedHost(
     val observe: suspend () -> Unit = {},
     /** FEED-4: where the photos are read (null: no photo is drawn). */
     val photos: PhotoReader? = null,
+    /** The pop-in "Pas de connexion" (state and buttons): shown only while the Feed has nothing to show. */
+    val connection: ConnectionHost = ConnectionHost(),
+    /** NOTIF-1A and NOTIF-6A: the bell and the card of the second chance. */
+    val notifications: FeedNotifications = FeedNotifications(),
 )
 
 /** The hand-overs to the applications of the system, with the calm message of the ticket when none answers. */
@@ -182,6 +191,10 @@ fun FeedScreen(
     refreshing: Boolean = false,
     me: FeedMe = FeedMe(),
     actions: FeedActions = FeedActions(),
+    /** The pop-in "Pas de connexion" (bug of 2026-11-10): shown only while there is nothing to show; once closed, the page says it itself. */
+    popIn: ConnectionHost = ConnectionHost(),
+    popInSuppressed: Boolean = false,
+    notifications: FeedNotifications = FeedNotifications(),
 ) {
     RecentsPrivacy()
     val texts = rememberFeedTexts()
@@ -242,7 +255,16 @@ fun FeedScreen(
     ) {
         when (state) {
             DirectoryState.Loading -> {
-                Box(Modifier.padding(top = headerRoom, bottom = tabBarRoom)) { FeedSkeleton() }
+                Box(Modifier.padding(top = headerRoom, bottom = tabBarRoom)) {
+                    if (popIn.state.inlineVisible) {
+                        ConnectionInline(
+                            popIn,
+                            Modifier.padding(Spacing.m),
+                        )
+                    } else {
+                        FeedSkeleton()
+                    }
+                }
             }
 
             DirectoryState.Unavailable -> {
@@ -275,6 +297,8 @@ fun FeedScreen(
                         onOpenPhoto = { opened = it },
                         topRoom = headerRoom,
                         refreshing = refreshing,
+                        popIn = popIn,
+                        notifications = notifications,
                     )
                 }
             }
@@ -285,6 +309,7 @@ fun FeedScreen(
             myStatusDescription = content?.let { texts.label(it.myLabel) },
             onOpenProfile = actions.onOpenProfile,
             onLogo = { scope.launch { toTopAndShow() } },
+            notifications = notifications,
             // Moved by a translation read in the draw phase only: no recomposition, no layout, no margin that moves.
             modifier =
                 Modifier
@@ -326,6 +351,10 @@ fun FeedScreen(
         // Polite announcement of "Actualiser" (a node of one dp INSIDE the safe area, drawn nowhere).
         RefreshAnnouncement(refreshing, offline)
     }
+    // Nothing to show and no network (or no answer for a while): the calm pop-in, with "Réessayer" and the countdown of the next automatic attempt.
+    // Never two windows at once (ticket pop-ins-avis C5): the pop-in waits while the sheet "Localiser" is open or the Miff waits for the person's agreement.
+    val waitingAgreement = agreement.isWaiting((state as? DirectoryState.Ready)?.activeId)
+    ConnectionPopIn(popIn, suppressed = popInSuppressed || locate != LocateUiState.Idle || waitingAgreement)
     opened?.let { photo ->
         PhotoFullScreen(
             opened = photo,
@@ -362,6 +391,8 @@ private fun FeedBody(
     /** The header is drawn over the list: its height is the top padding of the content, so that the first card starts under it. */
     topRoom: Dp,
     refreshing: Boolean,
+    popIn: ConnectionHost,
+    notifications: FeedNotifications,
 ) {
     val content = (feed as? FeedUiState.Ready)?.content
     val pullState = rememberPullToRefreshState()
@@ -408,6 +439,15 @@ private fun FeedBody(
             if (state.fromCache && content == null) {
                 item { MiffNotice(stringResource(R.string.feed_offline_note)) }
             }
+            if (notifications.secondChanceVisible) {
+                // NOTIF-1A: ONE calm card, after the first update of someone who put the pop-in of the notifications off.
+                item(key = "notification-second-chance") {
+                    NotificationSecondChanceCard(
+                        onEnable = notifications.onSecondChanceEnable,
+                        onLater = notifications.onSecondChanceLater,
+                    )
+                }
+            }
             if (agreement.isWaiting(state.activeId)) {
                 // "Pas maintenant" was chosen: a permanent card tells the truth (nothing is shared), calmly, with the one way back.
                 item {
@@ -419,7 +459,9 @@ private fun FeedBody(
             }
             when (feed) {
                 FeedUiState.Loading -> {
-                    if (!agreement.isWaiting(state.activeId)) item { SkeletonBlocks() }
+                    if (!agreement.isWaiting(state.activeId)) {
+                        item { if (popIn.state.inlineVisible) ConnectionInline(popIn) else SkeletonBlocks() }
+                    }
                 }
 
                 FeedUiState.Unavailable -> {
@@ -461,6 +503,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.readyItems(
             texts = texts,
             onMessage = actions.onMessage,
             onResumeSharing = { actions.onResumeSharing(content.miffId) },
+            travelNote = content.travelNote,
         )
     }
     items(content.cards, key = { it.member.uid }) { card ->
@@ -474,6 +517,8 @@ private fun androidx.compose.foundation.lazy.LazyListScope.readyItems(
             miffId = content.miffId,
             nowMillis = System.currentTimeMillis(),
             onOpenPhoto = onOpenPhoto,
+            // MODE VOYAGE: the link "Modifier" of MY card opens the Profile, where the trip is set.
+            onEditTravel = actions.onOpenProfile,
         )
     }
     item(key = "add") {

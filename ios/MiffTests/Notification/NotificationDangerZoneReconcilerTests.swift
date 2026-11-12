@@ -34,6 +34,18 @@ final class NotificationDangerZoneReconcilerTests: ReconcilerTestCase {
         XCTAssertEqual(rig.center.history.items.first?.state, .shown)
     }
 
+    func testDuringMyTripNoN6IsShownNorRecorded() async {
+        let rig = makeRig(now: at(14, 0))
+        seed(rig, [green("me"), green("x")])
+        await rig.reconciler.myTravelChanged(uid: "me", untilMillis: at(24, 0), previousUntilMillis: nil)
+
+        await rig.reconciler.dangerZoneEntered(miffId: miffId, placeId: "p-risk", enteredAtMillis: at(14, 0))
+
+        XCTAssertNil(rig.scheduler.pending[n6Identifier()])
+        XCTAssertTrue(rig.center.history.items.isEmpty, "ni notification, ni ligne du centre : N7 seule est attendue")
+        XCTAssertEqual(Set(rig.scheduler.pending.keys), [NotificationIdentifier.make(type: .n7, miffId: "")])
+    }
+
     func testN6IsNeverRemovedByAReconciliation() async {
         let rig = makeRig(now: at(14, 0))
         seed(rig, [green("me"), green("x")])

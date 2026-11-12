@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
+import com.tomessa.miff.domain.notification.SecondChance
 import com.tomessa.miff.domain.permission.ApiLevel
 import com.tomessa.miff.domain.permission.PermissionNames
 import com.tomessa.miff.domain.permission.PermissionSnapshot
@@ -47,7 +48,11 @@ class AndroidDevicePermissions(
     }
 }
 
-/** "The notification screen was shown to this account on this phone": it is shown once, never again (it never blocks). */
+/**
+ * What the phone remembers about the notification permission: the screen ("amorce") already shown to this account on this phone (it is shown once, never
+ * again, and it never blocks), whether the system window was ever launched by Miff (a fact of the PHONE: the system does not tell "never asked" from
+ * "refused for good"), and the state of the "second chance" card of the Feed (NOTIF-1A).
+ */
 interface NotificationAskStore {
     fun wasShown(uid: String): Boolean
 
@@ -55,6 +60,18 @@ interface NotificationAskStore {
 
     /** The account was deleted (AUTH-5): nothing is kept for it. */
     fun forget(uid: String) {}
+
+    /** The system window of POST_NOTIFICATIONS was launched at least once on this phone. */
+    fun systemAsked(): Boolean = false
+
+    fun markSystemAsked() {}
+
+    fun secondChance(uid: String): SecondChance = SecondChance.NONE
+
+    fun setSecondChance(
+        uid: String,
+        value: SecondChance,
+    ) {}
 }
 
 /** A flag per account in private preferences (no secret, no position). The preference file is not part of any backup (see backup_rules.xml). */
@@ -74,6 +91,36 @@ class SharedPreferencesNotificationAskStore(
     }
 
     override fun forget(uid: String) {
-        prefs.edit().remove(uid).apply()
+        prefs
+            .edit()
+            .remove(uid)
+            .remove(secondChanceKey(uid))
+            .apply()
+    }
+
+    override fun systemAsked(): Boolean = prefs.getBoolean(KEY_SYSTEM_ASKED, false)
+
+    override fun markSystemAsked() {
+        prefs.edit().putBoolean(KEY_SYSTEM_ASKED, true).apply()
+    }
+
+    override fun secondChance(uid: String): SecondChance =
+        prefs.getString(secondChanceKey(uid), null)?.let { name ->
+            SecondChance.entries.firstOrNull { it.name == name }
+        }
+            ?: SecondChance.NONE
+
+    override fun setSecondChance(
+        uid: String,
+        value: SecondChance,
+    ) {
+        prefs.edit().putString(secondChanceKey(uid), value.name).apply()
+    }
+
+    private fun secondChanceKey(uid: String) = "second_chance:$uid"
+
+    private companion object {
+        /** Not a uid: an account identifier never starts with "__". */
+        const val KEY_SYSTEM_ASKED = "__system_asked"
     }
 }

@@ -736,4 +736,53 @@ class MiffViewModelsTest {
             assertEquals(ActionMessage.NO_PROFILE, vm.uiState.value.confirmMessage)
             assertEquals(1, profileMissing)
         }
+
+    // --- AC-4: "Cet appareil n'est pas reconnu pour le moment" ----------------------------------------------------
+
+    @Test
+    fun create_aDeviceNotRecognized_hasItsOwnCalmSentence_notTheGenericOne() =
+        runTest(dispatcher) {
+            repo.createResult = CreateResult.Failed(MiffFailure.DEVICE_NOT_RECOGNIZED)
+            val vm = create()
+            vm.onNameChanged("Chez nous")
+            vm.onSubmit()
+            advanceUntilIdle()
+            assertEquals(ActionMessage.DEVICE_NOT_RECOGNIZED, vm.uiState.value.message)
+            assertEquals("not a missing profile: no routing", 0, profileMissing)
+        }
+
+    @Test
+    fun join_aDeviceNotRecognized_onTheCodeStep_isNotAWrongCode_andDoesNotCountAsOne() =
+        runTest(dispatcher) {
+            repo.joinPreparation = JoinPreparation.Failed(MiffFailure.DEVICE_NOT_RECOGNIZED)
+            val vm = join()
+            repeat(6) {
+                vm.onCodeChanged(CODE)
+                vm.onContinue()
+                advanceUntilIdle()
+            }
+            assertEquals(JoinProblem.DEVICE_NOT_RECOGNIZED, vm.uiState.value.problem)
+            assertEquals("no pause: 6 real tries", 6, repo.calls.count { it == "prepareJoin" })
+        }
+
+    @Test
+    fun join_aDeviceNotRecognized_onTheConfirmStep_isSaidOnTheConfirmation_andIsNotTheNotFoundMessage() =
+        runTest(dispatcher) {
+            val vm = join()
+            vm.onCodeChanged(CODE)
+            vm.onContinue()
+            advanceUntilIdle()
+            repo.joinResult = JoinResult.Failed(MiffFailure.DEVICE_NOT_RECOGNIZED)
+            vm.onConfirm()
+            advanceUntilIdle()
+            assertEquals(ActionMessage.DEVICE_NOT_RECOGNIZED, vm.uiState.value.confirmMessage)
+            assertEquals(JoinStep.CONFIRM, vm.uiState.value.step)
+            assertEquals(0, profileMissing)
+        }
+
+    @Test
+    fun theOrdinaryRefusalKeepsTheGenericSentence() {
+        assertEquals(ActionMessage.GENERIC, messageFor(MiffFailure.REFUSED))
+        assertEquals(ActionMessage.DEVICE_NOT_RECOGNIZED, messageFor(MiffFailure.DEVICE_NOT_RECOGNIZED))
+    }
 }
