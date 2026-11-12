@@ -55,7 +55,8 @@ async function creerMiff(miffId, membres) {
         token: appareil.token ?? `jeton-${uid}-${i}`,
         platform: appareil.platform ?? 'android',
         tz: appareil.tz ?? 'Europe/Paris',
-        locale: 'fr',
+        appVersion: '1.0.0 (12)',
+        createdAt: ts(T_PUBLICATION),
         notify: 'notify' in appareil ? appareil.notify : { updates: true },
         ...(appareil.extra ?? {}),
         updatedAt: appareil.updatedAt ?? ts(T_PUBLICATION),
@@ -164,15 +165,14 @@ test('V2 : un membre qui a arrêté son partage (sharing.enabled = false) ne re�
   assert.equal(bilan.lectures, 7, "4 fiches + 2 appareils (C n'est pas lu) + 1 état");
 });
 
-test('V3 : notify.updates = false -> pas de notification ; notificationsEnabled = false (si présent) -> pas de notification non plus', async () => {
+test('V3 : notify.updates = false -> pas de notification pour cet appareil (les autres sont notifiés)', async () => {
   const m = quatre();
   m.D.appareils = [{ notify: { updates: false } }];
-  m.C.appareils = [{ extra: { notificationsEnabled: false } }];
   await creerMiff(MIFF, m);
   const c = contexte();
   const bilan = await publier(c);
-  assert.deepEqual(jetonsEnvoyes(c), ['jeton-B-0']);
-  assert.equal(bilan.ecartes.notification_coupee, 2);
+  assert.deepEqual(jetonsEnvoyes(c), ['jeton-B-0', 'jeton-C-0']);
+  assert.equal(bilan.ecartes.notification_coupee, 1);
 });
 
 test('V3b : notify absent, mal formé ou "updates" non booléen -> écarté (seul `true` strict notifie)', async () => {

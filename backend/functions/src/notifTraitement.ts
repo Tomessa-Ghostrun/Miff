@@ -185,8 +185,8 @@ async function executer(dep: Dependances, evenement: Evenement, bilan: Bilan): P
     if (retenus.length < snap.size) ecarter(bilan, "appareil_remplace", snap.size - retenus.length);
     for (const doc of retenus) {
       bilan.examines += 1;
-      const d = doc.data() as { token?: unknown; platform?: unknown; tz?: unknown; notify?: { updates?: unknown }; notificationsEnabled?: unknown };
-      if (d.notify?.updates !== true || d.notificationsEnabled === false) {
+      const d = doc.data() as { token?: unknown; platform?: unknown; tz?: unknown; notify?: { updates?: unknown } };
+      if (d.notify?.updates !== true) {
         ecarter(bilan, "notification_coupee");
       } else if (typeof d.token !== "string" || d.token.length === 0 || d.token.length > 4096 || (d.platform !== "android" && d.platform !== "ios")) {
         ecarter(bilan, "jeton_illisible");
