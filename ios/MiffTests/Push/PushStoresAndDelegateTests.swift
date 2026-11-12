@@ -144,14 +144,55 @@ final class PushStoresAndDelegateTests: XCTestCase {
         }
     }
 
-    func testTheDelegateSortsMessagesOnTheSameRuleAsTheParser() {
-        let good: [AnyHashable: Any] = ["type": "circle_update", "miffId": "m1", "authorUid": "u1"]
-        let local: [AnyHashable: Any] = ["type": "n1", "key": "k", "miffId": "m1"]
-        let forged: [AnyHashable: Any] = ["type": "circle_update", "miffId": "https://example.com", "authorUid": "u1"]
+    private let serverMessage: [AnyHashable: Any] = ["type": "circle_update", "miffId": "m1", "authorUid": "u1"]
+    /// La forme des rappels locaux de NOTIF-P0 (PR #127) : un type et une clé de leur cru, jamais celui du serveur.
+    private let localReminder: [AnyHashable: Any] = ["type": "n1", "key": "k", "miffId": "m1"]
+    private let forgedMessage: [AnyHashable: Any] = [
+        "type": "circle_update", "miffId": "https://example.com", "authorUid": "u1"
+    ]
 
-        XCTAssertNotNil(CircleNewsParser.parse(good))
-        XCTAssertNil(CircleNewsParser.parse(local), "un rappel local passe à l'autre délégué")
-        XCTAssertNil(CircleNewsParser.parse(forged), "une valeur forgée n'ouvre rien")
+    func testAServerMessageInTheForegroundIsSuppressedAndAnnounced() {
+        let delegate = PushNotificationDelegate()
+        var announced: [CircleNewsTarget] = []
+        delegate.onForeground = { announced.append($0) }
+
+        XCTAssertEqual(delegate.routeWillPresent(userInfo: serverMessage), .suppress)
+        XCTAssertEqual(announced, [CircleNewsTarget(miffId: "m1", authorUid: "u1")])
+    }
+
+    func testALocalReminderAndAForgedMessageAreForwardedNotAnnounced() {
+        let delegate = PushNotificationDelegate()
+        var announced = 0
+        delegate.onForeground = { _ in announced += 1 }
+
+        XCTAssertEqual(delegate.routeWillPresent(userInfo: localReminder), .forward, "rappel local")
+        XCTAssertEqual(delegate.routeWillPresent(userInfo: forgedMessage), .forward, "une valeur forgée n'ouvre rien")
+        XCTAssertEqual(delegate.routeWillPresent(userInfo: [:]), .forward)
+        XCTAssertEqual(announced, 0)
+    }
+
+    func testOnlyTheNormalTapOnAServerMessageOpensTheFeed() {
+        let delegate = PushNotificationDelegate()
+        var opened: [CircleNewsTarget] = []
+        delegate.onTap = { opened.append($0) }
+        let dismiss = UNNotificationDismissActionIdentifier
+        let tap = UNNotificationDefaultActionIdentifier
+
+        XCTAssertEqual(delegate.routeResponse(userInfo: serverMessage, actionIdentifier: dismiss), .ignore)
+        XCTAssertTrue(opened.isEmpty, "un geste de rejet n'ouvre rien")
+        XCTAssertEqual(delegate.routeResponse(userInfo: serverMessage, actionIdentifier: tap), .open)
+        XCTAssertEqual(opened, [CircleNewsTarget(miffId: "m1", authorUid: "u1")])
+    }
+
+    func testAResponseToALocalReminderOrAForgedMessageIsForwardedAndOpensNothing() {
+        let delegate = PushNotificationDelegate()
+        var opened = 0
+        delegate.onTap = { _ in opened += 1 }
+        let tap = UNNotificationDefaultActionIdentifier
+
+        XCTAssertEqual(delegate.routeResponse(userInfo: localReminder, actionIdentifier: tap), .forward)
+        XCTAssertEqual(delegate.routeResponse(userInfo: forgedMessage, actionIdentifier: tap), .forward)
+        XCTAssertEqual(opened, 0)
     }
 
     func testTheDelegateKeepsAWeakLinkToTheNextDelegate() {

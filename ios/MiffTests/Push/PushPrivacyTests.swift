@@ -130,6 +130,14 @@ final class PushPrivacyTests: XCTestCase {
         XCTAssertTrue(text.contains("<string>development</string>"))
     }
 
+    func testExactlyOneDelegateIsSetOnTheNotificationCenter() throws {
+        // Un seul délégué peut être posé : celui des messages du serveur, qui chaîne les rappels locaux par next (docs/dev/fcm-ios.md §7).
+        let setters = try appSources().filter { source in
+            source.lines.contains { $0.contains("UNUserNotificationCenter.current().delegate") }
+        }.map { $0.path }
+        XCTAssertEqual(setters, ["App/PushServices.swift"])
+    }
+
     func testTheRunningAppHasTheSameSwitchesInItsInfoPlist() {
         let info = Bundle.main.infoDictionary ?? [:]
         XCTAssertEqual(info["FirebaseMessagingAutoInitEnabled"] as? Bool, false)

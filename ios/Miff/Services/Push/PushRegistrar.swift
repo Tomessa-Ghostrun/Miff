@@ -59,6 +59,9 @@ final class PushRegistrar {
     private let gate = AsyncGate()
     /// Monte à chaque sortie : une synchronisation commencée avant ne termine rien après (pas de jeton rallumé, pas d'écriture tardive).
     private var epoch = 0
+    /// Une sortie (`forget`) est en cours : une synchronisation qui démarre à cet instant ne fait rien (sinon elle rallumerait le service pendant
+    /// que `deleteToken` attend). Un compteur, pas un drapeau : deux sorties peuvent se chevaucher. Retombe à zéro en fin de sortie, quoi qu'il arrive.
+    private var exitsInProgress = 0
     private var failedAtMillis: Int?
     private var cleaningFailedAtMillis: Int?
     /// Le souhait du dernier essai, pour distinguer une nouvelle tentative d'un changement (un changement s'essaie tout de suite).
@@ -76,7 +79,7 @@ final class PushRegistrar {
     }
 
     private func syncUnlocked(freshToken: String?, startedIn: Int) async {
-        guard startedIn == epoch else {
+        guard startedIn == epoch, exitsInProgress == 0 else {
             return
         }
         guard let uid = deps.currentUid() else {
@@ -225,6 +228,10 @@ final class PushRegistrar {
     /// si le compte est encore joignable (borné) ; 4. la mémoire du téléphone est effacée. Ne lève jamais.
     func forget() async {
         epoch += 1
+        exitsInProgress += 1
+        defer {
+            exitsInProgress -= 1
+        }
         let record = deps.local.record()
         if record != nil || deps.local.serviceOn() {
             await deps.tokens.disable()

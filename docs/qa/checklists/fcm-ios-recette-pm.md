@@ -37,6 +37,7 @@
 | 2.1 | **Se déconnecter** de A. | Le document `devices` de A est **supprimé** (console) ; les notifications déjà affichées pour A disparaissent du tiroir. (J2) |
 | 2.2 | Se reconnecter avec A. | Aucune fenêtre d'explication nouvelle (l'accord de ce compte est gardé) ; le document est recréé. |
 | 2.3 | Mode avion, **se déconnecter**, puis réseau rétabli. | La déconnexion réussit sans erreur affichée. **Notez** si, B publiant ensuite, l'iPhone reçoit quand même quelque chose (ne devrait pas). Le document peut rester dans la console jusqu'au prochain envoi (inerte). |
+| 2.3 bis | Après 2.3, sur ce même iPhone, **connectez le compte B** (autre compte, autre Miff ou même Miff). Un proche de A publie dans la Miff de A. | **Rien d'affiché** sur l'iPhone de B. Si une notification apparaît quand même, **notez le prénom affiché et l'heure** : c'est le cas résiduel de `docs/dev/fcm-ios.md` §4 (alerte affichée par iOS sans extension de service). |
 | 2.4 | Connectez A sur un **second téléphone**. | Un seul document `devices` subsiste : celui du nouvel appareil. (J3) |
 | 2.5 | **Supprimer** le compte de test. | Plus aucun document `devices` pour ce compte. |
 

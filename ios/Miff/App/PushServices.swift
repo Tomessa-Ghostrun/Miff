@@ -3,6 +3,13 @@ import UserNotifications
 
 /// Un seul point où l'app apprend qu'un proche a donné des nouvelles PENDANT qu'elle est ouverte (Miff du compte vérifiée, jamais sa propre update).
 /// Rien n'est branché dessus aujourd'hui : le centre de notifications (NOTIF-P0) y posera sa ligne silencieuse.
+/// Dit si la session est en train de se terminer (déconnexion, suppression du compte). Branché APRÈS la création du gestionnaire de session (qui reçoit
+/// l'arrêt des notifications à sa construction) : tant qu'il n'est pas branché, rien n'est « en fin de session ».
+@MainActor
+final class PushSessionProbe {
+    var isEnding: () -> Bool = { false }
+}
+
 @MainActor
 final class PushForegroundHook {
     var onCircleNews: ((CircleNewsTarget) -> Void)?
@@ -21,6 +28,8 @@ struct PushServices {
     let consent: PushConsentStore
     /// La demande « ouvre le Feed de cette Miff » d'un toucher sur la notification.
     let openRequests: PushOpenRequests
+    /// Dit si la session se termine (branché par `AppEnvironment` une fois le gestionnaire de session créé).
+    let sessionProbe: PushSessionProbe
     let hook = PushForegroundHook()
     /// Reçoit les réponses du système pour les messages du serveur. À retenir (le système n'en garde qu'une référence faible).
     let delegate = PushNotificationDelegate()
@@ -42,13 +51,17 @@ struct PushServices {
         let consent = UserDefaultsPushConsentStore()
         let switchStore = UserDefaultsCircleNewsSwitchStore()
         let probe = SystemNotificationAuthorizationProbe()
+        let sessionProbe = PushSessionProbe()
         let registrar = PushRegistrar(
             PushRegistrarDependencies(
                 registry: FirestoreDeviceTokenRegistry(),
                 local: local,
                 tokens: tokens,
                 currentUid: { gateway.currentUid },
-                sessionDeviceId: { device.currentDeviceId },
+                // Pendant la fin de la session (`SessionManager.ending`, déjà vrai quand l'état passe à « chargement »), aucune écriture : sinon une
+                // synchronisation lancée par ce changement d'état rallumerait le service juste avant son arrêt. `ending` retombe à faux si la
+                // fin est annulée ou échoue : la synchronisation repart alors normalement.
+                sessionDeviceId: { sessionProbe.isEnding() ? nil : device.currentDeviceId },
                 // L'accord de CE compte ET l'autorisation du système, lue maintenant (la personne peut l'avoir retirée dans les Réglages).
                 consent: { uid in
                     guard consent.isGiven(uid: uid) else {
@@ -73,6 +86,7 @@ struct PushServices {
             circleNews: circleNews,
             consent: consent,
             openRequests: PushOpenRequests(),
+            sessionProbe: sessionProbe,
             tokens: tokens,
             local: local,
             switchStore: switchStore,

@@ -54,6 +54,11 @@ private final class FakeRegistry: DeviceTokenRegistry {
 private final class FakeTokens: PushTokenSource {
     private let log: EventLog
     var token: String? = "token-1"
+    /// Durées (secondes) pour tenir une opération « en cours » le temps de lancer autre chose.
+    var enableDelaySeconds: Double = 0
+    var disableDelaySeconds: Double = 0
+    private(set) var enableStarted = false
+    private(set) var disableStarted = false
 
     init(log: EventLog) {
         self.log = log
@@ -61,11 +66,19 @@ private final class FakeTokens: PushTokenSource {
 
     func enableAndFetch() async -> String? {
         log.add("enable")
+        enableStarted = true
+        if enableDelaySeconds > 0 {
+            try? await Task.sleep(nanoseconds: UInt64(enableDelaySeconds * 1_000_000_000))
+        }
         return token
     }
 
     func disable() async {
         log.add("disable")
+        disableStarted = true
+        if disableDelaySeconds > 0 {
+            try? await Task.sleep(nanoseconds: UInt64(disableDelaySeconds * 1_000_000_000))
+        }
     }
 }
 
@@ -109,6 +122,8 @@ private final class FakeLocal: PushLocalState {
 private final class World {
     var uid: String? = "uid-1"
     var deviceId: String? = "device-AAAAAAAAAAAAAAAA"
+    /// La session se termine (SessionManager.ending) : aucun identifiant de session n'est rendu.
+    var ending = false
     var consent = true
     var updates = true
     var online = true
@@ -141,7 +156,7 @@ final class PushRegistrarTests: XCTestCase {
                 local: local,
                 tokens: tokens,
                 currentUid: { world.uid },
-                sessionDeviceId: { world.deviceId },
+                sessionDeviceId: { world.ending ? nil : world.deviceId },
                 consent: { _ in world.consent },
                 notifyUpdates: { _ in world.updates },
                 isOnline: { world.online },
@@ -361,6 +376,56 @@ final class PushRegistrarTests: XCTestCase {
         XCTAssertEqual(rig.log.count("disable"), 1)
         await syncing.value
         XCTAssertNil(rig.local.record(), "une écriture qui finit après la sortie ne laisse rien en mémoire")
+    }
+
+    // MARK: - Une synchronisation et une sortie en même temps (revue de #206, I1)
+
+    func testASyncStartedWhileTheExitIsInProgressNeverTurnsTheServiceBackOn() async {
+        let rig = makeRig()
+        await rig.registrar.sync()
+        let enablesBefore = rig.log.count("enable")
+        rig.tokens.disableDelaySeconds = 0.5
+        let leaving = Task { await rig.registrar.forget() }
+        await waitUntil { rig.tokens.disableStarted }
+
+        // Lancée par le changement d'état de la session, PENDANT que deleteToken attend.
+        await rig.registrar.sync()
+
+        XCTAssertEqual(rig.log.count("enable"), enablesBefore, "le service n'est pas rallumé pendant la sortie")
+        await leaving.value
+        XCTAssertFalse(rig.local.serviceOn())
+        XCTAssertEqual(rig.registry.upserts.count, 1, "aucune écriture pendant la sortie")
+    }
+
+    func testAnExitDuringTheSwitchOnSwitchesTheServiceOffAgain() async {
+        let rig = makeRig()
+        rig.tokens.enableDelaySeconds = 0.5
+        let syncing = Task { await rig.registrar.sync() }
+        await waitUntil { rig.tokens.enableStarted }
+
+        await rig.registrar.forget()
+        await syncing.value
+
+        XCTAssertGreaterThanOrEqual(rig.log.count("disable"), 2, "la sortie, puis l'extinction du service rallumé")
+        XCTAssertFalse(rig.local.serviceOn())
+        XCTAssertEqual(rig.registry.upserts.count, 0)
+    }
+
+    func testWhileTheSessionIsEndingNothingIsDoneThenAfterACancelledEndTheSyncRestarts() async {
+        let rig = makeRig()
+        rig.world.ending = true
+        await rig.registrar.sync()
+        XCTAssertEqual(rig.log.events, [], "pendant la fin de la session : ni allumage, ni écriture")
+
+        // La fin est annulée (suppression de compte annulée) ou a échoué : ending retombe, tout repart.
+        rig.world.ending = false
+        await rig.registrar.sync()
+        XCTAssertEqual(rig.registry.upserts.count, 1)
+
+        // Une sortie terminée, puis une nouvelle synchronisation : le compteur de sorties est retombé à zéro.
+        await rig.registrar.forget()
+        await rig.registrar.sync()
+        XCTAssertEqual(rig.registry.upserts.count, 2)
     }
 
     func testAServiceLeftOnWithNobodySignedInIsSwitchedOffAtTheNextLook() async {

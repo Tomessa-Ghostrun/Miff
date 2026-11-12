@@ -249,6 +249,8 @@ final class AppEnvironment {
                 )
             )
         )
+        // SRV-2I : pendant la fin de la session, le registre des appareils n'écrit rien (voir `PushServices.make`).
+        pushServices.sessionProbe.isEnding = { [weak manager] in manager?.ending ?? false }
         privacySettings = privacy
         analyticsTracker = tracker
         session = manager
