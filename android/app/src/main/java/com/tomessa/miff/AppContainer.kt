@@ -307,6 +307,8 @@ class AppContainer(
             device = deviceSession,
             cache = cachePurger,
             onSharingChanged = { trackingLooksAgain(TrackingEngine.Reason.SHARING_CHANGED) },
+            // REPRISE DU PARTAGE: the detection hears WHICH Miff was resumed (the status was deleted on stop and rewritten grey on resume), then looks again.
+            onSharingResumed = { miffId -> trackingSharingResumed(miffId) },
             // AC-4: "this device is not recognized" is told apart from a refusal of the rules, only after a refusal.
             appCheck = FirebaseAppCheckProbe(),
             // Offline, the reads that check the server give up quickly (the Feed no longer waits 20 s per read with no network).
@@ -555,6 +557,18 @@ class AppContainer(
             // A purge of the cache left by a failed sign-out comes before any other access to Firestore.
             cachePurger.purgeIfPending()
             trackingEngine.lookAgain(reason)
+        }
+    }
+
+    /**
+     * The person RESUMED the sharing of a Miff: the detection flags that Miff (it will start its detection again from nothing), then looks at its Miffs again, in this order, in one job.
+     * Only the identifier of the Miff is passed. Never blocks the caller.
+     */
+    fun trackingSharingResumed(miffId: String) {
+        trackingScope.launch {
+            cachePurger.purgeIfPending()
+            trackingEngine.markResumed(miffId)
+            trackingEngine.lookAgain(TrackingEngine.Reason.SHARING_CHANGED)
         }
     }
 

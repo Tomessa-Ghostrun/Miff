@@ -169,6 +169,19 @@ class TrackingEngine(
     }
 
     /**
+     * REPRISE DU PARTAGE d'une Miff (see [takeResumed]): the Miff is flagged, in the order of the engine's own work (under its lock), BEFORE the look at the Miffs that follows
+     * ([refresh] with [Reason.SHARING_CHANGED]). Nothing is read or written here: only the identifier of the Miff is kept, in the private local copy.
+     */
+    suspend fun markResumed(miffId: String) {
+        mutex.withLock {
+            if (sessionEnded()) return@withLock
+            val uid = env.uid() ?: return@withLock
+            val state = stateFor(uid) ?: LocalState(uid)
+            local.save(state.copyWith(resumedMiffs = (state.resumedMiffs ?: emptySet()) + miffId))
+        }
+    }
+
+    /**
      * The geofencing says: the person entered or left the zone named [zoneKey]. The location that comes with the event is NEVER read (the receiver
      * does not).
      */
@@ -342,13 +355,17 @@ class TrackingEngine(
             }
         }
 
+        // REPRISE DU PARTAGE: the Miffs resumed and now known are started again from nothing (the server deleted what the phone thought it had written).
+        val taken = takeResumed(state, synced.verified)
+        state = taken.state
+
         if (state.miffs.isEmpty()) {
-            // Nobody to tell: nothing is watched, nothing is kept (the person shares nowhere with the consent of version 3).
+            // Nobody to tell: nothing is watched, nothing is kept (the person shares nowhere with the consent of version 3). Only the flags of a Miff not yet seen (no complete look) stay.
             journal.record(JournalKind.NOT_ELIGIBLE)
             runCatchingCancellable { geofences.removeAll() }
             runCatchingCancellable { movement.stop() }
             networkWake.stop()
-            local.save(LocalState(uid, checkedAtMillis = state.checkedAtMillis))
+            local.save(LocalState(uid, checkedAtMillis = state.checkedAtMillis, resumedMiffs = state.resumedMiffs))
             return
         }
         if (!permissions.locationComplete) {
@@ -372,6 +389,7 @@ class TrackingEngine(
         if (fix != null) journal.record(JournalKind.POSITION_READ, batteryPct = env.batteryPct())
 
         state = reconcile(state, reason, fix, now)
+        if (taken.miffIds.isNotEmpty()) state = presenceAfterResume(state, taken.miffIds, fix, now)
         // With more than 20 zones the choice is made again with the fresh position.
         if (fix != null && allZones(state).size > ZoneSelection.MAX_WATCHED) state = armZones(state, fix, false)
         local.save(state)
@@ -639,6 +657,116 @@ class TrackingEngine(
             }
         }
         return state.copyWith(miffs = miffs, inside = inside)
+    }
+
+    // --- Sharing resumed -----------------------------------------------------------------------------------------------------------------
+
+    /** The Miffs of a pass whose detection was started again from nothing, with the local copy that results. */
+    private class Taken(
+        val state: LocalState,
+        val miffIds: List<String>,
+    )
+
+    /**
+     * REPRISE DU PARTAGE (recette, 2026-11-11: the card stayed GREY after "stop then resume"). Stopping the sharing DELETES the status, the photo and the last position of the Miff on
+     * the server, and resuming writes an `unknown` (grey) status. The engine only writes a status when the presence CHANGES ([PresenceMachine.onTransition] returns nothing when the
+     * derived presence is the one it keeps), so nothing wrote it again before the next entry or exit: either the phone still kept the presence from before the stop, or it found the
+     * Miff "as new" while the person is already in the place (no arrival to tell, the geofencing only reports a change). The last position also stayed "written" on the phone while the
+     * server had deleted it.
+     *
+     * The Miffs flagged by [markResumed] and now known to the engine are therefore started again from nothing ([LocalMiff.afterResume]) and returned, and their flag is removed. A flagged Miff
+     * that is not eligible yet keeps its flag for the pass in which it is, unless a COMPLETE look at the server said it is not eligible ([verified]): then the flag is dropped.
+     */
+    private fun takeResumed(
+        state: LocalState,
+        verified: Boolean,
+    ): Taken {
+        val flagged = state.resumedMiffs
+        if (flagged.isNullOrEmpty()) return Taken(state, emptyList())
+        val taken = flagged.sorted().filter { it in state.miffs }
+        val remaining = if (verified) emptySet() else flagged - taken.toSet()
+        val miffs = state.miffs + taken.associateWith { state.miffs.getValue(it).afterResume() }
+        return Taken(state.copyWith(miffs = miffs, resumedMiffs = remaining.ifEmpty { null }), taken)
+    }
+
+    /**
+     * MODE VOYAGE: a trip is on, so NO ordinary presence is ever worked out. The resumed Miffs are started again from nothing (their last position is published again), and the trip is
+     * told again to them: the status that the resume wrote says `unknown` without the trip, so they leave the list of the Miffs that already know it ([flushTravel] writes it).
+     */
+    private fun takeResumedDuringTravel(state: LocalState): LocalState {
+        val taken = takeResumed(state, verified = false)
+        val travel = taken.state.travel
+        if (travel == null || taken.miffIds.isEmpty()) return taken.state
+        val ids = taken.miffIds.toSet()
+        return taken.state.copyWith(
+            travel =
+                travel.copyWith(
+                    startedIn = travel.startedIn - ids,
+                    upToDateIn =
+                        travel.upToDateIn - ids,
+                ),
+        )
+    }
+
+    /**
+     * The presence of the resumed Miffs, worked out again "as if they had never been grey" from what the phone knows of the person NOW: the zones where it believes them (`inside`) and the
+     * position of this pass (never older than 10 minutes, see [chooseFix]). In a trusted or danger zone: that presence, at the known time of the entry (else now). Outside every zone of the
+     * Miff, WITH a position to say so: `out`, now. Outside a zone and WITHOUT a position: nothing is invented, the status stays grey until the next signal. The status is written by the
+     * usual pass ([flushPending]) with all its conditions ("Toujours" + precise, consent of version 3, session, breaker). The zones the position shows the person in are kept in `inside`
+     * (as the restart does, see [reconcile]) so that the next departure or the next arrival in another zone starts from the right place. N6 is NOT told (nobody entered a danger zone just now).
+     */
+    private fun presenceAfterResume(
+        start: LocalState,
+        miffIds: List<String>,
+        fix: Fix?,
+        now: Long,
+    ): LocalState {
+        var state = start
+        for (miffId in miffIds) {
+            val zones = zonesOf(state, miffId)
+            if (zones.isEmpty()) continue
+            var inside = state.inside
+            if (fix != null) {
+                val own = zones.map { it.key }.toSet()
+                val seen =
+                    allZones(state).filter {
+                        it.key in own && it.key !in inside && ZoneSelection.contains(it, fix.lat, fix.lng)
+                    }
+                if (seen.isNotEmpty()) inside = inside + seen.associate { it.key to now }
+            }
+            val derived = PresenceMachine.derive(zones, inside)
+            val fact: StatusFact =
+                when (derived.presence) {
+                    PresenceValue.IN_TRUSTED, PresenceValue.IN_RISK -> {
+                        val entered = zones.firstOrNull { it.placeId == derived.placeId }?.let { inside[it.key] } ?: now
+                        StatusFact(
+                            presence = derived.presence,
+                            placeId = derived.placeId,
+                            presenceAtMillis = EventTime.forWrite(entered, now) ?: now,
+                            setLastUpdate = derived.presence == PresenceValue.IN_TRUSTED,
+                        )
+                    }
+
+                    PresenceValue.OUT -> {
+                        if (fix == null) continue
+                        StatusFact(PresenceValue.OUT, null, now, setLastUpdate = false)
+                    }
+
+                    else -> {
+                        continue
+                    }
+                }
+            tellPresence(miffId, fact.presence, fact.presenceAtMillis, fact.setLastUpdate)
+            journal.record(JournalKind.STATUS_AFTER_RESUME, derived.placeId)
+            state =
+                state.copyWith(inside = inside).withMiff(miffId) {
+                    it.copyWith(
+                        derived = DerivedPresence(fact.presence, fact.placeId),
+                        pending = PendingStatus.of(fact),
+                    )
+                }
+        }
+        return state
     }
 
     /** The notifications are told that my presence changed; whatever they do, it never reaches the detection (a failure here is swallowed, nothing is logged). */
@@ -1370,7 +1498,7 @@ class TrackingEngine(
             return
         }
         travelAlarm.schedule(travel.untilMillis)
-        var state = syncTravelTargets(uid, start, reason, now)
+        var state = takeResumedDuringTravel(syncTravelTargets(uid, start, reason, now))
         val recheck = reason == Reason.OPENED || reason == Reason.REARM || reason == Reason.NETWORK_BACK
         val gate = WriteGate(recheck)
         state = flushTravel(uid, state, gate, now)

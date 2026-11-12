@@ -115,6 +115,13 @@ class LocalMiff(
         clearTravel = clearTravel,
     )
 
+    /**
+     * REPRISE DU PARTAGE: what this phone remembers of the detection of this Miff, forgotten (the server deleted the status, the photo and the last position when the sharing
+     * stopped, and wrote an `unknown` status when it was resumed): the presence, the last position written, the status waiting, the battery, the access and the keys of a trip.
+     * The places (and when they were read) stay: they are what the presence is computed from.
+     */
+    fun afterResume() = LocalMiff(places = places, readAtMillis = readAtMillis)
+
     override fun toString(): String = "LocalMiff(redacted)"
 }
 
@@ -182,6 +189,11 @@ class LocalState(
     val batteryTriedAtMillis: Long = 0L,
     /** MODE VOYAGE: the trip in progress, or null. Kept by every copy of this state; erased with it (sign-out, deletion of the account, session lost). */
     val travel: LocalTravel? = null,
+    /**
+     * REPRISE DU PARTAGE: the Miffs whose sharing the person just resumed and whose detection the engine has not started again yet (see `TrackingEngine.markResumed`).
+     * Optional (null = none): a copy written before this change has no such key. Holds identifiers of Miffs only.
+     */
+    val resumedMiffs: Set<String>? = null,
 ) {
     fun fix(): Fix? =
         if (fixLat != null && fixLng != null &&
@@ -204,6 +216,7 @@ class LocalState(
         positionCursor: String? = this.positionCursor,
         batteryTriedAtMillis: Long = this.batteryTriedAtMillis,
         travel: LocalTravel? = this.travel,
+        resumedMiffs: Set<String>? = this.resumedMiffs,
     ) = LocalState(
         uid = uid,
         miffs = miffs,
@@ -219,6 +232,7 @@ class LocalState(
         positionCursor = positionCursor,
         batteryTriedAtMillis = batteryTriedAtMillis,
         travel = travel,
+        resumedMiffs = resumedMiffs,
     )
 
     override fun toString(): String = "LocalState(redacted)"
