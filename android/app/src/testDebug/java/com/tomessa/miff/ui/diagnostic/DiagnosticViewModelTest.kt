@@ -29,6 +29,7 @@ import org.junit.Test
 class DiagnosticViewModelTest {
     private class FakeRepository : DiagnosticRepository {
         override val firebaseProjectId: String = "miff-3d283"
+        override var hasSession: Boolean = false
         var probeResult = RulesProbeOutcome.RULES_ACTIVE
         var test2Result: Test2Result = Test2Result.Success(profileExists = false, offer = OfferState.Classic)
         val signInCalls = mutableListOf<Pair<String, String>>()
@@ -139,6 +140,26 @@ class DiagnosticViewModelTest {
             repository.probeResult = RulesProbeOutcome.RULES_OPEN
             viewModel.runTest1()
             assertEquals(Test1State.Done(RulesProbeOutcome.RULES_OPEN), viewModel.uiState.value.test1)
+        }
+
+    @Test
+    fun bothTestsRefuseToRunWhileARealAccountIsSignedIn_andNeverTouchTheSession() =
+        runTest(UnconfinedTestDispatcher()) {
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { viewModel.uiState.collect {} }
+            repository.hasSession = true
+
+            viewModel.runTest1()
+            assertEquals(Test1State.RefusedSignedIn, viewModel.uiState.value.test1)
+            assertEquals("test 1 would sign the real account out: it did not run", 0, repository.probeCalls)
+
+            viewModel.runTest2("a@b.fr", "secret")
+            assertEquals(Test2State.RefusedSignedIn, viewModel.uiState.value.test2)
+            assertTrue("test 2 would sign the real account out: it did not run", repository.signInCalls.isEmpty())
+
+            // Once the person has signed out, the tests run again.
+            repository.hasSession = false
+            viewModel.runTest1()
+            assertEquals(Test1State.Done(RulesProbeOutcome.RULES_ACTIVE), viewModel.uiState.value.test1)
         }
 
     @Test
