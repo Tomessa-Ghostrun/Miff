@@ -190,8 +190,8 @@ Comptes : `alice` (gratuite, créatrice), `bob` (gratuit, membre), `carol` (grat
 | U2 | Idem avec `firstName` vide, `avatar` > 20 Ko, clé inconnue | KO |
 | U3 | `eve` modifie `createdAt` | KO |
 | U4 | `eve` supprime `users/eve` | OK |
-| U5 | `eve` crée `users/eve/devices/d1 {token, platform:"ios", updatedAt=serverTime}` | OK ; `platform:"web"` : KO |
-| U6 | `bob` lit `users/eve/devices/d1` | KO |
+| U5 | (SRV-2R, jeton de notification : gabarit à 7 clés, section 26) `eve`, dont la session est `DEVICE_A`, crée `users/eve/devices/DEVICE_A` avec `platform:"ios"` ; `platform:"web"` | OK ; KO |
+| U6 | `bob` lit `users/eve/devices/{DEVICE_A}` | KO |
 | U7 | Suppression de compte d'une membre simple (batch par Miff) | OK |
 | U8 | Suppression de compte d'une créatrice avec membres restants : suppression de la Miff sans retirer les autres membres | OK pour les règles **si** le lot contient la pierre tombale `miffsDeleted/{id}` et la suppression du code (DUR-1) ; la Miff devient orpheline (risque documenté) ; le client doit retirer les membres d'abord |
 
@@ -289,8 +289,8 @@ Cas ajoutés pour tuer les **survivants** du test par mutation étendu (`tests/t
 | U1b | Profil : `termsAcceptedAt` ou `createdAt` client à la création ; `termsAcceptedAt` client à la mise à jour ; puis valeurs serveur | KO ×4 (dont la mise à jour avec l'heure serveur : (a) est figé, AUTH-B) ; OK ×1 |
 | U2b | Profil : nom vide ; `termsVersion` vide ou de 21 caractères (création et mise à jour) ; puis valeurs conformes | KO ×6 ; OK ×2 |
 | A5b | `eve` crée `users/mallory` | KO |
-| U5b | Appareil : clé inconnue, jeton vide ou de 513 caractères, `updatedAt` client, identifiant `a.b` ou de 65 caractères ; puis jeton de 512 et identifiant de 64 | KO ×6 ; OK ×2 |
-| U6b | `eve` écrit `users/alice/devices/d1` ; puis `alice` | KO ; OK |
+| U5b | Appareil (SRV-2R) : clé inconnue, jeton vide ou de 4097 caractères, `updatedAt` client, identifiant de 15 / 65 caractères ou avec un point (même quand c'est celui de la session) ; puis jeton de 4096 | KO ×7 ; OK |
+| U6b | `eve` écrit `users/alice/devices/{DEVICE_A}` (alice a une session valide) ; puis `alice` | KO ; OK |
 
 ### 12.1 Cas hors émulateur (tests rapides, sans émulateur)
 
@@ -482,7 +482,7 @@ Document de session `users/{uid}/session/active` `{ deviceId, startedAt }` (prop
 | SE2 | Schéma fermé : plateforme, position ou toute clé en plus ; clé manquante ; identifiant vide, de 15 ou 65 caractères, avec `/`, espace, retour à la ligne, accent, `null`, nombre, booléen, objet ; heure du client ; mise à jour partielle qui ajoute une clé. Bornes de 16 et 64 caractères | KO partout ; OK pour les deux bornes |
 | SE3 | La session de `bob` : `alice` (créatrice de sa Miff), `carol`, `zoe`, `eve` et un visiteur la lisent, l'écrivent, la suppriment | KO partout ; la session de `bob` ne change pas |
 | SE4 | Déconnexion volontaire : `bob` supprime sa session (même absente) ; `alice` supprime celle de `bob` ; lecture d'une session absente | OK ; KO ; « introuvable » sans erreur de droits |
-| SE5 | Un seul chemin : autre identifiant sous `session/`, `sessions/active`, liste de la sous-collection, sous-document ; les jetons de notification (`devices`) inchangés ; la session s'écrit sans profil | KO ×5 ; OK ; OK |
+| SE5 | Un seul chemin : autre identifiant sous `session/`, `sessions/active`, liste de la sous-collection, sous-document ; l'ancien gabarit de jeton (`devices/abc {token, platform, updatedAt}`) est refusé (SRV-2R, section 26) ; la session s'écrit sans profil | KO ×7 ; OK |
 | SE6 | Temps 1 : statut et position SANS `deviceId` (applications actuelles), sans session puis avec une session existante | OK partout (le trou du temps 1) |
 | SE7 | Statut avec `deviceId` : sans session ; égal à la session ; différent ; casse différente ; `null`, vide, nombre, booléen, tableau, objet ; mise à jour partielle qui l'envoie | KO ; OK ; KO ; KO ; KO ; OK |
 | SE8 | Scénario complet : A écrit, B se connecte, A refusé (le statut de B n'est pas écrasé), B accepté, A reprend la place, B refusé | OK / KO / OK / OK / KO / OK |
@@ -663,3 +663,28 @@ Comptes : `alice` (créatrice gratuite de M1, a déjà `p1`), `bob` et `carol` (
 **Lectures de règles** (comptage sans cache) : créer une demande `trusted` = 5 sur 20 (borne haute du texte 7), `risk` = 6 (8), retirer = 4 (5), refuser = 2, accepter (créatrice gratuite) = 4 (borne haute 7), accepter avec un lieu Miff+ = 5 (8) ; lister : 1 (créateur) ou 3 (demandeur) sur 10. **Aucun lot existant ne change** (créer, rejoindre, quitter, retirer un membre, supprimer la Miff, lieux : aucune règle existante n'appelle les nouvelles fonctions). Chiffres figés par `tests/unit/budgets-demande-lieu.test.js` ; mesures de l'émulateur (scénarios `READS-req-*`) dans `rules-test-report.md`.
 
 **Cas hors émulateur** (documentés, non testables en règles) : expiration à 30 jours (masquage et nettoyage côté clients) ; rafales de création / retrait (aucune limitation de débit possible : App Check) ; contenu des demandes (adresse d'un tiers) ; envoi d'une notification au créateur (aucun serveur sur Spark).
+
+## 26. JETONS D'APPAREIL pour les notifications push (SRV-2R, ticket `docs/tickets/notification-update-membres.md` §8, étude `docs/dev/etude-serveur-notifications-premium.md` §8) — NON DÉPLOYÉ
+
+Document `users/{uid}/devices/{deviceId}` : `deviceId` = **l'identifiant de la session active** (`users/{uid}/session/active.deviceId`, un compte = un appareil) ; 7 clés exactes (`token` 1 à 4096, `platform` ios | android, `appVersion` 1 à 32, `tz` fuseau, `notify` { `updates` booléen }, `updatedAt` et `createdAt` = heure serveur) ; **propriétaire seul** (lire, lister, écrire, supprimer) ; écriture seulement si l'identifiant est celui de la session (`getAfter`, une lecture de règles) ; suppression sans condition. **Plafond « 5 appareils »** : non compté par les règles (impossible sans lecture coûteuse) ; un seul identifiant est écrivable à la fois et le nouvel appareil supprime les autres dans son lot de connexion (DV11 montre la limite : des jetons périmés peuvent subsister s'il oublie, ils sont inertes et le serveur les ignore). Collection serveur `notifState/{miffId}` : **aucune règle**, refus par défaut (DV12). **Seule règle existante modifiée** : l'ancien bloc `devices` (gabarit `{token ≤ 512, platform, updatedAt}`, identifiants libres), qu'aucune application publiée n'écrit ; les cas U5, U5b, U6, U6b, SE5 ont été réécrits en conséquence. Aucune autre règle ni aucun lot existant ne change (test unitaire de budget).
+
+Comptes : `alice` (créatrice de M1), `bob`, `carol` (membres), `dave` (Miff+), `eve` (étrangère), `zoe` (créatrice de M2). Les sessions sont injectées sans les règles (`DEVICE_A`, `DEVICE_B`).
+
+| ID | Cas | Attendu |
+|---|---|---|
+| DV1 | `bob` (session `DEVICE_A`) crée son jeton : 7 clés exactement, heures du serveur ; relecture (get et liste) ; bornes acceptées : jeton de 4096, version de 32, fuseaux `America/Argentina/Buenos_Aires`, `Etc/GMT+5`, `GMT+01:00`, `UTC`, une lettre, 64 caractères, iOS, interrupteur « un proche donne des nouvelles » coupé | OK ×9 |
+| DV2 | Lot de connexion [session B + jeton B + suppression du jeton A] en UN lot ; jeton sous un identifiant qui n'est pas celui de la nouvelle session ; ancien jeton mis à jour sous la nouvelle session ; jeton écrit seul quand la session existe déjà | KO ×2 ; OK ; OK |
+| DV3 | Forme : chacune des 7 clés manquante ; clés en trop (position, nom, `userAgent`, identifiant publicitaire, `deviceId`, **`locale` et `notificationsEnabled`, retirés du modèle**) ; jeton vide / 4097 / nombre / nul ; plateforme `web`, casse, vide, nombre ; version vide / 33 / nombre ; fuseau vide, 65, commence par `/` ou un chiffre, espace, retour à la ligne, accent, barre oblique inverse ; `notify` booléen / vide / clé en trop / clé manquante / valeur texte ; `updatedAt` et `createdAt` du client, nuls, textes ; ancien gabarit `{token, platform, updatedAt}` ; contrôle valide | KO partout ; OK (contrôle) |
+| DV4 | Identifiant : `d1` à `d5`, trop court, autre que la session, suffixe, minuscules, session d'un autre appareil ; identifiants de session mal formés injectés (court, 15, 65, point, espace, accents) : le jeton refuse le sien ; identifiants valides de 16 et 64 caractères | KO partout ; OK (identifiants valides) |
+| DV5 | Sans session ; session d'un autre appareil ; session supprimée ; session d'un autre compte avec le même identifiant | KO partout ; OK (contrôle avec la bonne session) |
+| DV6 | Mise à jour **partielle** : jeton, fuseau, version, `notify.updates` ; `createdAt` figé ; refusés : `updatedAt` absent / du client, `createdAt` modifié ou supprimé, plateforme changée, clé supprimée (`tz`, `notify`), clé ajoutée, jeton vide ou de 4097, fuseau, `notify` invalide ; `set` complet sur un jeton existant (nouveau `createdAt`) refusé, accepté s'il reprend le `createdAt` lu | OK (mises à jour valides) ; KO (le reste) ; KO ; OK |
+| DV7 | Appareil remplacé : la session passe à `DEVICE_B` ; l'ancien jeton ne peut plus être mis à jour ni recréé ; il reste supprimable ; le nouvel appareil s'enregistre | OK ; KO ×3 ; OK ; OK |
+| DV8 | Lecture par un tiers : un membre de la même Miff, la créatrice, une étrangère, une autre créatrice, `dave`, un visiteur : `get`, liste, liste filtrée, **groupe de collections** `devices` (même pour le propriétaire) ; profil du propriétaire non lisible ; le propriétaire lit et liste | KO partout ; OK ×2 |
+| DV9 | Usurpation : création, mise à jour, suppression du jeton d'un autre (avec la forme valide et une session de même identifiant chez la cible), visiteur compris ; le jeton du propriétaire reste intact ; contrôle propriétaire | KO partout ; OK |
+| DV10 | Suppression : jeton existant, jeton absent, session déjà supprimée, session d'un autre appareil ; séquence de la suppression de compte des applications (session supprimée d'abord, puis liste côté serveur et suppression de chaque jeton) ; lot de plusieurs suppressions | OK partout ; `devices` vide |
+| DV11 | Pas de compteur : trois connexions sans nettoyage laissent trois jetons, seul le dernier est modifiable (limite connue, jetons périmés inertes) ; identifiant d'une session pas encore ouverte refusé ; six connexions avec nettoyage [session + jeton + 5 suppressions] : un seul jeton à chaque fois | OK ; KO ; OK (6 connexions, un seul jeton à chaque fois) |
+| DV12 | `notifState/{miffId}` : créatrice, membres, `dave`, étrangers, visiteur : `get`, liste, liste filtrée, groupe de collections, création, mise à jour, suppression, sous-documents, autre Miff, `miffs/{id}/notifState` ; l'écriture Admin (serveur) fonctionne et l'état n'a pas changé | KO partout ; OK (Admin) |
+
+**Lectures de règles** (comptage sans cache, test unitaire `budgets-jetons.test.js`) : créer ou mettre à jour un jeton = **1** sur 10 (la session) ; lire, lister, supprimer = **0** ; lot de connexion [session + jeton + N suppressions] = **1** sur 20 quel que soit N (mesuré à l'émulateur : au plus 0, la session faisant partie du lot ; la borne prudente documentée reste 1). **Aucune règle existante n'appelle les fonctions des jetons.**
+
+**Cas hors émulateur** (documentés, non testables en règles) : plafond du nombre de jetons (voir ci-dessus) ; coût d'une boucle d'écritures d'un propriétaire malveillant sur son propre jeton (App Check strict) ; jeton réellement valide chez FCM (le serveur supprime un jeton refusé par FCM) ; purge des jetons inactifs (fonction planifiée, SRV-4) ; expiration TTL de `notifState` (console, action du PM) ; `getAfter` d'un document du même lot facturé ou non en production (comptage prudent : 1).

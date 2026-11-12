@@ -73,6 +73,8 @@ import com.tomessa.miff.ui.theme.textTitleBold24Gradient
 fun PlacePaywallScreen(
     reason: PaywallReason,
     onClose: () -> Unit,
+    /** The offer comes from "Accepter" on a request received: the card says the request stays pending (ticket LIEU-REQ, section 4.5). */
+    request: Boolean = false,
 ) {
     val title = stringResource(R.string.place_paywall_soon)
     Column(
@@ -114,7 +116,7 @@ fun PlacePaywallScreen(
                     .padding(horizontal = Spacing.m, vertical = Spacing.s),
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
-            ContextCard(reason)
+            ContextCard(reason, request)
             Text(
                 text = stringResource(R.string.place_paywall_headline),
                 style = textTitleBold24Gradient,
@@ -173,7 +175,10 @@ fun PlacePaywallScreen(
 
 /** The calm box at the top: why the offer shows (design 14 and 15). */
 @Composable
-private fun ContextCard(reason: PaywallReason) {
+private fun ContextCard(
+    reason: PaywallReason,
+    request: Boolean = false,
+) {
     val limit = reason == PaywallReason.LIMIT
     Row(
         modifier =
@@ -242,6 +247,8 @@ private fun ContextCard(reason: PaywallReason) {
                     stringResource(
                         when {
                             reason == PaywallReason.MIFF -> R.string.feed_selector_paywall_body
+                            request && limit -> R.string.place_request_paywall_limit
+                            request -> R.string.place_request_paywall_danger
                             limit -> R.string.place_paywall_limit_body
                             else -> R.string.place_paywall_danger_body
                         },

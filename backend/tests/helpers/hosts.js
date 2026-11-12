@@ -40,4 +40,11 @@ export const H = {
   requestsDelete: { match: 'match /placeRequests/{reqId} {', method: 'delete' },
   requestCounterCreate: { match: 'match /meta/placeRequests {', method: 'create' },
   requestCounterUpdate: { match: 'match /meta/placeRequests {', method: 'update' },
+  // SRV-2R : jetons d'appareil et session (la session est écrite dans le même lot à la connexion).
+  devicesGet: { match: 'match /devices/{deviceId} {', method: 'get' },
+  devicesList: { match: 'match /devices/{deviceId} {', method: 'list' },
+  devicesCreate: { match: 'match /devices/{deviceId} {', method: 'create' },
+  devicesUpdate: { match: 'match /devices/{deviceId} {', method: 'update' },
+  devicesDelete: { match: 'match /devices/{deviceId} {', method: 'delete' },
+  sessionUpdate: { match: 'match /session/active {', method: 'update' },
 };

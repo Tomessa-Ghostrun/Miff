@@ -77,6 +77,8 @@ fun PlaceDetailScreen(
     onEdit: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
+    /** Not null: the detail of a REQUEST to add this place (ticket LIEU-REQ): no "Modifier", a banner, and the buttons of the request. */
+    request: RequestDetailUi? = null,
 ) {
     RecentsPrivacy()
     val title = state.place?.name ?: stringResource(R.string.place_detail_title_loading)
@@ -90,7 +92,7 @@ fun PlaceDetailScreen(
     ) {
         DetailHeader(
             title = title,
-            canEdit = state.status == PlaceDetailStatus.READY && state.canEdit,
+            canEdit = state.status == PlaceDetailStatus.READY && state.canEdit && request == null,
             onBack = onBack,
             onEdit = onEdit,
         )
@@ -121,7 +123,8 @@ fun PlaceDetailScreen(
             }
 
             PlaceDetailStatus.READY -> {
-                state.place?.let { Content(state, it, Modifier.weight(1f)) }
+                state.place?.let { Content(state, it, request, Modifier.weight(1f)) }
+                if (request != null) RequestFoot(request)
             }
         }
     }
@@ -172,6 +175,7 @@ private fun DetailHeader(
 private fun Content(
     state: PlaceDetailState,
     place: Place,
+    request: RequestDetailUi?,
     modifier: Modifier,
 ) {
     val context = LocalContext.current
@@ -188,6 +192,20 @@ private fun Content(
         verticalArrangement = Arrangement.spacedBy(Spacing.m),
     ) {
         if (state.fromCache) MiffNotice(stringResource(R.string.place_detail_cache_notice))
+        // The place is not in the Miff yet: the first thing said is what it is (the requester's wait), in the calm tone of the app.
+        if (request != null) {
+            InfoCard(
+                stringResource(
+                    if (request.creator != null) {
+                        R.string.place_request_detail_banner_creator
+                    } else {
+                        R.string.place_request_detail_banner_member
+                    },
+                ),
+            )
+        }
+        // The creator sees WHO asks (photo or initials, first name) and since when, in the detail as in the list (criterion C2).
+        request?.creator?.let { RequesterDetailRow(it) }
         PlaceMapBox(
             spec =
                 PlaceMapSpec(
@@ -242,7 +260,7 @@ private fun Content(
                 modifier = Modifier.padding(start = Spacing.s).size(Spacing.m + Spacing.xs),
             )
         }
-        Facts(state, place)
+        Facts(state, place, showAudience = request == null)
         // HIDDEN until LOC-2 (review of PR #56): these two sentences describe what the phone does on arrival and departure, which
         // does not exist yet (nothing detects a position). The texts stay in the catalogs (place_detail_info_trusted and
         // place_detail_info_danger, FR/EN, Android and iOS); LOC-2 switches this on with the detection itself.
@@ -268,6 +286,8 @@ private fun splitAddress(address: String): Pair<String, String> {
 private fun Facts(
     state: PlaceDetailState,
     place: Place,
+    /** "Visible par" and "Créé par" describe a place of the Miff: a request has neither (nobody sees it but its creator). */
+    showAudience: Boolean = true,
 ) {
     Column(
         modifier =
@@ -285,12 +305,13 @@ private fun Facts(
         )
         Divider()
         FactWith(R.drawable.ic_visibility, stringResource(R.string.place_detail_type)) { PlaceTypeTag(place.type) }
-        Divider()
+        if (place.category != null || showAudience) Divider()
         // A place written before the categories existed has none: nothing is shown (never "Autre" by default).
         if (place.category != null) {
             FactWithCategory(place.category)
-            Divider()
+            if (showAudience) Divider()
         }
+        if (!showAudience) return@Column
         Fact(R.drawable.ic_group, stringResource(R.string.place_detail_visible_by), state.miffName)
         if (state.creatorName.isNotEmpty()) {
             Divider()
@@ -406,5 +427,67 @@ private fun InfoCard(text: String) {
             modifier = Modifier.size(Spacing.l),
         )
         Text(text = text, style = textBodyRegular, color = colorTextPrimary)
+    }
+}
+
+/** The foot of the detail of a request: for its author, "Retirer ma demande" (white with a blue outline: taking a request back is never a red gesture). */
+@Composable
+private fun RequestFoot(request: RequestDetailUi) {
+    Column(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .background(colorBgCanvas)
+                .padding(horizontal = Spacing.l, vertical = Spacing.s),
+    ) {
+        val creator = request.creator
+        if (creator != null) {
+            AnswerButtons(
+                requestName = request.placeName,
+                busy = request.busy,
+                onAccept = creator.onAccept,
+                onDecline = creator.onDecline,
+            )
+            return@Column
+        }
+        OutlinedButton(
+            onClick = request.onWithdraw ?: {},
+            enabled = !request.busy,
+            shape = ShapeMd,
+            border =
+                androidx.compose.foundation.BorderStroke(
+                    com.tomessa.miff.ui.theme.StrokeAccent,
+                    colorActionPrimary,
+                ),
+            colors =
+                ButtonDefaults.outlinedButtonColors(
+                    containerColor = colorBgSurface,
+                    contentColor = colorActionPrimary,
+                ),
+            modifier = Modifier.fillMaxWidth().heightIn(min = Spacing.minTouchTarget),
+        ) {
+            Text(stringResource(R.string.place_request_withdraw), style = textBodyBold16)
+        }
+    }
+}
+
+/** "Demandé par Léa" and the date, in a card of the family of the facts: the creator knows who asks before answering. */
+@Composable
+private fun RequesterDetailRow(creator: RequestCreatorDetail) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .miffShadow(ShadowDefault, ShapeMd)
+                .clip(ShapeMd)
+                .background(colorBgSurface)
+                .border(StrokeHairline, colorBorderDefault, ShapeMd)
+                .padding(horizontal = Spacing.m, vertical = Spacing.s)
+                .semantics(mergeDescendants = true) {},
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        RequesterLine(creator.requester)
+        creator.dateText?.let { Text(text = it, style = textBodyRegular14, color = colorTextDescription) }
     }
 }

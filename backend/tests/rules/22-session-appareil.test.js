@@ -84,14 +84,14 @@ s.tc('SE4', 'déconnexion volontaire : le propriétaire supprime sa session (mê
   if (snap.exists) throw new Error('document inattendu');
 });
 
-s.tc('SE5', 'un seul chemin : users/{uid}/session/active ; aucun autre identifiant, aucune liste ; les règles de devices (jetons de notification) sont inchangées', async (h) => {
+s.tc('SE5', 'un seul chemin : users/{uid}/session/active ; aucun autre identifiant, aucune liste ; les jetons de notification (devices, SRV-2R) ont leur propre règle, liée à la session (section 26)', async (h) => {
   await assertFails(h.db('alice').doc('users/alice/session/autre').set(sessionDoc()));
   await assertFails(h.db('alice').doc('users/alice/session/autre').get());
   await assertFails(h.db('alice').doc('users/alice/sessions/active').set(sessionDoc()));
   await assertFails(h.db('alice').collection('users/alice/session').get()); // pas de liste, même pour soi
   await assertFails(h.db('alice').collection('users/alice/session').where(FieldPath.documentId(), '==', 'active').get()); // ni requête ciblée sur « active »
   await assertFails(h.db('alice').doc('users/alice/session/active/sous/doc').set({ a: 1 }));
-  await assertSucceeds(h.db('alice').doc('users/alice/devices/abc').set({ token: 't', platform: 'ios', updatedAt: serverTs() }));
+  await assertFails(h.db('alice').doc('users/alice/devices/abc').set({ token: 't', platform: 'ios', updatedAt: serverTs() })); // ancien gabarit : refusé (section 26)
   // Le profil n'est pas nécessaire pour écrire la session (elle est écrite à la connexion, avant le profil).
   await h.admin((f) => f.doc('users/eve').delete());
   await assertSucceeds(writeSession(h, 'eve', DEVICE_A));

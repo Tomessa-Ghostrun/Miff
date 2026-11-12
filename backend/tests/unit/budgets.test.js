@@ -45,6 +45,7 @@ test('BUDGET - coût figé de chaque fonction de règles (direct, avec fonctions
     validMiffCreate: [3, 3],
     validMiffUpdate: [2, 2],
     validJoinCodeCreate: [3, 3],
+    validDeviceShape: [1, 1], // SRV-2R : la session du compte (getAfter), seule lecture des jetons d'appareil
     isPremiumOneRead: [1, 1],
     validPlaceCreate: [0, 1],
     validPlaceUpdate: [0, 1],

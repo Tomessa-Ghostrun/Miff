@@ -5,7 +5,7 @@
 // pourrait refuser à sa place et la protection visée resterait non testée.
 import {
   ID, CODE, T0, HOUR, suite, assertFails, assertSucceeds, commit, createMiffOps, joinOps, update, del, serverTs,
-  statusDoc, photoDoc, setConsentV3, bytes, inMs, sharingOnNow, sharingOff, placeInput, userDoc,
+  statusDoc, photoDoc, setConsentV3, bytes, inMs, sharingOnNow, sharingOff, placeInput, userDoc, sessionSeed, SESSION_PATH, deviceDoc, DEVICE_DOC_PATH,
 } from '../helpers/fixtures.js';
 
 const s = suite();
@@ -206,20 +206,29 @@ s.tc('A5b', "créer le profil d'un autre utilisateur : refusé", async ({ db }) 
   await assertFails(db('eve').doc('users/mallory').set(userDoc()));
 });
 
-s.tc('U5b', "appareil : clé inconnue, jeton vide ou trop long, date client, identifiant hors format refusés", async ({ db }) => {
-  const device = (over = {}) => ({ token: 'jeton-de-test', platform: 'ios', updatedAt: serverTs(), ...over });
-  const eve = (id) => db('eve').doc(`users/eve/devices/${id}`);
-  await assertFails(eve('d1').set(device({ langue: 'fr' })));
-  await assertFails(eve('d1').set(device({ token: '' })));
-  await assertFails(eve('d1').set(device({ token: 'x'.repeat(513) })));
-  await assertFails(eve('d1').set(device({ updatedAt: inMs(-HOUR) })));
-  await assertFails(eve('a.b').set(device()));
-  await assertFails(eve('x'.repeat(65)).set(device()));
-  await assertSucceeds(eve('d1').set(device({ token: 'x'.repeat(512) })));
-  await assertSucceeds(eve('x'.repeat(64)).set(device()));
+s.tc('U5b', "appareil (SRV-2R) : clé inconnue, jeton vide ou trop long, date client, identifiant hors format refusés (un défaut à la fois)", async ({ db, admin }) => {
+  const as = async (id) => admin((f) => f.doc(SESSION_PATH('eve')).set(sessionSeed(id)));
+  const eve = (id) => db('eve').doc(DEVICE_DOC_PATH('eve', id));
+  await as(undefined); // session DEVICE_A
+  await assertFails(eve(undefined).set(deviceDoc({ langue: 'fr' })));
+  await assertFails(eve(undefined).set(deviceDoc({ token: '' })));
+  await assertFails(eve(undefined).set(deviceDoc({ token: 'x'.repeat(4097) })));
+  await assertFails(eve(undefined).set(deviceDoc({ updatedAt: inMs(-HOUR) })));
+  await assertFails(eve(undefined).set(deviceDoc({ updatedAt: inMs(-HOUR), createdAt: inMs(-HOUR) }))); // les deux heures du client, égales entre elles
+  // Identifiant hors format, MÊME s'il est celui de la session (injectée sans les règles) : 15 et 65 caractères, point.
+  for (const bad of ['x'.repeat(15), 'x'.repeat(65), 'a.bcdefghijklmnopq']) {
+    await as(bad);
+    await assertFails(eve(bad).set(deviceDoc()));
+  }
+  await as(undefined);
+  await assertSucceeds(eve(undefined).set(deviceDoc({ token: 'x'.repeat(4096) })));
 });
 
-s.tc('U6b', "écrire un jeton d'appareil pour un autre utilisateur : refusé", async ({ db }) => {
-  await assertFails(db('eve').doc('users/alice/devices/d1').set({ token: 'jeton-de-test', platform: 'ios', updatedAt: serverTs() }));
-  await assertSucceeds(db('alice').doc('users/alice/devices/d1').set({ token: 'jeton-de-test', platform: 'ios', updatedAt: serverTs() }));
+s.tc('U6b', "écrire un jeton d'appareil pour un autre utilisateur : refusé (même avec une session valide chez la cible)", async ({ db, admin }) => {
+  await admin(async (f) => {
+    await f.doc(SESSION_PATH('alice')).set(sessionSeed());
+    await f.doc(SESSION_PATH('eve')).set(sessionSeed());
+  });
+  await assertFails(db('eve').doc(DEVICE_DOC_PATH('alice')).set(deviceDoc()));
+  await assertSucceeds(db('alice').doc(DEVICE_DOC_PATH('alice')).set(deviceDoc()));
 });

@@ -40,12 +40,27 @@ struct PhotoFullScreen: View {
     }
 
     var body: some View {
-        // UN seul GeometryReader, à la racine, qui ignore les zones sûres : `size` est l'écran ENTIER, `insets` les vraies zones sûres. Pas de
-        // GeometryReader imbriqué, pas de Spacer vertical, pas de hauteur imposée : la photo est CENTRÉE dans l'écran, la croix et l'icône sont des
-        // surimpressions collées en haut, la légende une surimpression collée en bas (zone sûre basse + 8 pt).
+        // UN seul GeometryReader, à la racine, qui RESPECTE les zones sûres : c'est la condition pour que `proxy.safeAreaInsets` donne les VRAIES
+        // marges (encoche, barre d'accueil). Posé sous `.ignoresSafeArea()`, il les rendait toutes à ZÉRO (cause trouvée sur les captures de la CI :
+        // la croix passait sous l'heure, le bouton sous la barre d'accueil). C'est le CONTENU, dans le lecteur, qui est étendu à l'écran ENTIER :
+        // `size` est l'écran entier (zone visible + zones sûres). Pas de GeometryReader imbriqué, pas de Spacer vertical, pas de hauteur imposée :
+        // la photo est CENTRÉE dans l'écran, la croix et l'icône sont une surimpression collée en haut, la légende une surimpression collée en bas.
+        // MARGES (retour du PM, TestFlight 32 : sur un vrai appareil le `fullScreenCover` peut annoncer des zones sûres NULLES) : on lit aussi celles
+        // de la fenêtre (`PhotoSafeArea`), puis des PLANCHERS les rattrapent (haut : au moins 47 pt + 12 pt ; bas : au moins 34 pt + 16 pt), en portrait.
         GeometryReader { proxy in
-            let size = proxy.size
-            let insets = proxy.safeAreaInsets
+            let proxyInsets = proxy.safeAreaInsets
+            let size = PhotoFullScreenLayout.screenSize(
+                visible: proxy.size, top: proxyInsets.top, bottom: proxyInsets.bottom,
+                leading: proxyInsets.leading, trailing: proxyInsets.trailing
+            )
+            let read = PhotoSafeArea.read(proxy: proxyInsets)
+            let portrait = PhotoFullScreenLayout.isPortrait(size)
+            let insets = EdgeInsets(
+                top: PhotoFullScreenLayout.topMargin(safeInset: read.top, isPortrait: portrait),
+                leading: read.leading,
+                bottom: PhotoFullScreenLayout.bottomMargin(safeInset: read.bottom, isPortrait: portrait),
+                trailing: read.trailing
+            )
             ZStack {
                 Color.black
                 photo(size: size)
@@ -57,8 +72,8 @@ struct PhotoFullScreen: View {
             .overlay(alignment: .bottom) {
                 footerOverlay(size: size, insets: insets)
             }
+            .ignoresSafeArea()
         }
-        .ignoresSafeArea()
         .preferredColorScheme(.dark)
         .accessibilityAction(.escape, onDismiss)
         .hidesInAppSwitcher()
@@ -232,7 +247,7 @@ struct PhotoFullScreen: View {
         .padding(.leading, insets.leading)
         .padding(.trailing, insets.trailing)
         .padding(.top, PhotoFullScreenLayout.captionTopPadding)
-        .padding(.bottom, insets.bottom + PhotoFullScreenLayout.captionBottomPadding)
+        .padding(.bottom, insets.bottom)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 

@@ -56,3 +56,17 @@ test("journaliser : un nom d'événement qui ressemble à une donnée est rempla
   assert.ok(tout.includes('ping.test'), tout);
   assert.ok(!tout.includes('Thomas') && !tout.includes('48.85') && !tout.includes('latitude'), tout);
 });
+
+test('SRV-4B : compteurs numériques et motif fermé acceptés ; un motif libre, un prénom ou un nombre dans un champ de texte sont omis', () => {
+  assert.deepEqual(
+    assainir({ resultat: 'ok', examines: 3, envoyes: 2, ecartes: 1, purges: 1, lectures: 8, ecritures: 1, dureeMs: 40 }),
+    { resultat: 'ok', examines: 3, envoyes: 2, ecartes: 1, purges: 1, lectures: 8, ecritures: 1, dureeMs: 40 },
+  );
+  assert.deepEqual(assainir({ resultat: 'refuse', motif: 'plafond' }), { resultat: 'refuse', motif: 'plafond' });
+  assert.equal(assainir({ motif: 'Tomessa' }).motif, '[omis]');
+  assert.equal(assainir({ motif: 'miff-ABC123' }).motif, '[omis]');
+  assert.equal(assainir({ motif: 7 }).motif, '[omis]', 'un nombre ne passe pas dans un champ de texte fermé');
+  assert.equal(assainir({ resultat: 1 }).resultat, '[omis]');
+  assert.equal(assainir({ envoyes: 'trois' }).envoyes, '[omis]');
+  assert.equal(assainir({ prenom: 'Tomessa', jeton: 'abc', uid: 'u1' }).champOmis, '[omis]');
+});
