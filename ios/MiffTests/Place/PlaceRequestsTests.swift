@@ -178,7 +178,7 @@ final class PlaceRequestsTests: XCTestCase {
     // MARK: - Rôle
 
     func testTheRoleIsNeverDeducedFromAnUnknownUid() {
-        let id = "(uid)_1"
+        let id = "\(uid)_1"
 
         XCTAssertTrue(PlaceRequestRole.isAuthor(requestId: id, myUid: uid))
         XCTAssertFalse(PlaceRequestRole.isAuthor(requestId: id, myUid: nil))

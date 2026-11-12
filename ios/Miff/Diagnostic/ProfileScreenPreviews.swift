@@ -173,7 +173,7 @@ struct ProfileScreenPreview: View {
                 return .loaded([])
             }
             let request = PlaceRequest(
-                id: "(uid)_1", miffId: miffId, requestedBy: uid, name: "Club de judo", type: .trusted,
+                id: "\(uid)_1", miffId: miffId, requestedBy: uid, name: "Club de judo", type: .trusted,
                 address: "12 rue des Écoles, 21000 Dijon, France", lat: 47.32, lng: 5.04, radiusM: 100,
                 category: .sport, createdAtMillis: nil
             )
