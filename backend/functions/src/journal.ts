@@ -13,7 +13,7 @@ export const RESULTATS = ["ok", "refuse", "erreur"] as const;
 
 export const MOTIFS = [
   "suppression", "date_absente", "trop_ancien", "identifiant_invalide", "auteur_absent", "auteur_sans_partage", "prenom_vide",
-  "aucun_destinataire", "deja_vu", "plafond",
+  "aucun_destinataire", "deja_vu", "plafond", "miff_absente",
 ] as const;
 
 export interface ChampsJournal {

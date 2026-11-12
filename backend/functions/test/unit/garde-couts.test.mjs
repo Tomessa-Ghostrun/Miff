@@ -214,6 +214,7 @@ test('M8 : chemins Firestore touchés par la fonction = liste fermée ; écritur
   // Lectures : chemins passés à doc() / collection() dans tout src/.
   const chemins = sources.flatMap(({ texte }) => [...code(texte).matchAll(/\b(?:doc|collection)\(\s*`([^`]+)`/g)].map((m) => m[1])).sort();
   assert.deepEqual(chemins, [
+    'miffs/${miffId}',
     'miffs/${miffId}/members',
     'miffs/${miffId}/members/${auteurUid}',
     'notifState/${miffId}',

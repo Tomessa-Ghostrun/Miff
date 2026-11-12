@@ -5,12 +5,13 @@
 // Ordre voulu (chaque etape peut s'arreter sans rien ecrire) :
 //   1. garde-fous de l'evenement (photo recente, identifiants sains)                                  0 lecture
 //   2. PRE-CONTROLE de notifState/{miffId} : deja vu ? plafond horaire ? -> arret, 1 lecture seule      1 lecture
-//   3. fiches de membres (au plus 30) -> auteur partageant, destinataires partageant (20 au plus)      1 lecture par fiche
+//   3. la Miff existe encore (miffs/{miffId}, 1 lecture) : sinon motif miff_absente, aucun envoi
+//   3 bis. fiches de membres (au plus 30) -> auteur partageant, destinataires partageant (20 au plus)      1 lecture par fiche
 //   4. SESSION ACTIVE de chaque destinataire, puis get DIRECT de devices/{session.deviceId}                2 lectures par destinataire (1 sans session)
 //      -> envoi UNIQUEMENT a l'appareil de la session ; pas de session ou pas de document = pas d'envoi
 //   5. reservation transactionnelle dans notifState/{miffId} (verification finale, meme verdict)        1 lecture, 1 ecriture SEULEMENT si on envoie
 //   6. envoi FCM par appareil (2 nouvelles tentatives au plus), purge des jetons que FCM dit inconnus
-// Budget (Miff de 4 membres, 3 destinataires, 1 appareil chacun) : 1 + 4 + 3 x 2 + 1 = 12 lectures, 1 ecriture. Update plafonnee ou rejouee : 1 lecture, 0 ecriture.
+// Budget (Miff de 4 membres, 3 destinataires, 1 appareil chacun) : 1 + 1 + 4 + 3 x 2 + 1 = 13 lectures, 1 ecriture. Update plafonnee ou rejouee : 1 lecture, 0 ecriture.
 // "Au plus une fois" : la reservation (etape 5) PRECEDE l'envoi ; un plantage entre les deux, ou une panne de FCM apres la reservation, perd la notification
 // et consomme le plafond de l'heure pour cet auteur (le Feed la montre quand meme) ; la fonction n'en double jamais.
 // Journaux : uniquement des nombres et des mots fixes (journal.ts), jamais d'identifiant, de prenom ni de jeton.
@@ -52,7 +53,7 @@ export interface Evenement {
   createdAt: unknown;
 }
 
-export type MotifArret = "date_absente" | "trop_ancien" | "identifiant_invalide" | "auteur_absent" | "auteur_sans_partage" | "prenom_vide" | "aucun_destinataire" | "deja_vu" | "plafond";
+export type MotifArret = "date_absente" | "trop_ancien" | "identifiant_invalide" | "auteur_absent" | "auteur_sans_partage" | "prenom_vide" | "aucun_destinataire" | "deja_vu" | "plafond" | "miff_absente";
 
 export interface Bilan {
   /** Present si rien n'a ete envoye faute de raison d'envoyer ; absent si au moins une reservation a eu lieu. */
@@ -148,7 +149,13 @@ async function executer(dep: Dependances, evenement: Evenement, bilan: Bilan): P
   const verdictInitial = verdictEtat(etatInitial, auteurUid, createdAt);
   if (verdictInitial !== "reserve") return arreter(verdictInitial);
 
-  // --- 3. Fiches de membres : l'auteur et les destinataires ---------------------------------------------------------------------
+  // --- 3. La Miff existe-t-elle encore ? (1 lecture, seuls les droits du createur sont demandes) -------------------------------------------------
+  // Les sous-collections d'une Miff supprimee peuvent subsister (suppression non recursive) : sans Miff, aucune notification, meme si des fiches restent.
+  const [miff] = await db.getAll(db.doc(`miffs/${miffId}`), { fieldMask: ["ownerUid"] });
+  bilan.lectures += 1;
+  if (!miff || !miff.exists) return arreter("miff_absente");
+
+  // --- 4. Fiches de membres : l'auteur et les destinataires ---------------------------------------------------------------------
   // Seuls prenom et "partage actif" sont demandes. Si l'auteur n'est pas dans les 30 premieres fiches (Miff hors norme), une lecture de plus.
   const fiches = await db.collection(`miffs/${miffId}/members`).select("firstName", "sharing.enabled").limit(MAX_FICHES).get();
   bilan.lectures += Math.max(1, fiches.size);
@@ -173,7 +180,7 @@ async function executer(dep: Dependances, evenement: Evenement, bilan: Bilan): P
     destinataires = destinataires.slice(0, MAX_DESTINATAIRES);
   }
 
-  // --- 4. Session active puis appareil de la session (contrat docs/dev/jetons-appareil-clients.md §7) ----------------------------------------------
+  // --- 5. Session active puis appareil de la session (contrat docs/dev/jetons-appareil-clients.md §7) ----------------------------------------------
   // Pour chaque destinataire : (a) users/{uid}/session/active ; absente = AUCUN envoi a ce compte ; (b) lecture DIRECTE (get) de users/{uid}/devices/{session.deviceId},
   // jamais une liste : les jetons d'autres identifiants (appareil remplace, deconnexion hors connexion restee sans suppression) ne sont ni lus ni utilises.
   // Raison : un jeton reste valide chez FCM meme si son document n'a pas pu etre supprime ; un autre compte qui s'ouvre ensuite sur le meme telephone recevrait
@@ -211,7 +218,7 @@ async function executer(dep: Dependances, evenement: Evenement, bilan: Bilan): P
   }
   if (cibles.length === 0) return arreter("aucun_destinataire");
 
-  // --- 5. Reservation : verification finale dans une transaction sur notifState/{miffId} (deux executions simultanees : une seule passe) -------
+  // --- 6. Reservation : verification finale dans une transaction sur notifState/{miffId} (deux executions simultanees : une seule passe) -------
   const issue = await db.runTransaction(async (tx) => {
     const verdict = verdictEtat(await tx.get(refEtat), auteurUid, createdAt);
     if (verdict !== "reserve") return verdict;
@@ -226,7 +233,7 @@ async function executer(dep: Dependances, evenement: Evenement, bilan: Bilan): P
   if (issue !== "reserve") return arreter(issue);
   bilan.ecritures += 1;
 
-  // --- 6. Envoi : un message par appareil ---------------------------------------------------------------------------------------
+  // --- 7. Envoi : un message par appareil ---------------------------------------------------------------------------------------
   const instant = maintenant();
   await Promise.all(
     cibles.map(async (cible) => {

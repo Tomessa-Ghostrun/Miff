@@ -327,11 +327,12 @@ Quand un membre **publie une update** (une photo écrite dans `miffs/{miff}/phot
 
 | Cas | Lectures Firestore | Écritures |
 |---|---|---|
-| Miff de **4 membres**, 3 destinataires avec 1 téléphone chacun | **12** (1 contrôle préalable + 4 fiches + 3 × 2 [session puis téléphone de la session] + 1 vérification finale) | **1** (l'état) |
-| Miff de **15 membres** | **45** | 1 |
-| Miff de **40 membres** | **72** au plus (73 si l'auteur est hors des 30 premières fiches) : 1 + 30 fiches + 20 × 2 [session + téléphone] + 1 | 1 |
+| Miff de **4 membres**, 3 destinataires avec 1 téléphone chacun | **13** (1 contrôle préalable + 1 Miff + 4 fiches + 3 × 2 [session puis téléphone de la session] + 1 vérification finale) | **1** (l'état) |
+| Miff de **15 membres** | **46** | 1 |
+| Miff de **40 membres** | **73** au plus (74 si l'auteur est hors des 30 premières fiches) : 1 + 1 + 30 fiches + 20 × 2 [session + téléphone] + 1 | 1 |
 | Update plafonnée (2e de l'heure) ou rejouée | **1** (le contrôle préalable arrête tout avant de lire fiches, sessions et téléphones) | **0** |
-| Auteur seul dans sa Miff | **2** | 0 |
+| Miff supprimée (document absent, fiches restées) | **2** (aucun envoi) | 0 |
+| Auteur seul dans sa Miff | **3** | 0 |
 | Événement de plus de 5 min, suppression de photo | **0** | 0 |
 | Jeton invalide purgé | n/a | +1 par jeton |
 
@@ -352,7 +353,7 @@ npx firebase deploy --only functions:notifierUpdate --project miff-3d283
 
 Matériel : **deux comptes de test** dans **une même Miff de test**, les deux avec le partage activé, chacun sur son téléphone (un appareil par compte), notifications autorisées sur celui qui reçoit, réglage « Quand un proche donne des nouvelles » activé. **Pas de vrais proches dans cette Miff.**
 1. Le compte 1 publie une update. Attendu : le compte 2 reçoit « {Prénom} a donné des nouvelles » en quelques secondes (2 minutes au plus), **sans photo ni lieu** ; le compte 1 ne reçoit rien.
-2. Journaux (section 5) : `npx firebase functions:log --only notifierUpdate -n 30 --project miff-3d283`. Attendu : une ligne `notif.update.bilan` avec `envoyes: 1`, `lectures: 6` (2 comptes : 1 contrôle préalable + 2 fiches + 1 téléphone + 1 session + 1 vérification finale), `ecritures: 1`, **sans aucun nom, identifiant ni jeton**. Une ligne `notif.update.fcm-erreur` avec `code` 8 = clé APNs absente ou refusée côté Apple (ticket §12, étape du PM) ; `code` 1 = jeton inconnu (purgé) ; `code` 3 ou 4 = panne passagère de Google.
+2. Journaux (section 5) : `npx firebase functions:log --only notifierUpdate -n 30 --project miff-3d283`. Attendu : une ligne `notif.update.bilan` avec `envoyes: 1`, `lectures: 7` (2 comptes : 1 contrôle préalable + 1 Miff + 2 fiches + 1 session + 1 téléphone + 1 vérification finale), `ecritures: 1`, **sans aucun nom, identifiant ni jeton**. Une ligne `notif.update.fcm-erreur` avec `code` 8 = clé APNs absente ou refusée côté Apple (ticket §12, étape du PM) ; `code` 1 = jeton inconnu (purgé) ; `code` 3 ou 4 = panne passagère de Google.
 3. Le compte 1 publie une 2e update **dans l'heure** : pas de nouvelle notification (`notif.update.ignore`, `motif: plafond`), la photo est visible dans le Feed.
 4. Console Firebase > Firestore : la collection `notifState` contient un document par Miff de test, **sans nom ni jeton** (que des dates) ; la règle TTL est visible.
 5. Console Firebase > Functions : instances maximales 5, mémoire 256 Mio, compte `notify-update@…`.

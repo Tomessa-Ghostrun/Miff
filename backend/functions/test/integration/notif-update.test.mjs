@@ -119,7 +119,7 @@ const quatre = () => ({
 
 // --- V1 : destinataires, auteur exclu, forme exacte, budget de lectures ----------------------------------------------------------------
 
-test('V1 : A publie à 14:00 -> B, C, D notifiés, A non ; message de forme exacte ; 12 lectures et 1 écriture (Miff de 4)', async () => {
+test('V1 : A publie à 14:00 -> B, C, D notifiés, A non ; message de forme exacte ; 13 lectures et 1 écriture (Miff de 4)', async () => {
   await creerMiff(MIFF, quatre());
   const c = contexte();
   const bilan = await publier(c);
@@ -127,7 +127,7 @@ test('V1 : A publie à 14:00 -> B, C, D notifiés, A non ; message de forme exac
   assert.deepEqual(jetonsEnvoyes(c), ['jeton-B-0', 'jeton-C-0', 'jeton-D-0']);
   assert.equal(bilan.envoyes, 3);
   assert.equal(bilan.motif, undefined);
-  assert.equal(bilan.lectures, 12, '1 pré-contrôle + 4 fiches + 3 destinataires x (session + appareil) + 1 état (transaction)');
+  assert.equal(bilan.lectures, 13, '1 pré-contrôle + 1 Miff + 4 fiches + 3 destinataires x (session + appareil) + 1 état (transaction)');
   assert.equal(bilan.ecritures, 1, "1 écriture : l'état de la Miff");
 
   const parJeton = Object.fromEntries(c.fcm.messages.map((m) => [m.token, m]));
@@ -164,7 +164,7 @@ test('V2 : un membre qui a arrêté son partage (sharing.enabled = false) ne re�
   const bilan = await publier(c);
   assert.deepEqual(jetonsEnvoyes(c), ['jeton-B-0', 'jeton-D-0']);
   assert.equal(bilan.ecartes.sans_partage, 1);
-  assert.equal(bilan.lectures, 10, "1 + 4 fiches + 2 destinataires x (session + appareil) (C n'est pas lu) + 1");
+  assert.equal(bilan.lectures, 11, "1 + 1 Miff + 4 fiches + 2 destinataires x (session + appareil) (C n'est pas lu) + 1");
 });
 
 test('V3 : notify.updates = false -> pas de notification pour cet appareil (les autres sont notifiés)', async () => {
@@ -207,7 +207,7 @@ test("I1 : plusieurs jetons chez un même compte -> seul l'appareil de la SESSIO
   const bilan = await publier(c);
   assert.deepEqual(jetonsEnvoyes(c), ['jeton-B-1', 'jeton-C-0', 'jeton-D-0']);
   assert.equal(c.fcm.messages.length, 3, 'les autres documents devices de B ne sont ni lus ni utilisés');
-  assert.equal(bilan.lectures, 1 + 4 + 3 * 2 + 1, 'pré-contrôle + 4 fiches + 3 destinataires x (session + get direct de l appareil) + état : plus de liste, quel que soit le nombre de jetons');
+  assert.equal(bilan.lectures, 1 + 1 + 4 + 3 * 2 + 1, 'pré-contrôle + Miff + 4 fiches + 3 destinataires x (session + get direct de l appareil) + état : plus de liste, quel que soit le nombre de jetons');
 });
 
 test("I1 : un seul document mais d'une AUTRE session (déconnexion échouée puis autre compte sur le même téléphone) -> aucun envoi ; pas de session -> aucun envoi", async () => {
@@ -261,7 +261,7 @@ test("l'auteur doit lui-même partager ; l'auteur absent de la Miff ou seul dans
   let c = contexte();
   let bilan = await publier(c);
   assert.equal(bilan.motif, 'auteur_sans_partage');
-  assert.equal(bilan.lectures, 1 + 4);
+  assert.equal(bilan.lectures, 1 + 1 + 4);
   assert.deepEqual(c.fcm.messages, []);
   assert.equal(await existe(`notifState/${MIFF}`), false);
 
@@ -273,7 +273,7 @@ test("l'auteur doit lui-même partager ; l'auteur absent de la Miff ou seul dans
   c = contexte();
   bilan = await publier(c, { miffId: 'Seul' });
   assert.equal(bilan.motif, 'aucun_destinataire');
-  assert.equal(bilan.lectures, 2, 'le pré-contrôle et la liste des membres, rien d\'autre');
+  assert.equal(bilan.lectures, 3, 'le pré-contrôle, la Miff et la liste des membres, rien d\'autre');
   assert.equal(bilan.ecritures, 0);
 });
 
@@ -455,13 +455,13 @@ test('V11 : un événement dont la photo a plus de 5 min au traitement n\'envoie
   assert.equal(bilan.envoyes, 3);
 });
 
-test('F3/V12 : Miff de 15 membres = 45 lectures et 1 écriture ; Miff de 40 membres = 30 fiches, 20 destinataires, 72 lectures (73 si l\'auteur est hors des 30 premières fiches)', async () => {
+test('F3/V12 : Miff de 15 membres = 46 lectures et 1 écriture ; Miff de 40 membres = 30 fiches, 20 destinataires, 73 lectures (74 si l\'auteur est hors des 30 premières fiches)', async () => {
   const membres = (n) => Object.fromEntries(Array.from({ length: n }, (_, i) => [`u${String(i).padStart(2, '0')}`, {}]));
   await creerMiff('Quinze', membres(15));
   let c = contexte();
   let bilan = await publier(c, { miffId: 'Quinze', auteurUid: 'u00' });
   assert.equal(c.fcm.messages.length, 14);
-  assert.equal(bilan.lectures, 1 + 15 + 14 + 14 + 1);
+  assert.equal(bilan.lectures, 1 + 1 + 15 + 14 + 14 + 1);
   assert.equal(bilan.ecritures, 1);
 
   await creerMiff('Quarante', membres(40));
@@ -469,13 +469,13 @@ test('F3/V12 : Miff de 15 membres = 45 lectures et 1 écriture ; Miff de 40 memb
   bilan = await publier(c, { miffId: 'Quarante', auteurUid: 'u00' });
   assert.equal(c.fcm.messages.length, 20, '20 destinataires au plus');
   assert.equal(bilan.ecartes.au_dela_limite, 9, '29 autres fiches lues, 20 retenues');
-  assert.equal(bilan.lectures, 1 + 30 + 20 + 20 + 1);
+  assert.equal(bilan.lectures, 1 + 1 + 30 + 20 + 20 + 1);
 
   // Auteur hors des 30 premières fiches : une lecture de plus pour le retrouver, et la notification part quand même.
   c = contexte();
   bilan = await publier(c, { miffId: 'Quarante', auteurUid: 'u39', quand: plus(T_PUBLICATION, 1) });
   assert.equal(c.fcm.messages.length, 20);
-  assert.equal(bilan.lectures, 1 + 30 + 1 + 20 + 20 + 1);
+  assert.equal(bilan.lectures, 1 + 1 + 30 + 1 + 20 + 20 + 1);
 });
 
 // --- V13 : deux Miffs en commun ------------------------------------------------------------------------------------------------------
@@ -576,7 +576,7 @@ test("I2 : update plafonnée ou rejouée = 1 seule lecture (notifState) et 0 éc
   await creerMiff(MIFF, quatre());
   const c = contexte();
   const premiere = await publier(c);
-  assert.equal(premiere.lectures, 12);
+  assert.equal(premiere.lectures, 13);
 
   const rejeu = await publier(c);
   assert.equal(rejeu.motif, 'deja_vu');
@@ -640,4 +640,18 @@ test("M4 : une exception non prévue (Firestore en panne) ne remonte pas, et n'�
   for (const interdit of ['Zorglub', 'UidSecretXYZ', 'JetonSecretQQQ', 'MiffSecrete', 'devices', 'at ', 'Error:', 'stack']) {
     assert.ok(!tout.includes(interdit), `« ${interdit} » ne doit pas apparaître dans les journaux : ${tout}`);
   }
+});
+
+// --- I-A : Miff supprimée --------------------------------------------------------------------------------------------------------------
+
+test("I-A : la Miff n'existe plus (document supprimé, sous-collections restées) -> aucun envoi, motif miff_absente, 2 lectures, 0 écriture", async () => {
+  await creerMiff(MIFF, quatre());
+  await db.doc(`miffs/${MIFF}`).delete(); // suppression non récursive : fiches, sessions et appareils subsistent
+  const c = contexte();
+  const bilan = await publier(c);
+  assert.equal(bilan.motif, 'miff_absente');
+  assert.deepEqual(c.fcm.messages, []);
+  assert.equal(bilan.lectures, 2, 'pré-contrôle + Miff : aucune fiche lue');
+  assert.equal(bilan.ecritures, 0);
+  assert.equal(await existe(`notifState/${MIFF}`), false);
 });

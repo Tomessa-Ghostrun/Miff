@@ -39,6 +39,10 @@ before(async () => {
 after(viderEmulateur);
 
 const MIFF = 'MiffDeclencheur';
+// La fonction verifie que la Miff existe encore (miffs/{miffId}) avant tout envoi.
+before(async () => {
+  await db.doc(`miffs/${MIFF}`).set({ ownerUid: 'A1', name: 'Miff de test' });
+});
 async function membre(uid, partage, appareil = true) {
   await db.doc(`miffs/${MIFF}/members/${uid}`).set({ role: 'member', firstName: uid, sharing: { enabled: partage } });
   if (appareil) await db.doc(`users/${uid}/devices/dev0`).set({ token: `jeton-${uid}`, platform: 'android', tz: 'Europe/Paris', notify: { updates: true } });

@@ -294,20 +294,20 @@ Les alertes de budget **ne plafonnent pas** la dépense ; le plafond de dépense
 
 | Cas | Lectures | Écritures |
 |---|---|---|
-| Update dans une Miff de 4 membres (3 destinataires, 1 téléphone chacun) | **12** (contrôle préalable 1, fiches 4, téléphones 3, sessions 3, vérification finale 1) | **1** |
-| Miff de 15 membres | 45 | 1 |
-| Miff de 40 membres (bornée) | 72 au plus (73 si l'auteur est hors des 30 premières fiches) | 1 |
+| Update dans une Miff de 4 membres (3 destinataires, 1 téléphone chacun) | **13** (contrôle préalable 1, Miff 1, fiches 4, sessions 3, téléphones 3, vérification finale 1) | **1** |
+| Miff de 15 membres | 46 | 1 |
+| Miff de 40 membres (bornée) | 73 au plus (74 si l'auteur est hors des 30 premières fiches) | 1 |
 | 2e update de l'heure du même auteur, ou événement rejoué | **1** (le contrôle préalable arrête tout) | **0** |
 | Jeton rejeté par Google (appli désinstallée) | n/a | +1 (suppression) |
 
-**Effet sur le ratio de la section 1** : l'hypothèse du ticket est de 2 updates par utilisateur actif et par jour, soit **≈ +24 lectures et +2 écritures par jour et par utilisateur actif** (hypothèse haute). Le ratio de référence passe donc d'environ **75 à environ 100** lectures par utilisateur actif **dès que la fonction est en ligne** : ne pas y voir une dérive. Le quota gratuit de lectures (50 000 par jour) correspond alors à **≈ 500 utilisateurs actifs par jour** au lieu de ≈ 650. Les 30 premiers jours, relever séparément la **part des lectures due à la fonction** : console Firebase > Functions > `notifierUpdate` > Tableau de bord (nombre d'invocations du jour) × 12, à comparer au total de lectures de la journée.
+**Effet sur le ratio de la section 1** : l'hypothèse du ticket est de 2 updates par utilisateur actif et par jour, soit **≈ +26 lectures et +2 écritures par jour et par utilisateur actif** (hypothèse haute). Le ratio de référence passe donc d'environ **75 à environ 100** lectures par utilisateur actif **dès que la fonction est en ligne** : ne pas y voir une dérive. Le quota gratuit de lectures (50 000 par jour) correspond alors à **≈ 500 utilisateurs actifs par jour** au lieu de ≈ 650. Les 30 premiers jours, relever séparément la **part des lectures due à la fonction** : console Firebase > Functions > `notifierUpdate` > Tableau de bord (nombre d'invocations du jour) × 13, à comparer au total de lectures de la journée.
 
 **Quoi regarder (1 minute, chaque jour pendant la bêta, puis chaque semaine)**
 
 | Quoi | Où | Normal | À examiner |
 |---|---|---|---|
-| Invocations par jour | Functions > `notifierUpdate` > Tableau de bord | ≈ 2 par utilisateur actif et par jour (une invocation par publication, plus une pour chaque suppression de photo : les expirations et les arrêts de partage déclenchent la fonction, qui s'arrête aussitôt sans rien lire) | Plus de 10 par utilisateur actif : boucle de publication ou abus (App Check) |
-| Notifications envoyées vs écartées | Journaux (`npx firebase functions:log --only notifierUpdate -n 50 --project miff-3d283`) : lignes `notif.update.bilan` (`envoyes`, `ecartes`, `purges`, `lectures`, `ecritures`) | `envoyes` ≈ 1 à 3 par update ; `lectures` ≈ 12 pour une Miff de 4 | `envoyes` toujours 0 alors que des updates sont publiées : jetons non enregistrés, règles des jetons non déployées, ou partage coupé chez tout le monde |
+| Invocations par jour | Functions > `notifierUpdate` > Tableau de bord | ≈ **4** par utilisateur actif et par jour (≈ 2 publications + ≈ 2 suppressions de photo : chaque photo expirée, chaque arrêt de partage ou départ déclenche aussi la fonction, qui s'arrête aussitôt sans rien lire) ; à 10 000 utilisateurs actifs par jour, ≈ 1,2 million d'invocations par mois | Plus de 10 par utilisateur actif : boucle de publication ou abus (App Check) |
+| Notifications envoyées vs écartées | Journaux (`npx firebase functions:log --only notifierUpdate -n 50 --project miff-3d283`) : lignes `notif.update.bilan` (`envoyes`, `ecartes`, `purges`, `lectures`, `ecritures`) | `envoyes` ≈ 1 à 3 par update ; `lectures` ≈ 13 pour une Miff de 4 | `envoyes` toujours 0 alors que des updates sont publiées : jetons non enregistrés, règles des jetons non déployées, ou partage coupé chez tout le monde |
 | Erreurs d'envoi | Lignes `notif.update.fcm-erreur` (`code` : 1 jeton inconnu, 8 clé APNs refusée, 3 ou 4 panne passagère de Google, 9 message refusé) | Aucune, ou quelques `code 1` isolés (purge normale) | **`code 8` en série** : clé APNs à revoir (ticket §12) ; **`code 1` > 10 % des envois** : nettoyage insuffisant (signal 3 du ticket §14) ; `code 5` ou 6 : quota d'envoi atteint |
 | Plafonnées / rejouées | Lignes `notif.update.ignore` (`motif: plafond` ou `deja_vu`) | Quelques-unes | `deja_vu` en nombre : Google livre les événements plusieurs fois (le comportement est sûr, mais regarder le coût) |
 | Dépense | Google Cloud > Facturation > Rapports, filtre projet `miff-3d283` | 0 € à quelques centimes | Une ligne qui monte, ou un e-mail de l'alerte de budget |
