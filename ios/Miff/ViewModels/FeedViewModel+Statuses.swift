@@ -94,6 +94,11 @@ extension FeedViewModel {
                 timers.firstAnswer?.cancel()
                 noteAnswer(fromCache: fromCache, timers: timers)
                 statusView = .loaded(byUid: byUid, fromCache: fromCache)
+                if !fromCache {
+                    dependencies.onStatusesLoaded(
+                        FeedStatusesEvent(miffId: miffId, statuses: byUid, myUid: dependencies.currentUid())
+                    )
+                }
             }
         }
     }

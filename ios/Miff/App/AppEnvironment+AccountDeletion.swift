@@ -21,6 +21,7 @@ struct AccountDeletionServices {
                 notifications: SystemLocalNotificationsCleaner(),
                 trackingLocal: TrackingLocalFileStore(),
                 detectionJournal: DetectionJournals.make(),
+                notificationData: NotificationLocalData.live(),
                 updateLedger: updateLedger
             )
         )

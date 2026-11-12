@@ -13,6 +13,8 @@ struct SettingsDestinationView: View {
     let restricted: Bool
     let navigate: (SettingsRoute) -> Void
     let onBack: () -> Void
+    /// Toucher une ligne du centre de notifications : le centre se referme et l'onglet demandé s'ouvre (jamais une erreur).
+    var onOpenNotification: (NotificationDestination) -> Void = { _ in }
 
     var body: some View {
         if SettingsAccess.isAllowed(route, restricted: restricted) {
@@ -29,7 +31,8 @@ struct SettingsDestinationView: View {
                     onBack: onBack,
                     onOpenMyInfo: { navigate(.myInfo) },
                     onOpenAccount: { navigate(.account) },
-                    onOpenPrivacy: { navigate(.privacy) }
+                    onOpenPrivacy: { navigate(.privacy) },
+                    onOpenNotifications: { navigate(.notifications) }
                 ),
                 build: .current,
                 restricted: restricted
@@ -52,6 +55,37 @@ struct SettingsDestinationView: View {
             )
         case .detectionHelp:
             DetectionHelpView(onBack: onBack)
+        case .notifications, .notificationCenter, .notificationsHelp:
+            notificationScreen
+        }
+    }
+
+    /// NOTIF-P0 : Réglages > Notifications, le centre de notifications et l'aide « notifications coupées ».
+    @ViewBuilder
+    private var notificationScreen: some View {
+        switch route {
+        case .notifications:
+            NotificationSettingsView(
+                model: environment.makeNotificationSettingsViewModel(),
+                actions: NotificationSettingsActions(
+                    onBack: onBack,
+                    onOpenCenter: { navigate(.notificationCenter) },
+                    onOpenHelp: { navigate(.notificationsHelp) }
+                )
+            )
+        case .notificationCenter:
+            NotificationCenterView(
+                model: environment.makeNotificationCenterViewModel(),
+                service: environment.notifications.center,
+                miffName: { environment.notificationMiffName($0) },
+                actions: NotificationCenterActions(
+                    onBack: onBack,
+                    onOpen: onOpenNotification,
+                    onOpenHelp: { navigate(.notificationsHelp) }
+                )
+            )
+        default:
+            NotificationHelpView(onBack: onBack)
         }
     }
 }

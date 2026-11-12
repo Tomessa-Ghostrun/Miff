@@ -20,6 +20,8 @@ struct FeedScreenActions {
     let onOpenMap: (PositionFix, @escaping (Bool) -> Void) -> Void
     let onSignOut: () -> Void
     let onOpenSettings: () -> Void
+    /// La cloche : le centre de notifications (NOTIF-6I).
+    let onOpenNotifications: () -> Void
 }
 
 private struct HeaderHeightKey: PreferenceKey {
@@ -35,6 +37,9 @@ struct FeedScreen: View {
     @ObservedObject var awaiting: AwaitingAgreement
     let isActive: Bool
     let actions: FeedScreenActions
+    /// NOTIF-P0 : le point de la cloche (non lu) et la carte « deuxième chance ».
+    @ObservedObject var notificationCenter: NotificationCenterService
+    @ObservedObject var secondChance: NotificationSecondChanceViewModel
 
     @State private var headerModel = FeedHeaderModel()
     @State private var headerHeight: CGFloat = 0
@@ -175,6 +180,7 @@ struct FeedScreen: View {
             topInset: headerHeight,
             isActive: isActive,
             agreementWaiting: ready.activeId.map { awaiting.waiting.contains($0) } ?? false,
+            secondChanceDue: secondChance.isDue,
             scrollToTop: scrollToTop,
             actions: listActions,
             onContentMoved: { headerModel.contentMoved(to: $0) }
@@ -184,6 +190,7 @@ struct FeedScreen: View {
     private var listActions: FeedListActions {
         let model = self.model
         let awaiting = self.awaiting
+        let secondChance = self.secondChance
         return FeedListActions(
             card: MemberCardActions(
                 onLocate: { model.onLocate(uid: $0) },
@@ -199,7 +206,9 @@ struct FeedScreen: View {
             ),
             onRetry: { model.retry() },
             onReviewAgreement: { awaiting.requestReview() },
-            onRefresh: { await model.pullToRefresh() }
+            onRefresh: { await model.pullToRefresh() },
+            onSecondChanceActivate: { Task { await secondChance.activate() } },
+            onSecondChanceDismiss: { secondChance.dismiss() }
         )
     }
 
@@ -219,6 +228,9 @@ struct FeedScreen: View {
                 myLevel: content?.myLevel ?? .neutral,
                 myStatusDescription: content.map { texts.label($0.myLabel) },
                 pill: pillState,
+                showsBell: ready.map { !$0.miffs.isEmpty } ?? false,
+                unreadNotifications: notificationCenter.unreadCount,
+                onOpenNotifications: actions.onOpenNotifications,
                 onOpenProfile: actions.onOpenProfile,
                 onLogo: {
                     headerModel.show()

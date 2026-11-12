@@ -32,6 +32,7 @@ import com.tomessa.miff.domain.feed.PositionFix
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.miffBottomInsets
+import com.tomessa.miff.ui.navigation.holdForDiagnostic
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorActionPrimary
@@ -62,7 +63,12 @@ fun LocateSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     // "Cette action n'est pas disponible sur cet appareil." when no application of maps answers (the sheet stays open).
     var mapUnavailable by remember { mutableStateOf(false) }
-    ModalBottomSheet(onDismissRequest = onDismiss, sheetState = sheetState, containerColor = colorBgSurface) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+        containerColor = colorBgSurface,
+        modifier = Modifier.holdForDiagnostic(),
+    ) {
         Column(
             modifier =
                 Modifier

@@ -102,10 +102,10 @@ struct MiffOnboardingHost: View {
 @MainActor
 struct MiffHomeHost: View {
     private let environment: AppEnvironment
-    @ObservedObject private var directory: MiffDirectory
+    @ObservedObject var directory: MiffDirectory
     /// Le message calme d'un lieu enregistré, en mémoire seulement (LOC-3).
-    @ObservedObject private var placeNotices: PlaceNotices
-    @State private var path: [MiffRoute] = []
+    @ObservedObject var placeNotices: PlaceNotices
+    @State var path: [MiffRoute] = []
     /// Le profil de la personne (onglet Profil, Mes informations) : lu une fois par session, gardé ici pour les deux écrans.
     @StateObject private var profile: ProfileTabViewModel
     /// Les membres des cartes de Miff du Profil (photos, nombre) : ce que le Feed a lu pour la Miff affichée, plus une lecture ponctuelle
@@ -170,6 +170,7 @@ struct MiffHomeHost: View {
                     onOpenMiff: { open(.miff($0)) },
                     onCreateMiff: { createMiffFromProfile() },
                     onOpenSettings: { open(.settings($0)) },
+                    tabRequests: environment.notifications.tabRequests,
                     feed: { context in feedTab(context) }
                 )
                     .toolbar(.hidden, for: .navigationBar)
@@ -192,7 +193,7 @@ struct MiffHomeHost: View {
         // décision du PM du 2026-11-07) ; les autres écrans des Réglages restent où ils sont.
         .onChange(of: MainShellRules.hasNoMiff(directory.state)) { noMiff in
             if noMiff {
-                path.removeAll { $0.isMyInfoScreen }
+                path.removeAll { $0.isMyInfoScreen || $0.isNotificationScreen }
             }
         }
         // De retour à l'écran racine après un lieu ou un formulaire : la liste des lieux du Profil est relue si un créateur y a touché.
@@ -213,6 +214,12 @@ struct MiffHomeHost: View {
         // serveur que l'accès à chaque Miff existe encore, avant d'en montrer quoi que ce soit (ticket §5.7, critère D2).
         .task {
             await directory.refreshIfNeeded()
+        }
+        // NOTIF-P0 : le centre de notifications et les choix de la personne sont lus depuis l'appareil (aucun réseau) pour que la cloche
+        // dise tout de suite s'il y a du non lu.
+        .task {
+            environment.notifications.center.load()
+            environment.notifications.preferences.reload()
         }
         // Une suppression non terminée est reprise au lancement (critère S4), et une suppression qui se termine pendant que la
         // personne est ailleurs que sur l'écran de cette Miff est dite avec calme.
@@ -260,7 +267,8 @@ struct MiffHomeHost: View {
                 onOpenOffer: { open(.placePaywall(.extraMiff)) },
                 onOpenMiff: { open(.miff($0)) },
                 onSignOut: { signOut() },
-                onOpenSettings: { open(.settings(.settings)) }
+                onOpenSettings: { open(.settings(.settings)) },
+                onOpenNotifications: { open(.settings(.notificationCenter)) }
             )
         )
     }
@@ -274,6 +282,15 @@ struct MiffHomeHost: View {
         case .openFlow:
             open(.create)
         }
+    }
+
+    /// Toucher une ligne du centre de notifications : la pile revient à la coquille et l'onglet demandé s'ouvre (le Feed, ou l'écran
+    /// Update — remplacé par le Feed dans les builds qui n'ont pas le bouton central).
+    private func openNotification(_ destination: NotificationDestination) {
+        path.removeAll()
+        environment.notifications.tabRequests.request(
+            NotificationNavigation.tab(for: destination, showsUpdateButton: TabBarConfig.current.showsUpdateButton)
+        )
     }
 
     @ViewBuilder
@@ -309,7 +326,8 @@ struct MiffHomeHost: View {
                 profile: profile,
                 restricted: MainShellRules.hasNoMiff(directory.state),
                 navigate: { open(.settings($0)) },
-                onBack: { pop() }
+                onBack: { pop() },
+                onOpenNotification: { openNotification($0) }
             )
         default:
             placeDestination(route)
@@ -363,62 +381,6 @@ struct MiffHomeHost: View {
         }
     }
 
-    /// Ce que la liste des lieux d'une Miff reçoit : Miff+ ou non (nil tant que ce n'est pas lu auprès du serveur), le message d'un
-    /// enregistrement, les gestes.
-    private func placeContext(for miffId: String) -> PlaceListContext {
-        // Miff+ n'est affirmé (ou nié) que s'il a été LU auprès du serveur : sinon nil, et la liste n'affirme rien de la formule
-        // gratuite (ni compteur, ni pastille).
-        var premium: Bool?
-        if case .ready(let ready) = directory.state, ready.premiumKnown {
-            premium = ready.premium
-        }
-        let notices = placeNotices
-        return PlaceListContext(
-            premium: premium,
-            notice: notices.notice,
-            actions: PlaceListActions(
-                onOpen: { place in open(.placeDetail(miffId: miffId, placeId: place.id)) },
-                // Toujours le formulaire : il relit l'abonnement et les lieux auprès du SERVEUR et ne propose l'offre que si la limite
-                // est vraiment atteinte (jamais une décision prise sur l'annuaire, qui peut ignorer un Miff+).
-                // Le formulaire coche d'abord CETTE Miff (celle dont la liste est regardée), pas la dernière rejointe.
-                onAdd: { _ in open(.placeForm(placeId: nil, miffId: miffId)) }
-            ),
-            onLeave: { notices.consume() }
-        )
-    }
-
-    /// Le formulaire est fini. Un lieu supprimé (ou qui n'existe plus) ramène à la liste : le détail d'un lieu qui n'existe plus ne
-    /// vaut pas le retour.
-    private func finishPlaceForm(_ end: PlaceFormEnd) {
-        guard let last = path.last, last.isPlaceFormScreen else {
-            return
-        }
-        if end == .placeGone {
-            placeNotices.gone()
-        }
-        path.removeLast()
-        if end != .saved, case .placeDetail? = path.last {
-            path.removeLast()
-        }
-    }
-
-    /// L'offre s'ouvre ; elle REMPLACE le formulaire quand celui-ci n'a rien à offrir (la limite trouvée à l'ouverture).
-    private func openPlacePaywall(_ reason: PaywallReason, replacesForm: Bool) {
-        if replacesForm, case .placeForm? = path.last {
-            path.removeLast()
-        }
-        open(.placePaywall(reason))
-    }
-
-    /// Le lieu a été supprimé ailleurs pendant que son détail était ouvert : « Ce lieu n'existe plus. », et retour à la liste.
-    private func leavePlaceDetail() {
-        guard case .placeDetail? = path.last else {
-            return
-        }
-        placeNotices.gone()
-        path.removeLast()
-    }
-
     /// « Ouvrir la Miff » : l'écran de saisie du code est remplacé par l'écran de cette Miff.
     private func openExisting(_ miffId: String) {
         if !path.isEmpty {
@@ -439,7 +401,7 @@ struct MiffHomeHost: View {
         PlaceViewerRole.isCreator(ownerUid: directory.state.ownerUid(of: miffId), myUid: environment.session.currentUid)
     }
 
-    private func open(_ route: MiffRoute) {
+    func open(_ route: MiffRoute) {
         // Un créateur entre dans un lieu ou dans le formulaire d'un nouveau : les listes de lieux du Profil seront relues à leur retour.
         profilePlaces.routeOpened(route) { isCreator(of: $0) }
         // Une demande est écrite ou reprise là : les listes de demandes sont relues à leur retour.

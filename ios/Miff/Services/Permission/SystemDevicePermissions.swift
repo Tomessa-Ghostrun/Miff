@@ -111,7 +111,10 @@ final class SystemDevicePermissions: DevicePermissions {
     }
 
     func requestNotifications() async {
-        _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge])
+        // NOTIF-P0 (ticket §8 et §20) : bannière et son SEULEMENT. Pas de pastille sur l'icône (`.badge`), pas d'autorisation
+        // provisoire (`.provisional` : une livraison discrète annulerait l'utilité d'un rappel), pas de `.timeSensitive` ni de
+        // `.criticalAlert` (aucune capacité de plus).
+        _ = try? await UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound])
     }
 
     func openSettings() {

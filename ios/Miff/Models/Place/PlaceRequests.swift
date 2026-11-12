@@ -191,6 +191,23 @@ struct PlaceRequestDraft: Equatable, CustomStringConvertible {
     }
 }
 
+/// Le rôle de la personne devant une demande : créateur de la Miff, ou auteur de la demande. Jamais déduit d'un uid inconnu (nil).
+enum PlaceRequestRole {
+    /// Les Miffs que la personne a créées (connues par l'annuaire) : une Miff absente n'est pas la sienne, les boutons du créateur ne
+    /// s'affichent jamais dans le doute.
+    static func isCreator(miffId: String, creatorMiffs: Set<String>) -> Bool {
+        creatorMiffs.contains(miffId)
+    }
+
+    /// L'identifiant d'une demande est `{uid du demandeur}_{emplacement}` : l'auteur est la personne connectée, et seulement elle.
+    static func isAuthor(requestId: String, myUid: String?) -> Bool {
+        guard let myUid, !myUid.isEmpty, let author = PlaceRequest.parseId(requestId)?.requester else {
+            return false
+        }
+        return author == myUid
+    }
+}
+
 /// L'ordre des demandes dans une liste.
 enum PlaceRequestOrder {
     /// Le créateur : la plus ancienne d'abord (c'est celle qui attend depuis le plus longtemps). Une demande sans date vient en dernier.
