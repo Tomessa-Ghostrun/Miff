@@ -1,9 +1,17 @@
 package com.tomessa.miff.data.push
 
+import com.tomessa.miff.data.notification.NotificationPreferencesStore
+import com.tomessa.miff.data.notification.NotificationSettings
+import com.tomessa.miff.data.notification.NotificationTeardownSteps
+import com.tomessa.miff.domain.notification.NotificationPreferences
+import com.tomessa.miff.domain.notification.NotificationType
 import com.tomessa.miff.domain.push.RegistrationRecord
 import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -382,6 +390,107 @@ class PushRegistrarTest {
             now += 10 * 60_000L
             registrar.sync()
             assertTrue(registry.calls.any { it.kind == "upsert" })
+        }
+
+    // --- The sign-out shuts the registration (contract 4.6) ------------------------------------------------------------------------
+
+    private class MemoryPrefs : NotificationPreferencesStore {
+        var saved = NotificationPreferences()
+
+        override fun load() = saved
+
+        override fun save(preferences: NotificationPreferences) {
+            saved = preferences
+        }
+
+        override fun clear() {
+            saved = NotificationPreferences()
+        }
+    }
+
+    @Test
+    fun afterTheSignOutShutIt_theSameAccountAndSessionIsNeverRegisteredAgain_anotherSessionOpensItAgain() =
+        runTest {
+            registrar.sync()
+            registry.calls.clear()
+            val fetches = tokens.fetches
+            registrar.forget()
+            registry.calls.clear()
+            // The consent is still true, the account still signed in (the sign-out comes after the teardown): nothing wakes the service.
+            registrar.sync()
+            registrar.sync(freshToken = "token-2")
+            assertTrue(registry.calls.isEmpty())
+            assertEquals(fetches, tokens.fetches)
+            assertFalse(local.on)
+            assertNull(local.record)
+            // A new sign-in makes a new session: the registration is allowed again.
+            deviceId = "dev2"
+            registrar.sync()
+            assertTrue(registry.calls.any { it.kind == "upsert" && it.deviceId == "dev2" })
+        }
+
+    @Test
+    fun theTeardownOfASignOut_theResetOfTheChoicesDoesNotWakeTheRegistration() =
+        runTest {
+            val settings = NotificationSettings(MemoryPrefs())
+            // A choice that is not the default, so that the reset really emits (as it does for a person who changed something).
+            settings.setType(NotificationType.N9, false)
+            registrar.sync()
+            registry.calls.clear()
+            val fetches = tokens.fetches
+            // What the container does: every change of a choice asks the registry to look again.
+            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+                settings.preferences.drop(1).collect { registrar.sync() }
+            }
+            val teardown =
+                NotificationTeardownSteps(
+                    closePush = registrar::close,
+                    local = listOf(settings::reset),
+                    forgetPush = registrar::forget,
+                )
+            teardown.stop()
+            advanceUntilIdle()
+            assertEquals("only the deletion of the document, nothing written again", listOf("delete"), registry.kinds())
+            assertEquals("the service was not switched on again", fetches, tokens.fetches)
+            assertFalse(local.on)
+            assertNull(local.record)
+        }
+
+    @Test
+    fun aSlowForget_neverErasesTheRegistrationOfAnAccountThatSignedInAgainMeanwhile() =
+        runTest {
+            registrar.sync()
+            registry.calls.clear()
+            now += 31L * 24 * 3_600_000L
+            registry.hang = true
+            // A registration is stuck on the server and holds the lock.
+            val stuck = launch { registrar.sync() }
+            runCurrent()
+            // The sign-out: shut at once, the forget waits behind the stuck one.
+            val steps =
+                NotificationTeardownSteps(
+                    closePush = registrar::close,
+                    local = emptyList(),
+                    forgetPush = registrar::forget,
+                )
+            val signingOut = launch { steps.stop() }
+            runCurrent()
+            // The person signs in again (a new session) while the forget is still waiting; its first registration is queued behind it.
+            deviceId = "dev2"
+            registry.hang = false
+            val again = launch { registrar.sync() }
+            runCurrent()
+            advanceTimeBy(15_001L)
+            runCurrent()
+            stuck.join()
+            signingOut.join()
+            again.join()
+            assertEquals(
+                "the new session is registered, the late forget did not erase it",
+                "dev2",
+                local.record?.deviceId,
+            )
+            assertTrue(local.on)
         }
 
     @Test

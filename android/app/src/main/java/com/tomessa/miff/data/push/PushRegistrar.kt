@@ -51,6 +51,14 @@ class PushRegistrar(
     private var failedAtMillis: Long? = null
     private var cleaningFailedAtMillis: Long? = null
 
+    /**
+     * The (account, session) that [close] shut: nothing is registered for it again. Lifted only when ANOTHER account or ANOTHER session shows up (a sign-in makes a new
+     * identifier of session). Without it, the reset of the choices that follows a voluntary sign-out would wake [sync] while the account is still signed in, and the
+     * document just deleted would be written again (contract 4.6).
+     */
+    @Volatile
+    private var closedFor: Pair<String?, String?>? = null
+
     /** The wish the last call tried, to tell a retry from a change (a change of the wish is tried at once). */
     private var lastTriedWish: RegistrationWish? = null
 
@@ -65,6 +73,10 @@ class PushRegistrar(
             if (uid == null || deviceId == null || !DeviceDocumentId.isValid(deviceId) || !sessionValid(uid)) {
                 // Nobody is signed in with a valid session: the sign-out has already taken care of the document, there is nothing to do and nothing to write.
                 return
+            }
+            closedFor?.let { shut ->
+                if (shut.first == uid && shut.second == deviceId) return
+                closedFor = null
             }
             clearOtherDevices(uid, deviceId)
             val record = local.record()
@@ -175,16 +187,24 @@ class PushRegistrar(
     }
 
     /**
-     * The sign-out, the loss of the session, the deletion of the account: the document is deleted if the account can still be reached (bounded wait: the sign-out must not
-     * be held up), the token is invalidated with Google, everything remembered is erased. Never throws.
+     * The first thing of a sign-out, instant and without waiting for anything: this account and this session are shut (see [closedFor]), the token is invalidated with Google
+     * and the service switched off. A registration under way holds the lock while it talks to the server, and offline that can last: none of this waits for it.
      */
-    suspend fun forget() {
-        // FIRST, before waiting for the lock: a registration under way holds it while it talks to the server, and offline that can last. The token is invalidated at once and the
-        // service switched off in memory; the rest (the document, the memory of the phone) follows under the lock.
+    fun close() {
+        val uid = currentUid()
+        if (uid != null) closedFor = uid to sessionDeviceId()
         if (local.record() != null || local.serviceOn()) {
             tokens.disable()
             local.setServiceOn(false)
         }
+    }
+
+    /**
+     * The sign-out, the loss of the session, the deletion of the account: the document is deleted if the account can still be reached (bounded wait: the sign-out must not
+     * be held up), the token is invalidated with Google, everything remembered is erased. Never throws.
+     */
+    suspend fun forget() {
+        close()
         mutex.withLock {
             val record = local.record()
             if (record != null && currentUid() == record.uid) {

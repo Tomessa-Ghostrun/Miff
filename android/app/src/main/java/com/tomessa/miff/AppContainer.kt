@@ -64,11 +64,13 @@ import com.tomessa.miff.data.notification.AndroidNotificationTray
 import com.tomessa.miff.data.notification.AppVisibility
 import com.tomessa.miff.data.notification.FeedNotificationLink
 import com.tomessa.miff.data.notification.KnownMiffs
+import com.tomessa.miff.data.notification.KnownMiffsKeeper
 import com.tomessa.miff.data.notification.NotificationAuthorization
 import com.tomessa.miff.data.notification.NotificationCenter
 import com.tomessa.miff.data.notification.NotificationChannels
 import com.tomessa.miff.data.notification.NotificationScheduler
 import com.tomessa.miff.data.notification.NotificationSettings
+import com.tomessa.miff.data.notification.NotificationTeardownSteps
 import com.tomessa.miff.data.notification.NotificationTray
 import com.tomessa.miff.data.notification.SharedPreferencesKnownMiffs
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationCenterStore
@@ -394,6 +396,10 @@ class AppContainer(
      */
     val knownMiffs: KnownMiffs by lazy { SharedPreferencesKnownMiffs(context) }
 
+    private val knownMiffsKeeper: KnownMiffsKeeper by lazy {
+        KnownMiffsKeeper(knownMiffs, currentUid = { authGateway.currentUid })
+    }
+
     /**
      * SRV-2, push notifications ("Un proche a donné des nouvelles", ticket docs/tickets/notification-update-membres.md). The registrar keeps the document of THIS device
      * (`users/{uid}/devices/{deviceId}`: token, time zone, the switch) in line with the choices of the person; it registers nothing without an account with a valid session
@@ -505,15 +511,7 @@ class AppContainer(
                 notificationScope.launch {
                     miffDirectory.state.collect { state ->
                         if (state is DirectoryState.Ready) {
-                            authGateway.currentUid?.let {
-                                knownMiffs.remember(
-                                    it,
-                                    state.miffs
-                                        .map { m ->
-                                            m.id
-                                        }.toSet(),
-                                )
-                            }
+                            knownMiffsKeeper.onDirectory(state.miffs.map { m -> m.id }.toSet(), state.fromCache)
                             notificationScheduler.onMiffsKnown(
                                 state.miffs.map { it.id }.toSet(),
                             )
@@ -529,16 +527,21 @@ class AppContainer(
 
     /** NOTIF-P0: the centre, the choices, the alarms and what is in the tray go with the session (contract of the purge, DUR-3). */
     private val notificationTeardown: SessionTeardown by lazy {
-        SessionTeardown {
-            // SRV-2: FIRST, while the account is still signed in (the sign-out comes after the teardown): the document of this device goes, the token is invalidated.
-            pushRegistrar.forget()
-            knownMiffs.clear()
-            notificationScheduler.clearAll()
-            notificationCenter.purge()
-            notificationSettings.reset()
-            notificationTray.cancelAll()
-            tabRequests.clear()
-        }
+        NotificationTeardownSteps(
+            // SRV-2: FIRST and at once, while the account is still signed in (the sign-out comes after the teardown): the push is shut and the token invalidated.
+            closePush = pushRegistrar::close,
+            local =
+                listOf(
+                    knownMiffsKeeper::onSessionEnded,
+                    notificationScheduler::clearAll,
+                    notificationCenter::purge,
+                    notificationSettings::reset,
+                    notificationTray::cancelAll,
+                    tabRequests::clear,
+                ),
+            // Last: it waits (a few seconds at most) for the server to delete the document of this device.
+            forgetPush = pushRegistrar::forget,
+        )
     }
 
     /** A tap on a line of the centre (or, later, on a notification) asks the tabs to show the Feed or the Update. */
@@ -756,7 +759,7 @@ class AppContainer(
     /** After a voluntary "Quitter" the server confirmed: no message of lost access for it, purge of the cache, fresh list of Miffs. */
     suspend fun onMiffLeft(miffId: String) {
         miffDirectory.expectDeparture(miffId)
-        authGateway.currentUid?.let { knownMiffs.forget(it, miffId) }
+        knownMiffsKeeper.onLeft(miffId)
         notificationScope.launch { notificationScheduler.onMiffGone(miffId) }
         cachePurger.markPurgePending()
         cachePurger.purge()

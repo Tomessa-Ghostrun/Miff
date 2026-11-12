@@ -128,6 +128,12 @@ class NotificationAskStoreTest {
         assertTrue("forgetting for another account changes nothing", cold.contains("u1", "m2"))
         known.remember("u2", setOf("m9"))
         assertFalse("the list of the previous account is replaced", known.contains("u1", "m2"))
+        // A list that comes from the cache of the phone can add but never remove.
+        known.remember("u2", setOf("m10"), onlyAdd = true)
+        assertTrue(known.contains("u2", "m9") && known.contains("u2", "m10"))
+        known.remember("u3", setOf("m11"), onlyAdd = true)
+        assertFalse("another account starts over", known.contains("u2", "m9"))
+        assertTrue(known.contains("u3", "m11"))
         known.clear()
         assertFalse(known.contains("u2", "m9"))
     }
