@@ -109,7 +109,9 @@ final class PhotoFullScreenLayoutTests: XCTestCase {
         XCTAssertTrue(code.contains(".scaledToFit()"), "la photo entière, jamais recadrée")
         XCTAssertFalse(code.contains(".scaledToFill()"))
         XCTAssertTrue(code.contains(".frame(width: size.width, height: size.height)"), "la photo (et son conteneur) prennent l'écran ENTIER : la photo est centrée")
-        XCTAssertTrue(code.contains("        .ignoresSafeArea()\n"), "la racine occupe l'écran entier, zones sûres comprises")
+        XCTAssertTrue(code.contains("            .ignoresSafeArea()\n"), "le CONTENU occupe l'écran entier, zones sûres comprises")
+        XCTAssertFalse(code.contains("        }\n        .ignoresSafeArea()\n"), "jamais sur le GeometryReader lui-même : il rendrait des zones sûres à zéro")
+        XCTAssertTrue(code.contains("PhotoFullScreenLayout.screenSize("), "l'écran entier = zone visible + zones sûres")
         XCTAssertTrue(code.contains(".overlay(alignment: .top)"), "la croix et l'icône sont une surimpression collée en haut")
         XCTAssertTrue(code.contains(".overlay(alignment: .bottom)"), "la légende est une surimpression collée en bas")
         XCTAssertTrue(code.contains("footerOverlay(size: size, insets: insets)"))
@@ -127,6 +129,13 @@ final class PhotoFullScreenLayoutTests: XCTestCase {
         let bottomAt = try XCTUnwrap(code.range(of: ".overlay(alignment: .bottom)")?.lowerBound)
         XCTAssertLessThan(photoAt, topAt)
         XCTAssertLessThan(topAt, bottomAt)
+    }
+
+    func testTheScreenSizeIsTheVisibleAreaPlusTheSafeAreas() {
+        let size = PhotoFullScreenLayout.screenSize(visible: CGSize(width: 390, height: 751), top: 59, bottom: 34, leading: 0, trailing: 0)
+        XCTAssertEqual(size.width, 390)
+        XCTAssertEqual(size.height, 844)
+        XCTAssertEqual(PhotoFullScreenLayout.screenSize(visible: CGSize(width: 678, height: 354), top: 0, bottom: 21, leading: 59, trailing: 59), CGSize(width: 796, height: 375))
     }
 
     // MARK: - Quand la légende défile (calcul pur)
