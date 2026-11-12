@@ -228,6 +228,6 @@ final class NotificationDangerZoneReconcilerTests: ReconcilerTestCase {
     func testTouchingN6OpensTheFeedAndNeverTheUpdate() {
         let rig = makeRig(now: at(14, 0))
 
-        XCTAssertEqual(rig.reconciler.notificationTapped(type: "n6", key: nil, miffId: nil), .feed)
+        XCTAssertEqual(rig.reconciler.notificationTapped(type: "n6", miffId: nil), .feed)
     }
 }
