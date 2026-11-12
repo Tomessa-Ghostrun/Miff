@@ -194,6 +194,9 @@ struct LocalState: Codable, Equatable, CustomStringConvertible {
     /// MODE VOYAGE : le voyage en cours, ou nil. Gardé par chaque copie de cet état ; effacé avec lui (déconnexion, suppression du compte,
     /// session perdue). Facultatif : une copie écrite avant ce chantier n'a pas la clé.
     var travel: LocalTravel?
+    /// REPRISE DU PARTAGE : les Miffs dont la personne vient de reprendre le partage et que le suivi n'a pas encore remises à zéro (voir
+    /// `TrackingEngine+Resume.swift`). Facultatif : une copie écrite avant ce chantier n'a pas la clé.
+    var resumedMiffs: Set<String>?
 
     var fix: Fix? {
         get {
