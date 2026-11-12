@@ -119,8 +119,9 @@ extension FirestorePlaceRequestRepository {
         if failure == .offline || failure == .unknown {
             let left = await guarded({ try await store.readOne(miffId: request.miffId, requestId: request.id) })
             if case .value(let found) = left, found == nil {
-                onPlaceAdded()
-                return .done(placeId: placeId)
+                // La demande a disparu : le lot est passé (le lieu existe), OU elle a été reprise ou traitée ailleurs (le lieu n'existe pas).
+                // « Ajouté » n'est dit qu'après avoir VU le lieu.
+                return await afterRequestVanished(request: request, placeId: placeId, failure: failure)
             }
         }
         if failure == .refused, case .loaded(let again) = await placeRepository.prepare(uid: uid) {
@@ -136,6 +137,28 @@ extension FirestorePlaceRequestRepository {
             }
         }
         return .failed(failure)
+    }
+
+    /// La demande n'existe plus après un lot sans réponse : le lieu est lu auprès du serveur. Vu : fait. Absent : la demande est partie sans lui
+    /// (reprise, traitée sur un autre téléphone). Illisible : le doute reste un échec.
+    private func afterRequestVanished(
+        request: PlaceRequest,
+        placeId: String,
+        failure: MiffFailure
+    ) async -> RequestAcceptResult {
+        let places = self.places
+        let miffId = request.miffId
+        switch await guarded({ try await places.readPlaces(miffId: miffId) }) {
+        case .value(let found):
+            let name = PlaceName.stored(request.name)
+            guard found.contains(where: { $0.id == placeId && $0.name == name }) else {
+                return .gone
+            }
+            onPlaceAdded()
+            return .done(placeId: placeId)
+        case .failed:
+            return .failed(failure)
+        }
     }
 
     func decline(_ request: PlaceRequest, knownCount: Int) async -> RequestDeclineResult {

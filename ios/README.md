@@ -823,13 +823,15 @@ Le créateur d'une Miff **reçoit** les demandes, les **accepte** ou les **refus
 | `Views/Main/ProfileRequestsWatcher.swift` | Branche l'écouteur seulement pendant que l'app est devant (`scenePhase`), et dit au view model quelle est la Miff active du Feed |
 | `Views/Place/PlaceRequestUi.swift`, `PlaceRequestDetailView.swift` | La carte « À valider » du créateur (fond atténué, pointillés, « Demandé par {Prénom} », Refuser / Accepter), le détail |
 | `Views/Place/PlacePaywallView.swift`, `Views/Miff/MiffRoute.swift` | L'offre ouverte par « Accepter » (`MiffRoute.placeRequestPaywall`) avec les phrases `place_request_paywall_limit` / `_danger` |
-| `Services/Miff/MiffDeletion.swift` | Étape 2b : les demandes et le compteur sont supprimés avant le dernier lot de la suppression d'une Miff |
+| `Services/Miff/MiffDeletion.swift` | Étape 2b : les demandes et le compteur sont supprimés avant les lieux et le dernier lot de la suppression d'une Miff ; tout échec (refus compris) met la suppression en pause |
+| `Models/Notification/PlaceRequestLines.swift`, `NotificationRowText.swift`, `Services/Notification/RequesterDirectory.swift` | La ligne du centre par demande reçue (N8), son regroupement par demandeur, ses mots faits à l'affichage, les prénoms en mémoire seulement |
 | `Views/Main/MainTabBar.swift` | Le point (10 pt, sans nombre) sur l'onglet Profil |
 
 - **Le compteur du créateur est toujours une valeur ABSOLUE** (le nombre de demandes qu'il lit après son geste), jamais `increment(-1)` : cela répare aussi une dérive.
 - **Ce que le créateur voit en premier** : sous « Lieux de confiance de <Miff> », un bloc « À valider » (les demandes, la plus ancienne d'abord), puis les lieux ; l'encart « Mode voyage » reste en dernier.
 - **Pas de push** dans ce ticket : le créateur découvre la demande à l'ouverture de l'app (point sur l'onglet Profil, demande en tête de liste). L'écouteur est annulé en arrière-plan.
-- **Reste à faire** (dépend de la pile NOTIF-P0, PR #127 / #129 / #130, non fusionnée) : la ligne regroupée par demandeur dans le centre de notifications local et le point sur la cloche du Feed. La cloche et le centre n'existent pas dans `main`.
+- **Centre de notifications et cloche (critère C1)** : fait (la pile NOTIF-P0 est dans `main`). `Models/Notification/PlaceRequestLines.swift` (clé, une ligne par demande, regroupement des lignes non lues par demandeur et par Miff), `NotificationRowText.swift` (les mots, faits à l'affichage), `Services/Notification/RequesterDirectory.swift` (prénoms en MÉMOIRE seulement, vidés avec la session), `NotificationType.n8` (hors `allCases` : jamais un réglage, jamais une notification du système), `NotificationDestination.placeRequests` (ouvre l'onglet Profil sur la Miff). Les lignes sont écrites par `ProfileRequestsViewModel+Creator` (`onKnown`) et lues quand la liste est vue (`onListSeen`). Limite connue, comme sur Android : le centre est flouté quand les notifications du téléphone sont refusées ou jamais demandées.
+- **Revue indépendante** : la suppression d'une Miff passe en pause sur tout échec de ses demandes (refus compris, règles déployées) et supprime les demandes avant les lieux (contrat 2.8) ; « Accepter » vérifie que le lieu existe avant d'annoncer « ajouté » quand la demande est introuvable ; le rôle de la demande vient des Miffs créées ; « Réessayer » relance l'écouteur d'un créateur. Points mineurs 1, 4 et 6 : inchangés.
 
 ## Lieux de la Miff du carrousel, visibles par tous les membres (décision du PM, 2026-11-11 ; miroir d'Android PR #181)
 

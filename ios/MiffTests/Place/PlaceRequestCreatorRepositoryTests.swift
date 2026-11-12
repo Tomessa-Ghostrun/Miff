@@ -149,15 +149,38 @@ final class PlaceRequestCreatorRepositoryTests: XCTestCase {
         pending()
         requests.commitFailures = [firestoreError(FirestoreErrorNumber.unavailable)]
         let server = requests
+        let serverPlaces = places
         requests.onCommit = { _ in
             // Le lot atomique est passé : la demande n'existe plus, le lieu oui.
             server.requests = []
+            serverPlaces.places[testMiffId] = [testPlace(id: "NEWPLACE00000000001", name: "Club de judo")]
         }
 
         let result = await repository().accept(uid: creator, request: testRequest(), knownCount: 1)
 
         XCTAssertEqual(result, .done(placeId: "NEWPLACE00000000001"))
         XCTAssertEqual(added.value, 1)
+    }
+
+    func testARequestGoneWithoutItsPlaceIsGoneNotAddedAndAnUnreadablePlaceIsAFailure() async {
+        placeRepository.context = context(premium: true)
+        pending()
+        requests.commitFailures = [firestoreError(FirestoreErrorNumber.unavailable)]
+        let server = requests
+        requests.onCommit = { _ in
+            // Reprise par son auteur pendant que le lot était en route : la demande n'existe plus, le lieu n'a jamais été créé.
+            server.requests = []
+        }
+        let gone = await repository().accept(uid: creator, request: testRequest(), knownCount: 1)
+
+        pending()
+        requests.commitFailures = [firestoreError(FirestoreErrorNumber.unavailable)]
+        places.placesFailure = firestoreError(FirestoreErrorNumber.unavailable)
+        let unknown = await repository().accept(uid: creator, request: testRequest(), knownCount: 1)
+
+        XCTAssertEqual(gone, .gone, "jamais « ajouté » sans avoir vu le lieu")
+        XCTAssertEqual(unknown, .failed(.offline))
+        XCTAssertEqual(added.value, 0)
     }
 
     func testARefusalByTheRuleOfThePlaceBecomesTheOfferAndTheRequestStaysPending() async {

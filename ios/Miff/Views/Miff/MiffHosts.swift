@@ -293,6 +293,10 @@ struct MiffHomeHost: View {
     /// Update — remplacé par le Feed dans les builds qui n'ont pas le bouton central).
     private func openNotification(_ destination: NotificationDestination) {
         path.removeAll()
+        if case .placeRequests(let miffId) = destination {
+            // Une ligne de demande ouvre le Profil sur la Miff concernée (sans effet si la personne n'en fait plus partie).
+            directory.select(miffId: miffId)
+        }
         environment.notifications.tabRequests.request(
             NotificationNavigation.tab(for: destination, showsUpdateButton: TabBarConfig.current.showsUpdateButton)
         )

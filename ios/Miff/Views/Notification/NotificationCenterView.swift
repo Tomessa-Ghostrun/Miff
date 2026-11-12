@@ -12,23 +12,37 @@ struct NotificationCenterActions {
     let onOpenHelp: () -> Void
 }
 
+/// Les noms dont le centre a besoin pour écrire ses lignes, à l'affichage seulement.
+struct NotificationCenterNames {
+    /// Le nom de la Miff d'une ligne, seulement quand le compte en a plusieurs (sinon nil).
+    let miff: (String) -> String?
+    /// Le nom de la Miff d'une ligne de demande, TOUJOURS (sa phrase dit pour quelle Miff le lieu est proposé).
+    let requestMiff: (String) -> String?
+    /// Les prénoms des demandeurs (mémoire seulement) : la ligne se redessine quand l'un d'eux est lu.
+    let requesters: RequesterDirectory
+}
+
 struct NotificationCenterView: View {
     @StateObject private var model: NotificationCenterViewModel
     @ObservedObject private var service: NotificationCenterService
     private let actions: NotificationCenterActions
-    /// Le nom de la Miff d'une ligne, seulement quand le compte en a plusieurs (sinon nil).
     private let miffName: (String) -> String?
+    private let requestMiffName: (String) -> String?
+    /// Observé : la ligne d'une demande se redessine quand le prénom du demandeur est lu.
+    @ObservedObject private var directory: RequesterDirectory
     @Environment(\.scenePhase) private var scenePhase
 
     init(
         model: @autoclosure @escaping () -> NotificationCenterViewModel,
         service: NotificationCenterService,
-        miffName: @escaping (String) -> String?,
+        names: NotificationCenterNames,
         actions: NotificationCenterActions
     ) {
         _model = StateObject(wrappedValue: model())
         _service = ObservedObject(wrappedValue: service)
-        self.miffName = miffName
+        miffName = names.miff
+        requestMiffName = names.requestMiff
+        _directory = ObservedObject(wrappedValue: names.requesters)
         self.actions = actions
     }
 
@@ -121,7 +135,9 @@ struct NotificationCenterView: View {
 
     private var list: some View {
         let now = NotificationClock.wallMillis()
-        let groups = NotificationGrouping.groups(of: service.history.items, nowMillis: now, calendar: .current)
+        let groups = NotificationGrouping.groups(
+            of: PlaceRequestLines.displayed(service.history.items), nowMillis: now, calendar: .current
+        )
         return List {
             ForEach(groups, id: \.section.titleKey) { group in
                 Section {
@@ -147,10 +163,17 @@ struct NotificationCenterView: View {
             locale: .current,
             timeZone: .current
         )
+        let text = NotificationRowTexts.text(
+            for: item,
+            count: model.ids(of: item).count,
+            miffName: miffName(item.miffId),
+            requestMiffName: requestMiffName(item.miffId),
+            firstName: model.requesterName(of: item)
+        )
         return Button {
             actions.onOpen(model.open(item))
         } label: {
-            NotificationRowContent(item: item, time: time, miffName: miffName(item.miffId))
+            NotificationRowContent(item: item, text: text, time: time)
         }
         .buttonStyle(.plain)
         .listRowBackground(colorBgCanvas.color)
@@ -167,8 +190,8 @@ struct NotificationCenterView: View {
 /// UN élément par VoiceOver : « {titre}, {heure}, non lu ».
 private struct NotificationRowContent: View {
     let item: NotificationItem
+    let text: NotificationRowText
     let time: String
-    let miffName: String?
 
     var body: some View {
         HStack(alignment: .top, spacing: Spacing.sm) {
@@ -178,13 +201,15 @@ private struct NotificationRowContent: View {
                 .padding(.top, Spacing.xs + 2)
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
-                Text(verbatim: L10n.string(item.type.titleKey))
+                Text(verbatim: text.title)
                     .miffTextStyle(item.isUnread ? textBodyBold16 : textBodyRegular)
                     .foregroundColor(colorTextForm.color)
-                Text(verbatim: L10n.string(item.type.bodyKey))
-                    .miffTextStyle(textBodyRegular14)
-                    .foregroundColor(colorTextDescription.color)
-                if let miffName {
+                if let body = text.body {
+                    Text(verbatim: body)
+                        .miffTextStyle(textBodyRegular14)
+                        .foregroundColor(colorTextDescription.color)
+                }
+                if let miffName = text.miffName {
                     Text(verbatim: L10n.format("notif_center_in_miff", miffName))
                         .miffTextStyle(textBodyCaption)
                         .foregroundColor(colorTextSecondary.color)
@@ -202,7 +227,7 @@ private struct NotificationRowContent: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(
             Text(verbatim: NotificationTimeText.spokenLabel(
-                title: L10n.string(item.type.titleKey), time: time, unread: item.isUnread
+                title: text.title, time: time, unread: item.isUnread
             ))
         )
         .accessibilityAddTraits(.isButton)

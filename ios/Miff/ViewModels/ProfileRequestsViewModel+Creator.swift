@@ -53,7 +53,21 @@ extension ProfileRequestsViewModel {
             book.readingSucceeded(miffId: miffId, requests: requests)
         }
         resolveRequesters(miffId: miffId, requests: requests)
+        writeCenterLines(miffId: miffId, requests: requests)
         purgeLater(miffId: miffId)
+    }
+
+    /// UNE ligne par demande reçue dans le centre, écrite sans notification du système (l'app est devant : la ligne EST l'information).
+    /// Une demande de plus de 30 jours, ou faite par quelqu'un qui a quitté la Miff, n'en a pas. Une clé déjà inscrite ne l'est pas deux fois.
+    private func writeCenterLines(miffId: String, requests: [PlaceRequest]) {
+        guard let center else {
+            return
+        }
+        let now = nowMillis()
+        let received = requests.filter { !$0.isExpired(nowMillis: now) && state.requester(of: $0) != .notMember }
+        for line in PlaceRequestLines.lines(miffId: miffId, requests: received, nowMillis: now) {
+            center.record(line)
+        }
     }
 
     // MARK: - Qui a demandé
@@ -90,6 +104,9 @@ extension ProfileRequestsViewModel {
             unknownSince[key] = nowMillis()
         }
         state.requesters[key] = answer
+        if case .known(let card) = answer {
+            directory?.put(miffId: miffId, uid: card.uid, firstName: card.firstName)
+        }
         if answer == .notMember {
             purgeLater(miffId: miffId)
         }
@@ -153,6 +170,12 @@ extension ProfileRequestsViewModel {
         }
         for request in requests {
             seen.insert(seenKey(miffId, request))
+        }
+        // Les lignes de cette Miff dans le centre sont vues aussi : la pastille de la cloche s'éteint avec le point du Profil.
+        if let center {
+            for id in PlaceRequestLines.ids(of: center.history.items.filter { $0.isUnread }, miffId: miffId) {
+                center.markRead(id: id)
+            }
         }
         publish()
     }

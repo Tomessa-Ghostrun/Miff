@@ -4,6 +4,8 @@ import SwiftUI
 private struct RequestsWatchKey: Equatable {
     let miffId: String?
     let active: Bool
+    /// « Réessayer » : un autre numéro, donc un autre écouteur.
+    let epoch: Int
 }
 
 /// Ce qui dit au view model quelle est la Miff active du Feed et si la personne l'a créée.
@@ -41,7 +43,7 @@ struct ProfileRequestsWatcher: View {
                     creator: PlaceViewerRole.isCreator(ownerUid: key.ownerUid, myUid: myUid)
                 )
             }
-            .task(id: RequestsWatchKey(miffId: model.tracked, active: scenePhase == .active)) {
+            .task(id: RequestsWatchKey(miffId: model.tracked, active: scenePhase == .active, epoch: model.watchEpoch)) {
                 guard scenePhase == .active, let miffId = model.tracked else {
                     return
                 }

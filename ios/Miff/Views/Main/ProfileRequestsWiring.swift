@@ -79,11 +79,15 @@ extension AppEnvironment {
     /// Le view model des demandes d'ajout d'un lieu, créé avec la session de l'hôte (un par compte et par session).
     func makeProfileRequestsViewModel() -> ProfileRequestsViewModel {
         let session = self.session
-        return ProfileRequestsViewModel(
+        let model = ProfileRequestsViewModel(
             repository: placeRequestRepository,
             network: network,
             myUid: { session.currentUid }
         )
+        // Le centre de notifications (une ligne par demande reçue) et les prénoms derrière ses lignes (mémoire seulement).
+        model.center = notifications.center
+        model.directory = notifications.requesters
+        return model
     }
 }
 

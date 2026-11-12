@@ -113,6 +113,8 @@ final class ProfileRequestsViewModel: ObservableObject {
     /// L'offre doit s'ouvrir (la formule gratuite a ses 3 lieux, ou la demande est une zone de danger) : l'hôte la consomme. La demande reste
     /// en attente.
     @Published var paywall: PaywallReason?
+    /// Monte à chaque « Réessayer » d'un créateur : l'hôte relance l'écouteur (un créateur ne lit pas, il écoute).
+    @Published var watchEpoch = 0
 
     let repository: PlaceRequestRepository
     let network: NetworkMonitor
@@ -134,6 +136,9 @@ final class ProfileRequestsViewModel: ObservableObject {
     var onAccepted: (String) -> Void = { _ in }
     /// Les Miffs que la personne a maintenant, une fois connues : une lecture qui finit après le départ d'une Miff est jetée.
     var knownMiffIds: Set<String>?
+    /// Le centre de notifications (local) et les prénoms derrière ses lignes : une ligne par demande reçue (nil dans les tests sans centre).
+    var center: NotificationCenterService?
+    var directory: RequesterDirectory?
 
     init(
         repository: PlaceRequestRepository,
@@ -218,6 +223,9 @@ final class ProfileRequestsViewModel: ObservableObject {
             return
         }
         book.invalidate(miffId: miffId)
+        if creatorMiffs.contains(miffId) {
+            watchEpoch += 1
+        }
         onCardShown(miffId: miffId, creator: creatorMiffs.contains(miffId))
     }
 

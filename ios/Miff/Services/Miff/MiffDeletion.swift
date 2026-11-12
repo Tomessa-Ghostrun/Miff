@@ -53,13 +53,15 @@ final class MiffDeletion: MiffDeleter {
         guard !Task.isCancelled else {
             return .paused(.unknown)
         }
-        if let stopped = await deletePlaces(miffId: miffId) {
+        // Les demandes d'abord (contrat 2.8), puis les lieux : une demande porte une adresse et des coordonnées, elle ne doit jamais rester
+        // orpheline derrière une Miff supprimée.
+        if let stopped = await deletePlaceRequests(miffId: miffId) {
             return stopped
         }
         guard !Task.isCancelled else {
             return .paused(.unknown)
         }
-        if let stopped = await deletePlaceRequests(miffId: miffId) {
+        if let stopped = await deletePlaces(miffId: miffId) {
             return stopped
         }
         guard !Task.isCancelled else {
@@ -153,9 +155,9 @@ final class MiffDeletion: MiffDeleter {
 
     // MARK: - Étape 2b : les demandes d'ajout d'un lieu (LIEU-REQ, critère L3)
 
-    /// Les demandes et leur compteur, 5 par lot au plus (chaque suppression coûte 2 lectures de règles), AVANT le dernier lot : rien d'elles
-    /// ne reste une fois la Miff partie. Un refus veut dire que les règles ne les connaissent pas : il n'y a rien de ce genre à supprimer et
-    /// la suppression continue.
+    /// Les demandes et leur compteur, 5 par lot au plus (chaque suppression coûte 2 lectures de règles), AVANT les lieux et le dernier lot :
+    /// rien d'elles ne reste une fois la Miff partie. Les règles des demandes sont déployées : TOUT échec (réseau, mais aussi refus) met la
+    /// suppression en pause, jamais une Miff supprimée qui laisse des demandes orphelines (adresses et coordonnées inaccessibles).
     private func deletePlaceRequests(miffId: String) async -> MiffDeletionResult? {
         let store = self.store
         let read = await guardedCall(timeoutSeconds: timeoutSeconds) {
@@ -166,10 +168,7 @@ final class MiffDeletion: MiffDeleter {
         case .value(let found):
             leftovers = found
         case .failed(let failure, _):
-            guard failure == .refused else {
-                return .paused(failure)
-            }
-            leftovers = PlaceRequestLeftovers(requestIds: [], counterExists: false)
+            return .paused(failure)
         }
         var chunks: [[String]] = []
         var start = 0
@@ -191,7 +190,7 @@ final class MiffDeletion: MiffDeleter {
                 withCounter: leftovers.counterExists && index == chunks.count - 1
             )
             let deleted = await guardedCall(timeoutSeconds: timeoutSeconds) { try await store.commit(writes) }
-            if case .failed(let failure, _) = deleted, failure != .refused {
+            if case .failed(let failure, _) = deleted {
                 return .paused(failure)
             }
         }

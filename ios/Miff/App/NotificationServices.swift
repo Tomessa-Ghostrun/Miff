@@ -12,6 +12,8 @@ struct NotificationServices {
     let tabRequests: TabRequests
     /// Tout ce que les notifications gardent sur le téléphone, avec ce qui l'efface.
     let localData: NotificationLocalData
+    /// Les prénoms derrière les lignes de demandes d'un lieu (mémoire seulement, vidés avec la session).
+    let requesters: RequesterDirectory
 
     static func make(currentUid: @escaping () -> String?) -> NotificationServices {
         let data = NotificationLocalData.live()
@@ -19,7 +21,8 @@ struct NotificationServices {
             center: NotificationCenterService(store: data.center, currentUid: currentUid),
             preferences: NotificationPreferencesService(store: data.preferences, currentUid: currentUid),
             tabRequests: TabRequests(),
-            localData: data
+            localData: data,
+            requesters: RequesterDirectory()
         )
     }
 
@@ -29,10 +32,12 @@ struct NotificationServices {
         let center = self.center
         let preferences = self.preferences
         let data = self.localData
+        let requesters = self.requesters
         return {
             await MainActor.run {
                 center.purge()
                 preferences.forget()
+                requesters.stop()
             }
             data.eraseSession()
             await SystemLocalNotificationsCleaner().removeAll()
