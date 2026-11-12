@@ -1129,4 +1129,45 @@
     <string name="paywall_terms_link">Conditions d\'utilisation</string>
     <string name="paywall_privacy_link">Politique de confidentialité</string>
     <string name="android_paywall_store_name">Google Play</string>
+
+    <!-- COULEURS-1: l'ecran « Les couleurs de ta Miff » (ouvert en touchant la bulle du Feed) -->
+    <string name="feed_colors_title">Les couleurs de ta Miff</string>
+    <string name="feed_colors_intro">Les couleurs te disent, d\'un coup d\'œil, si tes proches ont donné des nouvelles récemment. Ce sont des repères, jamais des alarmes.</string>
+    <string name="feed_colors_person_title">La couleur d\'une personne</string>
+    <string name="feed_colors_person_intro">C\'est l\'anneau autour de sa photo et le liseré de sa carte.</string>
+    <string name="feed_colors_person_green_title">Vert</string>
+    <string name="feed_colors_person_green_body">Tout va bien. La personne est dans un lieu de confiance, ou elle en est partie depuis %1$s au plus.</string>
+    <string name="feed_colors_person_orange_title">Orange</string>
+    <string name="feed_colors_person_orange_body">Un peu de silence. La personne a quitté un lieu de confiance et n\'a pas donné de nouvelles depuis plus de %1$s (jusqu\'à %2$s).</string>
+    <string name="feed_colors_person_red_title">Rouge</string>
+    <string name="feed_colors_person_red_body">Pas de nouvelles depuis plus de %1$s après avoir quitté un lieu de confiance. Il y a souvent une explication simple (batterie, réseau…). Un message suffit parfois à être rassuré.</string>
+    <string name="feed_colors_person_gray_title">Gris</string>
+    <string name="feed_colors_person_gray_body">Pas d\'information à afficher : la personne n\'a pas encore donné de nouvelles, ou elle a arrêté de partager. Cela ne veut pas dire que quelque chose ne va pas.</string>
+    <string name="feed_colors_person_travel_title">Gris, en voyage</string>
+    <string name="feed_colors_person_travel_body">La personne a activé le mode voyage : sa carte indique « En voyage jusqu\'au… » et elle ne compte pas dans la couleur de la Miff.</string>
+    <string name="feed_colors_danger_title">Zone de danger</string>
+    <string name="feed_colors_danger_body">Si ta Miff a défini une zone de danger, la personne passe au rouge dès qu\'elle y entre. Si elle donne des nouvelles après son arrivée, elle repasse au vert pendant %1$s.</string>
+    <string name="feed_colors_changes_title">Ce qui change la couleur</string>
+    <string name="feed_colors_changes_arrive">Arriver dans un lieu de confiance : vert tout de suite.</string>
+    <string name="feed_colors_changes_leave">Quitter un lieu de confiance : le temps commence à compter.</string>
+    <string name="feed_colors_changes_news">Donner des nouvelles : le temps repart de zéro.</string>
+    <string name="feed_colors_changes_time">Le temps qui passe sans nouvelles : orange après %1$s, rouge après %2$s.</string>
+    <string name="feed_colors_changes_pause">Arrêter le partage ou activer le mode voyage : gris.</string>
+    <string name="feed_colors_miff_title">La couleur de la Miff</string>
+    <string name="feed_colors_miff_intro">C\'est la grande bulle en haut du fil. Elle résume la couleur de chacun, y compris la tienne.</string>
+    <string name="feed_colors_miff_green_title">Vert</string>
+    <string name="feed_colors_miff_green_body">Toutes les personnes dont on a des nouvelles sont vertes. La bulle dit « Tout va bien ».</string>
+    <string name="feed_colors_miff_orange_title">Orange</string>
+    <string name="feed_colors_miff_orange_body">Au moins une personne est orange, et personne n\'est rouge.</string>
+    <string name="feed_colors_miff_red_title">Rouge</string>
+    <string name="feed_colors_miff_red_body">Au moins une personne est rouge. La bulle te dit de qui il s\'agit.</string>
+    <string name="feed_colors_miff_gray_title">Gris</string>
+    <string name="feed_colors_miff_gray_body">Personne n\'a encore donné de nouvelles, tes proches sont tous en voyage, il n\'y a personne d\'autre dans la Miff, ou tu as arrêté de partager.</string>
+    <string name="feed_colors_miff_ignored">Les personnes en gris ne comptent pas dans la couleur de la Miff.</string>
+    <string name="feed_colors_not_title">Ce que les couleurs ne disent pas</string>
+    <string name="feed_colors_not_alert">Ce n\'est pas une alerte d\'urgence. Miff ne prévient jamais les secours : c\'est toi et tes proches qui décidez quoi faire.</string>
+    <string name="feed_colors_not_location">Ce n\'est pas une position en direct. Une couleur ne montre jamais où se trouve quelqu\'un.</string>
+    <string name="feed_colors_not_verdict">Orange ou rouge ne veut pas dire qu\'il y a un problème, seulement qu\'on n\'a pas eu de nouvelles depuis un moment.</string>
+    <string name="feed_colors_not_delay">Ton téléphone calcule les couleurs à partir des dernières informations reçues. Sans connexion, elles peuvent avoir un peu de retard : le fil indique alors l\'heure des dernières informations.</string>
+    <string name="feed_colors_bubble_action_a11y">Comprendre les couleurs</string>
 </resources>

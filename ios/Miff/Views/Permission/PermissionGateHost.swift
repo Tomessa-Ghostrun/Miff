@@ -49,6 +49,11 @@ struct PermissionGateHost<Content: View>: View {
                     Task {
                         await viewModel.onNotificationsAllowTapped()
                     }
+                },
+                onLater: {
+                    Task {
+                        await viewModel.onNotificationsLaterTapped()
+                    }
                 }
             )
         case .location:

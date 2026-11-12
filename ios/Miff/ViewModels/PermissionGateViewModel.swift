@@ -196,6 +196,19 @@ final class PermissionGateViewModel: ObservableObject {
         await refresh()
     }
 
+    /// « Plus tard » : la fenêtre du système n'est PAS consommée (elle pourra encore s'afficher, depuis Réglages > Notifications ou la carte du
+    /// Feed). L'amorce ne revient plus pour ce compte, et la personne continue (jamais bloquant).
+    func onNotificationsLaterTapped() async {
+        guard state.screen == .notifications, !notificationsBusy else {
+            return
+        }
+        if let uid = currentUid() {
+            asked.markShown(uid: uid)
+        }
+        notificationsHandled = true
+        await refresh()
+    }
+
     // MARK: - Localisation
 
     /// Le bouton de l'écran de la localisation : la fenêtre du système, ou les Réglages de l'app.
