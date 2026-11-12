@@ -43,4 +43,8 @@ struct MiffRepositoryRules {
     /// d'attendre, l'une après l'autre, la réponse (ou le délai de 20 s) d'un serveur injoignable (cause du « Feed qui charge à
     /// l'infini » sans réseau). Rien n'est jamais créé, rejoint ni nettoyé à partir de ce cache. Par défaut vrai (les tests).
     var isOnline: () -> Bool = { true }
+
+    /// La personne vient de REPRENDRE le partage de cette Miff (à la place de `onSharingChanged`) : le suivi remet sa détection à zéro pour
+    /// elle, PUIS relit les Miffs. Nil : `onSharingChanged` seul.
+    var onSharingResumed: ((String) -> Void)?
 }

@@ -75,7 +75,10 @@ extension TrackingEngine {
             deps.local.save(state)
             return
         }
-        await watch(state, pass: pass, reason: reason, supplied: supplied, now: now)
+        // Le drapeau de reprise n'est consommé que si la détection peut vraiment tourner : sans « Toujours » + position exacte, il attend
+        // (l'autorisation accordée plus tard relance un passage, `accessChanged`, qui recalcule alors la présence).
+        let resumed = takeResumed(&state)
+        await watch(state, pass: pass, reason: reason, supplied: supplied, now: now, resumed: resumed)
     }
 
     /// Personne à prévenir : rien n'est surveillé, rien n'est gardé (la personne ne partage nulle part avec le consentement v3).
@@ -83,7 +86,11 @@ extension TrackingEngine {
         journal.record(.notEligible)
         await deps.geofences.disarmAll()
         await stopMovement()
-        deps.local.save(LocalState(uid: uid, checkedAtMillis: state.checkedAtMillis))
+        var fresh = LocalState(uid: uid, checkedAtMillis: state.checkedAtMillis)
+        // Une reprise annoncée n'est pas oubliée parce que la relecture du serveur n'a pas (encore) trouvé la Miff éligible : elle sera
+        // recalculée au passage où elle le sera.
+        fresh.resumedMiffs = state.resumedMiffs
+        deps.local.save(fresh)
     }
 
     private func noteSystemConditions(_ reason: Reason) async {
@@ -100,7 +107,14 @@ extension TrackingEngine {
     }
 
     /// Ce qui se fait quand tout est en règle : armer, lire la position, écrire ce qui attend.
-    private func watch(_ start: LocalState, pass: PassContext, reason: Reason, supplied: Fix?, now: Int) async {
+    private func watch(
+        _ start: LocalState,
+        pass: PassContext,
+        reason: Reason,
+        supplied: Fix?,
+        now: Int,
+        resumed: [String] = []
+    ) async {
         var state = start
         // Tout réenregistrer (et redemander l'état de chaque zone) est réservé aux cas où le système a pu perdre ou changer ses
         // régions : échec de la surveillance, autorisation changée. Aux autres occasions, seul ce qui manque est enregistré.
@@ -116,6 +130,9 @@ extension TrackingEngine {
             journal.record(.positionRead, batteryPct: pass.batteryPct)
         }
         state = reconcilePlaces(state, now: now)
+        if !resumed.isEmpty {
+            state = presenceAfterResume(state, miffIds: resumed, fix: fix, now: now)
+        }
         if reason == .opened {
             await recheckStates(state, fix: fix)
         }

@@ -12,7 +12,7 @@ final class SharingChangeHookTests: XCTestCase {
     private lazy var cache = FakeCachePurger(timeline: timeline)
     private let changes = TestBox(0)
 
-    private func repo() -> FirestoreMiffRepository {
+    private func repo(onResumed: ((String) -> Void)? = nil) -> FirestoreMiffRepository {
         let counter = changes
         var rules = MiffRepositoryRules(
             newMiffId: { testMiffId },
@@ -21,6 +21,7 @@ final class SharingChangeHookTests: XCTestCase {
             deviceId: { testDeviceId }
         )
         rules.onSharingChanged = { counter.value += 1 }
+        rules.onSharingResumed = onResumed
         return FirestoreMiffRepository(
             store: store,
             observer: FakeMiffObserver(),
@@ -77,6 +78,23 @@ final class SharingChangeHookTests: XCTestCase {
 
         XCTAssertEqual(offline, .failed(.offline))
         XCTAssertEqual(changes.value, 2)
+    }
+
+    func testResumingTheSharingTellsTheTrackingWhichMiffInsteadOfAPlainChangeAndStoppingDoesNot() async {
+        let resumedIds = TestBox([String]())
+        let onResumed: (String) -> Void = { resumedIds.value.append($0) }
+
+        let stop = await repo(onResumed: onResumed).setSharing(miffId: testMiffId, uid: uid, enabled: false)
+        XCTAssertEqual(stop, .done)
+        XCTAssertEqual(changes.value, 1)
+        XCTAssertTrue(resumedIds.value.isEmpty)
+
+        let resume = await repo(onResumed: onResumed).setSharing(miffId: testMiffId, uid: uid, enabled: true)
+
+        XCTAssertEqual(resume, .done)
+        XCTAssertEqual(resumedIds.value, [testMiffId])
+        // La reprise remplace le simple changement : le suivi relit lui-même, dans l'ordre.
+        XCTAssertEqual(changes.value, 1)
     }
 
     func testLeavingAMiffAndCleaningUpALostOneTellTheTracking() async {
@@ -269,6 +287,19 @@ final class TrackingRuntimeTests: XCTestCase {
         }
         XCTAssertEqual(values, ["in_trusted", "out"])
         XCTAssertEqual(background.ended.count, 2, "chaque travail rend son temps")
+    }
+
+    func testResumingTheSharingThroughTheRuntimeRecomputesThePresenceAndWritesItAgain() async {
+        await rig.engine.refresh(.opened)
+        await rig.engine.onTransition(.enter, zoneKey: rig.homeKey, atMillis: rig.env.now - 60 * 1000)
+        let before = rig.store.statusWrites().count
+        let runtime = runtime()
+
+        runtime.sharingResumed(miffId: testMiffId)
+        await waitUntil { background.ended.count == 1 }
+
+        XCTAssertEqual(rig.store.statusWrites().count, before + 1)
+        XCTAssertEqual(rig.store.statusWrites().last?.data["presence"], .string("in_trusted"))
     }
 
     func testTheTwoOpeningsOfAColdStartAreOne() async {

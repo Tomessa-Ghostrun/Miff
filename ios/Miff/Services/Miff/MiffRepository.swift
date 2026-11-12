@@ -275,7 +275,7 @@ final class FirestoreMiffRepository: MiffRepository {
         }
         let result = await write { try await store.commit(writes) }
         if result == .done {
-            rules.onSharingChanged()
+            noteSharingChange(miffId: miffId, resumed: enabled)
         }
         // Un refus peut aussi vouloir dire « déjà dans l'état demandé » : la fenêtre demande le contraire de ce que disait la
         // fiche à son ouverture, et la fiche a pu changer depuis (un autre téléphone) ; les règles refusent alors une écriture
@@ -283,7 +283,7 @@ final class FirestoreMiffRepository: MiffRepository {
         if case .failed(let failure) = result, failure.mayHaveLanded || failure == .refused {
             let read = await guarded { try await store.readSharing(miffId: miffId, uid: uid) }
             if case .value(let current) = read, current == enabled {
-                rules.onSharingChanged()
+                noteSharingChange(miffId: miffId, resumed: enabled)
                 return .done
             }
         }
@@ -366,6 +366,19 @@ extension FirestoreMiffRepository {
     func recheckSessionIfRefused(_ failure: MiffFailure) async {
         if failure == .refused {
             await rules.recheckSession()
+        }
+    }
+}
+
+extension FirestoreMiffRepository {
+    /// Le suivi des lieux apprend que le partage a changé ; si c'est une REPRISE, il apprend d'abord laquelle (le serveur a supprimé le statut
+    /// à l'arrêt et l'a récrit « inconnu » : le suivi doit tout recalculer, voir `TrackingEngine+Resume.swift`), puis relit les Miffs : c'est
+    /// lui qui garde l'ordre.
+    fileprivate func noteSharingChange(miffId: String, resumed: Bool) {
+        if resumed, let onResumed = rules.onSharingResumed {
+            onResumed(miffId)
+        } else {
+            rules.onSharingChanged()
         }
     }
 }
