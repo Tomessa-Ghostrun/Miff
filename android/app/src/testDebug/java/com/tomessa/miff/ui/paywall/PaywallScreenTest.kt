@@ -126,6 +126,7 @@ class PaywallScreenTest {
         fontScale: Float? = null,
         reduceMotion: Boolean = false,
         owner: LifecycleOwner? = null,
+        request: Boolean = false,
     ): PaywallViewModel {
         composeRule.setContent {
             val density = LocalDensity.current
@@ -138,6 +139,7 @@ class PaywallScreenTest {
                         val content: @Composable () -> Unit = {
                             PaywallScreen(
                                 reason = reason,
+                                request = request,
                                 model = model,
                                 state = state,
                                 actions = actions,
@@ -528,6 +530,22 @@ class PaywallScreenTest {
         composeRule.onNodeWithText(text(R.string.place_paywall_danger_title)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.place_paywall_danger_body)).assertIsDisplayed()
         nothingToBuy()
+    }
+
+    @Test
+    fun comingSoon_aRequestAccepted_saysTheRequestStaysPending() {
+        host(PaywallReason.LIMIT, soon, request = true)
+        composeRule.onNodeWithText(text(R.string.place_request_paywall_limit)).assertIsDisplayed()
+        composeRule.onAllNodesWithText(text(R.string.place_paywall_limit_body)).assertCountEquals(0)
+        nothingToBuy()
+    }
+
+    @Test
+    fun comingSoon_aRequestAcceptedForADangerZone_saysTheRequestStaysPending() {
+        host(PaywallReason.DANGER, soon, request = true)
+        composeRule.onNodeWithText(text(R.string.place_request_paywall_danger)).assertIsDisplayed()
+        pass(3_300)
+        assertCrossThere()
     }
 
     @Test

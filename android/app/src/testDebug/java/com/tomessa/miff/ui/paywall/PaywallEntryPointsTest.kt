@@ -173,6 +173,15 @@ class PaywallEntryPointsTest {
     @Test
     fun entry_aSecondMiff_fromTheCardOfTheCarouselOfTheProfile() = entryBehaves(miffOfferRoute(), "extra_miff")
 
+    // "Accepter" on a place request received (LIEU-REQ-C): the same route with the request flag, through `openRequestOffer`.
+    @Test
+    fun entry_acceptingARequest_atTheLimit() =
+        entryBehaves(PlacePaywallRoute.of(PaywallReason.LIMIT, request = true), "extra_trusted_place")
+
+    @Test
+    fun entry_acceptingARequest_forADangerZone() =
+        entryBehaves(PlacePaywallRoute.of(PaywallReason.DANGER, request = true), "danger_zone")
+
     @Test
     fun entry_aDangerZone() = entryBehaves(PlacePaywallRoute.of(PaywallReason.DANGER), "danger_zone")
 

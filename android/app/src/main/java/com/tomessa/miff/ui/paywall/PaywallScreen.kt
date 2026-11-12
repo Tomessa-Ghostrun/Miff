@@ -141,6 +141,7 @@ internal fun currentPaywallState(): PaywallUiState = PaywallUiState.PRODUCTION
  *
  * "Notifications intelligentes" is NOT listed: no notification is sent yet (never promise what does not exist).
  *
+ * @param request the offer opened by "Accepter" on a place request received (LIEU-REQ-C): the context card says the request stays pending.
  * @param onShown called ONCE per display, when the screen is really on view (the `paywall_shown` event).
  * @param announce says a sentence to a screen reader without moving its focus; null = the system announcement.
  * @param reduceMotion animations turned off by the person: the cross appears at once.
@@ -151,6 +152,7 @@ fun PaywallScreen(
     model: PaywallViewModel,
     state: PaywallUiState,
     actions: PaywallActions,
+    request: Boolean = false,
     onShown: () -> Unit = {},
     announce: ((String) -> Unit)? = null,
     reduceMotion: Boolean = ReduceMotion.isRequested(LocalContext.current),
@@ -227,7 +229,7 @@ fun PaywallScreen(
             verticalArrangement = Arrangement.spacedBy(Spacing.m),
         ) {
             if (offer !is PaywallOffer.Subscribed) {
-                ContextCard(reason)
+                ContextCard(reason, request)
                 Text(
                     text = stringResource(R.string.place_paywall_headline),
                     style = textTitleBold24Gradient,
@@ -761,7 +763,10 @@ private fun Bubble(
 
 /** The calm box at the top: why the offer shows (design 14 and 15). */
 @Composable
-private fun ContextCard(reason: PaywallReason) {
+private fun ContextCard(
+    reason: PaywallReason,
+    request: Boolean,
+) {
     val limit = reason == PaywallReason.LIMIT
     Row(
         modifier =
@@ -830,6 +835,8 @@ private fun ContextCard(reason: PaywallReason) {
                     stringResource(
                         when {
                             reason == PaywallReason.MIFF -> R.string.feed_selector_paywall_body
+                            request && limit -> R.string.place_request_paywall_limit
+                            request -> R.string.place_request_paywall_danger
                             limit -> R.string.place_paywall_limit_body
                             else -> R.string.place_paywall_danger_body
                         },

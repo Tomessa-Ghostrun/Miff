@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
@@ -30,6 +31,7 @@ import com.tomessa.miff.domain.tracking.StatusLevel
 import com.tomessa.miff.ui.theme.GlassPalette
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
+import com.tomessa.miff.ui.theme.colorBrandPrimary
 import com.tomessa.miff.ui.theme.glassPalette
 
 private val BarShape = RoundedCornerShape(20.dp)
@@ -61,6 +63,8 @@ fun MainTabBar(
     glass: TabBarGlass = TabBarGlass.Default,
     /** Colour of the central button: the status of the person (wired by the UPDATE tickets; neutral grey until then). */
     updateStatus: StatusLevel = StatusLevel.NEUTRAL,
+    /** A request to add a place waits for the creator in the Profile (ticket LIEU-REQ-C): a small dot on the Profile tab, and its spoken name says why. */
+    profileDot: Boolean = false,
 ) {
     Box(
         modifier =
@@ -86,6 +90,7 @@ fun MainTabBar(
                     onClick = { onSelect(tab) },
                     palette = glassPalette(glass.variant),
                     updateStatus = updateStatus,
+                    dot = profileDot && tab == MainTab.PROFILE,
                 )
             }
         }
@@ -101,6 +106,8 @@ private fun TabItem(
     palette: GlassPalette,
     updateStatus: StatusLevel,
     modifier: Modifier = Modifier,
+    /** A small dot: something waits behind this tab (never a number). */
+    dot: Boolean = false,
 ) {
     val name =
         stringResource(
@@ -110,7 +117,7 @@ private fun TabItem(
                 }
 
                 MainTab.PROFILE -> {
-                    R.string.tabbar_profile_a11y
+                    if (dot) R.string.tabbar_profile_requests_a11y else R.string.tabbar_profile_a11y
                 }
 
                 // The colour is the ONLY visual signal of the central button (D25): the spoken name says the state for the screen reader.
@@ -156,6 +163,17 @@ private fun TabItem(
                     tint = tint,
                     modifier = Modifier.size(IconSize),
                 )
+                if (dot) {
+                    // The same dot as the bell of the Feed.
+                    Box(
+                        Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(top = Spacing.s, end = Spacing.s)
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(colorBrandPrimary),
+                    )
+                }
             }
 
             // The plate, ring and dot of the mockups (GlassTabBar.kt): a dot of colour, no pictogram, grey at the neutral state.

@@ -6696,6 +6696,40 @@
         }
       }
     },
+    "notif_n8_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A member of your Miff suggested a place. You can accept it or not from your Profile."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un membre de ta Miff propose un lieu. Tu peux l'accepter ou non depuis ton Profil."
+          }
+        }
+      }
+    },
+    "notif_n8_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A place to review"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un lieu à valider"
+          }
+        }
+      }
+    },
     "onboarding_have_account": {
       "extractionState": "manual",
       "localizations": {
@@ -9497,6 +9531,40 @@
         }
       }
     },
+    "place_request_a11y_pending_card": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pending request: %1$@, requested by %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demande en attente : %1$@, demandée par %2$@"
+          }
+        }
+      }
+    },
+    "place_request_a11y_pending_card_unknown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pending request: %@, requested by a member"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demande en attente : %@, demandée par un membre"
+          }
+        }
+      }
+    },
     "place_request_a11y_pending_mine": {
       "extractionState": "manual",
       "localizations": {
@@ -9510,6 +9578,57 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ta demande en attente : %@"
+          }
+        }
+      }
+    },
+    "place_request_accept": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accept"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accepter"
+          }
+        }
+      }
+    },
+    "place_request_accept_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accept the request: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accepter la demande : %@"
+          }
+        }
+      }
+    },
+    "place_request_accepted_toast": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "“%@” was added to the Miff."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "« %@ » a été ajouté à la Miff."
           }
         }
       }
@@ -9531,6 +9650,74 @@
         }
       }
     },
+    "place_request_by": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requested by %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demandé par %@"
+          }
+        }
+      }
+    },
+    "place_request_by_unknown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Requested by a member"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demandé par un membre"
+          }
+        }
+      }
+    },
+    "place_request_center_many": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ suggested %2$lld places for “%3$@”"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ a proposé %2$lld lieux pour « %3$@ »"
+          }
+        }
+      }
+    },
+    "place_request_center_one": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ suggested a place for “%2$@”"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ propose un lieu pour « %2$@ »"
+          }
+        }
+      }
+    },
     "place_request_cta_member": {
       "extractionState": "manual",
       "localizations": {
@@ -9544,6 +9731,91 @@
           "stringUnit": {
             "state": "translated",
             "value": "Demander l'ajout d'un lieu"
+          }
+        }
+      }
+    },
+    "place_request_date": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le %@"
+          }
+        }
+      }
+    },
+    "place_request_decline": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decline"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refuser"
+          }
+        }
+      }
+    },
+    "place_request_decline_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decline the request: %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refuser la demande : %@"
+          }
+        }
+      }
+    },
+    "place_request_declined_toast": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Request removed from the list."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Demande retirée de la liste."
+          }
+        }
+      }
+    },
+    "place_request_detail_banner_creator": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This place isn't in the Miff yet. It will be added if you accept."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce lieu n'est pas encore dans la Miff. Il y sera si tu acceptes."
           }
         }
       }
@@ -9667,6 +9939,57 @@
         }
       }
     },
+    "place_request_paywall_danger": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danger zones are part of Miff+. The request stays pending; you can also decline it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les zones de danger font partie de Miff+. La demande reste en attente, tu peux aussi la refuser."
+          }
+        }
+      }
+    },
+    "place_request_paywall_limit": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You've reached the free places limit. With Miff+, you can add this one and many more. The request stays pending; you can also decline it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu as atteint la limite de lieux gratuits. Avec Miff+, tu peux ajouter celui-ci et bien d'autres. La demande reste en attente, tu peux aussi la refuser."
+          }
+        }
+      }
+    },
+    "place_request_section_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To review"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À valider"
+          }
+        }
+      }
+    },
     "place_request_sending": {
       "extractionState": "manual",
       "localizations": {
@@ -9714,6 +10037,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ta demande partira dès que tu seras connecté."
+          }
+        }
+      }
+    },
+    "place_request_subscription_unknown": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We can't check your subscription right now. Please try again in a moment."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de vérifier ton abonnement pour l'instant. Réessaie dans un instant."
           }
         }
       }
@@ -13185,6 +13525,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Profil"
+          }
+        }
+      }
+    },
+    "tabbar_profile_requests_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profile, a place request to review"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil, une demande de lieu à valider"
           }
         }
       }
