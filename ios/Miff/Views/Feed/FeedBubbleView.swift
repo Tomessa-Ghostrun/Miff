@@ -3,7 +3,7 @@ import UIKit
 
 // La bulle de la Miff (maquettes 02 à 05) : UNE tache, de la couleur de la Miff, sous l'en-tête. Elle INFORME, elle n'alarme pas :
 // heures absolues pour l'orange et le rouge, aucun son, aucun défilement automatique, aucun point d'exclamation, jamais « en
-// sécurité ». Un pictogramme accompagne l'orange, le rouge et le neutre (la couleur n'est jamais seule), mais PAS le vert (décision du PM, 2026-11-08). Plusieurs alertes forment un carrousel (les rouges
+// sécurité ». AUCUN pictogramme dans la bulle, quelle que soit sa couleur (décision du PM, 2026-11-11) : les mots et la couleur suffisent. La phrase principale a EXACTEMENT le style des titres des autres écrans (`textDisplayHeadline`, 24 / 30, décision du PM du 2026-11-11). Plusieurs alertes forment un carrousel (les rouges
 // d'abord), avec des pastilles seulement quand il y a plusieurs pages, et « Alerte précédente / suivante » pour VoiceOver.
 
 /// Une tache douce et organique (une courbe fermée lisse par dix points), comme la tache des maquettes du PM. Symétrique en
@@ -65,14 +65,6 @@ struct BubbleView: View {
         BubbleMotion.enabled(reduceMotion: reduceMotion, active: isActive)
     }
 
-    /// MODE VOYAGE : l'avion est le symbole en filigrane de la bulle des voyageurs (la couleur n'est jamais seule).
-    private var travelSymbol: String? {
-        if case .travelers = bubble {
-            return "airplane"
-        }
-        return nil
-    }
-
     @ViewBuilder
     private var content: some View {
         if case .alerts(let pages, _) = bubble {
@@ -89,7 +81,7 @@ struct BubbleView: View {
                 }
             }
         } else {
-            BubbleBlob(level: bubble.level, symbol: travelSymbol, motion: motion) {
+            BubbleBlob(level: bubble.level, motion: motion) {
                 CalmBubbleLines(
                     bubble: bubble, texts: texts, travelNote: travelNote, onResumeSharing: actions.onResumeSharing
                 )
@@ -135,7 +127,7 @@ private struct CalmBubbleLines: View {
         case .sharingStopped:
             Headline(key: "feed_bubble_sharing_stopped_title")
             Line(text: L10n.string("feed_bubble_sharing_stopped_body"))
-            BubbleButton(key: "feed_bubble_resume_action", symbol: "mappin.and.ellipse", action: onResumeSharing)
+            BubbleButton(key: "feed_bubble_resume_action", action: onResumeSharing)
         case .travelers(let note):
             Headline(text: texts.travelersHeadline(note))
         case .alerts:
@@ -144,22 +136,20 @@ private struct CalmBubbleLines: View {
     }
 }
 
-/// La tache et son pictogramme en filigrane (D45) : le contenu est centré dans la forme (voir `BubbleLayout`) ; la FORME seule est écrasée / étirée (les deux axes en déphasage) et s'incline d'une fraction de
-/// degré ; le texte et le bouton ne sont PAS déformés, ils suivent seulement la dérive verticale de toute la bulle ; le symbole du
-/// pictogramme respire sur son propre cycle. Voir `BubbleMotion` (constantes nommées). Immobile avec « Réduire les animations ».
+/// La tache (D45) : le contenu est centré dans la forme (voir `BubbleLayout`) ; la FORME seule est écrasée / étirée (les deux axes en déphasage) et s'incline d'une fraction de
+/// degré ; le texte et le bouton ne sont PAS déformés, ils suivent seulement la dérive verticale de toute la bulle ; aucun pictogramme n'est posé
+/// dessus. Voir `BubbleMotion` (constantes nommées). Immobile avec « Réduire les animations ».
 private struct BubbleBlob<Content: View>: View {
     let level: StatusLevel
-    /// Le symbole en filigrane quand il ne vient pas de la couleur (l'avion de la bulle des voyageurs).
-    var symbol: String?
     let motion: Bool
     @ViewBuilder let content: () -> Content
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     var body: some View {
         // En pause (animations réduites, bulle hors écran ou app en arrière-plan) la vue est dessinée UNE fois : aucun rendu continu.
         TimelineView(.animation(minimumInterval: 1.0 / 30.0, paused: !motion)) { timeline in
             let seconds = timeline.date.timeIntervalSinceReferenceDate
             let blob = BubbleMotion.phase(at: seconds, period: BubbleMotion.blobPeriodSeconds)
-            let star = BubbleMotion.phase(at: seconds, period: BubbleMotion.starPeriodSeconds)
             // Le contenu est CENTRÉ dans la tache (retour de recette du PM, 2026-11-08) : marges égales à gauche et à droite, en haut et
             // en bas ; texte centré ligne par ligne ; zone plus haute que lui : il reste au milieu. Voir `BubbleLayout`.
             VStack(alignment: .center, spacing: Spacing.sm) {
@@ -167,7 +157,7 @@ private struct BubbleBlob<Content: View>: View {
             }
             .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity, minHeight: BubbleLayout.minContentHeight, alignment: .center)
-            .padding(.horizontal, BubbleLayout.horizontalInset)
+            .padding(.horizontal, BubbleLayout.horizontalInset(accessibilitySize: dynamicTypeSize.isAccessibilitySize))
             .padding(.vertical, BubbleLayout.verticalInset)
             .background(
                 FeedBubbleShape()
@@ -179,36 +169,8 @@ private struct BubbleBlob<Content: View>: View {
                     .rotationEffect(.degrees(motion ? BubbleMotion.tilt(blob) : 0))
                     .accessibilityHidden(true)
             )
-            .background(alignment: .bottomTrailing) {
-                // Pas de pictogramme sur une bulle verte (décision du PM, 2026-11-08). Les autres : le symbole posé directement dans
-                // la tache, grand et en filigrane, derrière le texte (décision du PM, 2026-11-10 : plus de cercle, rien qui ressemble
-                // à un bouton).
-                if let symbol = symbol ?? BubbleLayout.pictogram(for: level) {
-                    BubbleWatermark(symbol: symbol, level: level)
-                        .scaleEffect(motion ? BubbleMotion.starScale(star) : 1)
-                        .offset(y: motion ? BubbleMotion.starDrift(star) : 0)
-                        .padding(.trailing, BubbleLayout.symbolTrailing)
-                        .padding(.bottom, BubbleLayout.symbolBottom)
-                }
-            }
             .offset(y: motion ? BubbleMotion.drift(blob) : 0)
         }
-    }
-}
-
-/// Le pictogramme de la bulle : un symbole seul, sans cercle ni fond, de la teinte du niveau à faible opacité. Ni cliquable (aucun
-/// toucher ne lui est donné) ni lu par le lecteur d'écran (les mots disent la même chose).
-private struct BubbleWatermark: View {
-    let symbol: String
-    let level: StatusLevel
-
-    var body: some View {
-        Image(systemName: symbol)
-            .font(.system(size: BubbleLayout.symbolSize, weight: .regular))
-            .foregroundColor(level == .neutral ? colorTextDescription.color : level.onTint)
-            .opacity(BubbleLayout.symbolOpacity)
-            .allowsHitTesting(false)
-            .accessibilityHidden(true)
     }
 }
 
@@ -286,7 +248,10 @@ private struct AlertLines: View {
             Caption(text: offline)
         }
         if page.canMessage, let phone = page.member.phone {
-            BubbleButton(key: "feed_bubble_message_action", symbol: "message") { onMessage(phone) }
+            BubbleButton(
+                key: "feed_bubble_message_action",
+                spokenLabel: texts.contactA11y(page.member.callName)
+            ) { onMessage(phone) }
         }
     }
 }
@@ -308,6 +273,9 @@ private struct Headline: View {
         text
             .miffTextStyle(textDisplayHeadline)
             .foregroundColor(colorTextPrimary.color)
+            .multilineTextAlignment(.center)
+            .lineLimit(BubbleLayout.headlineMaxLines)
+            .minimumScaleFactor(BubbleLayout.headlineMinimumScale)
             .fixedSize(horizontal: false, vertical: true)
             .accessibilityAddTraits(.isHeader)
     }
@@ -335,30 +303,33 @@ private struct Caption: View {
     }
 }
 
-/// L'action douce d'une bulle : contour bleu, fond blanc, 44 pt de haut. Jamais un appel, jamais un bouton rouge.
+/// L'action douce d'une bulle : contour bleu, fond blanc, un peu plus PETITE qu'avant (texte 14 pt, marges réduites) mais avec une zone de
+/// toucher d'au moins 44 pt. TEXTE SEUL, sans pictogramme (décision du PM, 2026-11-11). Jamais un appel, jamais un bouton rouge. Le libellé
+/// est lu tel quel par VoiceOver, complété du prénom quand l'action vise quelqu'un (« Contacter Thomas »).
 private struct BubbleButton: View {
     let key: LocalizedStringKey
-    let symbol: String
+    var spokenLabel: String?
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: Spacing.sm) {
-                Image(systemName: symbol)
-                    .font(.system(size: 18))
-                Text(key)
-                    .miffTextStyle(textBodyBold16)
-            }
-            .foregroundColor(colorActionPrimary.color)
-            .padding(.horizontal, Spacing.md)
-            .frame(minHeight: Spacing.minTouchTarget)
-            .background(RoundedRectangle(cornerRadius: radiusMd, style: .continuous).fill(colorBgSurface.color))
-            .overlay(
-                RoundedRectangle(cornerRadius: radiusMd, style: .continuous)
-                    .stroke(colorBorderAction.color, lineWidth: strokeAccent)
-            )
+            Text(key)
+                .miffTextStyle(textBodyBold14)
+                .foregroundColor(colorActionPrimary.color)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, Spacing.md - Spacing.xs)
+                .padding(.vertical, Spacing.sm)
+                .background(RoundedRectangle(cornerRadius: radiusMd, style: .continuous).fill(colorBgSurface.color))
+                .overlay(
+                    RoundedRectangle(cornerRadius: radiusMd, style: .continuous)
+                        .stroke(colorBorderAction.color, lineWidth: strokeAccent)
+                )
+                .frame(minHeight: Spacing.minTouchTarget)
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(spokenLabel.map { Text(verbatim: $0) } ?? Text(key))
     }
 }
 
