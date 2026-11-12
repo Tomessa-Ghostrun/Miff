@@ -5,8 +5,22 @@ import SwiftUI
 /// réseau, aucune session, aucune écriture : c'est la VRAIE mise en page (`FeedCollapsingLayout`, `FeedListView`, `FeedHeaderContent`, la
 /// vraie bulle et les vraies cartes) nourrie par des données de démonstration (jamais de vraies personnes). Une ligne ROSE fine marque où la
 /// liste croit que l'en-tête s'arrête : la bulle doit commencer sous elle, jamais coupée. Compilé en configuration Debug SEULEMENT.
+/// Un réseau toujours présent : l'aperçu n'affiche jamais la pop-in « Pas de connexion ».
+private struct AlwaysOnlineNetwork: NetworkMonitor {
+    func isOnline() -> Bool {
+        true
+    }
+
+    func onlineChanges() -> AsyncStream<Bool> {
+        AsyncStream { continuation in
+            continuation.yield(true)
+        }
+    }
+}
+
 struct FeedScreenPreview: View {
     let name: String
+    @StateObject private var offlineRetry = OfflineRetryModel(network: AlwaysOnlineNetwork())
 
     private static let miffId = "AbCdEfGhIjKlMnOpQrSt"
     private static let now = 1_794_063_600_000
@@ -94,6 +108,7 @@ struct FeedScreenPreview: View {
             FeedListView(
                 feed: .ready(content),
                 ready: ready,
+                offlineRetry: offlineRetry,
                 locate: .idle,
                 texts: FeedTexts(),
                 topInset: layout.listInset,
