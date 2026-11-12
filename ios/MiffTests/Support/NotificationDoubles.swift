@@ -66,14 +66,53 @@ final class MemorySecondChanceStore: NotificationSecondChanceStore {
     }
 }
 
+final class MemoryNotificationPlanStore: NotificationPlanStoring {
+    private(set) var snapshots: [String: NotificationPlanSnapshot] = [:]
+    private(set) var ledgers: [String: NotificationLedger] = [:]
+    private(set) var travelEnds: [String: Int] = [:]
+    private(set) var clearCalls = 0
+
+    func loadTravelEnd(uid: String) -> Int? {
+        travelEnds[uid]
+    }
+
+    func saveTravelEnd(_ untilMillis: Int?, uid: String) {
+        travelEnds[uid] = untilMillis
+    }
+
+    func loadSnapshot(uid: String) -> NotificationPlanSnapshot? {
+        snapshots[uid]
+    }
+
+    func saveSnapshot(_ snapshot: NotificationPlanSnapshot, uid: String) {
+        snapshots[uid] = snapshot
+    }
+
+    func loadLedger(uid: String) -> NotificationLedger {
+        ledgers[uid] ?? NotificationLedger()
+    }
+
+    func saveLedger(_ ledger: NotificationLedger, uid: String) {
+        ledgers[uid] = ledger
+    }
+
+    func clear() {
+        clearCalls += 1
+        snapshots = [:]
+        ledgers = [:]
+        travelEnds = [:]
+    }
+}
+
 /// Un ensemble complet de stockages en mémoire.
 struct NotificationMemory {
     let preferences = MemoryNotificationPreferencesStore()
     let center = MemoryNotificationCenterStore()
     let secondChance = MemorySecondChanceStore()
+    let plan = MemoryNotificationPlanStore()
 
     var localData: NotificationLocalData {
-        NotificationLocalData(preferences: preferences, center: center, secondChance: secondChance)
+        NotificationLocalData(preferences: preferences, center: center, secondChance: secondChance, plan: plan)
     }
 }
 

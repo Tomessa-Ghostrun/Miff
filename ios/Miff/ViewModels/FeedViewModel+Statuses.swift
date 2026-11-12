@@ -95,12 +95,19 @@ extension FeedViewModel {
                 noteAnswer(fromCache: fromCache, timers: timers)
                 statusView = .loaded(byUid: byUid, fromCache: fromCache)
                 if !fromCache {
-                    dependencies.onStatusesLoaded(
-                        FeedStatusesEvent(miffId: miffId, statuses: byUid, myUid: dependencies.currentUid())
-                    )
+                    dependencies.onStatusesLoaded(statusesEvent(miffId, byUid: byUid))
                 }
             }
         }
+    }
+
+    /// Ce que les notifications reçoivent d'une réponse du serveur : les statuts et les membres de la Miff (seulement s'ils sont connus).
+    private func statusesEvent(_ miffId: String, byUid: [String: MemberStatus]) -> FeedStatusesEvent {
+        var members: [FeedStatusesEvent.Member] = []
+        if case .data(let id, let snapshot)? = piece, id == miffId {
+            members = snapshot.members.map { FeedStatusesEvent.Member(uid: $0.uid, sharing: $0.sharingEnabled) }
+        }
+        return FeedStatusesEvent(miffId: miffId, statuses: byUid, myUid: dependencies.currentUid(), members: members)
     }
 
     private func noteAnswer(fromCache: Bool, timers: StatusTimers) {

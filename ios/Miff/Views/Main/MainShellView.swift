@@ -240,9 +240,15 @@ struct MainShellView<Feed: View>: View {
                 selected = .feed
             }
         }
-        // Une ligne du centre de notifications a été touchée : l'onglet demandé s'ouvre.
-        .onChange(of: tabRequests.latest) { request in
-            if let request {
+        // Une ligne du centre de notifications ou une notification a été touchée : l'onglet demandé s'ouvre (une seule fois, même si la
+        // demande est arrivée avant que la coquille existe).
+        .onChange(of: tabRequests.latest) { _ in
+            if let request = tabRequests.takePending() {
+                selected = request.tab
+            }
+        }
+        .onAppear {
+            if let request = tabRequests.takePending() {
                 selected = request.tab
             }
         }
