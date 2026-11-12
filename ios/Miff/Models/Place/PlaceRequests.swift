@@ -196,18 +196,18 @@ enum PlaceRequestOrder {
     /// Le créateur : la plus ancienne d'abord (c'est celle qui attend depuis le plus longtemps). Une demande sans date vient en dernier.
     static func forCreator(_ requests: [PlaceRequest]) -> [PlaceRequest] {
         requests.sorted { first, second in
-            let a = first.createdAtMillis ?? Int.max
-            let b = second.createdAtMillis ?? Int.max
-            return a != b ? a < b : first.id < second.id
+            let firstDate = first.createdAtMillis ?? Int.max
+            let secondDate = second.createdAtMillis ?? Int.max
+            return firstDate != secondDate ? firstDate < secondDate : first.id < second.id
         }
     }
 
     /// Le demandeur : la plus récente en haut (ce qu'on vient d'envoyer est ce qu'on cherche).
     static func forMember(_ requests: [PlaceRequest]) -> [PlaceRequest] {
         requests.sorted { first, second in
-            let a = first.createdAtMillis ?? Int.max
-            let b = second.createdAtMillis ?? Int.max
-            return a != b ? a > b : first.id < second.id
+            let firstDate = first.createdAtMillis ?? Int.max
+            let secondDate = second.createdAtMillis ?? Int.max
+            return firstDate != secondDate ? firstDate > secondDate : first.id < second.id
         }
     }
 }

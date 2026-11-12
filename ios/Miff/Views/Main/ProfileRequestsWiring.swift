@@ -39,6 +39,18 @@ struct ProfileRequestsContent: Equatable, CustomStringConvertible {
     }
 }
 
+extension AppEnvironment {
+    /// Le view model des demandes d'ajout d'un lieu, créé avec la session de l'hôte (un par compte et par session).
+    func makeProfileRequestsViewModel() -> ProfileRequestsViewModel {
+        let session = self.session
+        return ProfileRequestsViewModel(
+            repository: placeRequestRepository,
+            network: network,
+            myUid: { session.currentUid }
+        )
+    }
+}
+
 extension ProfilePlacesPresentation {
     /// La liste des lieux pour `PlaceRows`, avec les demandes : l'onglet Profil les propose (un membre voit les siennes et « Demander l'ajout
     /// d'un lieu »).
