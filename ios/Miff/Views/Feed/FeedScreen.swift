@@ -122,7 +122,7 @@ struct FeedScreen: View {
                 ScrollView {
                     FeedSkeleton()
                         .padding(.horizontal, Spacing.md)
-                        .padding(.top, layout.listInset + Spacing.md)
+                        .padding(.top, layout.listInset + FeedTopInset.gapBelowHeader)
                         .background(ScrollDistanceReader(onChange: layout.onScrolled, onOrigin: layout.onOrigin))
                 }
             }

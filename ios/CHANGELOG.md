@@ -82,6 +82,11 @@ Le PM voyait, sur son iPhone 11 Pro, la légende vers le milieu-bas avec ~350 px
 - **Voile plus léger** : noir à 70 % (au lieu de 78 %) ; contraste du texte blanc toujours ≥ 4,5:1 sur le pire cas (~8,5:1).
 - Tests : `PhotoFullScreenLayoutTests` (un seul GeometryReader, surimpressions, marge basse, ancrage en bas, quand la légende défile) ; captures CI 150 à 152.
 
+### Feed : espace en-tête / bulle réduit de moitié (retour du PM sur le TestFlight 32)
+
+L'espace entre le bas de l'en-tête et le haut de la bulle est réduit de moitié : 12 pt (`FeedTopInset.gapBelowHeader`) au lieu de 16 pt de marge + 14 pt d'espacement laissé après le point d'ancrage (environ 38 pt à l'écran avec le contour de la bulle, environ 20 pt maintenant). La marge est l'ancre du haut de la liste : la bulle reste entière sous l'en-tête, jamais recouverte, et « retour en haut » (le logo) ramène la liste avec la marge. Elle reste tirée de mesures : zone sûre avec ou sans encoche, en-tête plus haut avec Dynamic Type (`FeedHeaderScrollTests`).
+
+
 ### Feed : le haut de la bulle n'est plus coupé par l'en-tête (cause réelle trouvée avec les captures de la CI, v2)
 
 Branche `ios/feed-header-v2` (PR #193 en brouillon, reprend #176). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi** ; les captures `90` à `93` de la CI montrent le Feed réel (aperçu `-MiffPreview feed-green|feed-orange|feed-red`).

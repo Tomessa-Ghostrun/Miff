@@ -6,6 +6,11 @@ import CoreGraphics
 // la hauteur de la barre d'état (une cinquantaine de points) trop haut, sous l'en-tête. La marge est maintenant tirée de MESURES : le bas de
 // l'en-tête au repos et l'endroit où le contenu de la liste commence réellement, dans le même repère (la fenêtre).
 enum FeedTopInset {
+    /// L'espace entre le bas de l'en-tête et le haut du contenu (la bulle). Retour du PM sur le TestFlight 32 : « un peu trop grand, à réduire de
+    /// moitié ». Avant : 16 pt de marge + 14 pt d'espacement laissé après le point d'ancrage = 30 pt (une quarantaine de points à l'écran avec
+    /// le contour de la bulle) ; maintenant 12 pt, sans espacement en plus : la bulle reste ENTIÈRE sous l'en-tête, jamais recouverte.
+    static let gapBelowHeader: CGFloat = 12
+
     /// La marge haute à donner au contenu de la liste : ce qu'il faut pour que son haut tombe exactement au bas de l'en-tête (`headerBottom`),
     /// compte tenu de l'endroit où la vue de défilement place son contenu (`contentOrigin` : le haut de la vue + sa marge automatique).
     /// Sans mesure (pas encore lues), la hauteur de l'en-tête (`fallback`). Jamais négative.

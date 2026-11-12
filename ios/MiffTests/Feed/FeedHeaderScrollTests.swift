@@ -146,6 +146,36 @@ final class FeedHeaderScrollTests: XCTestCase {
         XCTAssertEqual(FeedTopInset.listInset(headerBottom: 50, contentOrigin: 80, fallback: 106), 0)
     }
 
+    /// Retour du PM (TestFlight 32) : l'espace entre l'en-tête et la bulle est réduit de moitié (30 pt de marge et d'espacement avant, 12 pt maintenant).
+    func testTheGapBetweenTheHeaderAndTheBubbleIsHalvedAndTheBubbleStaysFullyBelowTheHeader() {
+        XCTAssertEqual(FeedTopInset.gapBelowHeader, 12)
+        XCTAssertLessThanOrEqual(FeedTopInset.gapBelowHeader, 30 / 2, "au plus la moitié de l'espace d'avant")
+        XCTAssertGreaterThan(FeedTopInset.gapBelowHeader, 0, "jamais recouverte : un espace reste")
+        // Le haut du contenu tombe au bas de l'en-tête + l'espace, quel que soit l'appareil : avec encoche (zone sûre 59 pt), sans encoche
+        // (20 pt) et avec un en-tête plus haut (Dynamic Type : la pastille de la Miff grandit).
+        for (safeTop, headerHeight) in [(CGFloat(59), CGFloat(106)), (20, 106), (59, 160), (20, 160)] {
+            let headerBottom = safeTop + headerHeight
+            let inset = FeedTopInset.listInset(headerBottom: headerBottom, contentOrigin: 0, fallback: headerHeight)
+            let expected = headerBottom + FeedTopInset.gapBelowHeader
+            let label = "zone sûre \(safeTop), en-tête \(headerHeight)"
+            XCTAssertEqual(inset + FeedTopInset.gapBelowHeader, expected, label)
+            XCTAssertGreaterThanOrEqual(inset, headerBottom, "jamais au-dessus du bas de l'en-tête")
+        }
+    }
+
+    func testTheListHasNoExtraSpacingAfterItsTopMarginAndTheLogoScrollsBackWithTheMargin() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // Feed
+            .deletingLastPathComponent() // MiffTests
+            .deletingLastPathComponent() // ios
+            .appendingPathComponent("Miff/Views/Feed/FeedListView.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+
+        XCTAssertTrue(source.contains(".frame(height: topInset + FeedTopInset.gapBelowHeader)"), "la marge est l'ancre")
+        let stack = "VStack(spacing: 0) {\n                    topAnchor"
+        XCTAssertTrue(source.contains(stack), "aucun espacement de la pile après l'ancre")
+    }
+
     func testAMeasureThatMovesByAFractionOfAPointIsNotNew() {
         XCTAssertTrue(FeedTopInset.isNewMeasure(10, old: nil))
         XCTAssertFalse(FeedTopInset.isNewMeasure(10.3, old: 10))
