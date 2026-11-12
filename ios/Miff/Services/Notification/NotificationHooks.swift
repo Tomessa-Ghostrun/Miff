@@ -10,20 +10,33 @@ import UserNotifications
 final class PresenceNotifyingLocalStore: TrackingLocalStore {
     private let wrapped: TrackingLocalStore
     private let onPresence: (String, StatusFact) -> Void
+    /// MODE VOYAGE : `(compte, fin du voyage ou nil, fin précédente ou nil)` à chaque changement de MON voyage (début, nouvelle date, fin).
+    private let onTravel: ((String, Int?, Int?) -> Void)?
     private let lock = NSLock()
     private var lastSeen: [String: StatusFact] = [:]
+    private var lastTravel: Int?
 
-    init(wrapping wrapped: TrackingLocalStore, onPresence: @escaping (String, StatusFact) -> Void) {
+    init(
+        wrapping wrapped: TrackingLocalStore,
+        onPresence: @escaping (String, StatusFact) -> Void,
+        onTravel: ((String, Int?, Int?) -> Void)? = nil
+    ) {
         self.wrapped = wrapped
         self.onPresence = onPresence
+        self.onTravel = onTravel
     }
 
     func load() -> LocalState? {
-        wrapped.load()
+        let state = wrapped.load()
+        lock.lock()
+        lastTravel = state?.travel?.untilMillis
+        lock.unlock()
+        return state
     }
 
     func save(_ state: LocalState) {
         wrapped.save(state)
+        notifyTravel(state)
         for (miffId, miff) in state.miffs {
             let fact = miff.pending?.fact
             lock.lock()
@@ -40,7 +53,21 @@ final class PresenceNotifyingLocalStore: TrackingLocalStore {
         wrapped.clear()
         lock.lock()
         lastSeen = [:]
+        lastTravel = nil
         lock.unlock()
+    }
+
+    /// MODE VOYAGE : seule la fin du voyage est annoncée (jamais une position ni un lieu). Une première sauvegarde sans voyage ne dit rien.
+    private func notifyTravel(_ state: LocalState) {
+        let current = state.travel?.untilMillis
+        lock.lock()
+        let previous = lastTravel
+        let changed = current != previous
+        lastTravel = current
+        lock.unlock()
+        if changed {
+            onTravel?(state.uid, current, previous)
+        }
     }
 }
 

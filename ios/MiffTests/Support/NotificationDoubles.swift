@@ -69,7 +69,16 @@ final class MemorySecondChanceStore: NotificationSecondChanceStore {
 final class MemoryNotificationPlanStore: NotificationPlanStoring {
     private(set) var snapshots: [String: NotificationPlanSnapshot] = [:]
     private(set) var ledgers: [String: NotificationLedger] = [:]
+    private(set) var travelEnds: [String: Int] = [:]
     private(set) var clearCalls = 0
+
+    func loadTravelEnd(uid: String) -> Int? {
+        travelEnds[uid]
+    }
+
+    func saveTravelEnd(_ untilMillis: Int?, uid: String) {
+        travelEnds[uid] = untilMillis
+    }
 
     func loadSnapshot(uid: String) -> NotificationPlanSnapshot? {
         snapshots[uid]
@@ -91,6 +100,7 @@ final class MemoryNotificationPlanStore: NotificationPlanStoring {
         clearCalls += 1
         snapshots = [:]
         ledgers = [:]
+        travelEnds = [:]
     }
 }
 

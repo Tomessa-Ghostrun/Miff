@@ -73,6 +73,7 @@ final class NotificationReconciler {
         }
         var ledger = deps.plans.loadLedger(uid: uid).pruned(nowMillis: now)
         let snapshot = deps.plans.loadSnapshot(uid: uid)
+        forgetOldTravelEnd(uid: uid, now: now)
         ledger = settleFired(ledger, pending: pending, snapshot: snapshot, now: now)
         let input = makeInput(uid: uid, now: now, snapshot: snapshot, authorization: authorization, ledger: ledger)
         let plan = NotificationPlanner.plan(input)
@@ -107,7 +108,20 @@ final class NotificationReconciler {
             .filter { $0.state == .shown }
             .map { ShownNotification(type: $0.type, atMillis: $0.createdAtMillis) }
         input.calendar = deps.calendar()
+        // MODE VOYAGE : la fin de MON voyage (un compte et un instant, gardés par le suivi) : N7, et la coupure de N1 à N4 pendant le voyage.
+        input.myTravelUntilMillis = deps.plans.loadTravelEnd(uid: uid)
         return input
+    }
+
+    /// Un voyage dont N7 aurait dû partir il y a plus de 24 h est oublié (la fin n'a plus rien à annoncer).
+    private func forgetOldTravelEnd(uid: String, now: Int) {
+        guard let until = deps.plans.loadTravelEnd(uid: uid) else {
+            return
+        }
+        let due = TravelEndNotice.dueAt(untilMillis: until, calendar: deps.calendar())
+        if now - due > TravelEndNotice.catchUpWindowMillis {
+            deps.plans.saveTravelEnd(nil, uid: uid)
+        }
     }
 
     // MARK: - Ce qui a déjà sonné
@@ -181,11 +195,20 @@ final class NotificationReconciler {
             guard let parts = NotificationIdentifier.parse(identifier) else {
                 continue
             }
+            if parts.type == .n7 {
+                // N7 ne dépend d'aucune Miff ni d'aucune couleur : elle reste à l'écran tant que son interrupteur et l'autorisation tiennent.
+                if !NotificationPlanner.travelEndStillWanted(
+                    preferences: input.preferences, authorization: input.authorization
+                ) {
+                    obsolete.append(identifier)
+                }
+                continue
+            }
             let valid = input.preferences.isEnabled(parts.type)
                 && input.authorization.isAllowed
                 && snapshot?.miffId == parts.miffId
                 && input.activeMiffId == parts.miffId
-                && stillTrue(parts.type, snapshot: snapshot, atMillis: input.nowMillis)
+                && stillTrue(parts.type, snapshot: snapshot, input: input)
             if !valid {
                 obsolete.append(identifier)
             }
@@ -195,11 +218,17 @@ final class NotificationReconciler {
         }
     }
 
-    private func stillTrue(_ type: NotificationType, snapshot: NotificationPlanSnapshot?, atMillis: Int) -> Bool {
+    private func stillTrue(
+        _ type: NotificationType,
+        snapshot: NotificationPlanSnapshot?,
+        input: NotificationPlanInput
+    ) -> Bool {
         guard let snapshot else {
             return false
         }
-        return NotificationPlanner.stillTrue(type, snapshot: snapshot, atMillis: atMillis)
+        return NotificationPlanner.stillTrue(
+            type, snapshot: snapshot, atMillis: input.nowMillis, myTravelUntilMillis: input.myTravelUntilMillis
+        )
     }
 
     private func program(

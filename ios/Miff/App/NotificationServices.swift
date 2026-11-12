@@ -93,6 +93,17 @@ struct NotificationServices {
         }
     }
 
+    /// MODE VOYAGE : le suivi des lieux dit que mon voyage commence, change de date ou se termine (N7, et la coupure de N1 à N4). Peut être appelé
+    /// depuis n'importe quel fil.
+    var travelChanged: (String, Int?, Int?) -> Void {
+        let reconciler = self.reconciler
+        return { @Sendable uid, until, previous in
+            Task { @MainActor in
+                await reconciler.myTravelChanged(uid: uid, untilMillis: until, previousUntilMillis: previous)
+            }
+        }
+    }
+
     /// Fin de session (déconnexion, suppression du compte, session prise par un autre appareil) : le centre, les choix et l'instantané sont
     /// vidés, et les notifications encore affichées ou en attente sont retirées pour que la personne suivante n'en voie aucune.
     var teardown: SessionTeardown {

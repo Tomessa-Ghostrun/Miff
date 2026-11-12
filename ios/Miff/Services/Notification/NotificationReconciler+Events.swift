@@ -47,6 +47,22 @@ extension NotificationReconciler {
         await reconcile()
     }
 
+    /// MODE VOYAGE : mon voyage commence, change de date ou se termine (le suivi des lieux le dit, sans attendre). Une fin déplacée ou un
+    /// nouveau voyage remplace la fin gardée (N7 est reprogrammée, une autre clé) ; une fin ANTICIPÉE (avant la date) l'efface (rien à
+    /// annoncer, N7 est annulée) ; une fin NATURELLE (la date est passée) la garde : N7 attend ses 8 h. Les rappels N1 à N4 en attente sont
+    /// annulés tout de suite quand un voyage commence (le plan est vide pendant le voyage).
+    func myTravelChanged(uid: String, untilMillis: Int?, previousUntilMillis: Int?) async {
+        guard deps.currentUid() == uid else {
+            return
+        }
+        if let untilMillis {
+            deps.plans.saveTravelEnd(untilMillis, uid: uid)
+        } else if let previous = previousUntilMillis, deps.nowMillis() < previous {
+            deps.plans.saveTravelEnd(nil, uid: uid)
+        }
+        await reconcile()
+    }
+
     /// J'ai publié une update : mon repère avance, N1 à N4 sont annulées (et reprogrammées avec le nouveau repère s'il y a lieu) aussitôt.
     /// À appeler par l'écran Update quand la publication est confirmée.
     func myUpdatePublished(atMillis: Int) async {

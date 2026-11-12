@@ -219,7 +219,9 @@ final class AppEnvironment {
         let trackingServices = TrackingServices.make(
             gateway: gateway, cache: cache, network: networkMonitor, device: device,
             // Un nouveau statut de ma présence détecté par le suivi : les rappels N1 et N2 sont programmés ou annulés aussitôt.
-            onPresence: notifs.presenceChanged
+            onPresence: notifs.presenceChanged,
+            // MODE VOYAGE : mon voyage commence, change de date ou se termine : N7 est programmée, déplacée ou annulée aussitôt.
+            onTravel: notifs.travelChanged
         )
         // Un partage ou un lieu qui change : le suivi relit les Miffs et les lieux (depuis n'importe quel fil).
         let miff = MiffServices.make(
