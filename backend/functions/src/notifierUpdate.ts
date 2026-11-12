@@ -7,7 +7,7 @@
 import { onDocumentWritten } from "firebase-functions/v2/firestore";
 import { getFirestore } from "firebase-admin/firestore";
 import { appAdmin } from "./appAdmin.js";
-import { COMPTE_SERVICE_NOTIFICATION, LIMITES_NOTIFICATION } from "./options.js";
+import { LIMITES_NOTIFICATION } from "./options.js";
 import { journaliser } from "./journal.js";
 import { creerClientFcm } from "./notifFcm.js";
 import { traiterPhotoPubliee } from "./notifTraitement.js";
@@ -15,7 +15,8 @@ import { traiterPhotoPubliee } from "./notifTraitement.js";
 export const notifierUpdate = onDocumentWritten(
   {
     document: "miffs/{miffId}/photos/{uid}",
-    serviceAccount: COMPTE_SERVICE_NOTIFICATION,
+    // Compte DEDIE aux roles minimaux, jamais le compte par defaut (revue de #194) ; litteral exige par le test garde-couts. A creer par le PM : docs/dev/deploiement-functions.md §1.4.
+    serviceAccount: "notify-update@miff-3d283.iam.gserviceaccount.com",
     maxInstances: LIMITES_NOTIFICATION.maxInstances,
     memory: LIMITES_NOTIFICATION.memory,
     retry: false,

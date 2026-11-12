@@ -35,10 +35,22 @@ export const LIMITES = {
 export const FONCTIONS_AVEC_RETRY_AUTORISEES: readonly string[] = [];
 
 /**
- * Fonctions autorisees a tourner avec l'identite PAR DEFAUT du projet (compte Compute, souvent Editeur) : uniquement les fonctions qui ne touchent
- * a aucune donnee (`ping`). Toute fonction metier declare un compte de service DEDIE (voir COMPTE_SERVICE_NOTIFICATION) ; le test le verifie.
+ * Types de declencheurs autorises : fonction appelable (callableTrigger) et evenement (eventTrigger, ex. ecriture Firestore).
+ * Tout autre type (HTTP public sans App Check, planifie, file de taches, blocage d'authentification) exige un ticket qui
+ * l'ajoute ICI et dans le test, avec sa raison (ex. SRV-6 : fonction planifiee).
+ */
+export const DECLENCHEURS_AUTORISES: readonly string[] = ["callableTrigger", "eventTrigger"];
+
+/**
+ * Fonctions autorisees a tourner avec l'identite PAR DEFAUT du projet : uniquement celles qui ne touchent a aucune donnee (`ping`).
+ * Toute fonction metier declare un compte de service DEDIE (option serviceAccount, litteral) ; le test garde-couts.test.mjs le verifie.
  */
 export const FONCTIONS_IDENTITE_PAR_DEFAUT_AUTORISEES: readonly string[] = ["ping"];
+
+// Identite d'execution : par defaut, le compte "Compute" par defaut du projet, qui a SOUVENT le role Editeur (tres large).
+// AVANT toute fonction qui touche Firestore ou FCM (SRV-4), creer un compte de service DEDIE aux roles minimaux et le brancher
+// avec l'option `serviceAccount` (nom du compte dedie, JAMAIS une cle, JAMAIS le compte par defaut). Voir docs/dev/secrets.md.
+// Le test garde-couts.test.mjs n'accepte `serviceAccount` que sous cette forme.
 
 setGlobalOptions({
   region: LIMITES.region,
@@ -52,15 +64,8 @@ setGlobalOptions({
 
 // ---------------------------------------------------------------------------------------------------------------------------------
 // Fonction de notification des updates (SRV-4B, ticket docs/tickets/notification-update-membres.md §10).
+// Compte de service : notify-update@miff-3d283.iam.gserviceaccount.com (litteral dans notifierUpdate.ts, a creer par le PM : deploiement-functions.md §1.4).
 // ---------------------------------------------------------------------------------------------------------------------------------
-/**
- * Compte de service DEDIE de la fonction (revue de #194) : le compte "Compute" par defaut a souvent le role Editeur du projet, une fonction qui
- * lit Firestore et envoie des notifications ne doit pas s'en servir. Ce compte n'a que les roles minimaux (docs/dev/deploiement-functions.md
- * §1.4 : Firestore lecture/ecriture, envoi FCM, reception d'evenements, ecriture des journaux), AUCUNE cle JSON : c'est une identite geree par Google.
- * A creer par le PM AVANT le premier deploiement de cette fonction (sinon le deploiement echoue, et c'est le bon comportement).
- */
-export const COMPTE_SERVICE_NOTIFICATION = "notify-update@miff-3d283.iam.gserviceaccount.com";
-
 /**
  * Limites propres a la fonction de notification. Le ticket parlait de 10 instances ; 5 (= le plafond du garde, deja prevu pour "une fonction precise")
  * suffit : memoire 256 Mio => 1 demande a la fois par instance (concurrence 1), ~0,3 a 1 s par evenement => ~5 a 15 evenements par seconde, soit

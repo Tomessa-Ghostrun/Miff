@@ -152,7 +152,9 @@ npx firebase deploy --only functions --project miff-3d283
 - `--project miff-3d283` : cible explicite, jamais implicite.
 - La commande installe puis compile le code sur ton poste (étapes automatiques de `firebase.json`), l'envoie, et Google le construit (plusieurs minutes pour le premier déploiement).
 
-**Essai à blanc facultatif** : ajoute `--dry-run` en fin de commande. La CLI construit le code et vérifie, **sans rien publier**.
+**Essai à blanc recommandé avant le premier déploiement** : ajoute `--dry-run` en fin de commande. La CLI installe, construit le code et vérifie, **sans rien publier**. Si l'essai à blanc réussit, relance la même commande sans `--dry-run`.
+
+**Si la CLI refuse `nodejs24`** (message du type « runtime not supported » ou « unsupported Node.js version ») : ne force rien et préviens Claude. Le repli prévu est **Node 22** : dans `backend/firebase.json` (`"runtime": "nodejs22"`), dans `backend/functions/package.json` (`"engines": { "node": "22" }`) et dans `backend/tests/unit/functions-config.test.js` (valeurs attendues). Le code est identique ; `firebase-admin` 14 demande Node 22 ou plus, donc compatible.
 
 ### Les questions que la commande peut te poser
 
@@ -188,7 +190,7 @@ La CLI se termine par `Deploy complete!`. En cas d'erreur, **rien de cassé n'es
 
 ## 5. Lire les journaux (logs)
 
-Les journaux disent ce que chaque fonction a fait. **Ils ne contiennent jamais de position, de nom, de jeton ni d'adresse e-mail** (règle codée et testée : un message de journal est un petit code comme `ping.ok`, avec au plus un résultat et un nombre).
+Les journaux disent ce que chaque fonction a fait. **Nos journaux APPLICATIFS (ce que le code de Miff écrit) ne contiennent jamais de position, de nom, de jeton ni d'adresse e-mail** (règle codée et testée : un message de journal est un petit code comme `ping.ok`, avec au plus un résultat et un nombre). **Mais** les journaux TECHNIQUES de la plateforme Google (Cloud Run / Cloud Logging, journaux de requêtes) gardent l'**adresse IP et le user-agent** de l'appelant : c'est une donnée personnelle que Miff ne maîtrise pas, à citer dans la politique de confidentialité (point RGPD, risque assumé par le PM, décision du 2026-10-23).
 
 - **Console Firebase** : projet **Miff** > **Functions** > onglet **Journaux** (filtre par fonction et par gravité).
 - **Console Google Cloud** : https://console.cloud.google.com/logs (choisir le projet `miff-3d283`, filtrer « Ressource : Cloud Run Revision » ou la fonction).
@@ -260,17 +262,35 @@ Chaque garde-fou ci-dessous est dans `backend/functions/src/options.ts` et **vé
 
 | Choix | Pourquoi (impact) | Limite connue | Signal pour le changer |
 |---|---|---|---|
-| **3 instances au plus** par fonction (`maxInstances`) | Plafonne la dépense en cas d'emballement ou d'abus : c'est le frein principal | Avec 128 Mio chaque instance traite **une** demande à la fois : au plus ~3 demandes simultanées, les suivantes attendent 30 s puis sont refusées (code 429) | Réponses `429` dans les journaux, notifications en retard : relever à 5 pour **cette** fonction (plafond du test : 5). **`notifierUpdate` est déjà à 5** (le ticket parlait de 10 ; 5 suffit : 1 demande à la fois par instance, ~0,3 à 1 s par événement, soit plus de 100 000 événements par heure pour une estimation de 20 000 **par jour** à 10 000 utilisateurs actifs par jour). Relever au-delà de 5 (jusqu'à 10) = modifier `LIMITES.maxInstancesPlafond` ET le test, en PR, avec le nombre de `429` qui le justifie |
+| **3 instances au plus** par fonction (`maxInstances`) | Plafonne la dépense en cas d'emballement ou d'abus : c'est le frein principal | Avec 128 Mio chaque instance traite **une** demande à la fois : au plus ~3 demandes simultanées, les suivantes attendent jusqu'à 30 s et **peuvent être refusées (code 429)** | Réponses `429` dans les journaux, notifications en retard : relever à 5 pour **cette** fonction (plafond du test : 5). **`notifierUpdate` est déjà à 5** (le ticket parlait de 10 ; 5 suffit : 1 demande à la fois par instance, ~0,3 à 1 s par événement, soit plus de 100 000 événements par heure pour une estimation de 20 000 **par jour** à 10 000 utilisateurs actifs par jour). Relever au-delà de 5 (jusqu'à 10) = modifier `LIMITES.maxInstancesPlafond` ET le test, en PR, avec le nombre de `429` qui le justifie |
 | **Mémoire 128 Mio** | La moins chère possible | Une fonction qui charge le SDK Admin (Firestore, FCM) peut manquer de mémoire | « Memory limit exceeded » dans les journaux : 256 Mio pour **cette** fonction (plafond du test). **`notifierUpdate` est déjà à 256 Mio** (SDK Admin Firestore + messagerie ; les événements portent la photo, jusqu'à 150 Ko, en mémoire) |
 | **Délai 30 s** | Une fonction bloquée ne facture pas plus de 30 s | Un traitement long est coupé | Journaux « timeout » : relever (plafond du test : 60 s), ou découper le travail |
 | **Pas de nouvelle tentative automatique** (`retry` désactivé) | Évite la boucle « échec → réessai → échec » qui fait exploser une facture | Un échec passager (service FCM indisponible quelques secondes) = **notification perdue** (`notifierUpdate` retente elle-même l'envoi 2 fois au plus, dans la même exécution, mais ne relance jamais l'exécution entière) | Des notifications manquantes avec un `ERROR` transitoire dans les journaux : activer `retry` pour **cette** fonction seulement, la rendre idempotente (sans double envoi) et l'ajouter à la liste `FONCTIONS_AVEC_RETRY_AUTORISEES` avec la raison |
 | **Aucune instance permanente** (`minInstances: 0`) | Pas de facture quand personne n'appelle | Le premier appel après une pause est plus lent (démarrage à froid, de l'ordre de la seconde : non mesuré) | Plaintes de lenteur sur les notifications de géofence : 1 instance minimale pour la fonction concernée = coût fixe à chiffrer avec le PM |
 | **Région Paris (europe-west9)**, 2e génération | Même région que la base (délais courts, données en UE) | Paris n'accepte que la 2e génération (c'est celle utilisée). Les déclencheurs Firestore doivent être dans la région de la base : c'est cohérent. FCM et les services de notification d'Apple restent des sous-traitants hors UE possibles (risque RGPD assumé, `data-model.md` §11) | Indisponibilité de la région : repli europe-west1 (Belgique), à décider |
-| **Node.js 24** | Supporté par Firebase jusqu'à fin 2028 (dates affichées par la CLI : abandon annoncé 2028-04-30, arrêt 2028-10-31 ; Node 20 est arrêté depuis le 2026-10-30) | Dépendances à mettre à jour (Dependabot ouvre les PR chaque lundi) | E-mail de Google « runtime déprécié » ou PR Dependabot de changement de Node |
-| **Journalisation minimale** (liste blanche) | Aucune donnée personnelle dans Cloud Logging, et moins de volume (donc moins de coût) | On ne peut pas retrouver « qui » a causé une erreur depuis les journaux | Besoin d'enquêter sur un incident : décision du PM au cas par cas (jamais de position ni de jeton) |
-| **App Check + connexion exigés** sur toute fonction appelable | Bloque les robots (et leur facture) et les comptes anonymes | Un téléphone sans App Check valide (appareil modifié, build non enregistré) est refusé | Erreurs « unauthenticated » en nombre dans les journaux alors que les testeurs sont normaux : vérifier App Check (`app-check-strict.md`) |
+| **Node.js 24** (repli prévu : Node 22 si la CLI refuse 24, voir §3) | Supporté par Firebase jusqu'à fin 2028 (dates affichées par la CLI : abandon annoncé 2028-04-30, arrêt 2028-10-31 ; Node 20 est arrêté depuis le 2026-10-30) | Dépendances à mettre à jour (Dependabot ouvre les PR chaque lundi) | E-mail de Google « runtime déprécié » ou PR Dependabot de changement de Node |
+| **Journalisation minimale** (liste blanche) | Aucune donnée personnelle dans **nos** journaux applicatifs, et moins de volume (donc moins de coût) | On ne peut pas retrouver « qui » a causé une erreur depuis nos journaux. Les journaux techniques de Google gardent l'IP et le user-agent de l'appelant (hors de notre contrôle) | Besoin d'enquêter sur un incident : décision du PM au cas par cas (jamais de position ni de jeton) |
+| **App Check + connexion exigés** sur toute fonction appelable (connexion anonyme refusée aussi) | Évite d'exécuter notre code pour un robot ou un compte anonyme. **Attention : une requête rejetée est quand même une invocation facturée qui occupe une instance** ; le vrai frein de coût reste `maxInstances` | Un téléphone sans App Check valide (appareil modifié, build non enregistré) est refusé. Un jeton App Check volé peut être rejoué : pour les fonctions sensibles (SRV-7), option `consumeAppCheckToken` (jeton à usage unique) | **Beaucoup de réponses 401 ou 429** dans les journaux : soit des robots (vérifier le tableau de bord App Check et la facture), soit des testeurs normaux bloqués (vérifier App Check, `app-check-strict.md`) |
 | **Déploiement à la main** (jamais la CI) | Aucune clé de service à stocker | Chaque mise en ligne demande 10 minutes du PM | Déploiements plus d'une fois par semaine : revoir (décision écrite du PM, clé à portée minimale) |
 | **Budget d'alerte 5 €/mois** (pas un plafond) | Alerte, sans frais | Données retardées de plusieurs heures ; ne bloque rien | Un e-mail à 50 % : regarder Facturation > Rapports le jour même |
+
+---
+
+## 9 bis. Deux points de sécurité à connaître
+
+### Identité d'exécution : un compte de service dédié AVANT SRV-4
+
+Une fonction s'exécute avec un « compte de service » (l'identité qu'elle présente à Google). Par défaut, c'est le **compte « Compute » par défaut du projet, qui a souvent le rôle Éditeur** : très large (il pourrait lire et modifier presque tout le projet). Aucune clé n'est en jeu, mais si une faille permettait de détourner une fonction, ce rôle large serait celui de l'attaquant.
+
+- **`ping` ne touche ni Firestore ni FCM** : l'identité par défaut est tolérée pour elle seule.
+- **Avant SRV-4 (première fonction qui lit Firestore ou envoie une notification)** : créer un compte de service **dédié** (par exemple nommé `miff-functions`) avec **uniquement** les rôles nécessaires, puis le brancher dans le code avec l'option `serviceAccount` (le **nom** du compte, jamais une clé). Jamais le rôle Éditeur ni Propriétaire.
+- Rôles (confirmés dans la documentation Google le 2026-11-12 pour `notifierUpdate`, voir section 1.4) : accès aux données Firestore (rôle « Utilisateur Cloud Datastore » ; **attention**, un compte de service ignore les règles de sécurité Firestore : ce rôle donne donc accès à toute la base, positions comprises, d'où l'importance de ne l'attribuer qu'aux fonctions qui en ont besoin), envoi de notifications (« Firebase Cloud Messaging API Admin »), et écriture des journaux.
+- Création et attribution des rôles : **par le PM** dans la console Google Cloud > IAM, **pas à pas en section 1.4** (compte `notify-update`, rôles confirmés pour `notifierUpdate`, droit « Utilisateur du compte de service » pour celui qui déploie).
+- Le test `garde-couts.test.mjs` n'accepte `serviceAccount` que sous la forme `serviceAccount: "nom-de-compte-dedie"` (jamais un compte par défaut, jamais une valeur calculée), et refuse tout compte au nom évoquant Éditeur, administrateur ou propriétaire.
+
+### Scripts d'installation des dépendances
+
+Deux dépendances de Firebase ont un script d'installation : `@firebase/util` et `protobufjs`. En local et dans la CI, les commandes utilisent `npm ci --ignore-scripts`, qui les **neutralise**. **Cloud Build (chez Google), lui, ne les neutralise pas** : il exécute l'installation normale au déploiement. Le risque est celui de toute dépendance (code malveillant introduit dans une version publiée) : il est réduit par les versions **épinglées** et le lockfile (pas de mise à jour surprise) et par la relecture des PR Dependabot (une PR par semaine pour `firebase-functions` et `firebase-admin`). À relire à chaque mise à jour : les notes de version et l'apparition éventuelle d'un **nouveau** script d'installation dans `package-lock.json` (`hasInstallScript`).
 
 ---
 
@@ -278,7 +298,7 @@ Chaque garde-fou ci-dessous est dans `backend/functions/src/options.ts` et **vé
 
 - Il faudrait créer une **clé de compte de service** avec le droit de déployer des fonctions (un droit très large), la stocker comme secret GitHub et la renouveler. `docs/dev/secrets.md` interdit d'en créer.
 - Un déploiement automatique sur une fusion supprimerait le « oui » explicite du PM.
-- Les fonctions s'exécutent avec une **identité gérée par Google** : aucune clé n'existe, ni côté dépôt, ni côté code. `ping` (qui ne touche à aucune donnée) garde l'identité par défaut du projet ; **toute fonction métier, dont `notifierUpdate`, utilise un compte de service dédié aux droits minimaux** (section 1.4), et un test refuse toute fonction métier sans compte dédié explicite.
+- Les fonctions s'exécutent avec une **identité gérée par Google** : aucune clé n'existe, ni côté dépôt, ni côté code. L'identité par défaut est cependant trop large (voir §9 bis) : `ping` (qui ne touche à aucune donnée) la garde, mais **toute fonction métier, dont `notifierUpdate`, utilise un compte de service dédié aux droits minimaux** (section 1.4) ; un test refuse toute fonction métier sans compte dédié explicite.
 
 Si ce choix change un jour, il se prend par une décision écrite du PM, avec une clé à portée minimale et les tests `project-guard.test.js` / `functions-config.test.js` adaptés en conséquence.
 

@@ -14,3 +14,12 @@ test("ping : avec connexion -> { ok: true } et rien d'autre (aucune donnée d'en
   const sortie = await ping.run({ data: { latitude: 1, nom: 'x' }, auth: { uid: 'u1', token: {} } });
   assert.deepEqual(sortie, { ok: true });
 });
+
+test("ping : connexion anonyme refusée (le projet n'active pas la connexion anonyme, on le vérifie aussi côté fonction)", async () => {
+  await assert.rejects(
+    () => ping.run({ data: {}, auth: { uid: 'u2', token: { firebase: { sign_in_provider: 'anonymous' } } } }),
+    (e) => e.code === 'unauthenticated',
+  );
+  const ok = await ping.run({ data: {}, auth: { uid: 'u3', token: { firebase: { sign_in_provider: 'password' } } } });
+  assert.deepEqual(ok, { ok: true });
+});
