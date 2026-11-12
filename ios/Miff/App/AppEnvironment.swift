@@ -236,8 +236,13 @@ final class AppEnvironment {
         // Un compte, un seul appareil (SESS-3) : l'identifiant de session vit dans un fichier privé, exclu des sauvegardes et effacé
         // avec l'app (jamais dans le Trousseau, qui survit à la désinstallation).
         let device = DeviceSession(remote: FirestoreDeviceSessionRemote(), store: DeviceIdFileStore())
+        // NOTIF-P0 : le centre de notifications, les choix de Réglages > Notifications, les demandes d'onglet et les rappels.
+        let notifs = NotificationServices.make(currentUid: { gateway.currentUid })
         let trackingServices = TrackingServices.make(
-            gateway: gateway, cache: cache, network: networkMonitor, device: device
+            gateway: gateway, cache: cache, network: networkMonitor, device: device,
+            // Un nouveau statut de ma présence détecté par le suivi : les rappels N1 et N2 sont programmés ou annulés aussitôt.
+            // MODE VOYAGE : mon voyage commence, change de date ou se termine : N7 est programmée, déplacée ou annulée aussitôt.
+            notifications: TrackingNotificationHooks(onPresence: notifs.presenceChanged, onTravel: notifs.travelChanged)
         )
         let places = PlaceServices.make(network: networkMonitor, onChanged: trackingServices.sharingChanged)
         // Un partage ou un lieu qui change : le suivi relit les Miffs et les lieux (depuis n'importe quel fil).
@@ -245,8 +250,7 @@ final class AppEnvironment {
             gateway: gateway, cache: cache, network: networkMonitor, device: device,
             onSharingChanged: trackingServices.sharingChanged, beforeLeave: places.beforeLeave
         )
-        // NOTIF-P0 : le centre de notifications, les choix de Réglages > Notifications et les demandes d'onglet.
-        let notifs = NotificationServices.make(currentUid: { gateway.currentUid })
+        notifs.connect(directory: miff.directory, awaiting: miff.awaiting)
         let updateServices = UpdateServices.make(
             gateway: gateway, network: networkMonitor, device: device, tracking: trackingServices, miff: miff
         )

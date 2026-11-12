@@ -328,7 +328,7 @@ Aucune ligne au catalogue Miff+, aucun écran provisoire, aucun paywall, aucun �
 | Titre / description | « Ton mode voyage est terminé » / « Ta carte reprend ses couleurs chez tes proches. Bon retour ! » (iOS : « Ouvre Miff pour que ta carte reprenne ses couleurs. Bon retour ! ») |
 | Au toucher | Le Feed (iOS : ouvre l'app et déclenche la fin si elle n'a pas encore été traitée) |
 | Annulation | Désactivation anticipée ; déconnexion ; suppression de compte ; session prise par un autre appareil ; interrupteur N7 coupé ; autorisation retirée ; fin déjà traitée app ouverte (entrée de centre silencieuse) |
-| Reprogrammation | Changement de date ; redémarrage (Android) ; changement d'heure ou de fuseau ; mise à jour ; langue (iOS) |
+| Reprogrammation | Changement de date ; redémarrage (Android) ; changement d'heure ou de fuseau ; mise à jour ; langue (iOS). **Limite iOS acceptée** : si l'heure ou le fuseau change app fermée, la demande du système garde son délai : N7 part à l'ancienne heure locale jusqu'à la prochaine ouverture, qui la reprogramme (comportement non modifié) |
 | Déduplication, plafonds | Clé `n7|{moi}|{travelUntil}` ; hors plafonds NOTIF-P0 ; importance normale |
 | Réglage | « Quand mon mode voyage se termine », actif par défaut |
 | Permission refusée | Rien n'est affiché ; la fin du voyage n'en dépend pas |

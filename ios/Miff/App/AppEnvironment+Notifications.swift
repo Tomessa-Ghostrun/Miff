@@ -3,7 +3,12 @@ import Foundation
 extension AppEnvironment {
     /// Réglages > Notifications (NOTIF-2I) : l'état de l'autorisation du téléphone (lu, jamais demandé sans un toucher) et les choix.
     func makeNotificationSettingsViewModel() -> NotificationSettingsViewModel {
-        NotificationSettingsViewModel(permissions: devicePermissions, service: notifications.preferences)
+        let reconciler = notifications.reconciler
+        return NotificationSettingsViewModel(
+            permissions: devicePermissions,
+            service: notifications.preferences,
+            counters: { reconciler.followUpCounters() }
+        )
     }
 
     /// Le centre de notifications (NOTIF-6I).
