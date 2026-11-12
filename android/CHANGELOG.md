@@ -2,6 +2,25 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.38.0] - 2026-11-12 : Feed, la phrase « Partage ta position pour voir cette photo » ne s'affiche plus à tort (bug remonté par le PM)
+
+Branche `android/fix-photo-position-gate`, PR brouillon ; recette `docs/qa/checklists/feed-photo-gate-android-recette-pm.md`. Numéro de version : le dernier de `main` est 0.37.0, celui-ci prend le suivant (à renuméroter au merge si une autre PR l'a pris). Aucun texte, aucune règle Firestore, aucune permission, aucune dépendance, aucun service payant.
+
+### Corrigé
+- **Symptôme** : sur la carte d'un proche (Semi) qui n'avait aucune update en cours, le Feed affichait la tuile « Partage ta position pour voir cette photo. » alors que le PM partageait bien sa position.
+- **Cause** : quand le serveur refuse la lecture d'une photo (`PERMISSION_DENIED`), le refus est ambigu (photo expirée, partage arrêté, ou réciprocité de la position). Le Feed le traduisait en « Partage ta position… » dès que **la note locale de la détection** ne contenait pas de position publiée pour cette Miff (`LocalPublishedPositions`, valeur « non » par défaut, vide après une reprise du partage, une réinstallation ou sans copie locale). Une photo expirée mais encore annoncée par le statut (`hasPhoto`) tombait donc dans la phrase de verrou.
+- **Correction** : la phrase n'apparaît que si **le serveur confirme** que ma position n'est pas publiée (`positions/{moi}` absente). Note locale « publiée » d'abord (aucune lecture) ; sinon **une lecture** de mon propre document de position (`Source.SERVER`), mémorisée 30 s par Miff. Réponse inconnue (hors connexion, refusée, déconnecté, chargement) : **rien n'est affiché**, jamais la phrase. Photo absente, invalide ou erreur autre que refus : jamais la phrase.
+- Règle du PM respectée et inchangée : partage de position non publié + photo refusée = phrase de verrou ; photo lisible = photo.
+
+### Modifié
+- `PhotoReader.kt` : `FirestorePhotoReader` est découpé en `CachedPhotoReader` (cache, sans Firestore, testable), `FirestorePhotoSource` (lecture de `photos/{uid}`), `OwnPositionResolver` + `FirestoreOwnPositionProbe` (ma position) ; `refusalLookup` prend un `OwnPosition` (`Published`, `NotPublished`, `Unknown`).
+- Tests : `PhotoGateTest` (partage actif + photo absente = aucune phrase ; partage actif + photo expirée refusée, note locale vide = aucune phrase ; partage actif + photo présente = photo ; position non publiée + refus = phrase ; position inconnue, hors ligne ou déconnecté = jamais la phrase ; autres erreurs = jamais la phrase ; une lecture au plus par Miff et par 30 s ; un refus n'est pas mémorisé).
+
+### À savoir
+- **Coût** : au plus une lecture de plus (mon propre document de position, 1 lecture facturée) par Miff et par 30 s, **seulement** après un refus de photo quand la note locale ne dit pas « publiée ». Négligeable ; signal de surveillance : aucun nouveau.
+- **Limite connue** : si ma position n'est vraiment pas publiée, la phrase peut aussi s'afficher pour un proche dont la photo vient d'expirer (le serveur ne distingue pas « expirée » de « position à publier »).
+- **iOS** : même défaut (`ownPositionPublished` lu sur la copie locale, `false` par défaut), non modifié dans cette PR.
+
 ## [0.37.0] - 2026-11-12 : toucher la bulle du Feed ouvre l'écran « Les couleurs de ta Miff » (COULEURS-1)
 
 Demande du PM (2026-11-12), ticket complet et décidé sur délégation du PM : `docs/tickets/couleurs-info.md` ; recette `docs/qa/checklists/couleurs-info-android-recette-pm.md` ; branche `android/couleurs-info`, PR brouillon. Numéro de version : le dernier de `main` est 0.36.0 (deux entrées), celui-ci prend le suivant, 0.37.0 (à renuméroter au merge si une autre PR l'a pris). Aucune donnée, aucune règle Firestore, aucune permission, aucune dépendance, aucun service payant.
