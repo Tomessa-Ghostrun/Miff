@@ -18,15 +18,14 @@ final class TravelNotificationPlannerTests: XCTestCase {
         return calendar
     }
 
-    private func millis(_ year: Int, _ month: Int, _ day: Int, _ hour: Int, _ minute: Int, zone: String = "Europe/Paris") -> Int {
-        let parts = DateComponents(year: year, month: month, day: day, hour: hour, minute: minute)
+    private func millis(_ parts: DateComponents, zone: String = "Europe/Paris") -> Int {
         let date = calendar(zone).date(from: parts) ?? Date(timeIntervalSince1970: 0)
         return Int((date.timeIntervalSince1970 * 1000).rounded())
     }
 
     /// Novembre 2026, heure de Paris.
     private func at(_ day: Int, _ hour: Int, _ minute: Int, ms: Int = 0) -> Int {
-        millis(2026, 11, day, hour, minute) + ms
+        millis(DateComponents(year: 2026, month: 11, day: day, hour: hour, minute: minute)) + ms
     }
 
     /// La fin d'un voyage dont le dernier jour est le 9 : 00:00 local du 10.
@@ -56,10 +55,8 @@ final class TravelNotificationPlannerTests: XCTestCase {
         _ now: Int,
         _ members: [PlanMember],
         travelUntil: Int? = nil,
-        preferences: NotificationPreferences = NotificationPreferences(),
-        authorization: NotificationAuthorization = .authorized,
-        session: String? = "me",
-        withMiff: Bool = true
+        withMiff: Bool = true,
+        configure: (inout NotificationPlanInput) -> Void = { _ in }
     ) -> NotificationPlanInput {
         var value = NotificationPlanInput(
             nowMillis: now,
@@ -67,13 +64,12 @@ final class TravelNotificationPlannerTests: XCTestCase {
                 ? NotificationPlanSnapshot(miffId: miff, myUid: me, members: members, savedAtMillis: now)
                 : nil,
             activeMiffId: withMiff ? miff : nil,
-            sessionUid: session
+            sessionUid: "me"
         )
         value.calendar = calendar()
         value.horizonMillis = Int.max
-        value.preferences = preferences
-        value.authorization = authorization
         value.myTravelUntilMillis = travelUntil
+        configure(&value)
         return value
     }
 
@@ -93,8 +89,8 @@ final class TravelNotificationPlannerTests: XCTestCase {
 
     func testN7OnTheDayTheSummerTimeEndsIsStillEightLocalNotEightHoursLater() {
         // Le 25 octobre 2026 dure 25 h à Paris (retour à l'heure d'hiver à 3 h) : la fin (00:00) est encore à l'heure d'été, 08:00 est à l'heure d'hiver.
-        let end = millis(2026, 10, 25, 0, 0)
-        let expected = millis(2026, 10, 25, 8, 0)
+        let end = millis(DateComponents(year: 2026, month: 10, day: 25, hour: 0, minute: 0))
+        let expected = millis(DateComponents(year: 2026, month: 10, day: 25, hour: 8, minute: 0))
 
         XCTAssertEqual(TravelEndNotice.dueAt(untilMillis: end, calendar: calendar()), expected)
         XCTAssertEqual(expected - end, 9 * hour, "le 25 octobre a 25 h : 9 h d'écart, pas 8")
@@ -105,12 +101,12 @@ final class TravelNotificationPlannerTests: XCTestCase {
         let due = TravelEndNotice.dueAt(untilMillis: tripEnd, calendar: calendar("America/New_York"))
 
         XCTAssertGreaterThan(due, tripEnd)
-        XCTAssertEqual(due, millis(2026, 11, 10, 8, 0, zone: "America/New_York"))
+        XCTAssertEqual(due, millis(DateComponents(year: 2026, month: 11, day: 10, hour: 8, minute: 0), zone: "America/New_York"))
     }
 
     func testN7WhenEightLocalIsTheEndItselfItLeavesAtOnceNotADayLate() {
         // 00:00 à Paris le 10 = 08:00 à Tokyo le 10.
-        XCTAssertEqual(millis(2026, 11, 10, 8, 0, zone: "Asia/Tokyo"), tripEnd)
+        XCTAssertEqual(millis(DateComponents(year: 2026, month: 11, day: 10, hour: 8, minute: 0), zone: "Asia/Tokyo"), tripEnd)
         XCTAssertEqual(TravelEndNotice.dueAt(untilMillis: tripEnd, calendar: calendar("Asia/Tokyo")), tripEnd)
     }
 
@@ -208,11 +204,11 @@ final class TravelNotificationPlannerTests: XCTestCase {
         let generalOff = NotificationPreferences().settingGeneral(false)
 
         XCTAssertEqual(plan(input(now, [], travelUntil: tripEnd)).keys.sorted(), ["n7"])
-        XCTAssertTrue(plan(input(now, [], travelUntil: tripEnd, preferences: switchOff)).isEmpty)
-        XCTAssertTrue(plan(input(now, [], travelUntil: tripEnd, preferences: generalOff)).isEmpty)
-        XCTAssertTrue(plan(input(now, [], travelUntil: tripEnd, authorization: .denied)).isEmpty)
-        XCTAssertTrue(plan(input(now, [], travelUntil: tripEnd, authorization: .notDetermined)).isEmpty)
-        XCTAssertTrue(plan(input(now, [], travelUntil: tripEnd, session: nil)).isEmpty)
+        XCTAssertTrue(plan(input(now, [], travelUntil: tripEnd) { $0.preferences = switchOff }).isEmpty)
+        XCTAssertTrue(plan(input(now, [], travelUntil: tripEnd) { $0.preferences = generalOff }).isEmpty)
+        XCTAssertTrue(plan(input(now, [], travelUntil: tripEnd) { $0.authorization = .denied }).isEmpty)
+        XCTAssertTrue(plan(input(now, [], travelUntil: tripEnd) { $0.authorization = .notDetermined }).isEmpty)
+        XCTAssertTrue(plan(input(now, [], travelUntil: tripEnd) { $0.sessionUid = nil }).isEmpty)
         XCTAssertTrue(plan(input(now, [], travelUntil: nil)).isEmpty)
     }
 
@@ -224,11 +220,11 @@ final class TravelNotificationPlannerTests: XCTestCase {
         let n7Off = NotificationPreferences().setting(.n7, to: false)
 
         XCTAssertEqual(
-            plan(input(at(10, 0, 30), members, travelUntil: tripEnd, preferences: others)),
+            plan(input(at(10, 0, 30), members, travelUntil: tripEnd) { $0.preferences = others }),
             ["n7": at(10, 8, 0)]
         )
         XCTAssertEqual(
-            plan(input(at(10, 0, 30), members, travelUntil: tripEnd, preferences: n7Off)),
+            plan(input(at(10, 0, 30), members, travelUntil: tripEnd) { $0.preferences = n7Off }),
             ["n1": at(10, 2, 5, ms: 1), "n2": at(10, 4, 5, ms: 1)]
         )
     }
