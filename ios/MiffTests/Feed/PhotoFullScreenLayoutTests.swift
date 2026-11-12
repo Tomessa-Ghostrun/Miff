@@ -103,25 +103,43 @@ final class PhotoFullScreenLayoutTests: XCTestCase {
 
         XCTAssertFalse(code.contains("PreferenceKey"), "aucune hauteur mesurée")
         XCTAssertFalse(code.contains(".layoutPriority("), "plus de partage de hauteur : la légende est une surimpression")
+        XCTAssertFalse(code.contains("ViewThatFits"), "plus de choix implicite : la légende défile selon un calcul testé (`footerScrolls`)")
+        XCTAssertEqual(code.components(separatedBy: "GeometryReader").count - 1, 1, "UN seul GeometryReader, à la racine : aucun imbriqué")
+        XCTAssertTrue(code.contains("proxy.safeAreaInsets"), "les vraies zones sûres, lues une fois")
         XCTAssertTrue(code.contains(".scaledToFit()"), "la photo entière, jamais recadrée")
         XCTAssertFalse(code.contains(".scaledToFill()"))
-        XCTAssertTrue(code.contains(".frame(width: area.size.width, height: area.size.height)"), "la photo prend toute la zone, pas sa taille propre")
-        XCTAssertTrue(code.contains(".ignoresSafeArea()"), "la photo occupe l'écran entier, zones sûres comprises")
-        XCTAssertTrue(code.contains("footerOverlay(screenHeight: screen.size.height)"), "la légende est posée par-dessus la photo")
+        XCTAssertTrue(code.contains(".frame(width: size.width, height: size.height)"), "la photo (et son conteneur) prennent l'écran ENTIER : la photo est centrée")
+        XCTAssertTrue(code.contains("        .ignoresSafeArea()\n"), "la racine occupe l'écran entier, zones sûres comprises")
+        XCTAssertTrue(code.contains(".overlay(alignment: .top)"), "la croix et l'icône sont une surimpression collée en haut")
+        XCTAssertTrue(code.contains(".overlay(alignment: .bottom)"), "la légende est une surimpression collée en bas")
+        XCTAssertTrue(code.contains("footerOverlay(size: size, insets: insets)"))
         XCTAssertTrue(code.contains("LinearGradient("), "dégradé qui fond la photo dans le voile")
         XCTAssertTrue(code.contains("colorPhotoCaptionScrim"), "voile sombre du design system, jamais une couleur en dur")
         XCTAssertTrue(code.contains("accessibilityReduceTransparency"), "« Réduire la transparence » : voile opaque")
-        XCTAssertTrue(code.contains("scrim.ignoresSafeArea(edges: .bottom)"), "le voile va jusqu'au bas de l'écran, le texte reste dans la zone sûre")
-        XCTAssertTrue(code.contains("ViewThatFits(in: .vertical)"), "la légende entière si ça tient, sinon elle défile")
-        XCTAssertTrue(code.contains("PhotoFullScreenLayout.footerMaxHeight(screenHeight:"), "zone bornée")
-        XCTAssertTrue(code.contains(".zIndex(1)"), "la croix et l'icône restent au-dessus, en haut")
+        XCTAssertTrue(code.contains(".padding(.bottom, insets.bottom + PhotoFullScreenLayout.captionBottomPadding)"), "zone sûre basse + 8 pt, rien d'autre")
+        XCTAssertTrue(code.contains("PhotoFullScreenLayout.footerScrolls("), "défilement décidé par un calcul pur")
+        XCTAssertTrue(code.contains("frame(minHeight: cap - PhotoFullScreenLayout.fadeHeight, alignment: .bottom)"), "défilante, la légende reste ANCRÉE EN BAS : jamais de vide noir sous le bouton")
+        XCTAssertTrue(code.contains(".accessibilitySortPriority(1)"), "la croix est lue en premier")
         XCTAssertTrue(code.contains(".hidesInAppSwitcher()"), "le voile des applications récentes est conservé")
-        // Ordre de la pile : la photo d'abord (dessous), puis la légende, puis la croix et l'icône (dessus).
-        let photoAt = try XCTUnwrap(code.range(of: "                photo\n")?.lowerBound)
-        let captionAt = try XCTUnwrap(code.range(of: "footerOverlay(screenHeight: screen.size.height)")?.lowerBound)
-        let closeAt = try XCTUnwrap(code.range(of: "labelKey: \"update_photo_close_a11y\"")?.lowerBound)
-        XCTAssertLessThan(photoAt, captionAt)
-        XCTAssertLessThan(captionAt, closeAt)
+        // Ordre : la photo (dessous), puis la légende et la barre du haut en surimpression.
+        let photoAt = try XCTUnwrap(code.range(of: "photo(size: size)")?.lowerBound)
+        let topAt = try XCTUnwrap(code.range(of: ".overlay(alignment: .top)")?.lowerBound)
+        let bottomAt = try XCTUnwrap(code.range(of: ".overlay(alignment: .bottom)")?.lowerBound)
+        XCTAssertLessThan(photoAt, topAt)
+        XCTAssertLessThan(topAt, bottomAt)
+    }
+
+    // MARK: - Quand la légende défile (calcul pur)
+
+    func testTheCaptionDoesNotScrollOnATallScreenWithNormalTextAndScrollsInLandscapeOrWithHugeText() {
+        let estimate = PhotoFullScreenLayout.footerEstimate
+        let bottom: CGFloat = 34
+        let fade = PhotoFullScreenLayout.fadeHeight
+
+        XCTAssertFalse(PhotoFullScreenLayout.footerScrolls(estimate: estimate + bottom + fade, screenHeight: 812), "11 Pro, texte normal : entière")
+        XCTAssertFalse(PhotoFullScreenLayout.footerScrolls(estimate: estimate + bottom + fade, screenHeight: 667), "SE, texte normal : entière")
+        XCTAssertTrue(PhotoFullScreenLayout.footerScrolls(estimate: estimate + 0 + fade, screenHeight: 375), "paysage : elle défile")
+        XCTAssertTrue(PhotoFullScreenLayout.footerScrolls(estimate: estimate * 3 + bottom + fade, screenHeight: 812), "texte maximal : elle défile")
     }
 
     func testTheCaptionTextIsWhiteFromTheDesignSystem() throws {
@@ -141,9 +159,9 @@ final class PhotoFullScreenLayoutTests: XCTestCase {
 
     func testTheCaptionIsTightAndSitsRightAboveTheBottomSafeAreaLikeOnAndroid() throws {
         // Avant : 8 pt de marge basse et 8 pt entre la légende et le bouton.
-        XCTAssertLessThanOrEqual(PhotoFullScreenLayout.captionBottomPadding, 4, "juste au-dessus de la zone sûre du bas")
+        XCTAssertLessThanOrEqual(PhotoFullScreenLayout.captionBottomPadding, 8, "zone sûre basse + 8 pt au plus")
         XCTAssertLessThanOrEqual(PhotoFullScreenLayout.captionSpacing, 4, "légende et bouton serrés")
-        XCTAssertLessThan(PhotoFullScreenLayout.captionBottomPadding, Spacing.sm)
+        XCTAssertLessThanOrEqual(PhotoFullScreenLayout.captionBottomPadding, Spacing.sm)
         XCTAssertLessThan(PhotoFullScreenLayout.captionSpacing, Spacing.sm)
         XCTAssertGreaterThan(PhotoFullScreenLayout.fadeHeight, 0, "le dégradé reste")
         let url = URL(fileURLWithPath: #filePath)
@@ -154,7 +172,7 @@ final class PhotoFullScreenLayoutTests: XCTestCase {
         let code = UpdatePrivacyTests.codeLines(try String(contentsOf: url, encoding: .utf8)).joined(separator: "\n")
 
         XCTAssertTrue(code.contains("spacing: PhotoFullScreenLayout.captionSpacing"))
-        XCTAssertTrue(code.contains(".padding(.bottom, PhotoFullScreenLayout.captionBottomPadding)"))
+        XCTAssertTrue(code.contains("insets.bottom + PhotoFullScreenLayout.captionBottomPadding"))
         XCTAssertFalse(code.contains("minHeight: Spacing.minTouchTarget + Spacing.xs"), "le bouton « Voir où c'était » ne gagne plus de hauteur : 44 pt")
         XCTAssertTrue(code.contains("minHeight: Spacing.minTouchTarget)"))
     }

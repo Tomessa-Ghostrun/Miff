@@ -49,6 +49,9 @@ struct ScreenPreview: View {
                     actions: cropActions
                 )
             }
+        case _ where name.hasPrefix("photo-"):
+            // La photo d'un proche en plein écran (Feed, FEED-8) : voir `PhotoScreenPreview`.
+            PhotoScreenPreview(name: name)
         case _ where name.hasPrefix("place-"):
             // Les lieux de confiance (formulaire, liste, détail, offre) : voir `PlaceScreenPreview`.
             PlaceScreenPreview(name: name)
