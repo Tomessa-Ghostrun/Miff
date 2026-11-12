@@ -19,7 +19,6 @@ Ajouté :
 Changé :
 - `PlaceRows` : un membre dont la liste est vide lit « Aucun lieu de confiance pour l'instant. » (aussi dans la liste du Profil de `ios/profil-lieux-membres`).
 - `PlacePrivacyTests` lit désormais les routes dans `MiffRoute.swift`.
-- Correction d'un branchement venu de `ios/profil-lieux-membres` : le crochet « les listes de lieux du Profil sont relues » était posé dans `open` de l'hôte d'onboarding (qui n'a ni annuaire ni liste) au lieu de l'hôte de l'app ; il est déplacé dans `MiffHomeHost.open`.
 
 Choix « économiques » : aucun (une requête de 3 documents au plus par Miff et par 5 minutes ; aucun écouteur côté membre). Limite connue : une demande traitée par le créateur n'est vue du membre qu'à sa prochaine lecture (5 minutes au plus). Signal : le ratio de `docs/dev/surveillance-quotas.md` §2.
 
