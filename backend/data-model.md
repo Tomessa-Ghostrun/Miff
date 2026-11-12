@@ -393,11 +393,12 @@ Les applications actuelles n'écrivent ni session ni `deviceId`. Si le serveur e
 ```
 users/{uid}                              profil privé (soi uniquement)
   memberships/{key}                      index "mes Miffs" + slot freemium
-  devices/{deviceId}                     jetons FCM (uniquement avec le push -> Blaze)
+  devices/{deviceId}                     jeton de notification de l'appareil actif (SRV-2R, NON DÉPLOYÉ) ; deviceId = identifiant de la session ; propriétaire seul
   session/active                         session « un compte, un seul appareil » (SESS-1) : deviceId + heure de début, propriétaire seul
 entitlements/{uid}                       statut premium (lecture seule côté client)
 joinCodes/{code}                         résolution du code secret -> miffId
 miffsDeleted/{miffId}                    pierre tombale d'une Miff supprimée (jamais lisible par un client)
+notifState/{miffId}                      état du serveur des notifications (SRV-2R / SRV-4, NON DÉPLOYÉ) : AUCUNE règle client, Admin seulement
 miffs/{miffId}                           le cercle
   members/{uid}                          profil (copie), rôle, CONSENTEMENT
   status/{uid}                           ÉTAT COURANT (sensible), existe seulement si partage activé
@@ -575,8 +576,56 @@ Lisible par tous les membres tant que la Miff existe (ils en « héritent »). �
 
 **Identifiant et lieu dans plusieurs Miffs.** `placeId` = 1 à 20 caractères alphanumériques. Gratuit : seulement `p1`, `p2` et `p3` (3 lieux depuis le 2026-11-10 ; 2 avant). Premium : identifiant libre généré **une seule fois** par le client (ID automatique Firestore, 20 caractères). Un lieu rattaché à N Miffs du créateur = **N documents `miffs/{miffId_i}/places/{placeId}` avec le même `placeId` et les mêmes champs** ; sur le téléphone, ce sont **un seul lieu physique** (même identifiant) : une seule zone surveillée, N statuts. Création, modification et suppression = un lot de N écritures, **N ≤ 5** par lot (§12) ; au-delà, plusieurs lots et reprise (idempotente : un `set` complet sur le même identifiant). Ajouter ou retirer une Miff d'un lieu existant = créer ou supprimer le document de cette Miff : les règles n'ont rien à changer (question ouverte du ticket, Q4). Un document ne change jamais de Miff (le chemin est son identité).
 
-### 2.10 `users/{uid}/devices/{deviceId}` — jetons de push (Blaze)
-`token` (string ≤ 512), `platform` (`ios`/`android`), `updatedAt` (heure serveur). À n'implémenter que le jour où l'envoi de push existe (§13). Supprimé à la déconnexion.
+### 2.10 `users/{uid}/devices/{deviceId}` — jeton de notification de l'appareil (SRV-2R, **NON DÉPLOYÉ**, SENSIBILITÉ FAIBLE À MOYENNE : identifiant d'appareil)
+
+> **NON DÉPLOYÉ.** Le fichier de règles déployé porte encore l'**ancien gabarit** de ce chemin (`{token ≤ 512, platform, updatedAt}`, identifiants libres) : aucune application publiée ne l'écrit. C'est la **seule règle existante modifiée** par la PR `backend/jetons-appareil` (remplacée, pas complétée : deux règles `allow` sur le même chemin s'additionnent, l'ancienne aurait laissé passer n'importe quoi). Alignement sur le ticket `docs/tickets/notification-update-membres.md` §8 (PR #192) et l'étude `docs/dev/etude-serveur-notifications-premium.md` §8 (SRV-2).
+
+**Identifiant** `{deviceId}` = **l'identifiant de la session active** de ce compte (`users/{uid}/session/active.deviceId`, SESS : un compte = un appareil), donc 16 à 64 caractères `[A-Za-z0-9_-]`, aléatoire, sans lien avec l'appareil physique. Les règles **exigent** que l'identifiant du jeton soit celui de la session au moment de l'écriture (un appareil remplacé ou déconnecté ne peut plus s'enregistrer).
+
+| Champ | Type | Note |
+|---|---|---|
+| `token` | string 1–4096 | Jeton FCM (Android) ou jeton FCM adossé à APNs (iOS). Identifiant d'appareil : **jamais lisible par un autre utilisateur**, jamais journalisé, jamais envoyé à Analytics. |
+| `platform` | `"ios"` \| `"android"` | **Figé** après la création. |
+| `appVersion` | string 1–32 | Version de l'application (ex. `1.0.0 (12)`). Sert au diagnostic (jetons d'une version qui ne gère pas un type de message) ; aucun autre usage. |
+| `tz` | string 1–64 | Fuseau IANA de l'appareil (`Europe/Paris`, `America/New_York`, ou `GMT+01:00`) pour les heures calmes 22 h – 7 h du ticket §7. Forme : une lettre puis `[A-Za-z0-9_+:/-]`. Rafraîchi quand il change. |
+| `notify` | map fermée `{ updates: bool }` | Interrupteur « Quand un proche donne des nouvelles » (ticket §6). Un seul booléen en v1 ; un nouveau type de notification = une évolution des règles (clé de plus). Réglage **global**, pas par Miff (ticket Q8). |
+| `updatedAt` | timestamp | **Heure serveur** à chaque écriture. |
+| `createdAt` | timestamp | **Heure serveur** à la création, **figée** ensuite (= `updatedAt` à la création). |
+
+**Exactement ces 7 clés** (ni position, ni nom, ni numéro, ni identifiant publicitaire, ni identifiant de Miff, **ni langue, ni état de l'autorisation** : retirés le 2026-11-12, le ticket dit « pas de langue stockée » et supprime le document quand l'autorisation est retirée ; un document présent veut dire « cet appareil peut recevoir »). Exemple :
+```json
+{ "token": "fcm…", "platform": "android", "appVersion": "1.0.0 (12)",
+  "tz": "Europe/Paris", "notify": { "updates": true }, "updatedAt": "…", "createdAt": "…" }
+```
+
+**Accès (propriétaire seul)** :
+- **Lecture** (`get` et `list`) : le propriétaire seul. Ni un co-membre, ni le créateur d'une Miff, ni un visiteur, **pas de lecture par groupe de collections**. Le serveur (Cloud Function, Admin SDK) le lit en contournant les règles. La liste sert au nouvel appareil (supprimer les anciens jetons) et à la suppression de compte.
+- **Création** : le propriétaire, forme exacte, `createdAt` = `updatedAt` = heure serveur, **identifiant = celui de la session** (lecture `getAfter` : le lot de connexion peut contenir la session ET le jeton). **1 lecture de règles.**
+- **Mise à jour** : même forme et même identifiant, `createdAt` et `platform` inchangés. Mise à jour **partielle** admise (`update({token, updatedAt})`, `update({'notify.updates': false, updatedAt})`). **1 lecture de règles.** Un `set` complet sur un jeton déjà présent est une mise à jour : il est refusé (son `createdAt` serait neuf) ; le client lit d'abord (transaction) puis crée ou met à jour (`docs/dev/jetons-appareil-clients.md`).
+- **Suppression** : le propriétaire, **sans condition de session** (déconnexion ; suppression de compte, qui supprime la session **avant** les jetons : décision du PM du 2026-11-06). 0 lecture de règles.
+
+**Plafond de 5 appareils : comment, et pourquoi pas par un compteur.** Les règles ne savent pas compter les documents d'une sous-collection sans lecture coûteuse (la liste n'est pas lisible dans une règle) ; un compteur écrit dans le même lot (comme les demandes de lieu) coûterait des lectures par écriture et dériverait avec les jetons laissés par des appareils désinstallés. Le modèle retenu **ne permet qu'UN identifiant écrivable à la fois** (celui de la session active) : un compte a donc **un appareil actif**, ce qui est plus strict que 5. Le nouvel appareil **supprime les autres jetons dans son lot de connexion** (contrat client). Limite connue (test DV11) : un client qui oublie ce nettoyage laisse des jetons périmés (un par connexion) ; ils sont inertes (non modifiables ; le contrat du serveur, SRV-4, est de n'envoyer qu'au jeton dont l'identifiant est celui de la session et de supprimer tout jeton refusé par FCM) et un propriétaire qui voudrait en fabriquer beaucoup doit rouvrir une session à chaque fois (App Check strict le borne). Les identifiants fixes `d1` à `d5` (méthode des demandes de lieu) ont été écartés : avec eux, deux téléphones se disputeraient un emplacement et le serveur ne saurait pas quel jeton est celui de la session.
+
+**Cycle de vie** (contrat complet : `docs/dev/jetons-appareil-clients.md`) :
+| Moment | Effet sur `devices` |
+|---|---|
+| Autorisation du système accordée + écran d'explication vu | Création (aucun jeton n'est enregistré avant : la politique de confidentialité le promet) |
+| Nouveau jeton FCM, changement de fuseau, ouverture après 30 jours sans écriture | Mise à jour (ticket §9 ; au plus une par jour) |
+| Interrupteur « Quand un proche donne des nouvelles » | Mise à jour `notify.updates` |
+| Interrupteur général coupé, autorisation retirée | Suppression du document |
+| Connexion sur un autre appareil (SESS) | Le nouvel appareil crée le sien et supprime les autres, dans le même lot que la session |
+| Déconnexion volontaire | Suppression, **après** `waitForPendingWrites` et **avant** `signOut` |
+| Suppression de compte | **Déjà couvert par le lot existant** (Android `AccountDeletion` et iOS `AccountDeletion.swift` listent `devices` côté serveur et suppriment chaque document, après la session) : **aucune modification de lot nécessaire**, compatible avec ces règles (test DV10). À ajouter côté client : invalider le jeton chez FCM (`deleteToken`). |
+| Jeton refusé par FCM (désinstallation) | Suppression par le serveur (SRV-4) |
+| Inactif > 60 jours | Purge par une fonction planifiée (SRV-4, optionnelle ; consomme l'une des 3 tâches planifiées gratuites du compte de facturation) |
+
+**Pour le serveur (SRV-4)** : lire `users/{uid}/devices` avec `limit(3)` pour chaque destinataire ; n'envoyer qu'aux jetons dont l'identifiant est celui de `users/{uid}/session/active` (une lecture de plus) **ou** dont `updatedAt` ≥ `session.startedAt` ; ignorer `notify.updates = false` ; ne jamais journaliser le jeton ni l'uid.
+
+**Budget de lectures de règles** (mesuré, `rules-test-report.md` / `budgets-jetons.test.js`) : création et mise à jour **1** sur 10 ; lecture, liste, suppression **0** ; lot de connexion (session + jeton + N suppressions) **1** sur 20 (mesuré à l'émulateur : 0, la session faisant partie du lot ; borne prudente documentée : 1).
+
+**Coût en écritures (Spark / Blaze)** : au plus **1 écriture par jour et par utilisateur**, en régime normal environ **1 par mois** (rafraîchissement à 30 jours, ticket §9) plus les changements de jeton ou de fuseau (rares) ; chaque écriture = 1 lecture (la transaction) + 1 lecture de règles. Même à 10 000 utilisateurs actifs par jour : de l'ordre de 2 000 écritures par jour, très loin du quota gratuit (20 000 par jour).
+
+**Données sensibles / RGPD** : le jeton est un identifiant d'appareil (donnée personnelle), le fuseau et la version sont des données techniques ; aucune position ni contenu. Base légale proposée : contrat (fonctionnalité demandée) et consentement à l'autorisation du système, retirable en coupant l'interrupteur ou dans les réglages du téléphone ; **non relue juridiquement : risque assumé par le PM (décision du 2026-10-23)**. Hors UE : FCM et APNs peuvent traiter le jeton hors UE (risque assumé, §11). Déclarer le jeton dans la politique de confidentialité, Data safety et App Privacy (ticket SRV-3) **avant** l'activation de l'envoi.
 
 ### 2.11 `miffsDeleted/{miffId}` — pierre tombale d'une Miff supprimée
 | Champ | Type | Note |
@@ -633,6 +682,19 @@ Un seul document, d'identifiant fixe `active` (tout autre identifiant sous `sess
 | `updatedAt` | timestamp | **Heure serveur** ; la règle de la demande exige `updatedAt == request.time` pour prouver que le compteur est écrit dans le même lot. |
 
 Lisible du **créateur seul** (`get`, jamais de liste). Écrit par un membre avec `set` + fusion et `increment(±1)` dans le même lot que sa demande ; par le créateur avec une **valeur absolue** (recalage). Supprimé par le créateur avec la Miff. Aucune donnée personnelle.
+
+### 2.16 `notifState/{miffId}` — état du serveur des notifications (SRV-2R pour l'accès ; contenu défini par SRV-4B ; **NON DÉPLOYÉ**)
+
+**Aucune règle client** : le chemin n'est mentionné nulle part dans `firestore.rules`, il tombe donc dans le refus par défaut (`match /{document=**}` : `if false`). Ni `get`, ni liste, ni groupe de collections, ni écriture, **pour aucun compte** (créateur de la Miff compris). Seule la Cloud Function (Admin SDK, qui contourne les règles) le lit et l'écrit. Prouvé par le test DV12 et par un test unitaire (aucune occurrence de `notifState` dans le fichier de règles) ; toute règle ajoutée un jour doit casser ces tests.
+
+Contenu proposé par le ticket §8.2 (à finaliser par SRV-4B, pas figé ici) : par auteur, `lastSeenCreatedAt` (idempotence : dernière publication traitée) et `lastNotifiedAt` (plafond d'une notification par auteur et par heure) ; `expireAt` = dernière écriture + 2 jours. **TTL Firestore sur `expireAt`** (action du PM dans la console, facturée à l'usage sur Blaze, négligeable : à vérifier) pour que les identifiants d'utilisateurs ne restent pas : conservation de 2 jours. Une lecture et une écriture par événement.
+
+### 2.17 Étude : « 30 s minimum entre deux photos » (proposition du ticket §10) — **NON RETENUE dans cette PR**
+
+Demande : exiger dans la règle de `photos/{uid}` un écart de 30 s avec `resource.data.createdAt` pour que la limite du client devienne une limite serveur (le déclencheur de la fonction est l'écriture de la photo).
+- **Coût en lectures de règles : 0** (`resource.data` est le document déjà chargé) ; aucun changement de lot.
+- **Mais** : (1) **contournable en une ligne** : l'auteur supprime sa photo (la suppression est autorisée, elle est nécessaire à l'arrêt du partage) puis la recrée, deux requêtes séparées ; `resource` est alors nul à la création et l'écart n'est jamais contrôlé ; seule une règle de suppression elle aussi limitée fermerait la porte, et elle bloquerait l'arrêt du partage et le départ ; (2) **modifie une règle déployée** sur le chemin le plus sensible (photo localisée), ce que cette PR s'interdit, avec un risque de refuser une publication légitime (nouvelle tentative d'une écriture mise en file hors connexion, deux Miffs publiées à quelques secondes d'écart par un lot, horloge) et un message d'erreur « permission refusée » pour un geste voulu ; (3) la protection réelle contre l'emballement est ailleurs et déjà prévue : idempotence et plafond d'une notification par auteur et par heure dans `notifState`, `maxInstances`, App Check strict, alertes de budget.
+- **Recommandation** : ne pas l'appliquer. Si le PM la veut quand même, c'est une PR distincte, après cette PR (texte à ajouter dans `allow create, update` de `photos`) : `&& (resource == null || request.time >= resource.data.createdAt + duration.value(30, 's'))`, avec tests (publication à 29 s refusée, à 31 s acceptée, suppression puis recréation acceptée = limite connue) et mutation. Aucune ligne de règle n'est modifiée par cette PR pour cela (test unitaire `budgets-jetons.test.js`).
 
 ---
 
@@ -778,7 +840,7 @@ Toutes les écritures multi-documents sont des **batches** (`WriteBatch` côté 
 | **Supprimer une Miff** (créateur) | — | Par étapes, en petits batches : retirer chaque autre membre avec le batch de retrait ci-dessus (**un membre par batch, le code est renouvelé à chaque fois** ; un retrait dans le batch final qui supprime la Miff est refusé), supprimer les `places` (≤ 5 par batch), puis en dernier un batch : delete `miffs/{id}` + **create `miffsDeleted/{id}` `{deletedAt: serverTimestamp()}`** (pierre tombale, §2.11) + delete `joinCodes/{code}` (le code actuel de la Miff, lu dans `miffs/{id}.joinCode`) + delete mon `status`/`photos`/**`positions`** (si existent ; **ma position est refusée si elle reste**) + delete mon `members/{uid}` + delete mon `memberships/{key}`. **Le batch est refusé sans la pierre tombale ou sans la suppression du code.** Si interrompu : relancer (idempotent : si le code a déjà été supprimé dans un batch précédent, le batch final reste accepté sans lui). Les sous-collections ne sont pas supprimées automatiquement par Firestore. **Constats MIFF-2 (tests 18-miff2, rapport des tests de règles, section MIFF-2)** : le client lit le serveur à chaque reprise (qui reste, quels lieux, la Miff existe-t-elle) ; la suppression d'un **code** ou d'un **index** absent est **refusée** (celle d'une fiche, d'un statut, d'une photo ou d'un lieu absent est acceptée), donc le client lit leur existence dans la transaction et omet ces deux suppressions s'ils manquent ; le lot final fait 13 appels de règles sur 20 au pire cas (12 avant la suppression de la position) (mesure et comptage dans le rapport). |
 | **Premium (lecture)** | `get entitlements/{uid}` (peut ne pas exister = gratuit) | Aucune. L'achat store ne suffit pas : c'est le serveur (ou le PM en manuel) qui écrit `entitlements`. |
 | **Suppression de compte** | — | §10, séquence décidée le 2026-10-24 : confirmation bienveillante au créateur **avant** (liste de ses Miffs et nombre de membres), puis **pour chaque Miff créée** : retrait des autres membres un par un (batch de retrait ci-dessus, **position comprise**), suppression des `places` (≤ 5 par batch), batch final de suppression de la Miff (pierre tombale + code + ma position) ; batch « Quitter » (**position comprise**) pour les Miffs rejointes ; suppression des `devices`, **de `users/{uid}/session/active` (SESS-1)** et de `users/{uid}` ; **en dernier** suppression de l'utilisateur Auth. Reprenable (idempotent). Les autres membres perdent l'accès et l'apprennent à leur prochain lancement. |
-| **Push (Blaze)** | — | À chaque lancement et rafraîchissement de jeton : `users/{uid}/devices/{deviceId}` set {token, platform, updatedAt}. À la déconnexion : delete. |
+| **Push (Blaze)** (SRV-2R, NON DÉPLOYÉ) | — | Voir §2.10 et `docs/dev/jetons-appareil-clients.md` : jeton écrit seulement après l'autorisation du système, dans le lot de connexion (session + jeton + suppression des autres jetons) ou par transaction (lire puis créer ou mettre à jour), rafraîchi au plus une fois par 24 h ; supprimé à la déconnexion (avant `signOut`), à la coupure de l'interrupteur et à la suppression de compte (lot existant inchangé). |
 
 **App Check** : les deux apps doivent initialiser Firebase App Check (App Attest/DeviceCheck sur iOS, Play Integrity sur Android) avant toute requête Firestore ; jeton de debug pour les builds de développement. Sans cela, le PM ne pourra pas activer l'application stricte (README).
 
@@ -792,7 +854,8 @@ Légende : `S` = soi-même, `M` = membre de la Miff, `P` = membre qui partage lu
 |---|---|---|---|---|---|
 | `users/{uid}` | S (**le numéro n'est lisible que par S**) | — | S (profil **avec `phone` E.164 obligatoire**, (a) CGU, (b) consentement facultatif ; heure serveur) | S (profil, **`phone` (jamais vidé)**, consentement (b) ; (a) et `createdAt` figés) | S |
 | `users/{uid}/memberships/{key}` | S | S | S (slot) | — | S (si plus membre) |
-| `users/{uid}/devices/{id}` | S | S | S | S | S |
+| `users/{uid}/devices/{sessionDeviceId}` (SRV-2R, NON DÉPLOYÉ) | S | S (**jamais** par groupe de collections) | S (7 clés, heures serveur, **identifiant = celui de la session**) | S (même forme, `createdAt` et `platform` figés, identifiant = session) | S (sans condition de session) |
+| `notifState/{miffId}` (SRV-2R, NON DÉPLOYÉ) | **— (serveur seulement)** | **—** | **—** | **—** | **—** |
 | `users/{uid}/session/active` (SESS-1) | **S seul** (ni le créateur, ni un co-membre) | — | S (`{deviceId, startedAt}`, schéma fermé, heure serveur ; remplace la précédente) | S (idem) | S (le client ne supprime que la sienne) |
 | `entitlements/{uid}` | S | — | — (serveur/console) | — | — |
 | `joinCodes/{code}` | tout compte connecté qui connaît le code | **—** | O (avec sa Miff) | O (nom) | O |
@@ -834,7 +897,8 @@ Les Cloud Functions / la console (Admin SDK) contournent les règles : c'est ain
 | Preuve d'acceptation (a) (`termsAcceptedAt`, `termsVersion`) et consentement statistiques (b) (`analyticsConsent`) | Tant que le profil existe ; **supprimées avec `users/{uid}`** à la suppression du compte. Conserver la preuve après suppression du compte exigerait un journal séparé sans donnée personnelle (Q13) : non modélisé. Un utilisateur social qui refuse le panneau de consentement n'a **aucun** enregistrement. |
 | Preuve de consentement (`sharing.*`) | Tant que le membre est dans la Miff ; supprimée avec le document membre. Si une conservation de la preuve après départ devenait un jour nécessaire, il faudrait un journal séparé (Q13) ; risque juridique assumé par le PM (décision du 2026-10-23, pas de relecture juridique). |
 | `session` (identifiant aléatoire + heure de début, SESS-1) | Remplacée à chaque connexion ; supprimée à la déconnexion volontaire (transaction) et à la suppression du compte ; peut subsister si l'application est désinstallée sans déconnexion, jusqu'à la prochaine connexion ou la suppression du compte. Le même identifiant est recopié dans le statut et la position (durée de ces documents). |
-| `devices` (jetons) | Supprimés à la déconnexion ; purge des jetons inactifs > 60 jours par fonction (Blaze). |
+| `devices` (jetons de notification, SRV-2R) | Supprimés à la déconnexion, à la coupure de l'interrupteur, à la suppression de compte (lot existant) et quand le remplacement par un autre appareil les rend inutiles ; supprimés par le serveur quand FCM refuse le jeton ; purge des jetons inactifs > 60 jours par fonction planifiée (SRV-4, optionnelle). |
+| `notifState` (état du serveur, SRV-2R / SRV-4B) | 2 jours (TTL sur `expireAt`, à activer par le PM dans la console) ; contient des identifiants d'utilisateurs, jamais de jeton ni de contenu. |
 | `entitlements` | Durée de l'abonnement ; purge à la suppression du compte (manuelle ou fonction). |
 | Sauvegardes Firestore | Désactivées par défaut. Ne pas activer de sauvegarde/restauration à un instant donné sans décision du PM (elle dupliquerait les données sensibles). |
 
@@ -857,7 +921,7 @@ Ce tableau décrit ce que le modèle implique ; il ne constitue pas une analyse 
 | **État de voyage et date de fin** (`presence = travel`, `travelUntil`, `travelUntilDay`, VOY-B, tous les comptes) | `status` | **Élevée** : révèle une **absence prévue** du domicile et sa durée, visible de tous les membres de la Miff ; en contrepartie le statut n'expose plus lieu de confiance, batterie ni présence pendant le voyage (la position, elle, reste partagée comme d'habitude) | Consentement explicite et révocable (le membre choisit et confirme à l'activation ; désactivable à tout moment) | Jusqu'à la désactivation, la fin du voyage ou la sortie de la Miff ; supprimé avec le statut |
 | Niveau de batterie, permission de localisation du téléphone | `status` | Faible à moyenne | Intérêt légitime / contrat | État courant |
 | **Identifiant de session aléatoire** (SESS-1) et heure de début | `users/{uid}/session/active` ; recopié dans `status` et `positions` (**lisible des membres autorisés**) | Faible (aléatoire, propre à l'application, sans lien avec l'appareil ; change à chaque connexion ; laisse deviner un changement de téléphone) | Contrat (fonctionnement du service : un seul appareil actif) ; non relue juridiquement : risque assumé | Jusqu'à la déconnexion volontaire, la reconnexion ou la suppression du compte |
-| Jetons de notification | `devices` | Faible (identifiant d'appareil) | Contrat | Jusqu'à déconnexion |
+| Jetons de notification, fuseau horaire, version de l'application, préférence « un proche donne des nouvelles » (SRV-2R, NON DÉPLOYÉ) | `devices` (propriétaire seul) | Faible à moyenne (identifiant d'appareil ; le fuseau laisse deviner une zone géographique large) | Contrat et consentement à l'autorisation du système (retirable) ; **non relue juridiquement : risque assumé** ; transit possible hors UE par FCM / APNs (risque assumé) | Jusqu'à déconnexion, coupure, suppression de compte ou jeton refusé par FCM |
 | Preuve d'acceptation des CGU (a) et du consentement | `users`, `members` | Faible | Obligation de pouvoir démontrer le consentement | Voir §10 |
 | Consentement (b) aux statistiques d'usage et rapports de plantage (état, date, version, retrait) | `users` (`analyticsConsent`) | Faible en soi (un booléen daté) ; **conditionne** la collecte d'une donnée à caractère personnel (identifiant d'installation, zone déduite de l'IP, journaux de plantage) | Consentement (RGPD art. 6.1.a et 7 : libre, spécifique, retirable aussi facilement que donné) | Tant que le profil existe (§10) |
 | État d'abonnement | `entitlements` | Faible | Contrat | Durée de l'abonnement |
