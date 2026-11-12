@@ -52,19 +52,26 @@ final class ProfileCarouselTouchTests: XCTestCase {
     // MARK: - Les sources : aucun bouton dans le carrousel
 
     private func carouselCode() throws -> String {
-        let url = URL(fileURLWithPath: #filePath)
+        let root = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent() // Main
             .deletingLastPathComponent() // MiffTests
             .deletingLastPathComponent() // ios
-            .appendingPathComponent("Miff/Views/Main/ProfileMiffCarousel.swift")
-        guard FileManager.default.fileExists(atPath: url.path) else {
-            throw XCTSkip("Source introuvable (\(url.path)).")
+        // Le carrousel (le geste) et sa rangée de cartes (les cartes elles-mêmes) : deux fichiers.
+        let files = ["Miff/Views/Main/ProfileMiffCarousel.swift", "Miff/Views/Main/ProfileCarouselCards.swift"]
+        var code = ""
+        for file in files {
+            let url = root.appendingPathComponent(file)
+            guard FileManager.default.fileExists(atPath: url.path) else {
+                throw XCTSkip("Source introuvable (\(url.path)).")
+            }
+            // Le code seulement : les lignes de commentaire (qui expliquent pourquoi il n'y a plus de bouton) ne comptent pas.
+            code += try String(contentsOf: url, encoding: .utf8)
+                .split(separator: "\n", omittingEmptySubsequences: false)
+                .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+                .joined(separator: "\n")
+            code += "\n"
         }
-        // Le code seulement : les lignes de commentaire (qui expliquent pourquoi il n'y a plus de bouton) ne comptent pas.
-        return try String(contentsOf: url, encoding: .utf8)
-            .split(separator: "\n", omittingEmptySubsequences: false)
-            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
-            .joined(separator: "\n")
+        return code
     }
 
     func testTheCarouselCardsHaveNoButtonAndNoSecondTapHandler() throws {
