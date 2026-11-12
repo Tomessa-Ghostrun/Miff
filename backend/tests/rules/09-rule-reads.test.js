@@ -9,7 +9,7 @@ import {
   consentOnNow, consentRevokeNow, consentOnSeed, userWithConsent, userDoc,
   ID, CODE, commit, createMiffOps, joinOps, leaveOps, removeMemberOps, leaveWithPositionOps, removeMemberWithPositionOps, set, update, del, statusDoc, placeInput, placeSeed, photoDoc,
   serverTs, sharingOnNow, T0, createShareOps, joinShareOps, PHONE_B, positionDoc, positionSeed, sharingOnNowV3, CONSENT_POSITION,
-  statusInitial, DEVICE_A, sessionSeed, SESSION_PATH, inMs, photoLegacyDoc, Timestamp,
+  statusInitial, DEVICE_A, DEVICE_B, sessionDoc, sessionSeed, SESSION_PATH, inMs, photoLegacyDoc, Timestamp, deviceDoc, deviceSeed, DEVICE_DOC_PATH,
 } from '../helpers/fixtures.js';
 import { measureReads, measureLot, writeReadsReport } from '../helpers/measure.js';
 import { probeEmulatorLimits, EXPECTED_LIMITS } from '../helpers/calibration.js';
@@ -630,6 +630,76 @@ const scenarios = [
         set(`${M1}/positions/carol`, positionDoc({ deviceId: DEVICE_A })),
         set(`${M1}/photos/carol`, photoDoc({ lat: 48.85661, lng: 2.35222, measuredAt: inMs(-60_000) })),
       ]),
+  },
+  // SRV-2R (jetons d'appareil, NON DÉPLOYÉ) : lot de connexion d'un nouvel appareil [session + jeton + suppression de 4 anciens jetons], rafraîchissement,
+  // suppression, lecture et liste. Le jeton lit la session du compte (getAfter) : 1 lecture de règles à l'écriture, 0 à la lecture et à la suppression.
+  {
+    id: 'READS-dev-login',
+    title: "SRV-2R : lot de connexion d'un nouvel appareil (session + jeton + 4 suppressions de jetons précédents)",
+    name: 'Connexion : session + jeton + 4 suppressions (batch de 6)',
+    lot: true,
+    hosts: [H.sessionUpdate, H.devicesCreate, H.devicesDelete],
+    prepare: async (env) => {
+      await seedSessions('bob')(env);
+      await env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(DEVICE_DOC_PATH('bob', DEVICE_A)).set(deviceSeed()));
+    },
+    run: (env) =>
+      commit(db(env, 'bob'), [
+        set(SESSION_PATH('bob'), sessionDoc(DEVICE_B)),
+        set(DEVICE_DOC_PATH('bob', DEVICE_B), deviceDoc()),
+        del(DEVICE_DOC_PATH('bob', DEVICE_A)),
+        del(DEVICE_DOC_PATH('bob', 'OldDevice1111111111111')),
+        del(DEVICE_DOC_PATH('bob', 'OldDevice2222222222222')),
+        del(DEVICE_DOC_PATH('bob', 'OldDevice3333333333333')),
+      ]),
+    maxReads: 1,
+  },
+  {
+    id: 'READS-dev-refresh',
+    title: 'SRV-2R : rafraîchissement du jeton (mise à jour partielle, une écriture)',
+    name: 'Jeton : rafraîchissement (1 écriture)',
+    limit: 10,
+    hosts: [H.devicesUpdate],
+    prepare: async (env) => {
+      await seedSessions('bob')(env);
+      await env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(DEVICE_DOC_PATH('bob')).set(deviceSeed()));
+    },
+    run: (env) => db(env, 'bob').doc(DEVICE_DOC_PATH('bob')).update({ token: 'nouveau-jeton', tz: 'Europe/Paris', updatedAt: serverTs() }),
+    maxReads: 1,
+  },
+  {
+    id: 'READS-dev-create',
+    title: 'SRV-2R : premier enregistrement du jeton (une écriture, session déjà posée)',
+    name: 'Jeton : création (1 écriture)',
+    limit: 10,
+    hosts: [H.devicesCreate],
+    prepare: seedSessions('bob'),
+    run: (env) => db(env, 'bob').doc(DEVICE_DOC_PATH('bob')).set(deviceDoc()),
+    maxReads: 1,
+  },
+  {
+    id: 'READS-dev-delete',
+    title: "SRV-2R : suppression du jeton (déconnexion) - aucune lecture de règles",
+    name: 'Jeton : suppression (déconnexion)',
+    limit: 10,
+    hosts: [H.devicesDelete],
+    prepare: async (env) => {
+      await env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(DEVICE_DOC_PATH('bob')).set(deviceSeed()));
+    },
+    run: (env) => db(env, 'bob').doc(DEVICE_DOC_PATH('bob')).delete(),
+    maxReads: 0,
+  },
+  {
+    id: 'READS-dev-read',
+    title: 'SRV-2R : lecture du jeton par son propriétaire (get) - aucune lecture de règles',
+    name: 'Jeton : lecture (get)',
+    limit: 10,
+    hosts: [H.devicesGet],
+    prepare: async (env) => {
+      await env.withSecurityRulesDisabled((ctx) => ctx.firestore().doc(DEVICE_DOC_PATH('bob')).set(deviceSeed()));
+    },
+    run: (env) => db(env, 'bob').doc(DEVICE_DOC_PATH('bob')).get(),
+    maxReads: 0,
   },
   // LIEU-REQ-A (demande d'ajout d'un lieu, NON DÉPLOYÉ) : lots du demandeur et du créateur, lectures. Une règle hôte par écriture du lot.
   {
