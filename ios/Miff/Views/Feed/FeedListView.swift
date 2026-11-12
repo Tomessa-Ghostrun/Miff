@@ -33,7 +33,7 @@ struct FeedListView: View {
     @ObservedObject var offlineRetry: OfflineRetryModel
     let locate: LocateUiState
     let texts: FeedTexts
-    /// L'en-tête est dessiné par-dessus la liste : sa hauteur est la marge haute du contenu, pour que la première carte commence dessous.
+    /// L'en-tête est dessiné par-dessus la liste : la marge haute du contenu, MESURÉE (`FeedTopInset`), pour que la première carte commence dessous.
     let topInset: CGFloat
     /// Le mouvement de la bulle n'existe que si l'onglet est en usage et l'app au premier plan.
     let isActive: Bool
@@ -43,6 +43,10 @@ struct FeedListView: View {
     let scrollToTop: Int
     let actions: FeedListActions
     let onContentMoved: (CGFloat) -> Void
+    /// La distance défilée lue directement sur la vue de défilement (voir `ScrollDistanceReader`).
+    let onScrolled: (CGFloat) -> Void
+    /// L'origine du contenu de la vue de défilement dans la fenêtre (voir `FeedTopInset`).
+    let onOrigin: (CGFloat) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let topId = "feed-top"
@@ -57,13 +61,15 @@ struct FeedListView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(spacing: 14) {
+                VStack(spacing: 0) {
                     topAnchor
-                    items
+                    LazyVStack(spacing: 14) {
+                        items
+                    }
+                    .padding(.horizontal, Spacing.md)
+                    .padding(.bottom, Spacing.md)
                 }
-                .padding(.horizontal, Spacing.md)
-                .padding(.top, topInset + Spacing.md)
-                .padding(.bottom, Spacing.md)
+                .background(ScrollDistanceReader(onChange: onScrolled, onOrigin: onOrigin))
             }
             .onPreferenceChange(ContentTopKey.self) { onContentMoved($0) }
             .refreshable { await actions.onRefresh() }
@@ -81,10 +87,11 @@ struct FeedListView: View {
         }
     }
 
-    /// Un point de hauteur nulle tout en haut du contenu : sa position dit où est le contenu.
+    /// La marge haute du contenu (l'en-tête mesuré + `FeedTopInset.gapBelowHeader`), tout en haut : son haut est le haut du contenu, sa position
+    /// dit où est le contenu, et « retour en haut » (le logo) y ramène la liste AVEC la marge, jamais la première carte sous l'en-tête.
     private var topAnchor: some View {
         Color.clear
-            .frame(height: 0)
+            .frame(height: topInset + FeedTopInset.gapBelowHeader)
             .id(Self.topId)
             .background(
                 GeometryReader { proxy in

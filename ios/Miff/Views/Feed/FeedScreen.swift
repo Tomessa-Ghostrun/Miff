@@ -24,14 +24,6 @@ struct FeedScreenActions {
     let onOpenNotifications: () -> Void
 }
 
-private struct HeaderHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
-
 struct FeedScreen: View {
     @ObservedObject var model: FeedViewModel
     @ObservedObject var awaiting: AwaitingAgreement
@@ -41,10 +33,7 @@ struct FeedScreen: View {
     @ObservedObject var notificationCenter: NotificationCenterService
     @ObservedObject var secondChance: NotificationSecondChanceViewModel
 
-    @State private var headerModel = FeedHeaderModel()
-    @State private var headerHeight: CGFloat = 0
     @State private var selectorOpen = false
-    @State private var scrollToTop = 0
     /// FEED-8 : la photo ouverte en plein écran. Rien n'en est gardé une fois fermée, ni quand le Feed quitte l'écran.
     @State private var openedPhoto: OpenedPhoto?
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOver
@@ -99,29 +88,17 @@ struct FeedScreen: View {
     }
 
     var body: some View {
-        ZStack(alignment: .top) {
-            stateContent
-            header
-            if model.refreshing {
-                // Le geste est en haut de la liste, sous l'en-tête : l'indicateur de l'actualisation se montre sous lui.
-                ProgressView()
-                    .tint(colorActionPrimary.color)
-                    .padding(.top, headerHeight + Spacing.sm)
-                    .accessibilityHidden(true)
-            }
-            // Rien à montrer et pas de réseau : la pop-in « Pas de connexion » (réessai à la main et toutes les 10 s).
-            OfflinePopinOverlay(model: model.offlineRetry)
-        }
-        .background(colorBgCanvas.color.ignoresSafeArea())
+        FeedCollapsingLayout(
+            locked: headerLocked,
+            isList: isList,
+            refreshing: model.refreshing,
+            header: { onLogo in headerContent(onLogo: onLogo) },
+            content: { layout in stateContent(layout) }
+        )
+        // Rien à montrer et pas de réseau : la pop-in « Pas de connexion » (réessai à la main et toutes les 10 s), par-dessus tout l'écran.
+        .overlay { OfflinePopinOverlay(model: model.offlineRetry) }
         // Sans Miff, la roue crantée des Réglages restreints (Réglages > Mon compte : déconnexion, suppression) est la seule sortie.
         .restrictedSettingsGear(visible: ready?.miffs.isEmpty == true, action: actions.onOpenSettings)
-        .onPreferenceChange(HeaderHeightKey.self) { height in
-            headerHeight = height
-            headerModel.measured(height)
-        }
-        .onAppear { headerModel.lock(headerLocked) }
-        .onChange(of: headerLocked) { locked in headerModel.lock(locked) }
-        .onChange(of: isList) { _ in headerModel.resetBaseline() }
         .onChange(of: model.refreshing) { refreshing in announceRefresh(refreshing) }
         // La feuille montre une position : elle est masquée dans la vignette du sélecteur d'applications comme le reste du Feed.
         .sheet(isPresented: locateIsShown) { locateSheet.hidesInAppSwitcher() }
@@ -141,20 +118,21 @@ struct FeedScreen: View {
     // MARK: - Les états
 
     @ViewBuilder
-    private var stateContent: some View {
+    private func stateContent(_ layout: FeedLayoutContext) -> some View {
         switch model.directoryState {
         case .loading:
             // La pop-in « Pas de connexion » a été fermée : la page dit la même chose à sa place (la barre d'onglets est masquée tant que
             // rien n'est lu, la personne ne doit jamais rester devant un squelette sans issue).
-            OfflineInlineSwitch(model: model.offlineRetry, topInset: headerHeight) {
+            OfflineInlineSwitch(model: model.offlineRetry, topInset: layout.headerHeight) {
                 ScrollView {
                     FeedSkeleton()
                         .padding(.horizontal, Spacing.md)
-                        .padding(.top, headerHeight + Spacing.md)
+                        .padding(.top, layout.listInset + FeedTopInset.gapBelowHeader)
+                        .background(ScrollDistanceReader(onChange: layout.onScrolled, onOrigin: layout.onOrigin))
                 }
             }
         case .unavailable:
-            OfflineInlineSwitch(model: model.offlineRetry, topInset: headerHeight) {
+            OfflineInlineSwitch(model: model.offlineRetry, topInset: layout.headerHeight) {
                 VStack(spacing: Spacing.sm) {
                     MiffNotice(text: L10n.string("feed_unavailable"))
                     Button {
@@ -165,34 +143,36 @@ struct FeedScreen: View {
                     .buttonStyle(.miffSecondaryFullWidth)
                 }
                 .padding(Spacing.md)
-                .padding(.top, headerHeight)
+                .padding(.top, layout.headerHeight)
                 .frame(maxHeight: .infinity, alignment: .top)
             }
         case .ready(let ready):
             if ready.miffs.isEmpty {
                 FeedNoMiff(onCreate: actions.onCreate, onJoin: actions.onJoin, onSignOut: actions.onSignOut)
-                    .padding(.top, headerHeight)
+                    .padding(.top, layout.headerHeight)
                     .frame(maxHeight: .infinity, alignment: .top)
             } else {
-                list(ready)
+                list(ready, layout)
             }
         }
     }
 
-    private func list(_ ready: DirectoryReady) -> some View {
+    private func list(_ ready: DirectoryReady, _ layout: FeedLayoutContext) -> some View {
         FeedListView(
             feed: model.uiState,
             ready: ready,
             offlineRetry: model.offlineRetry,
             locate: model.locate,
             texts: texts,
-            topInset: headerHeight,
+            topInset: layout.listInset,
             isActive: isActive,
             agreementWaiting: ready.activeId.map { awaiting.waiting.contains($0) } ?? false,
             secondChanceDue: secondChance.isDue,
-            scrollToTop: scrollToTop,
+            scrollToTop: layout.scrollToTop,
             actions: listActions,
-            onContentMoved: { headerModel.contentMoved(to: $0) }
+            onContentMoved: layout.onContentMoved,
+            onScrolled: layout.onScrolled,
+            onOrigin: layout.onOrigin
         )
     }
 
@@ -229,29 +209,22 @@ struct FeedScreen: View {
 
     // MARK: - L'en-tête
 
-    private var header: some View {
-        FeedHeaderOverlay(
-            model: headerModel,
-            content: FeedHeaderContent(
-                me: model.me,
-                myLevel: content?.myLevel ?? .neutral,
-                myStatusDescription: content.map { texts.label($0.myLabel) },
-                pill: pillState,
-                showsBell: ready.map { !$0.miffs.isEmpty } ?? false,
-                unreadNotifications: notificationCenter.unreadCount,
-                onOpenNotifications: actions.onOpenNotifications,
-                onOpenProfile: actions.onOpenProfile,
-                onLogo: {
-                    headerModel.show()
-                    scrollToTop += 1
-                },
-                onSelect: { model.onSelect($0) },
-                onCreate: { selectorEntryTapped(open: actions.onCreate) },
-                onJoin: { selectorEntryTapped(open: actions.onJoin) },
-                selectorOpen: $selectorOpen
-            )
+    private func headerContent(onLogo: @escaping () -> Void) -> FeedHeaderContent {
+        FeedHeaderContent(
+            me: model.me,
+            myLevel: content?.myLevel ?? .neutral,
+            myStatusDescription: content.map { texts.label($0.myLabel) },
+            pill: pillState,
+            showsBell: ready.map { !$0.miffs.isEmpty } ?? false,
+            unreadNotifications: notificationCenter.unreadCount,
+            onOpenNotifications: actions.onOpenNotifications,
+            onOpenProfile: actions.onOpenProfile,
+            onLogo: onLogo,
+            onSelect: { model.onSelect($0) },
+            onCreate: { selectorEntryTapped(open: actions.onCreate) },
+            onJoin: { selectorEntryTapped(open: actions.onJoin) },
+            selectorOpen: $selectorOpen
         )
-        .accessibilitySortPriority(1)
     }
 
     /// Le sélecteur s'ouvre pour tout le monde dès qu'il y a une Miff (décision du PM, 2026-11-08).
@@ -321,26 +294,5 @@ struct FeedScreen: View {
         } else if !offline {
             UIAccessibility.post(notification: .announcement, argument: L10n.string("feed_refresh_done_a11y"))
         }
-    }
-}
-
-/// L'en-tête par-dessus la liste : déplacé par une translation (aucune mise en page ne bouge), mesuré pour que la liste lui laisse sa place.
-private struct FeedHeaderOverlay: View {
-    @ObservedObject var model: FeedHeaderModel
-    let content: FeedHeaderContent
-
-    var body: some View {
-        content
-            .background(
-                GeometryReader { proxy in
-                    Color.clear.preference(key: HeaderHeightKey.self, value: proxy.size.height)
-                }
-            )
-            .background(
-                colorBgCanvas.color
-                    .ignoresSafeArea(edges: .top)
-                    .miffShadow(shadowSubtle)
-            )
-            .offset(y: model.state.offset)
     }
 }

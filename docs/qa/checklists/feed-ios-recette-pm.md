@@ -39,6 +39,11 @@ Les champs restent dans le schéma (ne rajoutez rien). Si un téléphone bouge o
 - [ ] **Rotation et onglets** : passez à l'onglet Profil et revenez : l'en-tête est visible, sans saut ni bande vide.
 - [ ] **Bas de liste** : faites défiler **jusqu'au bout** : « Ajouter un proche » finit **au-dessus** de la barre en verre, jamais dessous.
 
+- [ ] **Retour du build 27 (en-tête et bulle)** : au repos, la **bulle commence SOUS l'en-tête** (logo + pastille de la Miff), sans chevauchement. Faites défiler **vers le bas** : l'en-tête **disparaît** en suivant le doigt, et **rien ne passe sous l'heure de la barre d'état** ; remontez de quelques points : il **réapparaît aussitôt** (pastille de la Miff touchable), sans attendre le haut de la liste. Tirez vers le bas tout en haut : il reste entier. Un toucher sur le **logo** le ramène avec une **courte animation** (immédiat avec « Réduire les animations »). Avec **VoiceOver**, il reste toujours visible et lu en premier.
+
+- [ ] **Espace en-tête / bulle réduit de moitié** (TestFlight 32) : l'espace entre le bas de l'en-tête et le haut de la bulle est environ **deux fois plus petit** qu'avant (environ 20 pt) ; la bulle reste **entièrement visible**, jamais recouverte par l'en-tête ; même chose sur un iPhone sans encoche et avec une grande taille de texte ; le logo ramène la liste tout en haut avec cet espace.
+- [ ] **Au repos, le haut de la bulle est ENTIER** : sa forme arrondie commence **sous** l'en-tête (logo + pastille de la Miff), rien n'est coupé en ligne droite ; même chose avec une grande taille de texte et sur un petit iPhone. En défilant puis en revenant tout en haut, la bulle redevient entière.
+
 ## Partie B — Cartes (6 min)
 
 - [ ] **Les cartes des autres viennent d'abord, la vôtre est la dernière** (D43), **sans mention « Toi »** à côté de votre prénom (D42) ; elle porte la ligne « Ce que tes proches voient de toi » et **aucun** bouton.

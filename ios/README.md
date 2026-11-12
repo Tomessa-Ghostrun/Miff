@@ -440,6 +440,11 @@ Le Feed remplace l'accueil provisoire dans l'onglet Feed de la coquille d'ONB-7 
 
 - `IncentiveBubble` (`Views/Update/UpdateBubble.swift`) mesure la hauteur de son texte (`MessageHeightKey`) et applique `IncentiveBubbleLayout` : hauteur du corps = celle du texte, bornée à 40 % de l'écran (`UpdateLayout.bubbleMaxScreenShare`), défilement intérieur seulement au-delà ; plus de `ViewThatFits`. Même design qu'Android.
 
+### En-tête du Feed qui se masque (retour du PM sur le build 27)
+
+- **Lecture** : `ScrollDistanceReader` (`UIViewRepresentable` posée dans le contenu de la liste) observe `contentOffset` de la `UIScrollView` englobante et donne à `FeedHeaderModel.scrolled(to:)` la distance défilée exacte (`contentOffset.y + adjustedContentInset.top`) ; `contentMoved(to:)` (position du contenu, repli) est ignoré dès qu'une lecture directe a eu lieu. Règles : `CollapsingHeaderState.scrolled(from:to:)`, `minimumStep` 0,5 pt, `scrolledFromTopIfNear`. Mise en page : bande fixe sur la zone sûre du haut, en-tête coupé à la zone sûre (`mask`), retour animé de 0,2 s (`FeedHeaderMotion`), jamais animé avec « Réduire les animations ».
+
+
 ### Retours de recette du 2026-11-08 (branche `ios/feed-retours-recette`)
 
 - **Seuils de couleur (D47)** : `StatusThresholds` = `orangeAfterMillis` 2 h, `redAfterMillis` 4 h, `dangerZoneRedAfterMillis` 1 h ; `StatusColor.level` : « plus de » strict, repère `max(présence, dernière update)` après une sortie. **Zone de danger (décision du PM du 2026-11-08)** : `StatusColor.dangerZoneLevel` : rouge dès l'entrée ; vert si `lastUpdateAt > presenceAt` (strict) et `maintenant − lastUpdateAt ≤ 1 h`, sinon rouge ; jamais orange ; heure d'entrée inconnue = rouge ; la zone de confiance l'emporte. Le minuteur du Feed recalcule déjà chaque minute, sans lecture serveur : rien d'autre à changer. Mêmes constantes sur Android (`DANGER_ZONE_RED_AFTER_MILLIS`).
