@@ -18,6 +18,7 @@ enum AnalyticsEvent: Equatable {
     enum PaywallTrigger: String {
         case extraMiff = "extra_miff"
         case extraTrustedPlace = "extra_trusted_place"
+        case dangerZone = "danger_zone"
     }
 
     /// `slideIndex` doit valoir 0, 1 ou 2 (toute autre valeur est refusée par la liste blanche).

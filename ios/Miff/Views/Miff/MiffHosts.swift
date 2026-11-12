@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// Les écrans du flux Miff dans une navigation. Seuls des identifiants voyagent dans une destination (la Miff, le lieu, un mot fixe
-/// pour la raison de l'offre) : jamais le code, jamais un nom, une adresse ni une coordonnée.
+/// Les écrans du flux Miff dans une navigation. Seuls des identifiants voyagent dans une destination (la Miff, le lieu) : jamais le code, jamais un nom, une adresse ni une coordonnée.
 enum MiffRoute: Hashable {
     case create
     case join
@@ -9,7 +8,6 @@ enum MiffRoute: Hashable {
     /// Le formulaire d'un lieu : nouveau (`placeId` nil), ou le lieu à modifier, avec la Miff d'où il a été ouvert.
     case placeForm(placeId: String?, miffId: String?)
     case placeDetail(miffId: String, placeId: String)
-    case placePaywall(PaywallReason)
     /// Un écran des Réglages (ONB-7) : poussé dans la MÊME pile que les écrans de la Miff, jamais dans une pile imbriquée.
     case settings(SettingsRoute)
 
@@ -34,10 +32,17 @@ enum MiffRoute: Hashable {
             return id == miffId
         case .placeForm(_, let id):
             return id == miffId
-        case .create, .join, .placePaywall, .settings:
+        case .create, .join, .settings:
             return false
         }
     }
+}
+
+/// Un AFFICHAGE de l'offre : un identifiant neuf à chaque ouverture, donc un écran (et une croix différée de 3 secondes) neuf à chaque
+/// ouverture, jamais un état partagé entre deux affichages (critère CR4). Seule la raison, un mot fixe, voyage ici.
+struct PaywallPresentation: Identifiable {
+    let id = UUID()
+    let reason: PaywallReason
 }
 
 /// L'étape « créer ou rejoindre » de l'onboarding (une personne qui a un profil et pas de Miff, destination `miffChoice`) : le
@@ -100,7 +105,7 @@ struct MiffOnboardingHost: View {
                 navigate: { open(.settings($0)) },
                 onBack: { pop() }
             )
-        case .miff, .placeForm, .placeDetail, .placePaywall:
+        case .miff, .placeForm, .placeDetail:
             // Pas d'écran de Miff ni de lieu avant la fin de l'onboarding : la personne n'en a pas encore.
             EmptyView()
         }
@@ -154,6 +159,8 @@ struct MiffHomeHost: View {
     @StateObject private var updateModel: UpdateViewModel
     /// La banderole courte de la suppression (reprise au lancement, fin pendant que la personne est ailleurs).
     @State private var banner: DeletionBanner?
+    /// L'offre Miff+, quand elle est ouverte (`PaywallPresentation`).
+    @State private var paywall: PaywallPresentation?
 
     init(environment: AppEnvironment) {
         self.environment = environment
@@ -202,6 +209,14 @@ struct MiffHomeHost: View {
             if let notice = directory.notices.first {
                 AccessLostView(miffName: notice.name, onAcknowledge: { acknowledge(notice) })
             }
+        }
+        // L'offre est présentée en plein écran (ticket `paywall-v2.md` §6.3) : pas de geste à tirer pendant les 3 secondes de la croix.
+        .fullScreenCover(item: $paywall) { presentation in
+            PlacePaywallView(
+                reason: presentation.reason,
+                tracker: environment.analyticsTracker,
+                onClose: { paywall = nil }
+            )
         }
         // La dernière Miff a disparu : « Mes informations » empilé part (un compte sans Miff n'a que Mon compte et Confidentialité,
         // décision du PM du 2026-11-07) ; les autres écrans des Réglages restent où ils sont.
@@ -256,7 +271,7 @@ struct MiffHomeHost: View {
                 onCreate: { open(.create) },
                 onJoin: { open(.join) },
                 // Sélecteur du Feed, compte gratuit qui a déjà une Miff (décision du PM, 2026-11-08) : l'offre, sans achat.
-                onOpenOffer: { open(.placePaywall(.extraMiff)) },
+                onOpenOffer: { presentPaywall(.extraMiff) },
                 onOpenMiff: { open(.miff($0)) },
                 onSignOut: { signOut() },
                 onOpenSettings: { open(.settings(.settings)) }
@@ -331,8 +346,6 @@ struct MiffHomeHost: View {
                     onGone: { leavePlaceDetail() }
                 )
             )
-        case .placePaywall(let reason):
-            PlacePaywallView(reason: reason, tracker: environment.analyticsTracker, onClose: { pop() })
         case .create, .join, .miff, .settings:
             EmptyView()
         }
@@ -381,7 +394,15 @@ struct MiffHomeHost: View {
         if replacesForm, case .placeForm? = path.last {
             path.removeLast()
         }
-        open(.placePaywall(reason))
+        presentPaywall(reason)
+    }
+
+    /// LE point d'entrée de l'offre, pour tous les déclencheurs (4e lieu, zone de danger, 2e Miff) : en plein écran, avec un NOUVEL
+    /// affichage à chaque fois (la croix de 3 secondes repart de zéro). Deux touchers rapprochés n'en ouvrent qu'un.
+    private func presentPaywall(_ reason: PaywallReason) {
+        if paywall == nil {
+            paywall = PaywallPresentation(reason: reason)
+        }
     }
 
     /// Le lieu a été supprimé ailleurs pendant que son détail était ouvert : « Ce lieu n'existe plus. », et retour à la liste.

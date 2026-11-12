@@ -127,6 +127,22 @@ shot 95-fr-lieu-offre-danger 3 "${fr_args[@]}" -MiffPreview place-paywall-danger
 shot 95b-fr-miff-offre-deuxieme-miff 3 "${fr_args[@]}" -MiffPreview place-paywall-miff
 shot 96-en-lieu-rempli 6 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview place-form-filled
 
+# PAY-UI-I : l'écran d'offre Miff+ (ticket paywall-v2.md), plein écran. Les captures 94, 95 et 95b ci-dessus montrent la variante « sans
+# achat » (la seule de la production) AVANT les 3 secondes : croix absente, emplacement réservé. Les variantes « -cross » ont un délai
+# de 0 (croix présente, comme après 3 secondes). Les états avec offre (essai, deux formules, chargement, erreurs, abonné) ne sont
+# atteints que par ces aperçus : aucun achat n'existe avant SRV-8. Prix de démonstration, jamais ceux d'un store.
+shot 95c-fr-offre-sans-achat-croix 3 "${fr_args[@]}" -MiffPreview paywall-soon-cross
+shot 95d-fr-offre-essai 3 "${fr_args[@]}" -MiffPreview paywall-trial
+shot 95e-fr-offre-essai-croix 3 "${fr_args[@]}" -MiffPreview paywall-trial-cross
+shot 95f-fr-offre-deux-formules-croix 3 "${fr_args[@]}" -MiffPreview paywall-plans-cross
+shot 95g-fr-offre-chargement 3 "${fr_args[@]}" -MiffPreview paywall-loading
+shot 95h-fr-offre-indisponible 3 "${fr_args[@]}" -MiffPreview paywall-unavailable
+shot 95i-fr-offre-achat-en-cours 3 "${fr_args[@]}" -MiffPreview paywall-purchasing
+shot 95j-fr-offre-paiement-en-attente 3 "${fr_args[@]}" -MiffPreview paywall-pending-cross
+shot 95k-fr-offre-erreur-calme 3 "${fr_args[@]}" -MiffPreview paywall-failed-cross
+shot 95l-fr-offre-abonne 3 "${fr_args[@]}" -MiffPreview paywall-subscribed
+shot 95m-en-offre-essai-croix 3 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview paywall-trial-cross
+
 # Le vrai parcours de l'app (session, routage) : première ouverture = carrousel, après le splash animé.
 shot 37-fr-vrai-parcours 7 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffShowApp YES
 # L'animation de lancement réelle, jouée au-dessus du vrai parcours (aux instants 1 s et 2,2 s environ).
@@ -151,6 +167,8 @@ shot 42-fr-carrousel-texte-tres-grand 3 -AppleLanguages "(fr)" -AppleLocale fr_F
 shot 66-fr-miff-confirmation-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview miff-join-confirm
 shot 67-fr-miff-ecran-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview miff-screen-owner
 shot 79-fr-miff-supprimer-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview miff-screen-delete
+shot 99-fr-offre-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview paywall-trial-cross
+shot 99b-fr-offre-sans-achat-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview paywall-soon-cross
 xcrun simctl ui "$udid" content_size large > /dev/null 2>&1 || true
 
 xcrun simctl terminate "$udid" "$bundle_id" > /dev/null 2>&1 || true

@@ -21,7 +21,6 @@ enum SwipeBackScreen: Equatable {
     case miff
     case placeDetail
     case placeForm(isBusy: Bool)
-    case placePaywall
     /// Liste des Réglages, Mon compte, Confidentialité, aide à la détection.
     case settings
     /// Mes informations : verrouillé pendant l'envoi et tant que des changements ne sont pas enregistrés (la flèche, qui demande confirmation, est alors la seule
@@ -31,7 +30,7 @@ enum SwipeBackScreen: Equatable {
 
     var allowsSwipeBack: Bool {
         switch self {
-        case .signUp, .signIn, .passwordReset, .joinMiffCode, .miff, .placeDetail, .placePaywall, .settings:
+        case .signUp, .signIn, .passwordReset, .joinMiffCode, .miff, .placeDetail, .settings:
             return true
         case .profilePhone(let isWriting):
             return !isWriting

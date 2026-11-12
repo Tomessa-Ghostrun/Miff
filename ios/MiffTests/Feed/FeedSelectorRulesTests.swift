@@ -153,10 +153,11 @@ final class FeedSelectorRulesTests: XCTestCase {
         XCTAssertEqual(AnalyticsContract.validate(event.name, params: event.params), .allowed)
     }
 
-    func testTheOfferRouteDependsOnNoMiff() {
-        let route = MiffRoute.placePaywall(.extraMiff)
+    func testEachDisplayOfTheOfferIsANewPresentationCarryingOnlyItsReason() {
+        let first = PaywallPresentation(reason: .extraMiff)
+        let second = PaywallPresentation(reason: .extraMiff)
 
-        XCTAssertFalse(route.belongs(to: "miffA"), "l'offre ne part pas avec une perte d'accès")
-        XCTAssertFalse(route.isSettingsScreen)
+        XCTAssertNotEqual(first.id, second.id, "fermer puis rouvrir : nouvel affichage, la croix de 3 s repart")
+        XCTAssertEqual(first.reason, second.reason)
     }
 }

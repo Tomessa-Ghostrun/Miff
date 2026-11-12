@@ -1075,4 +1075,35 @@
 
     <!-- NOTIF-6A: centre verrouille (notifications refusees) -->
     <string name="notif_center_enable_action">Activer les notifications</string>
+
+    <!-- PAY-UI : ecran d'offre Miff+ (ticket paywall-v2.md) ; cles ajoutees par la PR iOS pour la parite, a reprendre par PAY-UI-A -->
+    <string name="paywall_cta_trial">Commencer l\'essai gratuit (7 jours)</string>
+    <string name="paywall_trial_then">Puis %1$s par an</string>
+    <string name="paywall_monthly_equivalent">soit %1$s par mois</string>
+    <string name="paywall_annual_savings" formatted="false">presque 30 % d\'économie</string>
+    <string name="paywall_cancel_anytime">Annulable à tout moment</string>
+    <string name="paywall_see_all_offers">Voir toutes les offres</string>
+    <string name="paywall_free_plan_stays">La formule gratuite reste disponible : 1 Miff et %1$d lieux de confiance.</string>
+    <string name="paywall_close_available_a11y">Tu peux maintenant fermer cet écran</string>
+    <string name="paywall_loading">Chargement des offres…</string>
+    <string name="paywall_unavailable">Les offres ne sont pas disponibles pour le moment. Vérifie ta connexion et réessaie.</string>
+    <string name="paywall_retry">Réessayer</string>
+    <string name="paywall_pending">Ton paiement est en cours de validation. Ton abonnement s\'activera dès qu\'il sera confirmé.</string>
+    <string name="paywall_error_calm">L\'achat n\'a pas pu être finalisé cette fois. Si un paiement a été effectué, ton abonnement apparaîtra automatiquement ; sinon, réessaie dans un instant.</string>
+    <string name="paywall_restore">Restaurer mes achats</string>
+    <string name="paywall_restore_none">Aucun abonnement Miff+ trouvé sur ce compte %1$s.</string>
+    <string name="paywall_subscribed">Tu as Miff+. Merci !</string>
+    <string name="paywall_subscribed_detail">Tout est débloqué.</string>
+    <string name="paywall_continue">Continuer</string>
+    <string name="paywall_working">Un instant…</string>
+    <string name="paywall_plan_annual_title">Annuel · %1$s par an</string>
+    <string name="paywall_plan_monthly_title">Mensuel · %1$s par mois</string>
+    <string name="paywall_no_commitment">Sans engagement</string>
+    <string name="paywall_info_trial">Essai gratuit de 7 jours, puis %1$s par an, facturés à la fin de l\'essai puis chaque année. L\'abonnement se renouvelle automatiquement au même tarif tant que tu ne l\'annules pas.</string>
+    <string name="paywall_info_annual">%1$s par an, facturés en une fois puis chaque année. Renouvellement automatique au même tarif tant que tu ne l\'annules pas.</string>
+    <string name="paywall_info_monthly">%1$s par mois, sans engagement. Renouvellement automatique chaque mois tant que tu ne l\'annules pas.</string>
+    <string name="paywall_info_cancel">Annule à tout moment dans les réglages de ton compte %1$s, avant la fin de la période en cours ; tu gardes l\'accès jusqu\'à la fin de la période payée.</string>
+    <string name="paywall_terms_link">Conditions d\'utilisation</string>
+    <string name="paywall_privacy_link">Politique de confidentialité</string>
+    <string name="android_paywall_store_name">Google Play</string>
 </resources>

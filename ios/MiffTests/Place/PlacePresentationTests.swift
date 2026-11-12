@@ -49,11 +49,12 @@ final class PlacePresentationTests: XCTestCase {
 
     // MARK: - L'offre (LIM5)
 
-    func testOnlyTheThirdPlaceHasAnAnalyticsTriggerNothingForTheDangerZone() {
+    func testEachEntryPointHasItsOwnFixedAnalyticsTrigger() {
         XCTAssertEqual(PlacePaywall.shown(for: .limit), .paywallShown(trigger: .extraTrustedPlace))
         XCTAssertEqual(PlacePaywall.dismissed(for: .limit), .paywallDismissed(trigger: .extraTrustedPlace))
-        XCTAssertNil(PlacePaywall.shown(for: .danger))
-        XCTAssertNil(PlacePaywall.dismissed(for: .danger))
+        XCTAssertEqual(PlacePaywall.shown(for: .danger), .paywallShown(trigger: .dangerZone))
+        XCTAssertEqual(PlacePaywall.dismissed(for: .danger), .paywallDismissed(trigger: .dangerZone))
+        XCTAssertEqual(PlacePaywall.shown(for: .extraMiff), .paywallShown(trigger: .extraMiff))
     }
 
     func testThePaywallEventsCarryNoPlace() throws {
@@ -76,11 +77,14 @@ final class PlacePresentationTests: XCTestCase {
         XCTAssertNil(tracking.disappeared(), "une seule fermeture (croix, « Plus tard » ou geste retour)")
     }
 
-    func testTheDangerZonePaywallSendsNothing() {
+    func testTheDangerZonePaywallIsCountedWithItsOwnTrigger() throws {
         let tracking = PlacePaywallTracking(reason: .danger)
 
-        XCTAssertNil(tracking.appeared())
-        XCTAssertNil(tracking.disappeared())
+        let shown = try XCTUnwrap(tracking.appeared())
+        XCTAssertEqual(shown, .paywallShown(trigger: .dangerZone))
+        XCTAssertEqual(shown.params as? [String: String], ["trigger": "danger_zone"])
+        XCTAssertEqual(AnalyticsContract.validate(shown.name, params: shown.params), .allowed)
+        XCTAssertEqual(tracking.disappeared(), .paywallDismissed(trigger: .dangerZone))
     }
 
     // MARK: - « Voir sur la carte »
