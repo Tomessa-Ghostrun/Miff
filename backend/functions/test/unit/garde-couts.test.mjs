@@ -20,6 +20,7 @@ const bonEndpoint = () => ({
   timeoutSeconds: 30,
   availableMemoryMb: 128,
   callableTrigger: {},
+  serviceAccountEmail: 'notify-update@miff-3d283.iam.gserviceaccount.com',
 });
 
 // --- Le détecteur lui-même : il doit voir les erreurs, sinon les tests suivants ne prouvent rien ---------------------------
@@ -47,6 +48,9 @@ test('détecteur : refuse une fonction sans maxInstances, hors région, trop lon
     'compte par défaut Compute': { ...bonEndpoint(), serviceAccountEmail: '123456789-compute@developer.gserviceaccount.com' },
     'compte App Engine par défaut': { ...bonEndpoint(), serviceAccountEmail: 'miff-3d283@appspot.gserviceaccount.com' },
     'compte nommé editor': { ...bonEndpoint(), serviceAccountEmail: 'miff-editor@miff-3d283.iam.gserviceaccount.com' },
+    'identité par défaut (fonction métier)': { ...bonEndpoint(), serviceAccountEmail: undefined },
+    "compte de l'Admin SDK": { ...bonEndpoint(), serviceAccountEmail: 'firebase-adminsdk-fbsvc@miff-3d283.iam.gserviceaccount.com' },
+    "compte d'un autre projet (Ghostrun)": { ...bonEndpoint(), serviceAccountEmail: 'notify-update@ghostrun-app.iam.gserviceaccount.com' },
     'pas un endpoint': undefined,
   };
   for (const [nom, endpoint] of Object.entries(cas)) {
@@ -69,10 +73,6 @@ test('au moins une fonction est exportée et chacune respecte région, maxInstan
   assert.ok(noms.length >= 1, 'index.ts doit exporter au moins la fonction témoin');
   const problemes = noms.flatMap((nom) => problemesDeGardeFous(nom, exportees[nom]?.__endpoint));
   assert.deepEqual(problemes, []);
-});
-
-test('SRV-1 : seule la fonction témoin `ping` existe (aucune fonction métier avant le ticket qui la demande)', () => {
-  assert.deepEqual(Object.keys(exportees), ['ping']);
 });
 
 test('les valeurs par défaut sont bien celles de options.ts (setGlobalOptions appliqué)', () => {
@@ -157,6 +157,82 @@ test('détecteur serviceAccount : accepte un compte dédié, refuse clé, compte
 
 test('code : serviceAccount accepté seulement avec un nom de compte dédié explicite (jamais une clé, jamais le compte par défaut)', () => {
   for (const { f, texte } of sources) assert.deepEqual(problemesServiceAccount(code(texte)), [], f);
+});
+
+test('fonctions exportées = la liste décidée par les tickets : `ping` (SRV-1) et `notifierUpdate` (SRV-4B) ; en ajouter une exige de modifier ce test, en PR', () => {
+  assert.deepEqual(Object.keys(exportees).sort(), ['notifierUpdate', 'ping']);
+});
+
+test('identité : `ping` (aucune donnée) peut garder l\'identité par défaut ; toute autre fonction exige un compte dédié DU PROJET Miff', () => {
+  assert.deepEqual(problemesDeGardeFous('ping', bonEndpoint()), []);
+  assert.deepEqual(problemesDeGardeFous('ping', { ...bonEndpoint(), serviceAccountEmail: undefined }), []);
+  assert.notDeepEqual(problemesDeGardeFous('notifierUpdate', { ...bonEndpoint(), serviceAccountEmail: undefined }), []);
+  assert.notDeepEqual(problemesDeGardeFous('notifierUpdate', { ...bonEndpoint(), serviceAccountEmail: 'notify-update@ghostrun-app.iam.gserviceaccount.com' }), [], 'compte d\'un autre projet (Ghostrun)');
+  assert.notDeepEqual(problemesDeGardeFous('notifierUpdate', { ...bonEndpoint(), serviceAccountEmail: 'firebase-adminsdk-fbsvc@miff-3d283.iam.gserviceaccount.com' }), [], 'compte de l\'Admin SDK');
+  assert.deepEqual(problemesDeGardeFous('notifierUpdate', bonEndpoint()), []);
+});
+
+test('notifierUpdate (SRV-4B) : déclenchée par Firestore sur photos/{uid} uniquement, europe-west9, 5 instances au plus, 256 Mio, 30 s, sans reprise, compte dédié', () => {
+  const e = exportees.notifierUpdate.__endpoint;
+  assert.deepEqual(problemesDeGardeFous('notifierUpdate', e), []);
+  assert.equal(e.eventTrigger?.eventType, 'google.cloud.firestore.document.v1.written');
+  assert.equal(e.eventTrigger?.eventFilterPathPatterns?.document, 'miffs/{miffId}/photos/{uid}');
+  assert.ok(!e.eventTrigger?.retry, 'pas de nouvelle tentative automatique');
+  assert.equal(e.maxInstances, LIMITES.maxInstancesPlafond);
+  assert.ok(e.maxInstances <= 10, 'jamais plus que les 10 du ticket');
+  assert.equal(e.availableMemoryMb, 256);
+  assert.equal(e.timeoutSeconds, 30);
+  assert.ok(!e.minInstances);
+  assert.equal(e.serviceAccountEmail, 'notify-update@miff-3d283.iam.gserviceaccount.com');
+  assert.ok(!e.callableTrigger && !e.httpsTrigger, 'aucun point d\'entrée appelable depuis Internet');
+});
+
+test('notifierUpdate : le compte de service du code est écrit en littéral dans notifierUpdate.ts et nulle part ailleurs', () => {
+  for (const { f, texte } of sources) {
+    const m = code(texte).match(/\bserviceAccount\s*:\s*"([^"]+)"/g) ?? [];
+    if (nomDe(f) === 'notifierUpdate.ts') assert.deepEqual(m, ['serviceAccount: "notify-update@miff-3d283.iam.gserviceaccount.com"']);
+    else assert.deepEqual(m, [], `${f} : serviceAccount interdit hors notifierUpdate.ts`);
+  }
+});
+
+test('notifierUpdate : n\'écrit jamais dans photos/ (pas de boucle sur elle-même) et ne lit que createdAt de la photo', () => {
+  const traitement = code(sources.find((s) => nomDe(s.f) === 'notifTraitement.ts').texte);
+  assert.doesNotMatch(traitement, /photos/, 'notifTraitement.ts ne touche pas à photos/');
+  const declencheur = code(sources.find((s) => nomDe(s.f) === 'notifierUpdate.ts').texte);
+  assert.deepEqual(declencheur.match(/\.get\("[^"]*"\)/g), ['.get("createdAt")'], 'seul createdAt est lu dans la photo');
+  assert.doesNotMatch(declencheur, /\.data\(\)|\.set\(|\.update\(|\.delete\(/);
+});
+
+test('notifierUpdate : jamais de sujet FCM (topic) ni d\'envoi multiple : un message par appareil', () => {
+  for (const { f, texte } of sources) {
+    assert.doesNotMatch(code(texte), /\btopic\b|subscribeToTopic|sendEachForMulticast|sendMulticast|sendAll\b/, `${f} : sujets et envois multiples interdits`);
+  }
+});
+
+test('M8 : chemins Firestore touchés par la fonction = liste fermée ; écriture SEULEMENT dans notifState (transaction) et suppression d\'un document devices avec précondition', () => {
+  const traitement = code(sources.find((s) => nomDe(s.f) === 'notifTraitement.ts').texte);
+  // Lectures : chemins passés à doc() / collection() dans tout src/.
+  const chemins = sources.flatMap(({ texte }) => [...code(texte).matchAll(/\b(?:doc|collection)\(\s*`([^`]+)`/g)].map((m) => m[1])).sort();
+  assert.deepEqual(chemins, [
+    'miffs/${miffId}',
+    'miffs/${miffId}/members',
+    'miffs/${miffId}/members/${auteurUid}',
+    'notifState/${miffId}',
+    'users/${d.uid}/devices/${deviceId}',
+    'users/${d.uid}/session/active',
+  ]);
+  // Écritures : une seule écriture de document (tx.set sur refEtat = notifState) et une seule suppression (devices, avec précondition sur la version lue).
+  for (const { f, texte } of sources) {
+    const ecritures = code(texte).match(/\.(set|update|create|add|delete|batch|bulkWriter|recursiveDelete)\(/g) ?? [];
+    if (nomDe(f) === 'notifTraitement.ts') assert.deepEqual(ecritures, ['.set(', '.delete('], f);
+    else assert.deepEqual(ecritures, [], `${f} : aucune écriture Firestore hors notifTraitement.ts`);
+  }
+  assert.match(traitement, /const refEtat = db\.doc\(`notifState\/\$\{miffId\}`\);/);
+  assert.match(traitement, /tx\.set\(\s*refEtat,/);
+  assert.equal((traitement.match(/\.runTransaction\(/g) ?? []).length, 1);
+  assert.match(traitement, /await cible\.ref\.delete\(\{ lastUpdateTime: cible\.version \}\);/);
+  // La référence supprimée vient de la lecture directe de users/{uid}/devices/{session.deviceId} (appareil.ref), jamais construite à la main.
+  assert.match(traitement, /ref: appareil\.ref,/);
 });
 
 test("code : pas de fonction HTTP publique (onRequest) ni de onCall hors de appelable.ts (App Check et connexion toujours exigés)", () => {

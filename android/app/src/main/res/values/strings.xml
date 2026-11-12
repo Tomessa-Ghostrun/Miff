@@ -677,6 +677,24 @@
     <string name="place_list_row_type_a11y">%1$s, %2$s</string>
     <string name="place_list_add_action">Add a place</string>
     <string name="place_list_add_premium_a11y">Add a place, part of Miff+</string>
+
+    <!-- LIEU-REQ-B: a member who is not the creator asks to add a place (pending request, seen by the creator alone) -->
+    <string name="place_request_cta_member">Ask to add a place</string>
+    <string name="place_request_form_title">Suggest a place</string>
+    <string name="place_request_form_submit">Send request</string>
+    <string name="place_request_sending">Sending your request…</string>
+    <string name="place_request_form_hint">The Miff\'s creator will see your request and decide whether to add it.</string>
+    <string name="place_request_sent">Request sent. It\'s pending in the list.</string>
+    <string name="place_request_sent_offline">Your request will be sent as soon as you\'re back online.</string>
+    <string name="place_request_badge_pending">Pending</string>
+    <string name="place_request_detail_banner_member">Waiting for a reply.</string>
+    <string name="place_request_withdraw">Withdraw my request</string>
+    <string name="place_request_withdrawn">Request withdrawn.</string>
+    <string name="place_request_limit_member">You already have 3 pending requests. You can suggest more once they\'ve been handled.</string>
+    <string name="place_request_limit_miff">This Miff already has several pending requests. Please try again a little later.</string>
+    <string name="place_request_unavailable">Place requests are not available yet. Please try again a little later.</string>
+    <string name="place_request_gone">This request is no longer pending.</string>
+    <string name="place_request_a11y_pending_mine">Your pending request: %1$s</string>
     <string name="place_list_row_a11y">%1$s, category %2$s, %3$s</string>
     <string name="place_list_row_noaddress_a11y">%1$s, category %2$s</string>
     <string name="place_detail_title_loading">Place</string>
