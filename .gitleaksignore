@@ -1,0 +1,3 @@
+# Faux positif unique et vérifié : jeton de notification FACTICE d'un jeu d'essai des règles (SRV-2R), commit 0c6b2fad (PR backend/jetons-appareil).
+# Le fichier a été corrigé dans le commit suivant (valeur à faible entropie) ; seule cette empreinte exacte est ignorée, aucune règle n'est assouplie.
+0c6b2fad6a46488b669d5c61e300615fda0b2b3a:backend/tests/helpers/fixtures.js:generic-api-key:88

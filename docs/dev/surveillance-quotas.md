@@ -274,6 +274,20 @@ Soit, pour une Miff de 4 membres : **6 lectures facturées par écriture** (born
 
 ---
 
+## 5 sexies. Cloud Functions (SRV-1, Blaze activé le 2026-11-11) : quoi regarder
+
+Tant que `ping` est la seule fonction, le coût attendu est **0 €**. Dès qu'une vraie fonction existe (notifications, SRV-4), ajouter à la revue (1 minute, une fois par semaine suffit au début) :
+
+| Quoi | Où | Normal | À examiner |
+|---|---|---|---|
+| Invocations du mois | Console Firebase > Functions > onglet **Tableau de bord** (ou Google Cloud > Cloud Run) | Très en dessous des 2 millions gratuits par mois | Plus de 1 million (50 % du gratuit) : revue de l'usage |
+| Erreurs | Functions > **Journaux**, filtre gravité « Erreur » | Aucune ou quelques-unes isolées | Des erreurs en série, ou des réponses `429` (limite d'instances atteinte : voir `deploiement-functions.md` §9) |
+| Dépense | Google Cloud > Facturation > Rapports, filtre projet `miff-3d283` | 0 € à quelques centimes | Une ligne qui monte sans explication, ou un e-mail de l'alerte de budget (5 €/mois : 50 %, 90 %, 100 %) |
+
+Les alertes de budget **ne plafonnent pas** la dépense ; le plafond de dépense Preview de Cloud Functions n'existe pas pour Firestore (`deploiement-functions.md` §1). Procédure pour désactiver une fonction : `deploiement-functions.md` §6.
+
+---
+
 ## 6. Ce que les agents font de leur côté
 
 - `backend-data` garde ces seuils et la procédure à jour (`backend/data-model.md` §12) et prépare, si le signal se confirme, la condition d'e-mail vérifié (gratuite) ou le plan de fonction « rejoindre » (Blaze).
