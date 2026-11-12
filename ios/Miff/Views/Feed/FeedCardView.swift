@@ -80,7 +80,12 @@ struct MemberCardView: View {
                     BatteryChip(text: texts.battery(battery))
                 }
             }
-            StateChip(text: texts.label(card.label), level: card.level, showsPlane: card.label.isTraveling)
+            StateChip(
+                text: texts.label(card.label),
+                emoji: card.labelCategory?.emoji,
+                level: card.level,
+                showsPlane: card.label.isTraveling
+            )
             if card.limitedLocation {
                 LimitedLocationBadge()
             }
@@ -154,16 +159,25 @@ private struct BatteryChip: View {
 /// en cours (décoratif : les mots disent l'état).
 private struct StateChip: View {
     let text: String
+    /// L'emoji de la catégorie du lieu, avant les mots (étiquette « dans un lieu de confiance » seulement) ; décoratif.
+    var emoji: String?
     let level: StatusLevel
     var showsPlane = false
 
     var body: some View {
         // Un nom de lieu (Loisir, Autre) peut être long (jusqu'à 40 signes) : deux lignes au plus, la fin coupée ensuite ; le lecteur
-        // d'écran lit toujours la carte en entier (`cardSpoken`).
-        HStack(spacing: Spacing.xs + Spacing.xs) {
+        // d'écran lit toujours la carte en entier (`cardSpoken`, sans l'emoji ni l'avion). L'avion du voyageur et l'emoji d'un lieu ne se
+        // rencontrent jamais (un voyageur n'est dans aucun lieu), mais ils ont la même place : avant les mots, décoratifs.
+        HStack(alignment: .firstTextBaseline, spacing: Spacing.sm) {
             if showsPlane {
                 Image(systemName: "airplane")
                     .font(.system(size: 14))
+                    .accessibilityHidden(true)
+            }
+            if let emoji {
+                // Même style que les mots : l'emoji suit la taille du texte de l'étiquette (pas de pastille de taille fixe ici).
+                Text(verbatim: emoji)
+                    .miffTextStyle(textBodyRegular14)
                     .accessibilityHidden(true)
             }
             Text(verbatim: text)

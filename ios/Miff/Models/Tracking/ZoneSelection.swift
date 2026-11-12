@@ -27,7 +27,7 @@ enum ZoneSelection {
 
     /// Les copies d'un lieu dans plusieurs Miffs sont UNE zone (critère MIF3) SEULEMENT quand c'est la même zone sur le terrain :
     /// même identifiant, même position, même rayon, même type (`ZoneKey`). Deux lieux différents qui ont par hasard le même
-    /// identifiant (les `p1` / `p2` fixes de deux créateurs gratuits) sont deux zones, comme deux copies périmées qui divergent :
+    /// identifiant (les `p1` / `p2` / `p3` fixes de deux créateurs gratuits) sont deux zones, comme deux copies périmées qui divergent :
     /// la prochaine lecture du serveur fait disparaître la périmée. Triées par clé : même entrée, même liste.
     static func merge(_ places: [MiffPlace]) -> [TrackedZone] {
         var groups: [String: [MiffPlace]] = [:]

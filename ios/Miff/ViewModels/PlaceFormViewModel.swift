@@ -124,7 +124,7 @@ final class PlaceFormViewModel: ObservableObject {
 
     private func openForCreate(_ loaded: PlaceContext) {
         if PlaceQuota.isAtFreeLimit(premium: loaded.premium, distinctPlaces: loaded.distinctPlaces) {
-            // Le serveur dit 2 lieux déjà (la liste était en retard) : l'offre, et rien n'est écrit.
+            // Le serveur dit 3 lieux déjà (la liste était en retard) : l'offre, et rien n'est écrit.
             update {
                 $0.loading = false
                 $0.premium = false

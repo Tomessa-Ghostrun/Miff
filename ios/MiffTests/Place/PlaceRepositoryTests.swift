@@ -175,7 +175,7 @@ final class PlaceRepositoryTests: XCTestCase {
 
     // MARK: - Créer : la formule gratuite (LIM1, LIM3)
 
-    func testCreateFreeFirstPlaceTakesP1SecondTakesP2OneDocumentEach() async {
+    func testCreateFreeFirstPlaceTakesP1SecondTakesP2ThirdTakesP3OneDocumentEach() async {
         setUpMiffs()
         let first = await repository().create(uid: uid, draft: draft(), context: await context())
 
@@ -184,13 +184,18 @@ final class PlaceRepositoryTests: XCTestCase {
         store.places[testMiffId] = [testPlace(id: "p1", name: "Maison", miffId: testMiffId)]
         let second = await repository().create(uid: uid, draft: draft(name: "Travail"), context: await context())
         XCTAssertEqual(second, .done(placeId: "p2"))
+        store.places[testMiffId, default: []].append(testPlace(id: "p2", name: "Travail", miffId: testMiffId))
+        let third = await repository().create(uid: uid, draft: draft(name: "Sport"), context: await context())
+        XCTAssertEqual(third, .done(placeId: "p3"))
+        XCTAssertEqual(store.commits.last?.map { $0.path }, ["miffs/\(testMiffId)/places/p3"])
     }
 
-    func testCreateFreeThirdPlaceIsRefusedBeforeAnythingIsSent() async {
+    func testCreateFreeFourthPlaceIsRefusedBeforeAnythingIsSent() async {
         setUpMiffs()
         store.places[testMiffId] = [
             testPlace(id: "p1", name: "A", miffId: testMiffId),
-            testPlace(id: "p2", name: "B", miffId: testMiffId)
+            testPlace(id: "p2", name: "B", miffId: testMiffId),
+            testPlace(id: "p3", name: "C", miffId: testMiffId)
         ]
 
         let result = await repository().create(uid: uid, draft: draft(), context: await context())
@@ -587,7 +592,7 @@ final class PlaceRepositoryTests: XCTestCase {
 
     // MARK: - Revue d'Android (PR #56) : les scénarios
 
-    func testScenarioAHasP1InMiffACreatingInMiffBTakesP2AndTheNextOneIsTheLimit() async {
+    func testScenarioAHasP1InMiffACreatingInMiffBTakesP2ThenP3AndTheNextOneIsTheLimit() async {
         // Le scénario de la revue (I4) : deux Miffs créées par un compte gratuit dont Miff+ est fini.
         setUpMiffs()
         store.seed("p1", miffs: [testMiffId])
@@ -605,19 +610,25 @@ final class PlaceRepositoryTests: XCTestCase {
         let loaded = await context()
         XCTAssertEqual(loaded.distinctPlaces, 2)
         let third = await repository().create(uid: uid, draft: draft(name: "Troisième"), context: loaded)
-        XCTAssertEqual(third, .needsPremium(.limit))
+        XCTAssertEqual(third, .done(placeId: "p3"))
+        store.places[testMiffId, default: []].append(testPlace(id: "p3", name: "Troisième", miffId: testMiffId))
+        let full = await context()
+        XCTAssertEqual(full.distinctPlaces, 3)
+        let fourth = await repository().create(uid: uid, draft: draft(name: "Quatrième"), context: full)
+        XCTAssertEqual(fourth, .needsPremium(.limit))
     }
 
-    func testScenarioTwoDifferentPlacesSharingAnIdentifierAreTwoPlacesForTheLimit() async {
+    func testScenarioThreeDifferentPlacesSharingAnIdentifierAreThreePlacesForTheLimit() async {
         setUpMiffs()
         store.seed("p1", miffs: [testMiffId])
+        store.seed("p2", miffs: [testMiffId])
         store.places[testOtherMiffId] = [testPlace(id: "p1", name: "Le stade", miffId: testOtherMiffId)]
         let loaded = await context()
 
         let result = await repository().create(uid: uid, draft: draft(), context: loaded)
 
-        XCTAssertEqual(loaded.groups.count, 2)
-        XCTAssertEqual(loaded.distinctPlaces, 2)
+        XCTAssertEqual(loaded.groups.count, 3)
+        XCTAssertEqual(loaded.distinctPlaces, 3)
         XCTAssertEqual(result, .needsPremium(.limit))
         XCTAssertTrue(store.commits.isEmpty)
     }

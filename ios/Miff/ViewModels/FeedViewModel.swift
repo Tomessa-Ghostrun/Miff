@@ -92,6 +92,8 @@ struct FeedDependencies {
     var timings = FeedTimings()
     /// MON statut et « mon partage est arrêté » à chaque calcul : l'Update en tire la couleur du bouton central et la bulle (D19).
     var onMyStatus: (MyStatusFacts?, Bool) -> Void = { _, _ in }
+    /// Les membres de la Miff affichée, DÉJÀ lus par l'écoute : le Profil les réutilise pour les photos de sa carte (zéro lecture de plus).
+    var onMembers: (String, [MiffMember]) -> Void = { _, _ in }
 }
 
 @MainActor
@@ -303,6 +305,7 @@ final class FeedViewModel: ObservableObject {
         case .data(let snapshot):
             lostReported = false
             piece = .data(miffId, snapshot)
+            dependencies.onMembers(miffId, snapshot.members)
             updateMe(snapshot)
             reconsiderStatuses()
         case .accessLost:

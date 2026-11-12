@@ -7946,13 +7946,13 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%1$lld of 2 places on the free plan"
+                  "value": "%1$lld of 3 places on the free plan"
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%1$lld of 2 places on the free plan"
+                  "value": "%1$lld of 3 places on the free plan"
                 }
               }
             }
@@ -7964,19 +7964,19 @@
               "one": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%1$lld lieu sur 2 avec la formule gratuite"
+                  "value": "%1$lld lieu sur 3 avec la formule gratuite"
                 }
               },
               "many": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%1$lld lieux sur 2 avec la formule gratuite"
+                  "value": "%1$lld lieux sur 3 avec la formule gratuite"
                 }
               },
               "other": {
                 "stringUnit": {
                   "state": "translated",
-                  "value": "%1$lld lieux sur 2 avec la formule gratuite"
+                  "value": "%1$lld lieux sur 3 avec la formule gratuite"
                 }
               }
             }
@@ -8772,13 +8772,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You've reached 2 places"
+            "value": "You've reached 3 places"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu as atteint 2 lieux"
+            "value": "Tu as atteint 3 lieux"
           }
         }
       }
