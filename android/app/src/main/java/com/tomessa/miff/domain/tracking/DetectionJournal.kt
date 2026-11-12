@@ -54,6 +54,9 @@ enum class JournalKind {
 
     /** The detection could not publish my position anywhere: see the lines of the detection just before. */
     UPDATE_HAND_OVER_FAILED,
+
+    /** The person resumed the sharing of a Miff and the detection worked out a presence again for it (the server had deleted the status). */
+    STATUS_AFTER_RESUME,
 }
 
 /** A line of the journal as it is kept and shown. */

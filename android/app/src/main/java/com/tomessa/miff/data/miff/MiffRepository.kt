@@ -248,6 +248,12 @@ class FirestoreMiffRepository(
      */
     private val onSharingChanged: () -> Unit = {},
     /**
+     * REPRISE DU PARTAGE: called INSTEAD of [onSharingChanged] when the person RESUMED the sharing of a Miff, with the identifier of that Miff (and nothing else): stopping deleted
+     * the status, the photo and the last position on the server and resuming wrote an `unknown` status, so the detection starts that Miff again from nothing, then looks at its Miffs
+     * (the engine keeps the order). Null: [onSharingChanged] alone, as before.
+     */
+    private val onSharingResumed: ((String) -> Unit)? = null,
+    /**
      * AC-4: asked only after the server REFUSED a step of "Créer" or "Rejoindre", to tell "this device is not recognized" (no App Check token)
      * from a refusal of the rules, see [refined]. The default knows nothing: nothing changes.
      */
@@ -496,7 +502,7 @@ class FirestoreMiffRepository(
                 MiffWrites.stopSharing(miffId, uid)
             }
         val result = write { store.commit(writes) }
-        if (result == MiffWriteResult.Done) onSharingChanged()
+        if (result == MiffWriteResult.Done) sharingChanged(miffId, resumed = enabled)
         // A refusal can also mean "already in the state asked for": the dialog asks for the opposite of what the card said when it
         // was opened, and the card may have changed since (another phone), in which case the rules refuse a no-op write
         // (false -> false, true -> true). The server's card is read, and the wanted state counts as a success.
@@ -505,11 +511,20 @@ class FirestoreMiffRepository(
         ) {
             val sharing = (guarded { store.readSharing(miffId, uid) } as? Guarded.Value)?.value
             if (sharing == enabled) {
-                onSharingChanged()
+                sharingChanged(miffId, resumed = enabled)
                 return MiffWriteResult.Done
             }
         }
         return result
+    }
+
+    /** The detection hears that the sharing of [miffId] changed; when it was RESUMED it hears which Miff first (see [onSharingResumed]). */
+    private fun sharingChanged(
+        miffId: String,
+        resumed: Boolean,
+    ) {
+        val onResumed = onSharingResumed
+        if (resumed && onResumed != null) onResumed(miffId) else onSharingChanged()
     }
 
     // --- MIFF-2: renew the code, remove a member, leave ------------------------------------------------------------

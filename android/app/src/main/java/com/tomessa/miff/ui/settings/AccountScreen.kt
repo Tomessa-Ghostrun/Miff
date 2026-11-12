@@ -24,6 +24,7 @@ import com.tomessa.miff.domain.auth.AccountSignIn
 import com.tomessa.miff.ui.auth.MessageText
 import com.tomessa.miff.ui.auth.text
 import com.tomessa.miff.ui.components.MiffSecondaryButton
+import com.tomessa.miff.ui.navigation.holdForDiagnostic
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.StrokeHairline
@@ -86,6 +87,7 @@ fun AccountScreen(
     }
     if (state.confirmingSignOut) {
         AlertDialog(
+            modifier = Modifier.holdForDiagnostic(),
             onDismissRequest = onSignOutCancelled,
             title = { Text(stringResource(R.string.settings_account_sign_out_title), style = textBodyBold16) },
             text = { Text(stringResource(R.string.settings_account_sign_out_body), style = textBodyRegular) },
