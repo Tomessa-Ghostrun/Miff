@@ -51,7 +51,7 @@
 
     <!-- Test 1 -->
     <string name="diag_test1_title">Test 1 · Reading without signing in</string>
-    <string name="diag_test1_description">Tries to read a Miff without being signed in. The expected answer is a refusal. If you were signed in, you are signed out first.</string>
+    <string name="diag_test1_description">Tries to read a Miff without being signed in. The expected answer is a refusal. Refused if an account is signed in (it would be signed out): sign out first.</string>
     <string name="diag_test1_action">Run test 1</string>
     <string name="diag_test1_running">Test in progress…</string>
     <string name="diag_test1_ok">Rules active: OK</string>
@@ -62,7 +62,7 @@
 
     <!-- Test 2 -->
     <string name="diag_test2_title">Test 2 · Reading with a test account</string>
-    <string name="diag_test2_description">Signs in with the test account created in the Firebase console, reads your profile and plan documents, then signs out. Nothing is written. The details are typed here only: they are never stored.</string>
+    <string name="diag_test2_description">Signs in with the test account created in the Firebase console, reads your profile and plan documents, then signs out. Refused if an account is already signed in. Nothing is written. The details are typed here only: they are never stored.</string>
     <string name="diag_test2_email_label">Test account e-mail</string>
     <string name="diag_test2_password_label">Password</string>
     <string name="diag_test2_action">Sign in and read</string>

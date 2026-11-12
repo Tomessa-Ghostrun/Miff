@@ -46,6 +46,7 @@ import com.tomessa.miff.domain.miff.MiffSelector
 import com.tomessa.miff.domain.miff.SelectorEntry
 import com.tomessa.miff.domain.miff.SelectorTap
 import com.tomessa.miff.domain.tracking.StatusLevel
+import com.tomessa.miff.ui.navigation.holdForDiagnostic
 import com.tomessa.miff.ui.notification.FeedNotifications
 import com.tomessa.miff.ui.notification.NotificationBell
 import com.tomessa.miff.ui.theme.ShadowDefault
@@ -172,7 +173,12 @@ internal fun MiffPill(
             contentLabel = stringResource(R.string.feed_selector_a11y, name),
             onClick = { open = true },
         )
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = colorBgSurface) {
+        DropdownMenu(
+            expanded = open,
+            onDismissRequest = { open = false },
+            containerColor = colorBgSurface,
+            modifier = Modifier.holdForDiagnostic(),
+        ) {
             state.miffs.forEach { miff ->
                 val active = miff.id == state.activeId
                 DropdownMenuItem(
