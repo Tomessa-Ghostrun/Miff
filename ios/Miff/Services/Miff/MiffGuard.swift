@@ -39,6 +39,11 @@ struct MiffRepositoryRules {
     /// Le partage de la personne a changé (entrée dans une Miff, arrêt ou reprise du partage, départ, perte d'accès) : le suivi des lieux
     /// relit les Miffs et les lieux (LOC-4b). Appelé après une écriture CONFIRMÉE par le serveur, depuis n'importe quel fil.
     var onSharingChanged: () -> Void = {}
+    /// Le système dit-il qu'un réseau est là ? Faux : la lecture des Miffs de la personne va droit au cache du téléphone au lieu
+    /// d'attendre, l'une après l'autre, la réponse (ou le délai de 20 s) d'un serveur injoignable (cause du « Feed qui charge à
+    /// l'infini » sans réseau). Rien n'est jamais créé, rejoint ni nettoyé à partir de ce cache. Par défaut vrai (les tests).
+    var isOnline: () -> Bool = { true }
+
     /// La personne vient de REPRENDRE le partage de cette Miff (à la place de `onSharingChanged`) : le suivi remet sa détection à zéro pour
     /// elle, PUIS relit les Miffs. Nil : `onSharingChanged` seul.
     var onSharingResumed: ((String) -> Void)?

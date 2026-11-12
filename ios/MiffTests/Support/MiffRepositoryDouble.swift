@@ -36,6 +36,8 @@ final class FakeMiffRepository: MiffRepository {
     var onCreate: () -> Void = {}
     var onJoin: () -> Void = {}
     var onMyMiffs: () -> Void = {}
+    /// Retient la lecture des Miffs tant que le test ne la libère pas (une lecture lancée hors connexion qui attend le réseau).
+    var myMiffsGate: (() async -> Void)?
     var onRemove: (String) -> Void = { _ in }
 
     func prepareCreate(uid: String) async -> CreatePreparation {
@@ -77,6 +79,7 @@ final class FakeMiffRepository: MiffRepository {
     func myMiffs(uid: String) async -> MyMiffsLoad {
         calls.append("myMiffs")
         onMyMiffs()
+        await myMiffsGate?()
         return myMiffsResult
     }
 

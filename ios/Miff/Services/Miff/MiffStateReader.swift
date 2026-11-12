@@ -46,10 +46,17 @@ final class MiffStateReader {
     /// `allowCache` : hors ligne, le cache du téléphone peut dire quoi MONTRER, mais rien n'est créé, rejoint ni nettoyé à
     /// partir de lui.
     func read(uid: String, allowCache: Bool) async -> StateRead {
-        let subscription = await subscriptionState(uid: uid)
+        // Le système dit « pas de réseau » : le serveur n'est pas interrogé (ni l'abonnement, ni les index), le cache répond tout de
+        // suite. Sinon chaque lecture attendrait son propre délai (jusqu'à 20 s) avant d'abandonner, l'une après l'autre : le Feed
+        // restait de longues secondes sur son squelette. La formule est alors « inconnue » (jamais « gratuit » sur un doute).
+        let serverOutOfReach = allowCache && !rules.isOnline()
+        var subscription = (premium: false, known: false)
+        if !serverOutOfReach {
+            subscription = await subscriptionState(uid: uid)
+        }
         let refs: [MembershipRef]
         let fromCache: Bool
-        switch await readRefs(uid: uid, allowCache: allowCache) {
+        switch await readRefs(uid: uid, allowCache: allowCache, serverOutOfReach: serverOutOfReach) {
         case .failed(let failure):
             return .failed(failure)
         case .refs(let found, let cached):
@@ -94,9 +101,14 @@ final class MiffStateReader {
         return false
     }
 
-    private func readRefs(uid: String, allowCache: Bool) async -> RefsRead {
+    private func readRefs(uid: String, allowCache: Bool, serverOutOfReach: Bool) async -> RefsRead {
         let store = self.store
-        let server = await guarded { try await store.readMemberships(uid: uid, fromServer: true) }
+        let server: Guarded<[MembershipRef]>
+        if serverOutOfReach {
+            server = .failed(.offline, lostAccess: false)
+        } else {
+            server = await guarded { try await store.readMemberships(uid: uid, fromServer: true) }
+        }
         switch server {
         case .value(let refs):
             return .refs(refs, fromCache: false)
