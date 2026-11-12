@@ -30,6 +30,9 @@ final class ProfilePlacesViewModel: ObservableObject {
     @Published private(set) var state = ProfilePlacesState()
 
     private var book: MiffPlacesBook
+    /// La Miff dont le carrousel montre la carte. `state` ne la suit que lorsque ses lieux sont connus : tant qu'ils sont lus, la liste
+    /// précédente RESTE dessinée (avec son propre titre), jamais un trou qui fait sauter l'écran (clignotement en balayant).
+    private var wantedMiffId: String?
     private let reader: PlacesReader
     /// Les Miffs que la personne a maintenant, une fois connues : une lecture qui finit après le départ d'une Miff est jetée.
     private var knownMiffIds: Set<String>?
@@ -50,15 +53,12 @@ final class ProfilePlacesViewModel: ObservableObject {
 
     /// La carte de cette Miff est celle que la personne regarde : ses lieux sont montrés, lus si, et seulement si, le registre le dit.
     func onCardShown(miffId: String) {
-        let view = book.view(miffId)
-        if state.selectedMiffId != miffId || state.view != view {
-            state = ProfilePlacesState(selectedMiffId: miffId, view: view)
-        }
+        wantedMiffId = miffId
+        publish()
         guard book.needsReading(miffId) else {
             return
         }
         book.readingStarted(miffId)
-        publish()
         let reader = self.reader
         Task { [weak self] in
             let answer = await reader.read(miffId: miffId)
@@ -69,18 +69,18 @@ final class ProfilePlacesViewModel: ObservableObject {
     /// Le Profil revient à l'écran (au retour d'un lieu ou d'un formulaire) : la liste regardée est relue si elle est périmée.
     func onProfileAppeared() {
         changePending = false
-        if let selected = state.selectedMiffId {
-            onCardShown(miffId: selected)
+        if let wanted = wantedMiffId {
+            onCardShown(miffId: wanted)
         }
     }
 
     /// « Réessayer » : relit tout de suite (une lecture déjà en cours n'est pas doublée).
     func onRetry() {
-        guard let selected = state.selectedMiffId else {
+        guard let wanted = wantedMiffId else {
             return
         }
-        book.invalidate(selected)
-        onCardShown(miffId: selected)
+        book.invalidate(wanted)
+        onCardShown(miffId: wanted)
     }
 
     /// Le créateur ouvre un lieu ou le formulaire d'un nouveau : quoi qu'il s'y passe, les listes sont relues à leur retour.
@@ -101,6 +101,9 @@ final class ProfilePlacesViewModel: ObservableObject {
     func retainOnly(_ miffIds: Set<String>) {
         knownMiffIds = miffIds
         book.retainOnly(miffIds)
+        if let wanted = wantedMiffId, !miffIds.contains(wanted) {
+            wantedMiffId = nil
+        }
         if let selected = state.selectedMiffId, !miffIds.contains(selected) {
             state = ProfilePlacesState()
         }
@@ -120,13 +123,19 @@ final class ProfilePlacesViewModel: ObservableObject {
         publish()
     }
 
+    /// Met à jour ce qui est dessiné : la Miff voulue dès que ses lieux sont connus (lus, donnés par le Feed, ou illisibles) ; tant qu'ils ne
+    /// le sont pas, rien ne change (l'ancienne liste reste, sans passage par un état vide).
     private func publish() {
-        guard let selected = state.selectedMiffId else {
+        let target = wantedMiffId ?? state.selectedMiffId
+        guard let target else {
             return
         }
-        let view = book.view(selected)
-        if state.view != view {
-            state = ProfilePlacesState(selectedMiffId: selected, view: view)
+        let view = book.view(target)
+        if view == .loading && target != state.selectedMiffId {
+            return
+        }
+        if state.selectedMiffId != target || state.view != view {
+            state = ProfilePlacesState(selectedMiffId: target, view: view)
         }
     }
 }

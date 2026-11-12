@@ -1,3 +1,4 @@
+import Combine
 import XCTest
 @testable import Miff
 
@@ -47,9 +48,10 @@ final class ProfilePlacesViewModelTests: XCTestCase {
 
         model.onCardShown(miffId: "B")
 
-        XCTAssertEqual(model.state.selectedMiffId, "B")
+        XCTAssertNil(model.state.selectedMiffId, "rien n'est montré tant que rien n'est lu")
         XCTAssertEqual(model.state.view, .loading, "pas d'absence inventée")
         await waitUntil { model.state.view != .loading }
+        XCTAssertEqual(model.state.selectedMiffId, "B")
         XCTAssertEqual(model.state.view, .ready([]), "une vraie liste vide, une fois lue")
     }
 
@@ -126,6 +128,64 @@ final class ProfilePlacesViewModelTests: XCTestCase {
 
         XCTAssertEqual(model.state.selectedMiffId, "A")
         XCTAssertEqual(model.state.view, .ready(places(["p1"], miffId: "A")))
+    }
+
+    // MARK: - Balayer d'une Miff à l'autre : aucun trou
+
+    func testSwipingToAMiffNotReadYetKeepsTheShownListUntilTheNewOneIsThere() async {
+        reader.answers["B"] = .loaded(places(["p9"]))
+        let model = makeModel()
+        model.seedFromFeed(miffId: "A", places: places(["p1"], miffId: "A"))
+        model.onCardShown(miffId: "A")
+        var seen: [ProfilePlacesState] = []
+        let watching = model.$state.sink { seen.append($0) }
+        defer {
+            watching.cancel()
+        }
+
+        model.onCardShown(miffId: "B")
+        XCTAssertEqual(model.state.selectedMiffId, "A", "l'ancienne liste reste dessinée pendant la lecture")
+        XCTAssertEqual(model.state.view, .ready(places(["p1"], miffId: "A")))
+        await waitUntil { model.state.selectedMiffId == "B" }
+
+        XCTAssertEqual(model.state.view, .ready(places(["p9"])))
+        XCTAssertFalse(seen.contains { $0.view == .loading }, "aucun passage par un état vide pendant le balayage")
+        XCTAssertEqual(seen.compactMap { $0.selectedMiffId }, ["A", "B"])
+    }
+
+    func testSwipingBackAndForthBetweenKnownMiffsNeverGoesThroughAnEmptyState() {
+        let model = makeModel()
+        model.seedFromFeed(miffId: "A", places: places(["p1"], miffId: "A"))
+        model.seedFromFeed(miffId: "B", places: places(["p2"]))
+        model.onCardShown(miffId: "A")
+        var seen: [ProfilePlacesState] = []
+        let watching = model.$state.sink { seen.append($0) }
+        defer {
+            watching.cancel()
+        }
+
+        for miff in ["B", "A", "B", "A"] {
+            model.onCardShown(miffId: miff)
+            XCTAssertEqual(model.state.selectedMiffId, miff)
+        }
+
+        XCTAssertFalse(seen.contains { $0.view == .loading || $0.view == .ready([]) })
+        XCTAssertTrue(reader.reads.isEmpty)
+    }
+
+    func testRetryAndAppearanceFollowTheMiffOfTheCardNotTheOneStillDrawn() async {
+        let model = makeModel()
+        model.seedFromFeed(miffId: "A", places: places(["p1"], miffId: "A"))
+        model.onCardShown(miffId: "A")
+        model.onCardShown(miffId: "B")
+        await waitUntil { model.state.selectedMiffId == "B" }
+
+        reader.answers["B"] = .loaded(places(["p9"]))
+        model.onRetry()
+        await waitUntil { model.state.view == .ready(self.places(["p9"])) }
+
+        XCTAssertEqual(reader.reads, ["B", "B"])
+        XCTAssertEqual(model.state.selectedMiffId, "B")
     }
 
     // MARK: - Un échec, « Réessayer »
