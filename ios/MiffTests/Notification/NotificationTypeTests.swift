@@ -65,7 +65,10 @@ final class NotificationTypeTests: XCTestCase {
             ),
             ExpectedTexts(
                 type: .n7,
-                french: ("Ton mode voyage est terminé", "Ouvre Miff pour que ta carte reprenne ses couleurs. Bon retour !"),
+                french: (
+                    "Ton mode voyage est terminé",
+                    "Ouvre Miff pour que ta carte reprenne ses couleurs. Bon retour !"
+                ),
                 english: (
                     "Your travel mode has ended",
                     "Open Miff so your card gets its usual colours back. Welcome back!"
