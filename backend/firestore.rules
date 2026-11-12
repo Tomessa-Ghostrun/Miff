@@ -9,7 +9,7 @@ rules_version = '2';
 // connue R-LIEU-POS ; renouvellement d'un consentement actif R-LIEU-3), puis le 2026-11-05 (SESS-1 temps 1) et le 2026-11-06
 // (R-PHOTO-LOC), puis le 2026-11-10 (fichier de `main` de ce jour : 3 lieux gratuits p1/p2/p3, mode voyage, R-LIEU-1 au plus tard
 // à cette date ; informations du PM, non vérifiables par l'agent, à confirmer dans la console : Firestore > Règles). NON DÉPLOYÉ :
-// SESS-1 temps 2 (deviceIdRequired() = true) et, depuis la PR backend/lieu-demande, la demande d'ajout d'un lieu (LIEU-REQ-A, point 13). Tout déploiement suit la procédure
+// SESS-1 temps 2 (deviceIdRequired() = true) et, depuis la PR backend/lieu-demande, la demande d'ajout d'un lieu (LIEU-REQ-A, point 13). Et, depuis la PR backend/jetons-appareil, les jetons d'appareil (SRV-2R, point 14). Tout déploiement suit la procédure
 // docs/dev/deploiement-regles.md et l'accord explicite du PM.
 //
 // Principes :
@@ -87,6 +87,17 @@ rules_version = '2';
 //     retrait ne sont PAS modifiés : les demandes d'un membre qui part sont retirées par son client avant « Quitter », sinon elles restent orphelines.
 //     Limites : pas de limitation de débit (App Check) ; compteur auto-réparé par le créateur (valeur absolue) ; aucune règle ne juge le contenu
 //     (adresse d'un tiers) ; risque juridique assumé par le PM (data-model.md §11, point 31).
+//
+// 14. Jetons d'appareil pour les notifications push (SRV-2R, ticket docs/tickets/notification-update-membres.md §8, étude docs/dev/etude-serveur-notifications-premium.md §8) — NON DÉPLOYÉ
+//     (le fichier déployé porte encore l'ANCIEN gabarit de `devices` { token ≤ 512, platform, updatedAt } : aucun client ne l'écrit). Document
+//     users/{uid}/devices/{deviceId} : `deviceId` = l'identifiant de la SESSION active (users/{uid}/session/active.deviceId, un compte = un appareil) ;
+//     9 clés exactes (token ≤ 4096, platform, appVersion, locale, notificationsEnabled, tz, notify { updates }, updatedAt = heure serveur, createdAt =
+//     heure serveur à la création puis figé) ; propriétaire SEUL pour lire (get et list), écrire et supprimer. L'écriture exige que l'identifiant soit celui de
+//     la session (getAfter : 1 lecture de règles, le lot de connexion peut contenir la session ET le jeton) : un appareil remplacé ne peut plus s'enregistrer.
+//     La suppression ne dépend PAS de la session (déconnexion, suppression de compte : la session est supprimée d'abord). Le plafond « 5 appareils » n'est pas
+//     compté (les règles ne savent pas compter) : un seul identifiant est écrivable à la fois (celui de la session) ; le nouvel appareil supprime les autres au
+//     lot de connexion. `notifState/{miffId}` (état du serveur : idempotence, plafond horaire) n'a AUCUNE règle : refusé par défaut, lu et écrit avec les droits
+//     Admin seulement. Remplace l'ancien bloc `devices` (seule règle existante modifiée : voir data-model.md §2.10).
 //
 // Coût : chaque get()/exists()/getAfter()/existsAfter() dans une règle est
 // facturé comme une lecture (même si la requête est refusée) et est limité à
@@ -683,6 +694,41 @@ service cloud.firestore {
         && d.startedAt == request.time;
     }
 
+    // -------------------------------------------------------------------------
+    // Jetons d'appareil pour les notifications (SRV-2R) : users/{uid}/devices/{deviceId}.
+    // -------------------------------------------------------------------------
+    // Fuseau horaire IANA ou assimilé ('Europe/Paris', 'America/Argentina/Buenos_Aires', 'Etc/GMT+5', 'GMT+01:00') : 1 à 64 caractères, commence par une lettre.
+    function isDeviceTz(v) {
+      return v is string && v.matches('^[A-Za-z][A-Za-z0-9_+:/-]{0,63}$');
+    }
+
+    // Préférences par type de notification : map fermée, un seul booléen en v1 (d'autres types = une évolution des règles).
+    function validDeviceNotify(n) {
+      return n is map
+        && n.keys().hasOnly(['updates'])
+        && n.keys().hasAll(['updates'])
+        && n.updates is bool;
+    }
+
+    // Forme commune à la création et à la mise à jour, APRÈS l'écriture (document fusionné). `deviceId` = identifiant de la session active du compte :
+    // getAfter (et non get) pour que le lot de connexion puisse écrire la session et le jeton ensemble ; si la session n'existe pas, getAfter échoue
+    // et l'écriture est refusée. UNE lecture de règles. Aucune donnée d'un autre utilisateur n'est lue.
+    function validDeviceShape(uid, deviceId) {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['token', 'platform', 'appVersion', 'locale', 'notificationsEnabled', 'tz', 'notify', 'updatedAt', 'createdAt'])
+        && d.keys().hasAll(['token', 'platform', 'appVersion', 'locale', 'notificationsEnabled', 'tz', 'notify', 'updatedAt', 'createdAt'])
+        && isStr(d.token, 1, 4096)
+        && d.platform in ['ios', 'android']
+        && isStr(d.appVersion, 1, 32)
+        && d.locale in ['fr', 'en']
+        && d.notificationsEnabled is bool
+        && isDeviceTz(d.tz)
+        && validDeviceNotify(d.notify)
+        && d.updatedAt == request.time
+        && isDeviceId(deviceId)
+        && getAfter(/databases/$(database)/documents/users/$(uid)/session/active).data.deviceId == deviceId;
+    }
+
     // L'écriture (statut, position) vient-elle de l'appareil actif ? Sans clé deviceId : acceptée au temps 1, refusée au temps 2
     // (aucune lecture). Avec la clé : elle doit égaler celle de la session du même compte (UNE lecture de règles ; si la session
     // n'existe pas, get() échoue et l'écriture est refusée). Mesure de COHÉRENCE : un client modifié peut recopier l'identifiant
@@ -938,16 +984,20 @@ service cloud.firestore {
           && !existsAfter(/databases/$(database)/documents/miffs/$(resource.data.miffId)/members/$(uid));
       }
 
-      // ---- Jetons FCM (à n'utiliser qu'avec le push, donc Blaze) ------------
+      // ---- Jetons de notification (SRV-2R) — NON DÉPLOYÉ ---------------------------------------------------------------------
+      // Un document par session active : l'identifiant est celui de users/{uid}/session/active. PRIVÉ : ni un co-membre, ni le créateur d'une Miff ne le lit
+      // (le serveur le lit avec les droits Admin). Lecture (get et list) par le propriétaire : le nouvel appareil liste les anciens pour les supprimer, la
+      // suppression de compte les liste. Création : forme exacte + createdAt = heure serveur. Mise à jour : même forme, createdAt et platform figés. Suppression :
+      // propriétaire, sans condition (la session est supprimée avant les jetons à la suppression de compte). 1 lecture de règles à l'écriture, 0 sinon.
       match /devices/{deviceId} {
         allow get, list: if isSelf(uid);
-        allow create, update: if isSelf(uid)
-          && request.resource.data.keys().hasOnly(['token', 'platform', 'updatedAt'])
-          && request.resource.data.keys().hasAll(['token', 'platform', 'updatedAt'])
-          && isStr(request.resource.data.token, 1, 512)
-          && request.resource.data.platform in ['ios', 'android']
-          && request.resource.data.updatedAt == request.time
-          && deviceId.matches('^[A-Za-z0-9_-]{1,64}$');
+        allow create: if isSelf(uid)
+          && validDeviceShape(uid, deviceId)
+          && request.resource.data.createdAt == request.resource.data.updatedAt;
+        allow update: if isSelf(uid)
+          && validDeviceShape(uid, deviceId)
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.platform == resource.data.platform;
         allow delete: if isSelf(uid);
       }
     }
