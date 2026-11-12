@@ -70,6 +70,7 @@ import com.tomessa.miff.domain.miff.MiffRole
 import com.tomessa.miff.domain.profile.Initials
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
+import com.tomessa.miff.ui.navigation.holdForDiagnostic
 import com.tomessa.miff.ui.profile.ProfileAvatar
 import com.tomessa.miff.ui.theme.CodeLetterSpacing
 import com.tomessa.miff.ui.theme.ShadowDefault
@@ -490,7 +491,12 @@ private fun MemberMenu(
                 tint = if (enabled) colorTextPrimary else colorTextDescription,
             )
         }
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = colorBgSurface) {
+        DropdownMenu(
+            expanded = open,
+            onDismissRequest = { open = false },
+            containerColor = colorBgSurface,
+            modifier = Modifier.holdForDiagnostic(),
+        ) {
             DropdownMenuItem(
                 text = {
                     Text(
@@ -700,6 +706,7 @@ fun MiffConfirmDialog(
         Column(
             modifier =
                 modifier
+                    .holdForDiagnostic()
                     .widthIn(max = Spacing.dialogWidth)
                     .fillMaxWidth()
                     .miffShadow(ShadowDefault, ShapeMd)
@@ -784,6 +791,7 @@ fun MiffProgressDialog(
         Column(
             modifier =
                 modifier
+                    .holdForDiagnostic()
                     .widthIn(max = Spacing.dialogWidth)
                     .fillMaxWidth()
                     .miffShadow(ShadowDefault, ShapeMd)
