@@ -87,6 +87,8 @@ Sinon **ne rien écrire**. **Décision (ticket §9, relu le 2026-11-12)** : le t
 
 Dans la séquence existante de purge : **après** `waitForPendingWrites` et **avant** `signOut`, supprimer `users/{uid}/devices/{mon deviceId}` (transaction ou `delete`, **sans condition de session** : les règles autorisent la suppression même si la session a déjà été supprimée), puis invalider le jeton chez FCM, puis le reste de la déconnexion (suppression de la session, etc.). Si la suppression échoue (hors connexion), la déconnexion continue : le document restera, **inerte** (le serveur n'envoie qu'au jeton de la session active, et la reconnexion de n'importe quel appareil du compte nettoie les autres).
 
+**Invalidation du jeton chez FCM (`deleteToken`) : obligatoire à CHAQUE chemin de sortie du compte, même quand la suppression du document Firestore échoue** (hors connexion, refus, délai). Les deux opérations sont indépendantes : tenter la suppression du document, puis appeler `deleteToken` quoi qu'il arrive (un échec de l'une n'empêche jamais l'autre ; `deleteToken` fonctionne sans réseau côté appareil et rend le jeton inutilisable). Chemins concernés : déconnexion volontaire (§4.6), remplacement par un autre appareil (§4.7), suppression de compte (§4.8), interrupteur général coupé et autorisation retirée (§4.5). C'est ce qui ferme le risque « le compte précédent reçoit encore des notifications sur ce téléphone après qu'un autre compte s'y est connecté » : un jeton FCM est lié au téléphone, pas au compte, donc un document périmé pointant vers ce jeton pourrait sinon le faire sonner pour l'ancien compte.
+
 ### 4.7 Remplacement par un autre appareil (SESS)
 
 Le nouvel appareil a déjà supprimé le jeton de l'ancien (§4.2). L'ancien appareil, quand il constate la disparition ou le remplacement de sa session, **tente** de supprimer son document (best effort : refus possible si `signOut` a déjà eu lieu) puis se déconnecte comme d'habitude. Il **ne doit pas** tenter d'écrire : ce serait refusé.
@@ -98,6 +100,10 @@ Lu dans le code de `main` le 2026-11-12 :
 - **iOS** : `FirestoreAccountDataStore.deviceIds` (`getDocuments(source: .server)`) et `deleteDevice` (écriture `delete`), mêmes étapes.
 - **Compatible avec les règles de cette PR sans changement** : la liste (`list`) et la suppression sont permises au propriétaire, **sans condition de session** (test DV10 : séquence « session supprimée d'abord, puis liste, puis suppression de chaque jeton »).
 - **Reste à faire côté client (SRV-2A / SRV-2I)** : invalider le jeton chez FCM (`deleteToken`) à cette étape (ticket §9, J2). Rien à changer dans le lot Firestore. **Besoin documenté, pas de modification ici.**
+
+### 4.9 À la réception d'une notification : ne faire confiance qu'à son propre compte
+
+Le message porte des identifiants techniques (Miff, auteur) pour ouvrir le bon écran. **Le client ignore toute donnée dont le `miffId` n'appartient pas au compte actuellement connecté** (Miff dont il n'est pas membre selon `memberships`/fiche de membre lue sur le serveur, ou aucun compte connecté) : pas de navigation, pas de ligne dans le centre de notifications, pas de lecture de la Miff nommée, aucune erreur visible. Cela couvre le jeton resté sur un téléphone où un autre compte s'est connecté, et tout message forgé ou périmé.
 
 ## 5. Erreurs attendues
 
@@ -120,8 +126,9 @@ Messages d'erreur côté interface : **aucun** pour ces écritures (ton non anxi
 
 ## 7. Ce que le serveur fait des jetons (contrat pour SRV-4, pour information)
 
-- Lit avec les droits Admin (les règles ne s'appliquent pas) ; `limit(3)` par destinataire.
-- N'envoie qu'au jeton dont l'identifiant est celui de `session/active.deviceId` (ou, à défaut, `updatedAt ≥ session.startedAt`), et seulement si `notify.updates` est à `true` ; un document présent = un appareil qui peut recevoir.
+- Lit avec les droits Admin (les règles ne s'appliquent pas). Pour chaque destinataire : lit `users/{uid}/session/active`, puis **`users/{uid}/devices/{session.deviceId}` en lecture directe (`get`)**, jamais une liste ni `limit(3)` : un seul jeton est concerné, les éventuels jetons périmés d'autres identifiants ne sont jamais lus ni utilisés (2 lectures par destinataire).
+- **Session absente (déconnexion, compte sans session) : le serveur n'envoie à AUCUN jeton de ce compte**, même s'il reste des documents `devices` (ils sont inertes). Idem si le document `devices/{session.deviceId}` n'existe pas.
+- N'envoie que si `notify.updates` est à `true` ; un document présent pour la session active = un appareil qui peut recevoir.
 - Supprime le document quand FCM répond « jeton inconnu » ; purge optionnelle à 60 jours.
 - Ne journalise ni jeton, ni uid, ni prénom. Utilise `tz` pour les heures calmes (22 h – 7 h). Les textes restent dans les apps (aucune langue n'est stockée).
 - Ne touche jamais à `notifState` depuis un client : cette collection n'a **aucune règle** (refus total, test DV12).
@@ -133,6 +140,8 @@ Messages d'erreur côté interface : **aucun** pour ces écritures (ton non anxi
 - [ ] Création et mise à jour par **transaction** (lire puis créer ou mettre à jour) ; `createdAt` jamais réécrit ; `platform` jamais modifié.
 - [ ] Lot de connexion : session + jeton + suppression des autres jetons (aucun chemin en double dans le lot).
 - [ ] Au plus une écriture par jour ; rafraîchissement au changement de jeton ou de fuseau, ou après 30 jours ; rien en arrière-plan.
+- [ ] `deleteToken` appelé à chaque sortie même si la suppression Firestore échoue (§4.6).
+- [ ] À la réception : tout message dont le `miffId` n'est pas celui d'une Miff du compte connecté est ignoré (§4.9).
 - [ ] Suppression : interrupteur général coupé, autorisation retirée, déconnexion (avant `signOut`), suppression de compte (déjà en place), remplacement par un autre appareil (best effort) ; invalidation du jeton chez FCM à chaque fois.
 - [ ] Aucune position, aucun nom, aucun identifiant publicitaire dans le document ; aucun journal ni événement Analytics contenant le jeton.
 - [ ] Tests unitaires : choix créer / mettre à jour, seuils 30 jours / 1 jour, changement de jeton, ordre déconnexion (jeton avant `signOut`), lot de connexion.
