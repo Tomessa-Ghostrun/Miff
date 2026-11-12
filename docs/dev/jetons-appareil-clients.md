@@ -122,6 +122,7 @@ Messages d'erreur côté interface : **aucun** pour ces écritures (ton non anxi
 
 - **Une écriture par ouverture au plus, une par jour au plus**, en pratique : l'enregistrement initial, un changement de jeton ou de fuseau (rares), le rafraîchissement au bout de 30 jours, et les actions de réglage. ≈ **1 écriture + 1 lecture par utilisateur actif et par mois** en régime normal, plus **1 lecture de règles** à chaque écriture (la session). Suppression et lecture : 0 lecture de règles.
 - Même en comptant un changement de jeton par utilisateur et par semaine, **10 000 utilisateurs actifs** font de l'ordre de 2 000 écritures par jour : très loin du quota gratuit (20 000 par jour). Les écritures de `devices` ne comptent pas parmi les postes de coût du projet (le coût dominant reste la lecture du Feed).
+- **Côté serveur (lectures)** : à chaque update publiée, la fonction lit la session active de chaque destinataire (`users/{uid}/session/active`, **1 lecture par destinataire**, voir §7). Un jeton non supprimé (déconnexion échouée) ne coûte donc **aucune écriture** mais **1 lecture de session par destinataire et par update** ; l'envoi lui-même est écarté si la session n'est pas celle du document.
 - **Signal à surveiller** (`docs/dev/surveillance-quotas.md`) : écritures de `devices` > 1 par utilisateur actif et par jour (plafond du contrat) = un client qui réécrit trop (boucle sur `onNewToken`, comparaison de jeton défaillante).
 
 ## 7. Ce que le serveur fait des jetons (contrat pour SRV-4, pour information)
