@@ -173,6 +173,23 @@ final class ProfilePlacesViewModelTests: XCTestCase {
         XCTAssertEqual(reader.reads, ["A"])
     }
 
+    func testBackAtTheRootReadsAgainOnlyWhenACreatorTouchedAPlaceInTheMeantime() async {
+        let model = makeModel()
+        model.seedFromFeed(miffId: "A", places: places(["p1"], miffId: "A"))
+        model.onCardShown(miffId: "A")
+
+        model.onReturnedToRoot()
+        XCTAssertTrue(reader.reads.isEmpty, "rien ne change : rien n'est lu")
+
+        reader.answers["A"] = .loaded(places(["p1", "p2"], miffId: "A"))
+        model.onPlacesMayChange()
+        model.onReturnedToRoot()
+        await waitUntil { model.state.view == .ready(self.places(["p1", "p2"], miffId: "A")) }
+        model.onReturnedToRoot()
+
+        XCTAssertEqual(reader.reads, ["A"], "une seule relecture par changement")
+    }
+
     // MARK: - Une Miff qui disparaît
 
     func testTheListOfAMiffTheCarouselNoLongerHasIsForgottenAndNothingStaysSelected() async {

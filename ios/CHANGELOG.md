@@ -2,6 +2,27 @@
 
 ## Non publié
 
+### Profil : les lieux de la Miff du carrousel sont visibles par tous les membres (décision du PM, 2026-11-11 ; miroir d'Android PR #181)
+
+Ticket `docs/tickets/lieux-de-confiance.md` (critère PL1b), contrat Android / iOS `docs/contracts/profile-places-members.md`, recette : `docs/qa/checklists/profil-lieux-membres-ios-recette-pm.md`, détail : `ios/README.md` (« Lieux de la Miff du carrousel »). **Rien n'est compilé en local** (la CI fait foi). **Branche partie de `ios/profil-carrousel-emoji-lieux3` (PR #145, pas encore fusionnée dans `main`)** : le carrousel n'existe pas dans `main` ; `main` (dont la PR Android #181) y est fusionné. **Règles Firestore : aucun changement** (`match /places/{placeId}`, `get, list` à tout membre, écritures au créateur).
+
+Ajouté :
+- **Section « Lieux de confiance de <Miff> » sous le carrousel de l'onglet Profil**, pour TOUS les membres de la Miff dont la carte est montrée (`ProfilePlacesSection`, `ProfilePlacesPresentation`) ; la Miff est toujours nommée, même avec une seule. Un membre qui n'est pas le créateur lit la liste (emoji de catégorie, « Zone de danger »), ouvre un lieu en LECTURE SEULE (déjà le cas du détail : pas de « Modifier »), et ne voit JAMAIS « Ajouter un lieu », le compteur du gratuit, une pastille ou une offre « Miff+ », ni le message « enregistré ». Liste vide : « Aucun lieu de confiance pour l'instant. » ; illisible : « Les lieux ne sont pas disponibles pour le moment. » + « Réessayer ». Le créateur est inchangé. L'encart « Mode voyage » reste le DERNIER bloc du Profil. Rien n'est dessiné tant que les lieux ne sont pas lus (ni titre, ni « aucun lieu »).
+- **Créateur** = `ownerUid` du document de la Miff, déjà lu pour la liste des Miffs (`MiffSummary.ownerUid`, 0 lecture de plus) ; inconnu ou personne inconnue = membre (`PlaceViewerRole.isCreator`). Ce qui est PERMIS reste décidé par les règles.
+- **Une seule lecture par Miff, jamais d'écouteur** (`MiffPlacesBook`, `ProfilePlacesViewModel`, `FirestorePlacesReader`) : 0 lecture pour la Miff du Feed (`FeedDependencies.onPlaces`, seulement pour une réponse confirmée par le serveur) ; P + 2 pour une autre Miff quand sa carte s'arrête (la carte « Créer une Miff » ne change rien), réutilisée 5 minutes ; échec : attente de 30 s, « Réessayer » relit tout de suite ; relecture quand le créateur est passé par un lieu ou le formulaire. **Choix économique** et signal de bascule : `docs/dev/surveillance-quotas.md` (section « Les lieux de la Miff du carrousel », volet iOS).
+- **VoiceOver** : une ligne = un bloc « nom, catégorie, adresse » ; une zone de danger finit par « Zone de danger » (`place_list_row_type_a11y`, `PlaceRowSpeech`) ; titre en titre ; la phrase « pas disponibles » est annoncée avec calme. Dynamic Type : le titre passe à la ligne, rien n'est coupé.
+- **Textes** (FR + EN, mêmes clés et mêmes textes qu'Android) : `place_profile_title_named`, `place_list_empty_member`, `place_profile_unavailable`, `place_list_row_type_a11y` (déjà au catalogue iOS et à `strings.xml` depuis la fusion de la PR #181 : aucune clé ajoutée ici).
+- Tests : `MiffPlacesBookTests`, `ProfilePlacesViewModelTests` (lecture unique, 0 pour la Miff du Feed, TTL, échec, relecture), `ProfilePlacesPresentationTests` (rôles, état vide, jamais d'édition pour un membre, VoiceOver, Miff cochée), `ProfilePlacesPlacementTests` (ordre des blocs), `FeedViewModelPlacesTests`, `MiffRepositoryTests` (créateur dans l'annuaire), `PlaceReadingTests` (créateur inconnu).
+
+Changé :
+- **« Ajouter un lieu » coche d'abord la Miff de la liste** (Profil, et écran de la Miff) quand la personne en est la créatrice, au lieu de la dernière Miff rejointe : un lieu ne part pas vers un autre cercle par surprise (`DefaultMiffChoice.of(owned:lastJoinedId:openedFromId:)`, route `placeForm(placeId:miffId:)`) ; sinon le choix habituel.
+- `PlaceDetailViewModel.canEdit` suit `PlaceViewerRole.isCreator` (jamais vrai si les deux identifiants sont vides) ; `PlaceRows` : un membre dont la liste est vide lit « Aucun lieu de confiance pour l'instant. » (le créateur garde sa phrase), aussi sur l'écran de la Miff.
+- `ProfileMiffCarousel` dit au Profil la Miff montrée (`onMiffShown`) et les Miffs connues (`onMiffsKnown`) ; `ProfileTabView`, `MainShellView`, `MiffHomeHost` et `FeedTab` reçoivent le view model des lieux.
+
+**Écarts avec Android** : aucun d'ordre fonctionnel ; la liste n'existait pas encore sur le Profil iOS (Android remplace une écoute en direct, iOS n'a jamais eu d'écouteur ici) ; une copie du téléphone VIDE rendue par une lecture est traitée comme un échec (jamais « aucun lieu » inventé hors ligne).
+
+**Limites connues** : comme sur Android, un lieu ajouté ou retiré par le créateur sur un autre téléphone n'apparaît chez un membre qu'à sa prochaine relecture (au plus 5 minutes, ou à son retour sur le Feed) ; la Miff du Feed montre les lieux de la dernière visite du Feed ; rien n'est vérifié à l'écran en local (recette sur l'iPhone 11 Pro).
+
 ### Carrousel de Miffs au Profil, emoji des catégories de lieux, 3 lieux gratuits (retours du PM, 2026-11-10 ; miroir d'Android)
 
 Recette : `docs/qa/checklists/profil-carrousel-emoji-lieux3-ios-recette-pm.md`. Détail, écarts et lectures : `ios/README.md` (« Catégories en emoji, carrousel de Miffs, 3 lieux gratuits »), contrat partagé `docs/contracts/place-categories.md`. **Rien n'est compilé en local** (la CI fait foi). **Les 3 lieux gratuits ne sont utilisables qu'après le déploiement des règles par le PM** (PR `backend/lieux-gratuits-3`).

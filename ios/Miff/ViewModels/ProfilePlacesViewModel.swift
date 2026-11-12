@@ -33,6 +33,8 @@ final class ProfilePlacesViewModel: ObservableObject {
     private let reader: PlacesReader
     /// Les Miffs que la personne a maintenant, une fois connues : une lecture qui finit après le départ d'une Miff est jetée.
     private var knownMiffIds: Set<String>?
+    /// Un créateur a ouvert un lieu ou un formulaire depuis la dernière fois que la liste a été remise à jour.
+    private var changePending = false
 
     init(reader: PlacesReader, clock: @escaping () -> Int = { Int(Date().timeIntervalSince1970 * 1000) }) {
         self.reader = reader
@@ -66,6 +68,7 @@ final class ProfilePlacesViewModel: ObservableObject {
 
     /// Le Profil revient à l'écran (au retour d'un lieu ou d'un formulaire) : la liste regardée est relue si elle est périmée.
     func onProfileAppeared() {
+        changePending = false
         if let selected = state.selectedMiffId {
             onCardShown(miffId: selected)
         }
@@ -83,6 +86,15 @@ final class ProfilePlacesViewModel: ObservableObject {
     /// Le créateur ouvre un lieu ou le formulaire d'un nouveau : quoi qu'il s'y passe, les listes sont relues à leur retour.
     func onPlacesMayChange() {
         book.invalidateAll()
+        changePending = true
+    }
+
+    /// La pile de navigation est revenue à l'écran racine : si un créateur a touché un lieu depuis, la liste regardée est relue (au cas où
+    /// l'onglet Profil n'annoncerait pas son retour). Sans changement en attente, rien n'est lu.
+    func onReturnedToRoot() {
+        if changePending {
+            onProfileAppeared()
+        }
     }
 
     /// Les Miffs de la personne maintenant : les lieux de toute autre sont oubliés.

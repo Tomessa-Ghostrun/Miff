@@ -235,6 +235,12 @@ struct MiffHomeHost: View {
                 path.removeAll { $0.isMyInfoScreen }
             }
         }
+        // De retour à l'écran racine après un lieu ou un formulaire : la liste des lieux du Profil est relue si un créateur y a touché.
+        .onChange(of: path.isEmpty) { isEmpty in
+            if isEmpty {
+                profilePlaces.onReturnedToRoot()
+            }
+        }
         // Mon visage sur les cartes du Profil suit mon profil, SANS lecture : le profil est déjà lu pour l'en-tête (et relu après une modification).
         .onChange(of: profile.state) { state in
             if case .ready(let mine) = state, let uid = environment.session.currentUid {

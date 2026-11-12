@@ -150,6 +150,8 @@ Ouvrir le **détail** d'un lieu garde son écoute en direct de la Miff (3 écout
 
 **Limite connue** : un lieu ajouté ou retiré par le créateur sur un autre téléphone n'apparaît chez les membres qu'à leur prochaine relecture (au plus 5 minutes sur le Profil, ou à leur retour sur le Feed qui écoute à nouveau). Les lieux changent rarement et la détection est lente par conception (« dans les prochaines heures », ticket Lieux). **Signal** : celui du §2 ; **levier gratuit** : allonger `MiffPlacesBook.TTL_MILLIS`.
 
+**iOS (même décision, même principe)** : `FirestorePlacesReader` (un seul `getDocuments` de `miffs/{id}/places`, jamais d'écouteur), règles de réutilisation dans `MiffPlacesBook` (testées, mêmes chiffres : 5 minutes, 30 s après un échec), `ProfilePlacesViewModel`. La Miff du Feed est reprise sans lecture (`FeedDependencies.onPlaces`, seulement une réponse confirmée par le serveur). **Différence avec Android** : la liste n'existait pas encore sur le Profil iOS, donc ce changement n'ajoute aucun écouteur et n'en supprime aucun ; pour un compte gratuit (une seule Miff, celle du Feed) il ajoute **0 lecture**. Une copie du téléphone VIDE est traitée comme un échec (jamais « aucun lieu » inventé hors ligne). **Levier gratuit** : `MiffPlacesBook.freshMillis`.
+
 ## 5. Journal de relevé (modèle à recopier)
 
 Une ligne par jour de bêta externe, dans un fichier à toi (ou dans une conversation avec Claude) :
