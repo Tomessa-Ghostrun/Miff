@@ -27,6 +27,8 @@ struct PhotoFullScreen: View {
     @State private var photoArea: CGSize = .zero
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    /// La hauteur du contenu de la légende (sans la zone sûre), qui grandit avec la taille du texte : elle décide si la légende défile.
+    @ScaledMetric(relativeTo: .body) private var footerEstimate: CGFloat = PhotoFullScreenLayout.footerEstimate
 
     private static let maxZoom: CGFloat = 4
     private static let doubleTapZoom: CGFloat = 2
