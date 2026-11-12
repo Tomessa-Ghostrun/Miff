@@ -67,7 +67,6 @@ extension TrackingEngine {
             await standDown(uid, state)
             return
         }
-        let resumed = takeResumed(&state)
         guard pass.snapshot.locationComplete else {
             // « Toujours » + la position exacte ne sont pas là : ni détection ni position (AUT7). Les Miffs sont prévenues, une fois,
             // que l'accès a changé.
@@ -76,6 +75,9 @@ extension TrackingEngine {
             deps.local.save(state)
             return
         }
+        // Le drapeau de reprise n'est consommé que si la détection peut vraiment tourner : sans « Toujours » + position exacte, il attend
+        // (l'autorisation accordée plus tard relance un passage, `accessChanged`, qui recalcule alors la présence).
+        let resumed = takeResumed(&state)
         await watch(state, pass: pass, reason: reason, supplied: supplied, now: now, resumed: resumed)
     }
 
@@ -84,7 +86,11 @@ extension TrackingEngine {
         journal.record(.notEligible)
         await deps.geofences.disarmAll()
         await stopMovement()
-        deps.local.save(LocalState(uid: uid, checkedAtMillis: state.checkedAtMillis))
+        var fresh = LocalState(uid: uid, checkedAtMillis: state.checkedAtMillis)
+        // Une reprise annoncée n'est pas oubliée parce que la relecture du serveur n'a pas (encore) trouvé la Miff éligible : elle sera
+        // recalculée au passage où elle le sera.
+        fresh.resumedMiffs = state.resumedMiffs
+        deps.local.save(fresh)
     }
 
     private func noteSystemConditions(_ reason: Reason) async {

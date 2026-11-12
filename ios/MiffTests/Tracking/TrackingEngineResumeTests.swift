@@ -112,5 +112,7 @@ final class TrackingEngineResumeTests: XCTestCase {
         await resume()
 
         XCTAssertEqual(presenceWrites().count, before)
+        // Le drapeau attend l'autorisation : il n'est pas consommé pour rien.
+        XCTAssertEqual(rig.local.state?.resumedMiffs, [testMiffId])
     }
 }

@@ -19,7 +19,14 @@ extension TrackingEngine {
         }
         var taken: [String] = []
         for miffId in flagged.sorted() where state.miffs[miffId] != nil {
-            state.update(miffId) { $0.resetDetection() }
+            state.update(miffId) { miff in
+                // MODE VOYAGE : le statut « inconnu » qui efface les clés d'un voyage terminé (`clearTravel`) attend peut-être encore son envoi ;
+                // la remise à zéro ne le supprime pas (la reprise a certes récrit le statut, mais sans compter là-dessus). Le recalcul ci-dessous
+                // le remplace s'il a mieux à dire ; l'écriture efface les clés de voyage dans tous les cas.
+                let keptPending = miff.clearTravel ? miff.pending : nil
+                miff.resetDetection()
+                miff.pending = keptPending
+            }
             taken.append(miffId)
         }
         let remaining = flagged.subtracting(taken)
@@ -32,7 +39,10 @@ extension TrackingEngine {
     /// zone de confiance ou de danger : cette présence, à l'heure d'entrée connue (sinon maintenant). Hors de toutes les zones de la Miff, avec
     /// une position pour le dire : `out`, maintenant. Sans position ET hors zone : rien n'est inventé (le statut reste `unknown` jusqu'au
     /// prochain signal du système, qui arrive aussi pour les zones tout juste réarmées). Le statut est écrit par le passage habituel
-    /// (`flushPending`), avec toutes ses conditions (« Toujours », consentement v3, session, disjoncteur).
+    /// (`flushPending`), avec toutes ses conditions (« Toujours », consentement v3, session, disjoncteur). Choix de l'heure : l'arrivée recalculée porte l'heure d'entrée connue
+    /// (jusqu'à 24 h, sinon maintenant) pour `presenceAt` ET `lastUpdateAt`, comme une vraie arrivée (une zone de confiance est toujours verte,
+    /// `StatusColor`) ; une zone de danger ne pose AUCUNE update (rouge tant que la personne n'en fait pas une, comme à l'arrivée) ; un `out`
+    /// part de MAINTENANT (le repère de l'orange et du rouge est le moment de la reprise : on ne sait pas depuis quand la personne est partie).
     func presenceAfterResume(_ start: LocalState, miffIds: [String], fix: Fix?, now: Int) -> LocalState {
         var state = start
         for miffId in miffIds {
