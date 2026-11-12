@@ -88,6 +88,7 @@ import com.tomessa.miff.ui.miff.MiffConfirmDialog
 import com.tomessa.miff.ui.miff.MiffHeader
 import com.tomessa.miff.ui.miff.MiffNotice
 import com.tomessa.miff.ui.miff.MiffSectionHeader
+import com.tomessa.miff.ui.navigation.holdForDiagnostic
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeFull
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -439,6 +440,7 @@ private fun MiffPickerSheet(
         onDismissRequest = actions.onMiffSheetClosed,
         sheetState = sheetState,
         containerColor = colorBgSurface,
+        modifier = Modifier.holdForDiagnostic(),
     ) {
         Column(
             modifier =

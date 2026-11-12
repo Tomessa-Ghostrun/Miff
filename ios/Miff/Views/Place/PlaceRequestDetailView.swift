@@ -37,9 +37,14 @@ struct PlaceRequestDetailView: View {
         self.onClose = onClose
     }
 
-    /// L'identifiant d'une demande est `{uid du demandeur}_{emplacement}` : qui la regarde sans en être l'auteur est le créateur de la Miff.
+    /// Le rôle vient de la Miff (la personne l'a-t-elle créée ? : l'annuaire le sait), jamais d'un uid déduit de l'identifiant.
     private var isCreator: Bool {
-        PlaceRequest.parseId(requestId)?.requester != myUid
+        PlaceRequestRole.isCreator(miffId: miffId, creatorMiffs: model.creatorMiffs)
+    }
+
+    /// La demande est la MIENNE : seul son auteur la retire (jamais déduit d'un uid inconnu).
+    private var isAuthor: Bool {
+        PlaceRequestRole.isAuthor(requestId: requestId, myUid: myUid)
     }
 
     private var request: PlaceRequest? {
@@ -180,7 +185,7 @@ struct PlaceRequestDetailView: View {
                         model.onDecline(current)
                     }
                 )
-            } else {
+            } else if isAuthor {
                 Button {
                     leaving = true
                     model.onWithdraw(current)

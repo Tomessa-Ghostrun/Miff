@@ -175,6 +175,20 @@ final class PlaceRequestsTests: XCTestCase {
         )
     }
 
+    // MARK: - Rôle
+
+    func testTheRoleIsNeverDeducedFromAnUnknownUid() {
+        let id = "(uid)_1"
+
+        XCTAssertTrue(PlaceRequestRole.isAuthor(requestId: id, myUid: uid))
+        XCTAssertFalse(PlaceRequestRole.isAuthor(requestId: id, myUid: nil))
+        XCTAssertFalse(PlaceRequestRole.isAuthor(requestId: id, myUid: ""))
+        XCTAssertFalse(PlaceRequestRole.isAuthor(requestId: id, myUid: "autreuid1"))
+        XCTAssertFalse(PlaceRequestRole.isAuthor(requestId: "pas un id", myUid: uid))
+        XCTAssertTrue(PlaceRequestRole.isCreator(miffId: testMiffId, creatorMiffs: [testMiffId]))
+        XCTAssertFalse(PlaceRequestRole.isCreator(miffId: testMiffId, creatorMiffs: []), "Miff inconnue : pas créateur")
+    }
+
     // MARK: - Lots
 
     func testCreatingIsALotOfTwoWithTheNineKeysAndAMergedCounter() {

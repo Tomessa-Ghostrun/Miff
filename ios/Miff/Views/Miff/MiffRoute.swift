@@ -52,6 +52,14 @@ enum MiffRoute: Hashable {
         self == .settings(.myInfo)
     }
 
+    /// Les écrans des notifications : un compte sans Miff n'en a pas (rien à notifier).
+    var isNotificationScreen: Bool {
+        if case .settings(let screen) = self {
+            return screen.isNotificationScreen
+        }
+        return false
+    }
+
     /// Cet écran dépend de cette Miff : il part avec elle quand son accès est perdu.
     func belongs(to miffId: String) -> Bool {
         switch self {

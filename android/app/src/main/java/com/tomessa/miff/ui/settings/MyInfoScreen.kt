@@ -58,6 +58,7 @@ import com.tomessa.miff.ui.auth.MessageText
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.rememberSystemCamera
+import com.tomessa.miff.ui.navigation.holdForDiagnostic
 import com.tomessa.miff.ui.profile.CountryField
 import com.tomessa.miff.ui.profile.CountryPickerSheet
 import com.tomessa.miff.ui.profile.LabeledOutlinedField
@@ -153,6 +154,7 @@ fun MyInfoScreen(
 
     if (askDiscard) {
         AlertDialog(
+            modifier = Modifier.holdForDiagnostic(),
             onDismissRequest = { askDiscard = false },
             title = { Text(stringResource(R.string.settings_my_info_discard_title), style = textBodyBold16) },
             text = { Text(stringResource(R.string.settings_my_info_discard_body), style = textBodyRegular) },

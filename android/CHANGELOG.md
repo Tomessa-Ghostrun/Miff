@@ -2,6 +2,93 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.37.0] - 2026-11-12 : toucher la bulle du Feed ouvre l'écran « Les couleurs de ta Miff » (COULEURS-1)
+
+Demande du PM (2026-11-12), ticket complet et décidé sur délégation du PM : `docs/tickets/couleurs-info.md` ; recette `docs/qa/checklists/couleurs-info-android-recette-pm.md` ; branche `android/couleurs-info`, PR brouillon. Numéro de version : le dernier de `main` est 0.36.0 (deux entrées), celui-ci prend le suivant, 0.37.0 (à renuméroter au merge si une autre PR l'a pris). Aucune donnée, aucune règle Firestore, aucune permission, aucune dépendance, aucun service payant.
+
+### Ajouté
+- **Écran « Les couleurs de ta Miff »** (`ColorsInfoScreen`) : ce que signifient le vert, l'orange, le rouge et le gris pour **une personne** (anneau de la photo, liseré de la carte) et pour **la Miff** (la bulle), ce qui fait changer la couleur, et ce que les couleurs **ne disent pas** (pas une alerte d'urgence, pas une position en direct). Poussé **plein écran sans barre d'onglets**, avec la flèche de retour (`SettingsScaffold`), contenu qui défile ; un double toucher rapide n'ouvre qu'un écran, le retour ramène au Feed dans le même état.
+- **Point d'entrée : toute la bulle de la Miff**, ses sept variantes (tout va bien, alertes orange ou rouge, pas encore de nouvelles, personne d'autre, partage arrêté, accord en attente, voyageurs) et **chaque page** d'un carrousel d'alertes. « Contacter » et « Reprendre le partage » **gardent leur comportement** (leur toucher gagne sur celui de la bulle) ; balayage, pastilles et « Alerte précédente / suivante » inchangés. **Aucun indice visuel ajouté** sur la bulle (décisions du PM des 2026-11-10 et 2026-11-11) : seulement l'onde d'appui habituelle, dessinée dans la forme de la tache.
+- **Lecteur d'écran** : la bulle propose l'action **« Comprendre les couleurs »** ; le bouton « Contacter » / « Reprendre le partage » reste un élément à part. Sur l'écran, le titre et les quatre sections sont des titres ; chaque ligne de couleur est lue d'un seul bloc (« Vert. Tout va bien. … ») ; les pastilles sont décoratives.
+- **Durées jamais écrites dans les textes** (règle STA9) : « 2 heures », « 4 heures », « 1 heure » sont lues dans `StatusThresholds` (`ColorsInfoDurations`) et écrites par le formateur du système (`MeasureFormat`), dans la langue du téléphone. Si le PM change un seuil, l'écran suit.
+- **Textes** : 39 clés `feed_colors_*` (38 de contenu + `feed_colors_bubble_action_a11y` pour l'accessibilité : le tableau du ticket en liste 39), français et anglais, **identiques dans le catalogue iOS `Localizable.xcstrings`** (textes seulement, aucun code Swift : c'est ce qui garde le contrôle de parité vert ; l'écran iOS est COULEURS-2). Illustrations : l'avatar de statut du Feed (pastille et anneau, sans pictogramme) et une mini-tache à la forme de la bulle ; aucune image importée.
+- Tests : `ColorsInfoScreenTest` (blocs dans l'ordre, textes français et anglais, durées lues dans les seuils et changeant avec eux, titres, lignes lues d'un bloc, aucune action hors le retour, très grande police, parité des 39 clés, aucun nombre d'heures écrit dans un catalogue, ton calme), `BubbleColorsEntryTest` (les sept variantes et les deux pages d'un carrousel ouvrent l'écran, « Contacter » et « Reprendre le partage » non, action d'accessibilité, aucun texte ajouté, zone d'au moins 48 dp, navigation poussée / retour / double ouverture).
+
+### Modifié
+- `BubbleView` gagne `onOpenColors` ; `FeedActions` gagne `onOpenColors` ; `MainTabs` gagne `onOpenColors` ; nouvelle route `ColorsInfoRoute` dans `MainShell`. `BubbleShape` devient visible dans le module (la mini-tache de l'écran a la forme de la bulle).
+- Lecture de la bulle par TalkBack : la bulle est désormais **un seul élément** (titre, ligne et compteur lus ensemble, puis l'action) au lieu de plusieurs ; son annonce de changement de niveau est inchangée.
+
+### À savoir
+- **Aucun événement Analytics** (contrat `analytics-events.md`, ligne 34, décision D16 du ticket Feed) : on ne saura pas combien de personnes ouvrent l'écran. Si le PM veut le mesurer : un événement `colors_info_opened` sans paramètre, par PR sur le contrat.
+- **Découverte** (risque R1 du ticket) : rien n'indique que la bulle se touche, choix assumé du PM ; à juger en recette.
+- La zone tactile est le **rectangle** de la bulle (les petits coins transparents répondent aussi) ; elle suit la dérive lente de la bulle, qui n'est pas modifiée.
+- Coût d'infrastructure : 0 (écran statique, aucune lecture, aucun appel réseau).
+
+## [0.36.0] - 2026-11-12 : l'app ne démarre plus sur le diagnostic ; accès par Réglages ou par un appui de 10 secondes
+
+Demande du PM du 2026-11-12 ; branche `android/debug-acces-reglages-appui-long`, PR brouillon. Pas de maquette (résultat direct demandé). Numéro de version : `main` est à 0.
+
+### Modifié
+- **Le démarrage est celui de la production, dans tous les builds** : splash, puis carrousel / connexion / Feed selon l'état. L'écran de diagnostic n'est plus la destination de départ des APK de debug (`MiffNavHost` démarre toujours sur `AppRoute`).
+- Le bouton de l'écran de diagnostic s'appelle « Retour à l'application » et **revient où l'on était, telle quelle** : le diagnostic s'ouvre **dans une fenêtre au-dessus de l'app**, qui reste en place dessous (fenêtres ouvertes, textes saisis, bandeaux conservés) ; ce n'est pas une destination de navigation. Le geste retour fait de même. Il passe aussi au-dessus d'une fenêtre de l'app restée ouverte.
+- **Tests 1 et 2 du diagnostic refusés si un compte est connecté** (ils déconnectaient la vraie session) : message clair, aucune déconnexion. La carte Confidentialité dit que ses interrupteurs changent les vrais réglages du téléphone. Libellés dans `src/debug/res` (absents du release) ; textes des tests 1 et 2 ajustés (clés partagées avec iOS inchangées).
+
+### Ajouté
+- **Porte 1 : Réglages > « Diagnostic »**, ligne en bas des Réglages (liste complète et liste réduite sans Miff). Build **debug seulement**.
+- **Porte 2 : appui continu de 10 secondes, n'importe où**, un seul doigt, immobile (tolérance 20 dp ; lever le doigt, bouger davantage ou poser un second doigt annule), avec un retour haptique bref à l'ouverture. Le détecteur (`Modifier.pointerInput`, phase **Initial**, ne consomme rien) est posé sur la **fenêtre entière** dans `MainActivity` (splash, carrousel, connexion, inscription, onboarding, permissions, Miff, Feed, Update) **et** sur la carte de chaque fenêtre ou feuille de l'app (une fenêtre est une fenêtre Android séparée : 13 emplacements, confirmations, sélecteurs, photo en plein écran, fenêtre d'avis ; et les 4 menus déroulants). Build **debug seulement**.
+- Règles pures `HoldGestureTracker` / `HoldGestureRules` (10 s, 20 dp, annulations) ; canal `DiagnosticRequests` (sans rejeu : une ancienne demande n'ouvre jamais l'écran plus tard).
+- `InternalDestinations` (debug et release) expose `SettingsEntry`, `holdModifier` et `Overlay` ; la version **release est vide** (ni geste, ni ligne, ni route).
+- Tests : `HoldGestureTrackerTest` (durée, tolérance, annulations), `DiagnosticHoldDetectorTest` (Robolectric, écran d'exemple : ouverture à 10 s et pas avant, tremblement toléré, glissement et second doigt annulent, un toucher et un défilement normaux ne sont pas gênés), `DiagnosticAccessTest` (ligne de Réglages, fenêtre au-dessus de l'app dont l'état est conservé à la fermeture), `DiagnosticViewModelTest` (tests 1 et 2 refusés avec un compte connecté), `DiagnosticAccessGuardTest` (démarrage sur l'app, détecteur absent du code commun et release).
+- Documentation : `docs/dev/acces-diagnostic.md`, recette PM `docs/qa/checklists/diagnostic-acces-android-recette-pm.md` ; les recettes qui disaient « l'app démarre sur le diagnostic » sont corrigées.
+
+### Sécurité
+- **Absent de tout build distribuable** : le code est dans `src/debug` seulement. La CI cherche maintenant aussi le marqueur `DIAGNOSTICHOLDGESTURE` dans le dex du bundle release (`android/ci/check-release-bundle.sh` et `.github/workflows/android.yml`) et dans l'APK `releaseLike`. Le script du bundle cherche aussi désormais `DEBUGAPPCHECKOFF` (déjà cherché par `android.yml`, oublié dans le script : les deux sont de nouveau d'accord, gardés par `ReleaseSigningGuardTest`).
+- Aucune donnée personnelle affichée (jeton, position, compte) ; le champ de connexion du test 2 est saisi à la main, jamais gardé ; le test de position envoie lat 0 / lng 0 refusé d'avance. Le geste n'envoie aucun événement. Contrôle **positif** ajouté dans `android.yml` (le marqueur est bien dans l'APK debug).
+
+### Choix « économiques »
+- **Aucun** : aucun service, aucune dépendance ajoutée.
+
+### À savoir
+- **`releaseLike` n'a ni la ligne ni le geste** (il est construit avec les sources release, c'est son but : mesurer la diffusion). Le diagnostic n'est donc dans que l'APK debug.
+- **Pas de test avec le vrai `AppRoot`** : il exige le conteneur complet (Firebase, session) qui ne se monte pas sur la JVM ; l'état conservé est prouvé avec un écran d'exemple et la même fenêtre. À vérifier à la main (recette, partie C).
+- Limites du geste : les fenêtres du système (demande d'autorisation, sélecteur de fichiers) ne passent pas par l'app ; la zone sombre autour d'une fenêtre de l'app ne déclenche pas le geste (seule la carte le fait).
+
+## [0.36.0] - 2026-11-12 : reprise du partage d'une Miff, la carte ne reste plus grise (même défaut que sur iOS, PR #190)
+
+Branche `android/reprise-partage-statut`, PR brouillon. Numéro de version : `main` est à 0.35.0 et deux PR ouvertes prennent 0.33.0 et 0.34.0 ; celui-ci prend le prochain libre, 0.36.0 (à renuméroter au merge si l'ordre change). Aucune donnée, aucune règle, aucune permission, aucune dépendance, aucun service payant, rien modifié sur `miff-3d283`.
+
+### Corrigé
+- **Symptôme (trouvé en recette TestFlight côté iOS, même structure côté Android)** : quand on **arrête** le partage d'une Miff puis qu'on le **reprend**, la carte reste **grise** chez les proches au lieu de redevenir verte, orange ou rouge, jusqu'à la prochaine entrée ou sortie d'un lieu.
+- **Cause (certitude : élevée sur le mécanisme, à confirmer sur l'OPPO).** Arrêter le partage **supprime** le statut, la photo et la dernière position de la Miff sur le serveur (`MiffWrites.stopSharing`) ; le reprendre récrit un statut `unknown`, gris (`MiffWrites.resumeSharing`). Or le suivi n'écrit un statut que sur un **changement de présence** (`PresenceMachine.onTransition` ne renvoie rien si la présence déduite est celle qu'il garde déjà ; `reconcile` ne regarde que les Miffs qui ont déjà une présence). Donc :
+  - si le téléphone gardait la présence d'avant l'arrêt (le passage de l'arrêt ne l'a pas vu, ou le suivi n'a pas été relancé), rien ne la récrit ;
+  - si le suivi avait oublié la Miff (elle sort de sa liste à l'arrêt) puis la retrouve « comme neuve » alors que la personne est déjà dans le lieu, il n'y a aucune arrivée à signaler : la zone est déjà connue du système ;
+  - dans les deux cas, plus rien ne récrit le statut avant la prochaine entrée ou sortie, et la dernière position écrite restait aussi « publiée » dans la copie locale alors que le serveur l'avait supprimée (garde-fou de fréquence : pas de nouvelle position avant 2 minutes, voire 250 m).
+- **Signal de reprise** : `MiffRepository.setSharing(enabled = true)` prévient le suivi **quelle Miff** est reprise (`onSharingResumed(miffId)`, à la place du signal générique `onSharingChanged`, qui reste utilisé pour tout le reste : arrêt, création, départ…). `AppContainer.trackingSharingResumed` pose le drapeau (`TrackingEngine.markResumed`, dans l'ordre du verrou du suivi) puis relance le passage habituel (`SHARING_CHANGED`) dans le même travail. Sans le signal branché, le comportement est celui d'avant.
+- **Remise à zéro puis recalcul** (`TrackingEngine.takeResumed` / `presenceAfterResume`) : au premier passage où la Miff est connue du suivi, sa détection est remise à zéro (présence, dernière position écrite, statut en attente, batterie, accès, clés de voyage ; les lieux sont gardés), puis la présence est recalculée « comme si elle n'avait jamais été grise » à partir de ce que le téléphone sait **maintenant** :
+  - dans un lieu de confiance ou une zone de danger (zones où la copie locale croit la personne, ou position de ce passage, **de moins de 10 minutes**, qui les contient) : cette présence, **à l'heure d'entrée connue** (sinon maintenant) ; les zones que la position montre sont gardées dans « où je suis » (comme le fait déjà le redémarrage), pour que la prochaine sortie parte du bon endroit ;
+  - hors de toutes les zones de la Miff **avec** une position de moins de 10 minutes : `out`, maintenant ;
+  - hors zone **sans** position récente : **rien n'est inventé**, le statut reste gris jusqu'au prochain signal (entrée/sortie, ouverture de l'app qui relit la position).
+- **Garde-fous inchangés** : le statut est écrit par le passage habituel (`flushPending`) : « Toujours » + position précise, consentement de version 3 (une Miff dont le consentement n'est pas v3 n'est pas gardée), session « un compte, un appareil » (sinon le statut attend), disjoncteur, hors ligne. **Mode voyage** : aucune présence ordinaire n'est calculée ni écrite ; la Miff reprise sort de la liste « déjà prévenue du voyage », donc le voyage lui est dit de nouveau (la reprise avait écrit un statut `unknown` sans voyage), et sa dernière position est republiée. **N6** (zone de danger) n'est **pas** déclenchée par une reprise (personne n'entre dans la zone à cet instant) ; les rappels (N1/N2) suivent le statut comme pour toute présence.
+- **Autre Miff qui partage la même zone** : seule la Miff reprise est remise à zéro ; les autres gardent présence, position et batterie (aucune écriture en plus).
+- **La dernière position est de nouveau publiée** (le serveur l'avait supprimée), par le passage habituel avec son garde-fou de fréquence et son disjoncteur.
+- Le drapeau (`LocalState.resumedMiffs`, facultatif, identifiants de Miffs seulement) vit dans la copie locale privée : effacé avec elle (déconnexion, suppression du compte, session perdue) ; un drapeau pour une Miff pas encore connue (lecture incomplète) est gardé pour le passage suivant, et retiré dès qu'une lecture **complète** dit qu'elle n'est pas éligible.
+- Journal local de diagnostic (build debug) : `STATUS_AFTER_RESUME` (un code et l'identifiant du lieu, comme les autres lignes du journal ; ni nom de lieu, ni coordonnée).
+
+### Tests
+- `TrackingEngineResumeTest` (nouveau, 18 cas) : le défaut sans le signal (arrêt vu puis reprise : aucun statut ; arrêt jamais vu : présence et position gardées) ; avec le signal : statut récrit dans le lieu (une seule fois), à l'heure d'entrée connue, zone de danger (pas de N6), `out` avec position récente, **rien sans position** (reste gris, puis normal à l'entrée suivante), rien avec une position de plus de 10 minutes, **autre Miff sur la même zone laissée telle quelle**, **rien sans « Toujours » + précise, mais la reprise attend et est calculée quand l'accès est accordé plus tard** (2 cas), drapeau retiré seulement par la sauvegarde qui suit la nouvelle présence, `afterResume` qui garde le statut qui termine un voyage, ancien texte de consentement, session non confirmée (le statut attend), lecture incomplète (drapeau gardé), effacement à la déconnexion, **voyage** (aucune présence ordinaire, voyage redit, position republiée).
+- `MiffRepositoryTest` : la reprise prévient quelle Miff (et pas l'arrêt) ; sans le signal branché, signal générique ; échec : rien ; « déjà repris ailleurs » compte comme une reprise.
+
+### Choix « économiques »
+- **Aucun service ni dépendance.** Aucune lecture supplémentaire notable : une reprise relisait déjà les Miffs et leurs lieux (signal `SHARING_CHANGED` d'avant) ; il s'y ajoute **au plus une écriture de statut et une écriture de position par Miff reprise** (geste manuel de la personne, donc rare), toutes deux comptées par le disjoncteur quotidien.
+
+### À savoir
+- **Limite connue** : hors d'un lieu et sans position récente, la carte reste grise jusqu'à la prochaine entrée ou sortie de zone (on n'invente pas un « tout va bien »). Sans « Toujours » + position précise, rien n'est écrit (carte grise) **mais le drapeau de reprise est gardé** : dès que l'accès est accordé (ouverture de l'app), la présence est calculée et écrite (revue indépendante, bloquant B1, même défaut qu'iOS #190).
+- **Reprise interrompue (I1)** : le drapeau n'est retiré de la copie locale que par la sauvegarde qui suit le calcul de la nouvelle présence ; un processus tué pendant l'attente de la position (téléphones qui coupent les applications en arrière-plan, comme l'OPPO) refait donc le calcul au passage suivant.
+- **Voyage terminé (I2)** : la remise à zéro garde le statut en attente qui termine un voyage (`clearTravel`) : si la reprise a été refusée parce qu'elle était déjà faite ailleurs, l'ancien statut porte encore les clés du voyage et seule cette écriture les efface.
+- **Limites connues** : (a) le retour du réseau (`onNetworkBack`) ne consomme pas le drapeau, c'est le prochain passage complet (ouverture, déplacement, reprise) ; (b) pendant un voyage le drapeau est consommé même sans accès précis : rien n'est écrit pour la présence, et la position est republiée dès que l'accès est là (sa « dernière position écrite » a été remise à zéro) ; (c) un drapeau pour une Miff non éligible, sans accès précis, reste dans la copie jusqu'à une lecture complète avec accès (un identifiant de Miff, aucune donnée) ; (d) un « déjà repris ailleurs » recalcule la présence une fois de plus : au plus une écriture de statut en trop, sans effet visible.
+- Après un arrêt vu par le suivi, l'heure d'arrivée dans le lieu n'est plus connue (la zone avait cessé d'être surveillée) : la carte porte l'heure de la reprise.
+- **Non vérifié sur un téléphone** : parcours dédié dans `docs/qa/checklists/reprise-partage-android-recette-pm.md` (arrêter puis reprendre, vérifier chez un proche).
+
 
 ## [0.32.0] - 2026-11-11 : Profil, les lieux de la Miff du carrousel sont visibles par tous les membres
 
