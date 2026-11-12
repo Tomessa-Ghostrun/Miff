@@ -35,7 +35,7 @@ final class MiffDeletionRequestsTests: XCTestCase {
     }
 
     func testTheRequestsAndTheirCounterGoFirstThenThePlacesThenTheLastLot() async {
-        let ids = (1...7).map { "uidmember($0)_1" }
+        let ids = (1...7).map { "uidmember\($0)_1" }
         world(requests: ids, counter: true)
 
         let result = await deletion().run(uid: uid, miffId: testMiffId)
@@ -46,11 +46,11 @@ final class MiffDeletionRequestsTests: XCTestCase {
         XCTAssertEqual(paths[0].filter { $0.contains("/placeRequests/") }.count, 5)
         XCTAssertEqual(paths[1].filter { $0.contains("/placeRequests/") }.count, 2)
         // Le compteur part avec le DERNIER lot de demandes.
-        XCTAssertEqual(paths[1].last, "miffs/(testMiffId)/meta/placeRequests")
-        XCTAssertEqual(paths[2], ["miffs/(testMiffId)/places/p1"])
+        XCTAssertEqual(paths[1].last, "miffs/\(testMiffId)/meta/placeRequests")
+        XCTAssertEqual(paths[2], ["miffs/\(testMiffId)/places/p1"])
         XCTAssertTrue(Array(store.commitsAsLots[0...1]).allSatisfy { $0.allSatisfy { $0.kind == .delete } })
         let last = store.commitsAsLots.dropFirst(3).first ?? []
-        XCTAssertTrue(last.contains { $0.path == "miffs/(testMiffId)" }, "le dernier lot est celui de la Miff")
+        XCTAssertTrue(last.contains { $0.path == "miffs/\(testMiffId)" }, "le dernier lot est celui de la Miff")
     }
 
     func testOnlyACounterLeftIsDeletedByALotOfItsOwn() async {
@@ -58,7 +58,7 @@ final class MiffDeletionRequestsTests: XCTestCase {
 
         _ = await deletion().run(uid: uid, miffId: testMiffId)
 
-        XCTAssertEqual(paths[0], ["miffs/(testMiffId)/meta/placeRequests"])
+        XCTAssertEqual(paths[0], ["miffs/\(testMiffId)/meta/placeRequests"])
     }
 
     func testNothingLeftWritesNothingForTheRequests() async {
@@ -78,7 +78,7 @@ final class MiffDeletionRequestsTests: XCTestCase {
 
         // Les règles des demandes sont déployées : un refus n'est plus « elles ne les connaissent pas ».
         XCTAssertEqual(result, .paused(.refused))
-        XCTAssertFalse(paths.joined().contains { $0 == "miffs/(testMiffId)" })
+        XCTAssertFalse(paths.joined().contains { $0 == "miffs/\(testMiffId)" })
     }
 
     func testNoNetworkWhileListingTheRequestsPausesTheDeletion() async {
@@ -89,7 +89,7 @@ final class MiffDeletionRequestsTests: XCTestCase {
 
         XCTAssertEqual(result, .paused(.offline))
         // La Miff n'est pas supprimée à moitié.
-        XCTAssertFalse(paths.joined().contains { $0 == "miffs/(testMiffId)" })
+        XCTAssertFalse(paths.joined().contains { $0 == "miffs/\(testMiffId)" })
     }
 
     func testARefusedOrOfflineLotOfRequestsStopsTheDeletionBeforeThePlacesAndTheMiff() async {
@@ -103,6 +103,6 @@ final class MiffDeletionRequestsTests: XCTestCase {
 
         XCTAssertEqual(refused, .paused(.refused))
         XCTAssertEqual(offline, .paused(.offline))
-        XCTAssertFalse(paths.joined().contains { $0.contains("/places/") || $0 == "miffs/(testMiffId)" })
+        XCTAssertFalse(paths.joined().contains { $0.contains("/places/") || $0 == "miffs/\(testMiffId)" })
     }
 }
