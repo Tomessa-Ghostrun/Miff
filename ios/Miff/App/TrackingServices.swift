@@ -41,8 +41,7 @@ struct TrackingServices {
         cache: CachePurger,
         network: NetworkMonitor,
         device: DeviceSession,
-        onPresence: @escaping (String, StatusFact) -> Void,
-        onTravel: @escaping (String, Int?, Int?) -> Void
+        notifications: TrackingNotificationHooks
     ) -> TrackingServices {
         // La batterie est lue à l'ouverture et à la sortie de l'app : le suivi du niveau est allumé dès le démarrage pour que la première
         // lecture ne soit pas vide (le système met un instant à donner le niveau). Aucune donnée n'est lue ici.
@@ -61,7 +60,9 @@ struct TrackingServices {
             store: FirestoreTrackingStore(base: miffStore, placeStore: FirestorePlaceStore(base: miffStore)),
             // Les notifications écoutent les nouveaux statuts de MA présence (N1 et N2) sans rien changer au moteur.
             local: PresenceNotifyingLocalStore(
-                wrapping: TrackingLocalFileStore(), onPresence: onPresence, onTravel: onTravel
+                wrapping: TrackingLocalFileStore(),
+                onPresence: notifications.onPresence,
+                onTravel: notifications.onTravel
             ),
             position: location,
             geofences: location,

@@ -4,6 +4,14 @@ import UserNotifications
 // Les trois petits ponts entre les notifications et le reste de l'app. CONFIDENTIALITÉ : seulement des identifiants de Miff, des
 // présences (`in_trusted`, `out`, `in_risk`, `unknown`) et des heures ; jamais une coordonnée, un nom de lieu ni une adresse.
 
+/// Ce que le suivi des lieux dit aux notifications : un nouveau statut de MA présence (arrivée, départ, zone de danger) et MON voyage
+/// (début, nouvelle date, fin). Jamais une coordonnée, un lieu ni un nom.
+struct TrackingNotificationHooks {
+    let onPresence: (String, StatusFact) -> Void
+    /// `(compte, fin du voyage ou nil, fin précédente ou nil)`.
+    let onTravel: (String, Int?, Int?) -> Void
+}
+
 /// La copie locale du suivi des lieux, vue par les notifications : à chaque sauvegarde, un NOUVEAU statut en attente d'une Miff (une arrivée,
 /// un départ, une entrée en zone de danger détectés par ce téléphone) est annoncé à `onPresence`. Aucune modification du moteur de suivi :
 /// il sauvegarde sa copie à chaque changement, c'est là que les notifications écoutent. Décorateur : tout le reste passe tel quel.

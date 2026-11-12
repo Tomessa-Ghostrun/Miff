@@ -2,10 +2,6 @@ import Foundation
 
 /// Où l'instantané et le registre des rappels sont gardés (un double en mémoire dans les tests). Un seul compte à la fois sur le téléphone.
 protocol NotificationPlanStoring: AnyObject {
-    private var travelEndURL: URL {
-        directory.appendingPathComponent("travel-end.json")
-    }
-
     func loadSnapshot(uid: String) -> NotificationPlanSnapshot?
     func saveSnapshot(_ snapshot: NotificationPlanSnapshot, uid: String)
     func loadLedger(uid: String) -> NotificationLedger
@@ -55,6 +51,10 @@ final class NotificationPlanFileStore: NotificationPlanStoring {
 
     private var ledgerURL: URL {
         directory.appendingPathComponent("ledger.json")
+    }
+
+    private var travelEndURL: URL {
+        directory.appendingPathComponent("travel-end.json")
     }
 
     func loadSnapshot(uid: String) -> NotificationPlanSnapshot? {
