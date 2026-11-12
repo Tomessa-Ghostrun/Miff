@@ -118,7 +118,11 @@ struct PlaceServices {
         let requests = FirestorePlaceRequestRepository(
             store: FirestorePlaceRequestStore(base: FirestoreMiffStore()),
             places: FirestorePlaceStore(base: FirestoreMiffStore()),
-            online: { network.isOnline() }
+            placeRepository: repository,
+            newPlaceId: { FirestorePlaceRepository.newFirestoreId() },
+            online: { network.isOnline() },
+            // LOC-4b : un lieu accepté fait relire les lieux au suivi, comme un lieu créé par le créateur.
+            onPlaceAdded: onChanged
         )
         return PlaceServices(
             // LOC-4b : un lieu créé, modifié ou supprimé fait relire les lieux au suivi (le téléphone du créateur n'attend pas l'heure).

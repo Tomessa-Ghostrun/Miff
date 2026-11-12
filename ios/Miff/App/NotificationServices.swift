@@ -19,6 +19,8 @@ struct NotificationServices {
     let reconciler: NotificationReconciler
     /// Reçoit les réponses du système ; retenu ici parce que le système n'en garde qu'une référence faible.
     let responseDelegate: NotificationResponseDelegate
+    /// Les prénoms derrière les lignes de demandes d'un lieu (mémoire seulement, vidés avec la session).
+    let requesters: RequesterDirectory
 
     static func make(currentUid: @escaping () -> String?) -> NotificationServices {
         let data = NotificationLocalData.live()
@@ -62,7 +64,8 @@ struct NotificationServices {
             tabRequests: tabRequests,
             localData: data,
             reconciler: reconciler,
-            responseDelegate: delegate
+            responseDelegate: delegate,
+            requesters: RequesterDirectory()
         )
     }
 
@@ -116,10 +119,12 @@ struct NotificationServices {
         let center = self.center
         let preferences = self.preferences
         let data = self.localData
+        let requesters = self.requesters
         return {
             await MainActor.run {
                 center.purge()
                 preferences.forget()
+                requesters.stop()
             }
             data.eraseSession()
             await SystemLocalNotificationsCleaner().removeAll()

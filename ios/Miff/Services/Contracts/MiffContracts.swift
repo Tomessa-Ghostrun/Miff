@@ -85,6 +85,11 @@ protocol MiffStore {
     /// Les identifiants de `miffs/{id}/places`, lus auprès du SERVEUR.
     func readPlaceIds(miffId: String) async throws -> [String]
 
+    /// Ce que les demandes d'ajout d'un lieu laissent dans une Miff que son créateur supprime (LIEU-REQ, critère L3), lu auprès du SERVEUR :
+    /// les identifiants de `miffs/{id}/placeRequests` et si le compteur `meta/placeRequests` existe. Rien par défaut (un double qui ne
+    /// connaît pas les demandes).
+    func readPlaceRequestLeftovers(miffId: String) async throws -> PlaceRequestLeftovers
+
     /// UNE transaction : la Miff (et l'existence du document de son code ACTUEL) est lue d'abord, `build` fait le lot à partir
     /// de ce qui a été lu (Firestore peut le rappeler si la Miff a changé entre-temps : un code renouvelé par un autre
     /// téléphone n'est jamais remplacé à partir d'une copie périmée). Une Miff qui n'existe pas lève `MiffGoneError`. Un lot
@@ -103,6 +108,21 @@ extension MiffStore {
 
     /// Par défaut : rien n'est mis en file (un double qui ne connaît pas la file du téléphone).
     func enqueue(_ writes: [DocWrite]) {}
+
+    /// Par défaut : aucune demande (un double qui ne connaît pas les demandes d'ajout d'un lieu).
+    func readPlaceRequestLeftovers(miffId: String) async throws -> PlaceRequestLeftovers {
+        PlaceRequestLeftovers(requestIds: [], counterExists: false)
+    }
+}
+
+/// Ce que les demandes d'ajout d'un lieu laissent dans une Miff : leurs identifiants, et si le compteur existe.
+struct PlaceRequestLeftovers: Equatable, CustomStringConvertible {
+    let requestIds: [String]
+    let counterExists: Bool
+
+    var description: String {
+        "PlaceRequestLeftovers(redacted)"
+    }
 }
 
 /// Ce qu'une transaction a lu d'une Miff : la Miff elle-même (son nom tel que le serveur l'a écrit, pour que le document du

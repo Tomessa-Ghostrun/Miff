@@ -16,6 +16,10 @@ struct ProfilePlacesActions {
     /// Les demandes d'ajout d'un lieu (LIEU-REQ) : ouvrir le détail d'une demande, et « Demander l'ajout d'un lieu » (un membre).
     var onOpenRequest: (_ miffId: String, _ requestId: String) -> Void = { _, _ in }
     var onRequestPlace: (_ miffId: String) -> Void = { _ in }
+    /// Le CRÉATEUR (LIEU-REQ-C) : accepter ou refuser une demande reçue, et dire que la liste avec ses demandes a été vue.
+    var onAcceptRequest: (PlaceRequest) -> Void = { _ in }
+    var onDeclineRequest: (PlaceRequest) -> Void = { _ in }
+    var onRequestsSeen: (_ miffId: String) -> Void = { _ in }
 
     static let none = ProfilePlacesActions(
         onOpenPlace: { _, _ in }, onAddPlace: { _ in }, onRetry: {}, onLeave: {}, onAppear: {}
@@ -57,6 +61,12 @@ struct ProfilePlacesSection: View {
                 )
             }
         }
+        // La liste est dessinée avec ses demandes : elles sont vues (le point de l'onglet Profil s'éteint).
+        .task(id: requests.received.map { $0.request.id }) {
+            if !requests.received.isEmpty {
+                actions.onRequestsSeen(presentation.miffId)
+            }
+        }
     }
 
     private var rowActions: PlaceListActions {
@@ -69,7 +79,10 @@ struct ProfilePlacesSection: View {
             // un créateur Miff+.
             onAdd: { _ in actions.onAddPlace(miffId) },
             onOpenRequest: { request in actions.onOpenRequest(miffId, request.id) },
-            onRequestPlace: { actions.onRequestPlace(miffId) }
+            onRequestPlace: { actions.onRequestPlace(miffId) },
+            onOpenReceived: { request in actions.onOpenRequest(miffId, request.id) },
+            onAcceptRequest: { request in actions.onAcceptRequest(request) },
+            onDeclineRequest: { request in actions.onDeclineRequest(request) }
         )
     }
 

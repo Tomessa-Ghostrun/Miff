@@ -182,6 +182,9 @@ Un membre qui n'est pas le créateur propose un lieu ; le créateur l'accepte ou
 
 
 
+**iOS (mêmes chiffres, mêmes règles)** : le membre lit ses demandes par `PlaceRequestBook` (une lecture par Miff et par 5 minutes, 30 s d'attente après un échec) ; le créateur est écouté par `ProfileRequestsWatcher` (UN écouteur, annulé quand l'app quitte le premier plan) et lit la fiche de chaque demandeur UNE fois par session (`ProfileRequestsViewModel`). Une demande faite sans réseau est gardée par le téléphone (`WriteBatch` non attendu) : elle coûte ses 2 écritures au retour du réseau, jugées par les règles à ce moment-là. **Signal propre à iOS** : une demande envoyée hors ligne puis refusée au retour du réseau disparaît sans un mot (risque R10) ; si des testeurs disent « ma demande a disparu », regarder d'abord le plafond de 10 de la Miff.
+
+
 ## 5. Journal de relevé (modèle à recopier)
 
 Une ligne par jour de bêta externe, dans un fichier à toi (ou dans une conversation avec Claude) :

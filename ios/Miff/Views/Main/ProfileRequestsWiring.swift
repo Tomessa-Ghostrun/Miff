@@ -11,6 +11,8 @@ struct ProfileRequestsContent: Equatable, CustomStringConvertible {
     var sentNotice: RequestNotice?
     var kind: RequestNoticeKind?
     var busyRequestId: String?
+    /// Un créateur : les demandes reçues, la plus ancienne d'abord, avec qui les a faites.
+    var received: [ReceivedRequest] = []
 
     static let none = ProfileRequestsContent()
 
@@ -26,12 +28,50 @@ struct ProfileRequestsContent: Equatable, CustomStringConvertible {
         sentNotice: RequestNotice?,
         kind: RequestNoticeKind?
     ) -> ProfileRequestsContent {
-        ProfileRequestsContent(
-            requests: isCreator ? [] : (state.views[miffId]?.requests ?? []),
+        let found = state.views[miffId]?.requests ?? []
+        return ProfileRequestsContent(
+            requests: isCreator ? [] : found,
             sentNotice: isCreator ? nil : sentNotice,
             kind: kind,
-            busyRequestId: state.busyRequestId
+            busyRequestId: state.busyRequestId,
+            received: isCreator ? found.map { ReceivedRequest(request: $0, requester: state.requester(of: $0)) } : []
         )
+    }
+}
+
+/// Ce que l'hôte de navigation fait des événements des demandes (LIEU-REQ-C) : « Accepter » qui doit ouvrir l'offre (formule gratuite pleine,
+/// ou zone de danger : la demande reste en attente), et un lieu accepté qui fait relire la liste des lieux du Profil sans attendre les 5 minutes.
+struct ProfileRequestsHostEffects: ViewModifier {
+    @ObservedObject var requests: ProfileRequestsViewModel
+    let places: ProfilePlacesViewModel
+    let openPaywall: (PaywallReason) -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: requests.paywall) { reason in
+                if let reason {
+                    requests.consumePaywall()
+                    openPaywall(reason)
+                }
+            }
+            .onAppear {
+                let places = self.places
+                requests.onAccepted = { miffId in
+                    places.onPlacesMayChange()
+                    places.onCardShown(miffId: miffId)
+                }
+            }
+    }
+}
+
+extension View {
+    /// Les événements des demandes pour l'hôte de navigation (`ProfileRequestsHostEffects`).
+    func profileRequestsEffects(
+        _ requests: ProfileRequestsViewModel,
+        places: ProfilePlacesViewModel,
+        openPaywall: @escaping (PaywallReason) -> Void
+    ) -> some View {
+        modifier(ProfileRequestsHostEffects(requests: requests, places: places, openPaywall: openPaywall))
     }
 }
 
@@ -39,11 +79,15 @@ extension AppEnvironment {
     /// Le view model des demandes d'ajout d'un lieu, créé avec la session de l'hôte (un par compte et par session).
     func makeProfileRequestsViewModel() -> ProfileRequestsViewModel {
         let session = self.session
-        return ProfileRequestsViewModel(
+        let model = ProfileRequestsViewModel(
             repository: placeRequestRepository,
             network: network,
             myUid: { session.currentUid }
         )
+        // Le centre de notifications (une ligne par demande reçue) et les prénoms derrière ses lignes (mémoire seulement).
+        model.center = notifications.center
+        model.directory = notifications.requesters
+        return model
     }
 }
 
@@ -62,6 +106,7 @@ extension ProfilePlacesPresentation {
         ui.requestNotice = requests.sentNotice
         ui.requestKind = requests.kind
         ui.busyRequestId = requests.busyRequestId
+        ui.received = requests.received
         return ui
     }
 }
@@ -91,7 +136,10 @@ extension ProfilePlacesActions {
                 model.onProfileAppeared()
             },
             onOpenRequest: { miffId, requestId in open(.placeRequestDetail(miffId: miffId, requestId: requestId)) },
-            onRequestPlace: { miffId in open(.placeRequestForm(miffId: miffId)) }
+            onRequestPlace: { miffId in open(.placeRequestForm(miffId: miffId)) },
+            onAcceptRequest: { model.onAccept($0) },
+            onDeclineRequest: { model.onDecline($0) },
+            onRequestsSeen: { model.onListSeen(miffId: $0) }
         )
     }
 }

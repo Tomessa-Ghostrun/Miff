@@ -12,6 +12,9 @@ enum MiffRoute: Hashable {
     case placePaywall(PaywallReason)
     /// Le formulaire d'une DEMANDE d'ajout d'un lieu (LIEU-REQ-B) : un membre qui n'est pas le créateur propose un lieu à cette Miff.
     case placeRequestForm(miffId: String)
+    /// L'offre ouverte par « Accepter » sur une demande reçue (formule gratuite pleine, ou zone de danger) : la même offre, avec la phrase
+    /// « La demande reste en attente, tu peux aussi la refuser. »
+    case placeRequestPaywall(PaywallReason)
     /// Le détail d'une demande en attente (la sienne, ou celle qu'un membre a faite au créateur).
     case placeRequestDetail(miffId: String, requestId: String)
     /// Un écran des Réglages (ONB-7) : poussé dans la MÊME pile que les écrans de la Miff, jamais dans une pile imbriquée.
@@ -70,7 +73,7 @@ enum MiffRoute: Hashable {
             return id == miffId
         case .placeRequestDetail(let id, _):
             return id == miffId
-        case .create, .join, .placePaywall, .settings:
+        case .create, .join, .placePaywall, .placeRequestPaywall, .settings:
             return false
         }
     }

@@ -18,11 +18,14 @@ final class NotificationCenterViewModel: ObservableObject {
     @Published var deleteAllAsked = false
 
     let service: NotificationCenterService
+    /// Les prénoms des demandeurs (mémoire seulement) : les mots d'une ligne de demande se font à l'affichage.
+    let directory: RequesterDirectory
     private let permissions: DevicePermissions
 
-    init(service: NotificationCenterService, permissions: DevicePermissions) {
+    init(service: NotificationCenterService, permissions: DevicePermissions, directory: RequesterDirectory) {
         self.service = service
         self.permissions = permissions
+        self.directory = directory
     }
 
     /// Verrouillé (flou + une carte + un bouton) quand le téléphone refuse les notifications ou qu'elles n'ont jamais été demandées.
@@ -57,13 +60,28 @@ final class NotificationCenterViewModel: ObservableObject {
     }
 
     /// Toucher une ligne : elle est lue, et l'on dit où aller. Jamais une erreur, même si la Miff n'existe plus.
+    /// Une ligne de demande mène au Profil, sur la Miff concernée.
     func open(_ item: NotificationItem) -> NotificationDestination {
-        service.markRead(id: item.id)
-        return item.type.destination
+        ids(of: item).forEach { service.markRead(id: $0) }
+        return item.type == .n8 ? .placeRequests(miffId: item.miffId) : item.type.destination
     }
 
     func delete(_ item: NotificationItem) {
-        service.delete(id: item.id)
+        ids(of: item).forEach { service.delete(id: $0) }
+    }
+
+    /// Les lignes du centre qu'une ligne dessinée représente : les demandes NON LUES d'une même personne dans une même Miff ne font
+    /// qu'une ligne (« Léa a proposé 3 lieux ») ; toute autre ligne n'est qu'elle-même.
+    func ids(of item: NotificationItem) -> [String] {
+        guard item.type == .n8 else {
+            return [item.id]
+        }
+        return PlaceRequestLines.entries(of: service.history.items).first { $0.ids.first == item.id }?.ids ?? [item.id]
+    }
+
+    /// Le prénom de la personne derrière une ligne de demande, tel que l'app le sait maintenant.
+    func requesterName(of item: NotificationItem) -> String? {
+        PlaceRequestLines.requester(of: item).flatMap { directory.firstName(miffId: item.miffId, uid: $0) }
     }
 
     func markAllRead() {

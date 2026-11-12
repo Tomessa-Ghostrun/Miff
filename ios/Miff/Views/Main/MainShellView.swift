@@ -77,6 +77,8 @@ struct MainShellView<Feed: View>: View {
     private let memberPreviews: MiffMemberPreviews
     private let travel: TravelViewModel
     private let places: ProfilePlacesShell
+    /// Les demandes d'ajout d'un lieu (LIEU-REQ-C) : le point de l'onglet Profil suit ce que le créateur n'a pas encore vu.
+    @ObservedObject private var requests: ProfileRequestsViewModel
     @ObservedObject private var updateModel: UpdateViewModel
     @ObservedObject private var myStatus: MyStatusStore
     private let update: UpdateShell
@@ -114,6 +116,7 @@ struct MainShellView<Feed: View>: View {
         self.memberPreviews = memberPreviews
         self.travel = travel
         self.places = places
+        _requests = ObservedObject(wrappedValue: places.requests)
         _updateModel = ObservedObject(wrappedValue: update.model)
         _myStatus = ObservedObject(wrappedValue: update.status)
         self.update = update
@@ -233,6 +236,10 @@ struct MainShellView<Feed: View>: View {
                         .environment(\.tabBarTopY, barVisible ? barTopY : nil)
                 }
             }
+            .background(
+                // L'écouteur du créateur sur UNE Miff, branché seulement pendant que l'app est devant (LIEU-REQ-C).
+                ProfileRequestsWatcher(model: places.requests, miffs: miffs, myUid: places.context.myUid)
+            )
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if barVisible {
                     bottomLayer(screenHeight: Self.fullHeight(of: proxy))
@@ -310,6 +317,7 @@ struct MainShellView<Feed: View>: View {
                 selected: shownTab,
                 central: central,
                 variant: updateModel.stage.glassVariant(updateTabSelected: shownTab == .update),
+                profileDot: requests.state.profileDot,
                 onSelect: { selected = $0 }
             )
             .background(TabBarTopReader())
