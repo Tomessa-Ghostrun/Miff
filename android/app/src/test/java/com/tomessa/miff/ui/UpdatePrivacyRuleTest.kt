@@ -130,7 +130,7 @@ class UpdatePrivacyRuleTest {
         }
         // A refusal is reduced to a calm sentence, never to "expired".
         val reader = code(named("PhotoReader.kt"))
-        assertTrue(reader.contains("PERMISSION_DENIED -> refusalLookup("))
+        assertTrue(Regex("""PhotoFetch\.Denied -> \{?\s*refusalLookup\(""").containsMatchIn(reader))
     }
 
     @Test

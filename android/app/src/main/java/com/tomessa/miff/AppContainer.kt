@@ -28,12 +28,15 @@ import com.tomessa.miff.data.auth.PasswordResetGateway
 import com.tomessa.miff.data.auth.PendingConsentStore
 import com.tomessa.miff.data.auth.SharedPreferencesPendingConsentStore
 import com.tomessa.miff.data.auth.UserProfileRepository
+import com.tomessa.miff.data.feed.CachedPhotoReader
 import com.tomessa.miff.data.feed.FeedRefresher
 import com.tomessa.miff.data.feed.FirestoreCircleStatusReader
 import com.tomessa.miff.data.feed.FirestoreFeedRefresher
-import com.tomessa.miff.data.feed.FirestorePhotoReader
+import com.tomessa.miff.data.feed.FirestoreOwnPositionProbe
+import com.tomessa.miff.data.feed.FirestorePhotoSource
 import com.tomessa.miff.data.feed.FirestorePositionReader
 import com.tomessa.miff.data.feed.FirestoreStatusObserver
+import com.tomessa.miff.data.feed.OwnPositionResolver
 import com.tomessa.miff.data.feed.PhotoCache
 import com.tomessa.miff.data.feed.PhotoReader
 import com.tomessa.miff.data.feed.PositionReader
@@ -623,9 +626,19 @@ class AppContainer(
     val photoCache: PhotoCache by lazy { PhotoCache() }
 
     val photoReader: PhotoReader by lazy {
-        FirestorePhotoReader(photoCache, ownPositionPublished = {
-            LocalPublishedPositions(SharedPreferencesTrackingLocalStore(context)).isPublished(it)
-        })
+        // A refusal of the rules only becomes the sentence "Partage ta position..." when it is KNOWN that I have not published my position: the local note of the
+        // detection first, then ONE read of my own position on the server (see OwnPositionResolver).
+        val resolver =
+            OwnPositionResolver(
+                myUid = { authGateway.currentUid },
+                localPublished = {
+                    LocalPublishedPositions(
+                        SharedPreferencesTrackingLocalStore(context),
+                    ).isPublished(it)
+                },
+                probe = FirestoreOwnPositionProbe(myUid = { authGateway.currentUid }),
+            )
+        CachedPhotoReader(photoCache, FirestorePhotoSource(), ownPosition = resolver::state)
     }
 
     val publishLedger: PublishLedger by lazy { SharedPreferencesPublishLedger(context) }
