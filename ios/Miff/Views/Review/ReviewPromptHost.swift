@@ -18,16 +18,14 @@ extension View {
     /// L'hôte de la fenêtre. `onTabs` : l'écran des onglets est celui qui est devant (ni un écran empilé, comme les Réglages, ni l'offre) : la
     /// fenêtre n'interrompt jamais un parcours, elle attend le retour aux onglets (choix C10 du ticket).
     @MainActor
-    func reviewPromptHost(
-        services: ReviewPromptServices,
-        directory: MiffDirectory,
-        awaiting: AwaitingAgreement,
-        onTabs: Bool
-    ) -> some View {
+    func reviewPromptHost(environment: AppEnvironment, directory: MiffDirectory, onTabs: Bool) -> some View {
         #if REVIEW_PROMPT
         return modifier(
             ReviewPromptHostModifier(
-                coordinator: services.coordinator, directory: directory, awaiting: awaiting, onTabs: onTabs
+                coordinator: environment.reviewPrompt.coordinator,
+                directory: directory,
+                awaiting: environment.awaitingAgreement,
+                onTabs: onTabs
             )
         )
         #else
