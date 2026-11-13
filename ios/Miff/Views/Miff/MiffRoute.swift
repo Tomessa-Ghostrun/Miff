@@ -49,6 +49,11 @@ enum MiffRoute: Hashable {
         self == .settings(.myInfo)
     }
 
+    /// Réglages > Langue : un compte sans Miff n'a pas cette ligne (décision du PM du 2026-11-07), donc pas cet écran non plus.
+    var isLanguageScreen: Bool {
+        self == .settings(.language)
+    }
+
     /// Les écrans des notifications : un compte sans Miff n'en a pas (rien à notifier).
     var isNotificationScreen: Bool {
         if case .settings(let screen) = self {

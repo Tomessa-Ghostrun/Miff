@@ -160,7 +160,7 @@ Légende du verdict : **OK** (conforme aux specs, à habiller) ; **À corriger**
 4. **États du Feed manquants** : partage désactivé (`PARTAGE_DESACTIVE`), « localisation limitée », statut inconnu / « Partage de ton statut en cours… », hors connexion, chargement, carte « moi » (F6 de `miff.md`), carte sans photo, **batterie inconnue**, photo expirée.
 5. **Écran de l'abonnement pour un premium accordé à la main** (pas de prochain paiement) ; **« Restaurer les achats »** (exigé par Apple pour les achats intégrés [À vérifier]) ; passage par la gestion d'abonnement **du magasin**.
 6. **Écrans cibles de la cloche, du bouton central et de l'avatar** (non dessinés ; Questions 1 et 15).
-7. **Variante iOS de la ligne « Langue »** (ouvre les réglages de l'iPhone, `onboarding.md` Q11) : la liste de reglages-5 est celle d'Android.
+7. ~~**Variante iOS de la ligne « Langue »** (ouvre les réglages de l'iPhone, `onboarding.md` Q11)~~ **Révisé le 2026-11-13** : iOS a le MÊME écran qu'Android (liste de reglages-5), dans l'app.
 8. États **vide**, **chargement**, **hors connexion** des Réglages et du Profil.
 
 ### 4D. Ton et principes transverses (`CLAUDE.md`)
@@ -256,7 +256,7 @@ Ces règles reprennent ce qui est décidé et **proposent** le reste ; chaque po
 - Liste [Proposé] : **Mes informations, Mon compte, Langue, Confidentialité** (décidé) ; **Abonnement** seulement pour un compte Premium (Question 7) ; **Notifications** masquée (Question 6) ; **Mes Miffs** : voir Question 2.
 - **Mes informations** : mêmes champs et règles que l'onboarding (prénom, nom 1 à 50 ; téléphone obligatoire, jamais vidé ; mention de visibilité N1 ; photo facultative carrée ≤ 20 000 octets sans métadonnées). Le **pays n'est pas stocké** (il se déduit de l'indicatif, `data-model.md` §2.1) : après enregistrement, le pays affiché pour un indicatif partagé (+1, +7) est le plus courant ; sans conséquence pour le numéro. Écriture : un lot `users/{uid}` + `members/{uid}` de chaque Miff confirmée (au plus 15 fiches par lot).
 - **Mon compte** : e-mail **en lecture seule** [Proposé : pas de changement d'e-mail en v1] ; compte Google : « Connecté avec Google », jamais de champ mot de passe ; compte Apple : adresse relais affichée telle quelle ; déconnexion avec confirmation [Décidé] ; suppression : flux AUTH-5 [Décidé].
-- **Langue** : FR, EN, « Langue du téléphone » ; Android : effet immédiat sans bouton « Enregistrer » ; iOS : ouvre les réglages de l'iPhone [Décidé, Q11].
+- **Langue** : FR, EN, « Langue du téléphone » ; Android : effet immédiat sans bouton « Enregistrer » ; iOS : ~~ouvre les réglages de l'iPhone [Décidé, Q11]~~ **même écran qu'Android, dans l'app, effet immédiat [Révisé par le PM, 2026-11-13]**.
 - **Confidentialité** [Décidé, §6.9].
 - **Abonnement** : voir ABO-1 (§7).
 
@@ -351,7 +351,7 @@ Les critères valent pour Android puis iOS sauf mention. Les critères existants
 
 ### 7.2 Critères propres à iOS (ONB-7a/b, FEED-3/4, PRO-2, ABO-2)
 - [ ] **I1** Mêmes critères que l'équivalent Android, vérifiés par TestFlight sur l'iPhone 11 Pro (aucun test local possible).
-- [ ] **I2** La ligne « Langue » ouvre les réglages de l'iPhone pour Miff et affiche la langue en cours (Q11) ; les deux langues sont déclarées dans l'app.
+- [ ] **I2** *(révisé le 2026-11-13)* La ligne « Langue » affiche la langue en cours et ouvre l'écran Langue de l'app (Français, English, Langue du téléphone ; coche sur le choix actif ; effet immédiat) ; elle n'ouvre plus les réglages de l'iPhone ; les deux langues sont déclarées dans l'app.
 - [ ] **I3** « Message » et « Appeler » utilisent les liens système (`sms:`, `tel:`) ; aucune clé de permission « contacts » ; VoiceOver annonce « Appeler Thomas » ; zones tactiles d'au moins 44 pt.
 - [ ] **I4** Pas de textes d'usage ajoutés sans usage (la clé de localisation « toujours » n'apparaît qu'avec ONB-8).
 
@@ -362,7 +362,7 @@ Les critères valent pour Android puis iOS sauf mention. Les critères existants
 | Sujet | Android | iOS |
 |---|---|---|
 | Barre d'onglets | Barre de navigation inférieure ; bouton central accentué ; « retour » sur onglet racine : quitter l'app | Barre personnalisée, zone sûre du bas ; geste de bord d'écran |
-| Langue | Choix dans l'app, effet immédiat (+ « Langues des applications » d'Android 13) : **la liste de reglages-5 convient** | La ligne ouvre les **réglages de l'iPhone** (décision Q11) : **la maquette doit avoir une variante iOS** |
+| Langue | Choix dans l'app, effet immédiat (+ « Langues des applications » d'Android 13) : **la liste de reglages-5 convient** | ~~La ligne ouvre les réglages de l'iPhone (décision Q11)~~ **Révisé le 2026-11-13** : même écran qu'Android, dans l'app (pas de variante iOS à dessiner) |
 | Message / Appeler | Intent « composer le numéro » (pas d'appel direct, aucune permission) et « envoyer un message » | Liens `tel:` et `sms:` ; iOS demande une confirmation avant l'appel |
 | Photo de profil | Sélecteur de photos du système ; application photo du système | Sélecteur du système ; appareil photo avec texte d'usage |
 | Abonnement | Gestion dans Google Play (lien vers la page d'abonnement) [À vérifier] | Gestion dans les réglages de l'App Store ; bouton « Restaurer les achats » exigé [À vérifier] |
@@ -407,7 +407,7 @@ Chaque question donne **ma recommandation** et **l'impact** de la réponse. Je n
 - *Impact* : maquette profil-0 ; texte du consentement d'entrée à relire dans le ticket Miff.
 
 **Q4. Langue : on confirme français et anglais seulement ?** (6 langues dans la maquette.)
-- *Recommandation* : oui, FR + EN + « Langue du téléphone », chaque nom dans sa langue, effet immédiat sur Android (sans bouton « Enregistrer »), réglages de l'iPhone sur iOS. Ajouter une langue = relecture du ton, textes légaux, captures (`initialisation-technique.md`).
+- *Recommandation* : oui, FR + EN + « Langue du téléphone », chaque nom dans sa langue, effet immédiat sur Android (sans bouton « Enregistrer »), réglages de l'iPhone sur iOS **(iOS révisé le 2026-11-13 : même écran qu'Android, dans l'app)**. Ajouter une langue = relecture du ton, textes légaux, captures (`initialisation-technique.md`).
 - *Impact* : retire 4 lignes de la maquette ; aucun code supplémentaire.
 
 **Q5. Mon compte : mot de passe et e-mail.**
@@ -496,7 +496,7 @@ Réponse du PM aux 15 questions de §10 : **« OK pour tout »**. Chaque recomma
 | Q1 | Bouton rond central | « Donner des nouvelles » (mise à jour manuelle) géré par un futur ticket **Update**. Tant qu'il n'existe pas : **masqué** dans les builds pour testeurs externes (la barre passe à deux onglets), **visible mais désactivé** dans les builds internes | ONB-3a |
 | Q2 | Écran d'une Miff, compte gratuit | La **carte de Miff du Profil** ouvre l'écran de la Miff (pas de « Mes Miffs » dans Réglages) ; dans le Feed, avec une seule Miff, le nom est une pastille **non cliquable** ; « Créer une nouvelle Miff » et « + Rejoindre / + Créer » **réservés au Premium** jusqu'au ticket Premium (**pour le sélecteur du Feed, remplacé le 2026-11-08 par la décision D51 de `feed.md`** : pastille cliquable pour tous, offre au toucher pour un compte gratuit ; la carte « Créer une nouvelle Miff » du Profil n'est pas touchée) | PRO-1, FEED-1 (pas ONB-3a) |
 | Q3 | Adresses des lieux | Liste = **nom + catégorie** ; l'adresse est sur un **écran de détail** en lecture ; dire clairement, avant d'entrer dans une Miff, que les lieux sont partagés | PRO-1, ticket Lieux, ticket Miff |
-| Q4 | Langues | **Français, English, « Langue du téléphone »**, chaque nom dans sa propre langue ; Android applique le choix **immédiatement** (sans bouton « Enregistrer ») ; iOS ouvre les réglages de l'iPhone | ONB-3a, iOS |
+| Q4 | Langues | **Français, English, « Langue du téléphone »**, chaque nom dans sa propre langue ; Android applique le choix **immédiatement** (sans bouton « Enregistrer ») ; ~~iOS ouvre les réglages de l'iPhone~~ iOS : même écran, dans l'app, effet immédiat (révisé le 2026-11-13) | ONB-3a, iOS |
 | Q5 | Mon compte | **E-mail en lecture seule** ; **pas** de formulaire à 3 champs : un bouton « Changer mon mot de passe » qui envoie l'e-mail de réinitialisation (AUTH-2), **masqué** pour les comptes Google et Apple ; « Supprimer mon compte » **seulement quand AUTH-5 est livré** | ONB-3b |
 | Q6 | Notifications | **Ligne masquée** tant que rien n'est envoyé ; l'état de la permission reste dans Confidentialité ; « classiques / intelligentes » à définir par le PM avant le futur ticket Notifications | ONB-3a/3b ; ticket Notifications |
 | Q7 | Abonnement dans Réglages | **Rien d'achetable** avant la validation serveur ; **ABO-1** = ligne « Abonnement » en lecture seule pour un Premium accordé à la main, sans prix ni bouton ; pas d'encart « Débloquez » | ABO-1 (plus tard) |
@@ -518,3 +518,15 @@ Réponse du PM aux 15 questions de §10 : **« OK pour tout »**. Chaque recomma
 **Décision du PM (2026-11-07), révise Q13 sur un point** : toujours **pas de barre d'onglets** sans Miff, mais la personne SANS Miff a accès à des **Réglages restreints** (liste limitée à « Mon compte » : e-mail, mot de passe, déconnexion, Supprimer mon compte ; et « Confidentialité » : textes légaux, autorisations, contact ; **pas** de Mes informations, Langue ni Notifications pour l'instant), par une **roue crantée discrète en haut à droite de l'écran de choix** (mêmes écrans Réglages que ceux de la barre, retour simple vers l'écran d'origine). Raison : la suppression de compte doit rester lançable dans l'app pour tout compte, y compris sans Miff (Google Play, Apple 5.1.1(v)), et elle n'est accessible que depuis les Réglages (décision du même jour, `suppression-compte.md`).
 
 Côté Android (0.17.0) : la roue crantée du Profil (`GearButton`) est réutilisée à l'identique sur l'écran de choix (nom parlé « Réglages », cible de 48 dp) ; `SettingsScreen` n'affiche que « Mon compte » et « Confidentialité » quand ses deux rappels « Mes informations » et « Langue » sont absents ; aucune nouvelle clé de texte, aucune nouvelle lecture Firestore.
+
+## Décision du PM (2026-11-13) : écran Langue dans l'app sur iOS
+
+**Décision du PM (2026-11-13), révise Q4 / Q11 d'Onboarding sur un point** : sur iOS, la ligne « Langue » des Réglages ouvre **le même écran qu'Android**, dans l'app (Français, English, Langue du téléphone ; coche sur le choix actif ; effet immédiat, sans bouton « Enregistrer »), et non plus les réglages de l'iPhone. Retour du PM à la recette : toucher « Langue » sortait de l'app.
+
+**D'où venait le choix d'origine** : une **recommandation de l'agent `product-specs`** (Onboarding §6.10, Q11), retenue telle quelle, pas une obligation d'Apple. Raisons de l'époque : iOS n'a pas d'interface officielle pour changer la langue d'une app en cours d'exécution (Apple propose « Langue préférée » par application dans les réglages de l'iPhone, iOS 13 et plus), et un changement à chaud passe par un contournement (voir ci-dessous). Rien n'interdit le choix dans l'app aux stores : **aucun risque de rejet connu**. La décision du PM prime ; ce choix est assumé.
+
+**Comment c'est fait (iOS, branche `ios/reglages-langue`)** :
+- Le choix (`fr`, `en` ou `system`) est gardé dans `UserDefaults` **sur l'appareil** (une valeur, jamais envoyée au serveur, jamais dans Analytics) ; **« Langue du téléphone » par défaut**, qui se comporte exactement comme avant (paquet de textes et locale du téléphone, repli anglais, pseudo-langue de la CI).
+- **Application à chaud sans redémarrage** : la locale de l'environnement SwiftUI suit le choix (`Text("cle")`, dates et nombres du système), `L10n` lit le paquet `fr.lproj` ou `en.lproj` du choix (textes calculés hors des vues), et les écrans de la coque et empilés se refont (identité liée au code de langue), **sans toucher à la pile, à l'onglet choisi ni aux modèles gardés par l'hôte**.
+- **Limites connues** : (1) les textes **gérés par le système** (fenêtres d'autorisation de localisation, de notifications et de photos, noms des boutons système, clavier) restent dans la **langue du téléphone** : ils viennent d'`InfoPlist` et d'iOS, pas de l'app ; (2) le **texte d'une notification locale est figé** à sa programmation : il est reprogrammé dans la nouvelle langue tout de suite après le choix (et à chaque retour au premier plan) ; (3) pour les écrans refaits, l'état **interne** non gardé par l'hôte (défilement, brouillon de saisie) repart de zéro : seul l'écran Langue est ouvert à ce moment-là, donc rien d'important n'est perdu ; le Feed relit ses données au retour (cache local, quelques lectures par changement de langue, rare) ; (4) un **futur push serveur** (FCM, Blaze) devra connaître la langue choisie : la langue n'est PAS envoyée au serveur aujourd'hui, à décider avec le PM si besoin ; (5) l'e-mail de réinitialisation du mot de passe suit la langue choisie (`languageCode` de Firebase Authentication).
+- Coût : **0 €**, aucune lecture ni écriture Firestore, aucun nouvel événement Analytics. Recette : `docs/qa/checklists/reglages-langue-ios-recette-pm.md`.

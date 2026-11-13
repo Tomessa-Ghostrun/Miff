@@ -5,17 +5,17 @@ import Foundation
 /// calendrier (sans fuseau) : il est posé à midi UTC et formaté en UTC, pour qu'aucun fuseau ne le décale. Rien n'est journalisé.
 enum TravelDayFormat {
     /// « 15 nov. » (avec l'année quand `TravelDay.showYear`).
-    static func short(_ day: TravelDay, locale: Locale = .current) -> String {
+    static func short(_ day: TravelDay, locale: Locale = AppLanguage.locale) -> String {
         format(day.date, template: day.showYear ? "yMMMd" : "MMMd", locale: locale)
     }
 
     /// « 15 nov. 2026 » : la date de la ligne « Date de fin », toujours avec son année.
-    static func withYear(_ date: TravelDate, locale: Locale = .current) -> String {
+    static func withYear(_ date: TravelDate, locale: Locale = AppLanguage.locale) -> String {
         format(date, template: "yMMMd", locale: locale)
     }
 
     /// Le même jour en toutes lettres (« 15 novembre 2026 »), pour le lecteur d'écran.
-    static func spoken(_ date: TravelDate, locale: Locale = .current) -> String {
+    static func spoken(_ date: TravelDate, locale: Locale = AppLanguage.locale) -> String {
         format(date, template: "yMMMMd", locale: locale)
     }
 

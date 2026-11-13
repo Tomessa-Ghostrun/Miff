@@ -125,6 +125,12 @@ shot 93-fr-lieu-detail-danger 6 "${fr_args[@]}" -MiffPreview place-detail-danger
 shot 95b-fr-miff-offre-deuxieme-miff 3 "${fr_args[@]}" -MiffPreview place-paywall-miff
 shot 96-en-lieu-rempli 6 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview place-form-filled
 
+# Réglages > Langue (écran dans l'app, comme Android) : téléphone en français puis en anglais, anglais CHOISI sur un téléphone en français
+# (-MiffAppLanguage, Debug seulement, rien n'est écrit), droite-à-gauche. La ligne Langue des Réglages dit la langue en cours.
+shot 160-fr-langue 2 "${fr_args[@]}" -MiffPreview lang-screen
+shot 161-fr-langue-anglais-choisi 2 "${fr_args[@]}" -MiffAppLanguage en -MiffPreview lang-screen
+shot 162-fr-reglages-anglais-choisi 2 "${fr_args[@]}" -MiffAppLanguage en -MiffPreview lang-settings
+shot 163-en-reglages 2 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview lang-settings
 # Profil : le carrousel de Miffs (retour du PM, 2026-11-10). Les VRAIS écrans, nourris par des états fixes (Diagnostic/ProfileScreenPreviews.swift).
 shot 99-fr-profil-carrousel 3 "${fr_args[@]}" -MiffPreview profile-carousel
 shot 99b-fr-profil-carrousel-2 3 "${fr_args[@]}" -MiffPreview profile-carousel-2
@@ -183,6 +189,8 @@ shot 93-fr-feed-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-orange
 shot 93-fr-feed-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-orange
 
 shot 152-fr-photo-plein-ecran-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview photo-3-4
+shot 166-fr-langue-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview lang-screen
+shot 167-fr-reglages-texte-tres-grand 2 "${fr_args[@]}" -MiffAppLanguage en -MiffPreview lang-settings
 
 
 

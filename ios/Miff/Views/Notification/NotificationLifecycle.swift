@@ -29,11 +29,16 @@ struct NotificationLifecycle: ViewModifier {
             .onReceive(Self.languageChanged) { _ in
                 reconcile()
             }
+            // Réglages > Langue : les notifications déjà programmées sont reprogrammées dans la langue choisie (leur texte est figé).
+            .onReceive(Self.appLanguageChosen) { _ in
+                reconcile()
+            }
     }
 
     private static let timeChanged = NotificationCenter.default.publisher(
         for: UIApplication.significantTimeChangeNotification
     )
+    private static let appLanguageChosen = NotificationCenter.default.publisher(for: AppLanguage.changed)
     private static let languageChanged = NotificationCenter.default.publisher(
         for: NSLocale.currentLocaleDidChangeNotification
     )

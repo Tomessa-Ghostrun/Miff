@@ -14,7 +14,7 @@ struct FeedTexts {
 
     init(
         lookup: @escaping (String) -> String = { L10n.string($0) },
-        locale: Locale = .current,
+        locale: Locale = AppLanguage.locale,
         zone: TimeZone = .current,
         is24Hour: Bool = FeedTexts.phoneUses24Hour()
     ) {

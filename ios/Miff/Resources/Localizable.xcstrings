@@ -13716,6 +13716,40 @@
         }
       }
     },
+    "ios_settings_language_english": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "English"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "English"
+          }
+        }
+      }
+    },
+    "ios_settings_language_french": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Français"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Français"
+          }
+        }
+      }
+    },
     "settings_language_subtitle": {
       "extractionState": "manual",
       "localizations": {
@@ -15952,13 +15986,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "opens the iPhone settings"
+            "value": "opens the language choice"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "ouvre les réglages de l'iPhone"
+            "value": "ouvre le choix de la langue"
           }
         }
       }
