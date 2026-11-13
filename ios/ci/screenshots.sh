@@ -145,6 +145,11 @@ shot 95e-fr-offre-essai-croix 3 "${fr_args[@]}" -MiffPreview paywall-trial-cross
 shot 95f-fr-offre-deux-formules-croix 3 "${fr_args[@]}" -MiffPreview paywall-plans-cross
 shot 95m-en-offre-essai-croix 3 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview paywall-trial-cross
 
+# La fenêtre d'avis « Que penses-tu de Miff ? » (docs/tickets/pop-ins-avis.md ; build Debug seulement, drapeau REVIEW_PROMPT) : la VRAIE carte par-dessus
+# un Feed de démonstration, (question, puis « Merci de nous le dire ! »), et plus bas en très grand texte ; « Merci ! » et l'anglais : `-MiffPreview review-thanks` à la main (l'étape est limitée en temps). Aucun réseau, rien d'écrit.
+shot 160-fr-avis-question 4 "${fr_args[@]}" -MiffPreview review-question
+shot 162-fr-avis-merci-formulaire 3 "${fr_args[@]}" -MiffPreview review-feedback
+
 
 # Le vrai parcours de l'app (session, routage) : première ouverture = carrousel, après le splash animé.
 shot 37-fr-vrai-parcours 7 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffShowApp YES
@@ -188,6 +193,7 @@ shot 152-fr-photo-plein-ecran-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview ph
 
 shot 99-fr-offre-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview paywall-trial-cross
 shot 99b-fr-offre-sans-achat-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview paywall-soon-cross
+shot 164-fr-avis-question-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview review-question
 
 xcrun simctl ui "$udid" content_size large > /dev/null 2>&1 || true
 

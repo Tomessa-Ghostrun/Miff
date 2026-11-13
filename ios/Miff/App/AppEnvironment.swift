@@ -175,6 +175,8 @@ final class AppEnvironment {
     /// La suppression d'une Miff, sans écran (MIFF-4) : reprise au lancement, banderole de fin, écran de la Miff.
     let miffDeletions: MiffDeletionCoordinator
     let joinLimiter: JoinAttemptLimiter
+    /// La fenêtre d'avis (docs/tickets/pop-ins-avis.md) : vide dans un build sans le drapeau `REVIEW_PROMPT` (Release).
+    let reviewPrompt: ReviewPromptServices
     /// LOC-4a : ce que le téléphone dit des autorisations de Miff (l'ÉTAT seulement, jamais une position), l'écran des
     /// notifications déjà montré, et le renouvellement du consentement.
     let consentRenewals: ConsentRenewals
@@ -265,13 +267,16 @@ final class AppEnvironment {
         let updateServices = UpdateServices.make(
             gateway: gateway, network: networkMonitor, device: device, tracking: trackingServices, miff: miff
         )
+        // La fenêtre d'avis : son état est effacé avec la session (déconnexion, suppression du compte), comme sur Android.
+        let review = ReviewPromptServices.make()
         let manager = SessionManager(
             SessionDependencies(
                 gateway: gateway, accounts: FirestoreAccountRepository(), pending: pending, flags: flagStore,
                 privacy: privacy, tracker: tracker, cache: cache,
                 // Le brouillon (noms, photo, numéro) et les Miffs en mémoire partent avec la session. Le suivi des lieux et
                 // les notifications ont leur propre arrêt ici, pour qu'une déconnexion les arrête (ticket §7.6).
-                teardown: Self.teardowns(drafts, miff, places, trackingServices, updateServices) + [notifs.teardown],
+                teardown: Self.teardowns(drafts, miff, places, trackingServices, updateServices) + [notifs.teardown]
+                    + review.teardowns,
                 device: device,
                 network: networkMonitor,
                 drafts: drafts, generationCounter: trackingServices.generation,
@@ -293,6 +298,7 @@ final class AppEnvironment {
         placeNotices = places.notices
         placeRequestRepository = places.requests
         joinLimiter = miff.limiter
+        reviewPrompt = review
         consentRenewals = miff.renewals
         awaitingAgreement = miff.awaiting
         tracking = trackingServices.runtime
