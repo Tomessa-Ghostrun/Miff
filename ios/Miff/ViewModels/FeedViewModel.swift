@@ -106,6 +106,7 @@ struct FeedDependencies {
 }
 
 @MainActor
+// swiftlint:disable:next type_body_length
 final class FeedViewModel: ObservableObject {
     @Published private(set) var uiState: FeedUiState = .loading
     @Published private(set) var directoryState: DirectoryState = .loading {

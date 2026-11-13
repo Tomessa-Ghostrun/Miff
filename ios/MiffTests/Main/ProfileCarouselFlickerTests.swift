@@ -178,7 +178,7 @@ final class ProfileCarouselFlickerTests: XCTestCase {
         let carousel = try source("Miff/Views/Main/ProfileMiffCarousel.swift")
 
         XCTAssertTrue(carousel.contains(".equatable()"), "la rangée n'est pas réévaluée à chaque image")
-        XCTAssertFalse(carousel.contains("@GestureState private var track"), "plus de décalage remis à zéro hors transaction")
+        XCTAssertFalse(carousel.contains("@GestureState private var track"), "décalage remis à zéro hors transaction")
         // À la fin du geste, la page ET le décalage changent dans le même bloc animé.
         XCTAssertTrue(carousel.contains("page = target\n                    dragX = 0"))
     }

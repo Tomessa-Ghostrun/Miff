@@ -26,9 +26,9 @@ extension ProfilePlacesViewModel {
             if isCreator(miffId) {
                 onPlacesMayChange()
             }
-        case .create, .join, .miff, .placePaywall, .settings:
+        case .create, .join, .miff, .settings:
             break
-        case .placeRequestPaywall, .placeRequestForm, .placeRequestDetail:
+        case .placeRequestForm, .placeRequestDetail:
             // Les demandes ont leur propre view model : `ProfileRequestsViewModel.onRequestsMayChange`.
             break
         }

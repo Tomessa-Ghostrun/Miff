@@ -48,7 +48,7 @@ extension MiffHomeHost {
         if replacesForm, case .placeForm? = path.last {
             path.removeLast()
         }
-        open(.placePaywall(reason))
+        presentPaywall(reason)
     }
 
     /// Le lieu a été supprimé ailleurs pendant que son détail était ouvert : « Ce lieu n'existe plus. », et retour à la liste.
