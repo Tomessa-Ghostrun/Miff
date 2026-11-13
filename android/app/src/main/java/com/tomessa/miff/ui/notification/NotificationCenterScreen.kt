@@ -125,6 +125,7 @@ fun NotificationCenterScreen(
             VisitGroup(
                 rows = state.visitRows,
                 nowMillis = nowMillis,
+                zone = zone,
                 onOpen = actions.onOpen,
                 onDelete = actions.onDelete,
             )
@@ -147,6 +148,7 @@ fun NotificationCenterScreen(
                     CenterRowView(
                         row = row,
                         nowMillis = nowMillis,
+                        zone = zone,
                         older = section == ItemSection.OLDER,
                         onOpen = { actions.onOpen(row) },
                         onDelete = { row.ids.forEach(actions.onDelete) },
@@ -178,6 +180,7 @@ fun NotificationCenterScreen(
 private fun VisitGroup(
     rows: List<CenterRow>,
     nowMillis: Long,
+    zone: ZoneId,
     onOpen: (CenterRow) -> Unit,
     onDelete: (String) -> Unit,
 ) {
@@ -188,9 +191,14 @@ private fun VisitGroup(
         modifier = Modifier.padding(top = Spacing.s, bottom = Spacing.xs).semantics { heading() },
     )
     rows.forEach { row ->
-        CenterRowView(row = row, nowMillis = nowMillis, older = false, onOpen = {
-            onOpen(row)
-        }, onDelete = { row.ids.forEach(onDelete) })
+        CenterRowView(
+            row = row,
+            nowMillis = nowMillis,
+            zone = zone,
+            older = false,
+            onOpen = { onOpen(row) },
+            onDelete = { row.ids.forEach(onDelete) },
+        )
     }
     Text(
         text = stringResource(R.string.notif_c1_limit),
@@ -451,6 +459,7 @@ private fun EmptyState() {
 private fun CenterRowView(
     row: CenterRow,
     nowMillis: Long,
+    zone: ZoneId,
     older: Boolean,
     onOpen: () -> Unit,
     onDelete: () -> Unit,
@@ -459,7 +468,7 @@ private fun CenterRowView(
     val title =
         if (row.visit != null) {
             // "Depuis ta dernière visite": a whole sentence made now from the kind, the category, the time and the first name the app knows (the centre holds none).
-            LastVisitTexts(context).sentence(row.visit, row.visitName, nowMillis)
+            LastVisitTexts(context, zone).sentence(row.visit, row.visitName, nowMillis)
         } else if (row.type == NotificationType.N8 && row.requesterName != null && row.requestMiffName != null) {
             // "Léa propose un lieu pour « Famille »" (one request), "Léa a proposé 3 lieux pour « Famille »" (several, all unread): made now from the first name
             // the app knows; the centre itself keeps no name.
