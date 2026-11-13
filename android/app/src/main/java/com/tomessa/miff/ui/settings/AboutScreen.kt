@@ -77,7 +77,7 @@ fun AboutScreen(
         ActionCard(
             icon = R.drawable.ic_mail,
             title = stringResource(R.string.settings_privacy_contact),
-            subtitle = stringResource(R.string.about_contact_subtitle),
+            subtitle = stringResource(R.string.android_about_contact_subtitle),
             actionLabel = stringResource(R.string.settings_privacy_open_mail_a11y),
             onClick = {
                 addressCopied = false

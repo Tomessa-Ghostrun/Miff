@@ -362,7 +362,7 @@ class AboutScreenTest {
                 height(it) < height(R.string.settings_privacy_contact),
             )
         }
-        composeRule.onNodeWithText(text(R.string.about_contact_subtitle)).assertExists()
+        composeRule.onNodeWithText(text(R.string.android_about_contact_subtitle)).assertExists()
     }
 
     @Test

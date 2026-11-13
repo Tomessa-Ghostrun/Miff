@@ -561,6 +561,7 @@
     <string name="about_version_copy_hint_a11y">copy the version</string>
     <string name="about_copied">Copied.</string>
     <string name="about_help_title">Need a hand?</string>
+    <string name="about_info_title">Information</string>
     <string name="about_feedback_title">Feedback on the app?</string>
     <string name="about_feedback_subtitle">Tell us what you like and what could be better.</string>
     <string name="about_feedback_hint_a11y">open the form in your browser</string>
@@ -575,8 +576,6 @@
     <string name="about_licenses_maps_privacy">When you type an address to create a place, the text is sent to the address service, without your name or your location.</string>
     <string name="about_licenses_open_hint_a11y">show the license text</string>
     <string name="about_licenses_close_hint_a11y">hide the license text</string>
-    <string name="about_info_title">Information</string>
-    <string name="about_contact_subtitle">A question, a problem, an idea: write to us.</string>
     <string name="settings_privacy_open_browser_a11y">open the page in your browser</string>
     <string name="settings_privacy_open_mail_a11y">write an email</string>
     <!-- Miff: remove a loved one, leave, delete the Miff, renew the code (ticket MIFF-2). Friendly, calm tone. -->
@@ -1219,6 +1218,7 @@
     <string name="feed_colors_bubble_action_a11y">Understand the colors</string>
     <!-- ABOUT-1A : textes propres a Android de Reglages > A propos et aide (lignes de cartes et d'adresses, detail d'une licence, indice de la version) -->
     <string name="android_about_copy_hint">Tap to copy</string>
+    <string name="android_about_contact_subtitle">A question, a problem, an idea: write to us.</string>
     <string name="android_about_licenses_footnote">The licenses are taken from the public description of each library.</string>
     <string name="android_about_licenses_includes">What it includes</string>
     <string name="android_about_licenses_text_unavailable">This text couldn\'t be shown just now.</string>

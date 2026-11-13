@@ -538,6 +538,7 @@
     <string name="about_version_copy_hint_a11y">copier la version</string>
     <string name="about_copied">Copié.</string>
     <string name="about_help_title">Besoin d\'un coup de main ?</string>
+    <string name="about_info_title">Informations</string>
     <string name="about_feedback_title">Un retour sur l\'app ?</string>
     <string name="about_feedback_subtitle">Dis-nous ce qui te plaît et ce qui pourrait être mieux.</string>
     <string name="about_feedback_hint_a11y">ouvrir le formulaire dans ton navigateur</string>
@@ -552,8 +553,6 @@
     <string name="about_licenses_maps_privacy">Quand tu tapes une adresse pour créer un lieu, le texte part vers le service d\'adresses, sans ton nom ni ta position.</string>
     <string name="about_licenses_open_hint_a11y">afficher le texte de la licence</string>
     <string name="about_licenses_close_hint_a11y">masquer le texte de la licence</string>
-    <string name="about_info_title">Informations</string>
-    <string name="about_contact_subtitle">Une question, un souci, une idée : écris-nous.</string>
     <string name="settings_privacy_open_browser_a11y">ouvrir la page dans ton navigateur</string>
     <string name="settings_privacy_open_mail_a11y">écrire un e-mail</string>
     <!-- Miff : retirer un proche, quitter, supprimer la Miff, renouveler le code (ticket MIFF-2). Ton calme et bienveillant. -->
@@ -1198,6 +1197,7 @@
     <string name="feed_colors_bubble_action_a11y">Comprendre les couleurs</string>
     <!-- ABOUT-1A : textes propres a Android de Reglages > A propos et aide (lignes de cartes et d'adresses, detail d'une licence, indice de la version) -->
     <string name="android_about_copy_hint">Touche pour copier</string>
+    <string name="android_about_contact_subtitle">Une question, un souci, une idée : écris-nous.</string>
     <string name="android_about_licenses_footnote">Les licences sont reprises des descriptions publiques de chaque bibliothèque.</string>
     <string name="android_about_licenses_includes">Ce que cela comprend</string>
     <string name="android_about_licenses_text_unavailable">Ce texte n\'a pas pu être affiché pour le moment.</string>
