@@ -19,6 +19,7 @@ object NotificationTexts {
             NotificationType.N4 -> R.string.notif_n4_title
             NotificationType.N6 -> R.string.notif_n6a_title
             NotificationType.N7 -> R.string.notif_n7_title
+            NotificationType.N9 -> R.string.notif_center_circle_update_title
             NotificationType.N8 -> R.string.notif_n8_title
         }
 
@@ -31,6 +32,7 @@ object NotificationTexts {
             NotificationType.N4 -> R.string.notif_n4_body
             NotificationType.N6 -> R.string.notif_n6a_body
             NotificationType.N7 -> R.string.notif_n7_body
+            NotificationType.N9 -> R.string.notif_circle_update_body
             NotificationType.N8 -> R.string.notif_n8_body
         }
 
@@ -50,6 +52,8 @@ object NotificationTexts {
 
             // No switch of its own (a line of the centre only): the label is never drawn, the one of the family stands in.
             NotificationType.N7 -> R.string.notif_settings_n7
+
+            NotificationType.N9 -> R.string.notif_settings_circle_update
 
             NotificationType.N8 -> R.string.notif_settings_n3
         }

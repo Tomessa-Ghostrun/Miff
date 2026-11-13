@@ -173,7 +173,7 @@ class TrackingPrivacyTest {
     }
 
     @Test
-    fun theManifest_declaresOneNonExportedReceiverForTheDetection_andOneForTheReminders_andNoService() {
+    fun theManifest_declaresTwoNonExportedReceivers_andOnlyTheNonExportedMessagingService() {
         val manifest = File("src/main/AndroidManifest.xml").readText()
         val receivers =
             Regex(
@@ -185,7 +185,16 @@ class TrackingPrivacyTest {
         assertTrue(receivers.all { it.contains("""android:exported="false"""") })
         assertEquals(1, receivers.count { it.contains("data.tracking.TrackingReceiver") })
         assertEquals(1, receivers.count { it.contains("data.notification.NotificationAlarmReceiver") })
-        assertFalse(manifest.contains("<service"))
+        // The ONLY service is the one that receives the push messages (SRV-2), not exported; the detection and the reminders still use no service.
+        val services =
+            Regex(
+                """<service[^>]*>""",
+                RegexOption.DOT_MATCHES_ALL,
+            ).findAll(manifest).map { it.value }.toList()
+        assertEquals(1, services.size)
+        assertTrue(services.single().contains("data.push.MiffMessagingService"))
+        assertTrue(services.single().contains("""android:exported="false""""))
+        assertFalse(manifest.contains("FOREGROUND_SERVICE"))
         // Only the system broadcasts of the restart and of the update are filtered on: the other actions are those of our own PendingIntents.
         assertTrue(manifest.contains("android.intent.action.BOOT_COMPLETED"))
         assertTrue(manifest.contains("android.intent.action.MY_PACKAGE_REPLACED"))

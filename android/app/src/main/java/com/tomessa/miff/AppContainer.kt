@@ -66,12 +66,16 @@ import com.tomessa.miff.data.notification.AndroidNotificationPresenter
 import com.tomessa.miff.data.notification.AndroidNotificationTray
 import com.tomessa.miff.data.notification.AppVisibility
 import com.tomessa.miff.data.notification.FeedNotificationLink
+import com.tomessa.miff.data.notification.KnownMiffs
+import com.tomessa.miff.data.notification.KnownMiffsKeeper
 import com.tomessa.miff.data.notification.NotificationAuthorization
 import com.tomessa.miff.data.notification.NotificationCenter
 import com.tomessa.miff.data.notification.NotificationChannels
 import com.tomessa.miff.data.notification.NotificationScheduler
 import com.tomessa.miff.data.notification.NotificationSettings
+import com.tomessa.miff.data.notification.NotificationTeardownSteps
 import com.tomessa.miff.data.notification.NotificationTray
+import com.tomessa.miff.data.notification.SharedPreferencesKnownMiffs
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationCenterStore
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationLedger
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationPreferencesStore
@@ -116,6 +120,11 @@ import com.tomessa.miff.data.profile.CurrentProfile
 import com.tomessa.miff.data.profile.FirestoreMyProfileRepository
 import com.tomessa.miff.data.profile.HttpsGooglePhotoSource
 import com.tomessa.miff.data.profile.MyProfileRepository
+import com.tomessa.miff.data.push.FirebasePushTokenSource
+import com.tomessa.miff.data.push.FirestoreDeviceTokenRegistry
+import com.tomessa.miff.data.push.PushMessageHandler
+import com.tomessa.miff.data.push.PushRegistrar
+import com.tomessa.miff.data.push.SharedPreferencesPushLocalState
 import com.tomessa.miff.data.review.ForegroundTicks
 import com.tomessa.miff.data.review.ReviewStateStore
 import com.tomessa.miff.data.review.SharedPreferencesReviewStateStore
@@ -157,10 +166,12 @@ import com.tomessa.miff.domain.analytics.AnalyticsTracker
 import com.tomessa.miff.domain.auth.ResendCooldown
 import com.tomessa.miff.domain.auth.SignInProvider
 import com.tomessa.miff.domain.miff.JoinAttemptLimiter
+import com.tomessa.miff.domain.notification.CircleNewsKeys
 import com.tomessa.miff.domain.notification.SnapshotMember
 import com.tomessa.miff.domain.paywall.MonotonicClock
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.profile.GooglePhotoPrefill
+import com.tomessa.miff.domain.push.DeviceAppVersion
 import com.tomessa.miff.domain.tracking.DetectionJournal
 import com.tomessa.miff.domain.tracking.Fix
 import com.tomessa.miff.domain.tracking.PresenceValue
@@ -343,7 +354,9 @@ class AppContainer(
      */
     val devicePermissions: DevicePermissions by lazy { AndroidDevicePermissions(context) }
 
-    val notificationAsks: NotificationAskStore by lazy { SharedPreferencesNotificationAskStore(context) }
+    val notificationAsks: NotificationAskStore by lazy {
+        SharedPreferencesNotificationAskStore(context, onPushConsent = ::pushSyncSoon)
+    }
 
     /**
      * NOTIF-P0 (ticket docs/tickets/notifications.md, section 20): notifications that need NO server. Everything here is LOCAL to the phone: the choices of
@@ -360,12 +373,13 @@ class AppContainer(
     val notificationCenter: NotificationCenter by lazy {
         NotificationCenter(
             store = SharedPreferencesNotificationCenterStore(context),
-            onRead = { key -> notificationTray.cancel(key) },
+            // A line of N9 (a loved one gave news) goes with the notification of its author: the tag of the tray is not the key of the line.
+            onRead = { key -> notificationTray.cancel(CircleNewsKeys.trayTagOf(key)) },
         )
     }
 
     val notificationAuthorization: NotificationAuthorization by lazy {
-        NotificationAuthorization(devicePermissions, notificationAsks)
+        NotificationAuthorization(devicePermissions, notificationAsks, currentUid = { authGateway.currentUid })
     }
 
     /**
@@ -385,7 +399,67 @@ class AppContainer(
             presenter = AndroidNotificationPresenter(context),
             appInForeground = { AppVisibility.inForeground },
             reader = FirestoreCircleStatusReader(),
+            isMyMiff = knownMiffs::contains,
         )
+    }
+
+    /**
+     * The Miffs of the account signed in, remembered on the phone (identifiers only) so that a push is checked against them even on a cold start (contract 4.9, SRV-2).
+     * Refreshed each time the directory reads the list, erased with the session.
+     */
+    val knownMiffs: KnownMiffs by lazy { SharedPreferencesKnownMiffs(context) }
+
+    private val knownMiffsKeeper: KnownMiffsKeeper by lazy {
+        KnownMiffsKeeper(knownMiffs, currentUid = { authGateway.currentUid })
+    }
+
+    /**
+     * SRV-2, push notifications ("Un proche a donné des nouvelles", ticket docs/tickets/notification-update-membres.md). The registrar keeps the document of THIS device
+     * (`users/{uid}/devices/{deviceId}`: token, time zone, the switch) in line with the choices of the person; it registers nothing without an account with a valid session
+     * and without the person's consent (the explanation answered, the phone lets Miff notify, the general switch on), and it switches the push service of the phone off otherwise.
+     * Built on first use; nothing is read or written until it is asked to [PushRegistrar.sync].
+     */
+    val pushRegistrar: PushRegistrar by lazy {
+        PushRegistrar(
+            registry = FirestoreDeviceTokenRegistry(),
+            local = SharedPreferencesPushLocalState(context),
+            tokens = FirebasePushTokenSource(),
+            currentUid = { authGateway.currentUid },
+            sessionDeviceId = { deviceIdStore.read() },
+            sessionValid = ::notificationSessionValid,
+            consent = { uid ->
+                notificationAuthorization.allowed() &&
+                    notificationAuthorization.consentGiven(uid) &&
+                    notificationSettings.current().enabled
+            },
+            notifyUpdates = { notificationSettings.current().wantsCircleNews() },
+            timeZoneId = {
+                java.util.TimeZone
+                    .getDefault()
+                    .id
+            },
+            appVersion = { DeviceAppVersion.of(BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE) },
+        )
+    }
+
+    /** Looks at the registry of devices now, off the main thread (a consent was just given, a switch just changed). */
+    private fun pushSyncSoon() {
+        // NO purge of the Firestore cache here: this is called from the sign-in screens and the consent panel, where a purge flag may be set for a flow that is not over.
+        notificationScope.launch { pushRegistrar.sync() }
+    }
+
+    /** What the messaging service hands each DATA message to: validated, then given to the notifications (no read of Firestore). */
+    val pushMessageHandler: PushMessageHandler by lazy {
+        PushMessageHandler(
+            currentUid = { authGateway.currentUid },
+            onCircleNews = { uid, news -> notificationScheduler.onCircleNews(uid, news) },
+        )
+    }
+
+    /** The system gave a new push token: registered at once if the person consented. The purge of a failed sign-out comes before any access to Firestore. */
+    suspend fun onNewPushToken(token: String) {
+        cachePurger.purgeIfPending()
+        pushRegistrar.sync(freshToken = token)
     }
 
     /**
@@ -441,12 +515,17 @@ class AppContainer(
             if (notificationWatchStarted.compareAndSet(false, true)) {
                 // Every change of a switch (the first value is the current one: skipped) asks the scheduler to bring the alarms in line, within the second.
                 notificationScope.launch {
-                    notificationSettings.preferences.drop(1).collect { notificationScheduler.reconcile() }
+                    notificationSettings.preferences.drop(1).collect {
+                        notificationScheduler.reconcile()
+                        // SRV-2: the switches are mirrored in the document of this device (the server reads notify.updates; the general switch off deletes it).
+                        pushRegistrar.sync()
+                    }
                 }
                 // Leaving a Miff, its deletion and the loss of the access all change the list the directory reads: the reminders of a Miff that is gone are cancelled.
                 notificationScope.launch {
                     miffDirectory.state.collect { state ->
                         if (state is DirectoryState.Ready) {
+                            knownMiffsKeeper.onDirectory(state.miffs.map { m -> m.id }.toSet(), state.fromCache)
                             notificationScheduler.onMiffsKnown(
                                 state.miffs.map { it.id }.toSet(),
                             )
@@ -455,18 +534,28 @@ class AppContainer(
                 }
             }
             notificationScheduler.reconcile()
+            // SRV-2: the permission may have changed, the time zone too, a day may have gone by: the registry is looked at again (a write only if something changed).
+            pushRegistrar.sync()
         }
     }
 
     /** NOTIF-P0: the centre, the choices, the alarms and what is in the tray go with the session (contract of the purge, DUR-3). */
     private val notificationTeardown: SessionTeardown by lazy {
-        SessionTeardown {
-            notificationScheduler.clearAll()
-            notificationCenter.purge()
-            notificationSettings.reset()
-            notificationTray.cancelAll()
-            tabRequests.clear()
-        }
+        NotificationTeardownSteps(
+            // SRV-2: FIRST and at once, while the account is still signed in (the sign-out comes after the teardown): the push is shut and the token invalidated.
+            closePush = pushRegistrar::close,
+            local =
+                listOf(
+                    knownMiffsKeeper::onSessionEnded,
+                    notificationScheduler::clearAll,
+                    notificationCenter::purge,
+                    notificationSettings::reset,
+                    notificationTray::cancelAll,
+                    tabRequests::clear,
+                ),
+            // Last: it waits (a few seconds at most) for the server to delete the document of this device.
+            forgetPush = pushRegistrar::forget,
+        )
     }
 
     /** A tap on a line of the centre (or, later, on a notification) asks the tabs to show the Feed or the Update. */
@@ -712,6 +801,7 @@ class AppContainer(
     /** After a voluntary "Quitter" the server confirmed: no message of lost access for it, purge of the cache, fresh list of Miffs. */
     suspend fun onMiffLeft(miffId: String) {
         miffDirectory.expectDeparture(miffId)
+        knownMiffsKeeper.onLeft(miffId)
         notificationScope.launch { notificationScheduler.onMiffGone(miffId) }
         cachePurger.markPurgePending()
         cachePurger.purge()
@@ -903,6 +993,11 @@ class AppContainer(
                 onAccountResolved = consentWithdrawals::resume,
                 deletionMarker = accountDeletionMarker,
                 localData = localDataErasers,
+                // SRV-2: the session is open again with the same identifier (deletion of the account cancelled): the registration of the push, shut by the teardown, opens again.
+                onSessionReopened = {
+                    pushRegistrar.reopen()
+                    pushSyncSoon()
+                },
             )
         }
     }

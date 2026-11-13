@@ -16,7 +16,7 @@ import kotlinx.serialization.json.Json
 
 /*
  * PRIVACY, for this file (criteria N-C3, N-C4, N-P0-10): the centre of notifications is LOCAL. It stores a type, a Miff identifier, two times and a
- * state per line, nothing else: no position, no address, no name of a place or of a person, no photo. It is never written to the server, never
+ * state per line, nothing else: no position, no address, no name of a place, no photo, and the first name of the author for N9 only (a loved one gave news). It is never written to the server, never
  * sent as an event, never logged. Kept 30 days or 100 lines; erased at the sign-out and at the deletion of the account.
  */
 
@@ -37,6 +37,7 @@ private class StoredItem(
     val createdAt: Long,
     val readAt: Long? = null,
     val silent: Boolean = false,
+    val who: String? = null,
 )
 
 class SharedPreferencesNotificationCenterStore(
@@ -62,6 +63,7 @@ class SharedPreferencesNotificationCenterStore(
                 createdAtMillis = s.createdAt,
                 readAtMillis = s.readAt,
                 state = if (s.silent) ItemState.SILENT else ItemState.SHOWN,
+                who = s.who,
             )
         }
     }
@@ -76,6 +78,7 @@ class SharedPreferencesNotificationCenterStore(
                     it.createdAtMillis,
                     it.readAtMillis,
                     it.state == ItemState.SILENT,
+                    it.who,
                 )
             }
         prefs.edit(commit = true) { putString(KEY_ITEMS, json.encodeToString(stored)) }

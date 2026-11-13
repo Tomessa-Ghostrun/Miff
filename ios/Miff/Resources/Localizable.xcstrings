@@ -19137,6 +19137,125 @@
           }
         }
       }
+    },
+    "notif_circle_update_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ checked in"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ a donné des nouvelles"
+          }
+        }
+      }
+    },
+    "notif_circle_update_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See it in your Miff."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retrouve-les dans ta Miff."
+          }
+        }
+      }
+    },
+    "notif_center_circle_update_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Someone in your circle checked in"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un proche a donné des nouvelles"
+          }
+        }
+      }
+    },
+    "notif_settings_circle_update": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When someone in your circle checks in"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quand un proche donne des nouvelles"
+          }
+        }
+      }
+    },
+    "notif_settings_circle_update_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A notification when someone in your Miff posts an update."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une notification quand un proche de ta Miff publie une update."
+          }
+        }
+      }
+    },
+    "notif_settings_section_loved_ones": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For your loved ones"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour tes proches"
+          }
+        }
+      }
+    },
+    "settings_detection_help_step_forcestop": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5. If you use \"Force stop\" on Miff, the news of your loved ones wait until you open Miff again. That is how Android works, and nothing is lost: everything is in your Miff."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5. Si tu utilises « Forcer l'arrêt » sur Miff, les nouvelles de tes proches attendent que tu rouvres Miff. C'est ainsi qu'Android fonctionne, et rien n'est perdu : tout est dans ta Miff."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

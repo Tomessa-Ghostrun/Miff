@@ -245,6 +245,7 @@ private fun Banner(
             style = textBodyRegular14,
             color = colorTextDescription,
         )
+        PushIdentifierNote()
         MiffButton(
             text = stringResource(R.string.notif_center_off_action),
             onClick = onAction,
@@ -367,6 +368,7 @@ private fun LockedPreview(
                 color = colorTextDescription,
                 textAlign = TextAlign.Center,
             )
+            PushIdentifierNote(textAlign = TextAlign.Center)
             MiffButton(
                 text = stringResource(R.string.notif_center_enable_action),
                 onClick = onEnable,
@@ -417,7 +419,9 @@ private fun CenterRowView(
 ) {
     val context = LocalContext.current
     val title =
-        if (row.type == NotificationType.N8 && row.requesterName != null && row.requestMiffName != null) {
+        if (row.type == NotificationType.N9 && row.who != null) {
+            stringResource(R.string.notif_circle_update_title, row.who)
+        } else if (row.type == NotificationType.N8 && row.requesterName != null && row.requestMiffName != null) {
             // "Léa propose un lieu pour « Famille »" (one request), "Léa a proposé 3 lieux pour « Famille »" (several, all unread): made now from the first name
             // the app knows; the centre itself keeps no name.
             if (row.count > 1) {
