@@ -134,7 +134,7 @@ Entrée « Supprimer mon compte » : style discret (texte, pas bouton plein), en
 | `entitlements/{uid}` (état Premium) | **Non supprimable depuis l'app** | purge manuelle par le PM | Politique : « suppression 30 jours après » (Q4). |
 | Abonnement du magasin | **Non résilié** | la personne le résilie dans le magasin | §5.9. |
 | Autorisation « Se connecter avec Apple » | **Révoquée sur iOS** ; non révocable depuis Android | §5.4 | |
-| Statistiques d'usage et rapports de plantage déjà envoyés | **Non supprimables par l'app** | conservés selon la politique (2 mois ; 90 jours) | Aucun identifiant de compte n'y figure (`setUserId` interdit, contrôlé par `NoSensitiveLoggingTest`) ; l'identifiant d'installation Firebase peut être réinitialisé (§5.10). |
+| Statistiques d'usage et rapports de plantage déjà envoyés | **Non supprimables par l'app** | conservés selon la politique (jusqu'à 14 mois ; 90 jours) | Aucun identifiant de compte n'y figure (`setUserId` interdit, contrôlé par `NoSensitiveLoggingTest`) ; l'identifiant d'installation Firebase peut être réinitialisé (§5.10). |
 | Copie locale (cache hors ligne), préférences, marqueurs | **Supprimé** | §5.10 | |
 | Copies de la fiche de la personne dans le **cache hors ligne des téléphones des autres membres** | **Hors de notre contrôle** | disparaît à leur prochaine connexion | Risque mineur (R9). |
 | Fiches arrivées dans une Miff créée **pendant** sa suppression | **Non supprimées par la procédure** (illisibles) | nettoyées par l'app de leur propriétaire | Risque accepté (`data-model.md` §11 point 9). |
