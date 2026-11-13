@@ -49,11 +49,14 @@ jobs:
   build-and-test:
     name: Build et tests (simulateur, sans signature)
     runs-on: macos-26 # arm64 ; Xcode 26.6 par defaut (verifie le 2026-10-21)
-    # Mesure : 6 a 8 min en tout (Release + Internal + captures comprises) sur les runners du depot prive ; le
-    # 2026-10-30, depuis le passage du depot en public, les memes etapes ont depasse 15 min a deux reprises
-    # (runners macOS plus lents ou files d'attente). 30 min ne suffisaient plus le 2026-11-04 (30,8 min mesurées sur MIFF-4, dont 12 min de captures) : 40 min ; les
-    # minutes sont gratuites en public. L'étape des captures a sa propre limite de 15 min (la moins critique).
-    timeout-minutes: 40
+    # Mesure : 6 a 8 min en tout (Release + Internal + captures comprises) sur les runners du depot prive. Depuis le
+    # passage du depot en public (2026-10-30), les runners macOS sont plus lents ou en file d'attente : 35 a 41 min
+    # mesurees le 2026-11-13 sur 5 runs complets (compilation Debug 2 a 5 min, tests 6 a 10 min, Release et Internal
+    # 4 a 5 min chacune, captures 11 a 14 min). Le run 43444821713 a ete ANNULE par la limite de 40 min alors que
+    # tout etait vert. Limite relevee a 60 min (marge de 45 % sur le pire cas mesure) ; GitHub accepte jusqu'a 360 min
+    # par job, et les minutes des runners standard sont gratuites sur un depot public. Une limite sert a couper un job
+    # bloque, pas a mesurer la lenteur : un run qui depasse 60 min est probablement bloque, a investiguer.
+    timeout-minutes: 60
     defaults:
       run:
         shell: bash
@@ -357,7 +360,9 @@ jobs:
 
       - name: Captures d'écran (français, anglais, repli, pseudo-langue, droite-à-gauche...)
         if: env.HEAVY_CHECKS == 'true'
-        timeout-minutes: 15
+        # Mesure le 2026-11-13 : 11 a 14 min (plus de 90 images, environ 8 s chacune sur un runner lent) ; 15 min
+        # coupaient l'etape a la moindre lenteur. 30 min = environ le double du pire cas mesure. Aucune capture retiree.
+        timeout-minutes: 30
         run: |
           set -uo pipefail
           # Le test 1 interroge le vrai Firestore (une lecture non authentifiée) : seulement avec la vraie configuration.

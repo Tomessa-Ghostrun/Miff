@@ -2,6 +2,9 @@
 
 ## Non publié
 
+### CI iOS : limites de durée relevées (job 40 -> 60 min, étape des captures 15 -> 30 min)
+
+Aucun effet dans l'app. Le job « Build et tests » était annulé alors que tout était vert (run 43444821713 : 41 min pour 40 permises ; captures à 11 à 14 min pour 15 permises). Mesures, choix et signal de bascule : `docs/dev/ios-spike.md` §7 bis. Aucun contrôle retiré ; deux lignes de `ci/screenshots.sh` qui répétaient une capture identique sont supprimées.
 
 ### Demande d'ajout d'un lieu : le créateur reçoit, accepte ou refuse (LIEU-REQ-C ; miroir d'Android PR #187, décisions du PM du 2026-11-11)
 
