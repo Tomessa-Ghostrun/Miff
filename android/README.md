@@ -773,6 +773,15 @@ Toutes gratuites. Versions résolues (BoM Compose 2026.09.00, BoM Firebase 35.1.
 | Plugin Spotless (ktlint 1.8.0) | 8.10.4 | Apache 2.0 (ktlint : MIT) |
 | Polices Baloo Thambi 2 et Hanken Grotesk | google/fonts, commit `45e3d52` | SIL OFL 1.1 |
 
+### Écran « Licences et attributions » et sa garde (ABOUT-1A, version 0.40.0)
+
+L'écran Réglages > À propos et aide > Licences et attributions lit **les fichiers de l'app** (hors connexion) : `app/src/main/assets/licenses/licenses.json` (l'inventaire : familles de bibliothèques, licence de chacune, préfixes « groupe:artefact » couverts) et `assets/licenses/texts/*.txt` (le texte complet de chaque licence ; les deux polices sont des copies de `third_party/fonts/OFL-*.txt`, un test les compare).
+
+- **Ajouter une dépendance livrée en release** : écrire son préfixe dans la liste `modules` d'une entrée de `licenses.json` (ou créer une entrée avec le texte de sa licence). **Sans cela la CI échoue** : la tâche Gradle `checkLicenses` (`gradle/licenses-guard.gradle.kts`, devant `testDebugUnitTest`) résout le classpath de **release** et refuse tout module non couvert ; `LicenseInventoryTest` vérifie en plus les bibliothèques déclarées dans `app/build.gradle.kts`. À la main : `./gradlew checkLicenses`.
+- **Mettre à jour une version** : la version affichée d'une ligne (`version` / `versionOf`) n'est qu'un **avertissement** de `checkLicenses` quand elle diffère (Dependabot ne doit pas rendre ses PR rouges) ; la corriger à l'occasion. La licence d'une bibliothèque ne change pas avec une version corrective ; la relire quand une version **majeure** arrive.
+- **Rien n'est relu par un juriste** (décision du PM, 2026-10-23) : les licences sont celles des POM publiés et des dépôts amont. L'écran et la PR ne disent jamais « conforme » ni « relu ».
+- Un composant non livré (la fenêtre d'avis, `play:review`) reste dans l'inventaire avec `"shipped": false` pour que la garde le connaisse ; il n'est jamais affiché.
+
 Dependabot (ticket INIT-1) proposera les mises à jour par PR. Comme Dependabot n'a pas accès aux secrets GitHub, le workflow `android.yml` génère pour lui, et pour lui seul, un `google-services.json` factice (projet `fake-ci-config-do-not-use`, clé évidemment fausse) afin de compiler ; l'APK de ces exécutions n'est pas publié.
 
 ## Préparer la release Google Play (lot « préparation de la release Android », version 0.32.0)

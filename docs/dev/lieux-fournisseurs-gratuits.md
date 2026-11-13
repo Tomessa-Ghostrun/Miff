@@ -64,7 +64,7 @@ Le formulaire propose des **adresses pendant la frappe** (service Photon, public
 
 **Limite connue** : l'ouverture du formulaire relit tout depuis le serveur (pour décider des limites sur des données fraîches). Pour un compte Miff+ avec beaucoup de Miffs, c'est une dizaine de lectures par ouverture : sans effet à l'échelle de la bêta. **Signal** : voir `surveillance-quotas.md` (ratio de lectures par utilisateur actif).
 
-## Licences et attributions (à reprendre dans l'écran « licences » quand il existera)
+## Licences et attributions (reprises dans l’écran « Licences et attributions » d’Android depuis ABOUT-1A, version 0.40.0)
 
 | Élément | Licence | À afficher |
 |---|---|---|
@@ -73,4 +73,4 @@ Le formulaire propose des **adresses pendant la frappe** (service Photon, public
 | Tuiles OpenFreeMap | Conditions d'OpenFreeMap (lues le 2026-11-01) | « OpenFreeMap © OpenMapTiles Data from OpenStreetMap » (sous chaque carte) |
 | Photon (service public de komoot) | Apache 2.0 (logiciel) ; données OSM (ODbL) | Pas d'attribution propre exigée dans les pages lues ; celle d'OSM suffit |
 
-Il n'y a **pas d'écran « licences » dans l'app** aujourd'hui : l'inventaire des dépendances est dans `android/README.md`.
+L’écran « Licences et attributions » existe depuis ABOUT-1A (Android, `android/app/src/main/assets/licenses/licenses.json`, garde de CI `checkLicenses`) ; l’inventaire des dépendances reste aussi dans `android/README.md`.
