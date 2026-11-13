@@ -6,6 +6,15 @@
 
 Aucun effet dans l'app. Le job « Build et tests » était annulé alors que tout était vert (run 43444821713 : 41 min pour 40 permises ; captures à 11 à 14 min pour 15 permises). Mesures, choix et signal de bascule : `docs/dev/ios-spike.md` §7 bis. Aucun contrôle retiré ; deux lignes de `ci/screenshots.sh` qui répétaient une capture identique sont supprimées.
 
+### Version des conditions enregistrée : « 1.0 » (miroir d'Android)
+
+Modifié :
+- `ConsentVersions.terms` passe de « 0.1 » à **« 1.0 »** : c'est la version des CGU et de la politique de confidentialité publiées le 2026-11-13 (`docs/legal/`, PR #226). Les nouveaux comptes enregistrent donc `termsVersion` = « 1.0 ». Aucun texte à l'écran ne change. Les règles Firestore (`backend/firestore.rules`, chaîne de 1 à 20 caractères) acceptent « 1.0 » : non modifiées.
+- **Comptes créés avant : ils gardent « 0.1 »** (`termsVersion` est figée après la création du profil par les règles) ; rien n'est migré. Un compte « 0.1 » est toujours reconnu comme ayant accepté (test `AppRoutingTests` conservé).
+- `ConsentVersions.analytics` (« 2026-10-v01 ») et la version du texte de consentement à la localisation (« 2026-11-v03 ») ont leur propre numéro, non touchés.
+- Tests : valeurs d'exemple « 0.1 » remplacées par « 1.0 » ; nouveau test qui verrouille la constante (« 1.0 », 1 à 20 caractères).
+
+
 ### Demande d'ajout d'un lieu : le créateur reçoit, accepte ou refuse (LIEU-REQ-C ; miroir d'Android PR #187, décisions du PM du 2026-11-11)
 
 Recette : `docs/qa/checklists/demande-lieu-ios-recette-pm.md` (partie B). Détail et écarts : `ios/README.md` (« Demande d'ajout d'un lieu »). Empilée sur la PR LIEU-REQ-B. **Rien n'est compilé en local** (la CI fait foi). Le centre de notifications et la cloche (#127) sont dans `main` : cette PR fait donc aussi la ligne du centre et le point de la cloche (critère C1). **Pas de notification du système** (pas de push dans ce ticket).

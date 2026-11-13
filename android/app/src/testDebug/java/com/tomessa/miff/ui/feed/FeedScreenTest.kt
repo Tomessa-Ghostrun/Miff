@@ -357,6 +357,27 @@ class FeedScreenTest {
     }
 
     @Test
+    fun bubbleInfoButton_hasItsRightEdgeOnTheRightEdgeOfTheCards_andItsBottomOnTheBubble() {
+        // COULEURS-1 v2 (PM, 2026-11-13): the "i" is outside the blob, its right edge on the right edge of the cards (the bubble and the cards are in the same list,
+        // with the same margin of 16 dp on each side), its bottom edge on the bottom edge of the bubble: the card below starts after the usual 14 dp.
+        feed(ready(nominal))
+        val density = context().resources.displayMetrics.density
+        val info =
+            composeRule
+                .onNodeWithContentDescription(
+                    text(R.string.feed_colors_bubble_action_a11y),
+                ).fetchSemanticsNode()
+                .boundsInRoot
+        val root = composeRule.onRoot().fetchSemanticsNode().boundsInRoot
+        assertEquals(root.right - 16 * density, info.right, 1f)
+        // The bubble itself ends at that bottom edge: its words are above it and the first card is under it.
+        val words = composeRule.onNodeWithText("Tout va bien").fetchSemanticsNode().boundsInRoot
+        assertTrue("the bottom of the button is under the words of the bubble", info.bottom > words.bottom)
+        val card = composeRule.onNodeWithContentDescription("Localiser Thomas").fetchSemanticsNode().boundsInRoot
+        assertTrue("the button is above the first card", info.bottom < card.top)
+    }
+
+    @Test
     fun bubble_orangeAndRedPages_areCentred_buttonIncluded() {
         val both =
             content(
