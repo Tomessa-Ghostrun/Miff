@@ -3,12 +3,16 @@ package com.tomessa.miff.ui.feed
 import android.app.Application
 import android.content.Context
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -18,10 +22,12 @@ import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHasNoClickAction
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertWidthIsAtLeast
+import androidx.compose.ui.test.captureToImage
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
@@ -97,6 +103,10 @@ class BubbleColorsEntryTest {
     private fun text(id: Int): String = context().getString(id)
 
     private val infoLabel get() = text(R.string.feed_colors_bubble_action_a11y)
+
+    private companion object {
+        const val HOST = "bubble-host"
+    }
 
     private val now = Instant.parse("2026-11-05T17:00:00Z").toEpochMilli()
     private val minute = 60_000L
@@ -181,7 +191,7 @@ class BubbleColorsEntryTest {
             val provided = if (fontScale == null) density else Density(density.density, fontScale = fontScale)
             CompositionLocalProvider(LocalDensity provides provided) {
                 MiffTheme {
-                    Box(Modifier.fillMaxSize()) { Bubble(content) }
+                    Box(Modifier.fillMaxWidth().testTag(HOST)) { Bubble(content) }
                 }
             }
         }
@@ -305,7 +315,7 @@ class BubbleColorsEntryTest {
         composeRule.onAllNodesWithContentDescription(infoLabel).assertCountEquals(1)
         val after = boundsOf(infoLabel)
         assertEquals(before.left, after.left, 1f)
-        assertEquals(before.top, after.top, 6f * 3f)
+        assertEquals(before.top, after.top, 1f)
         touchTheInfo()
         assertEquals(2, opened)
     }
@@ -335,13 +345,97 @@ class BubbleColorsEntryTest {
         assertEquals(listOf(infoLabel), config.getOrNull(SemanticsProperties.ContentDescription))
     }
 
+    private fun hostBounds(): Rect =
+        composeRule
+            .onNodeWithTag(HOST)
+            .fetchSemanticsNode()
+            .boundsInRoot
+
+    private val px get() = context().resources.displayMetrics.density
+
     @Test
-    fun theInfo_isAtTheBottomRight_insideTheBubbleAndClearOfItsWords() {
+    fun theInfo_isOutsideTheBubble_bottomAndRightEdgesOfTheBubble_andTheBubbleIsNotNarrowed() {
         show(allGood)
         val info = boundsOf(infoLabel)
+        val host = hostBounds()
+        // BOTTOM edge of the button = bottom edge of the bubble; RIGHT edge of the button = right edge of the bubble (= that of the cards of the Feed: same list).
+        assertEquals(host.bottom, info.bottom, 0.5f)
+        assertEquals(host.right, info.right, 0.5f)
+        // Not part of the bubble's room: the words stay centred in the full width (the button takes none of it) and clear of the touch area.
         val words = boundsOfText("Tout va bien")
-        assertTrue("at the right of the middle of the bubble", info.center.x > words.center.x)
-        assertTrue("under the words", info.top >= words.bottom - 1f)
+        assertEquals(host.center.x, words.center.x, 6f)
+        assertFalse("the touch area covers no word", info.overlaps(words))
+    }
+
+    @Test
+    fun theInfo_staysAtTheBottomRight_ofASingleAlert_andDoesNotMove() {
+        show(oneRed)
+        val host = hostBounds()
+        val before = boundsOf(infoLabel)
+        assertEquals(host.bottom, before.bottom, 0.5f)
+        assertEquals(host.right, before.right, 0.5f)
+        // Not part of the animation of the bubble: whatever the bubble does, the "i" stays where it is.
+        composeRule.mainClock.advanceTimeBy(3_000)
+        composeRule.waitForIdle()
+        val after = boundsOf(infoLabel)
+        assertEquals(before.left, after.left, 0.01f)
+        assertEquals(before.top, after.top, 0.01f)
+    }
+
+    /** The colour of the disc of the "i" is the colour of the bubble: the same pixel colour as the blob, away from every word. */
+    private fun assertDiscHasTheColourOfTheBubble(feed: FeedContent) {
+        show(feed)
+        assertDiscMatchesTheBubbleNow()
+    }
+
+    private fun assertDiscMatchesTheBubbleNow() {
+        val info = boundsOf(infoLabel)
+        val host = hostBounds()
+        val image = composeRule.onNodeWithTag(HOST).captureToImage().asAndroidBitmap()
+        val disc =
+            image.getPixel(
+                (info.right - host.left - 20 * px).toInt(),
+                (info.bottom - host.top - 12 * px).toInt(),
+            )
+        val blob = image.getPixel((0.1f * host.width).toInt(), (host.height / 2).toInt())
+
+        fun channel(
+            color: Int,
+            shift: Int,
+        ) = (color shr shift) and 0xFF
+        listOf(0, 8, 16, 24).forEach { shift ->
+            assertEquals(
+                "channel $shift of the disc ${Color(disc)} and of the bubble ${Color(blob)}",
+                channel(blob, shift).toFloat(),
+                channel(disc, shift).toFloat(),
+                8f,
+            )
+        }
+        assertTrue(
+            "the bubble is drawn (not transparent, not blank)",
+            (blob ushr 24) != 0 && blob != Color.White.toArgb() && blob != Color.Transparent.toArgb(),
+        )
+    }
+
+    @Test
+    fun theInfo_hasTheColourOfTheBubble_green() = assertDiscHasTheColourOfTheBubble(allGood)
+
+    @Test
+    fun theInfo_hasTheColourOfTheBubble_gray() = assertDiscHasTheColourOfTheBubble(noNews)
+
+    @Test
+    fun theInfo_hasTheColourOfTheBubble_red() = assertDiscHasTheColourOfTheBubble(oneRed)
+
+    @Test
+    fun theInfo_hasTheColourOfTheBubble_orange() = assertDiscHasTheColourOfTheBubble(oneOrange)
+
+    @Test
+    fun theInfo_followsTheColourOfThePageOfTheCarousel() {
+        show(redAndOrange)
+        assertDiscMatchesTheBubbleNow()
+        composeRule.onNodeWithText("Pas de nouvelles de Amandine depuis 12 h 00".t()).performTouchInput { swipeLeft() }
+        composeRule.waitForIdle()
+        assertDiscMatchesTheBubbleNow()
     }
 
     @Test

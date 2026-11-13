@@ -14,11 +14,11 @@
 
 ## Partie 1 : ouvrir l'écran depuis chaque bulle (6 min)
 
-1. [ ] Feed avec une bulle **verte** (« Tout va bien ») : un petit **« i » dans un cercle** apparaît **en bas à droite** de la bulle. Touchez-le : l'écran **« Les couleurs de ta Miff »** s'ouvre, **sans la barre d'onglets**, avec la flèche de retour en haut à gauche. Touchez ensuite **la bulle** (sur le texte, puis sur une partie colorée sans texte) : **il ne se passe rien**.
-2. [ ] Le « i » est **discret** (trait fin, même couleur que le texte de la bulle) mais **lisible**, et se touche **sans viser** (zone de toucher large autour du petit cercle). La bulle n'a **aucun autre** nouvel élément (ni flèche, ni lien, ni texte). Un appui sur le « i » montre un léger retour visuel rond.
+1. [ ] Feed avec une bulle **verte** (« Tout va bien ») : un petit **« i » dans un disque** apparaît **à côté de la bulle, dans son coin libre en bas à droite** (il n'est pas dans la tache). Touchez-le : l'écran **« Les couleurs de ta Miff »** s'ouvre, **sans la barre d'onglets**, avec la flèche de retour en haut à gauche. Touchez ensuite **la bulle** (sur le texte, puis sur une partie colorée sans texte) : **il ne se passe rien**.
+2. [ ] **Position et style du « i »** : son **bas est à la hauteur du bas de la bulle** ; son **bord droit est aligné sur le bord droit des cartes** des membres ; il est de la **couleur de la bulle** (disque vert, orange, rouge ou gris) avec un « i » foncé bien lisible. **La bulle bouge doucement, le « i » reste immobile.** La bulle a **la même hauteur et la même largeur qu'avant** (le « i » ne la rétrécit pas). Le « i » se touche **sans viser** (zone large vers le haut et la gauche). Aucun autre ajout (ni flèche, ni lien, ni texte). Un appui fonce un peu le disque.
 3. [ ] **Retour** (flèche de la barre, puis le geste ou le bouton retour du téléphone à l'ouverture suivante) : le Feed est retrouvé **tel qu'avant** (même défilement, même page de carrousel). Touchez deux fois très vite le « i » : **un seul** écran s'ouvre ; un seul retour suffit.
 4. [ ] Les autres bulles que vous pouvez obtenir (au moins deux autres) ont **toutes leur « i »**, qui ouvre le **même** écran : orange ou rouge (compte B en retard, ou une seule personne) ; grise « Pas encore de nouvelles » ; grise « Personne d'autre dans cette Miff » ; « Tu as arrêté de partager » (coupez le partage dans la Miff) ; voyageurs (mode voyage d'un proche).
-5. [ ] **Carrousel** (au moins deux alertes) : il n'y a **qu'un seul « i »**. Touchez-le sur la **première** page puis sur la **deuxième** : même écran. **Pendant le glissement d'une page à l'autre, le « i » ne bouge pas** (seule sa couleur suit la page). Le glissement horizontal, les petits points et le changement de page fonctionnent comme avant.
+5. [ ] **Carrousel** (au moins deux alertes) : il n'y a **qu'un seul « i »**. Touchez-le sur la **première** page puis sur la **deuxième** : même écran. **Pendant le glissement d'une page à l'autre, le « i » ne bouge pas** (seule sa couleur suit la page : disque orange sur la page orange, rouge sur la rouge). Le glissement horizontal, les petits points et le changement de page fonctionnent comme avant.
 6. [ ] **Les boutons gardent leur rôle et le « i » ne les gêne pas** : « **Contacter** » ouvre la messagerie et **n'ouvre pas** l'écran des couleurs ; « **Reprendre le partage** » ouvre le parcours habituel et **n'ouvre pas** l'écran des couleurs. Le « i » ne recouvre ni ces boutons, ni le texte, ni les petits points.
 7. [ ] **Rien d'autre n'a changé** : l'anneau de votre photo en haut ouvre toujours le Profil ; les cartes des membres ne s'ouvrent pas sur l'écran des couleurs ; la bulle d'encouragement de l'onglet Update non plus ; toucher la bulle de la Miff ne fait plus rien ; pendant le chargement, rien à toucher.
 
@@ -40,10 +40,10 @@
 
 ## Ce que je n'ai pas pu vérifier sans téléphone
 
-- Le **rendu exact du « i »** (taille, finesse du trait, distance au bord arrondi de la bulle) et sa couleur sur chaque variante : à juger à l'œil. Dites-moi s'il est trop discret, trop proche du bord ou trop près du texte.
-- Le **déplacement lent de la bulle** : le « i » du carrousel suit sa dérive de quelques millimètres ; vérifiez qu'il ne paraît pas décalé de la tache.
+- Le **rendu exact du « i »** (taille du disque, lisibilité de la lettre, distance au bord arrondi de la bulle, alignement avec le bas de la bulle et le bord des cartes) : à juger à l'œil. Dites-moi s'il est trop discret, trop petit ou trop loin de la bulle.
+- Le **mouvement de la bulle** : le « i » n'en fait pas partie ; vérifiez qu'il ne paraît pas "flotter" bizarrement à côté de la tache qui bouge de quelques millimètres.
 
 ## Limites connues
 
-- Pour que le « i » ne recouvre jamais le texte, la bulle réserve de la place en bas : elle peut être **un peu plus haute** (une dizaine de dp) qu'avant quand son texte est long.
+- La zone de toucher du « i » (48 dp) dépasse le disque vers le haut et la gauche ; les marges latérales du texte de la bulle passent de 40 à 48 dp, ce qui peut faire passer quelques mots à la ligne un peu plus tôt.
 - Aucun événement de statistiques n'est envoyé : on ne saura pas combien de personnes ouvrent l'écran tant que vous n'aurez pas décidé d'en ajouter un.

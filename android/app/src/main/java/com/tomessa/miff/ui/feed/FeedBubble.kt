@@ -3,6 +3,8 @@ package com.tomessa.miff.ui.feed
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -28,6 +31,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shape
@@ -139,8 +143,16 @@ fun BubbleView(
     Box(modifier = modifier.fillMaxWidth()) {
         CompositionLocalProvider(LocalBubblePhases provides phases, LocalOpenColors provides onOpenColors) {
             when (bubble) {
-                is Bubble.Alerts -> AlertCarousel(bubble.pages, texts, onMessage, travelNote)
-                else -> CalmBubble(bubble, texts, onResumeSharing, travelNote)
+                is Bubble.Alerts -> {
+                    AlertCarousel(bubble.pages, texts, onMessage, travelNote)
+                }
+
+                else -> {
+                    Box {
+                        CalmBubble(bubble, texts, onResumeSharing, travelNote)
+                        ColorsInfoButton(level = bubble.level, modifier = Modifier.align(Alignment.BottomEnd))
+                    }
+                }
             }
         }
         // Apart from the movement: nothing the screen reader says depends on it.
@@ -250,7 +262,7 @@ private fun AlertCarousel(
         verticalArrangement = Arrangement.spacedBy(Spacing.s),
     ) {
         // Keyed by the member: when an orange becomes red the ORDER changes, and each page must keep its own state.
-        // The "i" is NOT inside a page: it stays at the same place while the pages slide, and takes the colour of the page shown (COULEURS-1 v2).
+        // The "i" is OUTSIDE the pages (and of the animation of the bubble): it stays at the same place while the pages slide, and takes the colour of the page shown.
         Box {
             HorizontalPager(
                 state = pager,
@@ -261,11 +273,7 @@ private fun AlertCarousel(
                 val page = pages[index]
                 AlertPageBubble(page, texts, onMessage)
             }
-            ColorsInfoButton(
-                level = pages[current].level,
-                modifier = Modifier.align(Alignment.BottomEnd),
-                drifts = true,
-            )
+            ColorsInfoButton(level = pages[current].level, modifier = Modifier.align(Alignment.BottomEnd))
         }
         if (several) PagerDots(count = pages.size, current = current, level = pages[current].level)
         // MODE VOYAGE: the other members on a trip, under the alerts.
@@ -287,7 +295,7 @@ private fun AlertPageBubble(
     texts: FeedTexts,
     onMessage: (String) -> Unit,
 ) {
-    BubbleBlob(level = page.level, infoButton = false) {
+    BubbleBlob(level = page.level) {
         Headline(texts.alertTitle(page))
         texts.alertDetail(page)?.let { Line(it) }
         texts.alertNote(page)?.let { Caption(it) }
@@ -309,21 +317,14 @@ private val LocalBubblePhases = compositionLocalOf<BubblePhases?> { null }
 /** COULEURS-1: what the "i" of the bubble does (opens the page of the colours). */
 private val LocalOpenColors = compositionLocalOf<() -> Unit> { {} }
 
-/**
- * Room kept under the text for the "i" (its 48 dp touch area plus its margin below): the words, "Contacter" and "Reprendre le partage" can never be
- * covered by it, whatever the size of the font.
- */
-private val INFO_ROOM = 58.dp
-
 @Composable
 private fun BubbleBlob(
     level: StatusLevel,
-    infoButton: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     val phases = LocalBubblePhases.current
     // COULEURS-1 (v2, decision of the PM, 2026-11-13): the bubble is NOT touchable any more (a touch on it reaches only its own buttons); the page of the colours
-    // opens with the small "i" at the bottom right. A carousel draws ONE "i" for all its pages (see AlertCarousel; [infoButton] = false for its pages).
+    // opens with the small "i" ([ColorsInfoButton]), which is NOT part of the blob (see there).
     Box(
         modifier =
             Modifier
@@ -360,50 +361,58 @@ private fun BubbleBlob(
                 Modifier
                     .align(Alignment.Center)
                     .fillMaxWidth()
-                    .padding(start = 40.dp, top = 42.dp, end = 40.dp, bottom = INFO_ROOM),
+                    // 48 dp on each side (40 before, same height as before): the words never reach the 48 dp corner of the "i" at the bottom right.
+                    .padding(horizontal = 48.dp, vertical = 42.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
             content()
         }
-        if (infoButton) ColorsInfoButton(level = level, modifier = Modifier.align(Alignment.BottomEnd), drifts = false)
     }
 }
 
 /**
- * The "i" of the bubble (COULEURS-1 v2): a small circle with an "i", discreet, in the colour of the words of the level (the one validated for the labels of
- * the cards: at least 4.5 to 1 on each tint, well above the 3 to 1 asked for a symbol). The drawing is 24 dp, the touch area 48 dp (round, usual ripple),
- * at the bottom right INSIDE the shape of the blob; the room under the words ([INFO_ROOM]) keeps it clear of every word and button. Screen reader: a button
- * named "Comprendre les couleurs" (the letter itself is not read). [drifts]: the carousel draws it outside its pages, so it follows the slow drift itself.
+ * The "i" of the bubble (COULEURS-1 v2, decision of the PM, 2026-11-13): a small round button OUTSIDE the bubble, in the free corner at the bottom right of the
+ * bubble's rectangle (the blob is rounded there, so the corner is empty). It is NOT part of the blob: it is not in its layer, not clipped by its shape, and
+ * does not follow its slow movement (drift, squash, tilt): when the bubble moves, the "i" stays still. Its BOTTOM edge is the bottom edge of the bubble, its
+ * RIGHT edge the right edge of the bubble, which is that of the cards of the Feed (same list, same margins).
+ *
+ * Colour of the bubble: the disc is filled with the tint of the level shown (the colour of the blob; in a carousel it follows the page) and the "i" is in the
+ * text colour of the level, the one validated for the labels of the cards: at least 4.5 to 1 on each tint (`ColorContrastTest`). The glyph is 24 dp, the touch
+ * area 48 dp: the drawing sits in the bottom right corner of that area, so that its edges are those of the bubble. The words of the bubble stop 48 dp from the
+ * right and 42 dp from the bottom, so the touch area never covers a word, "Contacter" or "Reprendre le partage" (the dots of a carousel are below the pages).
+ * Screen reader: a button named "Comprendre les couleurs" (the letter itself is not read).
  */
 @Composable
 private fun ColorsInfoButton(
     level: StatusLevel,
     modifier: Modifier = Modifier,
-    drifts: Boolean,
 ) {
     val openColors = LocalOpenColors.current
-    val phases = LocalBubblePhases.current
     val label = stringResource(R.string.feed_colors_bubble_action_a11y)
     val color = level.onTint()
+    val source = remember { MutableInteractionSource() }
+    val pressed by source.collectIsPressedAsState()
     val textDensity = LocalDensity.current
     Box(
         modifier =
             modifier
-                .padding(end = INFO_END, bottom = INFO_BOTTOM)
-                .graphicsLayer {
-                    if (drifts && phases != null) translationY = BubbleMotion.driftDp(phases.blob.value) * density
-                }.size(Spacing.minTouchTarget)
-                .clip(CircleShape)
-                .clickable(role = Role.Button, onClick = openColors)
+                .size(Spacing.minTouchTarget)
+                .clickable(interactionSource = source, indication = null, role = Role.Button, onClick = openColors)
                 .semantics { contentDescription = label },
-        contentAlignment = Alignment.Center,
+        contentAlignment = Alignment.BottomEnd,
     ) {
         Box(
-            modifier = Modifier.size(INFO_GLYPH).border(INFO_STROKE, color, CircleShape),
+            modifier =
+                Modifier
+                    .size(INFO_GLYPH)
+                    .clip(CircleShape)
+                    .background(level.tint())
+                    // The press: the disc darkens a little (no ripple outside the shape).
+                    .background(if (pressed) color.copy(alpha = INFO_PRESSED_ALPHA) else Color.Transparent),
             contentAlignment = Alignment.Center,
         ) {
-            // Decorative (the button says it all to the screen reader). Sized in dp: the letter stays inside its circle at the largest font.
+            // Decorative (the button says it all to the screen reader). Sized in dp: the letter stays inside its disc at the largest font.
             Text(
                 text = "i",
                 style = textBodyBold14,
@@ -417,10 +426,8 @@ private fun ColorsInfoButton(
 }
 
 private val INFO_GLYPH = 24.dp
-private val INFO_STROKE = 1.5.dp
 private val INFO_LETTER = 14.dp
-private val INFO_END = 44.dp
-private val INFO_BOTTOM = 10.dp
+private const val INFO_PRESSED_ALPHA = 0.2f
 
 /**
  * The MAIN sentence of the bubble ("Tout va bien"): EXACTLY display/headline (Baloo Thambi 2 Regular, 24 sp / 30), the title of the other screens
