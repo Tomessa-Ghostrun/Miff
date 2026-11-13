@@ -1,0 +1,198 @@
+import XCTest
+@testable import Miff
+
+// L'en-tête du Feed qui se masque au défilement et revient dès qu'on remonte (D41, retour du PM sur le build 27) : les règles PURES, sans
+// interface. La distance défilée vient directement de la vue de défilement (`ScrollDistanceReader`) : 0 au repos, positive en descendant
+// dans la liste, négative quand on tire vers le bas.
+final class FeedHeaderScrollTests: XCTestCase {
+    private func header(height: CGFloat = 100) -> CollapsingHeaderState {
+        var state = CollapsingHeaderState()
+        state.measured(height)
+        return state
+    }
+
+    func testAtRestTheHeaderIsFullyShownAndTheListStartsBelowIt() {
+        var state = header()
+
+        state.scrolled(from: 0, to: 0)
+
+        XCTAssertEqual(state.offset, 0)
+        // La première carte commence sous l'en-tête : marge haute = sa hauteur + une marge, jamais moins.
+        let listTop = state.height + Spacing.md
+        XCTAssertGreaterThanOrEqual(listTop, state.height + state.offset)
+    }
+
+    func testScrollingDownHidesTheHeaderPointForPointThenFully() {
+        var state = header()
+        var previous: CGFloat = 0
+
+        for scrolled in stride(from: CGFloat(10), through: 300, by: 10) {
+            state.scrolled(from: previous, to: scrolled)
+            previous = scrolled
+            XCTAssertEqual(state.offset, -min(scrolled, 100), "à \(scrolled) pt")
+        }
+        XCTAssertEqual(state.offset, -100, "entièrement caché")
+    }
+
+    func testScrollingBackUpShowsItAtOnceWithoutWaitingForTheTop() {
+        var state = header()
+        state.scrolled(from: 0, to: 400)
+        XCTAssertEqual(state.offset, -100)
+
+        state.scrolled(from: 400, to: 370)
+        XCTAssertEqual(state.offset, -70, "30 pt vers le haut : 30 pt d'en-tête qui redescend")
+        state.scrolled(from: 370, to: 250)
+        XCTAssertEqual(state.offset, 0, "loin du haut de la liste, il est déjà entièrement revenu")
+    }
+
+    func testNearTheTopItIsNeverMoreHiddenThanTheListScrolled() {
+        var state = header()
+        state.scrolled(from: 0, to: 60)
+        XCTAssertEqual(state.offset, -60)
+
+        // Un retour vers le haut puis une nouvelle descente près du haut : jamais plus caché que le défilement (pas de bande vide).
+        state.scrolled(from: 60, to: 20)
+        XCTAssertEqual(state.offset, -20)
+        XCTAssertEqual(CollapsingHeaderState.scrolledFromTopIfNear(20, headerHeight: 100), 20)
+        XCTAssertNil(CollapsingHeaderState.scrolledFromTopIfNear(101, headerHeight: 100), "loin du haut")
+        XCTAssertEqual(CollapsingHeaderState.scrolledFromTopIfNear(100, headerHeight: 100), 100, "seuil inclus")
+    }
+
+    func testPullingDownAtTheTopKeepsTheHeaderShown() {
+        var state = header()
+
+        state.scrolled(from: 0, to: -40)
+
+        XCTAssertEqual(state.offset, 0)
+    }
+
+    func testATinyMovementIsIgnoredSoTheHeaderDoesNotShakeButARealOneIsFollowed() {
+        var state = header()
+        state.scrolled(from: 0, to: 200)
+
+        state.scrolled(from: 200, to: 200.3)
+        XCTAssertEqual(state.offset, -100, "moins de \(CollapsingHeaderState.minimumStep) pt : rien ne bouge")
+        state.scrolled(from: 200.3, to: 199.9)
+        XCTAssertEqual(state.offset, -100)
+        state.scrolled(from: 199.9, to: 190)
+        XCTAssertEqual(state.offset, -90.1, accuracy: 0.001, "un vrai mouvement est suivi")
+    }
+
+    func testALockedHeaderNeverHidesWhateverTheScroll() {
+        var state = header()
+        state.lock(true)
+
+        state.scrolled(from: 0, to: 500)
+
+        XCTAssertEqual(state.offset, 0)
+    }
+
+    func testNothingHidesBeforeTheHeaderIsMeasured() {
+        var state = CollapsingHeaderState()
+
+        state.scrolled(from: 0, to: 500)
+
+        XCTAssertEqual(state.offset, 0)
+    }
+
+    @MainActor
+    func testTheModelReadsTheDirectScrollWithoutAnyRestPositionToGuess() {
+        let model = FeedHeaderModel()
+        model.measured(100)
+
+        model.scrolled(to: 0)
+        XCTAssertEqual(model.state.offset, 0)
+        model.scrolled(to: 40)
+        XCTAssertEqual(model.state.offset, -40)
+        model.scrolled(to: 250)
+        XCTAssertEqual(model.state.offset, -100)
+        model.scrolled(to: 220)
+        XCTAssertEqual(model.state.offset, -70)
+        model.scrolled(to: -30)
+        XCTAssertEqual(model.state.offset, 0, "tirer vers le bas en haut de la liste : l'en-tête est là")
+    }
+
+    @MainActor
+    func testOnceTheDirectScrollIsReadTheFallbackPositionIsIgnored() {
+        let model = FeedHeaderModel()
+        model.measured(100)
+        model.scrolled(to: 0)
+
+        model.contentMoved(to: 150)
+        model.contentMoved(to: 10)
+
+        XCTAssertEqual(model.state.offset, 0, "la lecture de repli ne contredit pas la lecture directe")
+    }
+
+    // MARK: - La marge haute de la liste (cause réelle du bug des captures de la CI)
+
+    func testTheListStartsExactlyAtTheBottomOfTheHeaderWhenTheScrollViewIgnoresTheTopSafeArea() {
+        // Le cas des captures : la vue de défilement commence en haut de l'ÉCRAN (origine 0) ; l'en-tête est posé dans la zone sûre
+        // (59 pt) et mesure 106 pt : son bas est à 165 pt. Avant, la marge valait 106 pt et le contenu démarrait 59 pt trop haut.
+        let inset = FeedTopInset.listInset(headerBottom: 165, contentOrigin: 0, fallback: 106)
+
+        XCTAssertEqual(inset, 165)
+        XCTAssertEqual(0 + inset, 165, "le haut du contenu tombe au bas de l'en-tête (puis la marge Spacing.md)")
+    }
+
+    func testTheListInsetIsNotDoubledWhenTheScrollViewAlreadyAddsTheSafeArea() {
+        // Une vue de défilement qui ajoute elle-même la zone sûre (origine 59) : la marge n'est que la hauteur de l'en-tête.
+        XCTAssertEqual(FeedTopInset.listInset(headerBottom: 165, contentOrigin: 59, fallback: 106), 106)
+    }
+
+    func testWithoutMeasuresTheHeaderHeightIsUsedAndTheInsetIsNeverNegative() {
+        XCTAssertEqual(FeedTopInset.listInset(headerBottom: nil, contentOrigin: 0, fallback: 106), 106)
+        XCTAssertEqual(FeedTopInset.listInset(headerBottom: 165, contentOrigin: nil, fallback: 106), 106)
+        XCTAssertEqual(FeedTopInset.listInset(headerBottom: 50, contentOrigin: 80, fallback: 106), 0)
+    }
+
+    /// Retour du PM (TestFlight 32) : l'espace entre l'en-tête et la bulle est réduit de moitié (30 pt de marge et d'espacement avant, 12 pt maintenant).
+    func testTheGapBetweenTheHeaderAndTheBubbleIsHalvedAndTheBubbleStaysFullyBelowTheHeader() {
+        XCTAssertEqual(FeedTopInset.gapBelowHeader, 12)
+        XCTAssertLessThanOrEqual(FeedTopInset.gapBelowHeader, 30 / 2, "au plus la moitié de l'espace d'avant")
+        XCTAssertGreaterThan(FeedTopInset.gapBelowHeader, 0, "jamais recouverte : un espace reste")
+        // Le haut du contenu tombe au bas de l'en-tête + l'espace, quel que soit l'appareil : avec encoche (zone sûre 59 pt), sans encoche
+        // (20 pt) et avec un en-tête plus haut (Dynamic Type : la pastille de la Miff grandit).
+        for (safeTop, headerHeight) in [(CGFloat(59), CGFloat(106)), (20, 106), (59, 160), (20, 160)] {
+            let headerBottom = safeTop + headerHeight
+            let inset = FeedTopInset.listInset(headerBottom: headerBottom, contentOrigin: 0, fallback: headerHeight)
+            let expected = headerBottom + FeedTopInset.gapBelowHeader
+            let label = "zone sûre \(safeTop), en-tête \(headerHeight)"
+            XCTAssertEqual(inset + FeedTopInset.gapBelowHeader, expected, label)
+            XCTAssertGreaterThanOrEqual(inset, headerBottom, "jamais au-dessus du bas de l'en-tête")
+        }
+    }
+
+    func testTheListHasNoExtraSpacingAfterItsTopMarginAndTheLogoScrollsBackWithTheMargin() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // Feed
+            .deletingLastPathComponent() // MiffTests
+            .deletingLastPathComponent() // ios
+            .appendingPathComponent("Miff/Views/Feed/FeedListView.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+
+        XCTAssertTrue(source.contains(".frame(height: topInset + FeedTopInset.gapBelowHeader)"), "la marge est l'ancre")
+        let stack = "VStack(spacing: 0) {\n                    topAnchor"
+        XCTAssertTrue(source.contains(stack), "aucun espacement de la pile après l'ancre")
+    }
+
+    func testAMeasureThatMovesByAFractionOfAPointIsNotNew() {
+        XCTAssertTrue(FeedTopInset.isNewMeasure(10, old: nil))
+        XCTAssertFalse(FeedTopInset.isNewMeasure(10.3, old: 10))
+        XCTAssertTrue(FeedTopInset.isNewMeasure(10.5, old: 10))
+    }
+
+    func testTheShowAnimationIsShortAndSystemAnimationsAreRespectedByTheScreen() throws {
+        XCTAssertLessThanOrEqual(FeedHeaderMotion.showSeconds, 0.3, "animation courte")
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // Feed
+            .deletingLastPathComponent() // MiffTests
+            .deletingLastPathComponent() // ios
+            .appendingPathComponent("Miff/Views/Feed/FeedCollapsingLayout.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+
+        XCTAssertTrue(source.contains("accessibilityReduceMotion"), "« Réduire les animations » est lu")
+        let rule = "if reduceMotion {\n            change()"
+        XCTAssertTrue(source.contains(rule), "aucune animation quand il est demandé")
+    }
+}

@@ -65,12 +65,88 @@ Modifié :
 
 Coût (Spark) : **0 lecture, 0 écriture, 0 appel réseau** de plus (tout est local) ; aucun contournement ; aucune nouvelle dépendance, permission ni capacité ; aucune clé APNs ; aucun événement Analytics (les compteurs à venir resteront locaux).
 
+### Update : la bulle d'incitation (« Tu es passé en orange… ») compacte, comme sur Android (retour du PM sur iPhone)
+
+Branche `ios/bulle-incitation-compacte` (PR en brouillon). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.**
+
+Corrigé :
+- La bulle d'incitation orange / rouge était **beaucoup trop grosse** (un grand rectangle arrondi avec une pointe). Elle a maintenant le design d'Android (`IncentiveBubble` d'`UpdateBubble.kt`) : compacte, **de la hauteur de son texte** (marges de 16 pt, texte italique 16 / 22, coins de 20 pt, pointe de 22 x 11 pt qui s'arrête 4 pt au-dessus de la barre, 16 pt des bords). Sa hauteur est **mesurée** (`IncentiveBubbleLayout`) au lieu d'être laissée à un conteneur (`ViewThatFits` + `ScrollView`) : jamais plus haute que 40 % de l'écran, le texte défilant à l'intérieur au-delà (grand texte). Aucun symbole, VoiceOver inchangé (texte annoncé une fois à l'apparition).
+
+Ajouté : `IncentiveBubbleLayoutTests` (règle pure, vrais textes FR et EN sur le plus petit iPhone : moins de 200 pt, au plus 40 % de l'écran).
+
+### Reprise du partage d'une Miff : la carte ne reste plus grise (recette TestFlight, 2026-11-11)
+
+Symptôme : un testeur arrête le partage de sa position pour une Miff, puis le reprend : sa carte au Feed reste **grise** au lieu de redevenir verte, orange ou rouge. **Rien n'est compilé en local (la CI fait foi).**
+
+**Cause (certitude : élevée sur le mécanisme, moyenne sur le scénario exact du testeur).** Arrêter le partage SUPPRIME le statut, la photo et la dernière position de la Miff sur le serveur (`MiffWrites.stopSharing`) ; le reprendre récrit un statut `unknown` (`MiffWrites.resumeSharing`, gris). Or le suivi n'écrit un statut que sur un **changement de présence** (`PresenceMachine.onTransition` rend nil si la présence déduite est celle qu'il garde) :
+- si le suivi gardait la présence d'avant l'arrêt (le passage qui devait la retirer n'a pas vu le partage coupé, ou autre Miff qui partage encore la même zone), elle n'est jamais récrite ;
+- si le suivi avait retrouvé la Miff « comme neuve », la personne déjà dans le lieu ne produit aucune arrivée (la zone est déjà connue du système) ;
+- dans les deux cas, plus rien ne récrit le statut avant la prochaine entrée ou sortie de zone, et la dernière position écrite restait aussi « publiée » dans la copie locale alors que le serveur l'avait supprimée.
+
+Corrigé :
+- **Signal de reprise** : `MiffRepository.setSharing(enabled: true)` prévient le suivi **quelle Miff** est reprise (`MiffRepositoryRules.onSharingResumed`, `TrackingRuntime.sharingResumed`) ; le drapeau (`LocalState.resumedMiffs`, facultatif, persistant) est posé dans l'ordre des travaux du suivi, puis les Miffs sont relues dans le même travail. Sans ce signal branché (tests, autres usages) le comportement est celui d'avant (`onSharingChanged`).
+- **Remise à zéro de la détection de cette Miff** (`LocalMiff.resetDetection` : présence, dernière position écrite, statut en attente, batterie) puis **présence recalculée** à partir de ce que le téléphone sait MAINTENANT (`TrackingEngine+Resume.swift`) : dans un lieu de confiance ou une zone de danger (zones où la copie locale croit la personne, ou position de ce passage de moins de 10 minutes qui les contient) : cette présence, à l'heure d'entrée connue ; hors de toutes les zones **avec** une position pour le dire : `out`, maintenant ; hors zone **sans** position : rien n'est inventé (le statut reste `unknown` jusqu'au prochain signal du système). Le statut est écrit par le passage habituel (`flushPending`) avec ses conditions : « Toujours » + position exacte, consentement v3, session SESS-3, disjoncteur.
+- La dernière position est de nouveau publiée (le serveur l'avait supprimée).
+- Journal local de diagnostic (Debug et Internal) : `statusAfterResume`.
+
+**Limite connue** : hors d'un lieu et sans position, le statut reste gris jusqu'à la prochaine entrée ou sortie de zone (on n'invente pas un « tout va bien »).
+
+**Revue de la PR #190, ajouts** :
+- **Le drapeau de reprise n'est consommé que quand la détection peut tourner** : sans « Toujours » + position exacte il reste posé, et l'autorisation accordée plus tard (`accessChanged`) recalcule alors la présence (avant, le drapeau était retiré trop tôt : la carte restait grise par un autre chemin). Il survit aussi à l'effacement du suivi (`standDown`, par exemple consentement pas encore v3 ou relecture du serveur qui échoue juste après) et attend la fin d'un voyage.
+- **Mode voyage** : la remise à zéro garde le statut en attente qui efface les clés d'un voyage terminé (`clearTravel`) ; le recalcul le remplace s'il a mieux à dire, l'écriture efface les clés dans tous les cas.
+- **Choix des heures documenté** (`TrackingEngine+Resume.swift`) : l'arrivée recalculée porte l'heure d'entrée connue (jusqu'à 24 h, sinon maintenant) pour `presenceAt` et `lastUpdateAt`, comme une vraie arrivée (une zone de confiance est toujours verte) ; une zone de danger ne pose aucune update (rouge tant que la personne n'en fait pas, comme à l'arrivée) ; un `out` part de maintenant (on ne sait pas depuis quand la personne est partie).
+- **Tests ajoutés** (`TrackingEngineResumeEdgeTests`) : reprise sans « Toujours » puis « Toujours » accordé ; consentement pas encore v3 ; relecture du serveur en échec ; deux Miffs dans la même zone (seule la reprise est réécrite) ; position de plus de 10 minutes (aucun `out`) ; statut qui ne part pas (hors ligne, disjoncteur) reste en attente puis part au retour du réseau ; mode voyage (drapeau en attente, voyage terminé hors ligne puis effacement des clés).
+- **À vérifier en recette TestFlight** : après « arrêter puis reprendre », la carte « journal de détection » doit montrer `statusAfterResume` puis `statusWritten` (sinon `statusWaiting`, `breakerStatus` ou `positionUnavailable` disent pourquoi).
+
+**Tests** : `TrackingEngineResumeTests` (sans le signal, la présence n'est pas récrite = le bug ; avec : réécrite dans le lieu, après effacement complet du suivi, hors zone avec position, rien sans position, drapeau consommé une fois, position republiée, rien sans « Toujours » + précise), `TrackingWiringTests` (la reprise prévient le suivi de la Miff reprise ; l'arrêt non ; via le runtime la présence est récrite).
+
+**Erreur « Pas de connexion pour le moment » à la publication d'une photo après cette manip (certitude : faible sur la cause).** Le code de classement est correct sur le papier : un refus des règles (`permission-denied`, `unauthenticated`) donne `refused` (« réessaie dans un instant »), jamais « hors connexion » ; un partage coupé dans la Miff donne `sharingStopped` ; seuls un réseau absent selon le téléphone, une session non vérifiable, un identifiant de session absent, ou une erreur `unavailable` / `cancelled` / quota (critère H4) / réseau donnent « Pas de connexion ». Faute de journal on ne peut pas dire laquelle s'est produite. Ajouté : un **code de cause dans le journal local** (aucun message, chemin ni identifiant) : `updateOfflineNoNetwork`, `updateOfflineSessionUnverified`, `updateOfflineNoClearance`, `updateErrorUnavailable`, `updateErrorCancelled`, `updateErrorQuota`, `updateErrorTimedOut`, `updateErrorNetworkUrl`, `updateErrorRefused`, `updateErrorOther`. **À faire après l'essai** : le PM envoie la carte du journal après un essai raté. Tests : `UpdatePublisherDiagnosisTests`.
+
+**Choix économiques** : aucune dépendance ni service ; une reprise relit déjà les Miffs (même coût qu'avant), plus au plus UNE écriture de statut et UNE de position par Miff reprise (geste manuel).
+
+**Android (analyse seulement, rien modifié)** : `TrackingEngine.kt` a la même structure (statut écrit seulement sur un changement de présence ; `miff.derived()` gardé ; aucune notion de « reprise du partage » : `syncMiffs` ne compare ni `consentedAt` ni le statut). Le même défaut est probable si le passage d'arrêt n'a pas vu le partage coupé, ou si une zone déjà surveillée est partagée avec une autre Miff. À vérifier sur l'OPPO.
+
+
+
+### Feed : espace en-tête / bulle réduit de moitié (retour du PM sur le TestFlight 32)
+
+L'espace entre le bas de l'en-tête et le haut de la bulle est réduit de moitié : 12 pt (`FeedTopInset.gapBelowHeader`) au lieu de 16 pt de marge + 14 pt d'espacement laissé après le point d'ancrage (environ 38 pt à l'écran avec le contour de la bulle, environ 20 pt maintenant). La marge est l'ancre du haut de la liste : la bulle reste entière sous l'en-tête, jamais recouverte, et « retour en haut » (le logo) ramène la liste avec la marge. Elle reste tirée de mesures : zone sûre avec ou sans encoche, en-tête plus haut avec Dynamic Type (`FeedHeaderScrollTests`).
+
+### Feed : le haut de la bulle n'est plus coupé par l'en-tête (cause réelle trouvée avec les captures de la CI, v2)
+
+Branche `ios/feed-header-v2` (PR #193 en brouillon, reprend #176). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi** ; les captures `90` à `93` de la CI montrent le Feed réel (aperçu `-MiffPreview feed-green|feed-orange|feed-red`).
+
+Corrigé :
+- **Cause réelle** : la vue de défilement du Feed commence tout en haut de l'ÉCRAN (sous la barre d'état) alors que l'en-tête est posé DANS la zone sûre ; la marge haute de la liste ne valait que la hauteur de l'en-tête, sans la zone sûre (une cinquantaine de points) : le contenu démarrait trop haut, sous l'en-tête, et le haut de la bulle était coupé en ligne droite. La lecture du défilement de #176 n'y pouvait rien.
+- **Correctif** : la marge haute est tirée de MESURES (`FeedTopInset`) : le bas de l'en-tête au repos (mesuré par un conteneur fixe, dans la fenêtre) moins l'endroit où la vue de défilement place son contenu (`ScrollDistanceReader`, haut de la vue + marge automatique). Le haut de la liste tombe exactement au bas de l'en-tête, avec ou sans marge automatique de la vue de défilement (pas de double compte).
+- Mise en page extraite dans `FeedCollapsingLayout` (l'écran réel et l'aperçu de la CI passent par le même code).
+
+Ajouté : `FeedTopInset` (+ tests : cas des captures, pas de double compte, repli, jamais négatif), aperçu `FeedScreenPreview` et captures CI `90` à `93`.
+
+
+### Corrigé : photo en plein écran, croix et icône plus écrasées contre l'heure, bouton plus collé au bord bas (retour du PM, TestFlight 32, iPhone 11 Pro à encoche)
+
+Sur le vrai appareil, le `fullScreenCover` peut annoncer des zones sûres NULLES (le simulateur de la CI, lui, les donne bien) : la croix et l'icône se retrouvaient contre l'heure et la batterie, le bouton « Voir où c'était » contre le bord bas. Correctif durable en deux couches :
+- **Lecture des zones sûres de la fenêtre** (`PhotoSafeArea`, lecture seule) en plus de celles du lecteur de géométrie : on garde le plus grand des deux, côté par côté.
+- **Planchers de sécurité** (Swift pur et testé, `PhotoFullScreenLayout.topMargin` / `bottomMargin`) : haut = max(zone sûre haute, **47 pt**) + **12 pt** ; bas = max(zone sûre basse, **34 pt**) + **16 pt**. Ils ne valent qu'en portrait (en paysage il n'y a pas d'encoche en haut : le plancher ferait perdre de la place pour rien ; la zone sûre lue + les marges s'appliquent seules).
+- Tests : marges nulles (cas du cover) = 59 pt en haut, 50 pt en bas ; encoche 47/34 = 59 et 50 ; île dynamique (59) : la vraie valeur gagne ; paysage sans plancher. **Capture CI 153** (`-MiffForceZeroSafeArea YES`, option Debug seulement) : zones sûres simulées à 0, les planchers tiennent. Sur la capture, l'écran lui-même garde ses vraies dimensions.
+- Compromis visible : sur un iPhone sans encoche (SE) le plancher laisse ~27 pt de plus qu'il ne faudrait en haut ; c'est le prix de la sûreté demandée. À confirmer sur TestFlight.
+
+### Corrigé : la légende de la photo en plein écran n'est plus décollée du bas (retour du PM, build 30) — cause trouvée sur des captures de la CI
+
+Le PM voyait, sur son iPhone 11 Pro, la légende vers le milieu-bas avec ~350 px de noir sous le bouton « Voir où c'était », et une photo qui semblait « alignée en haut ». **Cause réelle**, lue sur de VRAIES captures du simulateur (nouvel écran de capture `-MiffPreview photo-3-4` / `photo-tall`, dans un vrai `fullScreenCover`, étapes 150 à 152 de `ios/ci/screenshots.sh`) : la photo était bien centrée, mais la légende était dans un `ViewThatFits { légende ; ScrollView { légende } }` qui **choisissait la variante `ScrollView` même en texte normal** ; un `ScrollView` prend toute la hauteur permise (45 % de l'écran) et range son contenu **en haut** : le voile sombre (78 %) recouvrait donc ~40 % de l'écran, légende en haut de ce bloc, vide dessous ; ce voile large cachait le bas de la photo, qui paraissait s'arrêter et laissait croire à une photo alignée en haut. Le calcul de mise en page était juste ; c'est le choix implicite de `ViewThatFits` qui ne l'était pas.
+- **Mise en page simple** : UN seul `GeometryReader` à la racine qui **respecte** les zones sûres (donc `proxy.safeAreaInsets` = les VRAIES marges) ; son contenu, lui, est étendu à l'écran entier par `.ignoresSafeArea()` et a la taille `PhotoFullScreenLayout.screenSize` (zone visible + zones sûres). **Seconde cause, vue sur les premières captures de ce correctif** : un `.ignoresSafeArea()` posé sur le `GeometryReader` lui-même lui faisait renvoyer des zones sûres à ZÉRO (la croix et l'icône passaient sous l'heure et la batterie, le bouton « Voir où c'était » sous la barre d'accueil) ; il est maintenant posé sur le contenu. Fond noir, photo `scaledToFit` dans un cadre de la taille de l'écran (CENTRÉE), croix et icône en `.overlay(alignment: .top)` (zone sûre haute), légende en `.overlay(alignment: .bottom)` : **sa marge basse est la zone sûre basse + 8 pt, et rien d'autre**. Plus de `ViewThatFits`, plus de GeometryReader imbriqué, plus de hauteur imposée.
+- **La légende défile seulement quand il le faut** (grand texte, paysage) selon un calcul pur et testé (`PhotoFullScreenLayout.footerScrolls`), et, défilante, son contenu est ANCRÉ EN BAS (`frame(minHeight:, alignment: .bottom)`) : jamais de vide noir sous le bouton. En texte normal, la légende est à sa hauteur naturelle : le voile ne la dépasse pas.
+- **Voile plus léger** : noir à 70 % (au lieu de 78 %) ; contraste du texte blanc toujours ≥ 4,5:1 sur le pire cas (~8,5:1).
+- Tests : `PhotoFullScreenLayoutTests` (un seul GeometryReader, surimpressions, marge basse, ancrage en bas, quand la légende défile) ; captures CI 150 à 152.
+
+
 ### Corrigé et changé : photo de proche en plein écran, enregistrement DIRECT dans la galerie, photo qui remplit la zone (retours du PM sur le build 25, 2026-11-11)
 
 - **Enregistrement direct dans la galerie** (décision du PM, **remplace** « sans permission / feuille de partage » : la feuille ne proposait pas « Enregistrer l'image ») : le toucher de l'icône en haut à droite enregistre la photo dans Photos, **sans feuille de partage**. `PHPhotoLibrary` en autorisation **`.addOnly`** (jamais de lecture de la galerie), demandée **au premier toucher** (clé **`NSPhotoLibraryAddUsageDescription`**, FR + EN : « Miff enregistre la photo dans ta galerie uniquement quand tu touches « Enregistrer cette photo ». Miff ne lit jamais tes photos ni ta galerie. »), puis `PHAssetCreationRequest.forAsset()` avec un JPEG **ré-encodé depuis les pixels** (`PhotoExport` : aucun EXIF, aucun GPS, aucune donnée de lieu ; testé avec une source qui porte un GPS). **Aucune écriture automatique** : seulement au toucher. Refus : message calme + « Ouvrir les réglages » (jamais culpabilisant) ; appareil restreint et échec : messages calmes ; confirmation « Photo enregistrée. ». Voile des applications récentes conservé.
 - **Contrôles de permission mis à jour** : `ci/check-binaries.sh` exige EXACTEMENT `NSPhotoLibraryAddUsageDescription` (jamais `NSPhotoLibraryUsageDescription`, qui permettrait de lire), `AppConfigurationTests`, `InfoPlistStaticTests`, `PermissionPrivacyTests` (clés du catalogue d'usage) et `PhotoSaveTests` (par lecture des sources : un seul fichier importe `Photos`, ajout seul, jamais de lecture, `save()` appelé seulement par le toucher, bouton seulement dans le plein écran). **App Privacy : toujours aucune collecte.** Documents de posture mis à jour (D52, `docs/release/update-photo-declarations.md` §13 bis, `docs/legal/README.md`).
 - **Textes** : `feed_photo_download`, `feed_photo_download_a11y` (nom parlé), `feed_photo_download_done`, `feed_photo_download_failed` **identiques à Android** (textes alignés, vérifiés par un test) ; deux clés propres à iOS (`ios_feed_photo_download_denied`, `ios_feed_photo_download_restricted`, hors parité) ; « Ouvrir les réglages » réutilise `update_action_open_settings`. Android n'est pas touché.
-- **VRAI plein écran, légende en surimpression** (retour du PM du 2026-11-11 : ~280 pt de large ne suffisait pas ; **remplace** la version « photo au-dessus du pied » de la même journée) : la photo `scaledToFit` occupe **TOUT l'écran, zones sûres comprises**, fond noir (entière, jamais recadrée, jamais limitée par sa taille propre, interpolation par défaut). La légende « Photo de X · 11 h 45 », « Position mesurée… » et « Voir où c'était » sont **posées par-dessus, en bas**, sur un dégradé qui fond la photo puis un **voile sombre** (jeton `colorPhotoCaptionScrim`, noir à 78 %, opaque avec « Réduire la transparence »), **texte blanc, contraste ≥ 4,5:1 même sur une photo toute blanche** (calcul WCAG testé : ~11,8:1), le texte restant dans la zone sûre du bas. La zone de légende est **bornée à 45 % de la hauteur** (`ViewThatFits`) : en grand texte ou en paysage elle **défile** et la photo n'est jamais masquée en entier. La croix et l'icône restent en haut (lues en premier par VoiceOver). Voile des applications récentes et vie privée inchangés. Tests : `PhotoFullScreenLayoutTests` (zone bornée, contraste, photo qui remplit l'écran, ordre de la pile, texte blanc).
+- **VRAI plein écran, légende en surimpression** (retour du PM du 2026-11-11 : ~280 pt de large ne suffisait pas ; **remplace** la version « photo au-dessus du pied » de la même journée) : la photo `scaledToFit` occupe **TOUT l'écran, zones sûres comprises**, fond noir (entière, jamais recadrée, jamais limitée par sa taille propre, interpolation par défaut). La légende « Photo de X · 11 h 45 », « Position mesurée… » et « Voir où c'était » sont **posées par-dessus, en bas**, sur un dégradé qui fond la photo puis un **voile sombre** (jeton `colorPhotoCaptionScrim`, noir à 70 %, opaque avec « Réduire la transparence »), **texte blanc, contraste ≥ 4,5:1 même sur une photo toute blanche** (calcul WCAG testé : ~11,8:1), le texte restant dans la zone sûre du bas. La zone de légende est **bornée à 45 % de la hauteur** (`ViewThatFits`) : en grand texte ou en paysage elle **défile** et la photo n'est jamais masquée en entier. La croix et l'icône restent en haut (lues en premier par VoiceOver). Voile des applications récentes et vie privée inchangés. Tests : `PhotoFullScreenLayoutTests` (zone bornée, contraste, photo qui remplit l'écran, ordre de la pile, texte blanc).
 - **Retours du PM sur le build 27** : (1) **la légende est collée en bas**, juste au-dessus de la zone sûre du bas, comme sur Android (`FeedPhoto.kt`) : marge basse **8 → 4 pt**, espace légende / « Voir où c'était » **8 → 4 pt**, bouton ramené à 44 pt (avant 48) ; le dégradé reste (`PhotoFullScreenLayout.captionBottomPadding`, `captionSpacing`, testés). (2) **L'icône « télécharger » et la croix sont centrées dans leur rond** : un symbole SF est aligné sur la boîte typographique du texte, pas sur le centre de son dessin ; les deux pictogrammes sont maintenant **dessinés** (`PhotoGlyphShape`, trait de 2 pt arrondi dans un carré de 20 pt, même disque translucide de 40 pt dans une zone de 48 pt) : leur boîte englobante est centrée par construction, **vérifiée sur le tracé** (`PhotoFullScreenLayoutTests`). Le nom parlé et la zone de toucher (48 pt) sont inchangés ; l'aspect du pictogramme est celui d'un trait, pas celui du symbole du système.
 - **Numérotation du ticket Feed** : `docs/tickets/feed.md` avait deux D51 et deux D52 ; D51 = sélecteur de Miff et D52 = enregistrement de la photo restent ; la ligne de temps en heure devient **D54** et le pictogramme de bulle sans cercle **D55** (références corrigées dans `ios/README.md` et `android/CHANGELOG.md`) ; D53 est pris par #160.
 
@@ -97,6 +173,21 @@ Modifié : `docs/tickets/update.md` (le flash n'est plus « absent » ; V4 mis �
 Coût : aucun (AVFoundation, aucun service ni quota). Sécurité : aucune permission, aucun journal, aucun événement Analytics, rien n'est stocké.
 
 Écarts : aucun écran de maquette ne montre le flash (`design/exports/update/claude/03-viseur-et-apercu.png`) ; l'emplacement et le style suivent le bouton de bascule voisin ; pictogrammes du système faute d'export vectoriel du PM. Le bouton n'est pas grisé mais masqué quand il est impossible (choix calme : pas de bouton qui ne sert à rien). Limite à vérifier sur l'iPhone : l'apparition du bouton juste après le démarrage de la caméra (le matériel répond une fois la session lancée).
+
+### Feed : l'en-tête qui se masque au défilement, la bulle jamais dessous (retour du PM sur le build 27)
+
+Branche `ios/feed-header-scroll` (PR en brouillon). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Même comportement que l'en-tête d'Android (`CollapsingHeader.kt`, « enter always »).
+
+Modifié :
+- **Lecture directe du défilement** : l'en-tête suit désormais la distance défilée lue sur la vue de défilement elle-même (`ScrollDistanceReader`, `contentOffset` + marge ajustée), au lieu de deviner la position de repos du contenu ; c'est cette position de repos mal devinée qui pouvait laisser la première carte (la bulle) sous l'en-tête. L'ancienne lecture (position du contenu) reste en repli si aucune vue de défilement n'est trouvée.
+- **Règles pures** (`CollapsingHeaderState`) : l'en-tête suit le doigt point pour point dans les deux sens et revient dès qu'on remonte ; jamais plus caché que le défilement près du haut (seuil = sa hauteur, inclus) ; un déplacement de moins de 0,5 pt est ignoré (l'en-tête ne vibre pas) ; verrouillé (chargement, hors connexion, VoiceOver ou Contrôle de sélection, sélecteur ouvert) : il reste là.
+- **La bulle et le contenu ne passent jamais sous la barre d'état** : une bande fixe de la couleur du fond couvre la zone sûre du haut ; l'en-tête qui monte est coupé à la zone sûre (comme Android) et garde son ombre.
+- **Retour animé** (logo, verrouillage) : 0,2 s, immédiat avec « Réduire les animations ».
+
+Ajouté : `FeedHeaderScrollTests` (distance défilée, retour au premier mouvement vers le haut, seuil près du haut, hystérésis de 0,5 pt, verrouillage, repli, animation courte et « Réduire les animations »).
+
+Accessibilité : avec VoiceOver ou Contrôle de sélection l'en-tête ne se masque jamais (il est toujours dans l'arbre d'accessibilité, lu en premier).
+
 
 ### Mes informations modifiable (ticket `docs/tickets/modifier-infos-perso.md`, décision du PM du 2026-11-11)
 
@@ -157,6 +248,44 @@ Changé :
 
 **Limites connues** : « Pendant l'utilisation » seul reste bloquant pour publier une photo (le suivi, donc la position partagée, exige « Toujours ») et la phrase générique « localisation éteinte ou plus autorisée » s'applique alors ; une phrase dédiée « Choisis Toujours » est une décision de texte pour le PM. Android (`UpdateViewModel.kt`) n'est pas touché ici : à vérifier s'il a les mêmes causes.
 
+### Feed : bulle sans symbole, bouton « Contacter », titre au style des autres écrans (décisions du PM, 2026-11-10 et 2026-11-11 ; miroir d'Android PR #160)
+
+Branche `ios/feed-bulle-police-contacter` (PR en brouillon). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.**
+
+Modifié :
+- **Phrase principale de la bulle** (« Tout va bien », « Pas encore de nouvelles », titre d'une alerte) : **exactement le style des titres des autres écrans** (`textDisplayHeadline`, Baloo Thambi 2 Regular 24 / 30, `.title2`, `text/primary`, centrée) : la taille 30 / 36 puis la police ExtraBold prévues d'abord sont abandonnées (décisions du PM du 2026-11-11) ; aucun style propre à la bulle, aucune nouvelle police. La bulle grandit en hauteur avec un grand texte.
+- **Plus aucun symbole dans la bulle**, quelle que soit sa couleur : le filigrane (horloge, point d'exclamation, sablier) et le pictogramme de bouton disparaissent. Code retiré : `BubbleLayout.pictogram` et `symbol*`, `BubbleWatermark`, constantes de mouvement `star*`.
+- **Bouton de la bulle** : libellé **« Contacter »** (EN « Contact ») au lieu de « Envoyer un message » (clé `feed_bubble_message_action` conservée, valeur changée ; à aligner si l'agent Android renomme la clé) ; texte seul, un peu plus petit (14 pt, marges réduites), zone de toucher d'au moins 44 pt ; VoiceOver lit « Contacter {prénom} » (clé `feed_bubble_contact_a11y`, la même qu'Android).
+- **Grand texte** : à très grand texte les marges latérales de la bulle diminuent et la phrase peut rétrécir jusqu'à 50 % (6 lignes au plus) : aucun mot n'est coupé.
+
+Ajouté : tests de typographie (`testTheBubbleHeadlineIsTheDisplayHeadlineStyle`), absence de symbole et zone de toucher (`BubbleLayoutTests`). Les emoji des étiquettes iOS sont dans #145 (pas ici).
+
+
+### Feed sans connexion : pop-in « Pas de connexion » avec réessai automatique (bug du PM, 2026-11-10 ; miroir d'Android)
+
+Bug : « Lorsque j'ouvre l'app sans connexion, le Feed se charge à l'infini. » Recette PM : `docs/qa/checklists/feed-hors-connexion-ios-recette-pm.md`. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.**
+
+**Cause trouvée** (trois attentes sans issue visible, aucune ne disait « pas de connexion ») :
+1. `MiffStateReader.read` interrogeait le serveur sans regarder le réseau : l'abonnement, puis les index, chacun avec un délai de 20 s, **l'un après l'autre**, avant de se rabattre sur le cache. Le squelette du Feed restait donc de longues secondes.
+2. `FeedViewModel` : tant que la Miff n'était pas dans le cache du téléphone, l'écoute restait en `loading` **sans aucune sortie** (hors ligne, Firestore n'envoie rien) ; l'état hors connexion ne servait qu'à dater un contenu déjà affiché.
+3. Onglet Profil : indicateur pendant la lecture du profil (20 s au plus) sans explication.
+
+Ajouté :
+- **Composant partagé** `OfflineRetryModel` (`ViewModels/`) et `OfflinePopinOverlay` (`Views/Shared/`) : pop-in calme « Pas de connexion / Vérifie ta connexion, on réessaie dans un instant. » avec **Réessayer** (relance tout de suite si le réseau est là ; sinon seul un indicateur répond), voile léger, `isModal`, Dynamic Type (la carte défile si le texte ne tient pas), « Réduire les animations » = simple fondu, et le décompte discret **« Nouvel essai dans N s »** (pas une zone « live » : il ne se répète pas chaque seconde).
+- **Elle se ferme** (revue indépendante : dans le cas principal, rien n'est lu et la barre d'onglets est masquée, la pop-in enfermait la personne) : toucher le voile, **croix**, ou geste « échappe » de VoiceOver. Fermée, la page dit la même chose à sa place (`OfflineInlineNote` : phrase calme `feed_offline_note` + **Réessayer**, à la place du squelette du Feed ou de l'indicateur du Profil) et les essais continuent derrière. Une fermeture ne dure que pour la panne en cours.
+- **VoiceOver** : une seule annonce (plus d'`Announcer`) ; la carte est modale, le focus est déplacé sur son texte (titre et phrase lus d'un bloc).
+- **Quand elle vient** : rien à montrer (ni contenu, ni copie du cache) ET pas de réseau, après **1,5 s de grâce** (comme Android ; pas de clignotement si le cache répond vite) ; lecture en échec et pas de réseau : tout de suite ; réseau annoncé « en ligne » mais **aucune donnée après 8 s** : elle vient aussi. Avec du contenu en cache : **comportement inchangé** (« Dernières informations de… », bandeau hors connexion), jamais de pop-in.
+- **Réessai automatique toutes les 10 s**, seulement tant que la pop-in est en place (visible ou fermée) et seulement si le système dit que le réseau est là (**jamais de boucle de lectures** contre un serveur injoignable ; **au plus 3 essais de suite** quand le réseau est annoncé mais ne répond pas, ensuite seuls « Réessayer » et le retour du réseau relancent ; l'essai automatique ne relance que les Miffs jamais lues ou une écoute en échec, les écoutes en cours se rattachent seules). Retour du réseau : la pop-in disparaît d'elle-même et l'écran relit une fois. Tout s'arrête en quittant l'onglet ou en passant en arrière-plan.
+- **Annuaire des Miffs** : sans réseau (dit par le système), `MiffStateReader` lit **directement le cache** (formule « inconnue », jamais « perdue » à partir du cache) au lieu d'enchaîner les délais ; au retour du réseau, le Feed relit UNE fois les Miffs servies par le cache ; si le réseau revient **pendant** une relecture commencée hors connexion, elle est rejouée UNE fois à sa fin (drapeau « rejouer » de `FeedViewModel.refreshDirectory`).
+- **Onglet Profil** : même pop-in tant que le profil n'est pas lu.
+- Chaînes (FR + EN) : `feed_offline_popin_title`, `_body`, `_retry`, `_countdown` (clés partagées avec Android, PR #149, mêmes valeurs) ; propres à iOS : `ios_feed_offline_popin_retrying_a11y`, `ios_feed_offline_popin_close_a11y`. Retirée : `feed_offline_popin_a11y` (plus d'annonce séparée).
+- **Tests** : `OfflineRetryModelTests` (grâce de 1,5 s, délai 8 s, compte à rebours, minuterie de 10 s, plafond de 3 essais et reprise par « Réessayer », retour du réseau, fermeture, deux touchers, sortie de l'écran, pas de minuterie doublée, pas de clignotement pendant une relecture), `FeedOfflinePopinTests` (dont le rejeu d'une relecture commencée hors connexion), `ProfileOfflinePopinTests`, `MiffRepositoryOfflineReadTests`. Les attentes sont toutes commandées par `ManualSleeper` (qui sait aussi « céder la main » : plus aucun `Task.sleep` réel dans ces tests).
+
+Limites connues : l'onboarding du profil et le démarrage de session ont déjà leurs délais bornés (15 s) et leur écran « Réessayer » : non modifiés. Les Réglages > Mes informations n'ont pas leur propre pop-in. Un Feed avec la Miff en cache mais sans statuts attend toujours au plus 15 s son squelette. **Choix économiques** : aucune dépendance, 0 €, moins de lectures (aucune lecture serveur sans réseau). Limite connue du plafond de 3 essais : un essai rattache les écoutes de l'écran (quelques dizaines de lectures Firestore au plus) ; signal de bascule : si le quota de lectures du plan gratuit approche (`docs/dev/surveillance-quotas.md`), baisser d'abord `OfflinePopinTimings.maxAutomaticAttemptsOnline`.
+
+
+
+
 ### Mode voyage, Feed (VOY-3I, miroir d'Android VOY-3A, PR #155)
 
 Troisième des trois PR empilées (base : `ios/mode-voyage-profil`, VOY-2I). Ticket `docs/tickets/mode-voyage.md` §6 (décisions du PM du 2026-11-10 : ouvert à TOUS ; la position reste partagée ; le voyageur n'a **aucun impact** sur la couleur ni sur le « n sur m »). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM : `docs/qa/checklists/voyage-ios-recette-pm.md`. Détail : `ios/README.md` (« Mode voyage »).
@@ -214,6 +343,7 @@ Ne change pas : aucune règle Firestore, aucun événement Analytics, aucun jour
 - **Détection « nouvel appareil »** : `checkedAtMillis == 0` (aucune relecture vérifiée du serveur) ; une copie locale déjà vérifiée n'est jamais relue (testé : une seule lecture de MON statut par Miff, puis une de plus après une déconnexion).
 - **À suivre dans les PR de notifications** : #129 devra gérer `.travel` dans `StatusColor.changeInstants` (liste vide : un voyageur est neutre et n'a aucun instant de changement) quand elle sera fusionnée avec cette PR ; sans cela le `switch` exhaustif ne compile plus.
 - Coût : 0 € ; signal de bascule : voir ci-dessus.
+
 
 ### Photo Google à l'inscription et retour par geste (retours du PM après TestFlight, 2026-11-08)
 

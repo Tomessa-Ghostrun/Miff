@@ -37,6 +37,8 @@ enum JournalKind: String, CaseIterable {
     case batteryRefreshSkipped
     /// BATT-3 : la dernière position du système (moins de 2 min) a servi à l'ouverture ou à la sortie, sans nouvelle demande.
     case positionReused
+    /// REPRISE du partage d'une Miff : la présence a été recalculée (zone actuelle) et sera réécrite, au lieu de rester grise.
+    case statusAfterResume
     /// Diagnostic de « Position introuvable » à la publication d'une photo (recette build 24) : CODES de cause seulement.
     /// Le suivi n'a pas écrit ma position : hors ligne, au moment de l'écriture.
     case positionSkippedOffline
@@ -58,6 +60,21 @@ enum JournalKind: String, CaseIterable {
     case updateHandOverFailed
     /// ... ou la remise a dépassé son délai (le suivi était occupé) et rien n'était publié à la relecture : réessayer plus tard suffit.
     case updateHandOverTimedOut
+    /// DIAGNOSTIC de l'échec d'une publication de photo (codes de classe seulement) : l'Update a répondu « pas de connexion » parce que...
+    /// ... le téléphone dit n'avoir aucun réseau,
+    case updateOfflineNoNetwork
+    /// ... la session de l'appareil n'a pas pu être vérifiée auprès du serveur,
+    case updateOfflineSessionUnverified
+    /// ... aucun identifiant de session confirmé n'a pu être obtenu,
+    case updateOfflineNoClearance
+    /// ... ou la transaction a échoué avec cette classe d'erreur :
+    case updateErrorUnavailable
+    case updateErrorCancelled
+    case updateErrorQuota
+    case updateErrorTimedOut
+    case updateErrorNetworkUrl
+    case updateErrorRefused
+    case updateErrorOther
 }
 
 /// Une ligne du journal telle qu'elle est gardée et montrée.

@@ -113,6 +113,11 @@ struct MainShellView<Feed: View>: View {
         MainShellRules.effectiveTab(selected: selected, hasNoMiff: hasNoMiff)
     }
 
+    /// L'onglet Profil est regardé : sa pop-in « Pas de connexion » suit le réseau (jamais en arrière-plan).
+    private var profileIsWatched: Bool {
+        shownTab == .profile && scenePhase != .background
+    }
+
     /// Les écrans empilés recouvrent cette coquille (pile de l'hôte) : `pathIsEmpty` vaut toujours vrai ici.
     private var barVisible: Bool {
         MainShellRules.barVisible(keyboardVisible: keyboardVisible, pathIsEmpty: true, directory: miffs)
@@ -179,6 +184,7 @@ struct MainShellView<Feed: View>: View {
                         state: profile.state,
                         miffs: miffs,
                         travel: travel,
+                        offlineRetry: profile.offlineRetry,
                         actions: ProfileTabActions(
                             onOpenMyInfo: { onOpenSettings(.myInfo) },
                             onOpenSettings: { onOpenSettings(.settings) },
@@ -186,6 +192,14 @@ struct MainShellView<Feed: View>: View {
                             onOpenMiff: onOpenMiff
                         )
                     )
+                    // Profil jamais lu et pas de réseau : la même pop-in « Pas de connexion » que le Feed, seulement tant que l'onglet est
+                    // à l'écran (l'essai automatique s'arrête en changeant d'onglet ou en quittant l'app).
+                    .overlay { OfflinePopinOverlay(model: profile.offlineRetry) }
+                    .task(id: profileIsWatched) {
+                        if profileIsWatched {
+                            await profile.watchConnectivity()
+                        }
+                    }
                 }
                 if shownTab == .update {
                     UpdateTabView(model: updateModel, miffCount: miffCount, actions: updateActions)

@@ -37,6 +37,26 @@ struct CollapsingHeaderState: Equatable {
         offset = max(offset, -max(scrolledFromTop, 0))
     }
 
+    /// En dessous de ce déplacement (en points) le défilement est du bruit (un doigt qui tremble, un rebond) : l'en-tête ne bouge pas. Évite
+    /// qu'il vibre à chaque image ; au-dessus, il suit le doigt point pour point (hystérésis : un petit va-et-vient ne le fait pas clignoter).
+    static let minimumStep: CGFloat = 0.5
+
+    /// Tant que le haut de la liste n'a pas défilé de plus que l'en-tête n'est haut, la liste est « près du haut » : l'en-tête n'y est jamais
+    /// plus caché que la liste n'a défilé (sinon une bande vide, ou une première carte sous lui). Renvoie la distance défilée, ou nil loin du haut.
+    static func scrolledFromTopIfNear(_ scrolled: CGFloat, headerHeight: CGFloat) -> CGFloat? {
+        scrolled <= headerHeight ? scrolled : nil
+    }
+
+    /// Le défilement vient de passer de `previous` à `scrolled` (distance depuis le repos du haut de la liste ; négative quand on tire vers le
+    /// bas) : l'en-tête suit, dans les deux sens, sauf pour un déplacement de moins de `minimumStep`, puis la règle du haut de liste s'applique.
+    mutating func scrolled(from previous: CGFloat, to scrolled: CGFloat) {
+        let delta = previous - scrolled
+        if abs(delta) >= Self.minimumStep {
+            follow(delta: delta)
+        }
+        limit(scrolledFromTop: Self.scrolledFromTopIfNear(scrolled, headerHeight: height))
+    }
+
     mutating func show() {
         offset = 0
     }

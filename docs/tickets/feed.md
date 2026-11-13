@@ -69,7 +69,7 @@ En une phrase : le Feed est l'écran qu'on ouvre pour **voir d'un coup d'œil qu
 | D5 | Le wording est **« zone de danger »** (pas « zone à risque »). La zone de danger est **Premium**, définie par le **créateur** seul ; entrer dans une zone de danger rend la personne **rouge** immédiatement ; une update (photo) **publiée après l'entrée** la rend verte pendant 1 h, puis rouge de nouveau (**D47**, PM 2026-11-08, qui **remplace** « l'update ne ramène pas au vert ») ; la règle « une update par heure en rouge » reste **abandonnée**. | LOC « Décisions du PM » 2026-11-01 (soir) ; N3, N5 |
 | D6 | Couleur de la Miff : **rouge** si au moins un membre rouge, **vert** si tous verts, **orange** sinon ; les membres **neutres sont ignorés** du calcul ; « Tout va bien » **seulement** si au moins un statut connu et tous les connus verts. | Notion Feed ; LOC N6 (appliqué par défaut le 2026-11-01) ; FPR Q12 |
 | D7 | Bulle vide : « Tout va bien » ; « {n} sur {m} ont donné des nouvelles » ; « Pas encore de nouvelles » ; « Tu es seul(e) dans cette Miff pour l'instant » ; repère « **Dernière nouvelle il y a 2 min** » (plus de « Mis à jour il y a 2 min ») ; **fin** de « Tout le monde est en sécurité ». | FPR Q12 ; Miff QM12 |
-| D8 | Alertes : une page de bulle **par alerte**, seulement s'il y en a plusieurs ; **heure absolue** pour orange et rouge (« à 16 h 02 »), relative pour le vert ; rouge d'ancienneté : « **Pas de nouvelles de {Prénom} depuis 16 h 02** » + bouton « **Envoyer un message** » ; orange : « {Prénom} a quitté {lieu} à 16 h 40 ». | FPR Q11 ; Notion Feed (carrousel) |
+| D8 | Alertes : une page de bulle **par alerte**, seulement s'il y en a plusieurs ; **heure absolue** pour orange et rouge (« à 16 h 02 »), relative pour le vert ; rouge d'ancienneté : « **Pas de nouvelles de {Prénom} depuis 16 h 02** » + bouton « **Contacter** » (D53, 2026-11-11) ; orange : « {Prénom} a quitté {lieu} à 16 h 40 ». | FPR Q11 ; Notion Feed (carrousel) |
 | D9 | Libellés d'étiquette : « À {catégorie} » si dans une zone de confiance, « A quitté {catégorie} » sinon ; le **nom du lieu** remplace la catégorie sauf pour **Maison, Travail, École, Sport** ; **depuis le 2026-11-08 (D48) : Chez un proche a aussi son libellé, seuls Loisir et Autre affichent le nom du lieu** ; « Dans une zone de danger » pour la zone de danger. | Notion Feed |
 | D10 | **Update** = photo publiée depuis l'écran Update ; une seule photo par personne, **valable pour toutes ses Miffs**, **écrasée** à chaque nouvelle publication, **illisible après 24 h** ; la photo en plein écran affiche **l'heure** et **la localisation figée au moment de la photo**. | Notion Update ; `data-model.md` §2.8 ; LOC (lecture retenue des tickets Notion) |
 | D11 | **Message** = application SMS du système, **Appeler** = téléphone du système, avec le **numéro de la fiche membre** (visible des membres, d'eux seuls) ; aucun appel ni SMS lancé par Miff, aucune permission « appel », « SMS », « contacts » ; masqués pour un proche sans numéro et sur sa propre carte. | Notion Feed ; Miff QM11, F2 ; FPR C5 |
@@ -196,7 +196,7 @@ Contenu, du haut vers le bas :
   - Refusé (réciprocité, partage arrêté, retrait) : **un seul message neutre** (« On ne peut pas afficher la position de {Prénom} pour le moment. Elle apparaît quand vous partagez tous les deux. »), jamais « erreur ».
   - Hors connexion : « Pas de connexion pour le moment. Réessaie dès que le réseau est revenu. »
   - **Livré seulement avec LOC-2b** (avant : bouton absent) [Décidé, FPR Q13 mis à jour].
-- **Envoyer un message** dans la bulle d'alerte (orange ou rouge, jamais sur ma propre page) : même intention SMS que le bouton de la carte du membre concerné.
+- **Contacter** (ex-« Envoyer un message », D53) dans la bulle d'alerte (orange ou rouge, jamais sur ma propre page) : même intention SMS que le bouton de la carte du membre concerné.
 
 ### 5.7 Photo d'update
 - Le Feed ne lit la photo que si `status.hasPhoto = true` **et** que `lastUpdateAt` a **moins de 25 h** (une photo est créée au plus tard à `lastUpdateAt` et vit au plus 25 h : au-delà, elle est forcément expirée, **ne pas lire** : chaque lecture refusée coûte quand même des lectures de règles). Lecture **à l'apparition de la carte** à l'écran (liste paresseuse), pas pour toutes les cartes à l'ouverture.
@@ -269,7 +269,7 @@ Clés `feed_` en parité ; les prénoms, lieux et heures s'insèrent par paramè
 | Orange | « {Prénom} a quitté {lieu} à 16 h 40 » | « {Name} left {place} at 4:40 PM » |
 | Rouge, ancienneté | « Pas de nouvelles de {Prénom} depuis 16 h 02 » | « No news from {Name} since 4:02 PM » |
 | Rouge, zone de danger | « {Prénom} est dans une zone de danger » + « Depuis 16 h 02 » | « {Name} is in a danger zone » + « Since 4:02 PM » |
-| Action d'alerte | « Envoyer un message » | « Send a message » |
+| Action d'alerte | « Contacter » (nom parlé : « Contacter {Prénom} ») | « Contact » (« Contact {Prénom} ») |
 | Moi, orange | « Tu as quitté {lieu} à 16 h 40 » | « You left {place} at 4:40 PM » |
 | Moi, rouge d'ancienneté | « Tes proches n'ont pas eu de tes nouvelles depuis 16 h 02 » | « Your loved ones haven't heard from you since 4:02 PM » |
 | Moi, zone de danger | « Tu es dans une zone de danger de ta Miff » (voir Q3) | « You're in a danger zone of your Miff » |
@@ -397,7 +397,7 @@ Clés `feed_` en parité ; les prénoms, lieux et heures s'insèrent par paramè
 
 | # | Risque | Effet | Mitigation |
 |---|---|---|---|
-| R1 | **Ton anxiogène** : bulle rouge, « zone de danger » (wording du PM) montré à tout le cercle, « Pas de nouvelles » | Perte de confiance, contre-sens avec CLAUDE.md | Phrases factuelles à l'heure absolue ; aucune animation d'alarme ni son ; pas de défilement automatique ; action douce « Envoyer un message » ; relecture à voix haute par le PM ; **R16 déjà assumé** (zone de danger utilisable comme outil de contrôle) |
+| R1 | **Ton anxiogène** : bulle rouge, « zone de danger » (wording du PM) montré à tout le cercle, « Pas de nouvelles » | Perte de confiance, contre-sens avec CLAUDE.md | Phrases factuelles à l'heure absolue ; aucune animation d'alarme ni son ; pas de défilement automatique ; action douce « Contacter » ; relecture à voix haute par le PM ; **R16 déjà assumé** (zone de danger utilisable comme outil de contrôle) |
 | R2 | **Fausse réassurance** : « vert, à la maison » d'un téléphone éteint (N9), batterie ou photo anciennes, cache hors connexion | Un proche croit que tout va bien | Tout est **daté** ; « Dernières informations de … » ; photo et batterie avec leur heure ; limite N9 **acceptée par le PM** |
 | R3 | **Fausse alerte** : horloge décalée, faux départ en bordure de zone (aucune temporisation, décidé), cache hors connexion qui passe orange | Inquiétude inutile | Mention « Informations de … » sous l'alerte hors connexion ; heures absolues ; écart d'horloge documenté |
 | R4 | **Position stockée** lisible des proches (**R18 assumé**) ; Localiser sur une position ancienne | Perte de confiance, anti-stalkerware | Réciprocité, masquage après 24 h, date toujours visible, **aucune étiquette** transmise aux cartes, texte de consentement (version 3), pas de carte intégrée |
@@ -426,7 +426,7 @@ Clés `feed_` en parité ; les prénoms, lieux et heures s'insèrent par paramè
 - [ ] **B4** Les phrases sont celles du §7 : « {Prénom} a quitté {lieu} à 16 h 40 », « Pas de nouvelles de {Prénom} depuis 16 h 02 », « {Prénom} est dans une zone de danger » ; **« zone à risque » n'existe nulle part** (code, clés, a11y).
 - [ ] **B5** Le repère « Dernière nouvelle » est le plus récent des repères des **autres** membres (jamais le mien) ; **un seul repère de temps** par bulle.
 - [ ] **B7** (D40, amplitudes remplacées par D45) La bulle de la Miff a un **mouvement continu visible et organique** : **étirement / écrasement déphasé (largeur de 100 % à 92 %, hauteur de 100 % à 90 %), inclinaison ±0,8°, dérive ±3,5 dp** (forme seule déformée, **pas le texte**), **cycle de 5 à 8 s**, **aucun clignotement ni rebond** ; **immobile** avec « Animations supprimées » ; **arrêté hors écran** (défilement, autre onglet, arrière-plan) ; **même amplitude** quel que soit le niveau ; rien n'est annoncé au lecteur d'écran.
-- [ ] **B6** Une alerte (orange ou rouge) sur un **autre** membre propose « Envoyer un message » (SMS) ; jamais sur ma propre page.
+- [ ] **B6** Une alerte (orange ou rouge) sur un **autre** membre propose « Contacter » (SMS) ; jamais sur ma propre page.
 
 **Cartes**
 - [ ] **C1** Chaque membre, moi compris (**en dernier, D43**), a une carte : avatar à anneau, prénom, étiquette (texte + icône), ligne de temps, batterie ; **ma carte n'a ni Localiser, ni Message, ni Appeler** et reflète mon document de statut.

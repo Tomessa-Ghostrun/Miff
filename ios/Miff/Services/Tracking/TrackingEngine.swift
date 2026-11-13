@@ -137,6 +137,18 @@ final class TrackingEngine {
         }
     }
 
+    /// REPRISE DU PARTAGE d'une Miff : le drapeau est posé (dans l'ordre des travaux du suivi) avant le passage `sharingChanged` qui le suit.
+    func markResumed(_ miffId: String) async {
+        await serialized {
+            guard !self.sessionEnded(), let uid = self.env.uid() else {
+                return
+            }
+            var state = self.stateFor(uid) ?? LocalState(uid: uid)
+            state.resumedMiffs = (state.resumedMiffs ?? []).union([miffId])
+            self.deps.local.save(state)
+        }
+    }
+
     /// La surveillance de régions dit : la personne est entrée dans la zone `zoneKey`, ou en est sortie. La position qui accompagne
     /// l'événement n'est JAMAIS lue (le pont du système ne la transmet pas).
     func onTransition(_ kind: TransitionKind, zoneKey: String, atMillis: Int) async {
