@@ -47,6 +47,21 @@ Ticket `docs/tickets/notification-update-membres.md` (§4 à §13 ; décisions d
 - **Écarts avec le ticket** : le ticket dit « discret » dans plusieurs passages ; la décision du PM du 2026-11-12 prime (son et vibration le jour, calme la nuit). Pas de regroupement explicite par le système (« {n} nouvelles dans ta Miff ») dans ce lot : Android regroupe de lui-même au-delà de quatre notifications d'une même app ; un résumé explicite reste à faire si le PM le veut. Pas de défilement vers la carte de l'auteur : l'appui ouvre le Feed de la bonne Miff.
 - **Côté iOS** : tout reste à faire (clé APNs, capacité Push) ; les clés de texte ci-dessus sont dans cette entrée.
 
+## [0.39.0] - 2026-11-13 : l'acceptation des CGU enregistre désormais la version « 1.0 » des textes publiés
+
+Branche `android/terms-version-1-0`, PR brouillon ; même changement côté iOS (`ios/terms-version-1-0`, même valeur). Numéro de version : le dernier de `main` est 0.38.0, celui-ci prend le suivant (à renuméroter au merge si une autre PR l'a pris). Aucun texte à l'écran, aucune règle Firestore, aucune permission, aucune dépendance, aucun service payant.
+
+### Modifié
+- `ConsentVersions.TERMS` passe de « 0.1 » (numéro de travail, jamais publié) à « 1.0 », la version des CGU et de la politique de confidentialité publiées le 2026-11-13 (`docs/legal/`, PR #226). C'est la valeur écrite dans `users/{uid}.termsVersion` à la création du profil.
+- Autres versions liées aux textes légaux : aucune à changer. `ConsentVersions.ANALYTICS` (`2026-10-v01`) et `MiffSharingConsent.VERSION` (`2026-11-v03`) sont des versions propres à leur texte de consentement ; la politique de confidentialité n'a pas de version distincte (une seule version « textes »).
+- Règles Firestore vérifiées, **non modifiées** : `termsVersion` doit être une chaîne de 1 à 20 caractères (`isStr(..., 1, 20)`), « 1.0 » est valide.
+- Tests : `ProfileDocumentTest` (nouveau test qui fige « 1.0 » pour la constante et pour le document de création), `PendingConsentStoreTest` et `UserProfileRepositoryTest` (valeurs d'exemple « 0.1 » remplacées par « 1.0 »).
+- `docs/legal/README.md` §3 et §10 : documentation du changement.
+
+### À savoir
+- **Comptes créés avant ce changement : ils gardent « 0.1 », rien n'est migré** (les règles figent `termsVersion` et `termsAcceptedAt` après la création ; réécrire une preuve d'acceptation serait à éviter). Pour la preuve d'acceptation : « 0.1 » atteste l'acceptation d'un état de travail jamais publié, pas du texte 1.0. Seuls des comptes de test sont concernés tant qu'aucune version n'est distribuée à des personnes réelles. Pas de ré-acceptation (risque J32, assumé par le PM).
+- Coût : aucun.
+
 ## [0.38.0] - 2026-11-12 : Feed, la phrase « Partage ta position pour voir cette photo » ne s'affiche plus à tort (bug remonté par le PM)
 
 Branche `android/fix-photo-position-gate`, PR brouillon ; recette `docs/qa/checklists/feed-photo-gate-android-recette-pm.md`. Numéro de version : le dernier de `main` est 0.37.0, celui-ci prend le suivant (à renuméroter au merge si une autre PR l'a pris). Aucun texte, aucune règle Firestore, aucune permission, aucune dépendance, aucun service payant.
