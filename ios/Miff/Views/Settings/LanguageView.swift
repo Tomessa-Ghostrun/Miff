@@ -2,8 +2,8 @@ import SwiftUI
 
 /// Réglages > Langue (maquette « reglages-5 », ticket Feed / Profil / Réglages critère A9 ; miroir de `LanguageScreen` d'Android). Trois choix,
 /// chacun écrit dans SA langue pour qu'on le retrouve quelle que soit la langue de l'app : « Français », « English » et « Langue du téléphone »
-/// (ce dernier suit la langue de l'app). Un toucher applique le choix tout de suite : pas de bouton « Enregistrer » (décision Q4). La coche
-/// marque le choix actif.
+/// (ce dernier suit la langue de l'app). Un toucher applique le choix tout de suite : pas de bouton « Enregistrer » (décision Q4). Un cercle
+/// radio (comme Android) marque le choix actif.
 ///
 /// L'écran n'ouvre plus les réglages de l'iPhone (décision du PM du 2026-11-13, qui remplace celle d'ouvrir ces réglages).
 struct LanguageView: View {
@@ -13,11 +13,11 @@ struct LanguageView: View {
     var body: some View {
         MiffFrame(title: L10n.string("settings_language_title"), onBack: onBack, usesCanvas: true) {
             VStack(spacing: 0) {
-                ForEach(AppLanguageChoice.allCases, id: \.self) { choice in
+                ForEach(LanguageRows.rows(selected: controller.choice), id: \.choice) { row in
                     LanguageRow(
-                        label: LanguageLabels.label(for: choice),
-                        isSelected: choice == controller.choice,
-                        action: { controller.select(choice) }
+                        label: LanguageLabels.label(for: row.choice),
+                        isSelected: row.isSelected,
+                        action: { controller.select(row.choice) }
                     )
                 }
             }
@@ -40,8 +40,47 @@ enum LanguageLabels {
     }
 }
 
-/// Une ligne de choix : le libellé (en gras sur le choix actif) et la coche. Toute la ligne est UN bouton d'au moins 44 pt ; VoiceOver lit
-/// « Français, sélectionné » grâce au trait « sélectionné » (dit dans la langue du téléphone par VoiceOver lui-même).
+/// L'état des trois lignes pour un choix donné : UNE seule est sélectionnée (comme le `selectableGroup` d'Android). Pur, testé.
+struct LanguageRowModel: Equatable {
+    let choice: AppLanguageChoice
+    let isSelected: Bool
+}
+
+enum LanguageRows {
+    static func rows(selected: AppLanguageChoice) -> [LanguageRowModel] {
+        AppLanguageChoice.allCases.map { LanguageRowModel(choice: $0, isSelected: $0 == selected) }
+    }
+
+    /// iOS n'a pas de rôle « bouton radio » : la ligne est un bouton, dit « sélectionné » quand elle l'est (VoiceOver lit
+    /// « Français, sélectionné, bouton »). Le cercle est décoratif (caché de VoiceOver) : la ligne est le contrôle.
+    static func traits(isSelected: Bool) -> AccessibilityTraits {
+        isSelected ? [.isButton, .isSelected] : .isButton
+    }
+}
+
+/// Le cercle d'un bouton radio (miroir du `RadioButton` d'Android) : vide en gris soutenu quand le choix n'est pas actif, bleu de l'app avec
+/// un point plein quand il l'est. Dessiné seulement : la ligne qui le porte est le contrôle. Il grandit un peu avec la taille du texte.
+struct LanguageRadioCircle: View {
+    let isSelected: Bool
+    @ScaledMetric(relativeTo: .body) private var size: CGFloat = 20
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(isSelected ? colorActionPrimary.color : colorBorderStrong.color, lineWidth: strokeAccent)
+            if isSelected {
+                Circle()
+                    .fill(colorActionPrimary.color)
+                    .padding(size * 0.25)
+            }
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+}
+
+/// Une ligne de choix : le libellé (en gras sur le choix actif) et, à droite comme sur Android, le cercle radio. Toute la ligne est UN
+/// bouton d'au moins 44 pt (jamais le seul cercle), lu comme un seul élément par VoiceOver.
 struct LanguageRow: View {
     let label: String
     let isSelected: Bool
@@ -55,12 +94,7 @@ struct LanguageRow: View {
                     .foregroundColor(isSelected ? colorTextForm.color : colorTextDescription.color)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
-                if isSelected {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: Spacing.sectionIcon, weight: .semibold))
-                        .foregroundColor(colorActionPrimary.color)
-                        .accessibilityHidden(true)
-                }
+                LanguageRadioCircle(isSelected: isSelected)
             }
             .padding(.vertical, Spacing.sm)
             .frame(minHeight: Spacing.minTouchTarget + Spacing.md)
@@ -69,7 +103,7 @@ struct LanguageRow: View {
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text(verbatim: label))
-        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityAddTraits(LanguageRows.traits(isSelected: isSelected))
     }
 }
 

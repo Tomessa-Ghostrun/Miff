@@ -967,7 +967,7 @@ Retour de recette : « Langue » ouvrait les réglages de l'iPhone ; le PM veut 
 | Chemin | Rôle |
 |---|---|
 | `Models/Main/AppLanguage.swift` | Le choix (`AppLanguageChoice`), son stockage (`UserDefaults`, clé `miff.appLanguage`, une valeur), la langue effective (`AppLanguageState` : code, locale, paquet de textes), l'instantané global lu hors des vues (`AppLanguage`) et le contrôleur observable (`AppLanguageController`) |
-| `Views/Settings/LanguageView.swift` | L'écran (trois lignes, coche, VoiceOver), `AppLanguageHost` (locale de l'environnement, posé à la racine dans `MiffApp`) et `followsAppLanguage()` |
+| `Views/Settings/LanguageView.swift` | L'écran (trois lignes avec bouton radio dessiné, VoiceOver « sélectionné »), `AppLanguageHost` (locale de l'environnement, posé à la racine dans `MiffApp`) et `followsAppLanguage()` |
 | `Localization/L10n.swift` | Lit le paquet et la locale de la langue choisie |
 
 **Application À CHAUD, sans redémarrage** (solution retenue : c'est faisable de façon fiable) : (1) la locale de l'environnement SwiftUI suit le choix, donc `Text("cle")`, les dates et les nombres des composants du système aussi ; (2) `L10n` lit le paquet `fr.lproj` ou `en.lproj`, donc tous les textes calculés (`L10n.string`, `L10n.format`, pluriels) et ceux calculés hors vue (notifications locales, e-mail de réinitialisation) suivent ; (3) la coque (onglets) et chaque écran empilé de `MiffHomeHost` posent `followsAppLanguage()` : leur identité suit le code de langue effectif, ils sont donc refaits dans la nouvelle langue. La **pile de navigation, l'onglet choisi et les modèles gardés par l'hôte ne sont jamais refaits**. Choisir le même code (« Langue du téléphone » quand le téléphone est déjà en français) ne refait rien.

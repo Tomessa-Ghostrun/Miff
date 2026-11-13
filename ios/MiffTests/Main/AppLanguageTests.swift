@@ -249,6 +249,34 @@ final class AppLanguageTests: XCTestCase {
         XCTAssertEqual(path, [.settings(.settings), .miff("abc")])
     }
 
+    // MARK: - Le bouton radio
+
+    func testExactlyOneRowIsSelectedWhateverTheChoice() {
+        for choice in AppLanguageChoice.allCases {
+            let rows = LanguageRows.rows(selected: choice)
+
+            XCTAssertEqual(rows.map { $0.choice }, [.french, .english, .system])
+            XCTAssertEqual(rows.filter { $0.isSelected }.map { $0.choice }, [choice])
+        }
+    }
+
+    func testTheSelectedRowFollowsTheController() {
+        let controller = AppLanguageController(store: MemoryLanguageStore(), environment: phone(["fr-FR"]))
+        let before = LanguageRows.rows(selected: controller.choice).filter { $0.isSelected }
+        XCTAssertEqual(before.map { $0.choice }, [.system])
+
+        controller.select(.english)
+
+        let after = LanguageRows.rows(selected: controller.choice).filter { $0.isSelected }
+        XCTAssertEqual(after.map { $0.choice }, [.english])
+    }
+
+    func testARowIsOneButtonThatSaysWhenItIsSelected() {
+        XCTAssertEqual(LanguageRows.traits(isSelected: true), [.isButton, .isSelected])
+        XCTAssertEqual(LanguageRows.traits(isSelected: false), .isButton)
+        XCTAssertFalse(LanguageRows.traits(isSelected: false).contains(.isSelected))
+    }
+
     // MARK: - Les sources
 
     private var app: URL {
@@ -280,6 +308,11 @@ final class AppLanguageTests: XCTestCase {
         let screen = try source("Views/Settings/LanguageView.swift")
         XCTAssertFalse(screen.contains("openSystemSettings"))
         XCTAssertFalse(screen.contains("openSettingsURLString"))
+        // Un cercle radio (miroir d'Android), plus de coche ; le cercle est caché de VoiceOver, la ligne entière est le bouton.
+        XCTAssertTrue(screen.contains("LanguageRadioCircle"))
+        XCTAssertFalse(screen.contains("checkmark"))
+        XCTAssertTrue(screen.contains(".accessibilityHidden(true)"))
+        XCTAssertTrue(screen.contains("Spacing.minTouchTarget"))
     }
 
     /// Les notifications locales, l'e-mail de réinitialisation et les formats lisent la langue CHOISIE, jamais celle du téléphone seule.

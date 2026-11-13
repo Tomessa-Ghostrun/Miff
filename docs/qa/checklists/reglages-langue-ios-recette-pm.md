@@ -2,7 +2,7 @@
 
 **Pour qui** : vous, sur votre iPhone 11 Pro, avec une version envoyée par TestFlight (branche `ios/reglages-langue`).
 **Durée** : environ 10 minutes.
-**Ce que vous testez** : toucher « Langue » dans les Réglages n'ouvre plus les réglages de l'iPhone. Vous arrivez sur **le même écran qu'Android** : Français, English, Langue du téléphone, avec une coche sur le choix actif. Le choix s'applique tout de suite, sans redémarrer l'app.
+**Ce que vous testez** : toucher « Langue » dans les Réglages n'ouvre plus les réglages de l'iPhone. Vous arrivez sur **le même écran qu'Android** : Français, English, Langue du téléphone, avec un **bouton radio** (cercle) sur chaque ligne, plein sur le choix actif. Le choix s'applique tout de suite, sans redémarrer l'app.
 **Décision** : PM, 2026-11-13 (retour de recette) — `docs/tickets/feed-profil-reglages.md`, section « Décision du PM (2026-11-13) ».
 **Matériel** : un compte avec au moins une Miff (la ligne « Langue » n'existe pas dans les Réglages restreints d'un compte sans Miff). Un iPhone dont la langue est le français ; pour la partie D, vous pouvez aussi le passer en anglais le temps du test.
 **Rappel de confidentialité** : le choix reste **sur l'iPhone** (une valeur « fr », « en » ou « system »). Il n'est envoyé nulle part et ne figure dans aucune statistique.
@@ -13,14 +13,15 @@
 |---|---|---|
 | A1 | Profil > roue crantée > Réglages. Regarder la ligne « Langue ». | Titre « Langue » et, dessous, « Langue actuelle : Français » (la langue en cours, écrite dans sa langue). |
 | A2 | Toucher « Langue ». | L'écran **Langue** s'ouvre **dans l'app** : les réglages de l'iPhone ne s'ouvrent pas. Trois lignes : « Français », « English », « Langue du téléphone ». Pas de bouton « Enregistrer ». |
-| A3 | Regarder la coche. | « Langue du téléphone » est coché par défaut (premier lancement). Le choix actif est en gras, avec une coche à droite. |
+| A3 | Regarder les cercles à droite de chaque ligne (comme Android). | Un seul cercle est **plein, en bleu de l'app** (point plein dans un cercle) : « Langue du téléphone » au premier lancement. Les deux autres sont des cercles **vides** en gris soutenu. Le choix actif est aussi en gras. |
+| A3b | Toucher n'importe où sur une ligne (le texte, l'espace vide, le cercle). | Toute la ligne est touchable, pas seulement le cercle. Le cercle plein passe sur la ligne touchée ; il n'y en a jamais deux. |
 | A4 | Flèche de retour, ou balayage depuis le bord gauche. | Retour à la liste des Réglages. |
 
 ## B. Changer la langue (à chaud)
 
 | # | Action | Résultat attendu |
 |---|---|---|
-| B1 | Sur l'écran Langue, toucher « English ». | **Tout de suite**, sans fermer l'app : le titre devient « Language », « Langue du téléphone » devient « Phone language », la coche passe sur « English ». Les noms « Français » et « English » ne changent jamais de langue. |
+| B1 | Sur l'écran Langue, toucher « English ». | **Tout de suite**, sans fermer l'app : le titre devient « Language », « Langue du téléphone » devient « Phone language », le cercle plein passe sur « English ». Les noms « Français » et « English » ne changent jamais de langue. |
 | B2 | Revenir à la liste des Réglages (flèche). | Tous les textes sont en anglais (« Settings », « My information »…) ; la ligne dit « Current language: English ». |
 | B3 | Revenir au Profil, puis au Feed, puis à une Miff. | Tout est en anglais, **sans mélange** avec du français (titres, boutons, messages, heures : « 3:02 PM », dates « Nov 3 »). Vous retrouvez l'onglet où vous étiez. |
 | B4 | Réglages > Langue > « Français ». | Tout repasse en français immédiatement ; heures « 15 h 02 ». |
@@ -48,9 +49,9 @@
 
 | # | Action | Résultat attendu |
 |---|---|---|
-| E1 | VoiceOver : sur l'écran Langue, se placer sur « Français ». | « Français, sélectionné, bouton » (ou « English » sans « sélectionné » si ce n'est pas le choix actif). Une seule étape par ligne. |
+| E1 | VoiceOver : sur l'écran Langue, se placer sur « Français ». | « Français, sélectionné, bouton » (iOS n'a pas de rôle « bouton radio » : la ligne est un bouton qui se dit « sélectionné » ; le cercle lui-même n'est pas lu) (ou « English » sans « sélectionné » si ce n'est pas le choix actif). Une seule étape par ligne. |
 | E2 | VoiceOver : sur la liste des Réglages, la ligne Langue. | « Langue, Langue actuelle : Français, bouton ». |
-| E3 | Réglages iPhone > Accessibilité > Affichage et taille du texte > Texte plus grand, taille maximale. | L'écran Langue et la ligne des Réglages restent lisibles, rien n'est coupé, les lignes grandissent. |
+| E3 | Réglages iPhone > Accessibilité > Affichage et taille du texte > Texte plus grand, taille maximale. | L'écran Langue (cercles compris, qui grandissent un peu) et la ligne des Réglages restent lisibles, rien n'est coupé, les lignes grandissent. |
 | E4 | Cibles : toucher le bord haut et bas d'une ligne de choix. | Toute la ligne est touchable (au moins 44 pt). |
 
 ## F. Compte sans Miff

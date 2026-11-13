@@ -131,8 +131,6 @@ shot 160-fr-langue 2 "${fr_args[@]}" -MiffPreview lang-screen
 shot 161-fr-langue-anglais-choisi 2 "${fr_args[@]}" -MiffAppLanguage en -MiffPreview lang-screen
 shot 162-fr-reglages-anglais-choisi 2 "${fr_args[@]}" -MiffAppLanguage en -MiffPreview lang-settings
 shot 163-en-reglages 2 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview lang-settings
-shot 164-fr-reglages 2 "${fr_args[@]}" -MiffPreview lang-settings
-shot 165-fr-langue-droite-a-gauche 2 "${fr_args[@]}" -MiffForceRTL YES -MiffPreview lang-screen
 # Profil : le carrousel de Miffs (retour du PM, 2026-11-10). Les VRAIS écrans, nourris par des états fixes (Diagnostic/ProfileScreenPreviews.swift).
 shot 99-fr-profil-carrousel 3 "${fr_args[@]}" -MiffPreview profile-carousel
 shot 99b-fr-profil-carrousel-2 3 "${fr_args[@]}" -MiffPreview profile-carousel-2
