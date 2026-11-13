@@ -782,6 +782,9 @@
     <string name="permission_location_step_1">Tap the button: the Miff settings open</string>
     <string name="permission_location_step_2">Choose Permissions, then Location</string>
     <string name="permission_location_step_3">Choose Allow all the time and keep Use precise location on</string>
+    <string name="permission_location_system_step_1">Tap the button: the screen that sets your location access opens</string>
+    <string name="permission_location_system_step_2">Choose Allow all the time</string>
+    <string name="permission_location_system_step_3">Keep precise location turned on</string>
     <string name="miff_consent3_title">What you share with this Miff</string>
     <string name="miff_consent3_create">By creating this Miff, you share your status and your last known location with its members; you can stop at any time in the Miff\'s settings.</string>
     <string name="miff_consent3_join">By joining this Miff, you share your status and your last known location with its members; you can stop at any time in the Miff\'s settings.</string>

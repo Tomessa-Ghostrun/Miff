@@ -9,6 +9,7 @@ import com.tomessa.miff.data.permission.DevicePermissions
 import com.tomessa.miff.data.permission.NotificationAskStore
 import com.tomessa.miff.domain.miff.MiffFailure
 import com.tomessa.miff.domain.notification.SecondChance
+import com.tomessa.miff.domain.permission.BackgroundRequestOutcome
 import com.tomessa.miff.domain.permission.GateScreen
 import com.tomessa.miff.domain.permission.LocationButton
 import com.tomessa.miff.domain.permission.PermissionSnapshot
@@ -196,10 +197,13 @@ class PermissionGateViewModelTest {
             phone.snapshot = snap(fine = true, coarse = true, notifications = true)
             model.onLocationDialogAnswered(canAskAgain = true)
             assertEquals(GateScreen.LOCATION, model.uiState.value.screen)
-            assertEquals(LocationButton.OPEN_SETTINGS, model.uiState.value.location.button)
+            // Android 11+: the next button asks the system for ITS OWN screen of the permission (not the settings of the app).
+            assertEquals(LocationButton.SYSTEM_BACKGROUND_SCREEN, model.uiState.value.location.button)
             assertFalse(model.uiState.value.location.error)
-            // To the settings and back with the wrong choice: the message of the ticket.
-            model.onSettingsOpened()
+            // The system opened nothing (refused at once): the screen must open the settings of the app, on that same tap.
+            assertTrue(model.onBackgroundRequestAnswered(BackgroundRequestOutcome.NO_UI))
+            assertEquals(LocationButton.OPEN_SETTINGS, model.uiState.value.location.button)
+            // Back from the settings with the wrong choice: the message of the ticket.
             model.onResumed()
             assertEquals(GateScreen.LOCATION, model.uiState.value.screen)
             assertTrue(model.uiState.value.location.error)
@@ -208,6 +212,50 @@ class PermissionGateViewModelTest {
             phone.snapshot = snap(fine = true, coarse = true, background = true, notifications = true)
             model.onResumed()
             assertEquals(GateScreen.NONE, model.uiState.value.screen)
+        }
+
+    @Test
+    fun android11Plus_theSystemScreenOfTheLocation_isAskedFirst_andTheGateClosesOnItsOwnWhenAlwaysIsGiven() =
+        runTest {
+            val phone = Phone(snap(fine = true, coarse = true, notifications = true, sdk = 33))
+            val model = vm(phone)
+            advanceUntilIdle()
+            assertEquals(GateScreen.LOCATION, model.uiState.value.screen)
+            assertEquals(LocationButton.SYSTEM_BACKGROUND_SCREEN, model.uiState.value.location.button)
+            assertTrue(model.uiState.value.location.systemScreen)
+            // The system showed its screen, the person chose "only while using": the calm message, same button, the settings of the app NOT opened.
+            assertFalse(model.onBackgroundRequestAnswered(BackgroundRequestOutcome.SYSTEM_UI_SEEN))
+            model.onResumed()
+            assertTrue(model.uiState.value.location.error)
+            assertEquals(LocationButton.SYSTEM_BACKGROUND_SCREEN, model.uiState.value.location.button)
+            // Second time: "Toujours autoriser". Coming back, the state is read and the next step (the Feed) follows by itself.
+            phone.snapshot = snap(fine = true, coarse = true, background = true, notifications = true, sdk = 33)
+            assertFalse(model.onBackgroundRequestAnswered(BackgroundRequestOutcome.GRANTED))
+            model.onResumed()
+            assertEquals(GateScreen.NONE, model.uiState.value.screen)
+        }
+
+    @Test
+    fun android11Plus_aSystemThatAnswersAtOnceNeverMakesALoop_theSettingsOfTheAppTakeOver() =
+        runTest {
+            val phone = Phone(snap(fine = true, coarse = true, notifications = true, sdk = 31))
+            val model = vm(phone)
+            advanceUntilIdle()
+            assertTrue(model.onBackgroundRequestAnswered(BackgroundRequestOutcome.NO_UI))
+            // The next taps go straight to the settings of the app: no second request that would be refused again.
+            assertEquals(LocationButton.OPEN_SETTINGS, model.uiState.value.location.button)
+            assertFalse(model.uiState.value.location.systemScreen)
+            model.onResumed()
+            assertEquals(LocationButton.OPEN_SETTINGS, model.uiState.value.location.button)
+        }
+
+    @Test
+    fun android10_theBackgroundIsStillAskedByTheWindowOfTheSystem_notBySystemScreen() =
+        runTest {
+            val model = vm(Phone(snap(fine = true, coarse = true, notifications = true, sdk = 29)))
+            advanceUntilIdle()
+            assertEquals(LocationButton.SYSTEM_DIALOG, model.uiState.value.location.button)
+            assertFalse(model.uiState.value.location.systemScreen)
         }
 
     @Test
