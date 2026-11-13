@@ -85,6 +85,10 @@ targets:
         product: FirebaseCrashlytics
       - package: Firebase
         product: FirebaseAnalyticsCore
+      # SRV-2I : notifications push entre proches (ticket docs/tickets/notification-update-membres.md). Même version exacte de Firebase, aucun
+      # paquet de plus (les dépendances de Messaging sont déjà dans Package.resolved). Éteint tant que la personne n'a rien accordé (voir Info.plist).
+      - package: Firebase
+        product: FirebaseMessaging
       - package: GoogleSignIn
         product: GoogleSignIn
       - package: PhoneNumberKit
@@ -103,7 +107,9 @@ targets:
     # Info.plist genere par XcodeGen (fichier non versionne, voir ios/.gitignore).
     # LOC-4a : EXACTEMENT deux cles de localisation (les textes d'usage des fenetres du systeme), et RIEN d'autre : ni
     # NSLocationAlwaysUsageDescription (ancien, inutile des iOS 11), ni NSLocationTemporaryUsageDescriptionDictionary, ni
-    # UIBackgroundModes. La surveillance de regions et le changement de position significatif (LOC-4b, livre) relancent l'app
+    # UIBackgroundModes (SRV-2I : pas non plus « remote-notification » : les alertes de « {Prénom} a donné des nouvelles » sont affichées par le système
+    # sans aucun code de l'app, et aucun message silencieux n'est envoyé ; ce mode ne sert qu'à réveiller l'app pour du travail en arrière-plan,
+    # que Miff ne fait pas : guideline 2.5.4, aucun mode d'arrière-plan inutile). La surveillance de regions et le changement de position significatif (LOC-4b, livre) relancent l'app
     # terminee sans le mode d'arriere-plan « location », qui sert aux mises a jour CONTINUES de position : Miff n'en fait pas
     # (guideline 2.5.4 : aucun mode d'arriere-plan inutile). A rouvrir SEULEMENT si la recette sur iPhone (docs/qa/checklists/
     # loc-4b-ios-recette-pm.md) DEMONTRE qu'une relance est manquee a cause de son absence. Toujours ABSENT :
@@ -179,6 +185,13 @@ targets:
         # Pas d'evenement automatique screen_view : un nom d'ecran pourrait un jour evoquer un lieu
         # (voir docs/contracts/analytics-events.md).
         FirebaseAutomaticScreenReportingEnabled: false
+        # SRV-2I : notifications push. (1) Le service de jeton de Firebase Messaging est ÉTEINT au démarrage : aucun jeton n'est demandé à Apple ni à
+        # Firebase avant que la personne ait répondu à l'écran qui dit que Miff enregistre un identifiant technique de son téléphone ET accordé
+        # l'autorisation du système ; le registraire (PushRegistrar) l'allume alors, et l'éteint à chaque sortie. (2) La substitution automatique
+        # des méthodes de l'app par Firebase est COUPÉE : le jeton d'APNs est transmis explicitement (MiffAppDelegate), rien n'est branché en
+        # cachette sur les notifications. Contrôle : AppConfigurationTests, InfoPlistStaticTests et ci/check-binaries.sh.
+        FirebaseMessagingAutoInitEnabled: false
+        FirebaseAppDelegateProxyEnabled: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.tomessa.miff

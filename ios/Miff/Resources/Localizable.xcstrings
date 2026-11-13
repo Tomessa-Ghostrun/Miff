@@ -14345,6 +14345,23 @@
         }
       }
     },
+    "ios_permission_notifications_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff also lets you know when someone in your circle checks in. For this, Miff saves a technical identifier of your phone, provided by Apple to send notifications. You can turn it all off at any time in your phone's settings. The examples above show what you could receive."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff te prévient aussi quand un proche donne des nouvelles. Pour cela, Miff enregistre un identifiant technique de ton téléphone, fourni par Apple pour envoyer les notifications. Tu peux tout couper à tout moment dans les réglages de ton téléphone. Les exemples ci-dessus montrent ce que tu pourrais recevoir."
+          }
+        }
+      }
+    },
     "permission_notifications_note": {
       "extractionState": "manual",
       "localizations": {
