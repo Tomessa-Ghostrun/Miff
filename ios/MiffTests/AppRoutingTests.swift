@@ -81,7 +81,7 @@ final class AppRoutingTests: XCTestCase {
             hasMembership: true,
             analyticsConsentEnabled: true,
             phone: "+33612345678",
-            termsVersion: "0.1"
+            termsVersion: "1.0"
         )
         XCTAssertTrue(full.hasPhone)
         XCTAssertTrue(full.hasTermsVersion)
@@ -96,7 +96,7 @@ final class AppRoutingTests: XCTestCase {
                 hasMembership: false,
                 analyticsConsentEnabled: false,
                 phone: phone,
-                termsVersion: "0.1"
+                termsVersion: "1.0"
             ).hasPhone
         }
         XCTAssertFalse(hasPhone(nil))
@@ -122,7 +122,9 @@ final class AppRoutingTests: XCTestCase {
         XCTAssertFalse(hasTerms(nil))
         XCTAssertFalse(hasTerms(""))
         XCTAssertFalse(hasTerms(1))
+        // Un compte créé avant la version 1.0 du texte garde « 0.1 » (valeur figée) : il compte toujours.
         XCTAssertTrue(hasTerms("0.1"))
+        XCTAssertTrue(hasTerms("1.0"))
     }
 
     func testWithoutAProfileNothingElseCounts() {
@@ -131,7 +133,7 @@ final class AppRoutingTests: XCTestCase {
             hasMembership: true,
             analyticsConsentEnabled: true,
             phone: "+33612345678",
-            termsVersion: "0.1"
+            termsVersion: "1.0"
         )
         XCTAssertFalse(none.hasMembership)
         XCTAssertFalse(none.analyticsConsentEnabled)
