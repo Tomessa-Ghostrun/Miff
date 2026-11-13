@@ -10,6 +10,20 @@ Modifié :
 - `ConsentVersions.analytics` (« 2026-10-v01 ») et la version du texte de consentement à la localisation (« 2026-11-v03 ») ont leur propre numéro, non touchés.
 - Tests : valeurs d'exemple « 0.1 » remplacées par « 1.0 » ; nouveau test qui verrouille la constante (« 1.0 », 1 à 20 caractères).
 
+### COULEURS-2 - Écran « Les couleurs de ta Miff » et bouton « i » de la bulle du Feed
+
+Branche `ios/couleurs-info` (PR en brouillon). Ticket `docs/tickets/couleurs-info.md`, **modifié par une décision du PM du 2026-11-13 : un petit bouton « i » en bas à droite de la bulle ouvre l'écran ; toucher la bulle ne fait plus rien.** Miroir d'Android COULEURS-1 (#211). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM : `docs/qa/checklists/couleurs-info-ios-recette-pm.md`. Détail : `ios/README.md`, section « Les couleurs de ta Miff ». **0 € : écran statique, aucune lecture de données, aucun réseau, aucun événement de statistiques, aucune permission, aucune dépendance.**
+
+Ajouté :
+- **L'écran « Les couleurs de ta Miff »** (`ColorsInfoView`, contenu `ColorsInfoContent`) : introduction, la couleur d'une personne (vert, orange, rouge, gris, gris en voyage, zone de danger), ce qui change la couleur, la couleur de la Miff, ce que les couleurs ne disent pas. Poussé plein écran (`MiffRoute.colorsInfo`) sans barre d'onglets, contenu défilant, Dynamic Type (l'illustration passe au-dessus du texte aux grandes tailles), lignes lues d'un bloc, titres en en-têtes, anglais en repli. Les 39 clés `feed_colors_*` existent déjà (PR Android) : réutilisées telles quelles, valeurs vérifiées.
+- **Les durées** (2 h, 4 h, 1 h) sont lues dans `StatusThresholds` (`ColorsInfoDurations`) et écrites par le formateur du système ; un test prouve que changer un seuil change le texte et qu'aucun catalogue n'écrit un nombre d'heures.
+- **Le bouton « i »** (`BubbleInfoButton`), précision du PM du 2026-11-13 : **EN DEHORS de la bulle** (hors de sa forme et de son animation : immobile), son **bas aligné sur le bas de la bulle**, sa **droite alignée sur la droite des cartes**, dans le coin bas-droit de la boîte de la bulle que la tache ne couvre pas. Un **disque de la couleur de la bulle** (celle de la page d'un carrousel) avec un « i » dans la couleur du texte de la bulle (contraste AA, au moins 4,5 pour 1 sur chaque teinte) ; zone de toucher de 44 pt, libellé VoiceOver « Comprendre les couleurs » (bouton).
+- Aperçus et captures CI : `-MiffPreview colors-info`, `feed-gray`, `feed-stopped`, `feed-carousel` (captures `96` et `98` seulement dans `ci/screenshots.sh` ; `feed-gray` et `feed-stopped` restent des aperçus manuels : l'étape des captures est limitée à 15 min et est presque pleine sur `main`, voir le rapport de la PR).
+- Tests : `ColorsInfoTests` (durées, ordre des blocs, textes exacts FR et EN, ton, parité, écran statique), `BubbleInfoButtonTests` (zone de toucher, aucun recouvrement du contenu, contraste, présence dans chaque variante, aucune réaction au toucher de la bulle, navigation à un seul écran).
+
+Modifié : marges haut et bas de la bulle de 44 à 52 pt et hauteur minimale du contenu de 176 à 160 pt (une bulle courte garde ses 264 pt ; une bulle haute gagne 16 pt) pour que la zone de toucher de 44 pt du « i » ne puisse jamais recouvrir le texte, même avec la dérive de la bulle. `BubbleActions`, `FeedScreenActions`, `FeedTabActions` reçoivent `onOpenColors`. « Contacter », « Reprendre le partage », le carrousel et ses pastilles ne changent pas.
+
+Écart avec le ticket : bouton « i » au lieu du toucher de la bulle (décision du PM) ; en conséquence l'action VoiceOver sur la bulle n'existe pas (le bouton porte le libellé). Limite connue : aucun test d'interface n'existe dans le projet (cible de tests unitaires seulement) : la présence du bouton dans chaque variante est vérifiée sur le code et par les captures CI ; le toucher réel est à la recette du PM. Aucun contournement de quota.
 
 ### Demande d'ajout d'un lieu : le créateur reçoit, accepte ou refuse (LIEU-REQ-C ; miroir d'Android PR #187, décisions du PM du 2026-11-11)
 

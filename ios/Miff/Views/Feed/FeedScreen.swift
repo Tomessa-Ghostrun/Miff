@@ -22,6 +22,8 @@ struct FeedScreenActions {
     let onOpenSettings: () -> Void
     /// La cloche : le centre de notifications (NOTIF-6I).
     let onOpenNotifications: () -> Void
+    /// Le petit bouton « i » de la bulle : l'écran « Les couleurs de ta Miff » (statique, poussé plein écran).
+    let onOpenColors: () -> Void
 }
 
 struct FeedScreen: View {
@@ -191,7 +193,8 @@ struct FeedScreen: View {
             ),
             bubble: BubbleActions(
                 onMessage: actions.onMessage,
-                onResumeSharing: { resumeSharing() }
+                onResumeSharing: { resumeSharing() },
+                onOpenColors: actions.onOpenColors
             ),
             onRetry: { model.retry() },
             onReviewAgreement: { awaiting.requestReview() },

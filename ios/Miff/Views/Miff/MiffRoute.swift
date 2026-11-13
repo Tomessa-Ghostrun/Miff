@@ -16,6 +16,8 @@ enum MiffRoute: Hashable {
     case placeRequestDetail(miffId: String, requestId: String)
     /// Un écran des Réglages (ONB-7) : poussé dans la MÊME pile que les écrans de la Miff, jamais dans une pile imbriquée.
     case settings(SettingsRoute)
+    /// « Les couleurs de ta Miff » : l'écran statique ouvert par le bouton « i » de la bulle du Feed (COULEURS-2). Aucun identifiant.
+    case colorsInfo
 
     /// Le formulaire d'un lieu, ou celui d'une demande (même écran, même sortie).
     var isPlaceFormScreen: Bool {
@@ -70,8 +72,17 @@ enum MiffRoute: Hashable {
             return id == miffId
         case .placeRequestDetail(let id, _):
             return id == miffId
-        case .create, .join, .settings:
+        case .create, .join, .settings, .colorsInfo:
             return false
+        }
+    }
+}
+
+extension Array where Element == MiffRoute {
+    /// Deux touchers rapprochés ouvrent un seul écran, pas deux : une route déjà au sommet de la pile n'est pas empilée une seconde fois.
+    mutating func openOnce(_ route: MiffRoute) {
+        if last != route {
+            append(route)
         }
     }
 }

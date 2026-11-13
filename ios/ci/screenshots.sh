@@ -159,6 +159,9 @@ splash_args=(-MiffSkipSplash YES)
 shot 90-fr-feed-bulle-verte 3 "${fr_args[@]}" -MiffPreview feed-green
 shot 91-fr-feed-bulle-orange 3 "${fr_args[@]}" -MiffPreview feed-orange
 shot 92-fr-feed-bulle-rouge 3 "${fr_args[@]}" -MiffPreview feed-red
+# COULEURS-2 : le bouton « i » hors de la bulle (carrousel ; les bulles verte, orange et rouge ci-dessus le montrent aussi) et l'écran des couleurs. Peu de captures : l'étape est limitée à 15 min.
+shot 96-fr-feed-bulle-carrousel 3 "${fr_args[@]}" -MiffPreview feed-carousel
+shot 98-fr-couleurs-ecran 3 "${fr_args[@]}" -MiffPreview colors-info
 
 # Mode sombre du système : l'app doit rester claire.
 xcrun simctl ui "$udid" appearance dark > /dev/null 2>&1 || true

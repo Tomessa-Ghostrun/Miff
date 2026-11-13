@@ -63,6 +63,9 @@ struct ScreenPreview: View {
         case _ where name.hasPrefix("profile-carousel"):
             // L'onglet Profil et son carrousel de Miffs : voir `ProfileScreenPreview`.
             ProfileScreenPreview(name: name)
+        case "colors-info":
+            // « Les couleurs de ta Miff » (COULEURS-2), l'écran statique ouvert par le bouton « i » de la bulle du Feed.
+            ColorsInfoView(onBack: ignoreAction)
         case _ where name.hasPrefix("feed-"):
             // Le Feed (en-tête, bulle, cartes) : voir `FeedScreenPreview`.
             FeedScreenPreview(name: name)
