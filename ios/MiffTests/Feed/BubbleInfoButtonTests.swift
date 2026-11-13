@@ -85,7 +85,7 @@ final class BubbleInfoButtonTests: XCTestCase {
             let blue = blend(tint.blue, over: colorBgCanvas.blue, alpha: tint.alpha)
             let flat = ColorToken(hex: UInt32(red << 16 | green << 8 | blue))
 
-            XCTAssertGreaterThanOrEqual(glyph.contrastRatio(with: flat), 4.5, "bulle \(name)")
+            XCTAssertGreaterThanOrEqual(entry.glyph.contrastRatio(with: flat), 4.5, "bulle \(entry.name)")
         }
     }
 
