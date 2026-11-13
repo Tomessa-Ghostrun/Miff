@@ -1118,7 +1118,7 @@ Ordre de grandeur de coût à ~2 000 utilisateurs actifs/jour après bascule : q
 
 ## 13. Ce qui exige Blaze (Cloud Functions) et ce qui peut s'en passer
 
-Cloud Functions n'existent pas sur Spark. **Blaze est activé (décision du PM, 2026-11-11)** et le **socle SRV-1** est écrit (`backend/functions/`) : la fonction de démonstration `ping` et, depuis **SRV-4B**, la première fonction métier `notifierUpdate` (notification push d'une update aux autres membres, §2.16 ; **jamais déployée par un agent**, déploiement par le PM sur « oui » explicite, `docs/dev/deploiement-functions.md` §11). Les autres fonctions (SRV-4 suite, SRV-6 et suivants) viendront par tickets. Les tableaux ci-dessous restent la liste de ce que chaque fonction future couvrira. Tableau fonction par fonction :
+Cloud Functions n'existent pas sur Spark. **Blaze est activé (décision du PM, 2026-11-11)** et le **socle SRV-1** est écrit (`backend/functions/`) et la première fonction métier est `notifierUpdate` (SRV-4B : notification push d'une update aux autres membres, §2.16 ; **jamais déployée par un agent**, déploiement par le PM sur « oui » explicite, `docs/dev/deploiement-functions.md` §11). La fonction de démonstration `ping` du socle a été **retirée du code** (elle tournait avec l'identité par défaut du projet, trop large, pour aucun usage) ; seule `notifierUpdate` existe. Les autres fonctions (SRV-4 suite, SRV-6 et suivants) viendront par tickets. Les tableaux ci-dessous restent la liste de ce que chaque fonction future couvrira. Tableau fonction par fonction :
 
 | Fonctionnalité | Sur Spark (sans fonction) | Avec Blaze |
 |---|---|---|
