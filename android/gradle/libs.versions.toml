@@ -24,7 +24,7 @@ profileinstaller = "1.4.1"
 maplibre = "13.7.1"
 playServicesLocation = "21.4.0"
 camerax = "1.6.2"
-haze = "2.0.1"
+haze = "2.1.0"
 playReview = "2.0.2"
 
 [libraries]
