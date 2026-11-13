@@ -15,7 +15,13 @@ struct PlaceRadiusSection: View {
                 title: L10n.string("place_radius_title"),
                 description: L10n.string("place_radius_help")
             )
-            PlaceMapBlock(chosen: state.chosen, radiusM: state.radiusM, isDanger: state.type == .risk, height: 176)
+            PlaceMapBlock(
+                chosen: state.chosen,
+                radiusM: state.radiusM,
+                isDanger: state.type == .risk,
+                emoji: state.category?.emoji,
+                height: 176
+            )
             HStack(spacing: Spacing.md) {
                 slider
                 valuePill

@@ -49,6 +49,12 @@ object NotificationPolicy {
     const val MAX_PER_TYPE_PER_DAY = 2
     const val MAX_TOTAL_PER_DAY = 6
     const val MAX_N6_PER_DAY = 3
+
+    /** N9 (news pushed by the server): at most 6 shown a day on this phone, outside the total above (ticket notification-update-membres, 7). */
+    const val MAX_N9_PER_DAY = 6
+
+    /** The server drops a message not delivered after 2 hours; a message that still comes later (a clock off, a late relay) is only written to the centre. */
+    const val N9_MAX_AGE_MILLIS = 2L * 60L * 60L * 1000L
 }
 
 /** What the planner needs, nothing else. */
@@ -314,8 +320,8 @@ object NotificationPlanner {
                 miffLevelAt(input, now) == StatusLevel.RED && !responsibleAt(input, now)
             }
 
-            // Never planned: N6 and N7 are decided elsewhere, N8 is only a line of the centre.
-            NotificationType.N6, NotificationType.N7, NotificationType.N8 -> {
+            // Never planned: N6 and N7 are decided elsewhere, N8 is only a line of the centre, N9 comes from the server.
+            NotificationType.N6, NotificationType.N7, NotificationType.N8, NotificationType.N9 -> {
                 false
             }
         }

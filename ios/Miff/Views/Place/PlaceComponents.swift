@@ -1,29 +1,8 @@
 import SwiftUI
 
 // Les briques des écrans des lieux (formulaire, liste, détail, offre), construites avec les tokens du design system. Aucune
-// couleur ni aucun style de texte qui ne vienne pas d'eux. Les pictogrammes sont des SYMBOLES SYSTÈME provisoires (l'export Figma
-// du PM les remplacera : fiche `icones-categories.md`).
-
-extension PlaceCategory {
-    var symbol: String {
-        switch self {
-        case .home:
-            return "house"
-        case .work:
-            return "briefcase"
-        case .school:
-            return "graduationcap"
-        case .sport:
-            return "soccerball"
-        case .relative:
-            return "person.2"
-        case .leisure:
-            return "gamecontroller"
-        case .other:
-            return "ellipsis.circle"
-        }
-    }
-}
+// couleur ni aucun style de texte qui ne vienne pas d'eux. Les catégories de lieu sont des EMOJI (décision du PM, 2026-11-10 :
+// `PlaceCategory.emoji`), rendus comme du texte par la police du système.
 
 extension PlaceType {
     var symbol: String {
@@ -31,22 +10,48 @@ extension PlaceType {
     }
 }
 
-/// Un carré bleu pâle avec le pictogramme d'une catégorie : 28 pt dans le formulaire, 44 pt dans les listes. Un lieu écrit avant
-/// que les catégories existent n'en a pas : un simple repère, jamais « Autre » par défaut. Le NOM de la catégorie accompagne
-/// toujours le pictogramme (jamais le pictogramme seul) : celui-ci est caché au lecteur d'écran.
+/// Un carré bleu pâle avec l'emoji d'une catégorie : 28 pt dans le formulaire, 44 pt dans les listes. Un lieu écrit avant que
+/// les catégories existent n'en a pas : un simple repère (pictogramme du système, ce n'est pas une catégorie), jamais « Autre » par
+/// défaut. Le NOM de la catégorie accompagne toujours l'emoji (jamais l'emoji seul) : celui-ci est caché au lecteur d'écran.
+/// Le carré et l'emoji grandissent avec la taille du texte du système (Dynamic Type) ; l'emoji garde ses couleurs en clair comme en
+/// sombre, sur un fond teinté qui s'adapte.
 struct PlaceCategoryIcon: View {
     let category: PlaceCategory?
-    let size: CGFloat
+    private let size: CGFloat
+    @ScaledMetric private var scaled: CGFloat
+
+    init(category: PlaceCategory?, size: CGFloat) {
+        self.category = category
+        self.size = size
+        _scaled = ScaledMetric(wrappedValue: size, relativeTo: .body)
+    }
+
+    /// Grandit avec le texte, mais de moitié au plus : une ligne de liste ne doit pas devenir une affiche.
+    private var side: CGFloat {
+        min(scaled, size * 1.5)
+    }
 
     var body: some View {
-        Image(systemName: category?.symbol ?? "mappin.and.ellipse")
-            .font(.system(size: size * 0.5, weight: .regular))
-            .foregroundColor(colorActionPrimary.color)
-            .frame(width: size, height: size)
+        glyph
+            .frame(width: side, height: side)
             .background(
                 RoundedRectangle(cornerRadius: radiusMd, style: .continuous).fill(colorActionPrimaryTint20.color)
             )
             .accessibilityHidden(true)
+    }
+
+    @ViewBuilder
+    private var glyph: some View {
+        if let category {
+            Text(verbatim: category.emoji)
+                .font(.system(size: side * 0.55))
+                .lineLimit(1)
+                .minimumScaleFactor(0.5)
+        } else {
+            Image(systemName: "mappin.and.ellipse")
+                .font(.system(size: side * 0.5, weight: .regular))
+                .foregroundColor(colorActionPrimary.color)
+        }
     }
 }
 

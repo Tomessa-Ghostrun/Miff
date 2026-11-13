@@ -4,7 +4,9 @@ import Foundation
 /// la décision du PM du 2026-10-28). Constantes partagées avec Android : à changer en même temps que le texte.
 enum ConsentVersions {
     /// Conditions d'utilisation et politique de confidentialité : version publiée de docs/legal (1 à 20 caractères).
-    static let terms = "0.1"
+    /// « 1.0 » depuis la publication du 2026-11-13 (même valeur qu'Android). Les comptes créés avant gardent « 0.1 » :
+    /// `termsVersion` est figée après la création du profil, rien n'est migré.
+    static let terms = "1.0"
     /// Texte de la ligne sur les statistiques et rapports de plantage. Format AAAA-MM-vNN (les règles interdisent de
     /// revenir en arrière).
     static let analytics = "2026-10-v01"
@@ -47,6 +49,8 @@ enum FieldValueSpec: Equatable {
     /// Retire la clé du document (`FieldValue.delete()`) : seulement dans une MISE À JOUR (`.update`), jamais dans une création. Sert à retirer
     /// la photo de profil (« Supprimer la photo », Mes informations) : la clé disparaît, comme sur Android, au lieu de devenir « null ».
     case deleteField
+    /// Ajoute `delta` à un nombre du document (`FieldValue.increment`) : le compteur des demandes de lieu (LIEU-REQ), que les règles veulent voir bouger de +1 ou -1 dans le même lot qu'une demande.
+    case increment(Int)
     case map([String: FieldValueSpec])
 }
 

@@ -5,7 +5,9 @@ import java.time.ZoneId
 
 /*
  * The centre of notifications (ticket section 20.4): a LOCAL list of what Miff told the person on this phone. It holds a type, a Miff identifier and
- * times: NO position, NO address, NO name of a place, NO name of a person, NO photo (criteria N-C4, N-P0-10). The text shown is the text of the type.
+ * times: NO position, NO address, NO name of a place, NO photo (criteria N-C4, N-P0-10). The ONE exception is N9 (a loved one gave news, a push of the server):
+ * its line holds the FIRST NAME of the author, 20 characters at most, as the validated ticket asks (notification-update-membres.md, 13: "{Prénom} a donné des
+ * nouvelles", Q6); never a family name. The text shown is the text of the type.
  */
 
 /** How the notification came to the centre: shown by the system, or only written there (app in front, late catch-up, daily cap reached). */
@@ -22,6 +24,8 @@ data class NotificationItem(
     val createdAtMillis: Long,
     val readAtMillis: Long? = null,
     val state: ItemState = ItemState.SHOWN,
+    /** N9 only: the first name of the author (cleaned, 20 characters at most). Null for every other type. */
+    val who: String? = null,
 ) {
     val unread: Boolean get() = readAtMillis == null
 

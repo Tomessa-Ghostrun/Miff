@@ -122,8 +122,6 @@ shot 90-fr-lieu-liste-membre 3 "${fr_args[@]}" -MiffPreview place-list-member
 shot 91-fr-lieu-enregistre 3 "${fr_args[@]}" -MiffPreview place-list-saved
 shot 92-fr-lieu-detail 6 "${fr_args[@]}" -MiffPreview place-detail
 shot 93-fr-lieu-detail-danger 6 "${fr_args[@]}" -MiffPreview place-detail-danger
-shot 94-fr-lieu-offre-limite 3 "${fr_args[@]}" -MiffPreview place-paywall-limit
-shot 95-fr-lieu-offre-danger 3 "${fr_args[@]}" -MiffPreview place-paywall-danger
 shot 95b-fr-miff-offre-deuxieme-miff 3 "${fr_args[@]}" -MiffPreview place-paywall-miff
 shot 96-en-lieu-rempli 6 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview place-form-filled
 
@@ -135,12 +133,26 @@ shot 162-fr-reglages-anglais-choisi 2 "${fr_args[@]}" -MiffAppLanguage en -MiffP
 shot 163-en-reglages 2 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview lang-settings
 shot 164-fr-reglages 2 "${fr_args[@]}" -MiffPreview lang-settings
 shot 165-fr-langue-droite-a-gauche 2 "${fr_args[@]}" -MiffForceRTL YES -MiffPreview lang-screen
+# Profil : le carrousel de Miffs (retour du PM, 2026-11-10). Les VRAIS écrans, nourris par des états fixes (Diagnostic/ProfileScreenPreviews.swift).
+shot 99-fr-profil-carrousel 3 "${fr_args[@]}" -MiffPreview profile-carousel
+shot 99b-fr-profil-carrousel-2 3 "${fr_args[@]}" -MiffPreview profile-carousel-2
+shot 99c-fr-profil-carrousel-creer 3 "${fr_args[@]}" -MiffPreview profile-carousel-create
 
 # La photo d'un proche en plein écran (FEED-8), dans un vrai fullScreenCover : un 3:4 (comme la capture du PM) puis le format du viseur (9:19,5).
 shot 150-fr-photo-plein-ecran-3-4 4 "${fr_args[@]}" -MiffPreview photo-3-4
 shot 151-fr-photo-plein-ecran-haute 4 "${fr_args[@]}" -MiffPreview photo-tall
 # Zones sures annoncees NULLES (cas du fullScreenCover sur un vrai appareil) : les planchers (47 pt + 12 pt en haut, 34 pt + 16 pt en bas) doivent tenir.
 shot 153-fr-photo-plein-ecran-zones-sures-nulles 4 "${fr_args[@]}" -MiffPreview photo-tall -MiffForceZeroSafeArea YES
+
+# PAY-UI-I : l'écran d'offre Miff+ (ticket paywall-v2.md), plein écran. La capture 95b ci-dessus montre la variante « sans
+# achat » (la seule de la production) AVANT les 3 secondes : croix absente, emplacement réservé. Les variantes « -cross » ont un délai
+# de 0 (croix présente, comme après 3 secondes). Les états avec offre (essai, deux formules, chargement, erreurs, abonné) ne sont
+# atteints que par ces aperçus (essai et deux formules capturés ici ; chargement, indisponible, achat en cours, en attente, erreur, abonné : à lancer à la main, `-MiffPreview paywall-loading` etc., pour tenir dans les 15 min de l étape) : aucun achat n existe avant SRV-8. Prix de démonstration.
+shot 95c-fr-offre-sans-achat-croix 3 "${fr_args[@]}" -MiffPreview paywall-soon-cross
+shot 95e-fr-offre-essai-croix 3 "${fr_args[@]}" -MiffPreview paywall-trial-cross
+shot 95f-fr-offre-deux-formules-croix 3 "${fr_args[@]}" -MiffPreview paywall-plans-cross
+shot 95m-en-offre-essai-croix 3 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview paywall-trial-cross
+
 
 # Le vrai parcours de l'app (session, routage) : première ouverture = carrousel, après le splash animé.
 shot 37-fr-vrai-parcours 7 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffShowApp YES
@@ -168,15 +180,24 @@ shot 40-fr-inscription-texte-tres-grand 3 -AppleLanguages "(fr)" -AppleLocale fr
 shot 41-fr-telephone-texte-tres-grand 3 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffPreview phone
 shot 97-fr-lieu-texte-tres-grand 6 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffPreview place-form-filled
 shot 98-fr-lieu-liste-texte-tres-grand 4 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffPreview place-list-free
+shot 98b-fr-profil-carrousel-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview profile-carousel
 shot 42-fr-carrousel-texte-tres-grand 3 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffPreview carousel1
 shot 66-fr-miff-confirmation-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview miff-join-confirm
 shot 67-fr-miff-ecran-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview miff-screen-owner
 shot 79-fr-miff-supprimer-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview miff-screen-delete
+shot 152-fr-photo-plein-ecran-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview photo-3-4
+shot 93-fr-feed-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-orange
+
 shot 93-fr-feed-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-orange
 
 shot 152-fr-photo-plein-ecran-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview photo-3-4
 shot 166-fr-langue-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview lang-screen
 shot 167-fr-reglages-texte-tres-grand 2 "${fr_args[@]}" -MiffAppLanguage en -MiffPreview lang-settings
+
+
+
+shot 99-fr-offre-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview paywall-trial-cross
+shot 99b-fr-offre-sans-achat-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview paywall-soon-cross
 
 xcrun simctl ui "$udid" content_size large > /dev/null 2>&1 || true
 

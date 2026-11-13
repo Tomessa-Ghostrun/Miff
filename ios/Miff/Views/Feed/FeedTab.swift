@@ -41,7 +41,13 @@ struct FeedTab: View {
     @Environment(\.openURL) private var openURL
     @State private var noticeVisible = false
 
-    init(environment: AppEnvironment, context: FeedShellContext, actions: FeedTabActions) {
+    init(
+        environment: AppEnvironment,
+        context: FeedShellContext,
+        memberPreviews: MiffMemberPreviews,
+        profilePlaces: ProfilePlacesViewModel,
+        actions: FeedTabActions
+    ) {
         self.context = context
         self.actions = actions
         let session = environment.session
@@ -71,6 +77,10 @@ struct FeedTab: View {
         )
         // L'Update ne lit pas ma fiche : le Feed la lui donne (UN seul écouteur, D19).
         dependencies.onMyStatus = { facts, stopped in myStatus.update(facts, sharingStopped: stopped) }
+        // Les membres que le Feed a lus servent aussi aux photos de la carte du Profil : aucune lecture de plus.
+        dependencies.onMembers = { miffId, members in memberPreviews.record(miffId: miffId, members: members) }
+        // Les lieux que le Feed a lus servent aussi à la liste des lieux du Profil : aucune lecture de plus.
+        dependencies.onPlaces = { miffId, places in profilePlaces.seedFromFeed(miffId: miffId, places: places) }
         _model = StateObject(wrappedValue: FeedViewModel(dependencies: dependencies))
         _photos = StateObject(wrappedValue: environment.makeFeedPhotos())
         _awaiting = ObservedObject(wrappedValue: awaitingAgreement)

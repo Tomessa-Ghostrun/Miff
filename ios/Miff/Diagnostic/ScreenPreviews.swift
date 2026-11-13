@@ -52,12 +52,20 @@ struct ScreenPreview: View {
         case _ where name.hasPrefix("photo-"):
             // La photo d'un proche en plein écran (Feed, FEED-8) : voir `PhotoScreenPreview`.
             PhotoScreenPreview(name: name)
+
+        case _ where name.hasPrefix("paywall-"):
+            // L'offre Miff+ dans ses états (variante sans achat, essai, deux formules, chargement, erreurs) : voir `PaywallScreenPreview`.
+            PaywallScreenPreview(name: name)
+
         case _ where name.hasPrefix("place-"):
             // Les lieux de confiance (formulaire, liste, détail, offre) : voir `PlaceScreenPreview`.
             PlaceScreenPreview(name: name)
         case _ where name.hasPrefix("lang-"):
             // Réglages et Réglages > Langue : voir `LanguageScreenPreview`.
             LanguageScreenPreview(name: name)
+        case _ where name.hasPrefix("profile-carousel"):
+            // L'onglet Profil et son carrousel de Miffs : voir `ProfileScreenPreview`.
+            ProfileScreenPreview(name: name)
         case _ where name.hasPrefix("feed-"):
             // Le Feed (en-tête, bulle, cartes) : voir `FeedScreenPreview`.
             FeedScreenPreview(name: name)

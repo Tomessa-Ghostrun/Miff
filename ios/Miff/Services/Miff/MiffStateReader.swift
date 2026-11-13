@@ -30,7 +30,7 @@ final class MiffStateReader {
     }
 
     private enum Classification {
-        case valid(name: String?)
+        case valid(name: String?, ownerUid: String? = nil)
         case lost(name: String?)
         case failed(MiffFailure)
     }
@@ -68,10 +68,10 @@ final class MiffStateReader {
         var lost: [LostMiff] = []
         for ref in refs {
             switch await classify(ref, uid: uid, fromCache: fromCache) {
-            case .valid(let name):
+            case .valid(let name, let ownerUid):
                 valid.append(ref)
                 if let name {
-                    summaries.append(MiffSummary(id: ref.miffId, name: name))
+                    summaries.append(MiffSummary(id: ref.miffId, name: name, ownerUid: ownerUid))
                 }
             case .lost(let name):
                 lost.append(LostMiff(ref: ref, name: name))
@@ -132,7 +132,7 @@ final class MiffStateReader {
         let read = await guarded { try await store.readMiff(miffId: ref.miffId, fromServer: !fromCache) }
         switch read {
         case .value(.exists(let details)):
-            return .valid(name: details.name)
+            return .valid(name: details.name, ownerUid: details.ownerUid)
         case .value(.missing):
             let name = await cachedName(ref.miffId)
             return .lost(name: name)

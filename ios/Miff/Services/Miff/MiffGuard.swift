@@ -47,4 +47,9 @@ struct MiffRepositoryRules {
     /// La personne vient de REPRENDRE le partage de cette Miff (à la place de `onSharingChanged`) : le suivi remet sa détection à zéro pour
     /// elle, PUIS relit les Miffs. Nil : `onSharingChanged` seul.
     var onSharingResumed: ((String) -> Void)?
+
+    /// Appelé au début de « Quitter la Miff », avant le lot (LIEU-REQ, critère L1) : les demandes d'ajout d'un lieu en attente que la
+    /// personne a faites dans cette Miff sont reprises (elles portent une adresse et des coordonnées : elles ne restent pas orphelines). Ne
+    /// bloque JAMAIS le départ : un échec est son affaire.
+    var beforeLeave: (_ uid: String, _ miffId: String) async -> Void = { _, _ in }
 }

@@ -147,6 +147,8 @@ internal fun NavGraphBuilder.notificationRoutes(
                     onBack = { navController.popBackStackIfSafe() },
                     onOpen = { row ->
                         viewModel.onOpen(row)
+                        // N9: the Feed of the Miff concerned (ignored if the person does not belong to it).
+                        row.miffId?.let(container.miffDirectory::preselect)
                         if (row.type == NotificationType.N8) {
                             // A request to add a place: the list of the places of THAT Miff, where it is first (ticket LIEU-REQ, section 7.1). If none of the requests
                             // the row stands for is pending any more, the list opens with a neutral sentence (never an error).

@@ -31,6 +31,10 @@ class CenterRow(
     val miffName: String?,
     val createdAtMillis: Long,
     val unread: Boolean,
+    /** N9 only: the first name of the author (the line says "{Prénom} a donné des nouvelles"). */
+    val who: String? = null,
+    /** N9 only: the Miff the line is about, for the tap (the Feed shows it if the person belongs to it). */
+    val miffId: String? = null,
     /** The keys of the lines this row stands for: one, or several unread requests of the same person in the same Miff ("Léa a proposé 3 lieux"). */
     val ids: List<String> = listOf(id),
     /** A line about a request to add a place (N8): the Miff, ALWAYS named in its sentence. Null for every other line. */
@@ -119,6 +123,8 @@ class NotificationCenterViewModel(
             miffName = miffId?.let(names::get),
             createdAtMillis = createdAtMillis,
             unread = unread,
+            who = who,
+            miffId = if (type == NotificationType.N9) miffId else null,
         )
 
     /** A line about requests: the unread ones of a person in a Miff are ONE row; the words are made from what is known now. */
@@ -164,6 +170,8 @@ class NotificationCenterViewModel(
     /** "Les réactiver" when only the general switch of the app is off. */
     fun onEnableInApp() {
         settings.setEnabled(true)
+        // The band that offers it carries the sentence about the identifier of the phone: this yes is the consent to register it (SRV-2).
+        authorization.markConsentGiven()
         permission.value = authorization.state()
     }
 

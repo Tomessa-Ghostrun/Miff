@@ -13,6 +13,8 @@ struct PlaceMapView: UIViewRepresentable {
     let lng: Double
     let radiusM: Int
     let isDanger: Bool
+    /// L'emoji de la catégorie, posé dans le repère (nil : le simple point, avant le choix d'une catégorie ou pour un ancien lieu).
+    var emoji: String?
     let onLoadFailed: () -> Void
 
     func makeCoordinator() -> PlaceMapCoordinator {
@@ -37,7 +39,7 @@ struct PlaceMapView: UIViewRepresentable {
     func updateUIView(_ map: MKMapView, context: Context) {
         let coordinator = context.coordinator
         coordinator.onLoadFailed = onLoadFailed
-        let signature = "\(lat)|\(lng)|\(radiusM)|\(isDanger)"
+        let signature = "\(lat)|\(lng)|\(radiusM)|\(isDanger)|\(emoji ?? "")"
         // SwiftUI rappelle cette fonction à chaque changement du formulaire (une frappe, par exemple) : la carte n'est redessinée
         // que si le lieu, le rayon ou le type ont changé.
         guard coordinator.signature != signature else {
@@ -45,6 +47,7 @@ struct PlaceMapView: UIViewRepresentable {
         }
         coordinator.signature = signature
         coordinator.isDanger = isDanger
+        coordinator.emoji = emoji
         map.removeOverlays(map.overlays)
         map.removeAnnotations(map.annotations)
         let center = CLLocationCoordinate2D(latitude: lat, longitude: lng)
@@ -62,6 +65,7 @@ struct PlaceMapView: UIViewRepresentable {
 final class PlaceMapCoordinator: NSObject, MKMapViewDelegate {
     var signature = ""
     var isDanger = false
+    var emoji: String?
     var onLoadFailed: () -> Void = {}
 
     private var tint: UIColor {
@@ -82,16 +86,31 @@ final class PlaceMapCoordinator: NSObject, MKMapViewDelegate {
 
     func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
         let view = MKAnnotationView(annotation: annotation, reuseIdentifier: nil)
-        let size = CGSize(width: 14, height: 14)
         let color = tint
+        // Sans catégorie : le point de toujours. Avec : un disque blanc cerclé de la couleur du type, l'emoji au centre (dessiné comme
+        // du texte, donc rendu par la police du système, sans image ni ressource).
+        let emoji = emoji
+        let size = emoji == nil ? CGSize(width: 14, height: 14) : CGSize(width: 34, height: 34)
         view.image = UIGraphicsImageRenderer(size: size).image { _ in
-            color.setFill()
-            UIColor.white.setStroke()
             let rect = CGRect(origin: .zero, size: size).insetBy(dx: 1.5, dy: 1.5)
             let path = UIBezierPath(ovalIn: rect)
             path.lineWidth = 2
-            path.fill()
-            path.stroke()
+            if let emoji {
+                UIColor.white.setFill()
+                color.setStroke()
+                path.fill()
+                path.stroke()
+                let text = emoji as NSString
+                let attributes: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 18)]
+                let textSize = text.size(withAttributes: attributes)
+                let origin = CGPoint(x: (size.width - textSize.width) / 2, y: (size.height - textSize.height) / 2)
+                text.draw(at: origin, withAttributes: attributes)
+            } else {
+                color.setFill()
+                UIColor.white.setStroke()
+                path.fill()
+                path.stroke()
+            }
         }
         view.isAccessibilityElement = false
         return view
