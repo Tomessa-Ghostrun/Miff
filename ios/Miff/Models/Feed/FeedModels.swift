@@ -90,6 +90,10 @@ struct FeedMemberCard: Equatable, CustomStringConvertible {
     let canLocate: Bool
     /// FEED-8 : la photo de la dernière update, à lire quand la carte vient à l'écran (`none` : rien n'est dessiné, ni trou ni message).
     var photo: PhotoSlot = .none
+    /// La catégorie du lieu quand l'étiquette est « dans un lieu de confiance » ET que le lieu est connu avec une catégorie : son emoji
+    /// précède les mots (décision du PM, 2026-11-10). nil : pas d'emoji (danger, « A quitté… », sans nouvelles, lieu supprimé, lieu sans
+    /// catégorie : jamais « Autre » par défaut).
+    var labelCategory: PlaceCategory?
     /// MODE VOYAGE : le voyage de cette personne est en cours (pas fini) : la carte est hors de la couleur de la Miff et du décompte « n sur m ».
     var traveling = false
 

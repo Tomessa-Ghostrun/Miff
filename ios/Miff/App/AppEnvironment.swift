@@ -186,6 +186,8 @@ final class AppEnvironment {
     /// compte), lus à la demande et gardés seulement par l'écran qui les montre.
     lazy var profileReader: ProfileReading = FirestoreProfileReader()
     lazy var accountInfo: AccountInfoSource = FirebaseAccountInfo()
+    /// Les photos des membres sur les cartes de Miff du Profil : UNE lecture ponctuelle par Miff (voir `MiffMemberPreviews`).
+    lazy var memberPreviewReader: MemberPreviewReader = FirestoreMemberPreviewReader()
     /// Mes informations (ticket `docs/tickets/modifier-infos-perso.md`) : l'enregistrement sur le profil et sur la fiche de chaque Miff, par le magasin des Miffs
     /// (mêmes transactions, même garde d'écriture). Sans état : le SDK Firestore est résolu à chaque usage.
     lazy var myProfileRepository: MyProfileRepository = StoreMyProfileRepository(store: FirestoreMiffStore())

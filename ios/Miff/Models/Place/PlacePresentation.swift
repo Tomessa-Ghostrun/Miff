@@ -18,13 +18,13 @@ struct PlaceListUi: Equatable, CustomStringConvertible {
         Set(places.map { $0.id }).count
     }
 
-    /// « 2 lieux sur 2 avec la formule gratuite » : seulement pour un créateur dont la formule gratuite est CONNUE (`premium` faux
+    /// « 3 lieux sur 3 avec la formule gratuite » : seulement pour un créateur dont la formule gratuite est CONNUE (`premium` faux
     /// ET connu : jamais d'après une lecture échouée ou un cache, voir `DirectoryReady.premiumKnown`).
     var showsFreeCounter: Bool {
         isCreator && premium == false
     }
 
-    /// Un créateur en formule gratuite qui a déjà 2 lieux : « Ajouter un lieu » ouvre l'écran de la limite plutôt que le
+    /// Un créateur en formule gratuite qui a déjà 3 lieux : « Ajouter un lieu » ouvre l'écran de la limite plutôt que le
     /// formulaire (critère LIM1).
     var atFreeLimit: Bool {
         isCreator && premium == false && PlaceQuota.isAtFreeLimit(premium: false, distinctPlaces: distinctCount)
@@ -36,7 +36,7 @@ struct PlaceListUi: Equatable, CustomStringConvertible {
 }
 
 /// Les événements Analytics de l'offre : seulement « l'offre s'est ouverte / fermée », avec un déclencheur fixe et rien d'autre
-/// (critère LIM5). Le contrat a un déclencheur pour le 3e lieu et un pour la 2e Miff (`extra_miff`) ; il n'en existe pas encore
+/// (critère LIM5). Le contrat a un déclencheur pour le 4e lieu et un pour la 2e Miff (`extra_miff`) ; il n'en existe pas encore
 /// pour la zone de danger (point ouvert de la PR : rien n'est envoyé dans ce cas).
 enum PlacePaywall {
     static func trigger(for reason: PaywallReason) -> AnalyticsEvent.PaywallTrigger? {

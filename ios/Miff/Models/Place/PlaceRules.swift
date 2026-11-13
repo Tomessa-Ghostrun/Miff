@@ -18,9 +18,10 @@ enum PlaceLimits {
     /// Sous ce rayon, la note « la détection peut manquer un passage » s'affiche (décision Q12).
     static let radiusRecommended = 100
 
-    /// Formule gratuite : 2 lieux (décision QL9), dans les emplacements fixes des règles.
-    static let freePlaces = 2
-    static let freeIds = ["p1", "p2"]
+    /// Formule gratuite : 3 lieux (décision du PM du 2026-11-10, qui remplace les 2 lieux de QL9), dans les emplacements fixes des
+    /// règles (`p1`, `p2`, `p3` : les règles déployées doivent accepter `p3`, sinon le 3e lieu est refusé par le serveur).
+    static let freePlaces = 3
+    static let freeIds = ["p1", "p2", "p3"]
 
     /// Un lieu est écrit dans 5 Miffs au plus à la fois (décision Q4) : les règles lisent 20 documents au plus par lot.
     static let maxMiffs = 5
@@ -106,7 +107,7 @@ enum PlaceAddressText {
     }
 }
 
-/// Laquelle des limites demande Miff+. La zone de danger est Miff+ seulement (décision du ticket §6.2) ; le 3e lieu est
+/// Laquelle des limites demande Miff+. La zone de danger est Miff+ seulement (décision du ticket §6.2) ; le 4e lieu est
 /// la limite ; une 2e Miff (Feed, sélecteur de Miff, décision du PM du 2026-11-08) a sa propre phrase.
 enum PaywallReason: Hashable {
     case limit
@@ -156,14 +157,14 @@ struct PlaceDraft: Equatable, CustomStringConvertible {
 
 /// La réponse de `PlaceQuota` : quel identifiant écrire, ou pourquoi Miff+ est nécessaire.
 enum PlaceSlot: Equatable {
-    /// Écrire avec cet identifiant (`p1` / `p2` en gratuit, un neuf avec Miff+).
+    /// Écrire avec cet identifiant (`p1` / `p2` / `p3` en gratuit, un neuf avec Miff+).
     case use(String)
     case needsPremium(PaywallReason)
 }
 
 /// Les limites de la formule gratuite, décidées AVANT que rien soit envoyé (les règles ne sont que le filet, ticket §6.2).
 ///
-/// Gratuit : 2 lieux de confiance dans les emplacements fixes `p1` et `p2` des règles ; pas de zone de danger. Miff+ : autant
+/// Gratuit : 3 lieux de confiance dans les emplacements fixes `p1`, `p2` et `p3` des règles ; pas de zone de danger. Miff+ : autant
 /// qu'on veut, de tout type, un identifiant neuf tiré une fois sur le téléphone.
 enum PlaceQuota {
     /// - existingIdsByMiff : les identifiants déjà pris dans chaque Miff que la personne a créée (TOUTES, pas seulement celles
@@ -201,7 +202,7 @@ enum PlaceQuota {
         !premium && to == .risk && from != .risk ? .danger : nil
     }
 
-    /// « Ajouter un lieu » d'un créateur ouvre-t-il l'écran de la limite plutôt que le formulaire (gratuit, 2 lieux déjà) ?
+    /// « Ajouter un lieu » d'un créateur ouvre-t-il l'écran de la limite plutôt que le formulaire (gratuit, 3 lieux déjà) ?
     static func isAtFreeLimit(premium: Bool, distinctPlaces: Int) -> Bool {
         !premium && distinctPlaces >= PlaceLimits.freePlaces
     }

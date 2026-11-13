@@ -27,7 +27,7 @@ struct PlacePaywallView: View {
     }
 }
 
-/// L'offre affichée quand un compte gratuit demande un 3e lieu, une zone de danger (maquettes 14 et 15) ou une 2e Miff (sélecteur du
+/// L'offre affichée quand un compte gratuit demande un 4e lieu, une zone de danger (maquettes 14 et 15) ou une 2e Miff (sélecteur du
 /// Feed, décision du PM du 2026-11-08) : l'écran de l'offre avec une phrase calme en haut qui dit POURQUOI il s'affiche.
 /// PROVISOIRE (décision QL15) : aucun achat n'existe encore, donc le bouton d'essai et les prix ne sont pas dessinés
 /// (un prix n'est jamais écrit à la main, et un bouton qui ne fait rien serait un mensonge) ; « Miff+ arrive bientôt » dit où l'on en est. Rien n'est écrit ici : quitter l'écran ne change rien.
@@ -151,9 +151,10 @@ struct PlacePaywallContext: View {
         switch reason {
         case .limit:
             HStack(spacing: Spacing.xs) {
+                // « Tu as atteint 3 lieux » : trois pastilles pleines (la limite gratuite est atteinte), comme sur Android.
                 dot(filled: true)
                 dot(filled: true)
-                dot(filled: false)
+                dot(filled: true)
             }
             .accessibilityHidden(true)
         case .danger:

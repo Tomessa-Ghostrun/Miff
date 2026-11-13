@@ -63,11 +63,14 @@ struct FeedShellContext {
 struct MainShellView<Feed: View>: View {
     private let miffs: DirectoryState
     @ObservedObject private var profile: ProfileTabViewModel
+    /// Les membres des cartes du Profil : le Profil les observe lui-même (la coquille n'a pas à se redessiner pour eux).
+    private let memberPreviews: MiffMemberPreviews
     private let travel: TravelViewModel
     @ObservedObject private var updateModel: UpdateViewModel
     @ObservedObject private var myStatus: MyStatusStore
     private let update: UpdateShell
     private let onOpenMiff: (String) -> Void
+    private let onCreateMiff: () -> Void
     private let onOpenSettings: (SettingsRoute) -> Void
     private let feed: (FeedShellContext) -> Feed
     /// NOTIF-6I : un toucher sur une ligne du centre de notifications demande un onglet (le Feed, ou l'écran Update).
@@ -85,20 +88,24 @@ struct MainShellView<Feed: View>: View {
     init(
         miffs: DirectoryState,
         profile: ProfileTabViewModel,
+        memberPreviews: MiffMemberPreviews,
         travel: TravelViewModel,
         update: UpdateShell,
         onOpenMiff: @escaping (String) -> Void,
+        onCreateMiff: @escaping () -> Void,
         onOpenSettings: @escaping (SettingsRoute) -> Void,
         tabRequests: TabRequests,
         @ViewBuilder feed: @escaping (FeedShellContext) -> Feed
     ) {
         self.miffs = miffs
         _profile = ObservedObject(wrappedValue: profile)
+        self.memberPreviews = memberPreviews
         self.travel = travel
         _updateModel = ObservedObject(wrappedValue: update.model)
         _myStatus = ObservedObject(wrappedValue: update.status)
         self.update = update
         self.onOpenMiff = onOpenMiff
+        self.onCreateMiff = onCreateMiff
         self.onOpenSettings = onOpenSettings
         _tabRequests = ObservedObject(wrappedValue: tabRequests)
         self.feed = feed
@@ -183,13 +190,16 @@ struct MainShellView<Feed: View>: View {
                     ProfileTabView(
                         state: profile.state,
                         miffs: miffs,
+                        previews: memberPreviews,
+                        isActive: shownTab == .profile,
                         travel: travel,
                         offlineRetry: profile.offlineRetry,
                         actions: ProfileTabActions(
                             onOpenMyInfo: { onOpenSettings(.myInfo) },
                             onOpenSettings: { onOpenSettings(.settings) },
                             onRetry: { profile.retry() },
-                            onOpenMiff: onOpenMiff
+                            onOpenMiff: onOpenMiff,
+                            onCreateMiff: onCreateMiff
                         )
                     )
                     // Profil jamais lu et pas de réseau : la même pop-in « Pas de connexion » que le Feed, seulement tant que l'onglet est

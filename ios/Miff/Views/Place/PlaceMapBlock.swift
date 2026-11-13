@@ -8,6 +8,7 @@ struct PlaceMapBlock: View {
     let chosen: ResolvedAddress?
     let radiusM: Int
     let isDanger: Bool
+    var emoji: String?
     let height: CGFloat
 
     @State private var failed = false
@@ -21,6 +22,7 @@ struct PlaceMapBlock: View {
                     lng: chosen.lng,
                     radiusM: radiusM,
                     isDanger: isDanger,
+                    emoji: emoji,
                     onLoadFailed: { failed = true }
                 )
                 .id(attempt)
