@@ -25,6 +25,7 @@ struct AboutScreenPreview: View {
                     onBack: {},
                     onOpenMyInfo: {},
                     onOpenAccount: {},
+                    onOpenLanguage: {},
                     onOpenPrivacy: {},
                     onOpenNotifications: {}
                 ),
