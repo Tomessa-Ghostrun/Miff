@@ -170,7 +170,7 @@ Le site n'a **jamais** été publié : c'est une première mise en ligne complè
 Ce que **le PM fait lui-même** (aucun agent ne le fait) :
 
 1. **Console, §6 points 1 à 5** : enregistrer l'application Web dans le projet `miff-3d283` et copier la clé `apiKey` (« AIza… ») ; restreindre cette clé dans Google Cloud (sites `https://miff-3d283.web.app/*` et `https://miff-3d283.firebaseapp.com/*`, API « Identity Toolkit » seulement) ; vérifier les domaines autorisés d'Authentication ; activer Hosting (Spark, aucun paiement) ; **ne pas** encore changer le modèle d'e-mail « Réinitialisation du mot de passe » (point 4) : le faire **après** le déploiement, sinon les e-mails pointeraient vers une page qui n'existe pas encore.
-2. **Console, actions de `docs/legal/README.md` §3** : action 1 (Google Analytics : conservation à 2 mois, « réinitialiser à chaque nouvelle activité » désactivé), action 2 conseillée, et action 4 (stratégie TTL `notifState` / `expireAt` dans Firestore) : sans elles, la politique publiée serait inexacte sur la durée des statistiques et des états de notification.
+2. **Console, actions de `docs/legal/README.md` §3** : action 1 (Google Analytics : conservation à 14 mois, « réinitialiser à chaque nouvelle activité » désactivé), action 2 conseillée, et action 4 (stratégie TTL `notifState` / `expireAt` dans Firestore) : sans elles, la politique publiée serait inexacte sur la durée des statistiques et des états de notification.
 3. **Outil Firebase** (une fois) : `cd backend` puis `npm ci --ignore-scripts`, puis `.
 ode_modules.binirebase.cmd login:list` : ton compte doit apparaître (sinon `.
 ode_modules.binirebase.cmd login`). Ton compte Google voit aussi le projet `ghostrun-app` : chaque commande porte `--project miff-3d283`.
