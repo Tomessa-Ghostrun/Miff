@@ -28,6 +28,17 @@ extension FirestoreMiffStore {
         return snapshot.documents.map { $0.documentID }
     }
 
+    func readPlaceRequestLeftovers(miffId: String) async throws -> PlaceRequestLeftovers {
+        guard MiffId.isValid(miffId) else {
+            throw InvalidWriteError()
+        }
+        let miff = try firestore().collection("miffs").document(miffId)
+        let requests = try await miff.collection("placeRequests").getDocuments(source: .server)
+        let counter = try await miff.collection("meta").document("placeRequests").getDocument(source: .server)
+        let ids = requests.documents.map { $0.documentID }
+        return PlaceRequestLeftovers(requestIds: ids, counterExists: counter.exists)
+    }
+
     func commitWithMiff(miffId: String, build: @escaping (MiffTxView) -> [DocWrite]) async throws {
         guard MiffId.isValid(miffId) else {
             throw InvalidWriteError()

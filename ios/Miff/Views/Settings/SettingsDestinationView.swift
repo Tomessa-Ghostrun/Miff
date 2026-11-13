@@ -77,7 +77,7 @@ struct SettingsDestinationView: View {
             NotificationCenterView(
                 model: environment.makeNotificationCenterViewModel(),
                 service: environment.notifications.center,
-                miffName: { environment.notificationMiffName($0) },
+                names: environment.notificationCenterNames(),
                 actions: NotificationCenterActions(
                     onBack: onBack,
                     onOpen: onOpenNotification,

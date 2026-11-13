@@ -181,6 +181,28 @@ struct ProfileScreenPreview: View {
         }
 
         func withdrawAllMine(uid: String, miffId: String) async {}
+
+        func observe(miffId: String) -> AsyncStream<RequestsObservation> {
+            AsyncStream { $0.finish() }
+        }
+
+        func readAll(miffId: String) async -> MineRead {
+            .loaded([])
+        }
+
+        func readRequester(miffId: String, uid: String) async -> RequesterState {
+            .unknown
+        }
+
+        func accept(uid: String, request: PlaceRequest, knownCount: Int) async -> RequestAcceptResult {
+            .failed(.unknown)
+        }
+
+        func decline(_ request: PlaceRequest, knownCount: Int) async -> RequestDeclineResult {
+            .failed(.unknown)
+        }
+
+        func purge(miffId: String, requestIds: [String], remaining: Int) async {}
     }
 
     private struct DemoPlacesReader: PlacesReader {

@@ -326,4 +326,47 @@ enum PlaceRequestWrites {
             )
         ]
     }
+
+    /// REFUSER (créateur) : UN lot de 2, la demande supprimée et le compteur à la valeur absolue du nombre restant. Rien pour le demandeur.
+    static func decline(miffId: String, requestId: String, remaining: Int) -> [DocWrite] {
+        [
+            DocWrite(path: requestPath(miffId: miffId, requestId: requestId), kind: .delete),
+            DocWrite(path: counterPath(miffId: miffId), kind: .set, data: creatorCounter(pending: remaining))
+        ]
+    }
+
+    /// ACCEPTER (créateur) : UN lot de 3, atomique. Le lieu est créé comme celui d'un créateur (`PlaceWrites.createDocument` : les règles
+    /// de création d'un lieu s'appliquent telles quelles), la demande est supprimée, le compteur est à la valeur absolue du nombre restant.
+    static func accept(uid: String, request: PlaceRequest, placeId: String, remaining: Int) -> [DocWrite] {
+        let draft = PlaceDraft(
+            name: request.name,
+            miffIds: [request.miffId],
+            address: request.address ?? "",
+            lat: request.lat,
+            lng: request.lng,
+            radiusM: request.radiusM,
+            type: request.type,
+            // La catégorie choisie par le demandeur est copiée ; un document qui n'en a pas reçoit « Autre » (l'épingle neutre).
+            category: request.category ?? .other
+        )
+        return [
+            DocWrite(
+                path: PlaceWrites.path(miffId: request.miffId, placeId: placeId),
+                kind: .set,
+                data: PlaceWrites.createDocument(uid: uid, draft: draft)
+            )
+        ] + decline(miffId: request.miffId, requestId: request.id, remaining: remaining)
+    }
+
+    /// Nettoyage (créateur) : au plus `creatorDeletesPerLot` demandes supprimées, et le compteur à la valeur absolue du nombre restant.
+    static func purge(miffId: String, requestIds: [String], remaining: Int) -> [DocWrite] {
+        requestIds.map { DocWrite(path: requestPath(miffId: miffId, requestId: $0), kind: .delete) }
+            + [DocWrite(path: counterPath(miffId: miffId), kind: .set, data: creatorCounter(pending: remaining))]
+    }
+
+    /// Suppression d'une Miff (étape 2b, critère L3) : de 0 à 5 demandes par lot et, avec le dernier lot, le compteur. Jamais vide.
+    static func deleteAll(miffId: String, requestIds: [String], withCounter: Bool) -> [DocWrite] {
+        requestIds.map { DocWrite(path: requestPath(miffId: miffId, requestId: $0), kind: .delete) }
+            + (withCounter ? [DocWrite(path: counterPath(miffId: miffId), kind: .delete)] : [])
+    }
 }

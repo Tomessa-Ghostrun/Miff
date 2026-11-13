@@ -840,7 +840,7 @@ Trois PR empilées : **VOY-1I** le moteur (modèle, statut Firestore, suivi), **
 - **Accessibilité** : l'avion est décoratif ; la carte reste UN bloc lu (« Thomas, En voyage jusqu'au 15 nov., Depuis le 7 nov. ») ; la bulle annonce son titre puis la ligne ajoutée ; « Modifier » est un bouton de 44 pt nommé.
 - **Coût** : aucun (aucune lecture ni écoute de plus : le statut est déjà écouté).
 
-## Demande d'ajout d'un lieu (LIEU-REQ-B, miroir d'Android PR #184)
+## Demande d'ajout d'un lieu (LIEU-REQ-B et C, miroir d'Android PR #184 et #187)
 
 Ticket `docs/tickets/demande-ajout-lieu.md` (décisions D1 à D9 du PM, 2026-11-11), contrat des écritures `docs/dev/demande-lieu-clients.md`, recette `docs/qa/checklists/demande-lieu-ios-recette-pm.md`. Les règles Firestore (`placeRequests`, `meta/placeRequests`) sont **déployées en production depuis le 2026-11-12**. **Rien n'est compilé en local** : la CI fait foi.
 
@@ -863,6 +863,28 @@ Un membre qui n'est PAS le créateur d'une Miff **demande** l'ajout d'un lieu ; 
 - **Quitter** une Miff, et **supprimer son compte** : les demandes en attente de la personne dans cette Miff sont reprises AVANT le lot « Quitter » (`MiffRepositoryRules.beforeLeave`, `StoreAccountMiffs.beforeLeave`), une minute au plus, sans jamais bloquer le départ.
 - **Coût** (`docs/dev/surveillance-quotas.md`) : un membre lit ses propres demandes (3 documents au plus), une fois par Miff et par 5 minutes, sans écouteur.
 - **Écarts avec Android** : (1) pas de toast : le message calme du dernier geste est une carte bleu pâle en tête de la liste (annoncée par VoiceOver) ; (2) l'écran de la Miff garde sa liste de lecture seule pour un membre (les demandes ne se font que depuis le Profil, comme le demande le ticket).
+
+### Côté créateur (LIEU-REQ-C, miroir d'Android PR #187)
+
+Le créateur d'une Miff **reçoit** les demandes, les **accepte** ou les **refuse**, depuis la liste des lieux du Profil ET depuis le détail d'une demande.
+
+| Chemin | Rôle |
+|---|---|
+| `Services/Place/PlaceRequestRepository+Creator.swift` | `observe` (UN écouteur ; seul un refus des règles dit « retiré »), `readAll`, `readRequester`, `accept` (limites de la formule gratuite AVANT d'écrire, lot atomique de 3, réponse perdue vérifiée, refus de la règle du lieu → offre), `decline`, `purge` |
+| `Services/Firebase/FirestorePlaceRequestStore.swift` | L'écouteur `placeRequests` d'une Miff, la lecture d'une demande (serveur), la fiche du demandeur (`members/{uid}` : une fiche absente de la copie du téléphone ne prouve pas que la personne est partie) |
+| `ViewModels/ProfileRequestsViewModel+Creator.swift` | La Miff suivie, `watch`, le point, qui a demandé (lu une fois par personne et par session), accepter / refuser (un seul geste à la fois, jamais sans réseau), nettoyage des demandes périmées ou d'un ex-membre |
+| `Views/Main/ProfileRequestsWatcher.swift` | Branche l'écouteur seulement pendant que l'app est devant (`scenePhase`), et dit au view model quelle est la Miff active du Feed |
+| `Views/Place/PlaceRequestUi.swift`, `PlaceRequestDetailView.swift` | La carte « À valider » du créateur (fond atténué, pointillés, « Demandé par {Prénom} », Refuser / Accepter), le détail |
+| `Views/Place/PlacePaywallView.swift`, `Views/Miff/MiffRoute.swift` | L'offre ouverte par « Accepter » (`MiffRoute.placeRequestPaywall`) avec les phrases `place_request_paywall_limit` / `_danger` |
+| `Services/Miff/MiffDeletion.swift` | Étape 2b : les demandes et le compteur sont supprimés avant les lieux et le dernier lot de la suppression d'une Miff ; tout échec (refus compris) met la suppression en pause |
+| `Models/Notification/PlaceRequestLines.swift`, `NotificationRowText.swift`, `Services/Notification/RequesterDirectory.swift` | La ligne du centre par demande reçue (N8), son regroupement par demandeur, ses mots faits à l'affichage, les prénoms en mémoire seulement |
+| `Views/Main/MainTabBar.swift` | Le point (10 pt, sans nombre) sur l'onglet Profil |
+
+- **Le compteur du créateur est toujours une valeur ABSOLUE** (le nombre de demandes qu'il lit après son geste), jamais `increment(-1)` : cela répare aussi une dérive.
+- **Ce que le créateur voit en premier** : sous « Lieux de confiance de <Miff> », un bloc « À valider » (les demandes, la plus ancienne d'abord), puis les lieux ; l'encart « Mode voyage » reste en dernier.
+- **Pas de push** dans ce ticket : le créateur découvre la demande à l'ouverture de l'app (point sur l'onglet Profil, demande en tête de liste). L'écouteur est annulé en arrière-plan.
+- **Centre de notifications et cloche (critère C1)** : fait (la pile NOTIF-P0 est dans `main`). `Models/Notification/PlaceRequestLines.swift` (clé, une ligne par demande, regroupement des lignes non lues par demandeur et par Miff), `NotificationRowText.swift` (les mots, faits à l'affichage), `Services/Notification/RequesterDirectory.swift` (prénoms en MÉMOIRE seulement, vidés avec la session), `NotificationType.n8` (hors `allCases` : jamais un réglage, jamais une notification du système), `NotificationDestination.placeRequests` (ouvre l'onglet Profil sur la Miff). Les lignes sont écrites par `ProfileRequestsViewModel+Creator` (`onKnown`) et lues quand la liste est vue (`onListSeen`). Limite connue, comme sur Android : le centre est flouté quand les notifications du téléphone sont refusées ou jamais demandées.
+- **Revue indépendante** : la suppression d'une Miff passe en pause sur tout échec de ses demandes (refus compris, règles déployées) et supprime les demandes avant les lieux (contrat 2.8) ; « Accepter » vérifie que le lieu existe avant d'annoncer « ajouté » quand la demande est introuvable ; le rôle de la demande vient des Miffs créées ; « Réessayer » relance l'écouteur d'un créateur. Points mineurs 1, 4 et 6 : inchangés.
 
 ## Lieux de la Miff du carrousel, visibles par tous les membres (décision du PM, 2026-11-11 ; miroir d'Android PR #181)
 

@@ -88,14 +88,15 @@ enum CentralButtonState: Equatable, CaseIterable {
 /// Les noms parlés (VoiceOver) de la barre : une clé du catalogue par onglet. L'état « sélectionné » est annoncé à part, jamais par la
 /// couleur seule. Le nom du bouton central dit l'état de la personne (« Donner des nouvelles, tu es en orange »).
 enum TabBarNames {
-    static func key(for tab: MainTab, central: CentralButtonState = .neutral) -> String {
+    /// `profileDot` : une demande d'ajout d'un lieu attend le créateur dans le Profil (ticket LIEU-REQ-C) : le nom parlé de l'onglet le dit.
+    static func key(for tab: MainTab, central: CentralButtonState = .neutral, profileDot: Bool = false) -> String {
         switch tab {
         case .feed:
             return "tabbar_feed_a11y"
         case .update:
             return central.accessibilityKey
         case .profile:
-            return "tabbar_profile_a11y"
+            return profileDot ? "tabbar_profile_requests_a11y" : "tabbar_profile_a11y"
         }
     }
 }

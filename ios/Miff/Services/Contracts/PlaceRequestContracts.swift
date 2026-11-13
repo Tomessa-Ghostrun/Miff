@@ -23,6 +23,42 @@ protocol PlaceRequestStore {
     /// UN lot confié à la file du téléphone : il part quand le réseau revient (même après la fermeture de l'app) et les règles le jugent
     /// ALORS (un refus fait disparaître la demande sans un mot : risque R10 du ticket). Rend la main tout de suite.
     func enqueue(_ writes: [DocWrite])
+
+    // MARK: - Le créateur
+
+    /// Le créateur : toutes les demandes de `miffId`, en direct (`placeRequests` n'est lisible que du créateur). Le flux se termine avec
+    /// l'erreur du SDK quand les règles refusent.
+    func observeAll(miffId: String) -> AsyncThrowingStream<RequestsSnapshot, Error>
+
+    /// Le créateur : toutes les demandes de `miffId`, une fois (la copie du téléphone quand le serveur est hors d'atteinte).
+    func readAll(miffId: String) async throws -> [PlaceRequest]
+
+    /// Le créateur : une demande, auprès du SERVEUR (nil : elle n'existe plus).
+    func readOne(miffId: String, requestId: String) async throws -> PlaceRequest?
+
+    /// Le créateur : qui a demandé. Auprès du serveur (une réponse du cache n'est jamais « n'est plus membre ») ; lève quand il ne peut pas le dire.
+    func readRequester(miffId: String, uid: String) async throws -> RequesterRead
+}
+
+/// Les demandes d'une Miff telles qu'un écouteur les a données ; `fromCache` tant que le serveur n'a pas répondu.
+struct RequestsSnapshot: Equatable, CustomStringConvertible {
+    let requests: [PlaceRequest]
+    let fromCache: Bool
+
+    var description: String {
+        "RequestsSnapshot(redacted)"
+    }
+}
+
+/// La fiche de l'auteur d'une demande, lue dans `members/{uid}` de la Miff.
+enum RequesterRead: Equatable, CustomStringConvertible {
+    case found(RequesterCard)
+    /// Le serveur a répondu et il n'y a pas de telle fiche : la personne n'est plus dans la Miff.
+    case notMember
+
+    var description: String {
+        "RequesterRead(redacted)"
+    }
 }
 
 /// Ce que le formulaire d'une demande doit savoir de la personne avant de s'ouvrir (tout lu auprès du SERVEUR : une limite ne se décide
@@ -112,4 +148,64 @@ protocol PlaceRequestRepository {
     /// La personne va quitter `miffId` (critère L1) : ses demandes en attente sont reprises, un lot chacune. Ne bloque jamais le départ :
     /// un échec est ignoré (le créateur masque les demandes de quelqu'un qui n'est plus membre et les supprime).
     func withdrawAllMine(uid: String, miffId: String) async
+
+    // MARK: - Le créateur
+
+    /// Les demandes de `miffId` en direct, pour son créateur (UN écouteur, 10 documents au plus). Se termine tout seul sur un refus.
+    func observe(miffId: String) -> AsyncStream<RequestsObservation>
+
+    /// Les demandes de `miffId` une fois (la liste du créateur quand aucun écouteur ne la nourrit).
+    func readAll(miffId: String) async -> MineRead
+
+    /// Qui a demandé : la fiche du membre (prénom, photo ou initiales), lue UNE fois par personne et par session par l'appelant.
+    func readRequester(miffId: String, uid: String) async -> RequesterState
+
+    /// ACCEPTER (critères C3, C5 à C8) : la formule est lue auprès du SERVEUR, les limites de la formule gratuite sont appliquées AVANT
+    /// d'écrire (une zone de danger, un 4e lieu), puis UN lot crée le lieu comme demandé (mêmes règles qu'une création par le créateur),
+    /// supprime la demande et pose le compteur. `knownCount` est le nombre de demandes que le créateur voit maintenant (le compteur est
+    /// écrit à ce nombre réel, ce qui corrige aussi une dérive).
+    func accept(uid: String, request: PlaceRequest, knownCount: Int) async -> RequestAcceptResult
+
+    /// REFUSER (critère C4) : UN lot supprime la demande et pose le compteur. RIEN n'est écrit pour le demandeur.
+    func decline(_ request: PlaceRequest, knownCount: Int) async -> RequestDeclineResult
+
+    /// Le créateur supprime des demandes que personne ne traitera (plus de 30 jours, ou faites par quelqu'un qui a quitté la Miff), 4 par
+    /// lot au plus. Au mieux : un échec est ignoré (elles restent masquées et seront rencontrées de nouveau).
+    func purge(miffId: String, requestIds: [String], remaining: Int) async
+}
+
+/// Ce que dit l'écouteur du créateur : les demandes de la Miff, ou qu'on ne peut rien en dire. Une coupure réseau n'est jamais `accessLost`.
+enum RequestsObservation: Equatable, CustomStringConvertible {
+    case data(requests: [PlaceRequest], fromCache: Bool)
+    /// Le serveur a refusé l'accès (retiré, ou la Miff n'existe plus) : rien de cette Miff ne reste.
+    case accessLost
+    /// Autre chose s'est mal passé : ce qui est montré reste tel quel.
+    case failed
+
+    var description: String {
+        "RequestsObservation(redacted)"
+    }
+}
+
+/// Comment s'est terminée l'acceptation d'une demande par le créateur (critères C3, C5 à C8).
+enum RequestAcceptResult: Equatable, CustomStringConvertible {
+    /// UN lot est passé : le lieu existe, la demande est supprimée, le compteur est posé.
+    case done(placeId: String)
+    /// Rien n'a été écrit : la formule gratuite a 3 lieux, ou la demande est une zone de danger et le créateur n'est pas Miff+. La demande
+    /// reste en attente.
+    case needsPremium(PaywallReason)
+    /// La formule n'a pas pu être lue (pas de réseau, trop lent) : l'offre ne s'ouvre JAMAIS sur un doute.
+    case subscriptionUnknown
+    /// La demande n'est plus en attente (traitée sur un autre téléphone, reprise par son auteur, expirée), ou la Miff n'est plus à la personne.
+    case gone
+    case failed(MiffFailure)
+
+    var description: String {
+        "RequestAcceptResult(redacted)"
+    }
+}
+
+enum RequestDeclineResult: Equatable {
+    case done
+    case failed(MiffFailure)
 }

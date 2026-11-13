@@ -19,6 +19,8 @@ final class PlaceRequestRepositoryTests: XCTestCase {
         return FirestorePlaceRequestRepository(
             store: requests,
             places: places,
+            placeRepository: FakePlaceRepository(),
+            newPlaceId: { "FRESHID0000000000001" },
             nowMillis: { clock.value },
             timeoutSeconds: 1,
             online: { network.value }

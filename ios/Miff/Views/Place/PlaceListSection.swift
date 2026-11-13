@@ -9,6 +9,10 @@ struct PlaceListActions {
     var onOpenRequest: (PlaceRequest) -> Void = { _ in }
     /// « Demander l'ajout d'un lieu » : un membre qui n'est pas le créateur ouvre le formulaire d'une demande.
     var onRequestPlace: () -> Void = {}
+    /// Le CRÉATEUR ouvre le détail d'une demande reçue, l'accepte, ou la refuse.
+    var onOpenReceived: (PlaceRequest) -> Void = { _ in }
+    var onAcceptRequest: (PlaceRequest) -> Void = { _ in }
+    var onDeclineRequest: (PlaceRequest) -> Void = { _ in }
 
     static let none = PlaceListActions(onOpen: { _ in }, onAdd: { _ in })
 }
@@ -53,6 +57,9 @@ struct PlaceRows: View {
                     }
                 }
             }
+            if ui.isCreator && !ui.received.isEmpty {
+                receivedSection
+            }
             if ui.places.isEmpty {
                 // Un membre n'a rien à ajouter : un « pas encore » calme (décision du PM, 2026-11-11) ; le créateur garde sa phrase.
                 Text(verbatim: L10n.string(ui.isCreator ? "miff_places_empty" : "place_list_empty_member"))
@@ -70,6 +77,28 @@ struct PlaceRows: View {
                 }
             } else if ui.offersRequests {
                 requestButton
+            }
+        }
+    }
+
+    /// Le CRÉATEUR : les demandes reçues, sous un titre, EN PREMIÈRE POSITION, chacune avec qui l'a faite et les deux réponses (critères C2 à C4).
+    private var receivedSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Text("place_request_section_title")
+                .miffTextStyle(textBodyBold16)
+                .foregroundColor(colorTextForm.color)
+                .accessibilityAddTraits(.isHeader)
+            ForEach(ui.received, id: \.request.id) { received in
+                PlaceRequestCard(
+                    request: received.request,
+                    creator: RequestCreatorUi(
+                        requester: received.requester,
+                        busy: ui.busyRequestId != nil,
+                        onAccept: { actions.onAcceptRequest(received.request) },
+                        onDecline: { actions.onDeclineRequest(received.request) }
+                    ),
+                    onOpen: { actions.onOpenReceived(received.request) }
+                )
             }
         }
     }
