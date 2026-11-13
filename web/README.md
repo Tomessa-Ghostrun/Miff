@@ -163,6 +163,37 @@ cd web
 
 (Firebase CLI : celle de `backend/` après `npm ci`, ou une installation globale. **Toujours** `--project miff-3d283`.) Le fichier `web/firebase.json` déclenche automatiquement le garde-fou `scripts/web-predeploy-check.mjs` avant l'envoi : il **annule** le déploiement s'il reste un champ à compléter, si la clé web est absente, si le site est périmé ou construit en démonstration, si la commande vient d'une CI ou vise un autre projet que `miff-3d283`. (Ce hook n'a pas pu être essayé en vrai : aucun déploiement n'est autorisé dans ce travail ; à constater lors du premier déploiement, qui échoue de toute façon par sécurité si le hook ne s'exécute pas depuis `web/`.)
 
+### Première mise en ligne (13 novembre 2026) : déroulé complet, dans l'ordre
+
+Le site n'a **jamais** été publié : c'est une première mise en ligne complète. Textes en version 1.0 datés du 13 novembre 2026 (`docs/legal/README.md` §10). **Pages publiées** (adresse de base `https://miff-3d283.web.app`) : accueil `/fr/` et `/en/` (`/` choisit la langue), conditions `/fr/cgu` et `/en/terms`, confidentialité `/fr/confidentialite` et `/en/privacy`, suppression de compte `/fr/supprimer-mon-compte` et `/en/delete-account`, nouveau mot de passe `/reset-password` (une seule page, FR/EN selon le lien), page d'erreur `404`. Ces adresses sont celles que les apps ouvrent déjà (CGU et confidentialité).
+
+Ce que **le PM fait lui-même** (aucun agent ne le fait) :
+
+1. **Console, §6 points 1 à 5** : enregistrer l'application Web dans le projet `miff-3d283` et copier la clé `apiKey` (« AIza… ») ; restreindre cette clé dans Google Cloud (sites `https://miff-3d283.web.app/*` et `https://miff-3d283.firebaseapp.com/*`, API « Identity Toolkit » seulement) ; vérifier les domaines autorisés d'Authentication ; activer Hosting (Spark, aucun paiement) ; **ne pas** encore changer le modèle d'e-mail « Réinitialisation du mot de passe » (point 4) : le faire **après** le déploiement, sinon les e-mails pointeraient vers une page qui n'existe pas encore.
+2. **Console, actions de `docs/legal/README.md` §3** : action 1 (Google Analytics : conservation à 2 mois, « réinitialiser à chaque nouvelle activité » désactivé), action 2 conseillée, et action 4 (stratégie TTL `notifState` / `expireAt` dans Firestore) : sans elles, la politique publiée serait inexacte sur la durée des statistiques et des états de notification.
+3. **Outil Firebase** (une fois) : `cd backend` puis `npm ci --ignore-scripts`, puis `.
+ode_modules.binirebase.cmd login:list` : ton compte doit apparaître (sinon `.
+ode_modules.binirebase.cmd login`). Ton compte Google voit aussi le projet `ghostrun-app` : chaque commande porte `--project miff-3d283`.
+4. **Prévisualiser** (PowerShell, racine du dépôt) : `node scripts/preview-web.mjs`, ouvrir `http://127.0.0.1:5000/`, parcourir les 10 pages en FR et en EN, puis `Ctrl+C`. Dire « oui » ou lister ce qui ne va pas.
+5. **Construire la vraie version** (la clé reste dans cette seule fenêtre ; ne la colle ni dans une conversation ni dans un fichier) :
+   ```
+   $env:MIFF_WEB_API_KEY = "AIza…"
+   node scripts/build-web.mjs
+   ```
+   La commande doit afficher « démo=false, clé=présente, emplacements à compléter=0 ».
+6. **Dernier contrôle, sans rien envoyer** : `node scripts/web-predeploy-check.mjs` (doit se terminer sans refus).
+7. **Donner le « oui, déploie » explicite** dans la conversation, puis :
+   ```
+   cd web
+   ..ackend
+ode_modules.binirebase.cmd deploy --only hosting --project miff-3d283
+   ```
+   Le hook `predeploy` n'a jamais été essayé pour de vrai : s'il échoue, il annule le déploiement (c'est voulu), **ne pas le contourner**, relever le message et le transmettre.
+8. **Après le déploiement** : ouvrir les 10 pages sur `https://miff-3d283.web.app` ; puis console Authentication > Modèles > Réinitialisation du mot de passe > « Personnaliser l'URL d'action » : `https://miff-3d283.web.app/reset-password` (§6 point 4), et faire la **vérification OBLIGATOIRE** ci-dessous (e-mail réel, deux navigateurs). En cas de problème : « Rollback » (ci-dessous).
+9. **Renseigner l'adresse de la politique** dans les fiches de stores plus tard (`https://miff-3d283.web.app/en/privacy` et `/fr/confidentialite`) : rien à faire maintenant.
+
+Points à connaître avant de dire « oui » : (a) la page d'accueil dit que l'app n'est **pas encore disponible** (boutons de stores désactivés, lien « Être prévenu(e) du lancement » = e-mail à l'adresse de contact) : il n'existe donc aucun lien de store à fournir ; (b) le nom, l'adresse postale et l'e-mail de l'éditeur (`web/site.config.json`) deviennent **publics** à la mise en ligne ; (c) les textes décrivent la notification « {Prénom} a donné des nouvelles » alors que la fonction serveur n'est pas encore déployée ; (d) les apps envoient encore `termsVersion` « 0.1 » (`docs/legal/README.md` §3).
+
 ### Vérification OBLIGATOIRE au premier déploiement (clé restreinte par site)
 
 La restriction de clé « par site » repose sur l'en-tête `Referer` envoyé à Google. Le site envoie `Referer: https://miff-3d283.web.app/` (politique `strict-origin`), ce qui correspond à la restriction `https://miff-3d283.web.app/*`. Cette combinaison n'a **pas pu être essayée** sans déploiement : à constater avant de dire que la page fonctionne.
