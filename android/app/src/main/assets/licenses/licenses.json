@@ -1,0 +1,193 @@
+{
+  "schema": 1,
+  "about": "Inventory of what the app of release ships and under which licence (screen Settings > A propos et aide > Licences et attributions, ticket reglages-a-propos.md). Read by the app (offline) and by the CI guard checkLicenses (android/gradle/licenses-guard.gradle.kts): every module of releaseRuntimeClasspath must start with one of the prefixes of 'modules' below, or the CI fails. Never write 'conforme', 'valide' or 'relu par un juriste' here: licences are taken from the POM of each artifact and the upstream repositories, not read file by file.",
+  "texts": {
+    "apache-2.0": { "name": "Apache License 2.0", "file": "apache-2.0.txt" },
+    "bsd-2-maplibre": { "name": "BSD 2-Clause", "file": "bsd-2-maplibre.txt" },
+    "bsd-3-protobuf": { "name": "BSD 3-Clause", "file": "bsd-3-protobuf.txt" },
+    "bsd-3-go": { "name": "BSD 3-Clause (Go)", "file": "bsd-3-go-re2j.txt" },
+    "mit": { "name": "MIT", "file": "mit-animal-sniffer.txt" },
+    "android-sdk": { "name": "Android Software Development Kit License", "file": "android-sdk.txt" },
+    "play-integrity-tos": { "name": "Play Integrity API Terms of Service", "file": "play-integrity-tos.txt" },
+    "ofl-baloo": { "name": "SIL Open Font License 1.1", "file": "ofl-baloo-thambi-2.txt" },
+    "ofl-hanken": { "name": "SIL Open Font License 1.1", "file": "ofl-hanken-grotesk.txt" }
+  },
+  "entries": [
+    {
+      "id": "kotlin",
+      "group": "software",
+      "name": "Kotlin",
+      "version": "2.4.21",
+      "versionOf": "org.jetbrains.kotlin:kotlin-stdlib",
+      "licenses": ["apache-2.0"],
+      "includes": "kotlin-stdlib, kotlinx-coroutines, kotlinx-serialization, atomicfu, JetBrains annotations",
+      "modules": ["org.jetbrains.kotlin:", "org.jetbrains.kotlinx:", "org.jetbrains:annotations"]
+    },
+    {
+      "id": "androidx",
+      "group": "software",
+      "name": "AndroidX (Jetpack)",
+      "licenses": ["apache-2.0"],
+      "includes": "Core, Activity, Lifecycle, Navigation, CameraX, Credentials, DataStore, SplashScreen, ExifInterface, ProfileInstaller, Startup, and the other AndroidX libraries they bring",
+      "modules": ["androidx.", "org.jetbrains.androidx."]
+    },
+    {
+      "id": "compose",
+      "group": "software",
+      "name": "Jetpack Compose",
+      "version": "1.12.1",
+      "versionOf": "androidx.compose.ui:ui",
+      "licenses": ["apache-2.0"],
+      "includes": "UI, Foundation, Material 3, Runtime, Animation",
+      "modules": ["androidx.compose", "org.jetbrains.compose."]
+    },
+    {
+      "id": "firebase",
+      "group": "software",
+      "name": "Firebase",
+      "version": "BoM 35.1.0",
+      "versionOf": "com.google.firebase:firebase-bom",
+      "licenses": ["apache-2.0", "android-sdk"],
+      "includes": "Firestore, Crashlytics and App Check (Apache 2.0); Authentication and Analytics (Android Software Development Kit License)",
+      "modules": ["com.google.firebase:", "com.google.android.datatransport:", "com.google.android.recaptcha:"]
+    },
+    {
+      "id": "play-services",
+      "group": "software",
+      "name": "Google Play services",
+      "licenses": ["android-sdk"],
+      "includes": "Location, Auth, Base, Measurement, Tasks, Google ID",
+      "modules": ["com.google.android.gms:", "com.google.android.libraries.identity.googleid:"]
+    },
+    {
+      "id": "play-integrity",
+      "group": "software",
+      "name": "Google Play Integrity",
+      "licenses": ["play-integrity-tos"],
+      "includes": "Play Integrity API (used by Firebase App Check)",
+      "modules": ["com.google.android.play:integrity"]
+    },
+    {
+      "id": "play-review",
+      "group": "software",
+      "name": "Google Play In-App Review",
+      "shipped": false,
+      "reason": "The review window is absent from the builds of release (flag REVIEW_PROMPT false, code removed by R8, activity removed from the manifest): not shipped, so not listed.",
+      "modules": ["com.google.android.play:review", "com.google.android.play:core-common"]
+    },
+    {
+      "id": "libphonenumber",
+      "group": "software",
+      "name": "libphonenumber",
+      "version": "9.0.43",
+      "versionOf": "com.googlecode.libphonenumber:libphonenumber",
+      "licenses": ["apache-2.0"],
+      "includes": "Google libphonenumber",
+      "modules": ["com.googlecode.libphonenumber:"]
+    },
+    {
+      "id": "haze",
+      "group": "software",
+      "name": "Haze",
+      "version": "2.0.1",
+      "versionOf": "dev.chrisbanes.haze:haze",
+      "licenses": ["apache-2.0"],
+      "includes": "haze, haze-blur (blur of the tab bar), by Chris Banes and the Haze project contributors",
+      "modules": ["dev.chrisbanes.haze:"]
+    },
+    {
+      "id": "network-libraries",
+      "group": "software",
+      "name": "gRPC, OkHttp, Okio, Guava, Gson, Dagger",
+      "licenses": ["apache-2.0"],
+      "includes": "gRPC, OkHttp, Okio, Guava, Gson, Dagger and javax/jakarta inject, Timber, JSpecify, error-prone and other annotations: libraries brought by Firebase and Google Play services",
+      "modules": [
+        "io.grpc:",
+        "io.perfmark:",
+        "com.squareup.okhttp3:",
+        "com.squareup.okio:",
+        "com.google.guava:",
+        "com.google.code.gson:",
+        "com.google.code.findbugs:",
+        "com.google.dagger:",
+        "javax.inject:",
+        "jakarta.inject:",
+        "com.google.errorprone:",
+        "com.google.j2objc:",
+        "com.google.auto.value:",
+        "com.google.android:annotations",
+        "com.jakewharton.timber:",
+        "org.jspecify:"
+      ]
+    },
+    {
+      "id": "protobuf",
+      "group": "software",
+      "name": "Protocol Buffers",
+      "licenses": ["bsd-3-protobuf"],
+      "includes": "protobuf-javalite (and the copy embedded in AndroidX DataStore)",
+      "modules": ["com.google.protobuf:", "androidx.datastore:datastore-preferences-external-protobuf"]
+    },
+    {
+      "id": "re2j",
+      "group": "software",
+      "name": "RE2/J",
+      "licenses": ["bsd-3-go"],
+      "includes": "re2j, derived from RE2 in Go",
+      "modules": ["com.google.re2j:"]
+    },
+    {
+      "id": "animal-sniffer",
+      "group": "software",
+      "name": "Animal Sniffer annotations",
+      "licenses": ["mit"],
+      "includes": "animal-sniffer-annotations",
+      "modules": ["org.codehaus.mojo:"]
+    },
+    {
+      "id": "maplibre",
+      "group": "maps",
+      "labelKey": "android_about_licenses_map_engine",
+      "name": "MapLibre Native",
+      "version": "13.7.1",
+      "versionOf": "org.maplibre.gl:android-sdk-opengl",
+      "licenses": ["bsd-2-maplibre"],
+      "includes": "android-sdk-opengl (OpenGL ES), maplibre-android-gestures, android-sdk-geojson, android-sdk-turf",
+      "modules": ["org.maplibre.gl:"]
+    },
+    {
+      "id": "openfreemap",
+      "group": "maps",
+      "labelKey": "android_about_licenses_map_tiles",
+      "name": "OpenFreeMap",
+      "licenses": [],
+      "noticeKey": "android_about_licenses_map_tiles_notice",
+      "modules": []
+    },
+    {
+      "id": "photon",
+      "group": "maps",
+      "labelKey": "android_about_licenses_address_search",
+      "name": "Photon (komoot)",
+      "licenses": [],
+      "noticeKey": "android_about_licenses_address_search_notice",
+      "modules": []
+    },
+    {
+      "id": "font-baloo",
+      "group": "fonts",
+      "name": "Baloo Thambi 2",
+      "licenses": ["ofl-baloo"],
+      "includes": "Copyright 2019 The Baloo 2 Project Authors",
+      "modules": []
+    },
+    {
+      "id": "font-hanken",
+      "group": "fonts",
+      "name": "Hanken Grotesk",
+      "licenses": ["ofl-hanken"],
+      "includes": "Copyright 2021 The Hanken Grotesk Project Authors",
+      "modules": []
+    }
+  ]
+}

@@ -578,6 +578,7 @@ private fun MainNavigation(
                 onOpenAccount = { navController.open(AccountRoute) },
                 onOpenLanguage = { navController.open(LanguageRoute) },
                 onOpenPrivacy = { navController.open(PrivacyRoute) },
+                onOpenAbout = { navController.openAbout() },
                 onOpenNotifications = { navController.openNotificationSettings() },
                 onOpenSubscription =
                     subscription?.let { active ->
@@ -1060,6 +1061,8 @@ internal fun NavGraphBuilder.sharedSettingsRoutes(
     container: AppContainer,
     navController: NavHostController,
     scopeKey: String,
+    /** False in the RESTRICTED Settings (no Miff): "À propos et aide" then leaves out "Si les rappels n'arrivent pas" (decision Q1). */
+    showRemindersHelp: Boolean = true,
 ) {
     val session = container.sessionManager
     composable<AccountRoute> {
@@ -1126,6 +1129,8 @@ internal fun NavGraphBuilder.sharedSettingsRoutes(
     composable<DetectionHelpRoute> {
         DetectionHelpScreen(onBack = { navController.popBackStackIfSafe() })
     }
+    // "À propos et aide" (ticket reglages-a-propos.md): in the full Settings AND in the restricted ones, with the same screens.
+    aboutRoutes(navController, showRemindersHelp)
 }
 
 /**
@@ -1139,7 +1144,7 @@ internal fun NavGraphBuilder.restrictedSettingsRoutes(
     scopeKey: String,
 ) {
     restrictedSettingsListRoute(navController)
-    sharedSettingsRoutes(container, navController, scopeKey)
+    sharedSettingsRoutes(container, navController, scopeKey, showRemindersHelp = false)
 }
 
 /**
@@ -1154,6 +1159,7 @@ internal fun NavGraphBuilder.restrictedSettingsListRoute(navController: NavHostC
             onOpenAccount = { navController.open(AccountRoute) },
             onOpenLanguage = null,
             onOpenPrivacy = { navController.open(PrivacyRoute) },
+            onOpenAbout = { navController.openAbout() },
         )
     }
 }

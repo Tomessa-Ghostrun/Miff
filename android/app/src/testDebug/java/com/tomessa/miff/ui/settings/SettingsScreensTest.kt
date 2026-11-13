@@ -341,7 +341,7 @@ class SettingsScreensTest {
 
     @Test
     fun settings_listsMyInformationMyAccountAndLanguage_andNothingElse() {
-        show { SettingsScreen({}, {}, {}, {}, {}) }
+        show { SettingsScreen({}, {}, {}, {}, {}, {}) }
         shoot("settings-list")
         composeRule.onNodeWithText(text(R.string.settings_my_info_title)).assertExists()
         composeRule.onNodeWithText(text(R.string.settings_account_title)).assertExists()
@@ -367,6 +367,7 @@ class SettingsScreensTest {
                 onOpenAccount = { opened += "account" },
                 onOpenLanguage = null,
                 onOpenPrivacy = { opened += "privacy" },
+                onOpenAbout = { opened += "about" },
             )
         }
         shoot("settings-list-restricted")
@@ -384,7 +385,13 @@ class SettingsScreensTest {
             ).assertHasClickAction()
             .assertHeightIsAtLeast(48.dp)
             .performClick()
-        assertEquals(listOf("account", "privacy"), opened)
+        // Decision Q1 of the PM (2026-11-13): "À propos et aide" is ALSO in the restricted list (AP1).
+        composeRule
+            .onNodeWithText(text(R.string.about_title))
+            .assertHasClickAction()
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        assertEquals(listOf("account", "privacy", "about"), opened)
         // The deletion is INSIDE "Mon compte", never a line of the list.
         composeRule.onAllNodesWithText(text(R.string.settings_delete_entry)).assertCountEquals(0)
     }
@@ -393,10 +400,14 @@ class SettingsScreensTest {
     fun settings_eachRowIsOneButton_ofAtLeast48dp_andOpensItsScreen() {
         val opened = mutableListOf<String>()
         show {
-            SettingsScreen({}, { opened += "info" }, { opened += "account" }, { opened += "language" }, {
-                opened +=
-                    "privacy"
-            })
+            SettingsScreen(
+                {},
+                { opened += "info" },
+                { opened += "account" },
+                { opened += "language" },
+                { opened += "privacy" },
+                { opened += "about" },
+            )
         }
         listOf(
             R.string.settings_my_info_title,
@@ -409,13 +420,20 @@ class SettingsScreensTest {
         composeRule.onNodeWithText(text(R.string.settings_account_title)).performClick()
         composeRule.onNodeWithText(text(R.string.settings_language_title)).performClick()
         composeRule.onNodeWithText(text(R.string.settings_privacy_title)).performClick()
-        assertEquals(listOf("info", "account", "language", "privacy"), opened)
+        composeRule
+            .onNodeWithText(
+                text(R.string.about_title),
+            ).performScrollTo()
+            .assertHasClickAction()
+            .assertHeightIsAtLeast(48.dp)
+            .performClick()
+        assertEquals(listOf("info", "account", "language", "privacy", "about"), opened)
     }
 
     @Test
     fun settings_theBackArrowWorks_andTheTitleIsTheOnlyHeading() {
         var back = 0
-        show { SettingsScreen({ back++ }, {}, {}, {}, {}) }
+        show { SettingsScreen({ back++ }, {}, {}, {}, {}, {}) }
         composeRule
             .onNodeWithContentDescription(
                 text(R.string.auth_back_a11y),

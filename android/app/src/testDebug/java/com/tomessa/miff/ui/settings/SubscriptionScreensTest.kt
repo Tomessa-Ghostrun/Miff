@@ -63,7 +63,7 @@ class SubscriptionScreensTest {
     @Test
     fun settingsList_forAnActiveMiffPlus_hasTheSubscriptionLine_asOneButton_thatOpensTheScreen() {
         var opened = 0
-        show { SettingsScreen({}, {}, {}, {}, {}, onOpenSubscription = { opened++ }) }
+        show { SettingsScreen({}, {}, {}, {}, {}, {}, onOpenSubscription = { opened++ }) }
         composeRule
             .onNodeWithText(text(R.string.settings_subscription_title))
             .assertHasClickAction()
@@ -79,7 +79,7 @@ class SubscriptionScreensTest {
     @Test
     fun settingsList_withoutAnActiveMiffPlus_hasNoTraceOfASubscription() {
         // The default (no callback): free account, expired, no document, offline, error, and every list that does not pass it.
-        show { SettingsScreen({}, {}, {}, {}, {}) }
+        show { SettingsScreen({}, {}, {}, {}, {}, {}) }
         composeRule.onAllNodesWithText(text(R.string.settings_subscription_title)).assertCountEquals(0)
         composeRule.onAllNodesWithText(text(R.string.settings_subscription_subtitle)).assertCountEquals(0)
         composeRule.onAllNodesWithText("Miff+", substring = true).assertCountEquals(0)
@@ -90,7 +90,7 @@ class SubscriptionScreensTest {
     @Test
     fun restrictedSettingsList_ofAnAccountWithNoMiff_hasNoSubscriptionLine() {
         // The restricted list: Mon compte and Confidentialité only, and the subscription callback is never given.
-        show { SettingsScreen({}, null, {}, null, {}) }
+        show { SettingsScreen({}, null, {}, null, {}, {}) }
         composeRule.onNodeWithText(text(R.string.settings_account_title)).assertExists()
         composeRule.onNodeWithText(text(R.string.settings_privacy_title)).assertExists()
         composeRule.onAllNodesWithText(text(R.string.settings_my_info_title)).assertCountEquals(0)
