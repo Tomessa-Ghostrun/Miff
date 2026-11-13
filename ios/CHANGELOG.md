@@ -33,6 +33,14 @@ Ajouté :
 - **Les réponses au formulaire contiendront ce que la personne y écrit** (données personnelles possibles, hébergées par Google) : à ajouter à la politique de confidentialité avant d'allumer la fenêtre en diffusion.
 - Quand la PR « À propos et aide » (#222, `FeedbackForm.address`) et celle-ci seront toutes deux dans `main`, **l'adresse ne doit plus être écrite qu'à un endroit** : un test échoue sinon (`ReviewFeedbackFormTests`) ; faire lire `ReviewFeedbackForm.configuredAddress` par `FeedbackForm`.
 
+### Version des conditions enregistrée : « 1.0 » (miroir d'Android)
+
+Modifié :
+- `ConsentVersions.terms` passe de « 0.1 » à **« 1.0 »** : c'est la version des CGU et de la politique de confidentialité publiées le 2026-11-13 (`docs/legal/`, PR #226). Les nouveaux comptes enregistrent donc `termsVersion` = « 1.0 ». Aucun texte à l'écran ne change. Les règles Firestore (`backend/firestore.rules`, chaîne de 1 à 20 caractères) acceptent « 1.0 » : non modifiées.
+- **Comptes créés avant : ils gardent « 0.1 »** (`termsVersion` est figée après la création du profil par les règles) ; rien n'est migré. Un compte « 0.1 » est toujours reconnu comme ayant accepté (test `AppRoutingTests` conservé).
+- `ConsentVersions.analytics` (« 2026-10-v01 ») et la version du texte de consentement à la localisation (« 2026-11-v03 ») ont leur propre numéro, non touchés.
+- Tests : valeurs d'exemple « 0.1 » remplacées par « 1.0 » ; nouveau test qui verrouille la constante (« 1.0 », 1 à 20 caractères).
+
 
 ### Demande d'ajout d'un lieu : le créateur reçoit, accepte ou refuse (LIEU-REQ-C ; miroir d'Android PR #187, décisions du PM du 2026-11-11)
 

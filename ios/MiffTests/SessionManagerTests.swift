@@ -43,7 +43,7 @@ final class SessionManagerTests: XCTestCase {
     func testTermsRecordedForThisAccountOpenTheProfileStep() async {
         let harness = SessionHarness()
         harness.gateway.setSignedIn("uid-1")
-        harness.pending.save(PendingConsent(uid: "uid-1", termsVersion: "0.1", analyticsAccepted: true))
+        harness.pending.save(PendingConsent(uid: "uid-1", termsVersion: "1.0", analyticsAccepted: true))
 
         await harness.manager.startAndResolve()
 
@@ -53,7 +53,7 @@ final class SessionManagerTests: XCTestCase {
     func testTermsRecordedForAnotherAccountNeverCountForThisOne() async {
         let harness = SessionHarness()
         harness.gateway.setSignedIn("uid-2")
-        harness.pending.save(PendingConsent(uid: "uid-1", termsVersion: "0.1", analyticsAccepted: true))
+        harness.pending.save(PendingConsent(uid: "uid-1", termsVersion: "1.0", analyticsAccepted: true))
 
         await harness.manager.startAndResolve()
 
@@ -514,7 +514,7 @@ final class SessionManagerTests: XCTestCase {
     func testSignOutForgetsTheAcceptanceAndTheDraftOfThisDevice() async {
         let harness = SessionHarness()
         harness.gateway.setSignedIn("uid-1")
-        harness.pending.save(PendingConsent(uid: "uid-1", termsVersion: "0.1", analyticsAccepted: true))
+        harness.pending.save(PendingConsent(uid: "uid-1", termsVersion: "1.0", analyticsAccepted: true))
         await harness.manager.startAndResolve()
 
         await harness.manager.signOut()

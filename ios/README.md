@@ -791,6 +791,7 @@ Réglages > Mes informations n'est plus en lecture seule. Décision du PM du 202
 - **Retour** : confirmation « Quitter sans enregistrer ? » (deux boutons de même poids) quand des changements ne sont pas enregistrés ; le geste de retour depuis le bord est verrouillé pendant l'envoi et tant que des changements ne sont pas enregistrés (`SwipeBackScreen.myInfo`), la flèche demande alors confirmation.
 - **Accessibilité** : la photo est UN bouton « Modifier la photo de profil » ; champs libellés par `LabeledTextField` (compteur lu « 45 caractères sur 50 ») ; messages annoncés ; cibles de 44 pt ; texte du design system (Dynamic Type), le formulaire défile.
 - **Compte ancien sans `termsVersion`** : les règles refusent toute mise à jour du profil ; l'app répond « Ça n'a pas fonctionné cette fois… » (jamais un texte technique), puis « Ça ne passe toujours pas… » au 3e refus. Rien n'est tenté de plus (aucune règle changée, décision Q11 du ticket) ; à signaler au PM si un compte réel est concerné.
+- **Version des conditions (`termsVersion`)** : `ConsentVersions.terms` = « 1.0 » (textes publiés le 2026-11-13, `docs/legal/`), même valeur qu'Android ; à changer en même temps que le texte publié. Les comptes créés avant gardent « 0.1 » (valeur figée par les règles, rien n'est migré). Les règles acceptent 1 à 20 caractères. Le consentement à la localisation et celui des statistiques ont leur propre numéro.
 
 ### Écarts avec Android (listés dans la PR)
 
