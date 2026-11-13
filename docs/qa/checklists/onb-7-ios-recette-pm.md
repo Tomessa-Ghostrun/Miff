@@ -57,13 +57,13 @@
 
 | # | Vérifier | OK |
 |---|---|---|
-| 23 | L'engrenage ouvre la liste : **Mes informations, Mon compte, Langue, Confidentialité** ; pas de Notifications ni d'offre Premium ; la version est en bas | [ ] |
+| 23 | L'engrenage ouvre la liste : **Mes informations, Mon compte, Langue, Confidentialité, À propos et aide** (en dernier) ; pas d'offre Premium ; **plus de version en bas de la liste** (elle est dans « À propos et aide », décision du PM du 2026-11-13, ticket ABOUT-1I, recette `docs/qa/checklists/reglages-a-propos-ios-recette-pm.md`) | [ ] |
 | 23b | Chaque écran des Réglages (Mes informations, Mon compte, Supprimer mon compte, Langue, Confidentialité, Si les détections tardent) s'ouvre et se referme avec le retour, sans fermeture de l'app ; Conditions et Politique ouvrent le navigateur | [ ] |
 | 24 | **Langue** : la ligne dit « Langue actuelle : Français » ; la toucher ouvre les réglages de l'iPhone pour Miff. Changer la langue de l'app : au retour, l'app est dans l'autre langue | [ ] |
 | 25 | **Mon compte** : e-mail affiché (non modifiable). Compte e-mail : « Changer mon mot de passe » envoie un e-mail (le bouton se met en pause environ 1 minute). Compte Google ou Apple : pas de bouton mot de passe, « Connecté avec Google/Apple » | [ ] |
 | 26 | « Se déconnecter » demande **« Te déconnecter ? »** avec deux boutons de même poids ; Annuler ne fait rien ; confirmer ramène à l'écran de connexion | [ ] |
 | 27 | « Supprimer mon compte » ouvre un écran qui dit **honnêtement** que cela arrive bientôt sur iPhone et propose d'écrire à l'équipe (rien n'est supprimé) | [ ] |
-| 28 | **Confidentialité** : texte sur la localisation (« même quand l'app est fermée… »), état de la localisation et des notifications, « Ouvrir les réglages du téléphone », « Si les détections tardent », Conditions, Politique, « Nous contacter » | [ ] |
+| 28 | **Confidentialité** : texte sur la localisation (« même quand l'app est fermée… »), état de la localisation et des notifications, « Ouvrir les réglages du téléphone », « Si les détections tardent », Conditions, Politique. **« Nous contacter » n'est plus ici** : il est dans « À propos et aide » (décision du PM du 2026-11-13, ticket ABOUT-1I, recette `docs/qa/checklists/reglages-a-propos-ios-recette-pm.md`) | [ ] |
 | 29 | Dans Confidentialité, aller dans les réglages de l'iPhone, changer la localisation, **revenir** : l'état affiché se met à jour | [ ] |
 | 30 | Tous les textes se lisent sans accord de genre bizarre, tutoiement, ton calme, aucune alarme | [ ] |
 

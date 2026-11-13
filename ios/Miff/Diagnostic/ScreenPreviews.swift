@@ -75,6 +75,9 @@ struct ScreenPreview: View {
         case _ where name.hasPrefix("miff-"):
             // Le flux Miff (créer, rejoindre, écran d'une Miff, accueil, perte d'accès) : voir `MiffScreenPreview`.
             MiffScreenPreview(name: name)
+        case _ where name.hasPrefix("about-"):
+            // Réglages > À propos et aide et ses licences (ABOUT-1I) : voir `AboutScreenPreview`.
+            AboutScreenPreview(name: name)
         case "lookup-failed":
             AccountLookupFailedView(onRetry: ignoreAction, onSignOut: ignoreAction)
         default:

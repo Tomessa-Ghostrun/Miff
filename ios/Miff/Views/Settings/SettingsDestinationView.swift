@@ -33,9 +33,9 @@ struct SettingsDestinationView: View {
                     onOpenAccount: { navigate(.account) },
                     onOpenLanguage: { navigate(.language) },
                     onOpenPrivacy: { navigate(.privacy) },
-                    onOpenNotifications: { navigate(.notifications) }
+                    onOpenNotifications: { navigate(.notifications) },
+                    onOpenAbout: { navigate(.about) }
                 ),
-                build: .current,
                 restricted: restricted
             )
         case .myInfo:
@@ -58,6 +58,19 @@ struct SettingsDestinationView: View {
             )
         case .detectionHelp:
             DetectionHelpView(onBack: onBack)
+        case .about:
+            AboutView(
+                actions: AboutActions(
+                    onBack: onBack,
+                    onOpenDetectionHelp: { navigate(.detectionHelp) },
+                    onOpenNotificationsHelp: { navigate(.notificationsHelp) },
+                    onOpenLicenses: { navigate(.licenses) }
+                ),
+                build: .current,
+                restricted: restricted
+            )
+        case .licenses:
+            LicensesView(onBack: onBack)
         case .notifications, .notificationCenter, .notificationsHelp:
             notificationScreen
         }
