@@ -145,6 +145,14 @@ shot 95e-fr-offre-essai-croix 3 "${fr_args[@]}" -MiffPreview paywall-trial-cross
 shot 95f-fr-offre-deux-formules-croix 3 "${fr_args[@]}" -MiffPreview paywall-plans-cross
 shot 95m-en-offre-essai-croix 3 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview paywall-trial-cross
 
+# ABOUT-1I : Réglages > À propos et aide (les VRAIS écrans, états fixes : Diagnostic/AboutScreenPreviews.swift, build Debug seulement).
+# La liste des Réglages (ligne « À propos et aide » en dernier), l'écran (contact et retour en cartes EN HAUT, « Informations » en
+# lignes discrètes dessous), les licences, l'écran en anglais et au plus grand texte. Peu de captures : l'étape est saturée.
+shot 170-fr-reglages-a-propos-ligne 2 "${fr_args[@]}" -MiffPreview about-settings
+shot 172-fr-a-propos 2 "${fr_args[@]}" -MiffPreview about-screen
+shot 174-fr-licences 2 "${fr_args[@]}" -MiffPreview about-licenses
+shot 176-en-a-propos 2 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview about-screen
+
 
 # Le vrai parcours de l'app (session, routage) : première ouverture = carrousel, après le splash animé.
 shot 37-fr-vrai-parcours 7 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffShowApp YES
@@ -188,6 +196,7 @@ shot 152-fr-photo-plein-ecran-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview ph
 
 shot 99-fr-offre-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview paywall-trial-cross
 shot 99b-fr-offre-sans-achat-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview paywall-soon-cross
+shot 178-fr-a-propos-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview about-screen
 
 xcrun simctl ui "$udid" content_size large > /dev/null 2>&1 || true
 

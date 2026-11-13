@@ -7,6 +7,8 @@ struct SettingsActions {
     let onOpenAccount: () -> Void
     let onOpenPrivacy: () -> Void
     let onOpenNotifications: () -> Void
+    /// ABOUT-1I : la ligne « À propos et aide ». Valeur par défaut : un aperçu qui ne la montre pas n'a rien à fournir.
+    var onOpenAbout: () -> Void = {}
 }
 
 /// Réglages (maquettes « réglages », ticket Profil / Réglages critère A4) : Mes informations, Mon compte, Notifications (NOTIF-2I, absente
@@ -14,8 +16,7 @@ struct SettingsActions {
 /// encore). La ligne « Langue » ouvre les réglages de l'iPhone pour Miff (décision Q4) et dit la langue en cours.
 struct SettingsListView: View {
     let actions: SettingsActions
-    let build: BuildInfo
-    /// Un compte SANS Miff (décision du PM du 2026-11-07) : seulement Mon compte et Confidentialité.
+    /// Un compte SANS Miff (décision du PM du 2026-11-07) : seulement Mon compte, Confidentialité et « À propos et aide » (ABOUT-1I).
     var restricted = false
 
     var body: some View {
@@ -25,11 +26,6 @@ struct SettingsListView: View {
                     rowView(row)
                 }
             }
-            Text(verbatim: L10n.format("ios_settings_version", build.version, build.build))
-                .miffTextStyle(textBodyCaption)
-                .foregroundColor(colorTextDescription.color)
-                .frame(maxWidth: .infinity)
-                .padding(.top, Spacing.md)
         }
     }
 }
@@ -75,6 +71,14 @@ extension SettingsListView {
                 title: L10n.string("settings_privacy_title"),
                 subtitle: L10n.string("settings_privacy_subtitle"),
                 action: actions.onOpenPrivacy
+            )
+        case .about:
+            // ABOUT-1I : en dernier, aussi dans les Réglages restreints. La version n'est plus en pied de liste : elle est dans cet écran.
+            SettingsRow(
+                systemImage: "info.circle",
+                title: L10n.string("about_title"),
+                subtitle: L10n.string("about_row_subtitle"),
+                action: actions.onOpenAbout
             )
         }
     }

@@ -36,6 +36,25 @@ Reste à faire (hors de cette PR) :
 - Un créateur Miff+ de plusieurs Miffs n'est prévenu que pour la Miff suivie (limite documentée dans `docs/dev/surveillance-quotas.md`).
 
 
+### Réglages > « À propos et aide » : version, aide, contact, avis, licences (ABOUT-1I ; miroir d'Android ABOUT-1A, décisions du PM du 2026-11-13)
+
+Branche `ios/reglages-a-propos`, PR en brouillon. Ticket : `docs/tickets/reglages-a-propos.md`. Recette : `docs/qa/checklists/reglages-a-propos-ios-recette-pm.md`. Détail et écarts : `ios/README.md` (« Réglages > À propos et aide »). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.**
+
+Ajouté :
+- Une ligne **« À propos et aide »**, **en dernier** dans Réglages et **aussi dans les Réglages restreints** (compte sans Miff). Elle ouvre un écran avec la **version** (un toucher copie « Miff 0.1.0 (N) », rien d'autre), l'**aide** (les deux aides existantes), **« Nous contacter »**, **« Un retour sur l'app ? »** (formulaire Google Forms fourni par le PM, ouvert dans Safari à l'adresse exacte, affiché y compris en build de diffusion, aucune donnée ajoutée), les **textes légaux** et les **licences**.
+- **Écran « Licences et attributions »**, **hors connexion** : les 17 paquets de `Package.resolved` (nom, version, licence), le texte complet de chaque licence embarqué dans l'app, « Plans d'Apple (MapKit) » pour les cartes (ni MapLibre, ni OpenFreeMap, ni Photon : Android seulement), les deux polices (SIL OFL 1.1). Aucune relecture juridique (risque assumé) : jamais « conforme » ni « relu ».
+- **Garde de CI (AP15)** : `LicenseCatalogTests` échoue si un paquet de `Package.resolved` n'a pas sa licence (ou sa version à jour) dans `LicenseCatalog`.
+- Contact sans application e-mail : un message calme affiche l'adresse, avec « Copier l'adresse » (`ExternalOpener.open(_:completion:)`).
+- Textes FR + EN : 20 clés `about_*` en parité avec Android (lignes ajoutées aussi à ses `strings.xml`, **à fusionner avec ABOUT-1A**), 2 clés `ios_about_*`. Préfixe `about` au contrat `docs/contracts/i18n-keys.md` et au script de parité. Tests : `AboutTests`, `LicenseCatalogTests`. Captures de la CI : `about-*`.
+
+Changé :
+- **Écran réorganisé (retour du PM du 2026-11-13, aussi sur Android)** : **en haut et mis en avant**, deux grandes cartes avec icône, « Nous contacter » (bleu plein) et « Un retour sur l'app ? » (blanc à trait bleu, avec sa phrase) ; **plus bas**, sous un titre **« Informations »** (nouvelle clé `about_info_title`, aussi ajoutée aux `strings.xml` d'Android), des lignes de liste discrètes : version (copie au toucher), aides, Conditions, Politique, Licences. Comportements inchangés. Captures de la CI réduites à 5.
+- **« Nous contacter » quitte Confidentialité** (décision Q2 du PM) : mêmes clés, autre écran. Les liens Conditions et Politique y restent. Checklists iOS mises à jour (onb-7, suppression de compte, notifications).
+- **La version quitte le pied de la liste des Réglages** (décision Q4) : `SettingsListView` n'a plus de paramètre `build`, la clé `ios_settings_version` est remplacée par `about_version_label`.
+
+Limites : l'adresse du formulaire est une constante du code (`FeedbackForm.address`), pas une propriété de build comme sur Android ; la garde de licences couvre les paquets Swift (les polices sont listées à la main).
+
+
 ### Ajouté : écran d'offre Miff+ fidèle aux maquettes, états, croix de fermeture différée de 3 secondes (PAY-UI-I, 2026-11-12)
 
 Branche `ios/paywall-v2`, PR en brouillon. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi, et le comportement se recette sur l'iPhone (TestFlight).** Spec : `docs/tickets/paywall-v2.md` (fait foi), `docs/specs/paywall-premium.md`, `docs/tickets/premium-achat-reel.md` ; maquettes `design/exports/paywall/`. Recette : `docs/qa/checklists/paywall-v2-ios-recette-pm.md`. **Pas d'achat réel** (SRV-7 et SRV-8 non livrés, Miff+ accordé à la main) : en production, l'écran est la variante « Miff+ arrive bientôt » (aucun prix, aucun bouton d'essai).
