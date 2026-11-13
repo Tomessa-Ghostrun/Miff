@@ -202,6 +202,8 @@ struct MiffHomeHost: View {
                     .swipeBackEnabled()
                     .navigationDestination(for: MiffRoute.self) { route in
                         destination(route)
+                            // Changer la langue (Réglages > Langue) refait les écrans empilés dans la nouvelle langue, sans toucher à la pile.
+                            .followsAppLanguage()
                             .toolbar(.hidden, for: .navigationBar)
                             .swipeBackEnabled()
                     }
@@ -226,7 +228,7 @@ struct MiffHomeHost: View {
         // décision du PM du 2026-11-07) ; les autres écrans des Réglages restent où ils sont.
         .onChange(of: MainShellRules.hasNoMiff(directory.state)) { noMiff in
             if noMiff {
-                path.removeAll { $0.isMyInfoScreen || $0.isNotificationScreen }
+                path.removeAll { $0.isMyInfoScreen || $0.isLanguageScreen || $0.isNotificationScreen }
             }
         }
         // De retour à l'écran racine après un lieu ou un formulaire : la liste des lieux du Profil est relue si un créateur y a touché.

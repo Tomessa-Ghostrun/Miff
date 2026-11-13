@@ -31,6 +31,7 @@ struct SettingsDestinationView: View {
                     onBack: onBack,
                     onOpenMyInfo: { navigate(.myInfo) },
                     onOpenAccount: { navigate(.account) },
+                    onOpenLanguage: { navigate(.language) },
                     onOpenPrivacy: { navigate(.privacy) },
                     onOpenNotifications: { navigate(.notifications) }
                 ),
@@ -47,6 +48,8 @@ struct SettingsDestinationView: View {
             // AUTH-5c : le vrai parcours (information, confirmation, ré-authentification). Une fois confirmé, la suppression prend tout
             // l'écran (destination `accountDeletion`) et cette pile disparaît avec le reste de l'app connectée.
             DeleteAccountFlowView(environment: environment, onClose: onBack)
+        case .language:
+            LanguageView(controller: .shared, onBack: onBack)
         case .privacy:
             PrivacyView(
                 permissions: environment.devicePermissions,

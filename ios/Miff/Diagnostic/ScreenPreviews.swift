@@ -66,6 +66,9 @@ struct ScreenPreview: View {
         case "colors-info":
             // « Les couleurs de ta Miff » (COULEURS-2), l'écran statique ouvert par le bouton « i » de la bulle du Feed.
             ColorsInfoView(onBack: ignoreAction)
+        case _ where name.hasPrefix("lang-"):
+            // Réglages et Réglages > Langue : voir `LanguageScreenPreview`.
+            LanguageScreenPreview(name: name)
         case _ where name.hasPrefix("feed-"):
             // Le Feed (en-tête, bulle, cartes) : voir `FeedScreenPreview`.
             FeedScreenPreview(name: name)

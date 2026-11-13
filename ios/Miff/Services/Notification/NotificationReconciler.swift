@@ -20,10 +20,9 @@ struct NotificationReconcilerDependencies {
     var calendar: () -> Calendar = { Calendar.current }
     /// L'app est-elle au premier plan ? (Au premier plan aucune notification du système n'est affichée.)
     var isForeground: () -> Bool = { false }
-    /// La langue du texte figé dans une demande : un changement de langue la fait reprogrammer.
-    var language: () -> String = {
-        AppLanguageName.code(preferred: Locale.preferredLanguages, available: Bundle.main.localizations)
-    }
+    /// La langue du texte figé dans une demande : un changement de langue la fait reprogrammer. C'est la langue CHOISIE dans Réglages > Langue
+    /// (celle du téléphone par défaut), la même que celle de `text`.
+    var language: () -> String = { AppLanguage.code }
     var text: (String) -> String = { L10n.string($0) }
 }
 
