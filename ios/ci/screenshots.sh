@@ -145,6 +145,11 @@ shot 95e-fr-offre-essai-croix 3 "${fr_args[@]}" -MiffPreview paywall-trial-cross
 shot 95f-fr-offre-deux-formules-croix 3 "${fr_args[@]}" -MiffPreview paywall-plans-cross
 shot 95m-en-offre-essai-croix 3 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview paywall-trial-cross
 
+# La fenêtre d'avis « Que penses-tu de Miff ? » (docs/tickets/pop-ins-avis.md ; build Debug seulement, drapeau REVIEW_PROMPT) : la VRAIE carte par-dessus
+# un Feed de démonstration, (question, puis « Merci de nous le dire ! »), et plus bas en très grand texte ; « Merci ! » et l'anglais : `-MiffPreview review-thanks` à la main (l'étape est limitée en temps). Aucun réseau, rien d'écrit.
+shot 160-fr-avis-question 4 "${fr_args[@]}" -MiffPreview review-question
+shot 162-fr-avis-merci-formulaire 3 "${fr_args[@]}" -MiffPreview review-feedback
+
 
 # Le vrai parcours de l'app (session, routage) : première ouverture = carrousel, après le splash animé.
 shot 37-fr-vrai-parcours 7 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffShowApp YES
@@ -159,6 +164,9 @@ splash_args=(-MiffSkipSplash YES)
 shot 90-fr-feed-bulle-verte 3 "${fr_args[@]}" -MiffPreview feed-green
 shot 91-fr-feed-bulle-orange 3 "${fr_args[@]}" -MiffPreview feed-orange
 shot 92-fr-feed-bulle-rouge 3 "${fr_args[@]}" -MiffPreview feed-red
+# COULEURS-2 : le bouton « i » hors de la bulle (carrousel ; les bulles verte, orange et rouge ci-dessus le montrent aussi) et l'écran des couleurs. Peu de captures : l'étape est limitée à 15 min.
+shot 96-fr-feed-bulle-carrousel 3 "${fr_args[@]}" -MiffPreview feed-carousel
+shot 98-fr-couleurs-ecran 3 "${fr_args[@]}" -MiffPreview colors-info
 
 # Mode sombre du système : l'app doit rester claire.
 xcrun simctl ui "$udid" appearance dark > /dev/null 2>&1 || true
@@ -188,6 +196,7 @@ shot 152-fr-photo-plein-ecran-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview ph
 
 shot 99-fr-offre-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview paywall-trial-cross
 shot 99b-fr-offre-sans-achat-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview paywall-soon-cross
+shot 164-fr-avis-question-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview review-question
 
 xcrun simctl ui "$udid" content_size large > /dev/null 2>&1 || true
 

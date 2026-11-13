@@ -48,4 +48,14 @@ enum BuildFlavor {
         return false
         #endif
     }
+
+    /// La fenêtre d'avis (docs/tickets/pop-ins-avis.md) : présente seulement quand la condition de compilation `REVIEW_PROMPT` existe
+    /// (project.yml : Debug et Internal oui, Release non). Même drapeau que `BuildConfig.REVIEW_PROMPT` d'Android.
+    static var includesReviewPrompt: Bool {
+        #if REVIEW_PROMPT
+        return true
+        #else
+        return false
+        #endif
+    }
 }

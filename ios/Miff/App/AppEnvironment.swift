@@ -175,6 +175,8 @@ final class AppEnvironment {
     /// La suppression d'une Miff, sans écran (MIFF-4) : reprise au lancement, banderole de fin, écran de la Miff.
     let miffDeletions: MiffDeletionCoordinator
     let joinLimiter: JoinAttemptLimiter
+    /// La fenêtre d'avis (docs/tickets/pop-ins-avis.md) : vide dans un build sans le drapeau `REVIEW_PROMPT` (Release).
+    let reviewPrompt: ReviewPromptServices
     /// LOC-4a : ce que le téléphone dit des autorisations de Miff (l'ÉTAT seulement, jamais une position), l'écran des
     /// notifications déjà montré, et le renouvellement du consentement.
     let consentRenewals: ConsentRenewals
@@ -198,6 +200,8 @@ final class AppEnvironment {
     let detectionJournal: DetectionJournal
     /// L'Update (UPDATE-3) : la photo du moment, le bouton central coloré, la bulle d'incitation.
     let update: UpdateServices
+    /// Les notifications push entre proches (SRV-2I, SRV-4I) : le registre des appareils, l'interrupteur, la réception.
+    let push: PushServices
     /// La suppression du compte (AUTH-5c) : procédure, contrôleur et retrait de l'autorisation Apple. Construite à la première demande (les
     /// écrans de la suppression), à partir de ce que la session détient déjà ; seul le marqueur local est donné à la session dès le départ.
     lazy var accountDeletion: AccountDeletionServices = AccountDeletionServices.make(self)
@@ -229,6 +233,8 @@ final class AppEnvironment {
         AppEnvironment()
     }
 
+    // Le câblage de l'app tient en un seul endroit (chaque service reçoit ce qu'il lui faut des autres) : l'initialiseur dépasse 60 lignes avec les
+    // notifications push (SRV-2I). Le découper ferait passer des dizaines de valeurs entre fonctions sans rien clarifier.
     // swiftlint:disable:next function_body_length
     private init() {
         let flagStore = UserDefaultsBooleanStore()
@@ -265,20 +271,34 @@ final class AppEnvironment {
         let updateServices = UpdateServices.make(
             gateway: gateway, network: networkMonitor, device: device, tracking: trackingServices, miff: miff
         )
+        let pushServices = PushServices.make(
+            gateway: gateway, device: device, network: networkMonitor, directory: miff.directory
+        )
+        // La fenêtre d'avis : son état est effacé avec la session (déconnexion, suppression du compte), comme sur Android.
+        let review = ReviewPromptServices.make()
         let manager = SessionManager(
             SessionDependencies(
                 gateway: gateway, accounts: FirestoreAccountRepository(), pending: pending, flags: flagStore,
                 privacy: privacy, tracker: tracker, cache: cache,
                 // Le brouillon (noms, photo, numéro) et les Miffs en mémoire partent avec la session. Le suivi des lieux et
                 // les notifications ont leur propre arrêt ici, pour qu'une déconnexion les arrête (ticket §7.6).
-                teardown: Self.teardowns(drafts, miff, places, trackingServices, updateServices) + [notifs.teardown],
+                // SRV-2I : la sortie invalide d'abord le jeton de notification (avant tout le reste), puis arrête le reste.
+                teardown: [pushServices.teardown]
+                    + Self.teardowns(drafts, miff, places, trackingServices, updateServices) + [notifs.teardown]
+                    + review.teardowns,
                 device: device,
                 network: networkMonitor,
                 drafts: drafts, generationCounter: trackingServices.generation,
                 deletionMarker: AccountDeletionFileMarker(),
-                localData: AccountDeletionServices.localData(updateLedger: updateServices.ledger)
+                localData: AccountDeletionServices.localData(
+                    updateLedger: updateServices.ledger, extra: pushServices.erasers
+                )
             )
         )
+        // SRV-2I : pendant la fin de la session, le registre des appareils n'écrit rien (voir `PushServices.make`).
+        // Un SEUL delegue sur le centre de notifications : celui des messages du serveur ; les rappels locaux (NOTIF-P0) lui sont chaines.
+        pushServices.delegate.next = notifs.responseDelegate
+        pushServices.sessionProbe.isEnding = { [weak manager] in manager?.ending ?? false }
         privacySettings = privacy
         analyticsTracker = tracker
         session = manager
@@ -293,11 +313,13 @@ final class AppEnvironment {
         placeNotices = places.notices
         placeRequestRepository = places.requests
         joinLimiter = miff.limiter
+        reviewPrompt = review
         consentRenewals = miff.renewals
         awaitingAgreement = miff.awaiting
         tracking = trackingServices.runtime
         detectionJournal = trackingServices.journal
         update = updateServices
+        push = pushServices
         profileDrafts = drafts
         pendingConsent = pending
         notifications = notifs
@@ -379,6 +401,7 @@ final class AppEnvironment {
         let session = self.session
         let directory = miffDirectory
         let repository = miffRepository
+        let push = self.push
         return PermissionGateViewModel(
             dependencies: PermissionGateDependencies(
                 permissions: devicePermissions,
@@ -387,7 +410,10 @@ final class AppEnvironment {
                 currentUid: { session.currentUid },
                 leaver: { uid, miffId in await repository.leave(uid: uid, miffId: miffId) },
                 onLeft: { miffId in await directory.afterOwnDeparture(miffId: miffId) },
-                awaiting: awaitingAgreement
+                awaiting: awaitingAgreement,
+                pushConsent: push.consent,
+                // SRV-2I : l'accord vient d'être donné : le registre est synchronisé TOUT DE SUITE (pas au prochain retour au premier plan).
+                onNotificationsAnswered: { push.sync() }
             ),
             settings: PermissionGateSettings(locationBlocking: LocationBlockingSwitch.current)
         )

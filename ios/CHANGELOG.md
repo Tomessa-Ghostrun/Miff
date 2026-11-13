@@ -2,6 +2,22 @@
 
 ## Non publié
 
+### Fenêtre d'avis « Que penses-tu de Miff ? » (miroir d'Android, décision du PM du 2026-11-13)
+
+Branche `ios/pop-in-avis`, PR brouillon. Ticket `docs/tickets/pop-ins-avis.md` (§8), recette `docs/qa/checklists/avis-ios-recette-pm.md`, détail et écarts : `ios/README.md` (« Fenêtre d'avis »). **Rien n'est compilé en local** (la CI fait foi). Aucune permission, aucune dépendance, aucun service payant.
+
+Ajouté :
+- **La fenêtre** : le titre et deux boutons, « J'adore ! » (un « Merci ! » de 1,6 s, puis la fenêtre NATIVE d'Apple, `requestReview`) et « Peux faire mieux... » (le formulaire Google Forms dans le navigateur, adresse `https://forms.gle/5EEH4sEfsnCCLzEx7` telle quelle ; repli : le courrier à l'aide, puis une phrase calme). **Apple décide seul de l'affichage de sa fenêtre** (quota ; d'après la documentation d'Apple, pas dans TestFlight) : jamais promise. Mêmes règles, mêmes seuils et mêmes textes (`review_*`) qu'Android : 7 jours, 90 jours après « Peux faire mieux... », 30 jours après une fermeture sans limite, jamais après « J'adore ! », jamais sur l'Update, avec le clavier ni par-dessus un message de l'app.
+- **Drapeau de build `REVIEW_PROMPT`** (même nom qu'Android) : condition de compilation allumée en Debug et Internal, **éteinte en Release** (code non compilé). La CI le prouve sur le binaire (`check-binaries.sh`).
+- **État retenu** dans un petit fichier privé exclu des sauvegardes, effacé à la déconnexion, à la suppression du compte et à la perte de session. Rien envoyé, aucun événement Analytics.
+- **Carte « Fenêtre d'avis (essai) »** du diagnostic (Debug et Internal) : afficher la fenêtre au prochain retour, remettre à zéro.
+- Tests (`MiffTests/Review/*`), 3 captures de CI (`-MiffPreview review-question`, `review-thanks`, `review-feedback`), clés `ios_diag_review_*` (diagnostic, propres à iOS).
+
+À savoir :
+- **La fenêtre est absente des builds de diffusion** (Release) : c'est le point de contrôle du ticket (§4) ; la reconfirmer à la porte « prêt à soumettre ». Un build Internal ouvert à des testeurs externes la contient.
+- **Les réponses au formulaire contiendront ce que la personne y écrit** (données personnelles possibles, hébergées par Google) : à ajouter à la politique de confidentialité avant d'allumer la fenêtre en diffusion.
+- Quand la PR « À propos et aide » (#222, `FeedbackForm.address`) et celle-ci seront toutes deux dans `main`, **l'adresse ne doit plus être écrite qu'à un endroit** : un test échoue sinon (`ReviewFeedbackFormTests`) ; faire lire `ReviewFeedbackForm.configuredAddress` par `FeedbackForm`.
+
 ### Version des conditions enregistrée : « 1.0 » (miroir d'Android)
 
 Modifié :
@@ -10,6 +26,20 @@ Modifié :
 - `ConsentVersions.analytics` (« 2026-10-v01 ») et la version du texte de consentement à la localisation (« 2026-11-v03 ») ont leur propre numéro, non touchés.
 - Tests : valeurs d'exemple « 0.1 » remplacées par « 1.0 » ; nouveau test qui verrouille la constante (« 1.0 », 1 à 20 caractères).
 
+### COULEURS-2 - Écran « Les couleurs de ta Miff » et bouton « i » de la bulle du Feed
+
+Branche `ios/couleurs-info` (PR en brouillon). Ticket `docs/tickets/couleurs-info.md`, **modifié par une décision du PM du 2026-11-13 : un petit bouton « i » en bas à droite de la bulle ouvre l'écran ; toucher la bulle ne fait plus rien.** Miroir d'Android COULEURS-1 (#211). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM : `docs/qa/checklists/couleurs-info-ios-recette-pm.md`. Détail : `ios/README.md`, section « Les couleurs de ta Miff ». **0 € : écran statique, aucune lecture de données, aucun réseau, aucun événement de statistiques, aucune permission, aucune dépendance.**
+
+Ajouté :
+- **L'écran « Les couleurs de ta Miff »** (`ColorsInfoView`, contenu `ColorsInfoContent`) : introduction, la couleur d'une personne (vert, orange, rouge, gris, gris en voyage, zone de danger), ce qui change la couleur, la couleur de la Miff, ce que les couleurs ne disent pas. Poussé plein écran (`MiffRoute.colorsInfo`) sans barre d'onglets, contenu défilant, Dynamic Type (l'illustration passe au-dessus du texte aux grandes tailles), lignes lues d'un bloc, titres en en-têtes, anglais en repli. Les 39 clés `feed_colors_*` existent déjà (PR Android) : réutilisées telles quelles, valeurs vérifiées.
+- **Les durées** (2 h, 4 h, 1 h) sont lues dans `StatusThresholds` (`ColorsInfoDurations`) et écrites par le formateur du système ; un test prouve que changer un seuil change le texte et qu'aucun catalogue n'écrit un nombre d'heures.
+- **Le bouton « i »** (`BubbleInfoButton`), précision du PM du 2026-11-13 : **EN DEHORS de la bulle** (hors de sa forme et de son animation : immobile), son **bas aligné sur le bas de la bulle**, sa **droite alignée sur la droite des cartes**, dans le coin bas-droit de la boîte de la bulle que la tache ne couvre pas. Un **disque de la couleur de la bulle** (celle de la page d'un carrousel) avec un « i » dans la couleur du texte de la bulle (contraste AA, au moins 4,5 pour 1 sur chaque teinte) ; zone de toucher de 44 pt, libellé VoiceOver « Comprendre les couleurs » (bouton).
+- Aperçus et captures CI : `-MiffPreview colors-info`, `feed-gray`, `feed-stopped`, `feed-carousel` (captures `96` et `98` seulement dans `ci/screenshots.sh` ; `feed-gray` et `feed-stopped` restent des aperçus manuels : l'étape des captures est limitée à 15 min et est presque pleine sur `main`, voir le rapport de la PR).
+- Tests : `ColorsInfoTests` (durées, ordre des blocs, textes exacts FR et EN, ton, parité, écran statique), `BubbleInfoButtonTests` (zone de toucher, aucun recouvrement du contenu, contraste, présence dans chaque variante, aucune réaction au toucher de la bulle, navigation à un seul écran).
+
+Modifié : marges haut et bas de la bulle de 44 à 52 pt et hauteur minimale du contenu de 176 à 160 pt (une bulle courte garde ses 264 pt ; une bulle haute gagne 16 pt) pour que la zone de toucher de 44 pt du « i » ne puisse jamais recouvrir le texte, même avec la dérive de la bulle. `BubbleActions`, `FeedScreenActions`, `FeedTabActions` reçoivent `onOpenColors`. « Contacter », « Reprendre le partage », le carrousel et ses pastilles ne changent pas.
+
+Écart avec le ticket : bouton « i » au lieu du toucher de la bulle (décision du PM) ; en conséquence l'action VoiceOver sur la bulle n'existe pas (le bouton porte le libellé). Limite connue : aucun test d'interface n'existe dans le projet (cible de tests unitaires seulement) : la présence du bouton dans chaque variante est vérifiée sur le code et par les captures CI ; le toucher réel est à la recette du PM. Aucun contournement de quota.
 
 ### Demande d'ajout d'un lieu : le créateur reçoit, accepte ou refuse (LIEU-REQ-C ; miroir d'Android PR #187, décisions du PM du 2026-11-11)
 
@@ -354,6 +384,23 @@ Le PM voyait, sur son iPhone 11 Pro, la légende vers le milieu-bas avec ~350 px
 
 
 
+### Notifications push entre proches : « {Prénom} a donné des nouvelles » (SRV-2I et SRV-4I, ticket `docs/tickets/notification-update-membres.md`)
+
+Branche `ios/fcm-client`, PR en brouillon. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi, et la livraison réelle ne se teste que sur l'iPhone (TestFlight), après les déploiements du PM.** Notes : `docs/dev/fcm-ios.md`. Étapes du PM (clé APNs, capacité, console Firebase) : `docs/dev/apns-etapes-pm.md`. Recette : `docs/qa/checklists/fcm-ios-recette-pm.md`. **Rien n'est déployé** (ni règles, ni fonction) et aucune clé n'est dans le dépôt.
+
+Ajouté :
+- **Registre des appareils** `users/{uid}/devices/{deviceId}` (contrat `docs/dev/jetons-appareil-clients.md`, 7 clés : `token`, `platform = ios`, `appVersion`, `tz`, `notify.updates`, `updatedAt`, `createdAt`), derrière `DeviceTokenRegistry` (testable) ; `deviceId` = identifiant de la session confirmée ; transaction « lire puis créer ou mettre à jour » ; écriture au changement de jeton, de fuseau ou d'interrupteur, ou après 30 jours (au plus une par jour) ; une nouvelle session supprime les autres documents du compte. **Seulement avec un compte connecté, une session confirmée, l'autorisation du système ET l'accord de la personne** (aucun jeton avant).
+- **Accord** : la pop-in des notifications dit désormais que Miff enregistre « un identifiant technique de ton téléphone, fourni par Apple pour envoyer les notifications » (clé `ios_permission_notifications_note`, propre à iOS, FR et EN ; la clé partagée `permission_notifications_note` est laissée telle quelle : la parité de texte avec Android l'impose, et Android ne l'affiche pas) ; c'est le **seul** endroit qui enregistre l'accord. Les comptes qui avaient autorisé avant revoient la pop-in **une fois**. La synchronisation part tout de suite après la réponse.
+- **Réception** : l'alerte est affichée par le système (clés `notif_circle_update_title` / `_body`, **identiques à Android**, ajoutées au catalogue et à Android pour la parité) ; au premier plan, aucune notification du système ; un toucher ouvre le **Feed de la Miff concernée**, après validation stricte du message (type, forme des identifiants, auteur obligatoire) et seulement si la Miff appartient au compte connecté (appartenance inconnue, Miff étrangère, propre update, personne de connecté : ignoré).
+- **Sortie** (déconnexion, session remplacée ou perdue, début de suppression du compte, autorisation retirée) : `deleteToken` chez Firebase **en premier**, désenregistrement APNs, notifications retirées du tiroir, document supprimé (borné, hors connexion sans attente), mémoire effacée ; jamais bloquée par une écriture en cours.
+- **Configuration** : `FirebaseMessaging` (même version exacte de Firebase, aucun paquet de plus), `FirebaseMessagingAutoInitEnabled = false` (aucun jeton avant l'accord), `FirebaseAppDelegateProxyEnabled = false` (jeton d'APNs transmis explicitement), `aps-environment` dans `Miff.entitlements`, **pas de `UIBackgroundModes`** (justifié dans `project.yml` et `docs/dev/fcm-ios.md`). Contrôles : `ci/check-binaries.sh`, `PushPrivacyTests`, avertissement (non bloquant) dans `ios-testflight` si l'entitlement manque.
+- **Tests** : `CircleNewsParserTests` (parsing, Miff étrangère, démarrage à froid, déconnecté, propre update), `DeviceRegistrationTests` (règles d'écriture, **forme exacte du document**, nesting de `notify.updates`, `createdAt` / `platform` seulement à la création, conversion Firestore), `PushRegistrarTests` (aucun jeton avant l'accord, une écriture, changements, ordre de la sortie, sortie qui n'attend pas, hors connexion), `PushConsentGateTests`, `PushStoresAndDelegateTests`, `PushPrivacyTests` (aucun journal ni Analytics, Messaging confiné à un fichier, un seul endroit qui enregistre l'accord).
+
+Limites et points ouverts :
+- **L'écran Réglages > Notifications (NOTIF-P0 iOS, PR #127/#129/#130) n'est pas dans `main`** : l'interrupteur « Quand un proche donne des nouvelles » existe (actif par défaut, `CircleNewsSwitch`) mais n'a pas encore de bouton ; la ligne de centre silencieuse (premier plan) attend aussi ce centre (`PushForegroundHook`). Conflits attendus à la fusion : voir `docs/dev/fcm-ios.md` §7 (délégué des notifications à chaîner).
+- **`PrivacyInfo.xcprivacy` non modifié** : la qualification du jeton (`DeviceID`, lié ou non) est tranchée par `release-manager` (SRV-3).
+- **Écart Android / serveur** (à régler hors de cette PR) : le serveur envoie `type = circle_update`, Android attend `n9_update` + `sentAt` ; voir `docs/dev/fcm-ios.md` §8.
+- Coût : aucune lecture par message ; 1 lecture + 1 écriture par changement ou par mois et par utilisateur actif ; FCM gratuit.
 
 ### Corrigé et changé : photo de proche en plein écran, enregistrement DIRECT dans la galerie, photo qui remplit la zone (retours du PM sur le build 25, 2026-11-11)
 

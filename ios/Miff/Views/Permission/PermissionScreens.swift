@@ -138,6 +138,12 @@ struct NotificationsPopIn: View {
                 .foregroundColor(colorTextPrimary.color)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
+            // SRV-2I : dit, avant l’accord, que Miff enregistre un identifiant technique du téléphone.
+            Text("ios_permission_notifications_note")
+                .miffTextStyle(textBodyCaption)
+                .foregroundColor(colorTextDescription.color)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
         } footer: {
             Button(action: onAllow) {
                 Text("notif_prime_allow")

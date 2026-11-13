@@ -14,8 +14,11 @@ final class AccountLocalStorageGuardTests: XCTestCase {
         "Services/Notification/NotificationDefaultsStores.swift": "choix : teardown ; carte : AccountLocalData",
         "Services/Notification/NotificationPlanFileStore.swift": "instantané et registre : teardown, AccountLocalData",
         "Services/Notification/NotificationLocalData.swift": "regroupe et efface les stockages des notifications",
+        "App/PushServices.swift": "branchement des notifications push ; effaceurs : PushServices.erasers",
         "Services/Permission/DevicePermissions.swift": "drapeau par compte : AccountLocalData (notificationAsks)",
         "Services/PrivacySettings.swift": "choix Analytics / plantages : SessionManager (eraseCollectedData)",
+        "Services/Push/PushLocalFileStore.swift": "mémoire de l'enregistrement : PushRegistrar.forget, erasers",
+        "Services/Push/PushPreferenceStores.swift": "accord et interrupteur par compte : PushServices.erasers",
         "Services/Storage/AccountDeletionFileMarker.swift": "le marqueur lui-même : effacé en dernier",
         "Services/Storage/ActiveMiffStore.swift": "Miff active : AccountLocalData (activeMiff)",
         "Services/Storage/DeviceIdFileStore.swift": "session d'appareil : DeviceSession.forget",
@@ -24,7 +27,8 @@ final class AccountLocalStorageGuardTests: XCTestCase {
         "Services/Storage/ProfileDraftFileStore.swift": "brouillon du profil : drafts.clear",
         "Services/Update/PublishLedger.swift": "carnet de l'Update : AccountLocalData (updateLedger)",
         "Services/Tracking/FileDetectionJournal.swift": "journal : AccountLocalData (detectionJournal)",
-        "Services/Tracking/TrackingLocalFileStore.swift": "copie locale du suivi : AccountLocalData (trackingLocal)"
+        "Services/Tracking/TrackingLocalFileStore.swift": "copie locale du suivi : AccountLocalData (trackingLocal)",
+        "Services/Review/ReviewStateFileStore.swift": "fenêtre d'avis (dates, issue) : teardown (ReviewPromptServices)"
     ]
 
     func testEveryLocalStorageHasBeenReadForTheDeletionOfAnAccount() throws {
