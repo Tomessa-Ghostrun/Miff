@@ -88,7 +88,7 @@ class PrivacyScreensTest {
     }
 
     @Test
-    fun privacy_hasTheSwitch_theLocationAndNotificationSentences_theLinksAndTheContact() {
+    fun privacy_hasTheSwitch_theLocationAndNotificationSentences_andTheLinks_butNoContactAnyMore() {
         privacy(PrivacyUiState(analyticsEnabled = true))
         shoot("privacy")
         composeRule.onNodeWithText(text(R.string.settings_privacy_analytics_title)).assertExists()
@@ -99,7 +99,8 @@ class PrivacyScreensTest {
         composeRule.onNodeWithText(text(R.string.notif_privacy_body)).performScrollTo().assertExists()
         composeRule.onNodeWithText(text(R.string.auth_consent_terms_link)).performScrollTo().assertHasClickAction()
         composeRule.onNodeWithText(text(R.string.auth_consent_privacy_link)).performScrollTo().assertHasClickAction()
-        composeRule.onNodeWithText(text(R.string.settings_privacy_contact)).performScrollTo().assertHasClickAction()
+        // AP7 (decision Q2 of the PM, 2026-11-13): "Nous contacter" MOVED to Settings > À propos et aide, it is not here any more (and not duplicated).
+        composeRule.onAllNodesWithText(text(R.string.settings_privacy_contact)).assertCountEquals(0)
         // Allowed: only the location offers the settings of the phone.
         composeRule.onAllNodesWithText(text(R.string.settings_privacy_open_phone_settings)).assertCountEquals(1)
         composeRule.onAllNodesWithText(text(R.string.notif_state_open_settings)).assertCountEquals(0)
@@ -206,7 +207,7 @@ class PrivacyScreensTest {
         }
         composeRule
             .onNodeWithText(
-                text(R.string.settings_privacy_contact),
+                text(R.string.auth_consent_privacy_link),
             ).performScrollTo()
             .assertIsDisplayed()
             .assertHeightIsAtLeast(48.dp)

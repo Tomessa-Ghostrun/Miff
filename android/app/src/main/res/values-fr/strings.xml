@@ -532,6 +532,27 @@
     <string name="settings_privacy_open_phone_settings">Ouvrir les réglages du téléphone</string>
     <string name="settings_privacy_texts_title">Nos textes</string>
     <string name="settings_privacy_contact">Nous contacter</string>
+    <string name="about_title">À propos et aide</string>
+    <string name="about_row_subtitle">Version, aide, licences et contact</string>
+    <string name="about_version_label">Version %1$s (build %2$s)</string>
+    <string name="about_version_copy_hint_a11y">copier la version</string>
+    <string name="about_copied">Copié.</string>
+    <string name="about_help_title">Besoin d\'un coup de main ?</string>
+    <string name="about_info_title">Informations</string>
+    <string name="about_feedback_title">Un retour sur l\'app ?</string>
+    <string name="about_feedback_subtitle">Dis-nous ce qui te plaît et ce qui pourrait être mieux.</string>
+    <string name="about_feedback_hint_a11y">ouvrir le formulaire dans ton navigateur</string>
+    <string name="about_feedback_note">Le formulaire s\'ouvre dans ton navigateur, sur un site extérieur à Miff.</string>
+    <string name="about_contact_unavailable">Aucune application e-mail ne s\'est ouverte. Tu peux nous écrire à %1$s.</string>
+    <string name="about_contact_copy_action">Copier l\'adresse</string>
+    <string name="about_licenses_title">Licences et attributions</string>
+    <string name="about_licenses_intro">Miff s\'appuie sur des logiciels et des données libres. Merci à celles et ceux qui les créent. Voici ce que nous utilisons, et sous quelle licence.</string>
+    <string name="about_licenses_software_title">Logiciels</string>
+    <string name="about_licenses_maps_title">Cartes et adresses</string>
+    <string name="about_licenses_fonts_title">Polices</string>
+    <string name="about_licenses_maps_privacy">Quand tu tapes une adresse pour créer un lieu, le texte part vers le service d\'adresses, sans ton nom ni ta position.</string>
+    <string name="about_licenses_open_hint_a11y">afficher le texte de la licence</string>
+    <string name="about_licenses_close_hint_a11y">masquer le texte de la licence</string>
     <string name="settings_privacy_open_browser_a11y">ouvrir la page dans ton navigateur</string>
     <string name="settings_privacy_open_mail_a11y">écrire un e-mail</string>
     <!-- Miff : retirer un proche, quitter, supprimer la Miff, renouveler le code (ticket MIFF-2). Ton calme et bienveillant. -->
@@ -1174,4 +1195,16 @@
     <string name="feed_colors_not_verdict">Orange ou rouge ne veut pas dire qu\'il y a un problème, seulement qu\'on n\'a pas eu de nouvelles depuis un moment.</string>
     <string name="feed_colors_not_delay">Ton téléphone calcule les couleurs à partir des dernières informations reçues. Sans connexion, elles peuvent avoir un peu de retard : le fil indique alors l\'heure des dernières informations.</string>
     <string name="feed_colors_bubble_action_a11y">Comprendre les couleurs</string>
+    <!-- ABOUT-1A : textes propres a Android de Reglages > A propos et aide (lignes de cartes et d'adresses, detail d'une licence, indice de la version) -->
+    <string name="android_about_copy_hint">Touche pour copier</string>
+    <string name="android_about_contact_subtitle">Une question, un souci, une idée : écris-nous.</string>
+    <string name="android_about_licenses_footnote">Les licences sont reprises des descriptions publiques de chaque bibliothèque.</string>
+    <string name="android_about_licenses_includes">Ce que cela comprend</string>
+    <string name="android_about_licenses_text_unavailable">Ce texte n\'a pas pu être affiché pour le moment.</string>
+    <string name="android_about_licenses_unavailable">La liste n\'a pas pu être affichée pour le moment.</string>
+    <string name="android_about_licenses_map_engine">Moteur de carte : MapLibre Native</string>
+    <string name="android_about_licenses_map_tiles">Carte : OpenFreeMap, © OpenMapTiles, données © contributeurs OpenStreetMap</string>
+    <string name="android_about_licenses_address_search">Adresses : service Photon de komoot, données © contributeurs OpenStreetMap</string>
+    <string name="android_about_licenses_map_tiles_notice">Les cartes s\'affichent avec les tuiles d\'OpenFreeMap (https://openfreemap.org), qui utilisent le schéma © OpenMapTiles. Les données sont © contributeurs OpenStreetMap, disponibles sous la licence ODbL 1.0 (https://opendatacommons.org/licenses/odbl/1-0/). La mention reste visible sous chaque carte.</string>
+    <string name="android_about_licenses_address_search_notice">Les adresses proposées pendant la frappe viennent de Photon, le service public de komoot (https://photon.komoot.io), dont le logiciel est publié sous licence Apache 2.0. Ses données sont © contributeurs OpenStreetMap, disponibles sous la licence ODbL 1.0 (https://opendatacommons.org/licenses/odbl/1-0/).</string>
 </resources>

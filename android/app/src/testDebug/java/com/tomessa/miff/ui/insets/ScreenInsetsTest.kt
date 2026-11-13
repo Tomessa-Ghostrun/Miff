@@ -40,11 +40,14 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.test.core.app.ApplicationProvider
 import com.tomessa.miff.R
+import com.tomessa.miff.data.about.LicenseSource
 import com.tomessa.miff.data.account.AccountDeletionControls
 import com.tomessa.miff.data.account.AccountDeletionState
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.data.onboarding.DraftStep
 import com.tomessa.miff.data.profile.BitmapPhoto
+import com.tomessa.miff.domain.about.AppVersion
+import com.tomessa.miff.domain.about.LicenseInventory
 import com.tomessa.miff.domain.auth.SignInProvider
 import com.tomessa.miff.domain.miff.MiffMember
 import com.tomessa.miff.domain.miff.MiffRole
@@ -109,6 +112,8 @@ import com.tomessa.miff.ui.profile.ProfileStepScreen
 import com.tomessa.miff.ui.profile.ProfileTabStatus
 import com.tomessa.miff.ui.profile.ProfileTabUiState
 import com.tomessa.miff.ui.profile.ProfileUiState
+import com.tomessa.miff.ui.settings.AboutActions
+import com.tomessa.miff.ui.settings.AboutScreen
 import com.tomessa.miff.ui.settings.AccountDeletionContent
 import com.tomessa.miff.ui.settings.AccountScreen
 import com.tomessa.miff.ui.settings.AccountUiState
@@ -118,6 +123,7 @@ import com.tomessa.miff.ui.settings.DeleteInfoUiState
 import com.tomessa.miff.ui.settings.DeleteInventory
 import com.tomessa.miff.ui.settings.DeleteReauthUiState
 import com.tomessa.miff.ui.settings.LanguageScreen
+import com.tomessa.miff.ui.settings.LicensesScreen
 import com.tomessa.miff.ui.settings.MyInfoLoad
 import com.tomessa.miff.ui.settings.MyInfoScreen
 import com.tomessa.miff.ui.settings.MyInfoUiState
@@ -685,7 +691,26 @@ class ScreenInsetsTest {
     @Test
     fun settings_isInsideTheSafeArea() =
         assertScreenIsSafe("settings", withBackArrow = true) {
-            SettingsScreen({}, {}, {}, {}, {})
+            SettingsScreen({}, {}, {}, {}, {}, {})
+        }
+
+    @Test
+    fun about_isInsideTheSafeArea() =
+        assertScreenIsSafe("about", withBackArrow = true) {
+            AboutScreen(
+                version = AppVersion("0.39.0", "39000"),
+                actions = NoActions,
+                onBack = {},
+                onOpenDetectionHelp = {},
+                onOpenLicenses = {},
+                onOpenRemindersHelp = {},
+            )
+        }
+
+    @Test
+    fun licences_isInsideTheSafeArea() =
+        assertScreenIsSafe("licences", withBackArrow = true) {
+            LicensesScreen(source = NoLicenses, onBack = {}, onOpenEntry = {}, onOpenPrivacyPolicy = {})
         }
 
     @Test
@@ -797,7 +822,7 @@ class ScreenInsetsTest {
     @Test
     fun settings_inLandscapeWithACutout_staysInsideIt() =
         assertScreenIsSafeInLandscape {
-            SettingsScreen({}, {}, {}, {}, {})
+            SettingsScreen({}, {}, {}, {}, {}, {})
         }
 
     @Test
@@ -1259,4 +1284,27 @@ class ScreenInsetsTest {
 
         override fun signInAgain() = Unit
     }
+}
+
+/** What "À propos et aide" asks of the outside world, for the screens drawn here: nothing opens, nothing is copied. */
+private object NoActions : AboutActions {
+    override val feedbackFormUrl: String = "https://forms.example/abc"
+    override val supportEmail: String = "support@example.org"
+
+    override fun openContact() = false
+
+    override fun openFeedbackForm() = false
+
+    override fun openTerms() = Unit
+
+    override fun openPrivacyPolicy() = Unit
+
+    override fun copy(text: String) = false
+}
+
+/** An inventory that cannot be read: the licences screen then shows its calm message, which is enough to check its frame. */
+private object NoLicenses : LicenseSource {
+    override suspend fun inventory(): LicenseInventory? = null
+
+    override suspend fun text(file: String): String? = null
 }

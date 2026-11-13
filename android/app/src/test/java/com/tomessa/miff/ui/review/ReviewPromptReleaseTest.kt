@@ -120,11 +120,16 @@ class ReviewPromptReleaseTest {
         assertTrue(gradle.contains("""providers.gradleProperty("miff.feedbackFormUrl")"""))
         assertTrue(gradle.contains("miff.feedbackFormUrl must be empty or an https:// address"))
         assertTrue(gradle.contains("""buildConfigField("String", "FEEDBACK_FORM_URL""""))
+        // The default is the public Google Forms address given by the PM (2026-11-13), written in ONE place and nowhere else in the code; no query, no fragment.
+        assertTrue(gradle.contains("""feedbackFormProperty.getOrElse("https://forms.gle/5EEH4sEfsnCCLzEx7")"""))
+        val everywhere = kotlinFiles(".").filter { it.readText().contains("forms.gle") }
+        assertEquals(emptyList<File>(), everywhere)
         val readers =
             kotlinFiles(".")
                 .filter { file -> codeLines(file).any { it.contains("FEEDBACK_FORM_URL") } }
                 .map { it.name }
-        assertEquals(listOf("ReviewPromptHost.kt"), readers)
+        // Two readers, each of them the ONE place of its screen: the review window, and Settings > À propos et aide (ABOUT-1A, line "Un retour sur l'app ?", AboutRuleTest).
+        assertEquals(listOf("AboutActions.kt", "ReviewPromptHost.kt"), readers.sorted())
         // Opened as it is: nothing is appended to the address, no extra is put in the intent.
         val launcher = normalised(File(main, "data/review/StoreReview.kt"))
         assertFalse(launcher.contains("putExtra"))

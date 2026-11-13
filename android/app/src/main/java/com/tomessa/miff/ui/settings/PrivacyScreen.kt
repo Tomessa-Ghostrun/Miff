@@ -52,8 +52,9 @@ import com.tomessa.miff.ui.theme.textBodyRegular14
 /**
  * Settings > Confidentialité (ticket ONB-3b, criteria B5 and B6; not in the mockups, drawn here from the ticket): the ONE
  * switch for anonymous statistics and crash reports, what the app does with the location and the notifications (said
- * honestly: nothing yet), the links to the terms and the privacy policy (web pages of AUTH-W, in the language of the app),
- * and the contact. The location is never part of anything that is collected.
+ * honestly: nothing yet), and the links to the terms and the privacy policy (web pages of AUTH-W, in the language of the app).
+ * "Nous contacter" is NOT here any more: the PM moved it to Settings > "À propos et aide" on 2026-11-13 (ticket reglages-a-propos.md, AP7). The location is never
+ * part of anything that is collected.
  */
 @Composable
 fun PrivacyScreen(
@@ -126,12 +127,6 @@ fun PrivacyScreen(
         }
         LinkRow(stringResource(R.string.auth_consent_privacy_link), browser) {
             LegalLinks.open(context, LegalLinks.privacyUrl(context))
-        }
-        LinkRow(
-            stringResource(R.string.settings_privacy_contact),
-            stringResource(R.string.settings_privacy_open_mail_a11y),
-        ) {
-            ExternalLinks.contactSupport(context)
         }
     }
 }
