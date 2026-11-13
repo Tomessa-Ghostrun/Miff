@@ -16,7 +16,7 @@
 ## 1. Résumé pour le PM
 
 1. **Une seule nouvelle ligne dans Réglages : « À propos et aide »**, qui ouvre **un seul écran**, court, avec quatre blocs : **version**, **besoin d'un coup de main** (aide + contact + avis), **nos textes**, **licences**. Le nombre de touches pour « Nous contacter » ne change pas (3 depuis l'onglet Profil : engrenage, ligne, contact) ; ce qui change, c'est qu'on **trouve** le contact là où on le cherche (une ligne « aide »), au lieu de le chercher dans « Confidentialité ».
-2. **L'existant, tel que je l'ai lu [À vérifier]** : « Nous contacter » est dans Confidentialité, section « Nos textes », sur Android et iOS. **iOS affiche déjà** « Version X (build Y) » en bas de la liste des Réglages ; **Android n'affiche aucune version**. Aucun écran de licences. `FEEDBACK_FORM_URL` (Android) est vide, et **iOS n'a pas encore d'équivalent**.
+2. **L'existant, tel que je l'ai lu [À vérifier]** : « Nous contacter » est dans Confidentialité, section « Nos textes », sur Android et iOS. **iOS affiche déjà** « Version X (build Y) » en bas de la liste des Réglages ; **Android n'affiche aucune version**. Aucun écran de licences. `FEEDBACK_FORM_URL` (Android) **est renseignée depuis le 2026-11-13** (`https://forms.gle/5EEH4sEfsnCCLzEx7`, Google Forms, adresse fournie par le PM ; PR `android/feedback-form-url`), et **iOS n'a pas encore d'équivalent**.
 3. **« Donner mon avis » est masquée tant que l'adresse est vide** : aucune ligne morte, aucun écran « bientôt ». Dès que le PM donne l'adresse (un seul endroit par plateforme), la ligne apparaît sans autre développement.
 4. **Licences** : une liste lisible (nom, licence), le texte complet au toucher, **hors connexion**, et les **attributions de cartes et d'adresses** (OpenStreetMap, OpenFreeMap, Photon) que l'on avait promis d'écrire « quand l'écran existera ». Les attributions **sous la carte et sous la liste d'adresses restent en place** : l'écran les complète, il ne les remplace pas.
 5. **Coût : 0 €.** Aucune lecture ni écriture Firestore, aucune permission, aucun événement Analytics, aucun appel réseau à l'ouverture de l'écran (seuls les liens externes touchés sortent de l'app).
@@ -83,7 +83,7 @@
 ## 4. « Donner mon avis » (formulaire externe)
 
 - **Visible seulement si l'adresse est renseignée et valide** (`https://`, sans espace, guillemet, antislash ni `$` : règle déjà en vigueur pour `miff.feedbackFormUrl`, `pop-ins-avis.md` §8). Sinon : **aucune ligne**, aucun message.
-- **Même adresse** que celle de « Peux faire mieux... » (fenêtre d'avis) : **un seul endroit par plateforme**. Android : `BuildConfig.FEEDBACK_FORM_URL` existe ; iOS : équivalent à créer, **même règle** (HTTPS seulement, vide autorisé, jamais lue depuis un lien reçu).
+- **Même adresse** que celle de « Peux faire mieux... » (fenêtre d'avis) : **un seul endroit par plateforme**. Android : `BuildConfig.FEEDBACK_FORM_URL` existe ; iOS : équivalent à créer, **même règle** (HTTPS seulement, vide autorisé, jamais lue depuis un lien reçu). **Mise à jour 2026-11-13 : l'adresse existe (Google Forms, fournie par le PM, valeur par défaut de `miff.feedbackFormUrl`) : la ligne « Donner mon avis » sera donc visible dès la livraison de ABOUT-1A ; aucune configuration supplémentaire à attendre. Non codé dans la PR `android/feedback-form-url`.**
 - **Aucune donnée personnelle n'est ajoutée à l'adresse** (ni nom, ni e-mail, ni identifiant, ni position). Le navigateur et le service du formulaire verront l'adresse IP : c'est un site tiers, comme n'importe quel lien.
 - **Texte** : « Donner mon avis » / « Dis-nous ce qui te plaît et ce qui pourrait être mieux. » (sous-titre ; aucune promesse de réponse). **Séparation nette avec les stores** : ce lien n'ouvre **jamais** une fiche de store et ne parle pas de « note » ni d'« étoiles » (pour rester loin du filtrage d'avis décrit en `pop-ins-avis.md` §2).
 - **Cette ligne est indépendante du drapeau de build de la fenêtre d'avis** (`REVIEW_PROMPT`, éteint en release) : elle peut figurer dans un build de diffusion, puisqu'elle n'ouvre qu'un formulaire privé. À confirmer à la porte « prêt à soumettre » avec le reste (Q3).
@@ -130,7 +130,7 @@
 | Version | À **ajouter** (nom + numéro de version interne) | **Déjà affichée** en pied de liste des Réglages [À vérifier] : **déplacée** dans l'écran (Q4), le pied de liste disparaît |
 | Aide « rappels » | Oui | Non (pas d'équivalent) |
 | Aide « détections » | Écran existant | Écran propre à iOS existant |
-| Formulaire externe | `BuildConfig` existant, vide | **À créer** (même règle, même texte) |
+| Formulaire externe | `BuildConfig` existant, **renseigné le 2026-11-13** (même adresse) | **À créer** (même règle, même texte) |
 | Licences | Bibliothèques (README Android) + MapLibre, OpenFreeMap, OSM, Photon | firebase-ios-sdk, GoogleSignIn-iOS, AppAuth, GTMAppAuth, PhoneNumberKit (MIT), etc. + mention d'Apple pour les cartes ; **aucun MapLibre / OpenFreeMap / Photon** |
 | Copie de la version | Toast du système sur Android 13+ ; sinon message dans l'écran | Message dans l'écran (pas de toast système) |
 

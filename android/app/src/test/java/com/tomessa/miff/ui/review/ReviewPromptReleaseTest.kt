@@ -120,6 +120,10 @@ class ReviewPromptReleaseTest {
         assertTrue(gradle.contains("""providers.gradleProperty("miff.feedbackFormUrl")"""))
         assertTrue(gradle.contains("miff.feedbackFormUrl must be empty or an https:// address"))
         assertTrue(gradle.contains("""buildConfigField("String", "FEEDBACK_FORM_URL""""))
+        // The default is the public Google Forms address given by the PM (2026-11-13), written in ONE place and nowhere else in the code; no query, no fragment.
+        assertTrue(gradle.contains("""feedbackFormProperty.getOrElse("https://forms.gle/5EEH4sEfsnCCLzEx7")"""))
+        val everywhere = kotlinFiles(".").filter { it.readText().contains("forms.gle") }
+        assertEquals(emptyList<File>(), everywhere)
         val readers =
             kotlinFiles(".")
                 .filter { file -> codeLines(file).any { it.contains("FEEDBACK_FORM_URL") } }

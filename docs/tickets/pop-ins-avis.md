@@ -1,6 +1,6 @@
 # Ticket : fenêtre d'avis « J'adore ! / Peux faire mieux... » (pop-in d'avis du store)
 
-**Statut** : **décision du PM enregistrée le 2026-11-07** ; **Android construit le 2026-11-07, modifié le 2026-11-08 par de nouvelles décisions du PM** (PR brouillon `android/fenetre-avis`, voir §8) ; **iOS non commencé** ; aucun statut Notion modifié. Ticket court créé parce qu'aucun ticket ne couvrait cette fenêtre (recherche faite dans `docs/tickets/`, `docs/specs/` et `design/exports/pop-ins/README.md`, le 2026-11-07).
+**Statut** : **décision du PM enregistrée le 2026-11-07** ; **Android construit le 2026-11-07, modifié le 2026-11-08 par de nouvelles décisions du PM** (PR brouillon `android/fenetre-avis`, voir §8) ; **iOS non commencé** ; **adresse du formulaire externe renseignée le 2026-11-13** (PR `android/feedback-form-url`) ; aucun statut Notion modifié. Ticket court créé parce qu'aucun ticket ne couvrait cette fenêtre (recherche faite dans `docs/tickets/`, `docs/specs/` et `design/exports/pop-ins/README.md`, le 2026-11-07).
 **Rédigé le** : 2026-11-07 (agent `product-specs`, d'après la demande du coordinateur et `docs/release/decisions-stores-avant-soumission.md` §11).
 **Maquette** : `design/exports/pop-ins/03-avis-store.png` (« Que pensez vous de Miff ? », cinq étoiles, boutons « J'adore ! (5 étoiles) » et « Peux faire mieux... »).
 
@@ -62,11 +62,11 @@ PR brouillon `android/fenetre-avis` (#118) ; code dans `android/app/src/main/jav
 | D4 | **C8 confirmé** : après « Peux faire mieux... », la question ne revient qu'après **90 jours**, **sans plafond** de reprises. |
 | D5 | **C6 modifié** : **aucune limite** au nombre de fermetures sans réponse (croix ou geste retour) ; après chaque fermeture, la fenêtre revient après **30 jours**, indéfiniment. (Le compteur de fermetures n'existe plus.) |
 
-### Renseigner le formulaire externe (le PM doit fournir l'adresse)
-- **Un seul endroit** : la valeur par défaut de la propriété `miff.feedbackFormUrl` dans `android/app/build.gradle.kts` (`providers.gradleProperty("miff.feedbackFormUrl").getOrElse("")`, aujourd'hui **vide**), qui alimente `BuildConfig.FEEDBACK_FORM_URL`. Pour un essai sans modifier le code : `-Pmiff.feedbackFormUrl=https://...`.
+### Formulaire externe (adresse fournie par le PM le 2026-11-13)
+- **Un seul endroit** : la valeur par défaut de la propriété `miff.feedbackFormUrl` dans `android/app/build.gradle.kts` (`providers.gradleProperty("miff.feedbackFormUrl")` puis `.getOrElse("https://forms.gle/5EEH4sEfsnCCLzEx7")`), **adresse fournie par le PM le 2026-11-13** (formulaire Google Forms, adresse publique, pas un secret), qui alimente `BuildConfig.FEEDBACK_FORM_URL`. Pour un essai sans modifier le code : `-Pmiff.feedbackFormUrl=https://...`.
 - **Règles** : vide autorisé ; sinon une adresse **`https://`** sans espace, guillemet, antislash ni `$` (refusé à la compilation, et revérifié dans l'app) ; lue **uniquement** depuis `BuildConfig` (jamais depuis un lien reçu) ; ouverte **telle quelle** : **ne mettre dans l'adresse ni nom, ni e-mail, ni identifiant, ni position** (l'app n'en ajoute aucun).
-- **Service du formulaire** : **à choisir par le PM** (règle d'or : gratuit d'abord, conforme aux conditions du service ; vérifier où le service héberge les réponses, car elles contiendront des données personnelles que la personne y écrit). Le service retenu sera consigné ici dès que le PM le donne.
-- **Tant que l'adresse est vide** : « Peux faire mieux... » mène à « Merci de nous le dire ! » avec « Nous écrire ». Si aucune application ne peut ouvrir l'adresse, la fenêtre bascule sur le mail au support ; si rien ne s'ouvre, une courte phrase calme le dit.
+- **Service du formulaire** : **Google Forms, choisi par le PM (adresse donnée le 2026-11-13)**. Rappel : les réponses contiendront des données personnelles que la personne y écrit (hébergées par Google) : à mentionner dans la politique de confidentialité avant d'allumer la fenêtre dans un build de diffusion.
+- **Si l'adresse est vide (build fait avec `-Pmiff.feedbackFormUrl=`)** : « Peux faire mieux... » mène à « Merci de nous le dire ! » avec « Nous écrire ». Si aucune application ne peut ouvrir l'adresse, la fenêtre bascule sur le mail au support ; si rien ne s'ouvre, une courte phrase calme le dit.
 
 ### Ce qui est fixé par la décision du PM du 2026-11-07 ou par la maquette
 - Visuel de `03-avis-store.png` **sauf les étoiles** (D1), au tutoiement, français et anglais, clés `review_` (parité Android / iOS vérifiée).

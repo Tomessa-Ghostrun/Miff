@@ -2,6 +2,21 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.39.0] - 2026-11-13 : fenêtre d'avis, l'adresse du formulaire « Peux faire mieux... » est renseignée
+
+Branche `android/feedback-form-url`, PR brouillon. Numéro de version : le dernier de `main` est 0.38.0, celui-ci prend le suivant. Changement de configuration seulement ; ticket `docs/tickets/pop-ins-avis.md` (§8), recette `docs/qa/checklists/avis-android-recette-pm.md` (partie C).
+
+### Modifié
+- **Adresse fournie par le PM le 2026-11-13** : `https://forms.gle/5EEH4sEfsnCCLzEx7` (formulaire Google Forms, adresse **publique, pas un secret**). Elle est la valeur par défaut de `miff.feedbackFormUrl` dans `android/app/build.gradle.kts` (**un seul endroit**, comme le prévoit le ticket) ; elle alimente toujours `BuildConfig.FEEDBACK_FORM_URL`. La validation `https://` (sans espace, guillemet, antislash ni `$`) et la surcharge par `-Pmiff.feedbackFormUrl=...` sont **inchangées** ; `-Pmiff.feedbackFormUrl=` (vide) redonne l'écran « Merci de nous le dire ! » avec « Nous écrire ».
+- **Comportement** : sur un build qui contient la fenêtre, « Peux faire mieux... » ferme la fenêtre et ouvre l'adresse **dans le navigateur par défaut** (`ACTION_VIEW`, pas d'onglet intégré), **telle quelle** : **aucun nom, e-mail, identifiant, Miff ni position n'est ajouté** (testé). Si aucune application ne peut l'ouvrir : le mail au support ; si rien ne s'ouvre : la phrase calme `review_open_failed`. L'écran « Merci de nous le dire ! » reste le repli quand l'adresse est vide ou invalide.
+- Tests : `FeedbackFormTest` (l'adresse du PM s'ouvre telle quelle), `ReviewPromptReleaseTest` (valeur par défaut présente dans `build.gradle.kts` et **écrite nulle part ailleurs dans le code**). Les tests du `ReviewPromptViewModel` passaient déjà l'adresse en paramètre : aucun ne supposait « vide » via `BuildConfig`.
+
+### À savoir
+- **La fenêtre d'avis reste absente des builds de diffusion** (`REVIEW_PROMPT` faux en release et releaseLike) : cette adresse n'est donc visible par les testeurs que sur un build debug ou un build qui active la fenêtre. Ce changement ne l'allume pas.
+- **Les réponses au formulaire contiendront ce que la personne y écrit** (données personnelles possibles, hébergées par Google) : à mentionner dans la politique de confidentialité avant d'allumer la fenêtre en diffusion (risque connu, déjà noté dans le ticket).
+- **Le futur écran « À propos et aide »** (`docs/tickets/reglages-a-propos.md` §4, ticket ABOUT-1A) attend **cette même adresse** (`BuildConfig.FEEDBACK_FORM_URL`) pour sa ligne « Donner mon avis » : elle sera donc visible dès sa livraison. Non codé ici.
+- **iOS** : pas de fenêtre d'avis ni d'équivalent de l'adresse (seules les clés `review_` existent dans `Localizable.xcstrings`) ; non modifié.
+
 ## [0.38.0] - 2026-11-12 : Feed, la phrase « Partage ta position pour voir cette photo » ne s'affiche plus à tort (bug remonté par le PM)
 
 Branche `android/fix-photo-position-gate`, PR brouillon ; recette `docs/qa/checklists/feed-photo-gate-android-recette-pm.md`. Numéro de version : le dernier de `main` est 0.37.0, celui-ci prend le suivant (à renuméroter au merge si une autre PR l'a pris). Aucun texte, aucune règle Firestore, aucune permission, aucune dépendance, aucun service payant.
