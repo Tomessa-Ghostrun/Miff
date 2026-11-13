@@ -1,5 +1,3 @@
-// Les assertions citent des cas entiers : leurs lignes dépassent la limite.
-// swiftlint:disable line_length
 import XCTest
 @testable import Miff
 
@@ -282,4 +280,3 @@ final class PhotoGateTests: XCTestCase {
         XCTAssertEqual(after, .found(photo))
     }
 }
-// swiftlint:enable line_length
