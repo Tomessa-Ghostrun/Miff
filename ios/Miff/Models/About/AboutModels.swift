@@ -1,34 +1,57 @@
 import Foundation
 
-// Réglages > « À propos et aide » (ticket `docs/tickets/reglages-a-propos.md`, ABOUT-1I). Ici, la logique sans écran : les lignes du
-// bloc d'aide, l'adresse du formulaire d'avis, ce que copie la ligne de version. Rien ne lit ni n'écrit de donnée : aucune lecture
-// Firestore, aucun événement Analytics, aucun appel réseau à l'ouverture de l'écran (critère AP18).
+// Réglages > « À propos et aide » (ticket `docs/tickets/reglages-a-propos.md`, ABOUT-1I). Ici, la logique sans écran : les lignes de
+// chaque bloc, leur présentation, l'adresse du formulaire d'avis, ce que copie la ligne de version. Rien ne lit ni n'écrit de donnée :
+// aucune lecture Firestore, aucun événement Analytics, aucun appel réseau à l'ouverture de l'écran (critère AP18).
 
-/// Les lignes du bloc « Besoin d'un coup de main ? », dans l'ordre où elles s'affichent.
-enum AboutHelpRow: Equatable, Hashable {
-    /// L'aide propre à l'iPhone, déjà existante (le lien de Confidentialité reste).
-    case detectionHelp
-    /// L'aide « notifications coupées », déjà existante (absente des Réglages restreints, comme tout l'écran des notifications).
-    case notificationsHelp
+/// Les lignes de l'écran, dans l'ordre où elles s'affichent. Retour du PM du 2026-11-13 : « Nous contacter » et « Un retour sur l'app ? »
+/// sont EN HAUT et MIS EN AVANT ; tout le reste est plus bas, sous « Informations », en lignes de liste discrètes.
+enum AboutRow: Equatable, Hashable {
     /// « Nous contacter » : l'application e-mail, sans texte pré-rempli. Déplacé ici depuis Confidentialité (décision Q2 du PM).
     case contact
     /// « Un retour sur l'app ? » : le formulaire externe, seulement si son adresse est valide.
     case feedback
+    /// La version, qu'un toucher copie.
+    case version
+    /// L'aide propre à l'iPhone, déjà existante (le lien de Confidentialité reste).
+    case detectionHelp
+    /// L'aide « notifications coupées », déjà existante (absente des Réglages restreints, comme tout l'écran des notifications).
+    case notificationsHelp
+    case terms
+    case privacy
+    case licenses
+}
+
+/// Comment une ligne se présente : une grande carte avec icône (en haut), ou une ligne de liste standard (en bas).
+enum AboutPresentation: Equatable {
+    case featured
+    case standard
 }
 
 enum AboutContent {
-    /// Les lignes d'aide montrées. `restricted` : un compte sans Miff (Réglages restreints) n'a pas l'aide des notifications ; il garde le
-    /// contact, c'est le moment où l'on a le plus besoin d'aide.
-    static func helpRows(restricted: Bool, feedbackURL: URL?) -> [AboutHelpRow] {
-        var rows: [AboutHelpRow] = [.detectionHelp]
+    /// Les lignes mises en avant, en haut : le contact, puis le formulaire d'avis s'il a une adresse valide.
+    static func featuredRows(feedbackURL: URL?) -> [AboutRow] {
+        feedbackURL == nil ? [.contact] : [.contact, .feedback]
+    }
+
+    /// Les lignes du bloc « Informations », plus bas. `restricted` : un compte sans Miff (Réglages restreints) n'a pas l'aide des
+    /// notifications.
+    static func informationRows(restricted: Bool) -> [AboutRow] {
+        var rows: [AboutRow] = [.version, .detectionHelp]
         if !restricted {
             rows.append(.notificationsHelp)
         }
-        rows.append(.contact)
-        if feedbackURL != nil {
-            rows.append(.feedback)
-        }
+        rows += [.terms, .privacy, .licenses]
         return rows
+    }
+
+    static func presentation(of row: AboutRow) -> AboutPresentation {
+        switch row {
+        case .contact, .feedback:
+            return .featured
+        case .version, .detectionHelp, .notificationsHelp, .terms, .privacy, .licenses:
+            return .standard
+        }
     }
 }
 

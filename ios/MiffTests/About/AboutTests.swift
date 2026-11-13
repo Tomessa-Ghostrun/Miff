@@ -47,29 +47,56 @@ final class AboutTests: XCTestCase {
         XCTAssertEqual(parents, [.account])
     }
 
-    // MARK: - Les lignes d'aide (AP5, AP6, AP8)
+    // MARK: - Les blocs de l'écran (AP5, AP6, AP8 ; retour du PM du 2026-11-13)
 
-    func testTheHelpRowsAreInTheOrderOfTheTicketWithTheFeedbackFormLast() {
-        let url = FeedbackForm.url
+    func testContactAndFeedbackAreFeaturedAtTheTopInThatOrder() {
+        XCTAssertEqual(AboutContent.featuredRows(feedbackURL: FeedbackForm.url), [.contact, .feedback])
+    }
 
-        XCTAssertEqual(
-            AboutContent.helpRows(restricted: false, feedbackURL: url),
-            [.detectionHelp, .notificationsHelp, .contact, .feedback]
-        )
+    func testEverythingElseIsInTheInformationBlockBelowAndStyledAsStandardRows() {
+        let rows = AboutContent.informationRows(restricted: false)
+
+        XCTAssertEqual(rows, [.version, .detectionHelp, .notificationsHelp, .terms, .privacy, .licenses])
+        for row in rows {
+            XCTAssertEqual(AboutContent.presentation(of: row), .standard, "\(row)")
+        }
+        for row in AboutContent.featuredRows(feedbackURL: FeedbackForm.url) {
+            XCTAssertEqual(AboutContent.presentation(of: row), .featured, "\(row)")
+        }
+    }
+
+    func testNoRowIsInBothBlocks() {
+        let top = Set(AboutContent.featuredRows(feedbackURL: FeedbackForm.url))
+        let bottom = Set(AboutContent.informationRows(restricted: false))
+
+        XCTAssertTrue(top.isDisjoint(with: bottom))
     }
 
     func testARestrictedAccountKeepsTheContactButNotTheNotificationHelp() {
-        let rows = AboutContent.helpRows(restricted: true, feedbackURL: FeedbackForm.url)
-
-        XCTAssertEqual(rows, [.detectionHelp, .contact, .feedback])
+        XCTAssertEqual(
+            AboutContent.informationRows(restricted: true),
+            [.version, .detectionHelp, .terms, .privacy, .licenses]
+        )
+        XCTAssertEqual(AboutContent.featuredRows(feedbackURL: FeedbackForm.url), [.contact, .feedback])
     }
 
     func testWithoutAValidAddressThereIsNoFeedbackRowAndNothingElseChanges() {
+        XCTAssertEqual(AboutContent.featuredRows(feedbackURL: nil), [.contact])
         XCTAssertEqual(
-            AboutContent.helpRows(restricted: false, feedbackURL: nil),
-            [.detectionHelp, .notificationsHelp, .contact]
+            AboutContent.informationRows(restricted: false),
+            [.version, .detectionHelp, .notificationsHelp, .terms, .privacy, .licenses]
         )
-        XCTAssertEqual(AboutContent.helpRows(restricted: true, feedbackURL: nil), [.detectionHelp, .contact])
+    }
+
+    func testTheViewDrawsTheFeaturedBlockBeforeTheInformationBlock() throws {
+        let sources = try sourceFiles(in: ["Miff/Views/About"])
+        let view = try XCTUnwrap(sources.first { $0.path.hasSuffix("About/AboutView.swift") })
+        let featured = try XCTUnwrap(view.text.range(of: "featuredBlock"))
+        let information = try XCTUnwrap(view.text.range(of: "informationBlock"))
+
+        XCTAssertLessThan(featured.lowerBound, information.lowerBound)
+        XCTAssertTrue(view.text.contains("AboutFeaturedCard("))
+        XCTAssertTrue(view.text.contains("AboutListRow("))
     }
 
     // MARK: - L'adresse du formulaire (AP9, AP19)

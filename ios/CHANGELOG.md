@@ -48,6 +48,7 @@ Ajouté :
 - Textes FR + EN : 20 clés `about_*` en parité avec Android (lignes ajoutées aussi à ses `strings.xml`, **à fusionner avec ABOUT-1A**), 2 clés `ios_about_*`. Préfixe `about` au contrat `docs/contracts/i18n-keys.md` et au script de parité. Tests : `AboutTests`, `LicenseCatalogTests`. Captures de la CI : `about-*`.
 
 Changé :
+- **Écran réorganisé (retour du PM du 2026-11-13, aussi sur Android)** : **en haut et mis en avant**, deux grandes cartes avec icône, « Nous contacter » (bleu plein) et « Un retour sur l'app ? » (blanc à trait bleu, avec sa phrase) ; **plus bas**, sous un titre **« Informations »** (nouvelle clé `about_info_title`, aussi ajoutée aux `strings.xml` d'Android), des lignes de liste discrètes : version (copie au toucher), aides, Conditions, Politique, Licences. Comportements inchangés. Captures de la CI réduites à 5.
 - **« Nous contacter » quitte Confidentialité** (décision Q2 du PM) : mêmes clés, autre écran. Les liens Conditions et Politique y restent. Checklists iOS mises à jour (onb-7, suppression de compte, notifications).
 - **La version quitte le pied de la liste des Réglages** (décision Q4) : `SettingsListView` n'a plus de paramètre `build`, la clé `ios_settings_version` est remplacée par `about_version_label`.
 

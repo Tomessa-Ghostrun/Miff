@@ -561,6 +561,7 @@
     <string name="about_version_copy_hint_a11y">copy the version</string>
     <string name="about_copied">Copied.</string>
     <string name="about_help_title">Need a hand?</string>
+    <string name="about_info_title">Information</string>
     <string name="about_feedback_title">Feedback on the app?</string>
     <string name="about_feedback_subtitle">Tell us what you like and what could be better.</string>
     <string name="about_feedback_hint_a11y">open the form in your browser</string>

@@ -1,6 +1,23 @@
 {
   "sourceLanguage": "fr",
   "strings": {
+    "about_info_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Information"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Informations"
+          }
+        }
+      }
+    },
     "about_title": {
       "extractionState": "manual",
       "localizations": {
