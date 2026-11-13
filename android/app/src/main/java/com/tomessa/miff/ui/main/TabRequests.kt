@@ -5,11 +5,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/**
- * A request, from outside the tabs, to show a tab: a tap on a line of the centre of notifications, and (phase B) a tap on a notification of the system.
- * The request waits until the tabs are on screen and are told to take it ([consume]), so it is never lost behind another screen. Nothing personal:
- * only which tab.
- */
 /** NOTIF-P1A: bring the card of the member [uid] of the Miff [miffId] into view. Identifiers only, never a name. */
 data class FeedFocus(
     val miffId: String,
@@ -18,6 +13,11 @@ data class FeedFocus(
     override fun toString(): String = "FeedFocus(redacted)"
 }
 
+/**
+ * A request, from outside the tabs, to show a tab: a tap on a line of the centre of notifications, and (phase B) a tap on a notification of the system.
+ * The request waits until the tabs are on screen and are told to take it ([consume]), so it is never lost behind another screen. Nothing personal:
+ * only which tab.
+ */
 class TabRequests {
     private val state = MutableStateFlow<MainTab?>(null)
     private val focus = MutableStateFlow<FeedFocus?>(null)
