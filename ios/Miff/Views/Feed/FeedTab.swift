@@ -18,6 +18,8 @@ struct FeedTabActions {
     let onOpenSettings: () -> Void
     /// La cloche de l'en-tête : le centre de notifications (NOTIF-6I).
     let onOpenNotifications: () -> Void
+    /// Le bouton « i » de la bulle : l'écran « Les couleurs de ta Miff ».
+    let onOpenColors: () -> Void
 }
 
 /// Ce qui relance l'observation : la Miff affichée, l'onglet en usage / l'app au premier plan, « Réessayer ».
@@ -169,7 +171,8 @@ struct FeedTab: View {
             },
             onSignOut: actions.onSignOut,
             onOpenSettings: actions.onOpenSettings,
-            onOpenNotifications: actions.onOpenNotifications
+            onOpenNotifications: actions.onOpenNotifications,
+            onOpenColors: actions.onOpenColors
         )
     }
 

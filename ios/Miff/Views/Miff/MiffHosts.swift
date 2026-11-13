@@ -67,7 +67,7 @@ struct MiffOnboardingHost: View {
                 navigate: { open(.settings($0)) },
                 onBack: { pop() }
             )
-        case .miff, .placeForm, .placeDetail:
+        case .miff, .placeForm, .placeDetail, .colorsInfo:
             // Pas d'écran de Miff ni de lieu avant la fin de l'onboarding : la personne n'en a pas encore.
             EmptyView()
         case .placeRequestForm, .placeRequestDetail:
@@ -88,9 +88,7 @@ struct MiffOnboardingHost: View {
 
     /// Deux touchers rapprochés ouvrent un seul écran, pas deux.
     private func open(_ route: MiffRoute) {
-        if path.last != route {
-            path.append(route)
-        }
+        path.openOnce(route)
     }
 
     private func pop() {
@@ -300,7 +298,8 @@ struct MiffHomeHost: View {
                 onOpenMiff: { open(.miff($0)) },
                 onSignOut: { signOut() },
                 onOpenSettings: { open(.settings(.settings)) },
-                onOpenNotifications: { open(.settings(.notificationCenter)) }
+                onOpenNotifications: { open(.settings(.notificationCenter)) },
+                onOpenColors: { open(.colorsInfo) }
             )
         )
     }
@@ -355,6 +354,8 @@ struct MiffHomeHost: View {
                 places: placeContext(for: miffId),
                 onBack: { pop() }
             )
+        case .colorsInfo:
+            ColorsInfoView(onBack: { pop() })
         case .settings(let screen):
             SettingsDestinationView(
                 route: screen,
@@ -410,7 +411,7 @@ struct MiffHomeHost: View {
                     onPaywall: { openPlacePaywall($0, replacesForm: false) }
                 )
             )
-        case .create, .join, .miff, .settings:
+        case .create, .join, .miff, .settings, .colorsInfo:
             EmptyView()
         }
     }
@@ -454,9 +455,7 @@ struct MiffHomeHost: View {
         if case .miff(let miffId) = route {
             memberPreviews.invalidate(miffId: miffId)
         }
-        if path.last != route {
-            path.append(route)
-        }
+        path.openOnce(route)
     }
 
     private func pop() {

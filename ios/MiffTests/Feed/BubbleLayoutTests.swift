@@ -59,6 +59,8 @@ final class BubbleLayoutTests: XCTestCase {
     }
 
     /// Décision du PM (2026-11-11) : AUCUN symbole dans la bulle, quelle que soit sa couleur (filigrane, avion, pictogramme de bouton).
+    /// Seule exception (décision du PM du 2026-11-13) : le petit bouton « i » en bas à droite, qui vit dans son propre fichier
+    /// (`BubbleInfoButton.swift`, voir `BubbleInfoButtonTests`) ; le fichier de la bulle elle-même n'a toujours aucun symbole.
     func testTheBubbleHasNoSymbolAtAll() throws {
         let source = try String(contentsOf: bubbleSource, encoding: .utf8)
 
