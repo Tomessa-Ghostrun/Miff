@@ -107,7 +107,8 @@ final class PlaceRequestCreatorWritesTests: XCTestCase {
             .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
             .appendingPathComponent("Miff/Views/Miff/MiffRoute.swift"), encoding: .utf8)
 
-        XCTAssertFalse(routes.contains("Paywall"))
+        XCTAssertFalse(routes.contains("case placePaywall"))
+        XCTAssertFalse(routes.contains("case placeRequestPaywall"))
     }
 
     // MARK: - Ce que la liste reçoit

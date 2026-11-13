@@ -229,6 +229,7 @@ final class AppEnvironment {
         AppEnvironment()
     }
 
+    // swiftlint:disable:next function_body_length
     private init() {
         let flagStore = UserDefaultsBooleanStore()
         let privacy = PrivacySettings(

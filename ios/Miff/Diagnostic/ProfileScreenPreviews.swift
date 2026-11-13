@@ -26,7 +26,6 @@ struct ProfileScreenPreview: View {
         _requests = StateObject(wrappedValue: ProfileScreenPreview.demoRequests(selecting: shown))
     }
 
-
     private static let miffA = "AbCdEfGhIjKlMnOpQrSt"
     private static let miffB = "ZyXwVuTsRqPoNmLkJiHg"
     private static let me = "demoMe"

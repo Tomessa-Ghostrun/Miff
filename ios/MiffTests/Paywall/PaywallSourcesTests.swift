@@ -51,11 +51,13 @@ final class PaywallSourcesTests: XCTestCase {
 
         XCTAssertEqual(count(of: "PlacePaywallView(", in: hosts), 1, "un seul endroit crée l'écran d'offre")
         XCTAssertEqual(count(of: ".fullScreenCover(item: $paywall)", in: hosts), 1, "en plein écran (CR7)")
-        // La définition de `presentPaywall`, puis ses deux appelants : le sélecteur de Miff du Feed (2e Miff) et `openPlacePaywall`
-        // (4e lieu et zone de danger, depuis le formulaire d'un lieu).
-        XCTAssertEqual(count(of: "presentPaywall(", in: hosts), 3)
+        // La définition de `presentPaywall`, puis ses appelants dans l'hôte : le sélecteur de Miff du Feed (2e Miff), la carte « Créer une
+        // Miff » du Profil (2e Miff) et « Accepter » d'une demande reçue (4e lieu ou zone de danger) ; `openPlacePaywall` (4e lieu et zone
+        // de danger depuis le formulaire d'un lieu) est dans `MiffHomeHost+Places.swift`.
+        XCTAssertEqual(count(of: "presentPaywall(", in: hosts), 4)
         XCTAssertTrue(hosts.contains("onOpenOffer: { presentPaywall(.extraMiff) }"))
-        XCTAssertTrue(hosts.contains("        presentPaywall(reason)\n"))
+        let places = try read("Miff/Views/Miff/MiffHomeHost+Places.swift")
+        XCTAssertTrue(places.contains("        presentPaywall(reason)\n"))
         XCTAssertFalse(hosts.contains("placePaywall"), "l'offre n'est plus une page empilée (pas de geste retour)")
     }
 
