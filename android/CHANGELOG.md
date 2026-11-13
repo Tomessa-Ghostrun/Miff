@@ -2,9 +2,9 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
-## [0.39.0] - 2026-11-13 : l'écran « Les couleurs de ta Miff » s'ouvre avec un petit bouton « i » au lieu de la bulle (COULEURS-1, évolution)
+## [0.40.0] - 2026-11-13 : l'écran « Les couleurs de ta Miff » s'ouvre avec un petit bouton « i » au lieu de la bulle (COULEURS-1, évolution)
 
-Décision du PM du 2026-11-13 (position et style du « i » révisés le même jour, voir ci-dessous), prise après la recette de l'écran fusionné (PR #211) : `docs/tickets/couleurs-info.md` (§12 « Évolution du 2026-11-13 »), recette `docs/qa/checklists/couleurs-info-android-recette-pm.md` ; branche `android/couleurs-info-bouton-i`, PR brouillon. Numéro : le dernier de `main` est 0.38.0, celui-ci prend le suivant (à renuméroter au merge si une autre PR l'a pris). Aucune donnée, aucune règle Firestore, aucune permission, aucune dépendance, aucun service payant. **Aucune clé de texte ajoutée ni modifiée** (catalogue iOS inchangé, parité intacte).
+Décision du PM du 2026-11-13 (position et style du « i » révisés le même jour, voir ci-dessous), prise après la recette de l'écran fusionné (PR #211) : `docs/tickets/couleurs-info.md` (§12 « Évolution du 2026-11-13 »), recette `docs/qa/checklists/couleurs-info-android-recette-pm.md` ; branche `android/couleurs-info-bouton-i`, PR brouillon. Numéro : le dernier de `main` est 0.39.0, celui-ci prend le suivant (à renuméroter au merge si une autre PR l'a pris). Aucune donnée, aucune règle Firestore, aucune permission, aucune dépendance, aucun service payant. **Aucune clé de texte ajoutée ni modifiée** (catalogue iOS inchangé, parité intacte).
 
 ### Modifié
 - **Toucher la bulle de la Miff ne fait plus rien** : le comportement « bulle cliquable » est retiré, ainsi que l'action TalkBack « Comprendre les couleurs » qu'elle portait ; la bulle redevient un élément de lecture sans action. « Contacter » et « Reprendre le partage » sont inchangés.
@@ -23,6 +23,21 @@ Décision du PM du 2026-11-13 (position et style du « i » révisés le même j
 
 ### Choix « économiques » et limites connues
 - Aucun coût. **Limite connue** : le rendu exact (taille du disque, alignement visuel avec la bulle et les cartes) ne se juge qu'à l'œil sur le téléphone du PM (recette).
+
+## [0.39.0] - 2026-11-13 : l'acceptation des CGU enregistre désormais la version « 1.0 » des textes publiés
+
+Branche `android/terms-version-1-0`, PR brouillon ; même changement côté iOS (`ios/terms-version-1-0`, même valeur). Numéro de version : le dernier de `main` est 0.38.0, celui-ci prend le suivant (à renuméroter au merge si une autre PR l'a pris). Aucun texte à l'écran, aucune règle Firestore, aucune permission, aucune dépendance, aucun service payant.
+
+### Modifié
+- `ConsentVersions.TERMS` passe de « 0.1 » (numéro de travail, jamais publié) à « 1.0 », la version des CGU et de la politique de confidentialité publiées le 2026-11-13 (`docs/legal/`, PR #226). C'est la valeur écrite dans `users/{uid}.termsVersion` à la création du profil.
+- Autres versions liées aux textes légaux : aucune à changer. `ConsentVersions.ANALYTICS` (`2026-10-v01`) et `MiffSharingConsent.VERSION` (`2026-11-v03`) sont des versions propres à leur texte de consentement ; la politique de confidentialité n'a pas de version distincte (une seule version « textes »).
+- Règles Firestore vérifiées, **non modifiées** : `termsVersion` doit être une chaîne de 1 à 20 caractères (`isStr(..., 1, 20)`), « 1.0 » est valide.
+- Tests : `ProfileDocumentTest` (nouveau test qui fige « 1.0 » pour la constante et pour le document de création), `PendingConsentStoreTest` et `UserProfileRepositoryTest` (valeurs d'exemple « 0.1 » remplacées par « 1.0 »).
+- `docs/legal/README.md` §3 et §10 : documentation du changement.
+
+### À savoir
+- **Comptes créés avant ce changement : ils gardent « 0.1 », rien n'est migré** (les règles figent `termsVersion` et `termsAcceptedAt` après la création ; réécrire une preuve d'acceptation serait à éviter). Pour la preuve d'acceptation : « 0.1 » atteste l'acceptation d'un état de travail jamais publié, pas du texte 1.0. Seuls des comptes de test sont concernés tant qu'aucune version n'est distribuée à des personnes réelles. Pas de ré-acceptation (risque J32, assumé par le PM).
+- Coût : aucun.
 
 ## [0.38.0] - 2026-11-12 : Feed, la phrase « Partage ta position pour voir cette photo » ne s'affiche plus à tort (bug remonté par le PM)
 
