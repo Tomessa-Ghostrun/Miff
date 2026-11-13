@@ -152,7 +152,9 @@ final class NotificationCenterServiceTests: XCTestCase {
     private func makeScreen(_ authorization: NotificationAuthorization) -> Screen {
         let permissions = NotificationStubPermissions(authorization)
         let service = makeService()
-        let model = NotificationCenterViewModel(service: service, permissions: permissions)
+        let model = NotificationCenterViewModel(
+            service: service, permissions: permissions, directory: RequesterDirectory()
+        )
         return Screen(model: model, service: service, permissions: permissions)
     }
 

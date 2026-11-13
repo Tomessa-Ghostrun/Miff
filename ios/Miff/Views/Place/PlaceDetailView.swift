@@ -156,6 +156,9 @@ struct PlaceDetailHeader: View {
 struct PlaceDetailBody: View {
     let place: Place
     let state: PlaceDetailState
+    /// « Visible par » et « Créé par » décrivent un lieu de la Miff : une demande n'a ni l'un ni l'autre (personne ne la voit que son
+    /// créateur).
+    var showsAudience = true
 
     @Environment(\.openURL) private var openURL
     @State private var noMapApp = false
@@ -169,6 +172,7 @@ struct PlaceDetailBody: View {
             chosen: ResolvedAddress(label: address, lat: place.lat, lng: place.lng),
             radiusM: place.radiusM,
             isDanger: place.type == .risk,
+            emoji: place.category?.emoji,
             height: 210
         )
         if !address.isEmpty {
@@ -237,19 +241,8 @@ struct PlaceDetailBody: View {
             PlaceFactRow(symbol: "square.grid.2x2", label: L10n.string("place_detail_category")) {
                 categoryValue
             }
-            divider
-            PlaceFactRow(symbol: "person.2", label: L10n.string("place_detail_visible_by")) {
-                Text(verbatim: state.miffName)
-                    .miffTextStyle(textBodyRegular)
-                    .foregroundColor(colorTextPrimary.color)
-            }
-            if !state.creatorName.isEmpty {
-                divider
-                PlaceFactRow(symbol: "pencil", label: L10n.string("place_detail_created_by")) {
-                    Text(verbatim: creator)
-                        .miffTextStyle(textBodyRegular)
-                        .foregroundColor(colorTextPrimary.color)
-                }
+            if showsAudience {
+                audience
             }
         }
         .background(RoundedRectangle(cornerRadius: radiusMd, style: .continuous).fill(colorBgSurface.color))
@@ -259,6 +252,24 @@ struct PlaceDetailBody: View {
         )
     }
 
+    @ViewBuilder
+    private var audience: some View {
+        divider
+        PlaceFactRow(symbol: "person.2", label: L10n.string("place_detail_visible_by")) {
+            Text(verbatim: state.miffName)
+                .miffTextStyle(textBodyRegular)
+                .foregroundColor(colorTextPrimary.color)
+        }
+        if !state.creatorName.isEmpty {
+            divider
+            PlaceFactRow(symbol: "pencil", label: L10n.string("place_detail_created_by")) {
+                Text(verbatim: creator)
+                    .miffTextStyle(textBodyRegular)
+                    .foregroundColor(colorTextPrimary.color)
+            }
+        }
+    }
+
     private var divider: some View {
         Rectangle().fill(colorBorderDefault.color).frame(height: strokeHairline)
     }
@@ -266,9 +277,14 @@ struct PlaceDetailBody: View {
     @ViewBuilder
     private var categoryValue: some View {
         if let category = place.category {
-            Text(verbatim: category.label)
-                .miffTextStyle(textBodyRegular)
-                .foregroundColor(colorTextPrimary.color)
+            HStack(spacing: Spacing.xs) {
+                Text(verbatim: category.emoji)
+                    .miffTextStyle(textBodyRegular)
+                    .accessibilityHidden(true)
+                Text(verbatim: category.label)
+                    .miffTextStyle(textBodyRegular)
+                    .foregroundColor(colorTextPrimary.color)
+            }
         }
     }
 

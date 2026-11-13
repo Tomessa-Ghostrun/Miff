@@ -8,7 +8,7 @@ final class SwipeBackPolicyTests: XCTestCase {
 
     func testTheOrdinaryStackedScreensAllowTheSwipe() {
         let open: [SwipeBackScreen] = [
-            .signUp, .signIn, .passwordReset, .joinMiffCode, .miff, .placeDetail, .placePaywall, .settings
+            .signUp, .signIn, .passwordReset, .joinMiffCode, .miff, .placeDetail, .settings
         ]
         for screen in open {
             XCTAssertTrue(screen.allowsSwipeBack, "\(screen)")
@@ -54,7 +54,7 @@ final class SwipeBackPolicyTests: XCTestCase {
         let all: [SwipeBackScreen] = [
             .signUp, .signIn, .passwordReset, .profilePhone(isWriting: true), .createMiffName(isSaving: true),
             .createMiffReady, .joinMiffCode, .joinMiffConfirm, .miff, .placeDetail, .placeForm(isBusy: false),
-            .placePaywall, .settings, .deleteAccount(isBusy: false), .myInfo(hasUnsavedWork: true)
+            .settings, .deleteAccount(isBusy: false), .myInfo(hasUnsavedWork: true)
         ]
         for screen in all {
             XCTAssertNotEqual(screen.allowsSwipeBack, screen.locksSwipeBack, "\(screen)")

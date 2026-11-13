@@ -160,6 +160,18 @@ final class FakeMiffStore: MiffStore {
         return placeIds
     }
 
+    /// Ce que les demandes d'ajout d'un lieu laissent dans la Miff (LIEU-REQ, critère L3). Cette lecture n'est pas inscrite dans `calls` : les
+    /// tests existants comparent des suites d'appels exactes.
+    var requestLeftovers = PlaceRequestLeftovers(requestIds: [], counterExists: false)
+    var requestLeftoversFailure: Error?
+
+    func readPlaceRequestLeftovers(miffId: String) async throws -> PlaceRequestLeftovers {
+        if let requestLeftoversFailure {
+            throw requestLeftoversFailure
+        }
+        return requestLeftovers
+    }
+
     // MARK: - LOC-4a
 
     /// Ce que dit ma fiche dans chaque Miff : un `SharingConsentRead`, ou une erreur (refus des règles, réseau) ; absent = pas
@@ -257,6 +269,13 @@ final class FakeMiffStore: MiffStore {
             memberIds.removeAll { $0 == parts[3] }
         case ("miffs", "places"):
             placeIds.removeAll { $0 == parts[3] }
+        case ("miffs", "placeRequests"):
+            requestLeftovers = PlaceRequestLeftovers(
+                requestIds: requestLeftovers.requestIds.filter { $0 != parts[3] },
+                counterExists: requestLeftovers.counterExists
+            )
+        case ("miffs", "meta"):
+            requestLeftovers = PlaceRequestLeftovers(requestIds: requestLeftovers.requestIds, counterExists: false)
         case ("users", "memberships"):
             memberships.removeAll { $0.key == parts[3] }
         default:
@@ -326,6 +345,10 @@ class MiffStoreByDelegation: MiffStore {
 
     func readPlaceIds(miffId: String) async throws -> [String] {
         try await inner.readPlaceIds(miffId: miffId)
+    }
+
+    func readPlaceRequestLeftovers(miffId: String) async throws -> PlaceRequestLeftovers {
+        try await inner.readPlaceRequestLeftovers(miffId: miffId)
     }
 
     func commitWithMiff(miffId: String, build: @escaping (MiffTxView) -> [DocWrite]) async throws {

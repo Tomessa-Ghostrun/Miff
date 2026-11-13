@@ -176,12 +176,17 @@ final class PlacePrivacyTests: XCTestCase {
 
     func testTheViewModelsAndTheStateKeepNoPlaceInARestorableStateNorARoute() throws {
         let hosts = try read("Miff/Views/Miff/MiffHosts.swift")
+        let routes = try read("Miff/Views/Miff/MiffRoute.swift")
 
         XCTAssertFalse(hosts.contains("SceneStorage"))
         XCTAssertFalse(hosts.contains("AppStorage"))
-        // Les routes des lieux ne portent que des identifiants et un mot fixe.
-        XCTAssertTrue(hosts.contains("case placeForm(placeId: String?, miffId: String?)"))
-        XCTAssertTrue(hosts.contains("case placeDetail(miffId: String, placeId: String)"))
-        XCTAssertTrue(hosts.contains("case placePaywall(PaywallReason)"))
+        // Les routes des lieux ne portent que des identifiants (celles des demandes aussi : jamais un nom ni une adresse).
+        XCTAssertTrue(routes.contains("case placeForm(placeId: String?, miffId: String?)"))
+        XCTAssertTrue(routes.contains("case placeDetail(miffId: String, placeId: String)"))
+        XCTAssertTrue(routes.contains("case placeRequestForm(miffId: String)"))
+        XCTAssertTrue(routes.contains("case placeRequestDetail(miffId: String, requestId: String)"))
+        // L'offre (plein écran) ne porte que sa raison, un mot fixe.
+        XCTAssertTrue(hosts.contains("struct PaywallPresentation: Identifiable"))
+        XCTAssertTrue(hosts.contains("let reason: PaywallReason"))
     }
 }

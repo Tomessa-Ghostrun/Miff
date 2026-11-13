@@ -21,7 +21,7 @@ final class FeedPhotoPrivacyTests: XCTestCase {
         "Services/Contracts/FeedPhotoContracts.swift", "Services/Feed/PhotoLoader.swift", "Services/Feed/PhotoDecoder.swift",
         "Services/Firebase/FirestorePhotoSource.swift", "ViewModels/PhotoSlotViewModel.swift",
         "Views/Feed/FeedPhotoViews.swift", "Views/Feed/FeedPhotoFullScreen.swift", "App/AppEnvironment+FeedPhotos.swift",
-        "Views/Feed/PhotoSaveButton.swift"
+        "Views/Feed/PhotoSaveButton.swift", "Services/Feed/OwnPositionResolver.swift", "Services/Firebase/FirestoreOwnPositionSource.swift"
     ]
 
     private func code(_ relative: String) throws -> [String] {
@@ -90,11 +90,33 @@ final class FeedPhotoPrivacyTests: XCTestCase {
         XCTAssertTrue(source.contains("FeedFirestoreMapping.isUid(uid)"))
     }
 
+    func testMyOwnPositionIsReadOnceFromTheServerOnlyItsExistenceAndNeverAField() throws {
+        let source = try code("Services/Firebase/FirestoreOwnPositionSource.swift").joined(separator: "\n")
+
+        XCTAssertTrue(source.contains("getDocument(source: .server)"))
+        XCTAssertEqual(source.components(separatedBy: "getDocument(").count - 1, 1, "UN seul get")
+        XCTAssertTrue(source.contains("snapshot.exists"))
+        for forbidden in ["getDocuments", "addSnapshotListener", ".whereField", ".limit(", ".data()"] {
+            XCTAssertFalse(source.contains(forbidden), forbidden)
+        }
+        XCTAssertTrue(source.contains("MiffId.isValid(miffId)"))
+        XCTAssertTrue(source.contains("FeedFirestoreMapping.isUid(uid)"))
+    }
+
+    func testTheSentenceIsOnlyEverTheAnswerOfANotPublishedPositionConfirmedByTheServer() throws {
+        let loader = try code("Services/Feed/PhotoLoader.swift").joined(separator: "\n")
+
+        // Trois endroits, tous sous « non publiée » : la mémoire (réponse du serveur de moins de 30 s), le refus déjà connu, le refus du moment.
+        XCTAssertEqual(loader.components(separatedBy: "return .needsOwnPosition").count - 1, 3)
+        XCTAssertEqual(loader.components(separatedBy: "== .notPublished").count - 1, 1)
+        XCTAssertEqual(loader.components(separatedBy: "case .notPublished:").count - 1, 2)
+    }
+
     func testARefusalIsNeverTakenForAnExpiredPhotoNothingIsDeletedOnIt() throws {
         let loader = try code("Services/Feed/PhotoLoader.swift").joined(separator: "\n")
 
         XCTAssertTrue(loader.contains("case .refused:"))
-        XCTAssertTrue(loader.contains("return refusal(for: request)"))
+        XCTAssertTrue(loader.contains("return await refusal(for: request, startedIn: startedIn)"))
         XCTAssertFalse(loader.contains("delete"))
     }
 

@@ -75,6 +75,8 @@ enum NotificationNavigation {
             return showsUpdateButton ? .update : .feed
         case .feed:
             return .feed
+        case .profile, .placeRequests:
+            return .profile
         }
     }
 }
