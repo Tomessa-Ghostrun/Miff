@@ -248,6 +248,12 @@ struct MainShellView<Feed: View>: View {
             }
         }
         .onPreferenceChange(TabBarTopPreference.self) { barTopY = $0 }
+        // La fenêtre d'avis ne recouvre jamais l'Update ni la pop-in « Pas de connexion » du Profil (docs/tickets/pop-ins-avis.md). Sans effet
+        // dans un build sans le drapeau REVIEW_PROMPT (Release).
+        .reviewReportsShell(
+            updateOpen: shownTab == .update,
+            profilePopInVisible: { [weak offline = profile.offlineRetry] in offline?.isPopinVisible ?? false }
+        )
         // La dernière Miff a disparu : on repart du Feed.
         .onChange(of: hasNoMiff) { noMiff in
             if noMiff {

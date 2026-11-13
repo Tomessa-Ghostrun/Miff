@@ -24,7 +24,8 @@ final class AccountLocalStorageGuardTests: XCTestCase {
         "Services/Storage/ProfileDraftFileStore.swift": "brouillon du profil : drafts.clear",
         "Services/Update/PublishLedger.swift": "carnet de l'Update : AccountLocalData (updateLedger)",
         "Services/Tracking/FileDetectionJournal.swift": "journal : AccountLocalData (detectionJournal)",
-        "Services/Tracking/TrackingLocalFileStore.swift": "copie locale du suivi : AccountLocalData (trackingLocal)"
+        "Services/Tracking/TrackingLocalFileStore.swift": "copie locale du suivi : AccountLocalData (trackingLocal)",
+        "Services/Review/ReviewStateFileStore.swift": "état de la fenêtre d'avis (dates, issue) : teardown (ReviewPromptServices)"
     ]
 
     func testEveryLocalStorageHasBeenReadForTheDeletionOfAnAccount() throws {

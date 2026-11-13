@@ -220,4 +220,31 @@ case "$mode" in
     ;;
 esac
 
+# --- Fenêtre d'avis « Que penses-tu de Miff ? » (docs/tickets/pop-ins-avis.md, critère AV2) : présente en Debug et Internal (témoin positif),
+#     ABSENTE de la publication. Tout son code est derrière la condition de compilation REVIEW_PROMPT (project.yml : Debug et Internal oui,
+#     Release non) : en Release il n'est même pas compilé. Marqueurs : le texte REVIEWPROMPTPROBE (écrit dans NOTRE code seulement) et les
+#     noms de ses types. Pour l'inclure EXPRÈS dans un build de publication (après reconfirmation du PM à la porte « prêt à soumettre »),
+#     MIFF_ALLOW_REVIEW_PROMPT_IN_RELEASE=1 : jamais un oubli (même principe que MIFF_ALLOW_RELAXED_LOCATION_IN_RELEASE).
+review_markers='REVIEWPROMPTPROBE|ReviewPromptCoordinator|ReviewPromptRules|ReviewStateFileStore|ReviewFeedbackForm'
+review_hits="$(count_strings "$review_markers")"
+case "$mode" in
+  debug | internal)
+    if [ "${review_hits:-0}" -eq 0 ]; then
+      fail "Le build ${mode} devrait contenir la fenêtre d'avis (aucune trace trouvée : le drapeau REVIEW_PROMPT est-il dans project.yml ?). La recherche de chaînes ne prouve rien."
+    else
+      report "Fenêtre d'avis : présente dans le build ${mode} (${review_hits} traces, OK)"
+    fi
+    ;;
+  release)
+    if [ "${review_hits:-0}" -ne 0 ] && [ "${MIFF_ALLOW_REVIEW_PROMPT_IN_RELEASE:-0}" != "1" ]; then
+      fail "Le build Release contient la fenêtre d'avis (${review_hits} trace(s)) : elle doit être absente des builds de diffusion tant que le PM ne l'a pas reconfirmée (MIFF_ALLOW_REVIEW_PROMPT_IN_RELEASE=1 en toute connaissance de cause)."
+      strings -a "$binary" | grep -E "$review_markers" | head -n 5
+    elif [ "${review_hits:-0}" -ne 0 ]; then
+      report "Release : la fenêtre d'avis est PRÉSENTE (voulu : MIFF_ALLOW_REVIEW_PROMPT_IN_RELEASE=1)"
+    else
+      report "Release : aucune trace de la fenêtre d'avis (OK)"
+    fi
+    ;;
+esac
+
 exit "$failed"

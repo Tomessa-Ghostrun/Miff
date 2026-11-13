@@ -265,6 +265,14 @@ struct MiffHomeHost: View {
             try? await Task.sleep(nanoseconds: 4_000_000_000)
             banner = nil
         }
+        // La fenêtre d'avis (docs/tickets/pop-ins-avis.md) : par-dessus tout, jamais pendant un écran empilé (Réglages, lieux, Miff) ni l'offre.
+        // Sans effet dans un build sans le drapeau REVIEW_PROMPT (Release).
+        .reviewPromptHost(
+            services: environment.reviewPrompt,
+            directory: directory,
+            awaiting: environment.awaitingAgreement,
+            onTabs: path.isEmpty && paywall == nil
+        )
     }
 
     /// Le flux d'annonces est ouvert AVANT la reprise : rien de ce qu'elle annonce n'est perdu.
