@@ -12,7 +12,7 @@ struct PaywallPresentation: Identifiable {
 /// cet hôte n'est quitté que quand la session passe au fil (`continueAfterMiff`), jamais avant.
 @MainActor
 struct MiffOnboardingHost: View {
-    let environment: AppEnvironment
+    private let environment: AppEnvironment
     @State private var path: [MiffRoute] = []
 
     init(environment: AppEnvironment) {
@@ -109,7 +109,7 @@ struct MiffOnboardingHost: View {
 /// perdue ne reste visible derrière.
 @MainActor
 struct MiffHomeHost: View {
-    private let environment: AppEnvironment
+    let environment: AppEnvironment
     @ObservedObject var directory: MiffDirectory
     /// Le message calme d'un lieu enregistré, en mémoire seulement (LOC-3).
     @ObservedObject var placeNotices: PlaceNotices
