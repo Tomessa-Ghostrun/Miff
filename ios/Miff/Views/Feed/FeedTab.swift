@@ -151,6 +151,9 @@ struct FeedTab: View {
             }
             // Le sélecteur d'applications d'iOS garde une vignette de l'écran : ni positions ni photos ne doivent y rester.
             .hidesInAppSwitcher()
+            // La fenêtre d'avis lit ce que le Feed montre (statut d'un proche vu, ma carte, feuille « Localiser », pop-in « Pas de connexion »)
+            // au moment de décider : rien n'est envoyé ni gardé. Sans effet dans un build sans le drapeau REVIEW_PROMPT (Release).
+            .reviewReportsFeed(model: model)
     }
 
     private var screenActions: FeedScreenActions {

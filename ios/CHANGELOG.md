@@ -2,6 +2,22 @@
 
 ## Non publié
 
+### Fenêtre d'avis « Que penses-tu de Miff ? » (miroir d'Android, décision du PM du 2026-11-13)
+
+Branche `ios/pop-in-avis`, PR brouillon. Ticket `docs/tickets/pop-ins-avis.md` (§8), recette `docs/qa/checklists/avis-ios-recette-pm.md`, détail et écarts : `ios/README.md` (« Fenêtre d'avis »). **Rien n'est compilé en local** (la CI fait foi). Aucune permission, aucune dépendance, aucun service payant.
+
+Ajouté :
+- **La fenêtre** : le titre et deux boutons, « J'adore ! » (un « Merci ! » de 1,6 s, puis la fenêtre NATIVE d'Apple, `requestReview`) et « Peux faire mieux... » (le formulaire Google Forms dans le navigateur, adresse `https://forms.gle/5EEH4sEfsnCCLzEx7` telle quelle ; repli : le courrier à l'aide, puis une phrase calme). **Apple décide seul de l'affichage de sa fenêtre** (quota ; d'après la documentation d'Apple, pas dans TestFlight) : jamais promise. Mêmes règles, mêmes seuils et mêmes textes (`review_*`) qu'Android : 7 jours, 90 jours après « Peux faire mieux... », 30 jours après une fermeture sans limite, jamais après « J'adore ! », jamais sur l'Update, avec le clavier ni par-dessus un message de l'app.
+- **Drapeau de build `REVIEW_PROMPT`** (même nom qu'Android) : condition de compilation allumée en Debug et Internal, **éteinte en Release** (code non compilé). La CI le prouve sur le binaire (`check-binaries.sh`).
+- **État retenu** dans un petit fichier privé exclu des sauvegardes, effacé à la déconnexion, à la suppression du compte et à la perte de session. Rien envoyé, aucun événement Analytics.
+- **Carte « Fenêtre d'avis (essai) »** du diagnostic (Debug et Internal) : afficher la fenêtre au prochain retour, remettre à zéro.
+- Tests (`MiffTests/Review/*`), 3 captures de CI (`-MiffPreview review-question`, `review-thanks`, `review-feedback`), clés `ios_diag_review_*` (diagnostic, propres à iOS).
+
+À savoir :
+- **La fenêtre est absente des builds de diffusion** (Release) : c'est le point de contrôle du ticket (§4) ; la reconfirmer à la porte « prêt à soumettre ». Un build Internal ouvert à des testeurs externes la contient.
+- **Les réponses au formulaire contiendront ce que la personne y écrit** (données personnelles possibles, hébergées par Google) : à ajouter à la politique de confidentialité avant d'allumer la fenêtre en diffusion.
+- Quand la PR « À propos et aide » (#222, `FeedbackForm.address`) et celle-ci seront toutes deux dans `main`, **l'adresse ne doit plus être écrite qu'à un endroit** : un test échoue sinon (`ReviewFeedbackFormTests`) ; faire lire `ReviewFeedbackForm.configuredAddress` par `FeedbackForm`.
+
 ### Version des conditions enregistrée : « 1.0 » (miroir d'Android)
 
 Modifié :
