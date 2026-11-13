@@ -86,6 +86,21 @@ final class FakePhotoReader: PhotoReading {
     }
 }
 
+/// La lecture de MON document de position sur le serveur : une réponse écrite d'avance (nil : pas su), et le compte des lectures.
+final class FakeOwnPositionServer: OwnPositionServerReading {
+    var answer: Bool?
+    var delayNanoseconds: UInt64 = 0
+    private(set) var reads = 0
+
+    func exists(miffId: String) async -> Bool? {
+        reads += 1
+        if delayNanoseconds > 0 {
+            try? await Task.sleep(nanoseconds: delayNanoseconds)
+        }
+        return answer
+    }
+}
+
 /// Un statut qui dit qu'il y a une photo (les statuts de démonstration n'en ont pas).
 func feedPhotoStatus(updatedAgo: Int? = feedMinutes(20), hasPhoto: Bool = true) -> MemberStatus {
     MemberStatus(

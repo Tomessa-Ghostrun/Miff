@@ -5,13 +5,15 @@ import XCTest
 
 // La lecture paresseuse des photos (FEED-8, critères P1 à P4, Q2) : UNE lecture par photo et par statut, la mémoire d'abord, rien lu hors connexion,
 // un refus jamais pris pour « expirée » (aucune suppression, jamais), la réciprocité dite calmement, deux demandes simultanées = une lecture.
-// Miroir de `FirestorePhotoReaderTest.kt` d'Android.
+// Miroir de `FirestorePhotoReaderTest.kt` d'Android. Le sens d'un refus (la phrase seulement si le serveur confirme que ma position n'est pas publiée) : `PhotoGateTests`.
 @MainActor
 final class PhotoLoaderTests: XCTestCase {
     private let source = FakePhotoSource()
     private let cache = PhotoCache()
     private let network = FakeNetwork()
+    /// La note locale du suivi (seul un « oui » est fiable) et ce que dit le serveur de MON document de position (nil : pas su).
     private var ownPositionPublished = false
+    private let ownServer = FakeOwnPositionServer()
 
     private func makeLoader() -> PhotoLoader {
         PhotoLoader(
@@ -19,7 +21,12 @@ final class PhotoLoaderTests: XCTestCase {
                 source: source,
                 cache: cache,
                 isOnline: { [network] in network.isOnline() },
-                ownPositionPublished: { [unowned self] _ in self.ownPositionPublished },
+                ownPosition: OwnPositionResolver(
+                    myUid: { "me" },
+                    localPublished: { [unowned self] _ in self.ownPositionPublished },
+                    server: ownServer,
+                    nowMillis: { feedNow }
+                ),
                 nowMillis: { feedNow }
             )
         )
@@ -100,6 +107,7 @@ final class PhotoLoaderTests: XCTestCase {
     func testARefusalWithoutMyOwnPositionIsTheCalmSentenceAndIsNotAskedAgain() async {
         source.answers = [.refused]
         ownPositionPublished = false
+        ownServer.answer = false
         let loader = makeLoader()
 
         let first = await loader.read(PhotoFixtures.request())
@@ -108,6 +116,7 @@ final class PhotoLoaderTests: XCTestCase {
         XCTAssertEqual(first, .needsOwnPosition)
         XCTAssertEqual(second, .needsOwnPosition)
         XCTAssertEqual(source.fetches.count, 1, "un refus coûte 3 lectures de règles : pas deux fois")
+        XCTAssertEqual(ownServer.reads, 1, "ma position n'est lue qu'une fois (mémoire de 30 s)")
     }
 
     func testARefusalAfterIPublishedMyPositionIsNotTheReciprocityNothingIsShown() async {
@@ -117,6 +126,7 @@ final class PhotoLoaderTests: XCTestCase {
         let result = await makeLoader().read(PhotoFixtures.request())
 
         XCTAssertEqual(result, .missing)
+        XCTAssertEqual(ownServer.reads, 0, "la note locale « publiée » suffit : aucune lecture")
     }
 
     func testARefusalOnMyOwnCardIsNeverTheReciprocity() async {
@@ -126,12 +136,14 @@ final class PhotoLoaderTests: XCTestCase {
         let result = await makeLoader().read(PhotoFixtures.request(uid: "me", isMe: true))
 
         XCTAssertEqual(result, .missing)
+        XCTAssertEqual(ownServer.reads, 0)
     }
 
     func testOnceMyPositionIsPublishedAKnownRefusalIsReadAgainAndTheNewPhotoIsShown() async {
         let photo = PhotoFixtures.photo()
         source.answers = [.refused, .photo(photo)]
         ownPositionPublished = false
+        ownServer.answer = false
         let loader = makeLoader()
         let before = await loader.read(PhotoFixtures.request())
 
