@@ -8,6 +8,12 @@ import XCTest
 /// de texte), contraste sur chaque teinte, libellé parlé, présence dans chaque variante, aucune réaction au toucher de la bulle, navigation.
 /// Miroir des tests Android du même changement.
 final class BubbleInfoButtonTests: XCTestCase {
+    private struct GlyphOnTint {
+        let name: String
+        let glyph: ColorToken
+        let tint: ColorToken
+    }
+
     private var iosRoot: URL {
         URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent() // Feed
@@ -65,13 +71,14 @@ final class BubbleInfoButtonTests: XCTestCase {
 
     /// La couleur du glyphe est celle du texte posé sur la teinte du niveau : le contraste est celui du texte de la bulle, sur CHAQUE variante.
     func testTheInfoGlyphIsReadableOnEveryTintOfTheBubble() {
-        let tints: [(String, ColorToken, ColorToken)] = [
-            ("vert", colorStatusSafeText, colorStatusSafeTint),
-            ("orange", colorStatusWarningText, colorStatusWarningTint),
-            ("rouge", colorStatusDangerText, colorStatusDangerTint),
-            ("gris", colorTextForm, colorStatusNeutralTint)
+        let tints = [
+            GlyphOnTint(name: "vert", glyph: colorStatusSafeText, tint: colorStatusSafeTint),
+            GlyphOnTint(name: "orange", glyph: colorStatusWarningText, tint: colorStatusWarningTint),
+            GlyphOnTint(name: "rouge", glyph: colorStatusDangerText, tint: colorStatusDangerTint),
+            GlyphOnTint(name: "gris", glyph: colorTextForm, tint: colorStatusNeutralTint)
         ]
-        for (name, glyph, tint) in tints {
+        for entry in tints {
+            let tint = entry.tint
             // La teinte est semi-transparente : on la pose sur le fond de l'app.
             let red = blend(tint.red, over: colorBgCanvas.red, alpha: tint.alpha)
             let green = blend(tint.green, over: colorBgCanvas.green, alpha: tint.alpha)
@@ -134,3 +141,4 @@ final class BubbleInfoButtonTests: XCTestCase {
         XCTAssertEqual(path, [.colorsInfo, .settings(.settings)])
     }
 }
+// swiftlint:enable line_length

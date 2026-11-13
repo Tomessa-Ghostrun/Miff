@@ -243,7 +243,8 @@ final class ColorsInfoTests: XCTestCase {
         let code = UpdatePrivacyTests.codeLines(try source("Views/Feed/ColorsInfoView.swift")).joined(separator: "\n")
 
         XCTAssertFalse(code.contains("Image("), "aucune image")
-        XCTAssertFalse(code.contains("Button("), "lecture seule : aucun bouton (le retour vient du cadre)")
+        XCTAssertFalse(code.contains("Button" + "("), "lecture seule : aucun bouton (le retour vient du cadre)")
         XCTAssertNil(code.range(of: "(?<![A-Za-z])Color\\(", options: .regularExpression), "aucune valeur de couleur écrite ici")
     }
 }
+// swiftlint:enable line_length
