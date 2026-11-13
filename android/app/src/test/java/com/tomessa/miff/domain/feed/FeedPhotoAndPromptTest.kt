@@ -238,12 +238,12 @@ class FeedPhotoAndPromptTest {
         assertEquals(
             com.tomessa.miff.data.feed.PhotoLookup.NeedsOwnPosition,
             com.tomessa.miff.data.feed
-                .refusalLookup(ownPositionPublished = false),
+                .refusalLookup(com.tomessa.miff.data.feed.OwnPosition.NotPublished),
         )
         assertEquals(
             com.tomessa.miff.data.feed.PhotoLookup.Missing,
             com.tomessa.miff.data.feed
-                .refusalLookup(ownPositionPublished = true),
+                .refusalLookup(com.tomessa.miff.data.feed.OwnPosition.Published),
         )
     }
 
