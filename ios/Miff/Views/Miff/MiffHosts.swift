@@ -159,6 +159,9 @@ struct MiffHomeHost: View {
     /// Les membres des cartes de Miff du Profil (photos, nombre) : ce que le Feed a lu pour la Miff affichée, plus une lecture ponctuelle
     /// des autres, une fois par ouverture du Profil. Créé avec la session de l'hôte, il disparaît avec elle.
     @StateObject private var memberPreviews: MiffMemberPreviews
+    /// Les lieux sous le carrousel du Profil, pour tous les membres de la Miff regardée (décision du PM, 2026-11-11) : la Miff du Feed
+    /// est reprise sans lecture, les autres sont lues UNE fois (cache de 5 minutes), jamais d'écouteur. Créé avec la session de l'hôte.
+    @StateObject private var profilePlaces: ProfilePlacesViewModel
     /// MODE VOYAGE (VOY-2I) : la carte du Profil, créée pour la session ; le voyage est écrit par le moteur de suivi, nulle part ailleurs.
     @StateObject private var travel: TravelViewModel
     /// L'Update (UPDATE-3) : l'écran du bouton central, créé pour la session (la photo prise y vit, en mémoire seulement).
@@ -179,6 +182,7 @@ struct MiffHomeHost: View {
             )
         )
         _memberPreviews = StateObject(wrappedValue: MiffMemberPreviews(reader: environment.memberPreviewReader))
+        _profilePlaces = StateObject(wrappedValue: ProfilePlacesViewModel(reader: environment.placesReader))
         let reconciler = environment.notifications.reconciler
         // NOTIF-P0 : une update publiée annule N1 à N4 aussitôt (sans attendre le retour du Feed).
         _updateModel = StateObject(
@@ -198,6 +202,14 @@ struct MiffHomeHost: View {
                     profile: profile,
                     memberPreviews: memberPreviews,
                     travel: travel,
+                    places: ProfilePlacesShell(
+                        model: profilePlaces,
+                        notices: placeNotices,
+                        context: ProfilePlacesContext(
+                            myUid: environment.session.currentUid,
+                            actions: .make(model: profilePlaces, notices: placeNotices, open: { open($0) })
+                        )
+                    ),
                     update: UpdateShell(
                         model: updateModel,
                         status: environment.update.myStatus,
@@ -233,6 +245,12 @@ struct MiffHomeHost: View {
         .onChange(of: MainShellRules.hasNoMiff(directory.state)) { noMiff in
             if noMiff {
                 path.removeAll { $0.isMyInfoScreen || $0.isNotificationScreen }
+            }
+        }
+        // De retour à l'écran racine après un lieu ou un formulaire : la liste des lieux du Profil est relue si un créateur y a touché.
+        .onChange(of: path.isEmpty) { isEmpty in
+            if isEmpty {
+                profilePlaces.onReturnedToRoot()
             }
         }
         // Mon visage sur les cartes du Profil suit mon profil, SANS lecture : le profil est déjà lu pour l'en-tête (et relu après une modification).
@@ -290,6 +308,7 @@ struct MiffHomeHost: View {
             environment: environment,
             context: context,
             memberPreviews: memberPreviews,
+            profilePlaces: profilePlaces,
             actions: FeedTabActions(
                 onCreate: { open(.create) },
                 onJoin: { open(.join) },
@@ -415,7 +434,8 @@ struct MiffHomeHost: View {
                 onOpen: { place in open(.placeDetail(miffId: miffId, placeId: place.id)) },
                 // Toujours le formulaire : il relit l'abonnement et les lieux auprès du SERVEUR et ne propose l'offre que si la limite
                 // est vraiment atteinte (jamais une décision prise sur l'annuaire, qui peut ignorer un Miff+).
-                onAdd: { _ in open(.placeForm(placeId: nil, miffId: nil)) }
+                // Le formulaire coche d'abord CETTE Miff (celle dont la liste est regardée), pas la dernière rejointe.
+                onAdd: { _ in open(.placeForm(placeId: nil, miffId: miffId)) }
             ),
             onLeave: { notices.consume() }
         )
@@ -469,6 +489,8 @@ struct MiffHomeHost: View {
     }
 
     private func open(_ route: MiffRoute) {
+        // Un créateur entre dans un lieu ou dans le formulaire d'un nouveau : les listes de lieux du Profil seront relues à leur retour.
+        profilePlaces.routeOpened(route) { isCreator(of: $0) }
         // L'écran d'une Miff s'ouvre : ses membres ont pu changer, la carte du Profil la relira à sa prochaine apparition (voir `invalidate`).
         if case .miff(let miffId) = route {
             memberPreviews.invalidate(miffId: miffId)
@@ -482,6 +504,11 @@ struct MiffHomeHost: View {
         if !path.isEmpty {
             path.removeLast()
         }
+    }
+
+    /// La personne connectée a-t-elle créé cette Miff ? (le champ `ownerUid` de l'annuaire ; inconnu : non.)
+    private func isCreator(of miffId: String) -> Bool {
+        PlaceViewerRole.isCreator(ownerUid: directory.state.ownerUid(of: miffId), myUid: environment.session.currentUid)
     }
 
     private func signOut() {

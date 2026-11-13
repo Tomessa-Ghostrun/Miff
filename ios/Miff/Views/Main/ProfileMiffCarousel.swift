@@ -7,6 +7,10 @@ import SwiftUI
 struct ProfileCarouselActions {
     let onOpenMiff: (String) -> Void
     let onCreate: () -> Void
+    /// La carte de cette Miff est celle que la personne regarde (le Profil est à l'écran) : la liste des lieux en dessous suit cette Miff.
+    var onMiffShown: (String) -> Void = { _ in }
+    /// Les Miffs que la personne a maintenant : les lieux de toute autre sont oubliés.
+    var onMiffsKnown: (Set<String>) -> Void = { _ in }
 }
 
 /// Ce que le carrousel montre : les Miffs, celle que le Feed affiche, et la carte du départ. Sans `initialPage`, le carrousel s'ouvre sur la
@@ -290,11 +294,16 @@ struct ProfileMiffCarousel: View {
                 page = content.startPage
             }
         }
-        previews.retain(only: Set(miffs.map { $0.id }))
+        let known = Set(miffs.map { $0.id })
+        previews.retain(only: known)
+        actions.onMiffsKnown(known)
         guard current < miffs.count else {
             return
         }
         let miff = miffs[current]
+        // Les lieux sous le carrousel suivent la carte montrée (la carte « Créer une Miff » ne change rien : la liste reste celle de la
+        // dernière Miff regardée).
+        actions.onMiffShown(miff.id)
         await previews.loadIfNeeded(miffId: miff.id, isActive: miff.id == activeId)
     }
 }

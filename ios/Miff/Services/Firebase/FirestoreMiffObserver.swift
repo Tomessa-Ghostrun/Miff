@@ -110,7 +110,7 @@ final class FirestoreMiffObserver: MiffObserver {
         let places = snapshot.documents.compactMap { document in
             Place.fromServer(id: document.documentID, miffId: miffId, fields: document.data())
         }
-        return ObservedPiece(value: places.sorted { $0.name.lowercased() < $1.name.lowercased() })
+        return ObservedPiece(value: Place.sortedForList(places))
     }
 
     private struct DatedMember {
