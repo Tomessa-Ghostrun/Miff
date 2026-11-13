@@ -97,12 +97,16 @@ struct ReviewPromptCard: View {
                 content
             }
         }
-        .background(RoundedRectangle(cornerRadius: radiusMd, style: .continuous).fill(colorBgSurface.color))
+        // L'ombre est celle du FOND seulement : sinon elle se pose aussi sous chaque lettre du texte.
+        .background(
+            RoundedRectangle(cornerRadius: radiusMd, style: .continuous)
+                .fill(colorBgSurface.color)
+                .miffShadow(shadowDefault)
+        )
         .overlay(
             RoundedRectangle(cornerRadius: radiusMd, style: .continuous)
                 .stroke(colorBorderAction.color, lineWidth: strokeAccent)
         )
-        .miffShadow(shadowDefault)
     }
 
     @ViewBuilder

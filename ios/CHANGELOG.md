@@ -11,7 +11,7 @@ Ajouté :
 - **Drapeau de build `REVIEW_PROMPT`** (même nom qu'Android) : condition de compilation allumée en Debug et Internal, **éteinte en Release** (code non compilé). La CI le prouve sur le binaire (`check-binaries.sh`).
 - **État retenu** dans un petit fichier privé exclu des sauvegardes, effacé à la déconnexion, à la suppression du compte et à la perte de session. Rien envoyé, aucun événement Analytics.
 - **Carte « Fenêtre d'avis (essai) »** du diagnostic (Debug et Internal) : afficher la fenêtre au prochain retour, remettre à zéro.
-- Tests (`MiffTests/Review/*`), 5 captures de CI (`-MiffPreview review-question`, `review-thanks`, `review-feedback`), clés `ios_diag_review_*` (diagnostic, propres à iOS).
+- Tests (`MiffTests/Review/*`), 3 captures de CI (`-MiffPreview review-question`, `review-thanks`, `review-feedback`), clés `ios_diag_review_*` (diagnostic, propres à iOS).
 
 À savoir :
 - **La fenêtre est absente des builds de diffusion** (Release) : c'est le point de contrôle du ticket (§4) ; la reconfirmer à la porte « prêt à soumettre ». Un build Internal ouvert à des testeurs externes la contient.

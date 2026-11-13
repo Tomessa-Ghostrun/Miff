@@ -24,7 +24,7 @@ struct ReviewPromptServices {
             debugForceAllowed: BuildFlavor.includesDiagnostic,
             observesForeground: true
         )
-        return ReviewPromptServices(coordinator: coordinator, store: store, teardowns: [{ await coordinator.reset() }])
+        return ReviewPromptServices(coordinator: coordinator, store: store, teardowns: [{ @MainActor in coordinator.reset() }])
         #else
         return ReviewPromptServices(teardowns: [])
         #endif
