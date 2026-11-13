@@ -159,8 +159,7 @@ splash_args=(-MiffSkipSplash YES)
 shot 90-fr-feed-bulle-verte 3 "${fr_args[@]}" -MiffPreview feed-green
 shot 91-fr-feed-bulle-orange 3 "${fr_args[@]}" -MiffPreview feed-orange
 shot 92-fr-feed-bulle-rouge 3 "${fr_args[@]}" -MiffPreview feed-red
-# COULEURS-2 : le bouton « i » hors de la bulle, bulle grise et carrousel (peu de captures : l'étape a une limite de 15 min) ; l'écran des couleurs.
-shot 94-fr-feed-bulle-grise 3 "${fr_args[@]}" -MiffPreview feed-gray
+# COULEURS-2 : le bouton « i » hors de la bulle (carrousel ; les bulles verte, orange et rouge ci-dessus le montrent aussi) et l'écran des couleurs. Peu de captures : l'étape est limitée à 15 min.
 shot 96-fr-feed-bulle-carrousel 3 "${fr_args[@]}" -MiffPreview feed-carousel
 shot 98-fr-couleurs-ecran 3 "${fr_args[@]}" -MiffPreview colors-info
 
@@ -185,7 +184,6 @@ shot 152-fr-photo-plein-ecran-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview ph
 shot 93-fr-feed-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-orange
 
 shot 93-fr-feed-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-orange
-shot 93b-fr-feed-carrousel-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-carousel
 
 shot 152-fr-photo-plein-ecran-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview photo-3-4
 
