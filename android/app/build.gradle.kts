@@ -131,10 +131,11 @@ android {
         ) { "miff.reviewPrompt must be true or false" }
         buildConfigField("boolean", "REVIEW_PROMPT", reviewPromptProperty ?: "false")
         // Review window, "Peux faire mieux..." (decision of the PM, 2026-11-08): the EXTERNAL FEEDBACK FORM the PM will provide. ONE place: the default value of
-        // "miff.feedbackFormUrl" just below (empty for now; or -Pmiff.feedbackFormUrl=... for a test). Empty = the window shows its "Merci de nous le dire !" screen with
-        // "Nous écrire" instead. HTTPS only (checked here, and again in the app); it is read from BuildConfig ONLY (never from a received link) and opened as it is:
+        // "miff.feedbackFormUrl" just below: the public Google Forms address given by the PM on 2026-11-13 (a public address, not a secret). Override it with
+        // -Pmiff.feedbackFormUrl=... for a test; an EMPTY value (-Pmiff.feedbackFormUrl=) makes the window show its "Merci de nous le dire !" screen with "Nous écrire"
+        // instead. HTTPS only (checked here, and again in the app); it is read from BuildConfig ONLY (never from a received link) and opened as it is:
         // nothing about the person (name, e-mail, Miff, position, identifier) is ever added to it, so do not put any in the address.
-        val feedbackFormUrl = providers.gradleProperty("miff.feedbackFormUrl").getOrElse("").trim()
+        val feedbackFormUrl = providers.gradleProperty("miff.feedbackFormUrl").getOrElse("https://forms.gle/5EEH4sEfsnCCLzEx7").trim()
         require(
             feedbackFormUrl.isEmpty() || Regex("""https://[^\s"\\$]+""").matches(feedbackFormUrl),
         ) {

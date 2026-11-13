@@ -23,6 +23,13 @@ class FeedbackFormTest {
     }
 
     @Test
+    fun theAddressGivenByThePm_isOpenedAsItIs_withNothingAppended() {
+        val address = "https://forms.gle/5EEH4sEfsnCCLzEx7"
+        assertEquals(address, FeedbackForm.openableUrl(address))
+        assertEquals(address, FeedbackForm.openableUrl("  $address \n"))
+    }
+
+    @Test
     fun anythingElse_isRefused_neverClearText_neverAnotherScheme() {
         for (bad in listOf(
             "http://forms.example.org/miff",

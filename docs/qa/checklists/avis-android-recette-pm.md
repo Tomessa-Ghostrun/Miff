@@ -32,10 +32,9 @@ Remettez à zéro, provoquez la fenêtre.
 ## C. « Peux faire mieux... » (6 min)
 
 Remettez à zéro, provoquez la fenêtre. **Aucune boîte d'avis du store ne doit s'ouvrir dans toute cette partie.**
-- [ ] **Sans formulaire renseigné** (l'état d'aujourd'hui ; la carte de diagnostic dit « formulaire externe : non renseigné ») : touchez **« Peux faire mieux... »** : l'écran calme **« Merci de nous le dire ! »** avec **« Nous écrire »** et **« Plus tard »**.
-- [ ] **« Nous écrire »** : votre application e-mail s'ouvre sur l'adresse de support, **sans objet ni texte ajouté** (rien de personnel dans le message). Revenez : la fenêtre est fermée.
+- [ ] **Avec l'adresse du PM (état normal depuis le 2026-11-13 ; la carte de diagnostic dit « formulaire externe : renseigné (ouvert dans le navigateur) »)** : touchez **« Peux faire mieux... »** : la fenêtre se ferme et le **formulaire s'ouvre dans le navigateur**, directement, **sans écran « Merci de nous le dire ! »**. Regardez l'adresse affichée : **`https://forms.gle/5EEH4sEfsnCCLzEx7`, exactement, sans rien d'ajouté** (ni votre nom, ni votre e-mail, ni identifiant) ; le formulaire s'affiche. Revenez dans Miff : la fenêtre est fermée.
+- [ ] **Écran de repli** (facultatif : APK construit avec `-Pmiff.feedbackFormUrl=` vide ; la carte dit « non renseigné ») : touchez « Peux faire mieux... » : l'écran calme **« Merci de nous le dire ! »** avec **« Nous écrire »** et **« Plus tard »**. **« Nous écrire »** : votre application e-mail s'ouvre sur l'adresse de support, **sans objet ni texte ajouté** (rien de personnel dans le message). Revenez : la fenêtre est fermée.
 - [ ] Remettez à zéro, recommencez, touchez **« Plus tard »** : la fenêtre se ferme, rien d'autre ne se passe.
-- [ ] **Avec un formulaire** (à faire quand le PM a donné l'adresse : voir « Renseigner le formulaire » dans `docs/tickets/pop-ins-avis.md` §8, ou un APK construit avec `-Pmiff.feedbackFormUrl=https://...`) : **« Peux faire mieux... »** ferme la fenêtre et ouvre le **formulaire dans le navigateur**, directement, **sans écran « Merci de nous le dire ! »**. Regardez l'adresse affichée : **elle est exactement celle qui a été donnée**, sans rien d'ajouté (ni votre nom, ni votre e-mail).
 - [ ] La carte de diagnostic affiche l'issue « CAN_DO_BETTER » ; en production la question ne reviendrait qu'après **90 jours**, autant de fois que nécessaire (décision du 2026-11-08).
 
 ## D. Fermer sans répondre (3 min)
