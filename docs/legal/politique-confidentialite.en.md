@@ -1,6 +1,6 @@
 # Miff Privacy Policy
 
-**Version 0.1 — last updated: November 4, 2026**
+**Version 1.0 — last updated: November 13, 2026**
 
 Miff is an app that lets you know your loved ones are okay, without bothering them. To make that work, Miff processes some personal data, including information related to your location. This page explains, simply, what is collected, why, who can see it, how long it is kept, and how you stay in control.
 
@@ -185,7 +185,7 @@ Miff keeps no history: the status, the last known location and the photo (with i
 | A Miff's secret code | Until it is renewed or the Miff is deleted. When the creator removes a member, the code is automatically renewed. |
 | Proof of consent | While you are a member of the relevant Miff (for location and position consent); with your account (for the Terms). We do not keep this proof after you leave the Miff. |
 | Miff+ subscription state | For the duration of the subscription, then deleted 30 days after your account is deleted. |
-| Usage statistics (while turned on) | **2 months** for detailed data (at the level of each event and each user): this is the shortest period offered by Google Analytics, and we do not extend it. Deletion is carried out by Google in its periodic processing. Google Analytics may keep aggregated figures (totals, not linked to a person) for longer. |
+| Usage statistics (while turned on) | **Up to 14 months** for detailed data (at the level of each event and each user): this is the maximum period offered by standard Google Analytics, and we do not extend it. Deletion is carried out by Google in its periodic processing, so it is not immediate when this period ends. Google Analytics may keep aggregated figures (totals, not linked to a person) for longer. |
 | Crash reports (while turned on) | **90 days**, the period stated by Firebase for crash reports and associated identifiers. Google then starts removing them from its live systems and backups, which can take a little longer. |
 | Firebase installation identifier | Kept by Firebase while the app is used; deleted by Firebase after about 270 days without use of the app (period stated in Firebase's documentation, which may change). It may also be renewed if you reinstall the app. |
 | Messages sent to our contact address | The time needed to handle your request, then 1 year, after which they are deleted. |

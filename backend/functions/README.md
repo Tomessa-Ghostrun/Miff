@@ -1,6 +1,6 @@
 # backend/functions/ : Cloud Functions Miff (SRV-1, socle)
 
-TypeScript, **Node 24**, **2e génération**, région **`europe-west9`** (Paris). Une seule fonction : **`notifierUpdate`** (SRV-4B : notification aux autres membres quand une update est publiée ; compte de service dédié `notify-update@miff-3d283.iam.gserviceaccount.com`, 5 instances, 256 Mio, jamais déployée par un agent : `docs/dev/deploiement-functions.md` §11). Les autres fonctions viennent par tickets (`docs/dev/etude-serveur-notifications-premium.md` §8).
+TypeScript, **Node 24**, **2e génération**, région **`europe-west9`** (Paris). Une seule fonction : **`notifierUpdate`** (SRV-4B : notification aux autres membres quand une update est publiée ; compte de service dédié `notify-update@miff-3d283.iam.gserviceaccount.com`, 5 instances, 256 Mio, déployée par le PM le 2026-11-13 (jamais par un agent) : `docs/dev/deploiement-functions.md` §11 ; le compte a 4 rôles de projet + `run.invoker` sur le seul service `notifierupdate`, §1.4 D bis). Les autres fonctions viennent par tickets (`docs/dev/etude-serveur-notifications-premium.md` §8).
 
 **Déploiement : jamais par un agent ni par la CI.** Le PM le fait à la main : [`../../docs/dev/deploiement-functions.md`](../../docs/dev/deploiement-functions.md).
 
