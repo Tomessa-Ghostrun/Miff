@@ -37,9 +37,9 @@ extension View {
 
     /// La coquille des onglets dit à la fenêtre ce qu'elle seule sait.
     @MainActor
-    func reviewReportsShell(updateOpen: Bool, profilePopInVisible: @escaping @MainActor () -> Bool) -> some View {
+    func reviewReportsShell(updateOpen: Bool, profilePopIn: OfflineRetryModel) -> some View {
         #if REVIEW_PROMPT
-        return modifier(ReviewShellReporter(updateOpen: updateOpen, profilePopInVisible: profilePopInVisible))
+        return modifier(ReviewShellReporter(updateOpen: updateOpen, profilePopIn: profilePopIn))
         #else
         return self
         #endif
@@ -74,7 +74,7 @@ extension EnvironmentValues {
 private struct ReviewShellReporter: ViewModifier {
     @Environment(\.reviewSignals) private var signals
     let updateOpen: Bool
-    let profilePopInVisible: @MainActor () -> Bool
+    let profilePopIn: OfflineRetryModel
 
     func body(content: Content) -> some View {
         content
@@ -84,7 +84,7 @@ private struct ReviewShellReporter: ViewModifier {
 
     private func apply() {
         signals?.updateScreenOpen = updateOpen
-        signals?.profileConnectionPopInOpen = profilePopInVisible
+        signals?.profileConnectionPopInOpen = { [weak model = profilePopIn] in model?.isPopinVisible ?? false }
     }
 }
 
