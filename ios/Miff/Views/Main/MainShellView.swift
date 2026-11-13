@@ -20,6 +20,16 @@ private struct TabLayer<Content: View>: View {
     }
 }
 
+/// Ce que la coquille donne à l'onglet Profil pour la liste des lieux sous le carrousel (décision du PM, 2026-11-11) : le view model qui les
+/// lit, le message calme d'un geste, et la personne avec ses gestes.
+struct ProfilePlacesShell {
+    let model: ProfilePlacesViewModel
+    let notices: PlaceNotices
+    /// Les demandes d'ajout d'un lieu (LIEU-REQ), sous la même liste.
+    let requests: ProfileRequestsViewModel
+    let context: ProfilePlacesContext
+}
+
 /// Ce que la coquille a besoin de l'Update (UPDATE-3) : le view model de l'écran, et MON statut dans la Miff affichée (la couleur du bouton
 /// central, la bulle d'incitation, le nettoyage de la photo expirée).
 struct UpdateShell {
@@ -63,11 +73,17 @@ struct FeedShellContext {
 struct MainShellView<Feed: View>: View {
     private let miffs: DirectoryState
     @ObservedObject private var profile: ProfileTabViewModel
+    /// Les membres des cartes du Profil : le Profil les observe lui-même (la coquille n'a pas à se redessiner pour eux).
+    private let memberPreviews: MiffMemberPreviews
     private let travel: TravelViewModel
+    private let places: ProfilePlacesShell
+    /// Les demandes d'ajout d'un lieu (LIEU-REQ-C) : le point de l'onglet Profil suit ce que le créateur n'a pas encore vu.
+    @ObservedObject private var requests: ProfileRequestsViewModel
     @ObservedObject private var updateModel: UpdateViewModel
     @ObservedObject private var myStatus: MyStatusStore
     private let update: UpdateShell
     private let onOpenMiff: (String) -> Void
+    private let onCreateMiff: () -> Void
     private let onOpenSettings: (SettingsRoute) -> Void
     private let feed: (FeedShellContext) -> Feed
     /// NOTIF-6I : un toucher sur une ligne du centre de notifications demande un onglet (le Feed, ou l'écran Update).
@@ -85,20 +101,27 @@ struct MainShellView<Feed: View>: View {
     init(
         miffs: DirectoryState,
         profile: ProfileTabViewModel,
+        memberPreviews: MiffMemberPreviews,
         travel: TravelViewModel,
+        places: ProfilePlacesShell,
         update: UpdateShell,
         onOpenMiff: @escaping (String) -> Void,
+        onCreateMiff: @escaping () -> Void,
         onOpenSettings: @escaping (SettingsRoute) -> Void,
         tabRequests: TabRequests,
         @ViewBuilder feed: @escaping (FeedShellContext) -> Feed
     ) {
         self.miffs = miffs
         _profile = ObservedObject(wrappedValue: profile)
+        self.memberPreviews = memberPreviews
         self.travel = travel
+        self.places = places
+        _requests = ObservedObject(wrappedValue: places.requests)
         _updateModel = ObservedObject(wrappedValue: update.model)
         _myStatus = ObservedObject(wrappedValue: update.status)
         self.update = update
         self.onOpenMiff = onOpenMiff
+        self.onCreateMiff = onCreateMiff
         self.onOpenSettings = onOpenSettings
         _tabRequests = ObservedObject(wrappedValue: tabRequests)
         self.feed = feed
@@ -183,13 +206,20 @@ struct MainShellView<Feed: View>: View {
                     ProfileTabView(
                         state: profile.state,
                         miffs: miffs,
+                        previews: memberPreviews,
+                        isActive: shownTab == .profile,
                         travel: travel,
                         offlineRetry: profile.offlineRetry,
+                        placesModel: places.model,
+                        placeNotices: places.notices,
+                        requestsModel: places.requests,
+                        placesContext: places.context,
                         actions: ProfileTabActions(
                             onOpenMyInfo: { onOpenSettings(.myInfo) },
                             onOpenSettings: { onOpenSettings(.settings) },
                             onRetry: { profile.retry() },
-                            onOpenMiff: onOpenMiff
+                            onOpenMiff: onOpenMiff,
+                            onCreateMiff: onCreateMiff
                         )
                     )
                     // Profil jamais lu et pas de réseau : la même pop-in « Pas de connexion » que le Feed, seulement tant que l'onglet est
@@ -206,6 +236,10 @@ struct MainShellView<Feed: View>: View {
                         .environment(\.tabBarTopY, barVisible ? barTopY : nil)
                 }
             }
+            .background(
+                // L'écouteur du créateur sur UNE Miff, branché seulement pendant que l'app est devant (LIEU-REQ-C).
+                ProfileRequestsWatcher(model: places.requests, miffs: miffs, myUid: places.context.myUid)
+            )
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if barVisible {
                     bottomLayer(screenHeight: Self.fullHeight(of: proxy))
@@ -283,6 +317,7 @@ struct MainShellView<Feed: View>: View {
                 selected: shownTab,
                 central: central,
                 variant: updateModel.stage.glassVariant(updateTabSelected: shownTab == .update),
+                profileDot: requests.state.profileDot,
                 onSelect: { selected = $0 }
             )
             .background(TabBarTopReader())

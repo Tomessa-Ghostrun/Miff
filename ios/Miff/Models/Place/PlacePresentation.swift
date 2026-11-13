@@ -12,22 +12,41 @@ struct PlaceListUi: Equatable, CustomStringConvertible {
     let isCreator: Bool
     var premium: Bool?
     var notice: PlaceNotice?
+    /// Vrai : cette liste propose les DEMANDES (l'onglet Profil) : un membre y voit ses demandes en attente et « Demander l'ajout d'un lieu ».
+    /// Faux (l'écran de la Miff) : un membre y lit seulement.
+    var offersRequests = false
+    /// Un membre qui n'est pas le créateur : ses propres demandes en attente (LIEU-REQ-B), la plus récente d'abord ; elles viennent AVANT les lieux.
+    var requests: [PlaceRequest] = []
+    /// « Demande envoyée… » / « Ta demande partira dès que tu seras connecté. », montré après la fermeture du formulaire d'une demande.
+    var requestNotice: RequestNotice?
+    /// Le message calme du dernier geste sur une demande (« Demande retirée. »…).
+    var requestKind: RequestNoticeKind?
+    /// La demande en cours de réponse : ses boutons attendent.
+    var busyRequestId: String?
+    /// Le CRÉATEUR : les demandes reçues (LIEU-REQ-C), la plus ancienne d'abord ; elles viennent AVANT les lieux, dans des cartes qui les
+    /// distinguent des lieux de la Miff.
+    var received: [ReceivedRequest] = []
 
     /// Combien de lieux différents la liste montre (un lieu n'apparaît qu'une fois dans la liste d'une Miff).
     var distinctCount: Int {
         Set(places.map { $0.id }).count
     }
 
-    /// « 2 lieux sur 2 avec la formule gratuite » : seulement pour un créateur dont la formule gratuite est CONNUE (`premium` faux
+    /// « 3 lieux sur 3 avec la formule gratuite » : seulement pour un créateur dont la formule gratuite est CONNUE (`premium` faux
     /// ET connu : jamais d'après une lecture échouée ou un cache, voir `DirectoryReady.premiumKnown`).
     var showsFreeCounter: Bool {
         isCreator && premium == false
     }
 
-    /// Un créateur en formule gratuite qui a déjà 2 lieux : « Ajouter un lieu » ouvre l'écran de la limite plutôt que le
+    /// Un créateur en formule gratuite qui a déjà 3 lieux : « Ajouter un lieu » ouvre l'écran de la limite plutôt que le
     /// formulaire (critère LIM1).
     var atFreeLimit: Bool {
         isCreator && premium == false && PlaceQuota.isAtFreeLimit(premium: false, distinctPlaces: distinctCount)
+    }
+
+    /// Un membre qui a déjà les 3 demandes en attente du ticket : le bouton le dit doucement au lieu d'ouvrir le formulaire (critère M5).
+    var atRequestLimit: Bool {
+        !isCreator && requests.count >= PlaceRequestLimits.perMember
     }
 
     var description: String {
@@ -36,8 +55,8 @@ struct PlaceListUi: Equatable, CustomStringConvertible {
 }
 
 /// Les événements Analytics de l'offre : seulement « l'offre s'est ouverte / fermée », avec un déclencheur fixe et rien d'autre
-/// (critère LIM5). Le contrat a un déclencheur pour le 3e lieu et un pour la 2e Miff (`extra_miff`) ; il n'en existe pas encore
-/// pour la zone de danger (point ouvert de la PR : rien n'est envoyé dans ce cas).
+/// (critère LIM5). Le contrat a un déclencheur par point d'entrée : le 3e lieu (`extra_trusted_place`), la 2e Miff (`extra_miff`) et la
+/// zone de danger (`danger_zone`, ajouté par PAY-UI, ticket `paywall-v2.md` Q-PAY5).
 enum PlacePaywall {
     static func trigger(for reason: PaywallReason) -> AnalyticsEvent.PaywallTrigger? {
         switch reason {
@@ -46,7 +65,7 @@ enum PlacePaywall {
         case .extraMiff:
             return .extraMiff
         case .danger:
-            return nil
+            return .dangerZone
         }
     }
 
@@ -56,37 +75,6 @@ enum PlacePaywall {
 
     static func dismissed(for reason: PaywallReason) -> AnalyticsEvent? {
         trigger(for: reason).map { AnalyticsEvent.paywallDismissed(trigger: $0) }
-    }
-}
-
-/// Les textes de la phrase calme du haut de l'offre (la raison pour laquelle elle s'affiche) et de la mention « bientôt », par
-/// raison. Des clés du catalogue : le texte lui-même est dans les deux langues.
-extension PaywallReason {
-    var titleKey: String {
-        switch self {
-        case .limit:
-            return "place_paywall_limit_title"
-        case .danger:
-            return "place_paywall_danger_title"
-        case .extraMiff:
-            return "feed_selector_paywall_title"
-        }
-    }
-
-    var bodyKey: String {
-        switch self {
-        case .limit:
-            return "place_paywall_limit_body"
-        case .danger:
-            return "place_paywall_danger_body"
-        case .extraMiff:
-            return "feed_selector_paywall_body"
-        }
-    }
-
-    /// « Cette option n'est pas encore ouverte. » + ce qui reste en place (les lieux, ou la Miff actuelle).
-    var soonBodyKey: String {
-        self == .extraMiff ? "feed_selector_paywall_soon_body" : "place_paywall_soon_body"
     }
 }
 

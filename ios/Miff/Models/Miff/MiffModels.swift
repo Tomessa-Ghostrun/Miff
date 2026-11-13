@@ -69,6 +69,10 @@ struct MembershipRef: Equatable {
 struct MiffSummary: Equatable, CustomStringConvertible {
     let id: String
     let name: String
+    /// L'identifiant du créateur de la Miff, tel que le document de la Miff le dit (déjà lu pour construire la liste : aucune lecture de
+    /// plus) ; nil quand il n'est pas connu. Il décide seulement ce que le Profil DESSINE (les boutons des lieux d'un créateur) : ce qui
+    /// est permis, ce sont les règles de Firestore.
+    var ownerUid: String?
 
     var description: String {
         "MiffSummary(redacted)"

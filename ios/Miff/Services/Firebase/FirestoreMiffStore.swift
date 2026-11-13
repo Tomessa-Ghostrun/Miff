@@ -32,6 +32,8 @@ enum FirestoreFieldConversion {
             return NSNull()
         case .deleteField:
             return FieldValue.delete()
+        case .increment(let delta):
+            return FieldValue.increment(Int64(delta))
         case .map(let nested):
             return convert(nested)
         }
@@ -261,6 +263,31 @@ final class FirestoreMiffStore: MiffStore {
         }
     }
 
+    /// UN lot confié à la file du téléphone (un lot d'écritures groupées), SANS attendre : hors ligne, la complétion ne vient qu'après la réponse du serveur, et le
+    /// téléphone garde le lot jusque-là (il part au retour du réseau, même app fermée ; les règles le jugent ALORS). Réservé à la demande d'un
+    /// lieu faite sans réseau (critère M11 de LIEU-REQ) : toute autre écriture est une TRANSACTION, qui n'existe qu'en ligne. Un lot vide, ou
+    /// un statut / une position sans identifiant de session, n'est jamais confié (le garde est celui des transactions).
+    func enqueue(_ writes: [DocWrite]) {
+        guard !writes.isEmpty, SessionWriteGuard.isCompliant(writes), let database = try? firestore() else {
+            return
+        }
+        let batch = database.batch()
+        for write in writes {
+            let reference = database.document(write.path)
+            switch write.kind {
+            case .set:
+                batch.setData(FirestoreFieldConversion.convert(write.data), forDocument: reference)
+            case .update:
+                batch.updateData(FirestoreFieldConversion.convert(write.data), forDocument: reference)
+            case .delete:
+                batch.deleteDocument(reference)
+            case .merge:
+                batch.setData(FirestoreFieldConversion.convert(write.data), forDocument: reference, merge: true)
+            }
+        }
+        batch.commit { _ in }
+    }
+
     static func apply(_ writes: [DocWrite], to transaction: Transaction, in database: Firestore) {
         for write in writes {
             let reference = database.document(write.path)
@@ -269,6 +296,8 @@ final class FirestoreMiffStore: MiffStore {
                 transaction.setData(FirestoreFieldConversion.convert(write.data), forDocument: reference)
             case .update:
                 transaction.updateData(FirestoreFieldConversion.convert(write.data), forDocument: reference)
+            case .merge:
+                transaction.setData(FirestoreFieldConversion.convert(write.data), forDocument: reference, merge: true)
             case .delete:
                 transaction.deleteDocument(reference)
             }

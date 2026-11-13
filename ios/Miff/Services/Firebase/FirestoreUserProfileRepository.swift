@@ -123,6 +123,8 @@ final class FirestoreUserProfileRepository: UserProfileRepository {
             return NSNull()
         case .deleteField:
             return FieldValue.delete()
+        case .increment(let delta):
+            return FieldValue.increment(Int64(delta))
         case .map(let nested):
             return firestoreData(nested)
         }

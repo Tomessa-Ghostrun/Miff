@@ -61,10 +61,16 @@ struct PlaceFormView: View {
         miffId: String?,
         dependencies: PlaceFormDependencies,
         onBack: @escaping () -> Void,
-        exits: PlaceFormExits
+        exits: PlaceFormExits,
+        isRequest: Bool = false
     ) {
         _viewModel = StateObject(
-            wrappedValue: PlaceFormViewModel(placeId: placeId, miffId: miffId, dependencies: dependencies)
+            wrappedValue: PlaceFormViewModel(
+                placeId: placeId,
+                miffId: miffId,
+                dependencies: dependencies,
+                isRequest: isRequest
+            )
         )
         self.onBack = onBack
         self.exits = exits
@@ -126,7 +132,14 @@ struct PlaceFormContent: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     private var title: String {
-        L10n.string(state.mode == .create ? "place_form_title_new" : "place_form_title_edit")
+        switch state.mode {
+        case .create:
+            return L10n.string("place_form_title_new")
+        case .edit:
+            return L10n.string("place_form_title_edit")
+        case .request:
+            return L10n.string("place_request_form_title")
+        }
     }
 
     var body: some View {
@@ -226,11 +239,14 @@ struct PlaceFormFoot: View {
     var isInline = false
 
     private var saveKey: LocalizedStringKey {
-        state.saving ? "place_saving" : "place_save_action"
+        if state.mode == .request {
+            return state.saving ? "place_request_sending" : "place_request_form_submit"
+        }
+        return state.saving ? "place_saving" : "place_save_action"
     }
 
     private var messageText: String? {
-        guard let message = state.message else {
+        guard let message = state.displayedMessage else {
             return nil
         }
         switch message {
@@ -242,6 +258,12 @@ struct PlaceFormFoot: View {
             return L10n.string("place_message_miff_gone")
         case .idTaken:
             return L10n.string("ios_place_message_id_taken")
+        case .requestLimitMember:
+            return L10n.string("place_request_limit_member")
+        case .requestLimitMiff:
+            return L10n.string("place_request_limit_miff")
+        case .requestsUnavailable:
+            return L10n.string("place_request_unavailable")
         }
     }
 
@@ -252,7 +274,11 @@ struct PlaceFormFoot: View {
                 PlaceInfoLine(text: L10n.string("place_save_hint_category"))
             }
             if let messageText {
-                MiffNotice(text: messageText, isError: state.message != .offline)
+                // Les limites d'une demande sont dites calmement, comme une information : jamais la couleur d'une erreur.
+                MiffNotice(text: messageText, isError: !state.messageIsCalm)
+            }
+            if state.mode == .request {
+                PlaceInfoLine(text: L10n.string("place_request_form_hint"))
             }
             Button(action: actions.onSave) {
                 Text(saveKey)

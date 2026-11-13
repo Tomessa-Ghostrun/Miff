@@ -18,6 +18,11 @@ extension PlaceFormViewModel {
             update { $0.nameTooShort = true }
             return
         }
+        // Une demande a son propre chemin : sans réseau elle est gardée par le téléphone et part au retour du réseau (critère M11).
+        if current.mode == .request {
+            submitRequest(current)
+            return
+        }
         // Rien à tenter sans réseau : la réponse est immédiate et rien n'attend (PL9).
         guard dependencies.network.isOnline() else {
             update { $0.message = .offline }
