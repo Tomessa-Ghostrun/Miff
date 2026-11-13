@@ -180,11 +180,13 @@ final class PlacePrivacyTests: XCTestCase {
 
         XCTAssertFalse(hosts.contains("SceneStorage"))
         XCTAssertFalse(hosts.contains("AppStorage"))
-        // Les routes des lieux ne portent que des identifiants et un mot fixe (celles des demandes aussi : jamais un nom ni une adresse).
+        // Les routes des lieux ne portent que des identifiants (celles des demandes aussi : jamais un nom ni une adresse).
         XCTAssertTrue(routes.contains("case placeForm(placeId: String?, miffId: String?)"))
         XCTAssertTrue(routes.contains("case placeDetail(miffId: String, placeId: String)"))
-        XCTAssertTrue(routes.contains("case placePaywall(PaywallReason)"))
         XCTAssertTrue(routes.contains("case placeRequestForm(miffId: String)"))
         XCTAssertTrue(routes.contains("case placeRequestDetail(miffId: String, requestId: String)"))
+        // L'offre (plein écran) ne porte que sa raison, un mot fixe.
+        XCTAssertTrue(hosts.contains("struct PaywallPresentation: Identifiable"))
+        XCTAssertTrue(hosts.contains("let reason: PaywallReason"))
     }
 }

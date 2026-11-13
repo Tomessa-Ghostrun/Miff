@@ -103,30 +103,16 @@ final class FeedSelectorRulesTests: XCTestCase {
 
     // MARK: - L'offre d'une 2e Miff
 
-    func testThePaywallOfASecondMiffHasItsOwnTextsInBothLanguages() {
-        let reason = PaywallReason.extraMiff
+    func testTheComingSoonTextIsTheSameFromEveryEntryPoint() {
+        let text = L10n.string("paywall_soon_body")
 
-        for key in [reason.titleKey, reason.bodyKey, reason.soonBodyKey] {
-            XCTAssertNotEqual(L10n.string(key), key, "\(key) n'a pas de texte")
-        }
-        XCTAssertEqual(reason.titleKey, "feed_selector_paywall_title")
-        XCTAssertEqual(reason.bodyKey, "feed_selector_paywall_body")
-        XCTAssertEqual(reason.soonBodyKey, "feed_selector_paywall_soon_body")
-    }
-
-    func testTheOtherReasonsKeepTheirTexts() {
-        XCTAssertEqual(PaywallReason.limit.titleKey, "place_paywall_limit_title")
-        XCTAssertEqual(PaywallReason.limit.bodyKey, "place_paywall_limit_body")
-        XCTAssertEqual(PaywallReason.danger.titleKey, "place_paywall_danger_title")
-        XCTAssertEqual(PaywallReason.danger.bodyKey, "place_paywall_danger_body")
-        XCTAssertEqual(PaywallReason.limit.soonBodyKey, "place_paywall_soon_body")
-        XCTAssertEqual(PaywallReason.danger.soonBodyKey, "place_paywall_soon_body")
+        XCTAssertNotEqual(text, "paywall_soon_body", "le texte existe dans le catalogue")
+        XCTAssertFalse(text.contains("lieux"), "aucune mention propre à une entrée")
     }
 
     func testNoTextOfTheOfferSaysPremiumNorShowsAPrice() {
         for key in [
-            "feed_selector_paywall_title", "feed_selector_paywall_body", "feed_selector_paywall_soon_body",
-            "feed_selector_join", "feed_selector_create", "feed_selector_a11y"
+            "paywall_soon_body", "feed_selector_join", "feed_selector_create", "feed_selector_a11y"
         ] {
             let text = L10n.string(key).lowercased()
             XCTAssertFalse(text.contains("premium"), "\(key) : jamais « Premium » dans un texte affiché")
@@ -153,10 +139,11 @@ final class FeedSelectorRulesTests: XCTestCase {
         XCTAssertEqual(AnalyticsContract.validate(event.name, params: event.params), .allowed)
     }
 
-    func testTheOfferRouteDependsOnNoMiff() {
-        let route = MiffRoute.placePaywall(.extraMiff)
+    func testEachDisplayOfTheOfferIsANewPresentationCarryingOnlyItsReason() {
+        let first = PaywallPresentation(reason: .extraMiff)
+        let second = PaywallPresentation(reason: .extraMiff)
 
-        XCTAssertFalse(route.belongs(to: "miffA"), "l'offre ne part pas avec une perte d'accès")
-        XCTAssertFalse(route.isSettingsScreen)
+        XCTAssertNotEqual(first.id, second.id, "fermer puis rouvrir : nouvel affichage, la croix de 3 s repart")
+        XCTAssertEqual(first.reason, second.reason)
     }
 }

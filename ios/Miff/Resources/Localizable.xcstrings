@@ -5187,6 +5187,40 @@
         }
       }
     },
+    "ios_paywall_info_cancel_trial": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For a trial, at least 24 hours before it ends."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour un essai, au moins 24 heures avant sa fin."
+          }
+        }
+      }
+    },
+    "ios_paywall_store_name": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Store"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App Store"
+          }
+        }
+      }
+    },
     "ios_place_message_id_taken": {
       "extractionState": "manual",
       "localizations": {

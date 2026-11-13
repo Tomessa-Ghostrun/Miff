@@ -22,6 +22,7 @@ final class AnalyticsContractTests: XCTestCase {
             ("onboarding_completed", ["via": "joined"]),
             ("paywall_shown", ["trigger": "extra_miff"]),
             ("paywall_dismissed", ["trigger": "extra_trusted_place"]),
+            ("paywall_shown", ["trigger": "danger_zone"]),
             ("analytics_diagnostic_test", [:])
         ]
         for (name, params) in accepted {
@@ -113,6 +114,7 @@ final class AnalyticsContractTests: XCTestCase {
             .onboardingCompleted(via: .created),
             .paywallShown(trigger: .extraMiff),
             .paywallDismissed(trigger: .extraTrustedPlace),
+            .paywallShown(trigger: .dangerZone),
             .diagnosticTest
         ]
         for event in events {

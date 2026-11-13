@@ -52,6 +52,11 @@ struct ScreenPreview: View {
         case _ where name.hasPrefix("photo-"):
             // La photo d'un proche en plein écran (Feed, FEED-8) : voir `PhotoScreenPreview`.
             PhotoScreenPreview(name: name)
+
+        case _ where name.hasPrefix("paywall-"):
+            // L'offre Miff+ dans ses états (variante sans achat, essai, deux formules, chargement, erreurs) : voir `PaywallScreenPreview`.
+            PaywallScreenPreview(name: name)
+
         case _ where name.hasPrefix("place-"):
             // Les lieux de confiance (formulaire, liste, détail, offre) : voir `PlaceScreenPreview`.
             PlaceScreenPreview(name: name)

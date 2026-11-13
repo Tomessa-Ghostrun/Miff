@@ -1,7 +1,8 @@
 import Foundation
 
-/// Les écrans du flux Miff dans une navigation. Seuls des identifiants voyagent dans une destination (la Miff, le lieu, un mot fixe
-/// pour la raison de l'offre) : jamais le code, jamais un nom, une adresse ni une coordonnée.
+/// Les écrans du flux Miff dans une navigation. Seuls des identifiants voyagent dans une destination (la Miff, le lieu, la demande) :
+/// jamais le code, jamais un nom, une adresse ni une coordonnée. L'offre Miff+ n'est PAS une destination : elle s'ouvre en plein écran
+/// (`PaywallPresentation`), sans geste retour pendant les 3 secondes de sa croix.
 enum MiffRoute: Hashable {
     case create
     case join
@@ -9,12 +10,8 @@ enum MiffRoute: Hashable {
     /// Le formulaire d'un lieu : nouveau (`placeId` nil), ou le lieu à modifier, avec la Miff d'où il a été ouvert.
     case placeForm(placeId: String?, miffId: String?)
     case placeDetail(miffId: String, placeId: String)
-    case placePaywall(PaywallReason)
     /// Le formulaire d'une DEMANDE d'ajout d'un lieu (LIEU-REQ-B) : un membre qui n'est pas le créateur propose un lieu à cette Miff.
     case placeRequestForm(miffId: String)
-    /// L'offre ouverte par « Accepter » sur une demande reçue (formule gratuite pleine, ou zone de danger) : la même offre, avec la phrase
-    /// « La demande reste en attente, tu peux aussi la refuser. »
-    case placeRequestPaywall(PaywallReason)
     /// Le détail d'une demande en attente (la sienne, ou celle qu'un membre a faite au créateur).
     case placeRequestDetail(miffId: String, requestId: String)
     /// Un écran des Réglages (ONB-7) : poussé dans la MÊME pile que les écrans de la Miff, jamais dans une pile imbriquée.
@@ -73,7 +70,7 @@ enum MiffRoute: Hashable {
             return id == miffId
         case .placeRequestDetail(let id, _):
             return id == miffId
-        case .create, .join, .placePaywall, .placeRequestPaywall, .settings:
+        case .create, .join, .settings:
             return false
         }
     }

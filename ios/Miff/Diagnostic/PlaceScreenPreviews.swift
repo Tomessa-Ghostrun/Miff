@@ -17,11 +17,11 @@ struct PlaceScreenPreview: View {
         case "place-detail", "place-detail-danger", "place-detail-member":
             PlaceDetailContent(state: detailState, onBack: {}, onEdit: {}, onRetry: {})
         case "place-paywall-limit":
-            PlacePaywallContent(reason: .limit, onClose: {})
+            PaywallScreenPreview(name: "paywall-soon")
         case "place-paywall-danger":
-            PlacePaywallContent(reason: .danger, onClose: {})
+            PaywallScreenPreview(name: "paywall-soon-danger")
         case "place-paywall-miff":
-            PlacePaywallContent(reason: .extraMiff, onClose: {})
+            PaywallScreenPreview(name: "paywall-soon-miff")
         case "place-list-free", "place-list-premium", "place-list-member", "place-list-saved":
             MiffScreenContent(state: miffState, actions: miffActions, places: listContext)
         default:

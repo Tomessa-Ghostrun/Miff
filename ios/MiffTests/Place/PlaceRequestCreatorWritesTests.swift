@@ -101,18 +101,13 @@ final class PlaceRequestCreatorWritesTests: XCTestCase {
 
     // MARK: - Les routes
 
-    func testTheRequestOfferBelongsToNoMiffAndIsNotThePlainOffer() {
-        let offer = MiffRoute.placeRequestPaywall(.limit)
+    /// L'offre ouverte par « Accepter » n'est plus une destination de la pile : elle s'ouvre en plein écran (décision du PM, offre v2).
+    func testTheOfferIsNoMoreARouteOfTheStack() throws {
+        let routes = try String(contentsOf: URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Miff/Views/Miff/MiffRoute.swift"), encoding: .utf8)
 
-        XCTAssertFalse(offer.belongs(to: testMiffId))
-        XCTAssertFalse(offer.isPlaceFormScreen)
-        XCTAssertNotEqual(offer, MiffRoute.placePaywall(.limit))
-    }
-
-    func testTheOfferCarriesTheRequestSentenceOnlyForLimitAndDanger() {
-        XCTAssertEqual(PaywallReason.limit.bodyKey, "place_paywall_limit_body")
-        XCTAssertNotEqual(L10n.string("place_request_paywall_limit"), L10n.string("place_paywall_limit_body"))
-        XCTAssertNotEqual(L10n.string("place_request_paywall_danger"), L10n.string("place_paywall_danger_body"))
+        XCTAssertFalse(routes.contains("Paywall"))
     }
 
     // MARK: - Ce que la liste reçoit
