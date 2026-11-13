@@ -302,12 +302,73 @@ class AboutScreenTest {
     }
 
     @Test
-    fun theSectionTitles_areHeadings() {
+    fun theSectionTitle_isAHeading() {
         show(FakeActions())
-        listOf(R.string.about_help_title, R.string.settings_privacy_texts_title).forEach { id ->
-            val node = composeRule.onNodeWithText(text(id)).performScrollTo().fetchSemanticsNode()
-            assertTrue("\"${text(id)}\" must be a heading", node.config.contains(SemanticsProperties.Heading))
+        val node = composeRule.onNodeWithText(text(R.string.about_info_title)).performScrollTo().fetchSemanticsNode()
+        assertTrue("the Informations title must be a heading", node.config.contains(SemanticsProperties.Heading))
+    }
+
+    // --- AP20: order and emphasis (PM, 2026-11-13) --------------------------------------------------------------------------------------
+
+    private fun top(id: Int): Float =
+        composeRule
+            .onNodeWithText(text(id))
+            .fetchSemanticsNode()
+            .boundsInRoot.top
+
+    private fun height(id: Int): Float =
+        composeRule
+            .onNodeWithText(text(id))
+            .fetchSemanticsNode()
+            .boundsInRoot.height
+
+    @Test
+    fun contactAndFeedback_comeFirst_thenTheInformationLines() {
+        show(FakeActions())
+        val order =
+            listOf(
+                R.string.settings_privacy_contact,
+                R.string.about_feedback_title,
+                R.string.about_info_title,
+                R.string.settings_detection_help_title,
+                R.string.notif_settings_help_link,
+                R.string.auth_consent_terms_link,
+                R.string.auth_consent_privacy_link,
+                R.string.about_licenses_title,
+            ).map { top(it) }
+        assertEquals("the blocks must come in this order", order.sorted(), order)
+        // The version line is part of the lower section too.
+        assertTrue(
+            top(R.string.about_feedback_title) <
+                composeRule
+                    .onNodeWithText("Version 0.39.0 (build 39000)")
+                    .fetchSemanticsNode()
+                    .boundsInRoot.top,
+        )
+    }
+
+    @Test
+    fun theTwoActions_areLargerCards_theOtherLinesAreDiscreet() {
+        show(FakeActions())
+        val density = context().resources.displayMetrics.density
+        listOf(R.string.settings_privacy_contact, R.string.about_feedback_title).forEach {
+            assertTrue("the card of ${text(it)} must be at least 72 dp high", height(it) >= 72 * density)
+            // A card also has its calm sentence and its icon: it is one element, with a click action.
+            composeRule.onNodeWithText(text(it)).assertHasClickAction()
         }
+        listOf(R.string.settings_detection_help_title, R.string.auth_consent_privacy_link).forEach {
+            assertTrue(
+                "the line ${text(it)} must be smaller than a card",
+                height(it) < height(R.string.settings_privacy_contact),
+            )
+        }
+        composeRule.onNodeWithText(text(R.string.about_contact_subtitle)).assertExists()
+    }
+
+    @Test
+    fun withoutTheFormAddress_contactIsStillFirst() {
+        show(FakeActions(feedbackFormUrl = null))
+        assertTrue(top(R.string.settings_privacy_contact) < top(R.string.about_info_title))
     }
 
     // --- AP17: the largest font, right-to-left ---------------------------------------------------------------------------------------

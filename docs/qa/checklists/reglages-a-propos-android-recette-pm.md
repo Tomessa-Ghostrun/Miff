@@ -1,6 +1,7 @@
 # Recette Android de « À propos et aide » (ABOUT-1A) : parcours pour le PM
 
 **Pour qui** : vous, sur votre OPPO Find X5 Lite (Android 13). Un seul compte suffit ; pour la partie « sans Miff », un compte qui n'a ni créé ni rejoint de Miff (ou le même compte en mode « choix » juste après l'inscription).
+**Mise en page (retour du PM, 2026-11-13)** : tout en haut, deux **cartes bleu pâle** plus grandes (icône, titre, courte phrase) : **Nous contacter** puis **Un retour sur l’app ?** ; dessous, sous le titre **Informations**, des lignes discrètes : version, aides, Conditions, Politique, Licences.
 **Ce que fait la fonctionnalité** : une **dernière ligne « À propos et aide »** dans les Réglages (et dans les Réglages sans Miff) qui ouvre **un seul écran court** : la **version** (toucher = copier), de l'**aide** (les deux écrans d'aide existants, **Nous contacter**, **« Un retour sur l'app ? »**), **Nos textes** (Conditions, Politique) et **Licences et attributions** (texte complet, sans connexion). **Nous contacter** a **quitté** Confidentialité.
 **Durée** : environ 20 minutes.
 **Spec** : `docs/tickets/reglages-a-propos.md` (critères AP1 à AP19, décisions du PM du 2026-11-13). Cette recette ne couvre pas l'iPhone (ABOUT-1I).
@@ -21,13 +22,17 @@
 
 ## Partie 2 : la version (3 min)
 
-5. [ ] L'écran commence par **Miff**, puis **« Version X (build Y) »** : **X et Y correspondent à l'APK installé** (X = le numéro du nom de fichier, Y = numéro de build, AP3). Sous la ligne : « Touche pour copier ».
+> La version est maintenant dans la section **Informations** (sous les deux cartes), en ligne discrète.
+
+5. [ ] Dans « Informations », la ligne **« Version X (build Y) »** : **X et Y correspondent à l'APK installé** (X = le numéro du nom de fichier, Y = numéro de build, AP3). Sous la ligne : « Touche pour copier ».
 6. [ ] Touchez la ligne : **« Copié. »** apparaît sous elle. Collez dans une note (appui long, Coller) : le texte est **exactement `Miff X (Y)`** et **rien d'autre** (ni modèle de téléphone, ni identifiant, ni compte).
 7. [ ] La version n'apparaît **nulle part ailleurs** dans les Réglages.
 
-## Partie 3 : aide, contact, retour (6 min)
+## Partie 3 : contact, retour sur l’app, aides (6 min)
 
-8. [ ] Bloc **« Besoin d'un coup de main ? »**. **« Si les arrivées et départs tardent »** ouvre l'écran d'aide existant ; le retour ramène à « À propos et aide » (AP5). Le lien d'origine reste dans Confidentialité.
+0. [ ] **Ordre et style** (AP20) : en haut de l’écran, **deux cartes pleines** bleu pâle, avec icône, titre et phrase : **« Nous contacter »** (« Une question, un souci, une idée : écris-nous. ») puis **« Un retour sur l’app ? »** (« Dis-nous ce qui te plaît… » + la phrase sur le site extérieur). **Dessous**, un titre **« Informations »** puis de simples lignes (version, aides, Conditions, Politique, Licences), visiblement plus discrètes que les cartes. Rien de coupé, cartes faciles à toucher.
+
+8. [ ] Dans **Informations**, **« Si les arrivées et départs tardent »** ouvre l'écran d'aide existant ; le retour ramène à « À propos et aide » (AP5). Le lien d'origine reste dans Confidentialité.
 9. [ ] **« Si les rappels n'arrivent pas »** ouvre **le même écran d'aide** que le lien du même nom dans Réglages > Notifications (écart signalé dans la PR : les deux lignes mènent à la même aide aujourd'hui). Le retour ramène à « À propos et aide ».
 10. [ ] **« Nous contacter »** ouvre votre **application e-mail** avec l'adresse de contact provisoire **et rien de pré-rempli** (ni objet, ni texte) (AP6).
 11. [ ] **Sans application e-mail** (désactivez-la ou utilisez un téléphone sans) : touchez « Nous contacter » : une phrase calme **affiche l'adresse** et un bouton **« Copier l'adresse »** ; le toucher écrit « Adresse copiée. ». La ligne ne reste jamais sans réaction.

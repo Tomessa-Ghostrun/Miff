@@ -552,6 +552,8 @@
     <string name="about_licenses_maps_privacy">Quand tu tapes une adresse pour créer un lieu, le texte part vers le service d\'adresses, sans ton nom ni ta position.</string>
     <string name="about_licenses_open_hint_a11y">afficher le texte de la licence</string>
     <string name="about_licenses_close_hint_a11y">masquer le texte de la licence</string>
+    <string name="about_info_title">Informations</string>
+    <string name="about_contact_subtitle">Une question, un souci, une idée : écris-nous.</string>
     <string name="settings_privacy_open_browser_a11y">ouvrir la page dans ton navigateur</string>
     <string name="settings_privacy_open_mail_a11y">écrire un e-mail</string>
     <!-- Miff : retirer un proche, quitter, supprimer la Miff, renouveler le code (ticket MIFF-2). Ton calme et bienveillant. -->

@@ -23,6 +23,7 @@ Le PM a validé **toutes les valeurs par défaut de §10** et complété la ques
 | **Q6** | Les aides existantes sont **liées depuis cet écran**, en plus de leur place actuelle (mêmes écrans, aucun contenu copié). |
 | **Q7** | **Aucune** info technique de plus (modèle de téléphone, identifiants) dans la version copiée. |
 | **Q8** | **Pas de maquette** : gabarit des écrans de Réglages, écarts listés dans la PR. |
+| **Ordre et mise en avant (retour du PM sur l'APK, 2026-11-13)** | L'écran est **réorganisé** : **tout en HAUT et mis en avant**, « **Nous contacter** » puis « **Un retour sur l'app ?** » (deux **cartes** pleines, plus grandes, avec icône, titre clair et une courte phrase calme, dans le design system) ; **tout le reste, PLUS BAS et discret** (lignes de liste standard), sous un titre « **Informations** » : version (copie au toucher), aides existantes (« Si les détections tardent », « Si les rappels n'arrivent pas »), Conditions, Politique, Licences et attributions. Les comportements ne changent pas. Cette décision **remplace l'ordre du wireframe §3.2 et des blocs « Besoin d'un coup de main ? » / « Nos textes »** (plus de ces deux titres : les lignes sont regroupées sous « Informations »). Critère **AP20**. |
 
 **Écarts constatés à l'implémentation Android (2026-11-13)** :
 - **Libellé de la ligne du formulaire** : « Un retour sur l'app ? » (décision du PM) remplace « Donner mon avis » partout dans ce document. Son sous-titre reste « Dis-nous ce qui te plaît et ce qui pourrait être mieux. » (aucune promesse de réponse, ni store, ni note, ni étoiles : AP10).
@@ -190,6 +191,7 @@ Le PM a validé **toutes les valeurs par défaut de §10** et complété la ques
 - [ ] **AP17** Accessibilité : chaque ligne est un seul élément nommé (« {titre}, {sous-titre} ») ; cibles 48 dp / 44 pt ; **plus grand texte du système** : tout défile, rien n'est coupé ; droite-à-gauche correct ; la copie de la version est annoncée.
 - [ ] **AP18** **Aucune** permission nouvelle, **aucun** événement Analytics, **aucune** lecture ni écriture Firestore, **aucun** appel réseau à l'ouverture de l'écran ; aucune donnée personnelle dans un journal.
 - [ ] **AP19** Les liens externes (page légale, formulaire) n'acceptent que `https://` ; l'adresse du formulaire n'est lue que depuis la configuration de build.
+- [ ] **AP20** (décision du PM du 2026-11-13) **Ordre et mise en avant** : dans « À propos et aide », « Nous contacter » puis « Un retour sur l'app ? » sont **en premier** (haut de l'écran), présentés en **cartes pleines** (icône, titre, courte phrase calme, au moins 72 dp, un seul élément nommé pour le lecteur d'écran) ; **tout le reste** (version, aides, Conditions, Politique, Licences) vient **dessous**, sous le titre « Informations », en **lignes de liste discrètes** (titre non gras). Sans adresse de formulaire : seule la carte « Nous contacter » reste en haut. Tous les comportements de AP3 à AP19 sont conservés.
 
 ---
 

@@ -61,6 +61,24 @@ class AboutRuleTest {
     }
 
     @Test
+    fun theTwoActionsComeFirstInTheSource_thenTheInformationSection() {
+        // AP20 (decision of the PM, 2026-11-13): contact and feedback at the TOP as cards, everything else below under "Informations".
+        val about = code("ui/settings/AboutScreen.kt")
+        val contact = about.indexOf("R.string.settings_privacy_contact")
+        val feedback = about.indexOf("R.string.about_feedback_title")
+        val info = about.indexOf("AboutSection(R.string.about_info_title)")
+        val version = about.indexOf("VersionRow(version")
+        val help = about.indexOf("R.string.settings_detection_help_title")
+        val licences = about.indexOf("R.string.about_licenses_title")
+        assertTrue(contact in 0 until feedback)
+        assertTrue(feedback in 0 until info)
+        assertTrue(info in 0 until version)
+        assertTrue(version < help && help < licences)
+        // The two prominent lines are cards, the others are plain rows.
+        assertEquals(2, Regex("ActionCard\\(\\s*icon").findAll(about).count())
+    }
+
+    @Test
     fun contactIsNoLongerInPrivacy_itMovedToAboutAndHelp() {
         val privacy = code("ui/settings/PrivacyScreen.kt")
         assertFalse(privacy.contains("settings_privacy_contact"))
