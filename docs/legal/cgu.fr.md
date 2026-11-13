@@ -1,6 +1,6 @@
 # Conditions Générales d'Utilisation de Miff
 
-**Version 0.1 — dernière mise à jour : 4 novembre 2026**
+**Version 1.0 — dernière mise à jour : 13 novembre 2026**
 
 Bienvenue sur Miff. Ces conditions expliquent comment utiliser l'app, ce que tu peux en attendre, et ce que nous attendons de toi. Nous avons essayé de les écrire simplement. Pour savoir comment tes données sont traitées, lis aussi la [Politique de confidentialité](politique-confidentialite.fr.md).
 
