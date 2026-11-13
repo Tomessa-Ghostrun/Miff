@@ -207,8 +207,6 @@ final class FeedPureLogicTests: XCTestCase {
             largest = max(largest, BubbleMotion.scaleX(phase), BubbleMotion.scaleY(phase))
             XCTAssertLessThanOrEqual(abs(BubbleMotion.drift(phase)), BubbleMotion.driftPoints + 1e-9)
             XCTAssertLessThanOrEqual(abs(BubbleMotion.tilt(phase)), BubbleMotion.tiltDegrees + 1e-9)
-            XCTAssertLessThanOrEqual(abs(BubbleMotion.starDrift(phase)), BubbleMotion.starDriftPoints + 1e-9)
-            XCTAssertLessThanOrEqual(abs(BubbleMotion.starScale(phase) - 1), BubbleMotion.starScaleAmplitude + 1e-9)
         }
 
         XCTAssertLessThanOrEqual(largest, 1 + 1e-9, "la forme ne dépasse jamais sa boîte : aucun bord coupé")
@@ -221,10 +219,7 @@ final class FeedPureLogicTests: XCTestCase {
         XCTAssertEqual(BubbleMotion.squashY, 0.05)
         XCTAssertEqual(BubbleMotion.tiltDegrees, 0.8)
         XCTAssertEqual(BubbleMotion.driftPoints, 3.5)
-        XCTAssertEqual(BubbleMotion.starDriftPoints, 0.5)
         XCTAssertTrue((5.0...8.0).contains(BubbleMotion.blobPeriodSeconds), "un cycle de 5 à 8 s")
-        XCTAssertTrue((5.0...8.0).contains(BubbleMotion.starPeriodSeconds))
-        XCTAssertNotEqual(BubbleMotion.blobPeriodSeconds, BubbleMotion.starPeriodSeconds, "jamais en cadence")
     }
 
     func testTheTwoAxesAreOutOfPhaseSoTheShapeDeformsInsteadOfBreathingUniformly() {

@@ -69,13 +69,13 @@ class PlacePrivacyTest {
         events.forEach { line ->
             assertTrue(
                 "unexpected event: $line",
-                // The offer is shown / closed with a FIXED trigger of the contract, chosen by paywallTrigger (3rd place, 2nd Miff): nothing else.
+                // The offer is shown / closed with a FIXED trigger of the contract, chosen by paywallTrigger (3rd place, 2nd Miff, danger zone): nothing else.
                 "PaywallShown(trigger)" in line ||
                     "PaywallDismissed(trigger)" in line ||
                     Regex(
-                        """PaywallReason\.\w+ -> AnalyticsEvent\.PaywallTrigger\.(EXTRA_TRUSTED_PLACE|EXTRA_MIFF)""",
+                        """PaywallReason\.\w+ -> AnalyticsEvent\.PaywallTrigger\.(EXTRA_TRUSTED_PLACE|EXTRA_MIFF|DANGER_ZONE)""",
                     ).containsMatchIn(line) ||
-                    line.contains("fun paywallTrigger(reason: PaywallReason): AnalyticsEvent.PaywallTrigger?") ||
+                    line.contains("fun paywallTrigger(reason: PaywallReason): AnalyticsEvent.PaywallTrigger") ||
                     line.startsWith("import "),
             )
         }

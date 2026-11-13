@@ -34,6 +34,11 @@ enum DiagnosticLaunchOptions {
         UserDefaults.standard.string(forKey: "MiffPreview")
     }
 
+    /// Simule des zones sûres NULLES pour le plein écran de la photo (capture de la CI : prouve que les planchers de sécurité tiennent).
+    static var forceZeroSafeArea: Bool {
+        UserDefaults.standard.bool(forKey: "MiffForceZeroSafeArea")
+    }
+
     /// Lance le test 1 au démarrage (capture « Règles actives : OK »).
     static var autoRunTest1: Bool {
         UserDefaults.standard.bool(forKey: "MiffAutoTest1")
@@ -48,6 +53,7 @@ enum DiagnosticLaunchOptions {
     static let showHome = false
     static let showApp = false
     static let skipSplash = false
+    static let forceZeroSafeArea = false
     static let preview: String? = nil
     static let autoRunTest1 = false
     static let scrollTarget: DiagnosticSection? = nil

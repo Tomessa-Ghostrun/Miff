@@ -15,16 +15,43 @@ enum PhotoFullScreenLayout {
     /// Les espaces de la légende, SERRÉS pour qu'elle soit collée en bas, juste au-dessus de la zone sûre du bas (retour du PM sur le build 27 ;
     /// avant : 8 pt de marge basse et 8 pt entre la légende et le bouton). Le dégradé, lui, reste.
     static let captionTopPadding: CGFloat = 8
-    static let captionBottomPadding: CGFloat = 4
     static let captionSpacing: CGFloat = 4
+
+    /// PLANCHERS de sécurité des zones sûres (portrait) : ils tiennent même quand le plein écran annonce des marges nulles (cas du `fullScreenCover` sur
+    /// un vrai appareil, TestFlight 32). Haut : au moins l'encoche (47 pt) + 12 pt de marge pour la croix et l'icône ; bas : au moins la barre
+    /// d'accueil (34 pt) + 16 pt de marge sous « Voir où c'était ».
+    static let topInsetFloor: CGFloat = 47
+    static let topExtraMargin: CGFloat = 12
+    static let bottomInsetFloor: CGFloat = 34
+    static let bottomExtraMargin: CGFloat = 16
     /// L'opacité du voile noir derrière le texte.
-    static let scrimAlpha: Double = 0.78
+    static let scrimAlpha: Double = 0.70
     /// Le contrat de lisibilité (WCAG AA, texte courant).
     static let minimumContrast: Double = 4.5
+
+    /// La hauteur du contenu de la légende en texte normal (titre, position, bouton de 44 pt, espaces), SANS la zone sûre du bas : volontairement
+    /// large. Elle grandit avec la taille du texte (`@ScaledMetric` côté écran) ; au-delà de 45 % de la hauteur, la légende défile.
+    static let footerEstimate: CGFloat = 170
+
+    /// La légende défile-t-elle ? Oui quand son contenu estimé (zone sûre du bas comprise) dépasse sa hauteur maximale (grand texte, paysage).
+    static func footerScrolls(estimate: CGFloat, screenHeight: CGFloat) -> Bool {
+        estimate > footerMaxHeight(screenHeight: screenHeight)
+    }
 
     /// La hauteur maximale de la zone de la légende : au plus 45 % de la hauteur de l'écran. Plus haut, elle défile.
     static func footerMaxHeight(screenHeight: CGFloat) -> CGFloat {
         max(screenHeight, 0) * footerMaxShare
+    }
+
+    /// La taille de l'écran ENTIER : la zone visible (celle qu'un lecteur de géométrie qui respecte les zones sûres annonce) plus les zones sûres
+    /// (haut, bas, côtés). Le contenu qui ignore les zones sûres a cette taille.
+    static func screenSize(
+        visible: CGSize, top: CGFloat, bottom: CGFloat, leading: CGFloat, trailing: CGFloat
+    ) -> CGSize {
+        CGSize(
+            width: visible.width + leading + trailing,
+            height: visible.height + top + bottom
+        )
     }
 
     /// La taille de la photo entière (`scaledToFit`) dans la zone qui lui reste : elle REMPLIT la largeur ou la hauteur de la zone, sans jamais la
@@ -42,5 +69,23 @@ enum PhotoFullScreenLayout {
         let gray = max(0, min(1, 1 - alpha))
         let linear = gray <= 0.04045 ? gray / 12.92 : pow((gray + 0.055) / 1.055, 2.4)
         return 1.05 / (linear + 0.05)
+    }
+}
+
+extension PhotoFullScreenLayout {
+    /// Le décalage de la croix et de l'icône depuis le bord HAUT de l'écran : le plus grand de la zone sûre lue et du plancher (47 pt), plus 12 pt.
+    /// Le plancher ne vaut qu'en portrait (en paysage il n'y a pas d'encoche en haut : le plancher ferait perdre de la place pour rien).
+    static func topMargin(safeInset: CGFloat, isPortrait: Bool) -> CGFloat {
+        (isPortrait ? max(safeInset, topInsetFloor) : max(safeInset, 0)) + topExtraMargin
+    }
+
+    /// Le décalage de la légende et du bouton depuis le bord BAS de l'écran : le plus grand de la zone sûre lue et du plancher (34 pt), plus 16 pt.
+    static func bottomMargin(safeInset: CGFloat, isPortrait: Bool) -> CGFloat {
+        (isPortrait ? max(safeInset, bottomInsetFloor) : max(safeInset, 0)) + bottomExtraMargin
+    }
+
+    /// Vrai quand l'écran est plus haut que large (les planchers ne valent qu'alors).
+    static func isPortrait(_ size: CGSize) -> Bool {
+        size.height >= size.width
     }
 }

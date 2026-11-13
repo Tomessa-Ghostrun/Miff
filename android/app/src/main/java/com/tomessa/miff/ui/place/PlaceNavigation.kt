@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
@@ -23,9 +24,16 @@ import androidx.navigation.toRoute
 import com.tomessa.miff.AppContainer
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.analytics.AnalyticsEvent
+import com.tomessa.miff.domain.analytics.AnalyticsTracker
+import com.tomessa.miff.domain.paywall.MonotonicClock
+import com.tomessa.miff.domain.paywall.PaywallUiState
 import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.ui.main.TabsRoute
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
+import com.tomessa.miff.ui.paywall.PaywallActions
+import com.tomessa.miff.ui.paywall.PaywallScreen
+import com.tomessa.miff.ui.paywall.PaywallViewModel
+import com.tomessa.miff.ui.paywall.currentPaywallState
 import com.tomessa.miff.ui.profile.ProfileRequestsViewModel
 import com.tomessa.miff.ui.profile.profileRequestsFactory
 import com.tomessa.miff.ui.profile.profileRequestsKey
@@ -63,8 +71,6 @@ data class PlaceDetailRoute(
 @Serializable
 data class PlacePaywallRoute(
     val reason: String,
-    /** The offer opened by "Accepter" on a request received (ticket LIEU-REQ-C): the context card says the request stays pending. A flag, nothing else travels. */
-    val request: Boolean = false,
 ) {
     /** An unknown word (never produced by the app) falls back to the danger zone, as before. */
     fun paywallReason(): PaywallReason =
@@ -75,26 +81,23 @@ data class PlacePaywallRoute(
         }
 
     companion object {
-        fun of(
-            reason: PaywallReason,
-            request: Boolean = false,
-        ) = PlacePaywallRoute(
-            when (reason) {
-                PaywallReason.LIMIT -> "limit"
-                PaywallReason.MIFF -> "miff"
-                PaywallReason.DANGER -> "danger"
-            },
-            request,
-        )
+        fun of(reason: PaywallReason) =
+            PlacePaywallRoute(
+                when (reason) {
+                    PaywallReason.LIMIT -> "limit"
+                    PaywallReason.MIFF -> "miff"
+                    PaywallReason.DANGER -> "danger"
+                },
+            )
     }
 }
 
-/** The trigger of the analytics for an offer: a fixed value of the contract; none exists yet for the danger zone (open point of the places PR). */
-internal fun paywallTrigger(reason: PaywallReason): AnalyticsEvent.PaywallTrigger? =
+/** The trigger of the analytics for an offer: a fixed value of the contract (never a place, a name or a position). */
+internal fun paywallTrigger(reason: PaywallReason): AnalyticsEvent.PaywallTrigger =
     when (reason) {
         PaywallReason.LIMIT -> AnalyticsEvent.PaywallTrigger.EXTRA_TRUSTED_PLACE
         PaywallReason.MIFF -> AnalyticsEvent.PaywallTrigger.EXTRA_MIFF
-        PaywallReason.DANGER -> null
+        PaywallReason.DANGER -> AnalyticsEvent.PaywallTrigger.DANGER_ZONE
     }
 
 /**
@@ -102,7 +105,7 @@ internal fun paywallTrigger(reason: PaywallReason): AnalyticsEvent.PaywallTrigge
  * "danger"); the screens that call it never decide from their own copy of the plan. The request is left as it is.
  */
 fun NavController.openRequestOffer(reason: PaywallReason) =
-    navigate(PlacePaywallRoute.of(reason, request = true)) { launchSingleTop = true }
+    navigate(PlacePaywallRoute.of(reason)) { launchSingleTop = true }
 
 /** launchSingleTop: two quick taps open one screen, not two. */
 fun NavController.openPlaceRoute(route: Any) = navigate(route) { launchSingleTop = true }
@@ -261,26 +264,62 @@ fun NavGraphBuilder.placeRoutes(
             myUid = session.currentUid,
             viewModel = viewModel,
             onClose = { navController.popBackStackIfSafe() },
-            // "Accepter" at the limit of the free plan: the offer, with the sentence that says the request stays pending; the request is left as it is.
+            // "Accepter" at the limit of the free plan: the same offer as every other entry; the request is left as it is.
             onPaywall = navController::openRequestOffer,
         )
     }
+    paywallRoute(container.analyticsTracker, container.paywallClock, navController)
+}
+
+/**
+ * THE offer (paywall): the single destination of every entry (a 3rd place, a danger zone, a 2nd Miff from the selector of the Feed or from the carousel of
+ * the Profile: they all open a [PlacePaywallRoute]), so that the rule of the close cross (3 seconds, at every display) lives in ONE place. A test checks it for
+ * each entry (PaywallEntryPointsTest).
+ */
+fun NavGraphBuilder.paywallRoute(
+    tracker: AnalyticsTracker,
+    clock: MonotonicClock,
+    navController: NavController,
+) {
     composable<PlacePaywallRoute> { entry ->
         val paywall = entry.toRoute<PlacePaywallRoute>()
-        val reason = paywall.paywallReason()
-        val tracker = container.analyticsTracker
-        val trigger = paywallTrigger(reason)
-        // The only analytics of the offer: it was shown / closed, with a fixed trigger and nothing else (criterion LIM5).
-        LaunchedEffect(reason) {
-            if (trigger != null) tracker.track(AnalyticsEvent.PaywallShown(trigger))
-        }
-        PlacePaywallScreen(
-            reason = reason,
-            request = paywall.request,
-            onClose = {
-                if (trigger != null) tracker.track(AnalyticsEvent.PaywallDismissed(trigger))
-                navController.popBackStackIfSafe()
-            },
+        PaywallDestination(
+            reason = paywall.paywallReason(),
+            tracker = tracker,
+            clock = clock,
+            state = currentPaywallState(),
+            onClose = { navController.popBackStackIfSafe() },
         )
     }
+}
+
+/** One DISPLAY of the offer: its own [PaywallViewModel] (scoped to the navigation entry), so that nothing is shared between two displays. */
+@Composable
+internal fun PaywallDestination(
+    reason: PaywallReason,
+    tracker: AnalyticsTracker,
+    clock: MonotonicClock,
+    state: PaywallUiState,
+    onClose: () -> Unit,
+) {
+    val model: PaywallViewModel = viewModel(factory = viewModelFactory { initializer { PaywallViewModel(clock) } })
+    val trigger = paywallTrigger(reason)
+    // Two quick taps on the cross close ONE display: one `paywall_dismissed`.
+    var closing by remember { mutableStateOf(false) }
+    // The only analytics of the offer: it was shown (when it is really on view) and closed, with a fixed trigger and nothing else (criteria LIM5, CR14).
+    PaywallScreen(
+        model = model,
+        state = state,
+        actions =
+            PaywallActions(
+                onClose = {
+                    if (!closing) {
+                        closing = true
+                        tracker.track(AnalyticsEvent.PaywallDismissed(trigger))
+                        onClose()
+                    }
+                },
+            ),
+        onShown = { tracker.track(AnalyticsEvent.PaywallShown(trigger)) },
+    )
 }

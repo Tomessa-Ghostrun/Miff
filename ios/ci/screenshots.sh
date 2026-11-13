@@ -127,6 +127,12 @@ shot 95-fr-lieu-offre-danger 3 "${fr_args[@]}" -MiffPreview place-paywall-danger
 shot 95b-fr-miff-offre-deuxieme-miff 3 "${fr_args[@]}" -MiffPreview place-paywall-miff
 shot 96-en-lieu-rempli 6 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview place-form-filled
 
+# La photo d'un proche en plein écran (FEED-8), dans un vrai fullScreenCover : un 3:4 (comme la capture du PM) puis le format du viseur (9:19,5).
+shot 150-fr-photo-plein-ecran-3-4 4 "${fr_args[@]}" -MiffPreview photo-3-4
+shot 151-fr-photo-plein-ecran-haute 4 "${fr_args[@]}" -MiffPreview photo-tall
+# Zones sures annoncees NULLES (cas du fullScreenCover sur un vrai appareil) : les planchers (47 pt + 12 pt en haut, 34 pt + 16 pt en bas) doivent tenir.
+shot 153-fr-photo-plein-ecran-zones-sures-nulles 4 "${fr_args[@]}" -MiffPreview photo-tall -MiffForceZeroSafeArea YES
+
 # Le vrai parcours de l'app (session, routage) : première ouverture = carrousel, après le splash animé.
 shot 37-fr-vrai-parcours 7 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffShowApp YES
 # L'animation de lancement réelle, jouée au-dessus du vrai parcours (aux instants 1 s et 2,2 s environ).
@@ -134,6 +140,12 @@ splash_args=()
 shot 38-fr-vrai-splash-1s 1 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffShowApp YES
 shot 39-fr-vrai-splash-2s 2 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffShowApp YES
 splash_args=(-MiffSkipSplash YES)
+
+# Le Feed (VRAIE mise en page : en-tête, bulle, cartes ; données de démonstration ; ligne rose = où la liste croit que l'en-tête s'arrête) :
+# la bulle doit commencer SOUS l'en-tête, jamais coupée.
+shot 90-fr-feed-bulle-verte 3 "${fr_args[@]}" -MiffPreview feed-green
+shot 91-fr-feed-bulle-orange 3 "${fr_args[@]}" -MiffPreview feed-orange
+shot 92-fr-feed-bulle-rouge 3 "${fr_args[@]}" -MiffPreview feed-red
 
 # Mode sombre du système : l'app doit rester claire.
 xcrun simctl ui "$udid" appearance dark > /dev/null 2>&1 || true
@@ -151,6 +163,10 @@ shot 42-fr-carrousel-texte-tres-grand 3 -AppleLanguages "(fr)" -AppleLocale fr_F
 shot 66-fr-miff-confirmation-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview miff-join-confirm
 shot 67-fr-miff-ecran-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview miff-screen-owner
 shot 79-fr-miff-supprimer-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview miff-screen-delete
+shot 93-fr-feed-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-orange
+
+shot 152-fr-photo-plein-ecran-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview photo-3-4
+
 xcrun simctl ui "$udid" content_size large > /dev/null 2>&1 || true
 
 xcrun simctl terminate "$udid" "$bundle_id" > /dev/null 2>&1 || true

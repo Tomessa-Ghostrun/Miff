@@ -169,7 +169,11 @@ struct MiffHomeHost: View {
         _placeNotices = ObservedObject(wrappedValue: environment.placeNotices)
         let session = environment.session
         _profile = StateObject(
-            wrappedValue: ProfileTabViewModel(reader: environment.profileReader, currentUid: { session.currentUid })
+            wrappedValue: ProfileTabViewModel(
+                reader: environment.profileReader,
+                currentUid: { session.currentUid },
+                network: environment.network
+            )
         )
         let reconciler = environment.notifications.reconciler
         // NOTIF-P0 : une update publiée annule N1 à N4 aussitôt (sans attendre le retour du Feed).

@@ -49,9 +49,15 @@ struct ScreenPreview: View {
                     actions: cropActions
                 )
             }
+        case _ where name.hasPrefix("photo-"):
+            // La photo d'un proche en plein écran (Feed, FEED-8) : voir `PhotoScreenPreview`.
+            PhotoScreenPreview(name: name)
         case _ where name.hasPrefix("place-"):
             // Les lieux de confiance (formulaire, liste, détail, offre) : voir `PlaceScreenPreview`.
             PlaceScreenPreview(name: name)
+        case _ where name.hasPrefix("feed-"):
+            // Le Feed (en-tête, bulle, cartes) : voir `FeedScreenPreview`.
+            FeedScreenPreview(name: name)
         case _ where name.hasPrefix("miff-"):
             // Le flux Miff (créer, rejoindre, écran d'une Miff, accueil, perte d'accès) : voir `MiffScreenPreview`.
             MiffScreenPreview(name: name)
