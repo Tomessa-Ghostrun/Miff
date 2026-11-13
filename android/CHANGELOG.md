@@ -2,6 +2,24 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.39.0] - 2026-11-13 : l'écran « Les couleurs de ta Miff » s'ouvre avec un petit bouton « i » au lieu de la bulle (COULEURS-1, évolution)
+
+Décision du PM du 2026-11-13, prise après la recette de l'écran fusionné (PR #211) : `docs/tickets/couleurs-info.md` (§12 « Évolution du 2026-11-13 »), recette `docs/qa/checklists/couleurs-info-android-recette-pm.md` ; branche `android/couleurs-info-bouton-i`, PR brouillon. Numéro : le dernier de `main` est 0.38.0, celui-ci prend le suivant (à renuméroter au merge si une autre PR l'a pris). Aucune donnée, aucune règle Firestore, aucune permission, aucune dépendance, aucun service payant. **Aucune clé de texte ajoutée ni modifiée** (catalogue iOS inchangé, parité intacte).
+
+### Modifié
+- **Toucher la bulle de la Miff ne fait plus rien** : le comportement « bulle cliquable » est retiré, ainsi que l'action TalkBack « Comprendre les couleurs » qu'elle portait ; la bulle redevient un élément de lecture sans action. « Contacter » et « Reprendre le partage » sont inchangés.
+- **Nouveau bouton « i » en bas à droite de la bulle** (`FeedBubble.kt`, `ColorsInfoButton`) : cercle de 24 dp au trait fin (1,5 dp) avec la lettre « i », dans la couleur de texte du niveau de la bulle (`onTint()`, déjà validée à 4,5 contre 1 au moins sur chaque teinte par `ColorContrastTest` : vert, orange, rouge ; gris = `colorTextForm`). **Zone tactile de 48 dp** (ronde, onde de toucher habituelle). Présent sur les sept variantes (vert via « Tout va bien », gris « pas encore de nouvelles », seul, partage arrêté, accord en attente, voyageurs) et sur le carrousel d'alertes.
+- **Carrousel** : un **seul « i » pour toutes les pages**, posé sur le carrousel (pas dans chaque page) : il **ne bouge pas pendant le balayage** et **prend la couleur de la page affichée** ; il suit la lente dérive de la bulle (quelques dp, comme les pages).
+- **Pas de chevauchement** : le bas de la bulle réserve 58 dp sous le texte (au lieu de 42 dp), donc le « i » ne recouvre ni le texte, ni « Contacter », ni « Reprendre le partage », ni les pastilles (situées sous le carrousel), même à la police maximale ; effet visible : la bulle peut être **une dizaine de dp plus haute** quand son contenu est long.
+- **TalkBack** : le « i » est un bouton nommé « Comprendre les couleurs » (clé existante `feed_colors_bubble_action_a11y`, aucune clé ajoutée) avec le rôle bouton ; la lettre « i » n'est pas lue.
+- Écran « Les couleurs de ta Miff », route, retour, clés `feed_colors_*` : **inchangés**.
+
+### Tests
+- `BubbleColorsEntryTest` réécrit : « i » présent dans chaque variante et ouvrant l'écran ; un toucher sur la bulle n'ouvre rien et la bulle n'a aucune action ; bouton de rôle « bouton » nommé « Comprendre les couleurs » ; zone tactile de 48 dp ; « i » sous le texte et à droite ; carrousel : un seul « i », même place après un balayage ; « Contacter » et « Reprendre le partage » inchangés (n'ouvrent pas l'écran) ; **police maximale (200 %)** : le « i » ne chevauche ni le titre, ni « Contacter », ni « Reprendre le partage » ; double ouverture rapide = un seul écran.
+
+### Choix « économiques » et limites connues
+- Aucun coût. **Limite connue** : le rendu exact (finesse du trait, distance au bord arrondi de la bulle) ne se juge qu'à l'œil sur le téléphone du PM (recette) ; la couleur du « i » sur chaque page est couverte par les tests de contraste des couleurs, pas par une capture d'écran.
+
 ## [0.38.0] - 2026-11-12 : Écran d'offre Miff+ (paywall v2) : maquettes du PM, états, croix de fermeture après 3 secondes (PAY-UI-A)
 
 Ticket `docs/tickets/paywall-v2.md` (fait foi), spec `docs/specs/paywall-premium.md`, décisions du PM du 2026-11-12 (`docs/tickets/premium-achat-reel.md`), maquettes `design/exports/paywall/Paywall.png` et `Paywall-1.png` ; branche `android/paywall-v2`, PR brouillon. **Aucun achat réel** (SRV-7 et SRV-8 ne sont pas livrés : le premium reste accordé à la main).

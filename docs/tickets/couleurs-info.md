@@ -1,4 +1,6 @@
-# Ticket : COULEURS-INFO, l'écran « Les couleurs de ta Miff » (ouvert en touchant la bulle du Feed)
+# Ticket : COULEURS-INFO, l'écran « Les couleurs de ta Miff » (ouvert par le petit bouton « i » de la bulle du Feed)
+
+> **Évolution décidée par le PM le 2026-11-13 (après la recette de l'écran fusionné, PR #211) : bouton « i » au lieu de la bulle cliquable.** L'écran ne s'ouvre **plus** en touchant la bulle ; il s'ouvre en touchant un **petit bouton « i »** (information) placé **en bas à droite de la bulle**. Cette note prime sur tout passage ci-dessous qui dit « toucher la bulle » : D1, D2, D11, E1, E4, E5, A2, Q2, R1, R4 et R5 sont **remplacés** par la section « 12. Évolution du 2026-11-13 » en bas de ce ticket ; le reste (contenu de l'écran, textes `feed_colors_*`, durées, route, retour) est **inchangé**. Les passages d'origine sont conservés pour l'historique.
 
 **Statut** : spec complète, **décidée par l'agent `product-specs` sur délégation explicite du PM** (2026-11-12 : « tranche toi-même, il n'y aura pas de go PM sur la spec »). Prête à développer : Android (COULEURS-1) puis iOS (COULEURS-2).
 **Rédigé le** : 2026-11-12.
@@ -244,3 +246,31 @@ Surligner la couleur actuelle ; entrée depuis Réglages ou Profil ; expliquer l
 ## 11. Questions ouvertes pour le PM
 
 Aucune bloquante. Aucune décision existante du PM n'est contredite (aucun pictogramme dans la bulle, rien qui ressemble à un bouton, aucun événement Analytics sur le Feed, ton non anxiogène). Les points tranchés ci-dessus (D1 à D11) restent modifiables par le PM à tout moment.
+
+---
+
+## 12. Évolution du 2026-11-13 : bouton « i » au lieu de la bulle cliquable (décision du PM)
+
+**Pourquoi** : retour du PM sur l'écran déjà fusionné (PR #211) : toucher la bulle se découvre mal et se déclenche par accident en faisant défiler. **Ce qui change** : l'écran des couleurs s'ouvre avec un petit bouton « i » en bas à droite de la bulle ; **la bulle elle-même n'a plus aucune action**. **Ce qui ne change pas** : l'écran, ses textes (mêmes clés `feed_colors_*`), la route, le retour, les boutons « Contacter » et « Reprendre le partage ».
+
+| # | Décision | Pourquoi |
+|---|---|---|
+| D1' (remplace D1) | Le point d'entrée est le **bouton « i »**, présent sur **les sept variantes** de la bulle (vert / orange / rouge via les alertes, gris « pas encore de nouvelles », seul, partage arrêté, accord en attente, voyageurs) **et sur le carrousel d'alertes** : **un seul « i » pour tout le carrousel**, au même endroit pendant le balayage, qui prend la couleur de la page affichée. | Demande du PM. Un seul bouton à position stable = rien qui bouge sous le doigt. |
+| D2' (remplace D2) | Le « i » est **le** repère de découverte, **discret** : cercle de 24 dp / pt au trait fin avec la lettre « i », dans la couleur de texte du niveau de la bulle (celle déjà validée pour les étiquettes des cartes : au moins 4,5 contre 1 sur chaque teinte, bien au-dessus des 3 contre 1 demandés pour un symbole), même police et mêmes couleurs que la bulle. **Zone tactile d'au moins 48 dp / 44 pt** (ronde) autour du petit glyphe. Placé en bas à droite, à l'intérieur de la forme de la bulle. | Le PM veut un repère visible mais calme ; la zone tactile reste confortable. |
+| D2'a | **Rapport aux décisions D52 / D53** (`docs/tickets/feed.md`) : D53 c (« aucun pictogramme dans la bulle » = plus de filigrane horloge / « ! » / sablier qui dit l'état) et D52 (« rien qui ressemble à un bouton » sur la bulle) visaient l'état de la Miff, pas l'accès à l'aide. **Le « i » est maintenant l'affordance voulue par le PM, la seule** : il n'est ni un pictogramme d'état ni une icône de couleur ; la bulle reste, pour le reste, « mots seulement ». Aucun autre bouton, flèche ou lien n'est ajouté. | Le PM tranche explicitement : une décision plus récente remplace les deux plus anciennes sur ce point précis. |
+| D3' (complète D3) | Un toucher **sur la bulle** (texte ou fond) **ne fait rien d'autre que ce que font ses boutons existants**. « Contacter », « Reprendre le partage », le balayage, les pastilles et « Alerte précédente / suivante » sont inchangés. | Plus de clic accidentel en défilant. |
+| D3'a | **Pas de chevauchement** : le « i » ne recouvre ni le texte, ni « Contacter », ni « Reprendre le partage », ni les pastilles du carrousel, **même à la taille de police maximale** : un espace est réservé sous le texte de la bulle (la bulle peut grandir d'une dizaine de dp quand le texte est long), les pastilles sont sous le carrousel. | Le « i » ne doit rien masquer et ne doit pas être masqué. |
+| D3'b | **Lecteur d'écran** : le « i » est un **bouton nommé « Comprendre les couleurs »** (clé existante `feed_colors_bubble_action_a11y`, **aucune clé ajoutée**, aucune modification du catalogue iOS) ; la lettre « i » n'est pas lue. **La bulle redevient un simple élément de lecture, sans action** (l'action « Comprendre les couleurs » qu'elle portait est retirée). | Un nom clair, un rôle bouton, pas de double chemin. |
+| D11' | Pas de nouvelle entrée de menu (Profil, Réglages) : le « i » de la bulle reste le point d'entrée unique. | Inchangé. |
+
+**Critères d'acceptation remplaçant E1, E4, E5, A2, Q2** (les autres critères E2, E3, E6, E7, C*, A1, A3 à A5, Q1, Q3 sont inchangés) :
+- [ ] **E1'** Un toucher sur le **« i »** ouvre l'écran « Les couleurs de ta Miff » dans les **sept variantes** et, pour le carrousel, **depuis chaque page** (un seul « i », au même endroit).
+- [ ] **E1'b** Un toucher sur la **bulle** (texte ou fond) **n'ouvre rien**.
+- [ ] **E4'** Le « i » est le **seul** ajout visuel à la bulle : cercle discret dans la couleur de texte du niveau, lisible (contraste d'au moins 3 contre 1) sur chaque couleur ; ni texte, ni flèche, ni lien supplémentaire. Il suit la couleur de la page affichée dans le carrousel.
+- [ ] **E5'** La zone tactile du « i » mesure au moins **48 x 48 dp / 44 x 44 pt** ; sa position est **stable pendant le balayage** du carrousel ; il ne chevauche ni le texte, ni « Contacter », ni « Reprendre le partage », ni les pastilles, y compris à la taille de police maximale.
+- [ ] **A2'** TalkBack / VoiceOver : un **bouton « Comprendre les couleurs »** (rôle bouton) ; la bulle n'a **aucune action** ; « Contacter » / « Reprendre le partage » restent des éléments à part.
+- [ ] **Q2'** Tests d'interface : « i » présent dans chaque variante, il ouvre l'écran, zone tactile de 48 dp, un toucher sur la bulle n'ouvre rien, les boutons existants sont inchangés, police maximale sans chevauchement.
+
+**Risque R1 (découverte), réévalué** : le « i » est un repère conventionnel et visible, la découverte n'est plus un risque ouvert. **Nouveau risque R1'** : un « i » trop discret passe inaperçu, ou trop proche d'un bord de la forme de la bulle ; à juger à l'œil sur l'OPPO (recette PM) ; l'ajustement (taille du trait, position) est une petite PR. **R4 (clic accidentel en défilant)** et **R5 (boutons imbriqués)** disparaissent : la bulle n'est plus cliquable, le « i » et les boutons sont des éléments séparés.
+
+**Écarts de forme assumés (Android)** : le « i » est à l'intérieur de la forme de la bulle (donc un peu en retrait du coin du rectangle, la tache étant arrondie) ; un espace de 58 dp est réservé sous le texte de la bulle (au lieu de 42 dp), ce qui peut agrandir la bulle de quelques dp quand son contenu est le plus long.
