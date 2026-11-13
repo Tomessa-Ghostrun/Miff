@@ -3,6 +3,7 @@ package com.tomessa.miff.data.feed
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreException
+import com.google.firebase.firestore.Source
 import com.tomessa.miff.data.session.SessionTeardown
 import com.tomessa.miff.domain.update.SharedPhoto
 import kotlinx.coroutines.CancellationException
@@ -158,19 +159,106 @@ class PhotoCache(
     }
 }
 
-/**
- * What a refusal of the rules means for the card (backend/data-model.md: "un refus de lecture est ambigu"). It is NEVER a reason to delete anything. If I have
- * published my own position in this Miff, the refusal is NOT the reciprocity (the photo expired, or sharing stopped): nothing is shown. If I have not, it is the
- * reciprocity: the calm sentence "Partage ta position pour voir cette photo.".
- */
-internal fun refusalLookup(ownPositionPublished: Boolean): PhotoLookup =
-    if (ownPositionPublished) PhotoLookup.Missing else PhotoLookup.NeedsOwnPosition
+/** Have I published my own position in this Miff? The truth is the document `positions/{moi}` on the server (it is what the rules of the photos look at). */
+enum class OwnPosition {
+    Published,
+    NotPublished,
 
-class FirestorePhotoReader(
+    /** Not known (offline, refused, not signed in, still being read): NEVER taken for "not published". */
+    Unknown,
+}
+
+/**
+ * What a refusal of the rules means for the card (backend/data-model.md: "un refus de lecture est ambigu"). It is NEVER a reason to delete anything. The refusal
+ * has several causes (the photo expired, the sharing stopped, or the reciprocity of the place), so the calm sentence "Partage ta position pour voir cette photo."
+ * is shown ONLY when it is KNOWN that I have not published my own position. Published, or not known (loading, offline): nothing is shown, never the sentence.
+ */
+internal fun refusalLookup(ownPosition: OwnPosition): PhotoLookup =
+    if (ownPosition == OwnPosition.NotPublished) PhotoLookup.NeedsOwnPosition else PhotoLookup.Missing
+
+/** What ONE reading of `photos/{uid}` said, before the card draws anything. */
+sealed interface PhotoFetch {
+    /** The document is not there (the author has none, deleted it, or sharing stopped): for the rules this is "introuvable", not a refusal. */
+    data object Absent : PhotoFetch
+
+    /** The document is there and valid. */
+    class Valid(
+        val photo: SharedPhoto,
+    ) : PhotoFetch {
+        override fun toString(): String = "Valid(redacted)"
+    }
+
+    /** The document is there but is not a valid photo (half a place, too big, expired by its own date). */
+    data object Invalid : PhotoFetch
+
+    /** The rules refused. Ambiguous (expired photo, stopped sharing, reciprocity): see [refusalLookup]. */
+    data object Denied : PhotoFetch
+
+    /** The server could not be reached. */
+    data object Unreachable : PhotoFetch
+
+    /** Anything else (quota, expired sign-in, error of the server or of the phone). */
+    data object Failed : PhotoFetch
+}
+
+fun interface PhotoSource {
+    suspend fun fetch(
+        miffId: String,
+        uid: String,
+    ): PhotoFetch
+}
+
+fun interface OwnPositionProbe {
+    /** True: my `positions/{moi}` exists in this Miff. False: it does not. Null: not known. */
+    suspend fun exists(miffId: String): Boolean?
+}
+
+/**
+ * Has this phone published its own position in [miffId]? First the local note of the detection (free: a "yes" is enough to answer), then, only when the local
+ * note says nothing, ONE read of my own position on the server (a document I can always read; at most one per Miff per [FRESH_MILLIS] when the answer is known,
+ * so a list of cards does not read it again and again). The local note alone was the cause of a wrong sentence (it is forgotten at a resume of the sharing...).
+ */
+class OwnPositionResolver(
+    private val myUid: () -> String?,
+    private val localPublished: (miffId: String) -> Boolean,
+    private val probe: OwnPositionProbe,
+    private val nowMillis: () -> Long = System::currentTimeMillis,
+) {
+    private class Answer(
+        val published: Boolean,
+        val atMillis: Long,
+    )
+
+    private val answers = LinkedHashMap<String, Answer>()
+
+    suspend fun state(miffId: String): OwnPosition {
+        // Not signed in: nothing is known, so never the sentence.
+        val uid = myUid() ?: return OwnPosition.Unknown
+        if (localPublished(miffId)) return OwnPosition.Published
+        val key = "$uid/$miffId"
+        val now = nowMillis()
+        val known = synchronized(answers) { answers[key] }
+        if (known != null && now - known.atMillis < FRESH_MILLIS) {
+            return if (known.published) OwnPosition.Published else OwnPosition.NotPublished
+        }
+        val exists = probe.exists(miffId) ?: return OwnPosition.Unknown
+        synchronized(answers) { answers[key] = Answer(exists, now) }
+        return if (exists) OwnPosition.Published else OwnPosition.NotPublished
+    }
+
+    /** End of the session: the answers are forgotten. */
+    fun clear() = synchronized(answers) { answers.clear() }
+
+    companion object {
+        const val FRESH_MILLIS = 30_000L
+    }
+}
+
+/** The reader of the Feed: the cache, ONE source, and what a refusal means ([refusalLookup]). It never writes nor deletes. */
+class CachedPhotoReader(
     private val cache: PhotoCache,
-    /** Have I published my own position in this Miff? (known locally: it is the detection that writes it). */
-    private val ownPositionPublished: (miffId: String) -> Boolean = { false },
-    private val firestore: () -> FirebaseFirestore = { FirebaseFirestore.getInstance() },
+    private val source: PhotoSource,
+    private val ownPosition: suspend (miffId: String) -> OwnPosition,
     private val nowMillis: () -> Long = System::currentTimeMillis,
 ) : PhotoReader {
     override suspend fun read(
@@ -181,7 +269,41 @@ class FirestorePhotoReader(
         cache.get(miffId, uid, lastUpdateAtMillis, nowMillis())?.let { return PhotoLookup.Found(it) }
         // Nothing to show for this very status (an expired photo, for instance): the server is not asked again at each opening (review C8).
         if (cache.isMissing(miffId, uid, lastUpdateAtMillis)) return PhotoLookup.Missing
-        return try {
+        return when (val fetched = source.fetch(miffId, uid)) {
+            PhotoFetch.Absent, PhotoFetch.Invalid -> {
+                cache.putMissing(miffId, uid, lastUpdateAtMillis)
+                PhotoLookup.Missing
+            }
+
+            is PhotoFetch.Valid -> {
+                cache.putRead(miffId, uid, fetched.photo, lastUpdateAtMillis)
+                PhotoLookup.Found(fetched.photo)
+            }
+
+            PhotoFetch.Denied -> {
+                refusalLookup(ownPosition(miffId))
+            }
+
+            PhotoFetch.Unreachable -> {
+                PhotoLookup.Offline
+            }
+
+            PhotoFetch.Failed -> {
+                PhotoLookup.Missing
+            }
+        }
+    }
+}
+
+class FirestorePhotoSource(
+    private val firestore: () -> FirebaseFirestore = { FirebaseFirestore.getInstance() },
+    private val nowMillis: () -> Long = System::currentTimeMillis,
+) : PhotoSource {
+    override suspend fun fetch(
+        miffId: String,
+        uid: String,
+    ): PhotoFetch =
+        try {
             val snapshot =
                 firestore()
                     .collection("miffs")
@@ -191,38 +313,56 @@ class FirestorePhotoReader(
                     .get()
                     .await()
             if (!snapshot.exists()) {
-                cache.putMissing(miffId, uid, lastUpdateAtMillis)
-                return PhotoLookup.Missing
+                PhotoFetch.Absent
+            } else {
+                SharedPhoto
+                    .fromServer(
+                        jpeg = snapshot.getBlob("jpeg")?.toBytes(),
+                        createdAtMillis = (snapshot.get("createdAt") as? Timestamp)?.toDate()?.time,
+                        expiresAtMillis = (snapshot.get("expiresAt") as? Timestamp)?.toDate()?.time,
+                        lat = snapshot.get("lat") as? Number,
+                        lng = snapshot.get("lng") as? Number,
+                        measuredAtMillis = (snapshot.get("measuredAt") as? Timestamp)?.toDate()?.time,
+                        nowMillis = nowMillis(),
+                    )?.let { PhotoFetch.Valid(it) } ?: PhotoFetch.Invalid
             }
-            val photo =
-                SharedPhoto.fromServer(
-                    jpeg = snapshot.getBlob("jpeg")?.toBytes(),
-                    createdAtMillis = (snapshot.get("createdAt") as? Timestamp)?.toDate()?.time,
-                    expiresAtMillis = (snapshot.get("expiresAt") as? Timestamp)?.toDate()?.time,
-                    lat = snapshot.get("lat") as? Number,
-                    lng = snapshot.get("lng") as? Number,
-                    measuredAtMillis = (snapshot.get("measuredAt") as? Timestamp)?.toDate()?.time,
-                    nowMillis = nowMillis(),
-                ) ?: run {
-                    cache.putMissing(miffId, uid, lastUpdateAtMillis)
-                    return PhotoLookup.Missing
-                }
-            cache.putRead(miffId, uid, photo, lastUpdateAtMillis)
-            PhotoLookup.Found(photo)
         } catch (e: CancellationException) {
             throw e
         } catch (e: FirebaseFirestoreException) {
             when (e.code) {
-                FirebaseFirestoreException.Code.PERMISSION_DENIED -> refusalLookup(ownPositionPublished(miffId))
+                FirebaseFirestoreException.Code.PERMISSION_DENIED -> PhotoFetch.Denied
 
                 FirebaseFirestoreException.Code.UNAVAILABLE,
                 FirebaseFirestoreException.Code.DEADLINE_EXCEEDED,
-                -> PhotoLookup.Offline
+                -> PhotoFetch.Unreachable
 
-                else -> PhotoLookup.Missing
+                else -> PhotoFetch.Failed
             }
         } catch (e: Exception) {
-            PhotoLookup.Missing
+            PhotoFetch.Failed
+        }
+}
+
+/** ONE read of my own `positions/{moi}` from the server, only when a photo was refused and the local note does not say "published". Never listed, never written. */
+class FirestoreOwnPositionProbe(
+    private val myUid: () -> String?,
+    private val firestore: () -> FirebaseFirestore = { FirebaseFirestore.getInstance() },
+) : OwnPositionProbe {
+    override suspend fun exists(miffId: String): Boolean? {
+        val uid = myUid() ?: return null
+        return try {
+            firestore()
+                .collection("miffs")
+                .document(miffId)
+                .collection("positions")
+                .document(uid)
+                .get(Source.SERVER)
+                .await()
+                .exists()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            null
         }
     }
 }

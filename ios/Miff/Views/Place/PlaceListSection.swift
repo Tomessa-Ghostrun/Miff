@@ -5,6 +5,14 @@ struct PlaceListActions {
     let onOpen: (Place) -> Void
     /// « Ajouter un lieu » : `atFreeLimit` dit que la formule gratuite est pleine, donc l'hôte ouvre l'offre plutôt que le formulaire.
     let onAdd: (_ atFreeLimit: Bool) -> Void
+    /// Un membre ouvre le détail d'une de ses demandes en attente (LIEU-REQ-B).
+    var onOpenRequest: (PlaceRequest) -> Void = { _ in }
+    /// « Demander l'ajout d'un lieu » : un membre qui n'est pas le créateur ouvre le formulaire d'une demande.
+    var onRequestPlace: () -> Void = {}
+    /// Le CRÉATEUR ouvre le détail d'une demande reçue, l'accepte, ou la refuse.
+    var onOpenReceived: (PlaceRequest) -> Void = { _ in }
+    var onAcceptRequest: (PlaceRequest) -> Void = { _ in }
+    var onDeclineRequest: (PlaceRequest) -> Void = { _ in }
 
     static let none = PlaceListActions(onOpen: { _ in }, onAdd: { _ in })
 }
@@ -24,19 +32,37 @@ struct PlaceListContext {
 struct PlaceRows: View {
     let ui: PlaceListUi
     let actions: PlaceListActions
+    /// « Tu as déjà 3 demandes en attente », dit doucement au toucher du bouton (le formulaire ne s'ouvre pas).
+    @State private var limitShown = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             if let notice = ui.notice {
                 PlaceNoticeBar(notice: notice)
             }
+            if ui.offersRequests {
+                requestNotices
+            }
             if let caption {
                 Text(verbatim: caption)
                     .miffTextStyle(textBodyRegular14)
                     .foregroundColor(colorTextDescription.color)
             }
+            // Les demandes en attente d'un membre viennent AVANT les lieux (décision du PM, 2026-11-11) : ce qu'on vient de demander
+            // est ce qu'on cherche.
+            if ui.offersRequests && !ui.isCreator {
+                ForEach(ui.requests, id: \.id) { request in
+                    PlaceRequestCard(request: request) {
+                        actions.onOpenRequest(request)
+                    }
+                }
+            }
+            if ui.isCreator && !ui.received.isEmpty {
+                receivedSection
+            }
             if ui.places.isEmpty {
-                Text("miff_places_empty")
+                // Un membre n'a rien à ajouter : un « pas encore » calme (décision du PM, 2026-11-11) ; le créateur garde sa phrase.
+                Text(verbatim: L10n.string(ui.isCreator ? "miff_places_empty" : "place_list_empty_member"))
                     .miffTextStyle(textBodyRegular14)
                     .foregroundColor(colorTextDescription.color)
                     .multilineTextAlignment(.center)
@@ -49,11 +75,67 @@ struct PlaceRows: View {
                 PlaceAddRow(showsPremiumPill: ui.atFreeLimit) {
                     actions.onAdd(ui.atFreeLimit)
                 }
+            } else if ui.offersRequests {
+                requestButton
             }
         }
     }
 
-    /// Un membre : qui définit les lieux. Un créateur en formule gratuite : « 2 lieux sur 2 avec la formule gratuite ». Un créateur
+    /// Le CRÉATEUR : les demandes reçues, sous un titre, EN PREMIÈRE POSITION, chacune avec qui l'a faite et les deux réponses (critères C2 à C4).
+    private var receivedSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Text("place_request_section_title")
+                .miffTextStyle(textBodyBold16)
+                .foregroundColor(colorTextForm.color)
+                .accessibilityAddTraits(.isHeader)
+            ForEach(ui.received, id: \.request.id) { received in
+                PlaceRequestCard(
+                    request: received.request,
+                    creator: RequestCreatorUi(
+                        requester: received.requester,
+                        busy: ui.busyRequestId != nil,
+                        onAccept: { actions.onAcceptRequest(received.request) },
+                        onDecline: { actions.onDeclineRequest(received.request) }
+                    ),
+                    onOpen: { actions.onOpenReceived(received.request) }
+                )
+            }
+        }
+    }
+
+    /// La confirmation d'une demande envoyée, et le message calme d'un geste sur une demande.
+    @ViewBuilder
+    private var requestNotices: some View {
+        if !ui.isCreator, let sent = ui.requestNotice {
+            RequestNoticeBar(text: L10n.string(sent.queued ? "place_request_sent_offline" : "place_request_sent"))
+        }
+        if let kind = ui.requestKind {
+            RequestNoticeBar(text: L10n.string(kind.textKey))
+        }
+    }
+
+    /// Un membre ne PROPOSE pas un lieu directement : il le DEMANDE au créateur (le même bouton, le même dessin, une autre phrase).
+    @ViewBuilder
+    private var requestButton: some View {
+        PlaceAddRow(showsPremiumPill: false, labelKey: "place_request_cta_member") {
+            if ui.atRequestLimit {
+                limitShown = true
+            } else {
+                actions.onRequestPlace()
+            }
+        }
+        if limitShown && ui.atRequestLimit {
+            Text("place_request_limit_member")
+                .miffTextStyle(textBodyRegular14)
+                .foregroundColor(colorTextDescription.color)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .onAppear {
+                    MiffNoticeAnnouncements.announceOnce(L10n.string("place_request_limit_member"))
+                }
+        }
+    }
+
+    /// Un membre : qui définit les lieux. Un créateur en formule gratuite : « 3 lieux sur 3 avec la formule gratuite ». Un créateur
     /// Miff+, ou dont la formule n'est pas encore connue : rien (rien n'est affirmé sur ce qu'on ne sait pas).
     private var caption: String? {
         if !ui.isCreator {
@@ -91,17 +173,7 @@ struct PlaceRow: View {
     let onOpen: () -> Void
 
     private var spoken: String {
-        let address = place.address ?? ""
-        switch (place.category, address.isEmpty) {
-        case (.some(let category), false):
-            return L10n.format("place_list_row_a11y", place.name, category.label, address)
-        case (.some(let category), true):
-            return L10n.format("place_list_row_noaddress_a11y", place.name, category.label)
-        case (.none, false):
-            return L10n.format("place_list_row_nocategory_a11y", place.name, address)
-        case (.none, true):
-            return L10n.format("place_list_row_nocategory_noaddress_a11y", place.name)
-        }
+        PlaceRowSpeech.spoken(for: place)
     }
 
     var body: some View {
@@ -145,6 +217,8 @@ struct PlaceRow: View {
 /// ouvre l'offre (jamais masquée ni grisée).
 struct PlaceAddRow: View {
     let showsPremiumPill: Bool
+    /// « Ajouter un lieu » pour un créateur, « Demander l'ajout d'un lieu » pour un membre.
+    var labelKey = "place_list_add_action"
     let onAdd: () -> Void
 
     var body: some View {
@@ -153,7 +227,7 @@ struct PlaceAddRow: View {
                 Image(systemName: "plus")
                     .font(.system(size: 18, weight: .semibold))
                     .accessibilityHidden(true)
-                Text("place_list_add_action")
+                Text(LocalizedStringKey(labelKey))
                     .miffTextStyle(textBodyBold16)
                 if showsPremiumPill {
                     PlacePremiumPill()
@@ -168,7 +242,7 @@ struct PlaceAddRow: View {
         .buttonStyle(.plain)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(
-            Text(verbatim: L10n.string(showsPremiumPill ? "place_list_add_premium_a11y" : "place_list_add_action"))
+            Text(verbatim: L10n.string(showsPremiumPill ? "place_list_add_premium_a11y" : labelKey))
         )
         .accessibilityAddTraits(.isButton)
     }

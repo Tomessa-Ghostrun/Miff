@@ -7,24 +7,21 @@ import CoreGraphics
 // forme : l'échelle et l'inclinaison de la tache se font autour de son centre, la dérive verticale s'applique à toute la bulle.
 // Miroir d'Android (mêmes valeurs).
 enum BubbleLayout {
-    /// Le pictogramme d'une bulle (filigrane) selon sa couleur (la couleur n'est jamais seule pour l'orange, le rouge et le neutre). Décision du PM
-    /// (2026-11-08, build 22) : AUCUN pictogramme sur une bulle VERTE (« Tout va bien » parle de lui-même) ; l'orange garde l'horloge, le
-    /// rouge le point d'exclamation, le neutre le sablier. nil = pas de symbole, et le contenu reste centré dans la tache.
-    static func pictogram(for level: StatusLevel) -> String? {
-        switch level {
-        case .orange:
-            return "clock"
-        case .red:
-            return "exclamationmark"
-        case .neutral:
-            return "hourglass"
-        case .green:
-            return nil
-        }
-    }
-
     /// Marge de chaque côté du contenu (identique à gauche et à droite).
     static let horizontalInset: CGFloat = 52
+
+    /// Aux plus grandes tailles de texte (tailles d'accessibilité) la marge de chaque côté est réduite : un mot comme « nouvelles » doit
+    /// pouvoir tenir sur une ligne (retour de revue, 2026-11-11). Toujours identique à gauche et à droite.
+    static let accessibilityHorizontalInset: CGFloat = 28
+
+    static func horizontalInset(accessibilitySize: Bool) -> CGFloat {
+        accessibilitySize ? accessibilityHorizontalInset : horizontalInset
+    }
+
+    /// La phrase principale ne dépasse pas ce nombre de lignes et peut rétrécir jusqu'à cette échelle plutôt que de couper un mot (Dynamic
+    /// Type maximal) ; aux tailles courantes rien ne rétrécit (le texte passe à la ligne avant).
+    static let headlineMaxLines = 6
+    static let headlineMinimumScale: CGFloat = 0.5
 
     /// Marge en haut et en bas du contenu (identique).
     static let verticalInset: CGFloat = 44
@@ -32,16 +29,8 @@ enum BubbleLayout {
     /// Hauteur minimale de la zone du contenu (avant les marges) : une bulle courte reste ample, son texte au milieu.
     static let minContentHeight: CGFloat = 176
 
-    /// Le pictogramme est posé DIRECTEMENT dans la tache, sans cercle (un disque fait penser à un bouton : décision du PM, 2026-11-10),
-    /// en grand et en filigrane doux : sa taille (corps du symbole), son opacité (teinte du niveau) et sa distance au bord droit et au
-    /// bord bas de la bulle. Rien de cliquable, rien pour le lecteur d'écran. Il passe DERRIÈRE le texte et le bouton.
-    static let symbolSize: CGFloat = 76
-    static let symbolOpacity: Double = 0.2
-    static let symbolTrailing: CGFloat = 40
-    static let symbolBottom: CGFloat = 40
-
     /// La boîte totale de la bulle pour un contenu de la taille donnée : les marges s'ajoutent de chaque côté.
-    static func outerSize(content: CGSize) -> CGSize {
+    static func outerSize(content: CGSize, horizontalInset: CGFloat = BubbleLayout.horizontalInset) -> CGSize {
         CGSize(
             width: content.width + 2 * horizontalInset,
             height: max(content.height, minContentHeight) + 2 * verticalInset
@@ -50,7 +39,7 @@ enum BubbleLayout {
 
     /// Où se pose le contenu (de la taille donnée) dans la boîte de la bulle : au milieu, en largeur comme en hauteur, quelle que soit la
     /// taille du texte (Dynamic Type) ; dans une zone plus haute que lui (hauteur minimale), il est centré verticalement.
-    static func contentFrame(content: CGSize) -> CGRect {
+    static func contentFrame(content: CGSize, horizontalInset: CGFloat = BubbleLayout.horizontalInset) -> CGRect {
         let zoneHeight = max(content.height, minContentHeight)
         return CGRect(
             x: horizontalInset,

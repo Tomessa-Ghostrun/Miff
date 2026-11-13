@@ -1,15 +1,19 @@
 import SwiftUI
 
 // L'en-tête du Feed (maquette 01) : MON avatar avec l'anneau de MON statut (il ouvre l'onglet Profil), le logo (il ramène le fil en
-// haut) et, dessous, la pastille de la Miff. Pas de cloche : rien n'est notifié (plan gratuit), la fin de la rangée reste vide
-// (44 pt réservés au futur bouton des notifications). Il se masque quand on descend dans la liste et revient dès qu'on remonte
-// (D41) ; l'écran lui donne son déplacement.
+// haut) et, dessous, la pastille de la Miff. La cloche du centre de notifications est en fin de rangée (NOTIF-6I) : un simple point
+// quand il y a du non lu, jamais un chiffre ; sans Miff (rien à notifier) les 44 pt restent vides. Il se masque quand on descend dans
+// la liste et revient dès qu'on remonte (D41) ; l'écran lui donne son déplacement.
 
 struct FeedHeaderContent: View {
     let me: FeedMe
     let myLevel: StatusLevel
     let myStatusDescription: String?
     let pill: FeedPillState?
+    /// La cloche : montrée seulement avec au moins une Miff ; `unreadNotifications` > 0 allume le point.
+    let showsBell: Bool
+    let unreadNotifications: Int
+    let onOpenNotifications: () -> Void
     let onOpenProfile: () -> Void
     let onLogo: () -> Void
     let onSelect: (String) -> Void
@@ -36,9 +40,12 @@ struct FeedHeaderContent: View {
                     .buttonStyle(.plain)
                     .accessibilityLabel(profileLabel)
                     Spacer(minLength: 0)
-                    // Réservé au futur bouton des notifications : rien n'est dessiné aujourd'hui.
-                    Color.clear.frame(width: Spacing.minTouchTarget, height: Spacing.minTouchTarget)
-                        .accessibilityHidden(true)
+                    if showsBell {
+                        NotificationBell(unreadCount: unreadNotifications, action: onOpenNotifications)
+                    } else {
+                        Color.clear.frame(width: Spacing.minTouchTarget, height: Spacing.minTouchTarget)
+                            .accessibilityHidden(true)
+                    }
                 }
                 Button(action: onLogo) {
                     MiffWordmark()

@@ -64,6 +64,8 @@ struct MainTabBar: View {
     let selected: MainTab
     var central: CentralButtonState = .neutral
     var variant: TabBarVariant = .light
+    /// Une demande d'ajout d'un lieu attend le créateur dans le Profil (LIEU-REQ-C) : un petit point sur l'onglet, jamais un nombre.
+    var profileDot = false
     let onSelect: (MainTab) -> Void
 
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
@@ -100,14 +102,28 @@ struct MainTabBar: View {
                         .frame(width: TabBarLayout.entryWidth, height: TabBarLayout.entryHeight)
                 }
                 icon(for: tab, isSelected: isSelected)
+                if profileDot && tab == .profile {
+                    dot
+                }
             }
             .frame(maxWidth: .infinity, minHeight: TabBarLayout.barHeight)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text(verbatim: L10n.string(TabBarNames.key(for: tab, central: central))))
+        .accessibilityLabel(
+            Text(verbatim: L10n.string(TabBarNames.key(for: tab, central: central, profileDot: profileDot)))
+        )
         .accessibilityAddTraits(.isButton)
         .accessibilityAddTraits(isSelected ? AccessibilityTraits.isSelected : AccessibilityTraits())
+    }
+
+    /// Le même point que la cloche du Feed : décoratif (le nom parlé de l'onglet dit pourquoi).
+    private var dot: some View {
+        Circle()
+            .fill(colorBrandPrimary.color)
+            .frame(width: 10, height: 10)
+            .offset(x: 12, y: -12)
+            .accessibilityHidden(true)
     }
 
     @ViewBuilder

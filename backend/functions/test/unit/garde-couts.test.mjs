@@ -70,18 +70,16 @@ test('détecteur : accepte un compte de service dédié explicite, refuse tout l
 
 test('au moins une fonction est exportée et chacune respecte région, maxInstances, délai, mémoire, retry', () => {
   const noms = Object.keys(exportees);
-  assert.ok(noms.length >= 1, 'index.ts doit exporter au moins la fonction témoin');
+  assert.ok(noms.length >= 1, 'index.ts doit exporter au moins une fonction');
   const problemes = noms.flatMap((nom) => problemesDeGardeFous(nom, exportees[nom]?.__endpoint));
   assert.deepEqual(problemes, []);
 });
 
-test('les valeurs par défaut sont bien celles de options.ts (setGlobalOptions appliqué)', () => {
-  const e = exportees.ping.__endpoint;
-  assert.equal(e.maxInstances, LIMITES.maxInstances);
+test('les valeurs par défaut de options.ts (setGlobalOptions : région, délai) sont bien appliquées', () => {
+  const e = exportees.notifierUpdate.__endpoint;
   assert.equal(e.timeoutSeconds, LIMITES.timeoutSeconds);
-  assert.equal(e.availableMemoryMb, 128);
   assert.deepEqual(e.region, ['europe-west9']);
-  assert.ok(e.callableTrigger, 'ping est une fonction appelable');
+  assert.ok(!e.minInstances);
 });
 
 // --- Motifs dangereux dans le code source ------------------------------------------------------------------------------
@@ -159,13 +157,16 @@ test('code : serviceAccount accepté seulement avec un nom de compte dédié exp
   for (const { f, texte } of sources) assert.deepEqual(problemesServiceAccount(code(texte)), [], f);
 });
 
-test('fonctions exportées = la liste décidée par les tickets : `ping` (SRV-1) et `notifierUpdate` (SRV-4B) ; en ajouter une exige de modifier ce test, en PR', () => {
-  assert.deepEqual(Object.keys(exportees).sort(), ['notifierUpdate', 'ping']);
+test('fonctions exportées = la liste décidée par les tickets : `notifierUpdate` (SRV-4B) seule ; en ajouter une exige de modifier ce test, en PR (`ping`, retirée, ne doit pas revenir)', () => {
+  assert.deepEqual(Object.keys(exportees).sort(), ['notifierUpdate']);
 });
 
-test('identité : `ping` (aucune donnée) peut garder l\'identité par défaut ; toute autre fonction exige un compte dédié DU PROJET Miff', () => {
-  assert.deepEqual(problemesDeGardeFous('ping', bonEndpoint()), []);
-  assert.deepEqual(problemesDeGardeFous('ping', { ...bonEndpoint(), serviceAccountEmail: undefined }), []);
+test('identité : AUCUNE fonction ne peut tourner avec l\'identité par défaut du projet (compte Compute) ; toutes exigent un compte dédié DU PROJET Miff', () => {
+  const { FONCTIONS_IDENTITE_PAR_DEFAUT_AUTORISEES } = require('../../lib/options.js');
+  assert.deepEqual(FONCTIONS_IDENTITE_PAR_DEFAUT_AUTORISEES, [], 'liste vide : plus aucune exception');
+  // Une fonction du nom de l'ancienne fonction de démonstration, sans compte dédié, est refusée comme n'importe quelle autre.
+  assert.notDeepEqual(problemesDeGardeFous('ping', { ...bonEndpoint(), serviceAccountEmail: undefined }), []);
+  assert.notDeepEqual(problemesDeGardeFous('autreFonction', { ...bonEndpoint(), serviceAccountEmail: undefined }), []);
   assert.notDeepEqual(problemesDeGardeFous('notifierUpdate', { ...bonEndpoint(), serviceAccountEmail: undefined }), []);
   assert.notDeepEqual(problemesDeGardeFous('notifierUpdate', { ...bonEndpoint(), serviceAccountEmail: 'notify-update@ghostrun-app.iam.gserviceaccount.com' }), [], 'compte d\'un autre projet (Ghostrun)');
   assert.notDeepEqual(problemesDeGardeFous('notifierUpdate', { ...bonEndpoint(), serviceAccountEmail: 'firebase-adminsdk-fbsvc@miff-3d283.iam.gserviceaccount.com' }), [], 'compte de l\'Admin SDK');

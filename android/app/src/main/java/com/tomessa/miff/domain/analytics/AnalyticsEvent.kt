@@ -29,6 +29,9 @@ sealed class AnalyticsEvent(
     ) {
         EXTRA_MIFF("extra_miff"),
         EXTRA_TRUSTED_PLACE("extra_trusted_place"),
+
+        /** A danger zone asked by a free account (value added to the contract on 2026-11-12, ticket paywall-v2 Q-PAY5). */
+        DANGER_ZONE("danger_zone"),
     }
 
     /** [slideIndex] must be 0, 1 or 2 (anything else is refused by the allow-list). */

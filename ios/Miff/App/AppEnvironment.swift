@@ -25,7 +25,9 @@ struct MiffServices {
         cache: CachePurger,
         network: NetworkMonitor,
         device: DeviceSession,
-        onSharingChanged: @escaping () -> Void
+        onSharingChanged: @escaping () -> Void,
+        onSharingResumed: ((String) -> Void)? = nil,
+        beforeLeave: @escaping (_ uid: String, _ miffId: String) async -> Void = { _, _ in }
     ) -> MiffServices {
         let store = FirestoreMiffStore()
         // SESS-3 : un statut n'est écrit qu'avec l'identifiant de la session CONFIRMÉE de cet appareil ; après un refus, la session
@@ -40,6 +42,11 @@ struct MiffServices {
         )
         // LOC-4b : un partage qui change (entrer, arrêter, reprendre, quitter, perdre l'accès) fait relire les Miffs au suivi des lieux.
         rules.onSharingChanged = onSharingChanged
+        rules.onSharingResumed = onSharingResumed
+        // Sans réseau, l'annuaire des Miffs se lit dans le cache du téléphone tout de suite (pas de délais de 20 s mis bout à bout).
+        rules.isOnline = { network.isOnline() }
+        // LIEU-REQ (critère L1) : « Quitter » reprend d'abord les demandes d'ajout d'un lieu de la personne dans cette Miff.
+        rules.beforeLeave = beforeLeave
         let repository = FirestoreMiffRepository(
             store: store,
             observer: FirestoreMiffObserver(),
@@ -100,18 +107,35 @@ struct PlaceServices {
     let search: AddressSearch
     /// Le message calme d'un lieu enregistré, en mémoire seulement.
     let notices: PlaceNotices
+    /// Les demandes d'ajout d'un lieu (LIEU-REQ) : un membre propose un lieu au créateur de la Miff.
+    let requests: PlaceRequestRepository
 
-    static func make(onChanged: @escaping () -> Void) -> PlaceServices {
+    static func make(network: NetworkMonitor, onChanged: @escaping () -> Void) -> PlaceServices {
         let repository = FirestorePlaceRepository(
             store: FirestorePlaceStore(base: FirestoreMiffStore()),
             newId: { FirestorePlaceRepository.newFirestoreId() }
+        )
+        let requests = FirestorePlaceRequestRepository(
+            store: FirestorePlaceRequestStore(base: FirestoreMiffStore()),
+            places: FirestorePlaceStore(base: FirestoreMiffStore()),
+            placeRepository: repository,
+            newPlaceId: { FirestorePlaceRepository.newFirestoreId() },
+            online: { network.isOnline() },
+            // LOC-4b : un lieu accepté fait relire les lieux au suivi, comme un lieu créé par le créateur.
+            onPlaceAdded: onChanged
         )
         return PlaceServices(
             // LOC-4b : un lieu créé, modifié ou supprimé fait relire les lieux au suivi (le téléphone du créateur n'attend pas l'heure).
             repository: ChangeNotifyingPlaceRepository(repository, onChanged: onChanged),
             search: CachedAddressSearch(AppleAddressSearch()),
-            notices: PlaceNotices()
+            notices: PlaceNotices(),
+            requests: requests
         )
+    }
+
+    /// « Quitter une Miff » reprend d'abord les demandes d'ajout d'un lieu de la personne dans cette Miff (LIEU-REQ, critère L1).
+    var beforeLeave: (_ uid: String, _ miffId: String) async -> Void {
+        { [requests] uid, miffId in await requests.withdrawAllMine(uid: uid, miffId: miffId) }
     }
 
     /// Fin de session : le message, ce qui a été tapé dans la recherche d'adresse et ce qu'elle a reçu ne sont pas gardés.
@@ -146,6 +170,8 @@ final class AppEnvironment {
     let placeRepository: PlaceRepository
     let addressSearch: AddressSearch
     let placeNotices: PlaceNotices
+    /// Les demandes d'ajout d'un lieu (LIEU-REQ).
+    let placeRequestRepository: PlaceRequestRepository
     /// La suppression d'une Miff, sans écran (MIFF-4) : reprise au lancement, banderole de fin, écran de la Miff.
     let miffDeletions: MiffDeletionCoordinator
     let joinLimiter: JoinAttemptLimiter
@@ -157,6 +183,14 @@ final class AppEnvironment {
     /// FEED-5 : les lectures du Feed (statuts en direct, position au toucher, actualisation). Elles ne lisent qu'à l'usage.
     let feedServices = FeedServices.live()
     let notificationAsks: NotificationAskStore = UserDefaultsNotificationAskStore()
+    /// NOTIF-P0 : le centre de notifications local, les choix de Réglages > Notifications, les demandes d'onglet.
+    let notifications: NotificationServices
+    /// La carte « deuxième chance » du Feed : créée à la première demande, comme les autorisations qu'elle lit.
+    lazy var notificationSecondChance: NotificationSecondChanceViewModel = NotificationSecondChanceViewModel(
+        permissions: devicePermissions,
+        store: notifications.localData.secondChance,
+        currentUid: { [weak self] in self?.session.currentUid }
+    )
     /// Le suivi des lieux (LOC-4b) : créé TOUT DE SUITE au démarrage, pour que le système puisse relancer l'app terminée pour un
     /// événement de zone. Il ne fait rien tant que l'accord, « Toujours » et la position exacte ne sont pas là.
     let tracking: TrackingRuntime
@@ -174,6 +208,10 @@ final class AppEnvironment {
     /// compte), lus à la demande et gardés seulement par l'écran qui les montre.
     lazy var profileReader: ProfileReading = FirestoreProfileReader()
     lazy var accountInfo: AccountInfoSource = FirebaseAccountInfo()
+    /// Les photos des membres sur les cartes de Miff du Profil : UNE lecture ponctuelle par Miff (voir `MiffMemberPreviews`).
+    lazy var memberPreviewReader: MemberPreviewReader = FirestoreMemberPreviewReader()
+    /// Les lieux de la Miff du carrousel du Profil, visibles par tous ses membres : UNE lecture ponctuelle par Miff (voir `ProfilePlacesViewModel`).
+    lazy var placesReader: PlacesReader = FirestorePlacesReader()
     /// Mes informations (ticket `docs/tickets/modifier-infos-perso.md`) : l'enregistrement sur le profil et sur la fiche de chaque Miff, par le magasin des Miffs
     /// (mêmes transactions, même garde d'écriture). Sans état : le SDK Firestore est résolu à chaque usage.
     lazy var myProfileRepository: MyProfileRepository = StoreMyProfileRepository(store: FirestoreMiffStore())
@@ -191,6 +229,7 @@ final class AppEnvironment {
         AppEnvironment()
     }
 
+    // swiftlint:disable:next function_body_length
     private init() {
         let flagStore = UserDefaultsBooleanStore()
         let privacy = PrivacySettings(
@@ -206,30 +245,33 @@ final class AppEnvironment {
         // Un compte, un seul appareil (SESS-3) : l'identifiant de session vit dans un fichier privé, exclu des sauvegardes et effacé
         // avec l'app (jamais dans le Trousseau, qui survit à la désinstallation).
         let device = DeviceSession(remote: FirestoreDeviceSessionRemote(), store: DeviceIdFileStore())
+        // NOTIF-P0 : le centre de notifications, les choix de Réglages > Notifications, les demandes d'onglet et les rappels.
+        let notifs = NotificationServices.make(currentUid: { gateway.currentUid })
         let trackingServices = TrackingServices.make(
-            gateway: gateway, cache: cache, network: networkMonitor, device: device
+            gateway: gateway, cache: cache, network: networkMonitor, device: device,
+            // Un nouveau statut de ma présence détecté par le suivi : les rappels N1 et N2 sont programmés ou annulés aussitôt.
+            // MODE VOYAGE : mon voyage commence, change de date ou se termine : N7 est programmée, déplacée ou annulée aussitôt.
+            notifications: TrackingNotificationHooks(onPresence: notifs.presenceChanged, onTravel: notifs.travelChanged)
         )
+        let places = PlaceServices.make(network: networkMonitor, onChanged: trackingServices.sharingChanged)
         // Un partage ou un lieu qui change : le suivi relit les Miffs et les lieux (depuis n'importe quel fil).
         let miff = MiffServices.make(
             gateway: gateway, cache: cache, network: networkMonitor, device: device,
-            onSharingChanged: trackingServices.sharingChanged
+            onSharingChanged: trackingServices.sharingChanged,
+            onSharingResumed: trackingServices.sharingResumed,
+            beforeLeave: places.beforeLeave
         )
-        let places = PlaceServices.make(onChanged: trackingServices.sharingChanged)
+        notifs.connect(directory: miff.directory, awaiting: miff.awaiting)
         let updateServices = UpdateServices.make(
             gateway: gateway, network: networkMonitor, device: device, tracking: trackingServices, miff: miff
         )
         let manager = SessionManager(
             SessionDependencies(
-                gateway: gateway,
-                accounts: FirestoreAccountRepository(),
-                pending: pending,
-                flags: flagStore,
-                privacy: privacy,
-                tracker: tracker,
-                cache: cache,
+                gateway: gateway, accounts: FirestoreAccountRepository(), pending: pending, flags: flagStore,
+                privacy: privacy, tracker: tracker, cache: cache,
                 // Le brouillon (noms, photo, numéro) et les Miffs en mémoire partent avec la session. Le suivi des lieux et
-                // les notifications ajouteront leur propre arrêt ici, pour qu'une déconnexion les arrête (ticket §7.6).
-                teardown: Self.teardowns(drafts, miff, places, trackingServices, updateServices),
+                // les notifications ont leur propre arrêt ici, pour qu'une déconnexion les arrête (ticket §7.6).
+                teardown: Self.teardowns(drafts, miff, places, trackingServices, updateServices) + [notifs.teardown],
                 device: device,
                 network: networkMonitor,
                 drafts: drafts, generationCounter: trackingServices.generation,
@@ -249,6 +291,7 @@ final class AppEnvironment {
         placeRepository = places.repository
         addressSearch = places.search
         placeNotices = places.notices
+        placeRequestRepository = places.requests
         joinLimiter = miff.limiter
         consentRenewals = miff.renewals
         awaitingAgreement = miff.awaiting
@@ -257,6 +300,7 @@ final class AppEnvironment {
         update = updateServices
         profileDrafts = drafts
         pendingConsent = pending
+        notifications = notifs
     }
 
     /// Ce que la fin de session arrête, dans l'ordre : le brouillon (noms, photo, numéro) et les Miffs en mémoire, les suppressions en
@@ -357,7 +401,8 @@ final class AppEnvironment {
             search: addressSearch,
             network: network,
             currentUid: { session.currentUid },
-            notices: placeNotices
+            notices: placeNotices,
+            requests: placeRequestRepository
         )
     }
 

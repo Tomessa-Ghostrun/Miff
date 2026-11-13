@@ -320,7 +320,7 @@ final class PhotoSaveTests: XCTestCase {
         let screen = try code("Miff/Views/Feed/FeedPhotoFullScreen.swift")
         let closeAt = try XCTUnwrap(screen.range(of: "labelKey: \"update_photo_close_a11y\"")?.lowerBound)
         let saveAt = try XCTUnwrap(screen.range(of: "PhotoSaveButton(image: opened.image)")?.lowerBound)
-        let footerAt = try XCTUnwrap(screen.range(of: "private var footer: some View")?.lowerBound)
+        let footerAt = try XCTUnwrap(screen.range(of: "private func footer(insets: EdgeInsets)")?.lowerBound)
 
         XCTAssertLessThan(closeAt, saveAt, "après la croix, dans la même barre du haut")
         XCTAssertLessThan(saveAt, footerAt, "plus dans le pied")

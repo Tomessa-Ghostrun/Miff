@@ -101,6 +101,8 @@ extension FirestoreMiffRepository {
         guard MiffId.isValid(miffId) else {
             return .failed(.unknown)
         }
+        // Les demandes d'ajout d'un lieu partent AVANT que la personne cesse d'être membre (ensuite les règles refuseraient leur retrait).
+        await rules.beforeLeave(uid, miffId)
         let store = self.store
         // La clé de l'index est relue auprès du SERVEUR (« free », ou l'identifiant de la Miff) : on la trouve par son CHAMP
         // miffId, jamais par l'identifiant du document.

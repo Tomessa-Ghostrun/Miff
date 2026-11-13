@@ -20,6 +20,16 @@ private struct TabLayer<Content: View>: View {
     }
 }
 
+/// Ce que la coquille donne à l'onglet Profil pour la liste des lieux sous le carrousel (décision du PM, 2026-11-11) : le view model qui les
+/// lit, le message calme d'un geste, et la personne avec ses gestes.
+struct ProfilePlacesShell {
+    let model: ProfilePlacesViewModel
+    let notices: PlaceNotices
+    /// Les demandes d'ajout d'un lieu (LIEU-REQ), sous la même liste.
+    let requests: ProfileRequestsViewModel
+    let context: ProfilePlacesContext
+}
+
 /// Ce que la coquille a besoin de l'Update (UPDATE-3) : le view model de l'écran, et MON statut dans la Miff affichée (la couleur du bouton
 /// central, la bulle d'incitation, le nettoyage de la photo expirée).
 struct UpdateShell {
@@ -63,13 +73,21 @@ struct FeedShellContext {
 struct MainShellView<Feed: View>: View {
     private let miffs: DirectoryState
     @ObservedObject private var profile: ProfileTabViewModel
+    /// Les membres des cartes du Profil : le Profil les observe lui-même (la coquille n'a pas à se redessiner pour eux).
+    private let memberPreviews: MiffMemberPreviews
     private let travel: TravelViewModel
+    private let places: ProfilePlacesShell
+    /// Les demandes d'ajout d'un lieu (LIEU-REQ-C) : le point de l'onglet Profil suit ce que le créateur n'a pas encore vu.
+    @ObservedObject private var requests: ProfileRequestsViewModel
     @ObservedObject private var updateModel: UpdateViewModel
     @ObservedObject private var myStatus: MyStatusStore
     private let update: UpdateShell
     private let onOpenMiff: (String) -> Void
+    private let onCreateMiff: () -> Void
     private let onOpenSettings: (SettingsRoute) -> Void
     private let feed: (FeedShellContext) -> Feed
+    /// NOTIF-6I : un toucher sur une ligne du centre de notifications demande un onglet (le Feed, ou l'écran Update).
+    @ObservedObject private var tabRequests: TabRequests
     @State private var selected: MainTab = .feed
     @State private var keyboardVisible = false
     @State private var nowMillis = Int(Date().timeIntervalSince1970 * 1000)
@@ -83,20 +101,29 @@ struct MainShellView<Feed: View>: View {
     init(
         miffs: DirectoryState,
         profile: ProfileTabViewModel,
+        memberPreviews: MiffMemberPreviews,
         travel: TravelViewModel,
+        places: ProfilePlacesShell,
         update: UpdateShell,
         onOpenMiff: @escaping (String) -> Void,
+        onCreateMiff: @escaping () -> Void,
         onOpenSettings: @escaping (SettingsRoute) -> Void,
+        tabRequests: TabRequests,
         @ViewBuilder feed: @escaping (FeedShellContext) -> Feed
     ) {
         self.miffs = miffs
         _profile = ObservedObject(wrappedValue: profile)
+        self.memberPreviews = memberPreviews
         self.travel = travel
+        self.places = places
+        _requests = ObservedObject(wrappedValue: places.requests)
         _updateModel = ObservedObject(wrappedValue: update.model)
         _myStatus = ObservedObject(wrappedValue: update.status)
         self.update = update
         self.onOpenMiff = onOpenMiff
+        self.onCreateMiff = onCreateMiff
         self.onOpenSettings = onOpenSettings
+        _tabRequests = ObservedObject(wrappedValue: tabRequests)
         self.feed = feed
     }
 
@@ -107,6 +134,11 @@ struct MainShellView<Feed: View>: View {
     /// L'onglet réellement montré : le Feed dès que la dernière Miff a disparu.
     private var shownTab: MainTab {
         MainShellRules.effectiveTab(selected: selected, hasNoMiff: hasNoMiff)
+    }
+
+    /// L'onglet Profil est regardé : sa pop-in « Pas de connexion » suit le réseau (jamais en arrière-plan).
+    private var profileIsWatched: Bool {
+        shownTab == .profile && scenePhase != .background
     }
 
     /// Les écrans empilés recouvrent cette coquille (pile de l'hôte) : `pathIsEmpty` vaut toujours vrai ici.
@@ -174,20 +206,40 @@ struct MainShellView<Feed: View>: View {
                     ProfileTabView(
                         state: profile.state,
                         miffs: miffs,
+                        previews: memberPreviews,
+                        isActive: shownTab == .profile,
                         travel: travel,
+                        offlineRetry: profile.offlineRetry,
+                        placesModel: places.model,
+                        placeNotices: places.notices,
+                        requestsModel: places.requests,
+                        placesContext: places.context,
                         actions: ProfileTabActions(
                             onOpenMyInfo: { onOpenSettings(.myInfo) },
                             onOpenSettings: { onOpenSettings(.settings) },
                             onRetry: { profile.retry() },
-                            onOpenMiff: onOpenMiff
+                            onOpenMiff: onOpenMiff,
+                            onCreateMiff: onCreateMiff
                         )
                     )
+                    // Profil jamais lu et pas de réseau : la même pop-in « Pas de connexion » que le Feed, seulement tant que l'onglet est
+                    // à l'écran (l'essai automatique s'arrête en changeant d'onglet ou en quittant l'app).
+                    .overlay { OfflinePopinOverlay(model: profile.offlineRetry) }
+                    .task(id: profileIsWatched) {
+                        if profileIsWatched {
+                            await profile.watchConnectivity()
+                        }
+                    }
                 }
                 if shownTab == .update {
                     UpdateTabView(model: updateModel, miffCount: miffCount, actions: updateActions)
                         .environment(\.tabBarTopY, barVisible ? barTopY : nil)
                 }
             }
+            .background(
+                // L'écouteur du créateur sur UNE Miff, branché seulement pendant que l'app est devant (LIEU-REQ-C).
+                ProfileRequestsWatcher(model: places.requests, miffs: miffs, myUid: places.context.myUid)
+            )
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 if barVisible {
                     bottomLayer(screenHeight: Self.fullHeight(of: proxy))
@@ -200,6 +252,18 @@ struct MainShellView<Feed: View>: View {
         .onChange(of: hasNoMiff) { noMiff in
             if noMiff {
                 selected = .feed
+            }
+        }
+        // Une ligne du centre de notifications ou une notification a été touchée : l'onglet demandé s'ouvre (une seule fois, même si la
+        // demande est arrivée avant que la coquille existe).
+        .onChange(of: tabRequests.latest) { _ in
+            if let request = tabRequests.takePending() {
+                selected = request.tab
+            }
+        }
+        .onAppear {
+            if let request = tabRequests.takePending() {
+                selected = request.tab
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
@@ -253,6 +317,7 @@ struct MainShellView<Feed: View>: View {
                 selected: shownTab,
                 central: central,
                 variant: updateModel.stage.glassVariant(updateTabSelected: shownTab == .update),
+                profileDot: requests.state.profileDot,
                 onSelect: { selected = $0 }
             )
             .background(TabBarTopReader())

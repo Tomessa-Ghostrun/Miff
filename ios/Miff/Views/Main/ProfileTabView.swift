@@ -6,36 +6,76 @@ struct ProfileTabActions {
     let onOpenSettings: () -> Void
     let onRetry: () -> Void
     let onOpenMiff: (String) -> Void
+    /// « Créer une Miff » (dernière carte du carrousel) : l'hôte choisit entre l'offre (compte gratuit qui a déjà une Miff) et le parcours.
+    let onCreateMiff: () -> Void
+}
+
+/// Ce que l'onglet Profil sait de la personne et des gestes pour la liste des lieux sous le carrousel.
+struct ProfilePlacesContext {
+    /// La personne connectée : elle est comparée au créateur de la Miff pour savoir quels boutons dessiner.
+    var myUid: String?
+    var actions = ProfilePlacesActions.none
 }
 
 /// L'onglet Profil (maquette « profil », ticket Onboarding §6.8 et décision Q2 du ticket Feed / Profil / Réglages) : la photo (ou les
-/// initiales), « Prénom Nom », « C'est toi » et l'engrenage qui ouvre les Réglages ; en dessous, « Mes Miffs » : la carte de chaque Miff
-/// ouvre son écran. Un toucher sur la photo ou le nom ouvre « Mes informations ». Aucune donnée inventée : pas de « Famille » par défaut.
-/// Les lieux de la Miff restent dans l'écran de la Miff (ticket Lieux iOS), pas ici.
+/// initiales), « Prénom Nom », « C'est toi » et l'engrenage qui ouvre les Réglages ; en dessous, « Mes Miffs » : un carrousel, une carte
+/// par Miff (nom, nombre de membres, miniatures des membres ; elle ouvre l'écran de la Miff) et, en dernier, « Créer une Miff ». Un
+/// toucher sur la photo ou le nom ouvre « Mes informations ». Aucune donnée inventée : pas de « Famille » par défaut.
+/// Sous le carrousel, les lieux de confiance de la Miff dont la carte est montrée, visibles par TOUS ses membres (décision du PM, 2026-11-11).
 struct ProfileTabView: View {
     let state: ProfileTabState
     let miffs: DirectoryState
+    /// Les membres des cartes (la Miff du Feed : ce que le Feed a déjà lu ; les autres : une lecture ponctuelle à l'apparition).
+    @ObservedObject var previews: MiffMemberPreviews
+    /// Vrai quand l'onglet Profil est celui en usage : aucune lecture de membres avant.
+    let isActive: Bool
+    /// La carte montrée au départ (nil : la Miff du Feed ; les écrans de démonstration des captures en choisissent une autre).
+    var initialCarouselPage: Int?
     /// MODE VOYAGE (VOY-2I) : la carte « Mode voyage », en DERNIÈRE position de l'écran (après tous les autres blocs), ouverte à tous les comptes.
     @ObservedObject var travel: TravelViewModel
+    /// La pop-in « Pas de connexion » du Profil : fermée par la personne, la page dit la même chose à la place de l'indicateur.
+    @ObservedObject var offlineRetry: OfflineRetryModel
+    /// Les lieux de la Miff du carrousel (lus une fois par Miff, sans écouteur) et le message calme d'un geste.
+    @ObservedObject var placesModel: ProfilePlacesViewModel
+    @ObservedObject var placeNotices: PlaceNotices
+    /// Les demandes d'ajout d'un lieu (LIEU-REQ) : celles du membre, lues avec la liste (un membre ne lit que les siennes).
+    @ObservedObject var requestsModel: ProfileRequestsViewModel
+    let placesContext: ProfilePlacesContext
     let actions: ProfileTabActions
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.lg) {
-                header
-                if state == .unavailable {
-                    unavailable
+                Group {
+                    header
+                    if state == .unavailable {
+                        unavailable
+                    } else if state == .loading && offlineRetry.isInlineVisible {
+                        OfflineInlineNote(model: offlineRetry)
+                    }
                 }
+                .padding(.horizontal, Spacing.lg)
                 miffCards
+                placesSection
                 // MODE VOYAGE : l'encart est le DERNIER bloc de l'écran (décision du PM après la recette du build 26).
                 TravelCardView(model: travel)
             }
-            .padding(.horizontal, Spacing.lg)
             .padding(.vertical, Spacing.md)
         }
         .background(gradientProfileHeader.ignoresSafeArea())
         .accessibilityElement(children: .contain)
         .accessibilityLabel(Text("profile_tab_pane_a11y"))
+        // Retour d'un lieu ou d'un formulaire : la liste regardée est relue si elle est périmée. Départ de l'onglet : le message calme s'en va.
+        .onAppear {
+            if isActive {
+                placesContext.actions.onAppear()
+            }
+        }
+        .onChange(of: isActive) { active in
+            if !active {
+                placesContext.actions.onLeave()
+            }
+        }
     }
 
     private var header: some View {
@@ -103,55 +143,68 @@ struct ProfileTabView: View {
         }
     }
 
-    /// « Mes Miffs » : une carte par Miff ; le nom seulement (pas de nombre de membres ni de photos tant que le Feed et le Profil
-    /// complets n'existent pas sur iPhone).
+    /// « Mes Miffs » : le carrousel (une carte par Miff, puis « Créer une Miff »). Le titre garde les marges de l'écran ; le carrousel, lui,
+    /// a les siennes (ses cartes sont pleine largeur, ombre comprise).
     @ViewBuilder
     private var miffCards: some View {
-        if case .ready(let ready) = miffs, !ready.miffs.isEmpty {
+        if case .ready(let ready) = miffs {
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 Text("profile_tab_miffs_title")
                     .miffTextStyle(textDisplayTitle)
                     .foregroundColor(colorTextForm.color)
                     .accessibilityAddTraits(.isHeader)
-                ForEach(ready.miffs, id: \.id) { miff in
-                    MiffCard(name: miff.name, action: { actions.onOpenMiff(miff.id) })
-                }
+                    .padding(.horizontal, Spacing.lg)
+                ProfileMiffCarousel(
+                    content: ProfileCarouselContent(
+                        miffs: ready.miffs, activeId: ready.activeId, initialPage: initialCarouselPage
+                    ),
+                    previews: previews,
+                    isActive: isActive,
+                    actions: ProfileCarouselActions(
+                        onOpenMiff: actions.onOpenMiff,
+                        onCreate: actions.onCreateMiff,
+                        onMiffShown: { miffId in
+                            placesModel.onCardShown(miffId: miffId)
+                            requestsModel.onCardShown(miffId: miffId, creator: isCreator(of: miffId))
+                        },
+                        onMiffsKnown: { miffIds in
+                            placesModel.retainOnly(miffIds)
+                            requestsModel.retainOnly(miffIds: miffIds)
+                        }
+                    )
+                )
+                .padding(.horizontal, Spacing.lg)
             }
         }
     }
-}
 
-/// La carte d'une Miff : son nom, une courte aide, la flèche. Ouvre l'écran de la Miff.
-private struct MiffCard: View {
-    let name: String
-    let action: () -> Void
+    /// La personne connectée a-t-elle créé cette Miff ? (le champ `ownerUid` de l'annuaire ; inconnu : non, donc un membre.)
+    private func isCreator(of miffId: String) -> Bool {
+        PlaceViewerRole.isCreator(ownerUid: miffs.ownerUid(of: miffId), myUid: placesContext.myUid)
+    }
 
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: Spacing.sm) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(verbatim: name)
-                        .miffTextStyle(textBodyBold16)
-                        .foregroundColor(colorTextForm.color)
-                    Text("profile_tab_miff_hint")
-                        .miffTextStyle(textBodyRegular14)
-                        .foregroundColor(colorTextDescription.color)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
-                Image(systemName: "chevron.forward")
-                    .foregroundColor(colorActionPrimary.color)
-                    .accessibilityHidden(true)
-            }
-            .padding(.horizontal, Spacing.md)
-            .padding(.vertical, Spacing.sm)
-            .frame(minHeight: Spacing.minTouchTarget)
-            .background(RoundedRectangle(cornerRadius: radiusMd, style: .continuous).fill(colorBgSurface.color))
-            .miffShadow(shadowDefault)
+    /// Les lieux de la Miff du carrousel, pour tous ses membres. Rien n'est dessiné (pas même une marge) tant qu'ils n'ont pas été lus.
+    @ViewBuilder
+    private var placesSection: some View {
+        if case .ready(let ready) = miffs,
+           let presentation = ProfilePlacesPresentation.make(
+               state: placesModel.state, miffs: ready.miffs, myUid: placesContext.myUid
+           ) {
+            ProfilePlacesSection(
+                presentation: presentation,
+                // Miff+ n'est affirmé (ou nié) que s'il a été LU auprès du serveur : sinon nil, et la liste n'affirme rien de la formule gratuite.
+                premium: ready.premiumKnown ? ready.premium : nil,
+                notice: placeNotices.notice,
+                actions: placesContext.actions,
+                requests: ProfileRequestsContent.make(
+                    state: requestsModel.state,
+                    miffId: presentation.miffId,
+                    isCreator: presentation.isCreator,
+                    sentNotice: placeNotices.requestNotice,
+                    kind: requestsModel.notice
+                )
+            )
+            .padding(.horizontal, Spacing.lg)
         }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: L10n.format("profile_tab_miff_open_a11y", name)))
-        .accessibilityAddTraits(.isButton)
     }
 }

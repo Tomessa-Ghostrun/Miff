@@ -8,8 +8,8 @@
 
 **Ce que « déployer » veut dire ici** : envoyer le dossier `backend/functions/` vers le projet Firebase `miff-3d283`. Une fonction envoyée est **en ligne tout de suite** et peut être appelée par n'importe quelle copie de l'application (avec la vérification App Check et la connexion exigées, voir plus bas). On ne déploie donc qu'après un « oui » explicite du PM, CI verte.
 
-**État au moment de ce document** : le dossier contient **deux fonctions**.
-- **`ping`** (SRV-1, socle) : fonction de démonstration. Elle ne lit ni n'écrit aucune donnée, ne fait aucune notification, et répond seulement « ok » à une application connectée. Aucune application ne l'appelle encore. Elle sert à vérifier que toute la chaîne (code, déploiement, région, sécurité) fonctionne. **Sans risque pour les utilisateurs, coût attendu : 0 €.**
+**État au moment de ce document (2026-11-13)** : le dossier contient **une seule fonction**. Les fonctions ont été **déployées en production le 2026-11-13** (commit `2aacad1d`, deux fonctions : `ping` et `notifierUpdate`).
+- **`ping` : retirée du code.** C'était une fonction de démonstration (SRV-1) qui ne lisait ni n'écrivait aucune donnée et que personne n'appelait. Elle tournait avec le compte de service « Compute Engine par défaut » du projet (`29899146512-compute@developer.gserviceaccount.com`), dont les droits sont potentiellement très larges, alors qu'elle ne servait à rien : le plus sûr est de la supprimer. **Elle existe encore chez Google tant que le PM n'a pas tapé la commande de suppression** (section 3, encadré « Retrait de `ping` ») ; une fois cela fait, il ne reste que `notifierUpdate` en ligne.
 - **`notifierUpdate`** (SRV-4B) : la **première vraie fonction**. Quand un membre publie une update, elle envoie une notification discrète aux autres membres de sa Miff (« {Prénom} a donné des nouvelles »). **Elle lit des données (fiches de membres, jetons d'appareil) et envoie des notifications réelles** : sa mise en ligne est l'**interrupteur de mise en service** de la fonctionnalité (section 11). Elle exige un **compte de service dédié** (section 1.4) à créer **avant** son déploiement.
 
 ---
@@ -156,13 +156,28 @@ npx firebase deploy --only functions --project miff-3d283
 
 **Si la CLI refuse `nodejs24`** (message du type « runtime not supported » ou « unsupported Node.js version ») : ne force rien et préviens Claude. Le repli prévu est **Node 22** : dans `backend/firebase.json` (`"runtime": "nodejs22"`), dans `backend/functions/package.json` (`"engines": { "node": "22" }`) et dans `backend/tests/unit/functions-config.test.js` (valeurs attendues). Le code est identique ; `firebase-admin` 14 demande Node 22 ou plus, donc compatible.
 
+### Retrait de `ping` (à faire UNE fois, après la fusion de la PR qui la retire du code)
+
+`ping` est retirée du code, mais **elle reste en ligne chez Google** tant qu'on ne la supprime pas : retirer le code ne supprime rien tout seul. La commande exacte à taper (Git Bash ou PowerShell) :
+
+```bash
+cd C:\dev\miff-deploy\backend
+npx firebase functions:delete ping --region europe-west9 --project miff-3d283
+```
+
+- La CLI demande confirmation : **relis que le nom affiché est bien `ping`**, puis réponds oui. Ne supprime aucune autre fonction (surtout pas `notifierUpdate`).
+- Cette commande ne touche **pas** `notifierUpdate` ni aucune donnée (`ping` n'en avait aucune). Elle ne peut pas être « recréée par accident » : le code de `main` ne contient plus `ping`, donc un futur `deploy --only functions` ne la remet pas en ligne (et un test de la CI échouerait si quelqu'un la rajoutait).
+- Vérification : `npx firebase functions:list --project miff-3d283` ne doit plus lister que `notifierUpdate` (région `europe-west9`, compte de service `notify-update@…`).
+- Si tu lances un déploiement complet **avant** cette suppression, la CLI proposera de supprimer `ping` (« absente du code ») : réponds **oui pour `ping` uniquement**, après avoir lu la liste (voir le tableau ci-dessous).
+- Pas de retour de service à craindre : personne n'appelle `ping`. Si, contre toute attente, une application l'appelait, l'appel échouerait simplement (le résultat n'était pas utilisé).
+
 ### Les questions que la commande peut te poser
 
 | Question (en anglais) | Ta réponse |
 |---|---|
 | Activer des services Google (Cloud Functions, Artifact Registry, Cloud Build…) | Elle les active d'elle-même si besoin ; si elle demande confirmation : **oui**. Activer un service ne coûte rien en soi. |
 | `No cleanup policy detected for repositories in europe-west9 … This may result in a small monthly bill as container images accumulate over time.` suivi de `How many days do you want to keep container images before they're deleted?` | **Tape `1` puis Entrée** (1 jour : c'est la valeur proposée par défaut, durée de rétention courte). Cette règle supprime automatiquement les anciennes « boîtes » techniques de tes fonctions que Google conserve sinon indéfiniment (petite facture mensuelle qui monte avec le temps). Si la CLI te pose plutôt une question oui/non à ce sujet, réponds **oui**. Si tu la rates, la commande `npx firebase functions:artifacts:setpolicy --project miff-3d283` permet de la définir après coup. |
-| Une demande de suppression de fonctions absentes du code (`The following functions are found in your project but do not exist in your local source code`) | Lis la liste. **Si elle contient autre chose que ce que tu attends, réponds NON** et préviens Claude. Au premier déploiement, cette question n'apparaît pas. |
+| Une demande de suppression de fonctions absentes du code (`The following functions are found in your project but do not exist in your local source code`) | Lis la liste **en entier** avant de répondre. **Oui seulement si la liste ne contient QUE `ping`** (c'est la fonction retirée du code, voir l'encadré ci-dessous). **Si elle contient autre chose (par exemple `notifierUpdate`, ou un nom que tu ne reconnais pas), réponds NON** et préviens Claude : une fonction absente du code peut venir d'une erreur de dossier ou de commit. Ne passe jamais `--force` (il répond « oui » à ta place). Si tu as déjà supprimé `ping` avec la commande ci-dessous, la question n'apparaît plus. |
 | Tout message qui parle d'**instances minimales** ou d'un **coût minimum** | **Non**, annule (`Ctrl+C`) et préviens Claude : le dépôt n'en prévoit jamais (une instance minimale est facturée même sans trafic). |
 
 La CLI se termine par `Deploy complete!`. En cas d'erreur, **rien de cassé n'est mis en ligne** : l'ancienne version reste (au premier déploiement, il n'y a simplement rien).
@@ -178,23 +193,23 @@ La CLI se termine par `Deploy complete!`. En cas d'erreur, **rien de cassé n'es
 
 | # | Vérification | Où | OK si |
 |---|---|---|---|
-| 1 | La fonction est en ligne | Console Firebase > projet **Miff** > **Functions** (ou la commande `npx firebase functions:list --project miff-3d283`) | `ping` apparaît, région **europe-west9**, environnement 2e génération, Node.js 24 |
-| 2 | Les limites sont bien appliquées | Cliquer sur la fonction > détails (ou Google Cloud > Cloud Run > service de la fonction) | `ping` : instances maximales **3**, mémoire **128 Mio**, délai **30 s**, instances minimales **0**. `notifierUpdate` : instances maximales **5**, mémoire **256 Mio**, délai **30 s**, instances minimales **0**, compte de service **`notify-update@miff-3d283…`** (et non le compte « Compute Engine default ») |
-| 3 | Aucune erreur | Onglet **Journaux** de `ping` (section 5) | Aucun message rouge « Error » |
+| 1 | La fonction est en ligne | Console Firebase > projet **Miff** > **Functions** (ou la commande `npx firebase functions:list --project miff-3d283`) | `notifierUpdate` apparaît (et **plus `ping`**, une fois supprimée), région **europe-west9**, environnement 2e génération, Node.js 24 |
+| 2 | Les limites sont bien appliquées | Cliquer sur la fonction > détails (ou Google Cloud > Cloud Run > service de la fonction) | `notifierUpdate` : instances maximales **5**, mémoire **256 Mio**, délai **30 s**, instances minimales **0**, compte de service **`notify-update@miff-3d283…`** (et non le compte « Compute Engine default ») |
+| 3 | Aucune erreur | Onglet **Journaux** de `notifierUpdate` (section 5) | Aucun message rouge « Error » |
 | 4 | Pas de dépense | Google Cloud > Facturation > Rapports (le lendemain) | 0 € pour Cloud Functions |
 | 5 | Tu notes le déploiement | Date, commit déployé (8 caractères), version précédente | Dans un fichier à toi ou dans la conversation avec Claude |
 
-> `ping` ne peut pas être appelée depuis un navigateur : elle exige que l'**application** (vérifiée par App Check) soit connectée. Une réponse « refusée » à un essai maladroit est le **bon** comportement. Le premier vrai appel viendra avec les tickets suivants (SRV-2 et suivants). D'ici là, la vérification est : « la fonction est en ligne, avec les bonnes limites, sans erreur ».
+> `notifierUpdate` n'a **aucun point d'entrée appelable depuis un navigateur ni une application** : elle se déclenche seule quand une photo d'update est écrite dans Firestore. Il n'y a donc rien à « essayer » à la main : la vérification est « la fonction est en ligne, avec les bonnes limites et le bon compte de service, sans erreur », puis le test de la section 11.4. **`ping` ne doit plus apparaître** dans la liste (sinon : section 3, « Retrait de `ping` »).
 
 ---
 
 ## 5. Lire les journaux (logs)
 
-Les journaux disent ce que chaque fonction a fait. **Nos journaux APPLICATIFS (ce que le code de Miff écrit) ne contiennent jamais de position, de nom, de jeton ni d'adresse e-mail** (règle codée et testée : un message de journal est un petit code comme `ping.ok`, avec au plus un résultat et un nombre). **Mais** les journaux TECHNIQUES de la plateforme Google (Cloud Run / Cloud Logging, journaux de requêtes) gardent l'**adresse IP et le user-agent** de l'appelant : c'est une donnée personnelle que Miff ne maîtrise pas, à citer dans la politique de confidentialité (point RGPD, risque assumé par le PM, décision du 2026-10-23).
+Les journaux disent ce que chaque fonction a fait. **Nos journaux APPLICATIFS (ce que le code de Miff écrit) ne contiennent jamais de position, de nom, de jeton ni d'adresse e-mail** (règle codée et testée : un message de journal est un petit code comme `notif.update.bilan`, avec au plus un résultat et un nombre). **Mais** les journaux TECHNIQUES de la plateforme Google (Cloud Run / Cloud Logging, journaux de requêtes) gardent l'**adresse IP et le user-agent** de l'appelant : c'est une donnée personnelle que Miff ne maîtrise pas, à citer dans la politique de confidentialité (point RGPD, risque assumé par le PM, décision du 2026-10-23).
 
 - **Console Firebase** : projet **Miff** > **Functions** > onglet **Journaux** (filtre par fonction et par gravité).
 - **Console Google Cloud** : https://console.cloud.google.com/logs (choisir le projet `miff-3d283`, filtrer « Ressource : Cloud Run Revision » ou la fonction).
-- **Ligne de commande** : `npx firebase functions:log --project miff-3d283 --only ping -n 30` (les 30 dernières lignes).
+- **Ligne de commande** : `npx firebase functions:log --project miff-3d283 --only notifierUpdate -n 30` (les 30 dernières lignes).
 
 Niveaux : `INFO` = normal ; `WARNING` = à regarder si ça se répète (par exemple une demande refusée) ; `ERROR` = quelque chose a échoué : copie le message à Claude.
 
@@ -209,9 +224,9 @@ Par ordre de simplicité :
 1. **La supprimer** (propre, réversible : on redéploie le même code plus tard) :
    ```bash
    cd C:\dev\miff-deploy\backend
-   npx firebase functions:delete ping --region europe-west9 --project miff-3d283
+   npx firebase functions:delete <nomDeLaFonction> --region europe-west9 --project miff-3d283
    ```
-   La CLI demande confirmation : relis le nom de la fonction avant de répondre oui. **Attention** : tant que la fonction est présente dans le code de `main`, le déploiement suivant la remettra en ligne ; demande à Claude de la retirer du code (PR) avant de redéployer.
+   (Exemple réel, déjà décidé : le retrait de `ping`, section 3, encadré « Retrait de `ping` » : `npx firebase functions:delete ping --region europe-west9 --project miff-3d283`.) La CLI demande confirmation : relis le nom de la fonction avant de répondre oui. **Attention** : tant que la fonction est présente dans le code de `main`, le déploiement suivant la remettra en ligne ; demande à Claude de la retirer du code (PR) avant de redéployer. Inversement, une fonction supprimée **et** absente du code ne revient pas.
 2. **Pause rapide sans suppression** (si la console le permet) : Google Cloud > Cloud Run > cliquer le service de la fonction > onglet Sécurité > exiger l'authentification (ce qui bloque les appels publics). *Libellés non vérifiés : à confirmer dans la console ; en cas de doute, utilise la suppression.*
 3. **Plafond de dépense** (section 1.2) : à 100 %, Google met les fonctions en pause tout seul jusqu'au mois suivant.
 4. **Dernier recours, urgence financière** : prévenir Claude avant toute désactivation de la facturation du projet (conséquences sur Firestore et sur l'application non vérifiées).
@@ -248,7 +263,7 @@ Après un retour arrière : prévenir Claude (agent `backend-data`) pour corrige
 | Coût mensuel total (Firestore + fonctions) | ≈ 0 $ | ≈ 0,5 $ | ≈ 12 $ |
 | Dont les fonctions elles-mêmes | 0 $ | 0 $ | 0 $ (≈ 75 % du quota gratuit) |
 
-- **Tant qu'on est sur `ping` seule : 0 €.** Les 2 millions d'invocations par mois sont gratuites ; `ping` n'est appelée par personne.
+- **Tant qu'aucune notification n'est envoyée : 0 €.** Les 2 millions d'invocations par mois sont gratuites ; `notifierUpdate` ne s'exécute que lorsqu'un membre publie une update (la fonction `ping`, qui ne servait à rien, est retirée).
 - Le coût dominant n'est **pas** les fonctions, mais les lectures Firestore de l'application elle-même (au-delà de 50 000 par jour). Voir `surveillance-quotas.md`.
 - Lignes annexes, non chiffrées ici et normalement de l'ordre de quelques centimes : stockage des « boîtes » techniques (limité par la règle de 1 jour), journaux, construction (120 minutes par jour gratuites). **Non vérifié** : à lire dans Google Cloud > Facturation > Rapports après quelques semaines.
 - **Cloud Scheduler** (utile plus tard pour « plus de nouvelles ») : 3 tâches gratuites **par compte de facturation**, pas par projet. Si le compte de facturation est partagé avec Ghostrun, il faut compter les tâches des deux projets.
@@ -282,8 +297,8 @@ Chaque garde-fou ci-dessous est dans `backend/functions/src/options.ts` et **vé
 
 Une fonction s'exécute avec un « compte de service » (l'identité qu'elle présente à Google). Par défaut, c'est le **compte « Compute » par défaut du projet, qui a souvent le rôle Éditeur** : très large (il pourrait lire et modifier presque tout le projet). Aucune clé n'est en jeu, mais si une faille permettait de détourner une fonction, ce rôle large serait celui de l'attaquant.
 
-- **`ping` ne touche ni Firestore ni FCM** : l'identité par défaut est tolérée pour elle seule.
-- **Avant SRV-4 (première fonction qui lit Firestore ou envoie une notification)** : créer un compte de service **dédié** (par exemple nommé `miff-functions`) avec **uniquement** les rôles nécessaires, puis le brancher dans le code avec l'option `serviceAccount` (le **nom** du compte, jamais une clé). Jamais le rôle Éditeur ni Propriétaire.
+- **Aucune exception à l'identité par défaut** : la seule fonction qui la gardait, `ping` (qui ne touchait aucune donnée), a été retirée parce que ce compte (« Compute Engine par défaut ») a potentiellement des droits très larges pour un bénéfice nul. La liste d'exceptions du code est **vide**, et un test de la CI le vérifie.
+- **Pour toute fonction (lecture Firestore, envoi de notification, ou autre)** : créer un compte de service **dédié** (par exemple nommé `miff-functions`) avec **uniquement** les rôles nécessaires, puis le brancher dans le code avec l'option `serviceAccount` (le **nom** du compte, jamais une clé). Jamais le rôle Éditeur ni Propriétaire.
 - Rôles (confirmés dans la documentation Google le 2026-11-12 pour `notifierUpdate`, voir section 1.4) : accès aux données Firestore (rôle « Utilisateur Cloud Datastore » ; **attention**, un compte de service ignore les règles de sécurité Firestore : ce rôle donne donc accès à toute la base, positions comprises, d'où l'importance de ne l'attribuer qu'aux fonctions qui en ont besoin), envoi de notifications (« Firebase Cloud Messaging API Admin »), et écriture des journaux.
 - Création et attribution des rôles : **par le PM** dans la console Google Cloud > IAM, **pas à pas en section 1.4** (compte `notify-update`, rôles confirmés pour `notifierUpdate`, droit « Utilisateur du compte de service » pour celui qui déploie).
 - Le test `garde-couts.test.mjs` n'accepte `serviceAccount` que sous la forme `serviceAccount: "nom-de-compte-dedie"` (jamais un compte par défaut, jamais une valeur calculée), et refuse tout compte au nom évoquant Éditeur, administrateur ou propriétaire.
@@ -298,7 +313,7 @@ Deux dépendances de Firebase ont un script d'installation : `@firebase/util` et
 
 - Il faudrait créer une **clé de compte de service** avec le droit de déployer des fonctions (un droit très large), la stocker comme secret GitHub et la renouveler. `docs/dev/secrets.md` interdit d'en créer.
 - Un déploiement automatique sur une fusion supprimerait le « oui » explicite du PM.
-- Les fonctions s'exécutent avec une **identité gérée par Google** : aucune clé n'existe, ni côté dépôt, ni côté code. L'identité par défaut est cependant trop large (voir §9 bis) : `ping` (qui ne touche à aucune donnée) la garde, mais **toute fonction métier, dont `notifierUpdate`, utilise un compte de service dédié aux droits minimaux** (section 1.4) ; un test refuse toute fonction métier sans compte dédié explicite.
+- Les fonctions s'exécutent avec une **identité gérée par Google** : aucune clé n'existe, ni côté dépôt, ni côté code. L'identité par défaut est cependant trop large (voir §9 bis) : **toute fonction, dont `notifierUpdate`, utilise un compte de service dédié aux droits minimaux** (section 1.4) ; un test refuse toute fonction sans compte dédié explicite.
 
 Si ce choix change un jour, il se prend par une décision écrite du PM, avec une clé à portée minimale et les tests `project-guard.test.js` / `functions-config.test.js` adaptés en conséquence.
 
@@ -347,7 +362,7 @@ cd C:\dev\miff-deploy\backend
 npx firebase deploy --only functions:notifierUpdate --project miff-3d283
 ```
 
-(`--only functions:notifierUpdate` ne touche pas à `ping`. Les questions possibles sont celles de la section 3.) **Un échec du type « le compte de service n'existe pas » ou « permission `iam.serviceAccounts.actAs` refusée »** veut dire que la section 1.4 (étape A ou C) n'est pas terminée. **Ne contourne pas** en demandant de retirer l'option de compte dans le code : préviens Claude.
+(`--only functions:notifierUpdate` ne touche à aucune autre fonction. Les questions possibles sont celles de la section 3.) **Un échec du type « le compte de service n'existe pas » ou « permission `iam.serviceAccounts.actAs` refusée »** veut dire que la section 1.4 (étape A ou C) n'est pas terminée. **Ne contourne pas** en demandant de retirer l'option de compte dans le code : préviens Claude.
 
 ### 11.4 La tester après déploiement avec un compte de test
 

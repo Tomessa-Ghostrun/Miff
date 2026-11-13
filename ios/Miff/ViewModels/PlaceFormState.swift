@@ -7,6 +7,8 @@ import Foundation
 enum PlaceFormMode: Equatable {
     case create
     case edit
+    /// Un membre qui n'est pas le créateur propose un lieu (LIEU-REQ-B) : le même formulaire, « Soumettre la demande ».
+    case request
 }
 
 /// La liste sous le champ d'adresse.
@@ -25,6 +27,12 @@ enum PlaceMessage: Equatable {
     case miffGone
     /// Un lieu a changé depuis l'ouverture du formulaire (identifiant déjà pris).
     case idTaken
+    /// Demande : la personne a déjà 3 demandes en attente dans cette Miff (critère M5). Dit comme une information calme, jamais une erreur.
+    case requestLimitMember
+    /// Demande : la Miff porte déjà toutes les demandes qu'elle prend (10). Idem.
+    case requestLimitMiff
+    /// Demande : le serveur ne prend pas encore les demandes de lieu. Idem.
+    case requestsUnavailable
 
     init(failure: MiffFailure) {
         self = failure == .offline ? .offline : .generic
@@ -82,6 +90,8 @@ struct PlaceFormState: CustomStringConvertible {
     var deleteDialogOpen = false
     var deleting = false
     var deleteMessage: ActionMessage?
+    /// Demande : la personne a déjà ses 3 demandes ; le formulaire le dit et n'envoie rien.
+    var requestBlocked = false
     /// Le formulaire est fini : l'hôte quitte l'écran.
     var end: PlaceFormEnd?
     /// Miff+ est nécessaire : l'hôte ouvre l'écran de l'offre (et, pour la limite, ferme le formulaire).
@@ -114,7 +124,23 @@ struct PlaceFormState: CustomStringConvertible {
     /// chose a changé.
     var canSave: Bool {
         !loading && loadFailed == nil && !busy && PlaceName.hasSomething(name) && chosen != nil
-            && !selectedMiffIds.isEmpty && category != nil && changed
+            && !selectedMiffIds.isEmpty && category != nil && changed && !requestBlocked
+    }
+
+    /// Ce que le pied du formulaire dit : le dernier message, ou (demande) la limite de 3 tant qu'elle tient : taper dans un champ efface un
+    /// message, jamais celle-ci.
+    var displayedMessage: PlaceMessage? {
+        message ?? (requestBlocked ? .requestLimitMember : nil)
+    }
+
+    /// Les messages de limite et d'indisponibilité d'une demande sont des informations calmes : jamais la couleur d'une erreur.
+    var messageIsCalm: Bool {
+        switch displayedMessage {
+        case .offline, .requestLimitMember, .requestLimitMiff, .requestsUnavailable:
+            return true
+        case .generic, .miffGone, .idTaken, .none:
+            return false
+        }
     }
 
     /// Les Miffs auxquelles le lieu est attaché MAINTENANT (celles dont une suppression le retire), dans l'ordre de la liste,

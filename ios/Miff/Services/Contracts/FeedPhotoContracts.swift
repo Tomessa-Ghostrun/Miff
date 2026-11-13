@@ -11,6 +11,12 @@ protocol PhotoSource {
     func fetch(miffId: String, uid: String, nowMillis: Int) async -> PhotoFetch
 }
 
+/// La lecture brute de MON propre `miffs/{id}/positions/{moi}` : UN `get` auprès du SERVEUR, seulement son existence. nil : pas su (hors connexion,
+/// lecture refusée, déconnecté) ; jamais pris pour « non publiée ».
+protocol OwnPositionServerReading {
+    func exists(miffId: String) async -> Bool?
+}
+
 /// Ce que lit la carte d'un membre : la mémoire d'abord, puis le serveur une seule fois, puis la réciprocité.
 @MainActor
 protocol PhotoReading {

@@ -16,6 +16,8 @@ struct FeedTabActions {
     let onSignOut: () -> Void
     /// L'entrée discrète des Réglages restreints (#113), montrée seulement dans l'état « Pas encore de Miff ».
     let onOpenSettings: () -> Void
+    /// La cloche de l'en-tête : le centre de notifications (NOTIF-6I).
+    let onOpenNotifications: () -> Void
 }
 
 /// Ce qui relance l'observation : la Miff affichée, l'onglet en usage / l'app au premier plan, « Réessayer ».
@@ -32,11 +34,20 @@ struct FeedTab: View {
     /// FEED-8 : la lecture des photos des cartes (paresseuse : rien n'est lu avant qu'une carte vienne à l'écran).
     @StateObject private var photos: FeedPhotos
     @ObservedObject private var awaiting: AwaitingAgreement
+    @ObservedObject private var notificationCenter: NotificationCenterService
+    @ObservedObject private var secondChance: NotificationSecondChanceViewModel
+    private let reconciler: NotificationReconciler
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
     @State private var noticeVisible = false
 
-    init(environment: AppEnvironment, context: FeedShellContext, actions: FeedTabActions) {
+    init(
+        environment: AppEnvironment,
+        context: FeedShellContext,
+        memberPreviews: MiffMemberPreviews,
+        profilePlaces: ProfilePlacesViewModel,
+        actions: FeedTabActions
+    ) {
         self.context = context
         self.actions = actions
         let session = environment.session
@@ -45,6 +56,8 @@ struct FeedTab: View {
         let repository = environment.miffRepository
         let network = environment.network
         let awaitingAgreement = environment.awaitingAgreement
+        let secondChance = environment.notificationSecondChance
+        let reconciler = environment.notifications.reconciler
         let myStatus = environment.update.myStatus
         var dependencies = FeedDependencies(
             directory: directory,
@@ -52,13 +65,28 @@ struct FeedTab: View {
             services: services,
             network: network,
             awaiting: awaitingAgreement,
-            currentUid: { session.currentUid }
+            currentUid: { session.currentUid },
+            // Une update de la personne vue publiée (sa photo existe) : la carte « deuxième chance » peut apparaître.
+            onStatusesLoaded: { event in
+                if event.myStatus?.hasPhoto == true {
+                    secondChance.noteFirstUpdate()
+                }
+                // NOTIF-P0 : l'instantané des faits de couleur est réécrit et les rappels N1 à N4 sont réconciliés.
+                Task { await reconciler.feedStatusesLoaded(event) }
+            }
         )
         // L'Update ne lit pas ma fiche : le Feed la lui donne (UN seul écouteur, D19).
         dependencies.onMyStatus = { facts, stopped in myStatus.update(facts, sharingStopped: stopped) }
+        // Les membres que le Feed a lus servent aussi aux photos de la carte du Profil : aucune lecture de plus.
+        dependencies.onMembers = { miffId, members in memberPreviews.record(miffId: miffId, members: members) }
+        // Les lieux que le Feed a lus servent aussi à la liste des lieux du Profil : aucune lecture de plus.
+        dependencies.onPlaces = { miffId, places in profilePlaces.seedFromFeed(miffId: miffId, places: places) }
         _model = StateObject(wrappedValue: FeedViewModel(dependencies: dependencies))
         _photos = StateObject(wrappedValue: environment.makeFeedPhotos())
         _awaiting = ObservedObject(wrappedValue: awaitingAgreement)
+        _notificationCenter = ObservedObject(wrappedValue: environment.notifications.center)
+        _secondChance = ObservedObject(wrappedValue: secondChance)
+        self.reconciler = reconciler
     }
 
     private var running: Bool {
@@ -74,11 +102,36 @@ struct FeedTab: View {
 
     var body: some View {
         let key = ObservationKey(miffId: activeMiffId, running: running, restarts: model.restarts)
-        FeedScreen(model: model, awaiting: awaiting, isActive: running, actions: screenActions)
+        FeedScreen(
+            model: model,
+            awaiting: awaiting,
+            isActive: running,
+            actions: screenActions,
+            notificationCenter: notificationCenter,
+            secondChance: secondChance
+        )
             .environment(\.feedPhotos, photos)
             .task(id: key) {
                 if key.running {
                     await model.observe(miffId: key.miffId)
+                }
+            }
+            // Une autre Miff devient la Miff active : les rappels de l'ancienne sont annulés aussitôt.
+            .task(id: key.miffId) {
+                await reconciler.reconcile()
+            }
+            // La carte « deuxième chance » relit l'état du téléphone à l'ouverture et au retour dans l'app (la personne a pu changer
+            // l'autorisation dans les Réglages d'iOS).
+            .task(id: running) {
+                if running {
+                    await secondChance.refresh()
+                }
+            }
+            // La pop-in « Pas de connexion » suit le réseau tant que le Feed est à l'écran : annulée dès que l'onglet change ou que l'app
+            // part en arrière-plan (plus de pop-in ni d'essai automatique). Indépendante de « Réessayer » : un essai ne la remet pas à zéro.
+            .task(id: key.running) {
+                if key.running {
+                    await model.watchConnectivity()
                 }
             }
             .overlay(alignment: .bottom) {
@@ -115,7 +168,8 @@ struct FeedTab: View {
                 openURL(url) { accepted in done(accepted) }
             },
             onSignOut: actions.onSignOut,
-            onOpenSettings: actions.onOpenSettings
+            onOpenSettings: actions.onOpenSettings,
+            onOpenNotifications: actions.onOpenNotifications
         )
     }
 

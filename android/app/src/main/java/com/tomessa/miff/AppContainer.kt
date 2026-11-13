@@ -28,12 +28,15 @@ import com.tomessa.miff.data.auth.PasswordResetGateway
 import com.tomessa.miff.data.auth.PendingConsentStore
 import com.tomessa.miff.data.auth.SharedPreferencesPendingConsentStore
 import com.tomessa.miff.data.auth.UserProfileRepository
+import com.tomessa.miff.data.feed.CachedPhotoReader
 import com.tomessa.miff.data.feed.FeedRefresher
 import com.tomessa.miff.data.feed.FirestoreCircleStatusReader
 import com.tomessa.miff.data.feed.FirestoreFeedRefresher
-import com.tomessa.miff.data.feed.FirestorePhotoReader
+import com.tomessa.miff.data.feed.FirestoreOwnPositionProbe
+import com.tomessa.miff.data.feed.FirestorePhotoSource
 import com.tomessa.miff.data.feed.FirestorePositionReader
 import com.tomessa.miff.data.feed.FirestoreStatusObserver
+import com.tomessa.miff.data.feed.OwnPositionResolver
 import com.tomessa.miff.data.feed.PhotoCache
 import com.tomessa.miff.data.feed.PhotoReader
 import com.tomessa.miff.data.feed.PositionReader
@@ -165,6 +168,7 @@ import com.tomessa.miff.domain.auth.SignInProvider
 import com.tomessa.miff.domain.miff.JoinAttemptLimiter
 import com.tomessa.miff.domain.notification.CircleNewsKeys
 import com.tomessa.miff.domain.notification.SnapshotMember
+import com.tomessa.miff.domain.paywall.MonotonicClock
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.profile.GooglePhotoPrefill
 import com.tomessa.miff.domain.push.DeviceAppVersion
@@ -676,6 +680,12 @@ class AppContainer(
      */
     val joinLimiter: JoinAttemptLimiter by lazy { JoinAttemptLimiter(nowMillis = SystemClock::elapsedRealtime) }
 
+    /**
+     * The clock of the close cross of the offer (the paywall, ticket paywall-v2): elapsed real time since boot, counted in the background too, and
+     * not changeable by the person (unlike the wall clock). Tests give their own.
+     */
+    val paywallClock: MonotonicClock = MonotonicClock(SystemClock::elapsedRealtime)
+
     /** The Miffs of the person signed in, in memory for the session (Feed, Profile tab); also deals with a loss of access. */
     val miffDirectory: MiffDirectory by lazy {
         MiffDirectory(
@@ -705,9 +715,19 @@ class AppContainer(
     val photoCache: PhotoCache by lazy { PhotoCache() }
 
     val photoReader: PhotoReader by lazy {
-        FirestorePhotoReader(photoCache, ownPositionPublished = {
-            LocalPublishedPositions(SharedPreferencesTrackingLocalStore(context)).isPublished(it)
-        })
+        // A refusal of the rules only becomes the sentence "Partage ta position..." when it is KNOWN that I have not published my position: the local note of the
+        // detection first, then ONE read of my own position on the server (see OwnPositionResolver).
+        val resolver =
+            OwnPositionResolver(
+                myUid = { authGateway.currentUid },
+                localPublished = {
+                    LocalPublishedPositions(
+                        SharedPreferencesTrackingLocalStore(context),
+                    ).isPublished(it)
+                },
+                probe = FirestoreOwnPositionProbe(myUid = { authGateway.currentUid }),
+            )
+        CachedPhotoReader(photoCache, FirestorePhotoSource(), ownPosition = resolver::state)
     }
 
     val publishLedger: PublishLedger by lazy { SharedPreferencesPublishLedger(context) }

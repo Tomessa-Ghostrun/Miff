@@ -58,7 +58,7 @@ enum AnalyticsContract {
     #endif
 
     private static let signInMethods = ParamSpec.text(["email", "google", "apple"])
-    private static let paywallTriggers = ParamSpec.text(["extra_miff", "extra_trusted_place"])
+    private static let paywallTriggers = ParamSpec.text(["extra_miff", "extra_trusted_place", "danger_zone"])
 
     /// Les huit événements produit de la version 1 du contrat.
     private static let productEvents: [AnalyticsEventSpec] = [

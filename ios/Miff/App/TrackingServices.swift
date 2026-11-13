@@ -26,6 +26,17 @@ struct TrackingServices {
         }
     }
 
+    /// La personne reprend le partage de cette Miff : sa détection est remise à zéro, puis les Miffs sont relues (voir
+    /// `TrackingEngine+Resume.swift`). Remplace `sharingChanged` dans ce cas.
+    var sharingResumed: (String) -> Void {
+        let runtime = self.runtime
+        return { miffId in
+            Task { @MainActor in
+                runtime.sharingResumed(miffId: miffId)
+            }
+        }
+    }
+
     /// L'arrêt du suivi pour la fin de session : zones retirées, position, lieux et statuts en attente effacés. Borné : une
     /// déconnexion n'attend jamais plus de quelques secondes un passage en cours (l'arrêt est déjà marqué, l'effacement suit à la
     /// fin du passage).
@@ -40,7 +51,8 @@ struct TrackingServices {
         gateway: AuthGateway,
         cache: CachePurger,
         network: NetworkMonitor,
-        device: DeviceSession
+        device: DeviceSession,
+        notifications: TrackingNotificationHooks
     ) -> TrackingServices {
         // La batterie est lue à l'ouverture et à la sortie de l'app : le suivi du niveau est allumé dès le démarrage pour que la première
         // lecture ne soit pas vide (le système met un instant à donner le niveau). Aucune donnée n'est lue ici.
@@ -57,7 +69,12 @@ struct TrackingServices {
                 network: network
             ),
             store: FirestoreTrackingStore(base: miffStore, placeStore: FirestorePlaceStore(base: miffStore)),
-            local: TrackingLocalFileStore(),
+            // Les notifications écoutent les nouveaux statuts de MA présence (N1 et N2) sans rien changer au moteur.
+            local: PresenceNotifyingLocalStore(
+                wrapping: TrackingLocalFileStore(),
+                onPresence: notifications.onPresence,
+                onTravel: notifications.onTravel
+            ),
             position: location,
             geofences: location,
             movement: location,

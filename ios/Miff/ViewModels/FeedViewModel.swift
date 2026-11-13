@@ -76,6 +76,9 @@ struct FeedTimings {
     var minRefreshIntervalMillis = 15_000
     /// L'indicateur d'« Actualiser » se termine au plus tard après ce délai (8 s), avec la mention honnête « Dernières informations de… ».
     var refreshTimeoutSeconds: TimeInterval = 8
+    /// La pop-in « Pas de connexion » : un essai automatique toutes les 10 s, et le délai sans aucune donnée avant qu'elle vienne
+    /// quand le système dit pourtant « en ligne » (8 s).
+    var offlinePopin = OfflinePopinTimings()
 }
 
 /// Ce dont le Feed a besoin du monde extérieur (des doubles dans les tests).
@@ -90,11 +93,20 @@ struct FeedDependencies {
     var zone: () -> TimeZone = { TimeZone.current }
     var sleep: (Int) async -> Void = AppClock.live.pause
     var timings = FeedTimings()
+    /// NOTIF-P0 : appelé à chaque réponse DU SERVEUR sur les statuts de la Miff affichée (la carte « deuxième chance » des notifications
+    /// en vit ; le planificateur de rappels s'y branchera).
+    var onStatusesLoaded: @MainActor (FeedStatusesEvent) -> Void = { _ in }
     /// MON statut et « mon partage est arrêté » à chaque calcul : l'Update en tire la couleur du bouton central et la bulle (D19).
     var onMyStatus: (MyStatusFacts?, Bool) -> Void = { _, _ in }
+    /// Les membres de la Miff affichée, DÉJÀ lus par l'écoute : le Profil les réutilise pour les photos de sa carte (zéro lecture de plus).
+    var onMembers: (String, [MiffMember]) -> Void = { _, _ in }
+    /// Les lieux de la Miff affichée, DÉJÀ lus par l'écoute : la liste des lieux du Profil les réutilise (zéro lecture de plus). Seulement
+    /// quand le serveur les a confirmés : une copie du téléphone encore vide n'est jamais donnée (le Profil lit alors la Miff une fois).
+    var onPlaces: (String, [Place]) -> Void = { _, _ in }
 }
 
 @MainActor
+// swiftlint:disable:next type_body_length
 final class FeedViewModel: ObservableObject {
     @Published private(set) var uiState: FeedUiState = .loading
     @Published private(set) var directoryState: DirectoryState = .loading {
@@ -108,6 +120,8 @@ final class FeedViewModel: ObservableObject {
     @Published private(set) var restarts = 0
 
     let dependencies: FeedDependencies
+    /// La pop-in « Pas de connexion » du Feed quand rien n'est à montrer (ni contenu, ni copie du cache).
+    let offlineRetry: OfflineRetryModel
     var directory: MiffDirectory { dependencies.directory }
 
     var piece: FeedMiffPiece? { didSet { recompute() } }
@@ -128,6 +142,9 @@ final class FeedViewModel: ObservableObject {
     var lastRefreshAtMillis: Int?
     var locateTask: Task<Void, Never>?
     private var subscriptions: [AnyCancellable] = []
+    private var directoryRefreshing = false
+    private var directoryReadStartedOffline = false
+    private var directoryReplayPending = false
 
     struct StatusDecision: Equatable {
         let shouldRead: Bool
@@ -136,6 +153,14 @@ final class FeedViewModel: ObservableObject {
 
     init(dependencies: FeedDependencies) {
         self.dependencies = dependencies
+        offlineRetry = OfflineRetryModel(
+            network: dependencies.network,
+            sleep: dependencies.sleep,
+            timings: dependencies.timings.offlinePopin
+        )
+        offlineRetry.onRetry = { [weak self] kind in
+            self?.offlineRetryRequested(kind)
+        }
         nowMillis = dependencies.clock()
         waiting = dependencies.awaiting.waiting
         directoryState = dependencies.directory.state
@@ -157,10 +182,54 @@ final class FeedViewModel: ObservableObject {
     func retry() {
         lostReported = false
         restarts += 1
+        refreshDirectory()
+    }
+
+    /// Relit les Miffs, une lecture à la fois : un geste ou un essai automatique pendant qu'une lecture est en cours n'en empile pas une autre.
+    /// Une seule exception : la lecture en cours a COMMENCÉ hors connexion (elle ne répondra que par la copie du téléphone) et le réseau est
+    /// revenu depuis. Elle est alors rejouée UNE fois à sa fin (drapeau « rejouer »), sans quoi l'écran resterait sur la copie.
+    private func refreshDirectory() {
+        guard !directoryRefreshing else {
+            if directoryReadStartedOffline, dependencies.network.isOnline() {
+                directoryReplayPending = true
+            }
+            return
+        }
+        directoryRefreshing = true
         let directory = self.directory
         Task {
-            await directory.refresh()
+            var again = true
+            while again {
+                self.directoryReadStartedOffline = !self.dependencies.network.isOnline()
+                self.directoryReplayPending = false
+                await directory.refresh()
+                again = self.directoryReplayPending
+            }
+            self.directoryRefreshing = false
         }
+    }
+
+    /// La pop-in « Pas de connexion » demande une relecture (le réseau est là, c'est garanti par la pop-in). Un geste ou un retour du
+    /// réseau relancent tout ; l'essai automatique reste léger : les écoutes en cours se rattachent seules, seules les Miffs jamais
+    /// lues ou une écoute en échec sont relancées.
+    private func offlineRetryRequested(_ kind: OfflineRetryKind) {
+        switch kind {
+        case .manual, .networkBack:
+            retry()
+        case .automatic:
+            guard case .ready = directoryState else {
+                refreshDirectory()
+                return
+            }
+            if case .failed? = piece {
+                retry()
+            }
+        }
+    }
+
+    /// Suit le réseau pour la pop-in tant que le Feed est à l'écran (l'écran lance cette tâche, annulée en quittant l'onglet ou l'app).
+    func watchConnectivity() async {
+        await offlineRetry.watch()
     }
 
     /// Premium : une autre Miff a été choisie dans le sélecteur.
@@ -175,6 +244,7 @@ final class FeedViewModel: ObservableObject {
         if next != uiState {
             uiState = next
         }
+        offlineRetry.setNeed(offlineNeed)
         if case .ready(let content) = next {
             dependencies.onMyStatus(content.myFacts, content.myLabel == .sharingStopped)
         }
@@ -204,6 +274,32 @@ final class FeedViewModel: ObservableObject {
             return .unavailable
         case .loading, .lost:
             return .loading
+        }
+    }
+
+    /// Le Feed n'a RIEN à montrer (ni contenu, ni copie du cache) : c'est le seul cas où la pop-in « Pas de connexion » a un sens. Avec
+    /// la Miff connue (même en cache) le Feed garde son comportement : « Dernières informations de… » et la mention hors connexion.
+    private var offlineNeed: OfflineNeed {
+        switch directoryState {
+        case .loading:
+            return .loading
+        case .unavailable:
+            return .failed
+        case .ready(let ready):
+            guard let activeId = ready.activeId else {
+                return .none
+            }
+            guard let piece, piece.miffId == activeId else {
+                return .loading
+            }
+            switch piece {
+            case .data, .lost:
+                return .none
+            case .loading:
+                return .loading
+            case .failed:
+                return .failed
+            }
         }
     }
 
@@ -274,7 +370,25 @@ final class FeedViewModel: ObservableObject {
 
     private func watchNetwork() async {
         for await online in dependencies.network.onlineChanges() {
+            let wasOffline = offline
             offline = !online
+            if online && wasOffline {
+                rereadMiffsServedFromCache()
+            }
+        }
+    }
+
+    /// Le réseau revient alors que les Miffs affichées viennent du cache du téléphone (ou n'ont pas pu être lues) : elles sont relues UNE
+    /// fois auprès du serveur, sans quoi l'écran resterait sur la copie jusqu'à la prochaine ouverture de l'app.
+    private func rereadMiffsServedFromCache() {
+        switch directoryState {
+        case .ready(let ready) where ready.fromCache:
+            refreshDirectory()
+        case .unavailable, .loading:
+            // « loading » : la lecture en cours a commencé hors connexion ; elle est rejouée à sa fin (drapeau « rejouer »).
+            refreshDirectory()
+        case .ready:
+            break
         }
     }
 
@@ -303,6 +417,10 @@ final class FeedViewModel: ObservableObject {
         case .data(let snapshot):
             lostReported = false
             piece = .data(miffId, snapshot)
+            dependencies.onMembers(miffId, snapshot.members)
+            if !snapshot.fromCache {
+                dependencies.onPlaces(miffId, snapshot.places)
+            }
             updateMe(snapshot)
             reconsiderStatuses()
         case .accessLost:

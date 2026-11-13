@@ -8,7 +8,9 @@
 	     Sign in with Apple (AUTH-3) : capacite a activer sur l'identifiant d'app com.tomessa.miff (developer.apple.com >
 	     Certificats, identifiants et profils > Identifiants > Capacites > Sign in with Apple) ET le fournisseur Apple dans
 	     Firebase Authentication. Sans la capacite sur l'identifiant, la signature automatique de l'archive echoue.
-	     Aucune autre entitlement : pas de localisation, pas de trousseau partage, pas de notifications. -->
+	     Aucune autre entitlement : pas de localisation, pas de trousseau partage. Notifications (NOTIF-P0) : les notifications LOCALES
+	     (rappels programmes par le telephone, centre local) n'exigent AUCUNE entitlement ; la cle `aps-environment` (push, cle APNs)
+	     n'est volontairement PAS la : aucun push en phase 0 (ticket docs/tickets/notifications.md, §20). -->
 	<key>com.apple.developer.devicecheck.appattest-environment</key>
 	<string>production</string>
 	<key>com.apple.developer.applesignin</key>

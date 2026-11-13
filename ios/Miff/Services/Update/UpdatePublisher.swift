@@ -152,6 +152,7 @@ final class UpdatePublisher {
         }
         // Hors ligne : rien n'est tenté (une transaction échouerait de toute façon, après une longue attente). La photo reste à l'écran.
         guard network.isOnline() else {
+            journal.record(.updateOfflineNoNetwork)
             return .offline
         }
         // Qui tient la session : relue auprès du serveur AVANT toute écriture (un téléphone remplacé n'écrit rien).
@@ -160,9 +161,11 @@ final class UpdatePublisher {
         case .replaced:
             return .refused
         case .unverified:
+            journal.record(.updateOfflineSessionUnverified)
             return .offline
         case .confirmed:
             guard case .cleared(let identifier) = await device.clearance(uid: uid) else {
+                journal.record(.updateOfflineNoClearance)
                 return .offline
             }
             deviceId = identifier
@@ -259,6 +262,7 @@ final class UpdatePublisher {
                 outcome.notSharing += committed.notSharing
                 outcome.needsAgreement += committed.needsAgreement
             } catch {
+                journal.record(Self.commitErrorKind(error))
                 outcome.failure = Self.result(for: error)
                 break
             }
@@ -404,5 +408,36 @@ extension UpdatePublisher {
             journal.record(timedOut ? .updateHandOverTimedOut : .updateHandOverFailed)
         }
         return published
+    }
+}
+
+/// Le diagnostic d'un échec de la publication (recette TestFlight, 2026-11-11 : « Pas de connexion » avec du réseau). Le journal ne garde que
+/// ce CODE de classe d'erreur : ni le message, ni le chemin, ni l'identifiant d'un document (l'erreur peut les citer).
+extension UpdatePublisher {
+    fileprivate static func commitErrorKind(_ error: Error) -> JournalKind {
+        if error is OperationTimedOut {
+            return .updateErrorTimedOut
+        }
+        let nsError = error as NSError
+        if nsError.domain == NSURLErrorDomain {
+            return .updateErrorNetworkUrl
+        }
+        guard nsError.domain == FirestoreErrorNumber.domain else {
+            return .updateErrorOther
+        }
+        switch nsError.code {
+        case FirestoreErrorNumber.unavailable:
+            return .updateErrorUnavailable
+        case FirestoreErrorNumber.cancelled:
+            return .updateErrorCancelled
+        case FirestoreErrorNumber.resourceExhausted:
+            return .updateErrorQuota
+        case FirestoreErrorNumber.deadlineExceeded:
+            return .updateErrorTimedOut
+        case FirestoreErrorNumber.permissionDenied, FirestoreErrorNumber.unauthenticated:
+            return .updateErrorRefused
+        default:
+            return .updateErrorOther
+        }
     }
 }

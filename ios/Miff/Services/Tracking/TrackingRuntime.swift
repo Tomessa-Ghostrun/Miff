@@ -99,6 +99,15 @@ final class TrackingRuntime: TrackingEventSink {
         run { await engine.refresh(.sharingChanged) }
     }
 
+    /// REPRISE du partage d'une Miff : le drapeau est posé, puis les Miffs et les lieux sont relus, dans le même travail (donc dans l'ordre).
+    func sharingResumed(miffId: String) {
+        let engine = self.engine
+        run {
+            await engine.markResumed(miffId)
+            await engine.refresh(.sharingChanged)
+        }
+    }
+
     /// L'Update vient de mesurer ma position au toucher de « Publier » (moins de 10 minutes) et la remet au suivi, qui la publie LUI-MÊME avec
     /// ses garanties habituelles (« Toujours » + position exacte, partage actif et consentement de version 3, session SESS-3, garde-fou et
     /// disjoncteur, règles Firestore) : l'Update n'écrit jamais `positions/{moi}` (critère U8). Rend la main à la fin du passage du suivi

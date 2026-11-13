@@ -12,6 +12,9 @@ struct FeedListActions {
     let onRetry: () -> Void
     let onReviewAgreement: () -> Void
     let onRefresh: () async -> Void
+    /// La carte « deuxième chance » des notifications (NOTIF-1I).
+    let onSecondChanceActivate: () -> Void
+    let onSecondChanceDismiss: () -> Void
 }
 
 /// Où est le haut du contenu sur l'écran (lu par l'écran pour déplacer l'en-tête ; seuls les écarts comptent).
@@ -26,16 +29,24 @@ private struct ContentTopKey: PreferenceKey {
 struct FeedListView: View {
     let feed: FeedUiState
     let ready: DirectoryReady
+    /// La pop-in « Pas de connexion » du Feed : fermée par la personne, la page dit la même chose à la place du squelette.
+    @ObservedObject var offlineRetry: OfflineRetryModel
     let locate: LocateUiState
     let texts: FeedTexts
-    /// L'en-tête est dessiné par-dessus la liste : sa hauteur est la marge haute du contenu, pour que la première carte commence dessous.
+    /// L'en-tête est dessiné par-dessus la liste : la marge haute du contenu, MESURÉE (`FeedTopInset`), pour que la première carte commence dessous.
     let topInset: CGFloat
     /// Le mouvement de la bulle n'existe que si l'onglet est en usage et l'app au premier plan.
     let isActive: Bool
     let agreementWaiting: Bool
+    /// La carte « Un rappel si tu oublies de donner de tes nouvelles ? » est due (une seule fois, après la première update).
+    let secondChanceDue: Bool
     let scrollToTop: Int
     let actions: FeedListActions
     let onContentMoved: (CGFloat) -> Void
+    /// La distance défilée lue directement sur la vue de défilement (voir `ScrollDistanceReader`).
+    let onScrolled: (CGFloat) -> Void
+    /// L'origine du contenu de la vue de défilement dans la fenêtre (voir `FeedTopInset`).
+    let onOrigin: (CGFloat) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let topId = "feed-top"
@@ -50,13 +61,15 @@ struct FeedListView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(spacing: 14) {
+                VStack(spacing: 0) {
                     topAnchor
-                    items
+                    LazyVStack(spacing: 14) {
+                        items
+                    }
+                    .padding(.horizontal, Spacing.md)
+                    .padding(.bottom, Spacing.md)
                 }
-                .padding(.horizontal, Spacing.md)
-                .padding(.top, topInset + Spacing.md)
-                .padding(.bottom, Spacing.md)
+                .background(ScrollDistanceReader(onChange: onScrolled, onOrigin: onOrigin))
             }
             .onPreferenceChange(ContentTopKey.self) { onContentMoved($0) }
             .refreshable { await actions.onRefresh() }
@@ -74,10 +87,11 @@ struct FeedListView: View {
         }
     }
 
-    /// Un point de hauteur nulle tout en haut du contenu : sa position dit où est le contenu.
+    /// La marge haute du contenu (l'en-tête mesuré + `FeedTopInset.gapBelowHeader`), tout en haut : son haut est le haut du contenu, sa position
+    /// dit où est le contenu, et « retour en haut » (le logo) y ramène la liste AVEC la marge, jamais la première carte sous l'en-tête.
     private var topAnchor: some View {
         Color.clear
-            .frame(height: 0)
+            .frame(height: topInset + FeedTopInset.gapBelowHeader)
             .id(Self.topId)
             .background(
                 GeometryReader { proxy in
@@ -99,13 +113,25 @@ struct FeedListView: View {
                 onReview: actions.onReviewAgreement
             )
         }
+        if secondChanceDue {
+            NotificationSecondChanceCard(
+                onActivate: actions.onSecondChanceActivate,
+                onDismiss: actions.onSecondChanceDismiss
+            )
+        }
         switch feed {
         case .loading:
-            if !agreementWaiting {
+            if offlineRetry.isInlineVisible {
+                OfflineInlineNote(model: offlineRetry)
+            } else if !agreementWaiting {
                 FeedSkeleton()
             }
         case .unavailable:
-            unavailable
+            if offlineRetry.isInlineVisible {
+                OfflineInlineNote(model: offlineRetry)
+            } else {
+                unavailable
+            }
         case .ready(let content):
             readyItems(content)
         }
