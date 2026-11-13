@@ -1041,6 +1041,17 @@
     <string name="notif_center_delete_a11y">Supprimer cette notification</string>
     <string name="notif_center_unread_a11y">non lu</string>
     <string name="notif_center_in_miff">Miff « %1$s »</string>
+    <!-- NOTIF-P1A : « Depuis ta dernière visite » (ticket notifications-p1-derniere-visite.md, décisions du 2026-11-13) ; lignes sans accord de genre -->
+    <string name="notif_c1_title">Depuis ta dernière visite</string>
+    <string name="notif_c1_limit">Ces lignes résument ce qui a changé, pas tout ce qui s\'est passé.</string>
+    <string name="notif_c1_arrival">%1$s a rejoint %2$s %3$s</string>
+    <string name="notif_c1_departure">%1$s a quitté %2$s %3$s</string>
+    <string name="notif_c1_update">%1$s a donné de ses nouvelles %2$s</string>
+    <string name="notif_c1_silence">Dernière nouvelle de %1$s : %2$s</string>
+    <string name="notif_c1_silence_vowel">Dernière nouvelle d\'%1$s : %2$s</string>
+    <string name="notif_c1_someone">un proche</string>
+    <string name="notif_c1_moment_at_weekday">%1$s à %2$s</string>
+    <string name="notif_c1_moment_since_weekday">%1$s à %2$s</string>
     <string name="android_notif_channel_reminders">Rappels pour toi</string>
     <string name="android_notif_channel_reminders_desc">Un petit rappel pour donner de tes nouvelles quand tu passes orange ou rouge.</string>
     <string name="android_notif_channel_reminders_quiet">Rappels pour toi (nuit calme)</string>

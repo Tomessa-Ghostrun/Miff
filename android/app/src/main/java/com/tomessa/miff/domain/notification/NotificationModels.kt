@@ -50,16 +50,23 @@ enum class NotificationType(
      * never planned, never shown by the system, no switch in Settings. A tap leads to the list of the places of that Miff (the Profile), handled by the centre.
      */
     N8("n8", NotificationFamily.CIRCLE, NotificationDestination.FEED, quietAtNight = true),
+
+    /**
+     * NOTIF-P1A, "Depuis ta dernière visite" (ticket notifications-p1-derniere-visite.md, line C1): at most 3 lines of the centre about what changed for the people of the active
+     * Miff since the last visit. A line of the centre ONLY, like [N8]: never planned, never shown by the system (no banner, no sound, no badge), no switch of its own, and
+     * independent of the permission of the phone and of the general switch (decision Q4 of the PM). A tap leads to the Feed.
+     */
+    C1("c1", NotificationFamily.CIRCLE, NotificationDestination.FEED, quietAtNight = true),
     ;
 
     companion object {
         fun fromCode(code: String?): NotificationType? = entries.firstOrNull { it.code == code }
 
         /**
-         * The notifications of the perimeter: the ones a phone can SHOW, with a switch in Settings and a channel of the system. [N8] is not one of them (a line of
-         * the centre only), so every rule that is about showing, planning, switching or silencing a notification is written over THIS list, never over [entries].
+         * The notifications of the perimeter: the ones a phone can SHOW, with a switch in Settings and a channel of the system. [N8] and [C1] are not
+         * (lines of the centre only), so every rule that is about showing, planning, switching or silencing a notification is written over THIS list, never over [entries].
          */
-        val PERIMETER: List<NotificationType> = entries.filter { it != N8 }
+        val PERIMETER: List<NotificationType> = entries.filter { it != N8 && it != C1 }
     }
 }
 
@@ -93,7 +100,7 @@ data class NotificationPreferences(
             NotificationType.N7 -> n7
 
             // In the centre only, no switch of its own: always on.
-            NotificationType.N8 -> true
+            NotificationType.N8, NotificationType.C1 -> true
         }
 
     /** The type may be produced: the general switch AND its own are on. */
@@ -110,7 +117,7 @@ data class NotificationPreferences(
             NotificationType.N4 -> copy(n4 = on)
             NotificationType.N6 -> copy(n6 = on)
             NotificationType.N7 -> copy(n7 = on)
-            NotificationType.N8 -> this
+            NotificationType.N8, NotificationType.C1 -> this
         }
 }
 

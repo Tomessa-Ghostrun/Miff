@@ -109,21 +109,31 @@ fun NotificationCenterScreen(
             CenterMenu(
                 open = menuOpen,
                 onOpenChange = { menuOpen = it },
-                hasRows = state.rows.isNotEmpty() && !locked,
+                // The group "Depuis ta dernière visite" is real even when the notifications are off (decision Q4): the gestures of the menu apply to it.
+                hasRows = state.visitRows.isNotEmpty() || (state.rows.isNotEmpty() && !locked),
                 onMarkAllRead = actions.onMarkAllRead,
                 onClearAll = { confirmClear = true },
             )
         },
     ) {
-        if (locked) {
-            LockedPreview(state.banner) { actions.onBannerAction(state.banner) }
-        } else if (state.banner != CenterBanner.NONE) {
+        if (!locked && state.banner != CenterBanner.NONE) {
             Banner(state.banner) { actions.onBannerAction(state.banner) }
             Spacer(Modifier.size(Spacing.m))
         }
+        // NOTIF-P1A: "Depuis ta dernière visite" is not a notification of the phone: it stays visible whatever the permission and the general switch say (decision Q4).
+        if (state.visitRows.isNotEmpty()) {
+            VisitGroup(
+                rows = state.visitRows,
+                nowMillis = nowMillis,
+                onOpen = actions.onOpen,
+                onDelete = actions.onDelete,
+            )
+            Spacer(Modifier.size(Spacing.s))
+        }
         if (locked) {
-            // Nothing else: the real lines stay out of sight while the notifications are off.
-        } else if (state.rows.isEmpty()) {
+            // The real lines of the days stay out of sight while the notifications are off: a blurred preview and ONE way to turn them on.
+            LockedPreview(state.banner) { actions.onBannerAction(state.banner) }
+        } else if (state.rows.isEmpty() && state.visitRows.isEmpty()) {
             EmptyState()
         } else {
             NotificationSections.group(state.rows, { it.createdAtMillis }, nowMillis, zone).forEach { (section, rows) ->
@@ -158,6 +168,36 @@ fun NotificationCenterScreen(
             onCancel = { confirmClear = false },
         )
     }
+}
+
+/**
+ * NOTIF-P1A, "Depuis ta dernière visite": at most 3 lines above the days, then the honest sentence about what they are (a summary of what changed, not a history). Each line is one
+ * element for the screen reader, like every other line of the centre ("{phrase}, non lu").
+ */
+@Composable
+private fun VisitGroup(
+    rows: List<CenterRow>,
+    nowMillis: Long,
+    onOpen: (CenterRow) -> Unit,
+    onDelete: (String) -> Unit,
+) {
+    Text(
+        text = stringResource(R.string.notif_c1_title),
+        style = textBodyBold16,
+        color = colorTextForm,
+        modifier = Modifier.padding(top = Spacing.s, bottom = Spacing.xs).semantics { heading() },
+    )
+    rows.forEach { row ->
+        CenterRowView(row = row, nowMillis = nowMillis, older = false, onOpen = {
+            onOpen(row)
+        }, onDelete = { row.ids.forEach(onDelete) })
+    }
+    Text(
+        text = stringResource(R.string.notif_c1_limit),
+        style = textBodyCaption,
+        color = colorTextSecondary,
+        modifier = Modifier.padding(top = Spacing.xs),
+    )
 }
 
 private fun sectionTitle(section: ItemSection): Int =
@@ -417,7 +457,10 @@ private fun CenterRowView(
 ) {
     val context = LocalContext.current
     val title =
-        if (row.type == NotificationType.N8 && row.requesterName != null && row.requestMiffName != null) {
+        if (row.visit != null) {
+            // "Depuis ta dernière visite": a whole sentence made now from the kind, the category, the time and the first name the app knows (the centre holds none).
+            LastVisitTexts(context).sentence(row.visit, row.visitName, nowMillis)
+        } else if (row.type == NotificationType.N8 && row.requesterName != null && row.requestMiffName != null) {
             // "Léa propose un lieu pour « Famille »" (one request), "Léa a proposé 3 lieux pour « Famille »" (several, all unread): made now from the first name
             // the app knows; the centre itself keeps no name.
             if (row.count > 1) {
@@ -428,7 +471,8 @@ private fun CenterRowView(
         } else {
             stringResource(NotificationTexts.title(row.type))
         }
-    val body = stringResource(NotificationTexts.body(row.type))
+    // The sentence of a line of "Depuis ta dernière visite" carries its hour: no second line of body, no second line of time.
+    val body = if (row.visit != null) null else stringResource(NotificationTexts.body(row.type))
     val time =
         remember(row.createdAtMillis, older) {
             val flags =
@@ -440,7 +484,12 @@ private fun CenterRowView(
             DateUtils.formatDateTime(context, row.createdAtMillis, flags)
         }
     val miff = row.miffName?.let { stringResource(R.string.notif_center_in_miff, it) }
-    val meta = if (miff != null) "$time · $miff" else time
+    val meta =
+        when {
+            row.visit != null -> miff
+            miff != null -> "$time · $miff"
+            else -> time
+        }
     val unreadState = stringResource(R.string.notif_center_unread_a11y)
     val deleteLabel = stringResource(R.string.notif_center_delete_a11y)
     var menuOpen by remember { mutableStateOf(false) }
@@ -479,8 +528,8 @@ private fun CenterRowView(
                     style = if (row.unread) textBodyBold16 else textBodyBold14,
                     color = colorTextForm,
                 )
-                Text(text = body, style = textBodyRegular14, color = colorTextDescription)
-                Text(text = meta, style = textBodyCaption, color = colorTextSecondary)
+                body?.let { Text(text = it, style = textBodyRegular14, color = colorTextDescription) }
+                meta?.let { Text(text = it, style = textBodyCaption, color = colorTextSecondary) }
             }
         }
         DropdownMenu(

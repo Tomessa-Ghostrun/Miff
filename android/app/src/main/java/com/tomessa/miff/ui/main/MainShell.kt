@@ -329,6 +329,7 @@ private fun MainNavigation(
                                     currentUid = { container.authGateway.currentUid },
                                     waitingAgreement = container.awaitingAgreement.waiting,
                                     notifications = container.feedNotificationLink,
+                                    visits = container.feedVisitLink,
                                 )
                             }
                         },
@@ -401,6 +402,7 @@ private fun MainNavigation(
                 viewModel(key = profileRequestsKey(scopeKey), factory = profileRequestsFactory(container))
             val profileRequests by profileRequestsViewModel.state.collectAsStateWithLifecycle()
             val notificationsState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
+            val focusMember by container.tabRequests.pendingFocus.collectAsStateWithLifecycle()
             val requestNotificationWindow =
                 rememberNotificationPermissionRequest(onAnswered = notificationsViewModel::onSystemWindowAnswered)
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { notificationsViewModel.refresh() }
@@ -471,6 +473,8 @@ private fun MainNavigation(
                                 onOpenCenter = { navController.openNotificationCenter() },
                                 onSecondChanceEnable = requestNotificationWindow,
                                 onSecondChanceLater = notificationsViewModel::onSecondChanceLater,
+                                focusMember = focusMember,
+                                onFocusHandled = container.tabRequests::consumeFocus,
                             ),
                     ),
                 tabRequests = container.tabRequests,

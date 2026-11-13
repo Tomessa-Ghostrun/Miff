@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.ui.components.MiffButton
+import com.tomessa.miff.ui.main.FeedFocus
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorActionPrimary
@@ -47,6 +48,10 @@ class FeedNotifications(
     val onOpenCenter: () -> Unit = {},
     val onSecondChanceEnable: () -> Unit = {},
     val onSecondChanceLater: () -> Unit = {},
+    /** NOTIF-P1A: the card of this member is brought into view (a tap on a line of "Depuis ta dernière visite"); null when nobody is asked for. */
+    val focusMember: FeedFocus? = null,
+    /** The Feed took the request (or found no such card): it is forgotten. */
+    val onFocusHandled: (FeedFocus) -> Unit = {},
 )
 
 /**

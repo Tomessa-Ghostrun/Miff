@@ -52,9 +52,12 @@ class MiffApplication : Application() {
                         container.foregroundTicks.arrived()
                         // NOTIF-1A / 4A: the channels follow the language of the app, and the reminders are brought in line with the plan.
                         container.notificationsLookAgain()
+                        // NOTIF-P1A: back after 30 minutes or more (or a cold start) = the next fresh picture of the Feed is compared with the last one seen.
+                        container.lastVisitForeground()
                     },
                     onBackground = {
                         AppVisibility.inForeground = false
+                        container.lastVisitBackground()
                         container.trackingLooksAgain(TrackingEngine.Reason.BACKGROUNDED)
                     },
                 ),

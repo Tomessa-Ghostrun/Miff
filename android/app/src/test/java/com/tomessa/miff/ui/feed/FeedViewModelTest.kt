@@ -9,6 +9,7 @@ import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.data.miff.LostMiff
 import com.tomessa.miff.data.miff.MiffDirectory
 import com.tomessa.miff.data.miff.MyMiffsLoad
+import com.tomessa.miff.data.notification.FeedVisitLink
 import com.tomessa.miff.domain.feed.Bubble
 import com.tomessa.miff.domain.feed.FeedBanner
 import com.tomessa.miff.domain.feed.LocateResult
@@ -21,6 +22,7 @@ import com.tomessa.miff.domain.miff.MiffObservation
 import com.tomessa.miff.domain.miff.MiffRole
 import com.tomessa.miff.domain.miff.MiffSnapshot
 import com.tomessa.miff.domain.miff.MiffSummary
+import com.tomessa.miff.domain.notification.VisitState
 import com.tomessa.miff.domain.tracking.PresenceValue
 import com.tomessa.miff.domain.tracking.StatusLevel
 import com.tomessa.miff.testsupport.FakeCachePurger
@@ -113,6 +115,25 @@ private class FakeRefresher : FeedRefresher {
     }
 }
 
+/** What the Feed tells "Depuis ta dernière visite": the fresh pictures, in order. */
+private class RecordingVisits : FeedVisitLink {
+    class Call(
+        val myUid: String,
+        val state: VisitState,
+        val firstNames: Map<String, String>,
+    )
+
+    val calls = mutableListOf<Call>()
+
+    override fun onFreshPicture(
+        myUid: String,
+        state: VisitState,
+        firstNames: Map<String, String>,
+    ) {
+        calls += Call(myUid, state, firstNames)
+    }
+}
+
 /** The view model of the Feed: what it listens to, when, what it computes, and the sheet "Localiser" (no screen, no Firestore). */
 @OptIn(ExperimentalCoroutinesApi::class)
 class FeedViewModelTest {
@@ -138,6 +159,8 @@ class FeedViewModelTest {
         Dispatchers.resetMain()
     }
 
+    private val visits = RecordingVisits()
+
     private fun viewModel() =
         FeedViewModel(
             directory = directory,
@@ -150,6 +173,7 @@ class FeedViewModelTest {
             waitingAgreement = waiting,
             nowMillis = { base + dispatcher.scheduler.currentTime },
             zone = { ZoneOffset.UTC },
+            visits = visits,
         )
 
     private fun member(
@@ -1200,6 +1224,119 @@ class FeedViewModelTest {
             advanceTimeBy(10 * minute)
             // Three automatic attempts at most for a network that answers nothing, then the button only.
             assertEquals(before + 3, readsOfTheMiffs())
+            job.cancel()
+        }
+
+    // --- NOTIF-P1A: what the Feed tells "Depuis ta dernière visite" ---------------------------------------------------------------------------
+
+    @Test
+    fun visits_aFreshPictureIsTold_withTheOthersOnly_andNeverACachedOne() =
+        runTest(dispatcher) {
+            ready()
+            val feed = statuses.enqueue()
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            repo.observer.flowOf(MIFF_ID).tryEmit(snapshot(*trio))
+            feed.trySend(StatusFeed.Data(mapOf("me" to status(), "t" to status()), fromCache = true))
+            runCurrent()
+            assertTrue("a copy of the cache is not what the person saw", visits.calls.isEmpty())
+            feed.trySend(
+                StatusFeed.Data(
+                    mapOf(
+                        "me" to status(),
+                        "t" to status(),
+                        "a" to status(PresenceValue.OUT, presenceAgo = hour),
+                    ),
+                    fromCache = false,
+                ),
+            )
+            runCurrent()
+            val call = visits.calls.last()
+            assertEquals("me", call.myUid)
+            assertEquals(MIFF_ID, call.state.miffId)
+            assertEquals(
+                setOf("t", "a"),
+                call.state.members
+                    .map { it.uid }
+                    .toSet(),
+            )
+            assertEquals(mapOf("t" to "Thomas", "a" to "Amandine"), call.firstNames)
+            job.cancel()
+        }
+
+    @Test
+    fun visits_offline_orAfterAnActualiserThatTheServerDidNotAnswer_nothingIsTold() =
+        runTest(dispatcher) {
+            ready()
+            val feed = statuses.enqueue()
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            repo.observer.flowOf(MIFF_ID).tryEmit(snapshot(*trio))
+            feed.trySend(StatusFeed.Data(mapOf("me" to status(), "t" to status()), fromCache = false))
+            runCurrent()
+            val before = visits.calls.size
+            assertTrue(before >= 1)
+            network.online = false
+            runCurrent()
+            advanceTimeBy(2 * minute)
+            runCurrent()
+            assertEquals(
+                "offline: the Feed says \"Dernières informations de…\", nothing is compared",
+                before,
+                visits.calls.size,
+            )
+            job.cancel()
+        }
+
+    @Test
+    fun visits_theStatusesKeptInMemoryFromBeforeAnAbsence_areNotTakenForFreshOnes() =
+        runTest(dispatcher) {
+            ready()
+            val first = statuses.enqueue()
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            repo.observer.flowOf(MIFF_ID).tryEmit(snapshot(*trio))
+            first.trySend(StatusFeed.Data(mapOf("me" to status(), "t" to status()), fromCache = false))
+            runCurrent()
+            assertTrue(visits.calls.isNotEmpty())
+            job.cancel()
+            runCurrent()
+            visits.calls.clear()
+            // The person comes back after a long time: the view model still holds the old statuses, but the server has not spoken yet.
+            advanceTimeBy(3 * hour)
+            val second = statuses.enqueue()
+            val again = observing(vm)
+            runCurrent()
+            repo.observer.flowOf(MIFF_ID).tryEmit(snapshot(*trio))
+            runCurrent()
+            assertTrue("the old statuses are not the present", visits.calls.isEmpty())
+            second.trySend(
+                StatusFeed.Data(
+                    mapOf("me" to status(), "t" to status(PresenceValue.OUT, presenceAgo = hour)),
+                    fromCache = false,
+                ),
+            )
+            runCurrent()
+            assertTrue(visits.calls.isNotEmpty())
+            again.cancel()
+        }
+
+    @Test
+    fun visits_whenIDoNotShare_nothingIsTold() =
+        runTest(dispatcher) {
+            ready()
+            val vm = viewModel()
+            val job = observing(vm)
+            runCurrent()
+            repo.observer
+                .flowOf(
+                    MIFF_ID,
+                ).tryEmit(snapshot(member("me", "Camille", sharing = false), member("t", "Thomas")))
+            runCurrent()
+            assertTrue(visits.calls.isEmpty())
             job.cancel()
         }
 }

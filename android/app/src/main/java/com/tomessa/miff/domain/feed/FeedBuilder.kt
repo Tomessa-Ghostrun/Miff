@@ -328,7 +328,7 @@ object FeedBuilder {
         }
     }
 
-    private fun sentenceKind(category: PlaceCategory?): PlaceKind? =
+    internal fun sentenceKind(category: PlaceCategory?): PlaceKind? =
         when (category) {
             PlaceCategory.HOME -> PlaceKind.HOME
             PlaceCategory.WORK -> PlaceKind.WORK

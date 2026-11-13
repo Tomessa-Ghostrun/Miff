@@ -114,4 +114,27 @@ object NotificationList {
     ): List<NotificationItem> = items.filterNot { it.id == id }
 
     fun unreadCount(items: List<NotificationItem>): Int = items.count { it.unread }
+
+    /**
+     * NOTIF-P1A: the group "Depuis ta dernière visite" is REPLACED as a whole (or removed when [lines] is empty): there are never more than [LastVisit.MAX_LINES] lines
+     * of it, and never an old one. A line whose key is still there keeps what the person did with it (read), so an identical comparison changes nothing.
+     */
+    fun replaceVisit(
+        items: List<NotificationItem>,
+        lines: List<NotificationItem>,
+        nowMillis: Long,
+    ): List<NotificationItem> {
+        val before = items.filter { it.type == NotificationType.C1 }.associateBy { it.id }
+        val kept = items.filter { it.type != NotificationType.C1 }
+        return NotificationRetention.apply(
+            kept + lines.take(LastVisit.MAX_LINES).map { before[it.id] ?: it },
+            nowMillis,
+        )
+    }
+
+    /** NOTIF-P1A: the lines of the group that are about nobody still in the Miff, or about a Miff that is gone, are removed (the retreat of a member, the loss of access). */
+    fun removeVisit(
+        items: List<NotificationItem>,
+        remove: (NotificationItem) -> Boolean,
+    ): List<NotificationItem> = items.filterNot { it.type == NotificationType.C1 && remove(it) }
 }
