@@ -38,7 +38,7 @@ Préparé le 2026-11-11 par `release-manager` (PR `docs/aligner-decisions-public
 | # | Action | Où |
 |---|---|---|
 | P1 | **Relire** les textes légaux modifiés (diff de cette PR) : ils sont sous ta seule responsabilité, sans relecture juridique ; trancher les points ambigus du §4 | `docs/legal/*.md` |
-| P2 | Actions de console Google Analytics (durée 2 mois, collecte précise désactivée dans l'UE) **avant** de publier la politique | `docs/legal/README.md` §3 |
+| P2 | Actions de console Google Analytics (durée 14 mois, « réinitialiser » désactivé, collecte précise désactivée dans l'UE) **avant** de publier la politique | `docs/legal/README.md` §3 |
 | P3 | Dire **« oui, déploie »** pour publier le site (Firebase Hosting, projet `miff-3d283` uniquement) : page d'accueil, CGU, politique, suppression de compte | `web/`, `scripts/web-predeploy-check.mjs` |
 | P4 | À la soumission seulement : remplir **Data safety**, **App Privacy**, la note de revue, la classification d'âge, avec les réponses identiques partout | `google-play-data-safety.md`, `app-store-confidentialite-et-revue.md`, `update-photo-declarations.md` §5, §6, §16 |
 | P5 | Vérifier dans Play Console et TestFlight si un testeur externe a accepté le consentement `2026-11-v03` d'origine (sinon plan v4) | `docs/legal/consentement-localisation-v3.md` §1 bis |

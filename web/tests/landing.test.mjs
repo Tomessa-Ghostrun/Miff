@@ -75,6 +75,7 @@ test('LANDING - aucune promesse interdite : pas de prix, pas de « sécurisé à
     [/★|⭐|\b[45][.,][0-9]\s?\/\s?5\b|avis clients|customer reviews|testimonial|témoignage|« [^»]+ » — /i, 'faux avis, note ou témoignage'],
     [/Télécharger sur l’App Store|Télécharge sur l’App Store|Download on the App Store|Get it on Google Play|Disponible sur Google Play|Available on the App Store|Disponible sur l’App Store|Available on Google Play/i, 'libellé de badge officiel'],
     [/\b\d[\d  .,]*\s?(utilisateurs|users|téléchargements|downloads|familles|families)\b/i, 'faux chiffre'],
+    [/(?:prévient|prévenir|notifie|notifier|alerte|alerter)s+(?:ton|tes|ses|son|le|les)s+(?:cercle|proches)|(?:lets?|notif(?:y|ies)|alerts?)s+yours+(?:circle|loved ones)|(?:lets?)s+(?:yours+)?(?:circle of trust)s+know|petites? notifications?|notifications? d’(?:arrivée|départ)|(?:arrival|departure) notifications?|bien arrivée? à|arrived safely|just left/i, 'promesse de notification d’arrivée ou de départ (les textes légaux disent que Miff n’en envoie pas)'],
     [/vu dans|as seen (?:in|on)|featured in/i, 'faux logo ou mention de média'],
   ];
   for (const [name, text] of texts) for (const [pattern, label] of forbidden) assert.ok(!pattern.test(text), `${name} : ${label} détecté (${text.match(pattern)?.[0]})`);

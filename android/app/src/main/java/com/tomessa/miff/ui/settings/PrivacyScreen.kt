@@ -14,6 +14,10 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,10 +29,14 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.notification.NotificationPermissionState
+import com.tomessa.miff.domain.permission.BackgroundRequestOutcome
+import com.tomessa.miff.domain.permission.BackgroundRoute
+import com.tomessa.miff.domain.permission.LocationFlow
 import com.tomessa.miff.ui.auth.LegalLinks
 import com.tomessa.miff.ui.auth.MessageText
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.notification.PermissionStateBlock
+import com.tomessa.miff.ui.permission.rememberBackgroundLocationRequest
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorActionPrimary
@@ -62,6 +70,22 @@ fun PrivacyScreen(
     notifications: NotificationPermissionState = NotificationPermissionState.ALLOWED,
 ) {
     val context = LocalContext.current
+    // The location line: when only "all the time" is missing (Android 10+), the button asks the system, which opens ITS OWN screen of the location
+    // permission of Miff; the settings of the app (as before) when the system opens nothing, when nothing is missing, or on an older phone.
+    var systemScreenUnavailable by remember { mutableStateOf(false) }
+    val requestBackground =
+        rememberBackgroundLocationRequest { outcome ->
+            if (outcome == BackgroundRequestOutcome.NO_UI) {
+                systemScreenUnavailable = true
+                ExternalLinks.openPhoneSettings(context)
+            }
+        }
+    val openLocationSettings: () -> Unit = {
+        when (LocationFlow.backgroundRoute(location.backgroundRequestable, systemScreenUnavailable)) {
+            BackgroundRoute.REQUEST_FROM_SYSTEM -> requestBackground()
+            BackgroundRoute.OPEN_APP_SETTINGS -> ExternalLinks.openPhoneSettings(context)
+        }
+    }
     SettingsScaffold(title = stringResource(R.string.settings_privacy_title), onBack = onBack) {
         AnalyticsSwitch(state, onAnalyticsToggled)
         state.message?.let { PrivacyMessageText(it) }
@@ -84,7 +108,7 @@ fun PrivacyScreen(
         LocationBlock(
             location = location,
             onReviewAgreement = onReviewAgreement,
-            onOpenPhoneSettings = { ExternalLinks.openPhoneSettings(context) },
+            onOpenPhoneSettings = openLocationSettings,
             onOpenDetectionHelp = onOpenDetectionHelp,
         )
 

@@ -328,7 +328,7 @@ Soit, pour une Miff de 4 membres : **6 lectures facturées par écriture** (born
 
 ## 5 sexies. Cloud Functions (SRV-1, Blaze activé le 2026-11-11) : quoi regarder
 
-Tant que `ping` est la seule fonction en ligne, le coût attendu est **0 €**. Dès qu'une vraie fonction est déployée (`notifierUpdate`, SRV-4B : section 5 septies), ajouter à la revue (1 minute, une fois par semaine suffit au début) :
+`notifierUpdate` (SRV-4B : section 5 septies) est la seule fonction du code (la fonction de démonstration `ping` a été retirée). Tant qu'aucune fonction n'est en ligne, le coût attendu est **0 €** ; dès qu'elle l'est, ajouter à la revue (1 minute, une fois par semaine suffit au début) :
 
 | Quoi | Où | Normal | À examiner |
 |---|---|---|---|

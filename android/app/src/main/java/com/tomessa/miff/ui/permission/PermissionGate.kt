@@ -96,6 +96,13 @@ fun PermissionGate(
             viewModel.onLocationDialogAnswered(canAskAgain)
         }
 
+    // "All the time" on Android 11+: the standard request, by which the system opens ITS OWN screen of the location permission of Miff. The
+    // settings of the app (the former behaviour) only when the system opened nothing (it refused at once): then they open on the same tap.
+    val backgroundRequest =
+        rememberBackgroundLocationRequest { outcome ->
+            if (viewModel.onBackgroundRequestAnswered(outcome)) openAppSettings(context)
+        }
+
     when (state.screen) {
         GateScreen.NONE -> {
             content()
@@ -121,7 +128,8 @@ fun PermissionGate(
                         LocationButton.SYSTEM_DIALOG -> {
                             val sdk = viewModel.currentSnapshot.sdk
                             val missingFine = !viewModel.currentSnapshot.fineLocation
-                            // Android 11+: the window only asks for the precise location; "all the time" goes through the settings.
+                            // Android 11+: this window only asks for the precise location ("all the time" has its own button, above).
+                            // Android 10: the precise one with "all the time", then "all the time" alone if it was left out.
                             val wanted = LocationFlow.requestedPermissions(sdk)
                             locationWindow.launch(
                                 (
@@ -134,6 +142,10 @@ fun PermissionGate(
                                     }
                                 ).toTypedArray(),
                             )
+                        }
+
+                        LocationButton.SYSTEM_BACKGROUND_SCREEN -> {
+                            backgroundRequest()
                         }
 
                         LocationButton.OPEN_SETTINGS -> {

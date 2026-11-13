@@ -75,7 +75,7 @@ final class ProfileFormTests: XCTestCase {
 
 /// Le document de profil : la SEULE écriture qui crée `users/{uid}`, avec toutes les clés des règles.
 final class ProfileDocumentTests: XCTestCase {
-    private let consent = PendingConsent(uid: "u1", termsVersion: "0.1", analyticsAccepted: true)
+    private let consent = PendingConsent(uid: "u1", termsVersion: "1.0", analyticsAccepted: true)
 
     private func profile(
         first: String = "Camille",
@@ -94,10 +94,17 @@ final class ProfileDocumentTests: XCTestCase {
             ["firstName", "lastName", "phone", "createdAt", "termsAcceptedAt", "termsVersion", "analyticsConsent"])
         XCTAssertEqual(fields["firstName"], .string("Camille"))
         XCTAssertEqual(fields["phone"], .string("+33612345678"))
-        XCTAssertEqual(fields["termsVersion"], .string("0.1"))
+        XCTAssertEqual(fields["termsVersion"], .string("1.0"))
         // L'heure vient du serveur, jamais du téléphone.
         XCTAssertEqual(fields["createdAt"], .serverTimestamp)
         XCTAssertEqual(fields["termsAcceptedAt"], .serverTimestamp)
+    }
+
+    func testTheTermsVersionIsTheOnePublishedInDocsLegalAndFitsTheRules() {
+        // Version 1.0 publiée le 2026-11-13 (docs/legal), même valeur qu'Android. Les règles Firestore acceptent une
+        // chaîne de 1 à 20 caractères. Les comptes créés avant gardent « 0.1 » (valeur figée, rien n'est migré).
+        XCTAssertEqual(ConsentVersions.terms, "1.0")
+        XCTAssertTrue((1...20).contains(ConsentVersions.terms.count))
     }
 
     func testNoEmailAgeOrCountryIsEverWritten() throws {
@@ -122,7 +129,7 @@ final class ProfileDocumentTests: XCTestCase {
     }
 
     func testTheRefusedFormStaysWritableAndExplicit() throws {
-        let refused = PendingConsent(uid: "u1", termsVersion: "0.1", analyticsAccepted: false)
+        let refused = PendingConsent(uid: "u1", termsVersion: "1.0", analyticsAccepted: false)
         let fields = try ProfileDocument.forCreation(profile(), consent: refused)
 
         XCTAssertEqual(
