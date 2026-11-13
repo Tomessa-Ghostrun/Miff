@@ -23,7 +23,7 @@ class PendingConsentStoreTest {
     @Test
     fun whatIsSaved_isReadBackForTheSameAccount() {
         val store = store()
-        val consent = PendingConsent("uid-1", "0.1", analyticsAccepted = true)
+        val consent = PendingConsent("uid-1", "1.0", analyticsAccepted = true)
         store.save(consent)
         assertEquals(consent, store.read("uid-1"))
     }
@@ -31,7 +31,7 @@ class PendingConsentStoreTest {
     @Test
     fun anotherAccount_neverSeesIt() {
         val store = store()
-        store.save(PendingConsent("uid-1", "0.1", analyticsAccepted = true))
+        store.save(PendingConsent("uid-1", "1.0", analyticsAccepted = true))
         assertNull(store.read("uid-2"))
         assertNull(store.read(""))
     }
@@ -39,22 +39,22 @@ class PendingConsentStoreTest {
     @Test
     fun saving_forAnotherAccount_replacesTheOldOne() {
         val store = store()
-        store.save(PendingConsent("uid-1", "0.1", analyticsAccepted = true))
-        store.save(PendingConsent("uid-2", "0.1", analyticsAccepted = false))
+        store.save(PendingConsent("uid-1", "1.0", analyticsAccepted = true))
+        store.save(PendingConsent("uid-2", "1.0", analyticsAccepted = false))
         assertNull(store.read("uid-1"))
-        assertEquals(PendingConsent("uid-2", "0.1", analyticsAccepted = false), store.read("uid-2"))
+        assertEquals(PendingConsent("uid-2", "1.0", analyticsAccepted = false), store.read("uid-2"))
     }
 
     @Test
     fun clear_forgetsEverything_evenForANewInstance() {
-        store().save(PendingConsent("uid-1", "0.1", analyticsAccepted = true))
+        store().save(PendingConsent("uid-1", "1.0", analyticsAccepted = true))
         store().clear()
         assertNull(store().read("uid-1"))
     }
 
     @Test
     fun aSavedChoice_survivesANewInstance_likeARestartOfTheApp() {
-        store().save(PendingConsent("uid-1", "0.1", analyticsAccepted = true))
-        assertEquals(PendingConsent("uid-1", "0.1", analyticsAccepted = true), store().read("uid-1"))
+        store().save(PendingConsent("uid-1", "1.0", analyticsAccepted = true))
+        assertEquals(PendingConsent("uid-1", "1.0", analyticsAccepted = true), store().read("uid-1"))
     }
 }
