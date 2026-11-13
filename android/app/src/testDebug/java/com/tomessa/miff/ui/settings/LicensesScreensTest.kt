@@ -26,6 +26,7 @@ import com.tomessa.miff.data.about.LicenseSource
 import com.tomessa.miff.domain.about.LicenseGroup
 import com.tomessa.miff.domain.about.LicenseInventory
 import com.tomessa.miff.ui.theme.MiffTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -249,7 +250,8 @@ class LicensesScreensTest {
 
     // --- the real files of the app (AP12, AP13, AP14) -----------------------------------------------------------------------------------
 
-    private fun realSource() = AssetLicenseSource(context().assets)
+    // An immediate dispatcher: the real files are read at once, the screen is drawn with them before the first assertion.
+    private fun realSource() = AssetLicenseSource(context().assets, Dispatchers.Unconfined)
 
     @Test
     fun theRealInventory_opensWithNoNetwork_andEveryLineOpensItsFullText() =

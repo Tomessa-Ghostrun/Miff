@@ -128,7 +128,8 @@ class ReviewPromptReleaseTest {
             kotlinFiles(".")
                 .filter { file -> codeLines(file).any { it.contains("FEEDBACK_FORM_URL") } }
                 .map { it.name }
-        assertEquals(listOf("ReviewPromptHost.kt"), readers)
+        // Two readers, each of them the ONE place of its screen: the review window, and Settings > À propos et aide (ABOUT-1A, line "Un retour sur l'app ?", AboutRuleTest).
+        assertEquals(listOf("AboutActions.kt", "ReviewPromptHost.kt"), readers.sorted())
         // Opened as it is: nothing is appended to the address, no extra is put in the intent.
         val launcher = normalised(File(main, "data/review/StoreReview.kt"))
         assertFalse(launcher.contains("putExtra"))

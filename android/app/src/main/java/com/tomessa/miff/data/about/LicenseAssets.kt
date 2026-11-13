@@ -2,6 +2,7 @@ package com.tomessa.miff.data.about
 
 import android.content.res.AssetManager
 import com.tomessa.miff.domain.about.LicenseInventory
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.IOException
@@ -21,9 +22,11 @@ interface LicenseSource {
 /** Reads `assets/licenses/licenses.json` and `assets/licenses/texts/<file>`. Reading happens off the main thread. */
 class AssetLicenseSource(
     private val assets: AssetManager,
+    /** Where the files are read: off the main thread. The tests give an immediate dispatcher, so that the screens are drawn with their content at once. */
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : LicenseSource {
     override suspend fun inventory(): LicenseInventory? =
-        withContext(Dispatchers.IO) {
+        withContext(dispatcher) {
             try {
                 LicenseInventory.parse(read("$ROOT/licenses.json"))
             } catch (e: IOException) {
@@ -37,7 +40,7 @@ class AssetLicenseSource(
     override suspend fun text(file: String): String? {
         // The name comes from our own file, but a path is never built from a value we did not check: one plain file name, nothing else.
         if (!SAFE_FILE_NAME.matches(file)) return null
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             try {
                 read("$ROOT/texts/$file")
             } catch (e: IOException) {
