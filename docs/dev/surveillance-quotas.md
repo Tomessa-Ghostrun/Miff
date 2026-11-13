@@ -150,6 +150,10 @@ Ouvrir le **détail** d'un lieu garde son écoute en direct de la Miff (3 écout
 
 **Limite connue** : un lieu ajouté ou retiré par le créateur sur un autre téléphone n'apparaît chez les membres qu'à leur prochaine relecture (au plus 5 minutes sur le Profil, ou à leur retour sur le Feed qui écoute à nouveau). Les lieux changent rarement et la détection est lente par conception (« dans les prochaines heures », ticket Lieux). **Signal** : celui du §2 ; **levier gratuit** : allonger `MiffPlacesBook.TTL_MILLIS`.
 
+
+**iOS (même décision, même principe)** : `FirestorePlacesReader` (un seul `getDocuments` de `miffs/{id}/places`, jamais d'écouteur), règles de réutilisation dans `MiffPlacesBook` (testées, mêmes chiffres : 5 minutes, 30 s après un échec), `ProfilePlacesViewModel`. La Miff du Feed est reprise sans lecture (`FeedDependencies.onPlaces`, seulement une réponse confirmée par le serveur). **Différence avec Android** : la liste n'existait pas encore sur le Profil iOS, donc ce changement n'ajoute aucun écouteur et n'en supprime aucun ; pour un compte gratuit (une seule Miff, celle du Feed) il ajoute **0 lecture**. Une copie du téléphone VIDE est traitée comme un échec (jamais « aucun lieu » inventé hors ligne). **Levier gratuit** : `MiffPlacesBook.freshMillis`.
+
+
 ### Les demandes d'ajout d'un lieu (LIEU-REQ, décision du PM du 2026-11-11) : ce que ça coûte
 
 Un membre qui n'est pas le créateur propose un lieu ; le créateur l'accepte ou non. **Aucune notification quand l'app est fermée** (il faudrait un serveur : plan Blaze, pas pour l'instant) : le créateur le découvre à l'ouverture de l'app.
@@ -175,6 +179,11 @@ Un membre qui n'est pas le créateur propose un lieu ; le créateur l'accepte ou
 - **Rafales** (créer, retirer, recréer en boucle) : non limitables en règles sur Spark ; au plus 3 demandes simultanées par membre ; App Check à activer.
 
 **iOS (même décision, même principe)** : `FirestorePlacesReader` (un seul `getDocuments` de `miffs/{id}/places`, jamais d'écouteur), règles de réutilisation dans `MiffPlacesBook` (testées, mêmes chiffres : 5 minutes, 30 s après un échec), `ProfilePlacesViewModel`. La Miff du Feed est reprise sans lecture (`FeedDependencies.onPlaces`, seulement une réponse confirmée par le serveur). **Différence avec Android** : la liste n'existait pas encore sur le Profil iOS, donc ce changement n'ajoute aucun écouteur et n'en supprime aucun ; pour un compte gratuit (une seule Miff, celle du Feed) il ajoute **0 lecture**. Une copie du téléphone VIDE est traitée comme un échec (jamais « aucun lieu » inventé hors ligne). **Levier gratuit** : `MiffPlacesBook.freshMillis`.
+
+
+
+**iOS (mêmes chiffres, mêmes règles)** : le membre lit ses demandes par `PlaceRequestBook` (une lecture par Miff et par 5 minutes, 30 s d'attente après un échec) ; le créateur est écouté par `ProfileRequestsWatcher` (UN écouteur, annulé quand l'app quitte le premier plan) et lit la fiche de chaque demandeur UNE fois par session (`ProfileRequestsViewModel`). Une demande faite sans réseau est gardée par le téléphone (`WriteBatch` non attendu) : elle coûte ses 2 écritures au retour du réseau, jugées par les règles à ce moment-là. **Signal propre à iOS** : une demande envoyée hors ligne puis refusée au retour du réseau disparaît sans un mot (risque R10) ; si des testeurs disent « ma demande a disparu », regarder d'abord le plafond de 10 de la Miff.
+
 
 ## 5. Journal de relevé (modèle à recopier)
 
@@ -317,6 +326,22 @@ Soit, pour une Miff de 4 membres : **6 lectures facturées par écriture** (born
 
 ---
 
+## 5 sexies. Cloud Functions (SRV-1, Blaze activé le 2026-11-11) : quoi regarder
+
+Tant que `ping` est la seule fonction en ligne, le coût attendu est **0 €**. Dès qu'une vraie fonction est déployée (`notifierUpdate`, SRV-4B : section 5 septies), ajouter à la revue (1 minute, une fois par semaine suffit au début) :
+
+| Quoi | Où | Normal | À examiner |
+|---|---|---|---|
+| Invocations du mois | Console Firebase > Functions > onglet **Tableau de bord** (ou Google Cloud > Cloud Run) | Très en dessous des 2 millions gratuits par mois | Plus de 1 million (50 % du gratuit) : revue de l'usage |
+| Erreurs | Functions > **Journaux**, filtre gravité « Erreur » | Aucune ou quelques-unes isolées | Des erreurs en série, ou des réponses `429` (limite d'instances atteinte : voir `deploiement-functions.md` §9) |
+| Dépense | Google Cloud > Facturation > Rapports, filtre projet `miff-3d283` | 0 € à quelques centimes | Une ligne qui monte sans explication, ou un e-mail de l'alerte de budget (5 €/mois : 50 %, 90 %, 100 %) |
+
+Les alertes de budget **ne plafonnent pas** la dépense ; le plafond de dépense Preview de Cloud Functions n'existe pas pour Firestore (`deploiement-functions.md` §1). Procédure pour désactiver une fonction : `deploiement-functions.md` §6.
+
+
+---
+
+
 ## 5 quinquies. iOS : carrousel de Miffs du Profil (décision du PM, 2026-11-10)
 
 **Ce que fait l'application.** Chaque carte de Miff de l'onglet Profil montre le nombre de membres et leurs photos en miniature : cela demande la **liste des fiches `miffs/{id}/members`** de chaque Miff. Code : `MiffMemberPreviews` (quand lire) et `FirestoreMemberPreviewReader` (la lecture). Android a le même principe (section 4, « Le carrousel de Miffs du Profil »).
@@ -337,19 +362,9 @@ Soit, pour une Miff de 4 membres : **6 lectures facturées par écriture** (born
 
 **Sécurité** : une photo vient d'un autre téléphone ; seules les photos de 20 000 octets au plus et de 2048 px de côté au plus sont décodées, et réduites à la taille du rond (`AvatarDecoding`). Les noms et photos restent en mémoire pour la session (jamais sur le disque, jamais dans Analytics ni dans un journal).
 
-## 5 sexies. Cloud Functions (SRV-1, Blaze activé le 2026-11-11) : quoi regarder
-
-Tant que `ping` est la seule fonction en ligne, le coût attendu est **0 €**. Dès qu'une vraie fonction est déployée (`notifierUpdate`, SRV-4B : section 5 septies), ajouter à la revue (1 minute, une fois par semaine suffit au début) :
-
-| Quoi | Où | Normal | À examiner |
-|---|---|---|---|
-| Invocations du mois | Console Firebase > Functions > onglet **Tableau de bord** (ou Google Cloud > Cloud Run) | Très en dessous des 2 millions gratuits par mois | Plus de 1 million (50 % du gratuit) : revue de l'usage |
-| Erreurs | Functions > **Journaux**, filtre gravité « Erreur » | Aucune ou quelques-unes isolées | Des erreurs en série, ou des réponses `429` (limite d'instances atteinte : voir `deploiement-functions.md` §9) |
-| Dépense | Google Cloud > Facturation > Rapports, filtre projet `miff-3d283` | 0 € à quelques centimes | Une ligne qui monte sans explication, ou un e-mail de l'alerte de budget (5 €/mois : 50 %, 90 %, 100 %) |
-
-Les alertes de budget **ne plafonnent pas** la dépense ; le plafond de dépense Preview de Cloud Functions n'existe pas pour Firestore (`deploiement-functions.md` §1). Procédure pour désactiver une fonction : `deploiement-functions.md` §6.
-
 ---
+
+
 
 ## 5 septies. Cloud Functions : la fonction `notifierUpdate` (SRV-4B, notification d'une update aux proches)
 

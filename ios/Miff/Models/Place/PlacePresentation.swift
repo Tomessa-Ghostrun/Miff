@@ -12,6 +12,17 @@ struct PlaceListUi: Equatable, CustomStringConvertible {
     let isCreator: Bool
     var premium: Bool?
     var notice: PlaceNotice?
+    /// Vrai : cette liste propose les DEMANDES (l'onglet Profil) : un membre y voit ses demandes en attente et « Demander l'ajout d'un lieu ».
+    /// Faux (l'écran de la Miff) : un membre y lit seulement.
+    var offersRequests = false
+    /// Un membre qui n'est pas le créateur : ses propres demandes en attente (LIEU-REQ-B), la plus récente d'abord ; elles viennent AVANT les lieux.
+    var requests: [PlaceRequest] = []
+    /// « Demande envoyée… » / « Ta demande partira dès que tu seras connecté. », montré après la fermeture du formulaire d'une demande.
+    var requestNotice: RequestNotice?
+    /// Le message calme du dernier geste sur une demande (« Demande retirée. »…).
+    var requestKind: RequestNoticeKind?
+    /// La demande en cours de réponse : ses boutons attendent.
+    var busyRequestId: String?
 
     /// Combien de lieux différents la liste montre (un lieu n'apparaît qu'une fois dans la liste d'une Miff).
     var distinctCount: Int {
@@ -28,6 +39,11 @@ struct PlaceListUi: Equatable, CustomStringConvertible {
     /// formulaire (critère LIM1).
     var atFreeLimit: Bool {
         isCreator && premium == false && PlaceQuota.isAtFreeLimit(premium: false, distinctPlaces: distinctCount)
+    }
+
+    /// Un membre qui a déjà les 3 demandes en attente du ticket : le bouton le dit doucement au lieu d'ouvrir le formulaire (critère M5).
+    var atRequestLimit: Bool {
+        !isCreator && requests.count >= PlaceRequestLimits.perMember
     }
 
     var description: String {

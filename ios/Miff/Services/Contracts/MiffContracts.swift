@@ -90,6 +90,9 @@ protocol MiffStore {
     /// téléphone n'est jamais remplacé à partir d'une copie périmée). Une Miff qui n'existe pas lève `MiffGoneError`. Un lot
     /// vide est refusé avant envoi.
     func commitWithMiff(miffId: String, build: @escaping (MiffTxView) -> [DocWrite]) async throws
+
+    /// UN lot confié à la file du téléphone, sans attendre (voir `FirestoreMiffStore.enqueue`) : la demande d'un lieu faite hors connexion.
+    func enqueue(_ writes: [DocWrite])
 }
 
 extension MiffStore {
@@ -97,6 +100,9 @@ extension MiffStore {
     func readOwnTravel(miffId: String, uid: String) async throws -> TravelRead? {
         nil
     }
+
+    /// Par défaut : rien n'est mis en file (un double qui ne connaît pas la file du téléphone).
+    func enqueue(_ writes: [DocWrite]) {}
 }
 
 /// Ce qu'une transaction a lu d'une Miff : la Miff elle-même (son nom tel que le serveur l'a écrit, pour que le document du

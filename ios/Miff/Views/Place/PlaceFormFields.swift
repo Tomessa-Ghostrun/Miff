@@ -62,7 +62,11 @@ struct PlaceMiffsSection: View {
                 description: L10n.string(single ? "place_miff_help" : "place_miffs_help")
             )
             field(single: single)
-            PlaceInfoLine(text: L10n.string(single ? "place_miff_visibility" : "place_miffs_visibility"))
+            // Une demande n'est vue que du créateur tant qu'elle n'est pas acceptée : la phrase d'un lieu (« les membres verront ce lieu »)
+            // serait fausse.
+            if state.mode != .request {
+                PlaceInfoLine(text: L10n.string(single ? "place_miff_visibility" : "place_miffs_visibility"))
+            }
         }
         .sheet(isPresented: sheetBinding) {
             PlaceMiffPickerSheet(state: state, actions: actions)
