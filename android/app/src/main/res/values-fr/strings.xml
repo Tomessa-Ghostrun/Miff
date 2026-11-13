@@ -761,9 +761,9 @@
     <string name="permission_location_step_1">Touche le bouton : les paramètres de Miff s\'ouvrent</string>
     <string name="permission_location_step_2">Choisis Autorisations, puis Position</string>
     <string name="permission_location_step_3">Choisis Autoriser tout le temps et garde Position précise activée</string>
-    <string name="permission_location_system_step_1">Touche le bouton : l\'écran qui règle l\'accès à ta position s\'ouvre</string>
-    <string name="permission_location_system_step_2">Choisis Toujours autoriser (ou Autoriser tout le temps)</string>
-    <string name="permission_location_system_step_3">Garde Position exacte (ou précise) activée</string>
+    <string name="android_permission_location_system_step_1">Touche le bouton : l\'écran qui règle l\'accès à ta position s\'ouvre</string>
+    <string name="android_permission_location_system_step_2">Choisis Toujours autoriser (ou Autoriser tout le temps)</string>
+    <string name="android_permission_location_system_step_3">Garde Position exacte (ou précise) activée</string>
     <string name="miff_consent3_title">Ce que tu partages avec cette Miff</string>
     <string name="miff_consent3_create">En créant cette Miff, tu partages ton statut et ta dernière position connue avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff.</string>
     <string name="miff_consent3_join">En rejoignant cette Miff, tu partages ton statut et ta dernière position connue avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff.</string>

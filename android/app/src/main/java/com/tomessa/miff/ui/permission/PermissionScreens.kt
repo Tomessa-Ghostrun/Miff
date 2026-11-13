@@ -324,9 +324,9 @@ fun LocationPopIn(
             Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
                 if (model.systemScreen) {
                     // The system opens its own screen of the permission: the steps say what to choose there, not where to find it.
-                    Step(1, stringResource(R.string.permission_location_system_step_1))
-                    Step(2, stringResource(R.string.permission_location_system_step_2))
-                    Step(3, stringResource(R.string.permission_location_system_step_3))
+                    Step(1, stringResource(R.string.android_permission_location_system_step_1))
+                    Step(2, stringResource(R.string.android_permission_location_system_step_2))
+                    Step(3, stringResource(R.string.android_permission_location_system_step_3))
                 } else {
                     Step(1, stringResource(R.string.permission_location_step_1))
                     Step(2, stringResource(R.string.permission_location_step_2))

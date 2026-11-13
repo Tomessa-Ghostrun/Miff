@@ -149,9 +149,9 @@ class PermissionScreensTest {
         shoot("perm-lieu-13c-location-system-screen")
         // The disclosure stays, before the button (Google Play requirement): the request is still preceded by it.
         composeRule.onNodeWithText(text(R.string.permission_location_disclosure)).assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.permission_location_system_step_1)).assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.permission_location_system_step_2)).assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.permission_location_system_step_3)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.android_permission_location_system_step_1)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.android_permission_location_system_step_2)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.android_permission_location_system_step_3)).assertIsDisplayed()
         // The steps of the settings of the app ("Choisis Autorisations, puis Position") are not shown: the system opens the right screen itself.
         composeRule.onAllNodesWithText(text(R.string.permission_location_step_2)).assertCountEquals(0)
         composeRule.onAllNodesWithText(text(R.string.permission_location_error)).assertCountEquals(0)
