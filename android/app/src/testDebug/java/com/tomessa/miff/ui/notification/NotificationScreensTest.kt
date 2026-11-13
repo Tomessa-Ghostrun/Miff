@@ -6,12 +6,19 @@ import android.graphics.Bitmap
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.captureToImage
@@ -23,15 +30,20 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.tomessa.miff.R
+import com.tomessa.miff.domain.feed.PlaceKind
+import com.tomessa.miff.domain.notification.LastVisit
 import com.tomessa.miff.domain.notification.NotificationPermissionState
 import com.tomessa.miff.domain.notification.NotificationPreferences
 import com.tomessa.miff.domain.notification.NotificationType
+import com.tomessa.miff.domain.notification.VisitKind
 import com.tomessa.miff.ui.settings.SettingsScreen
 import com.tomessa.miff.ui.theme.MiffTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -444,5 +456,205 @@ class NotificationScreensTest {
         composeRule.onNodeWithText(text(R.string.notif_n1_title)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.notif_center_off_action)).performClick()
         assertEquals(listOf(CenterBanner.DISABLED), taps)
+    }
+
+    // --- "Depuis ta dernière visite" (NOTIF-P1A) ---------------------------------------------------------------------------------------------
+
+    private fun visitRow(
+        id: String,
+        kind: VisitKind,
+        ago: Long,
+        name: String? = "Thomas",
+        place: PlaceKind? = PlaceKind.SCHOOL,
+        unread: Boolean = true,
+    ) = CenterRow(
+        id = id,
+        type = NotificationType.C1,
+        miffName = null,
+        createdAtMillis = now - ago,
+        unread = unread,
+        visit = LastVisit.Parsed("uid-$id", kind, place, now - ago),
+        visitName = name,
+        miffId = "miff-1",
+    )
+
+    private val departure = VisitKind.DEPARTURE
+    private val silence = VisitKind.SILENCE
+
+    private fun sentenceOf(row: CenterRow) =
+        LastVisitTexts(
+            ApplicationProvider.getApplicationContext<Context>(),
+            zone,
+        ).sentence(row.visit!!, row.visitName, now)
+
+    @Test
+    fun theGroup_isAboveToday_hasItsLimitSentence_andNoSecondLineOfBodyOrHour() {
+        val visit =
+            listOf(
+                visitRow("v1", departure, ago = 3_600_000L),
+                visitRow("v2", silence, ago = 2 * 3_600_000L, name = "Amandine"),
+            )
+        show {
+            NotificationCenterScreen(
+                state =
+                    NotificationCenterUiState(
+                        listOf(row("a", NotificationType.N1, ago = 60_000L)),
+                        visitRows = visit,
+                    ),
+                actions = NotificationCenterActions(),
+                nowMillis = now,
+                zone = zone,
+            )
+        }
+        shoot("notif-p1a-group")
+        val title = composeRule.onNodeWithText(text(R.string.notif_c1_title))
+        title.assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.notif_c1_limit)).assertIsDisplayed()
+        composeRule.onNodeWithText(sentenceOf(visit[0])).assertIsDisplayed()
+        composeRule.onNodeWithText(sentenceOf(visit[1])).assertIsDisplayed()
+        // Above the first day.
+        val groupTop = title.fetchSemanticsNode().boundsInRoot.top
+        val todayTop =
+            composeRule
+                .onNodeWithText(
+                    text(R.string.notif_center_section_today),
+                ).fetchSemanticsNode()
+                .boundsInRoot.top
+        assertTrue("the group is above the days", groupTop < todayTop)
+        // The empty state is not shown, and the lines of the days are untouched.
+        composeRule.onAllNodesWithText(text(R.string.notif_center_empty_title)).assertCountEquals(0)
+        composeRule.onNodeWithText(text(R.string.notif_n1_title)).assertIsDisplayed()
+    }
+
+    @Test
+    fun aGroupAlone_isNotTheEmptyState_aTapOpensTheLine_andALongPressDeletesIt() {
+        val row = visitRow("v1", departure, ago = 3_600_000L)
+        val opened = mutableListOf<String>()
+        val deleted = mutableListOf<String>()
+        show {
+            NotificationCenterScreen(
+                state = NotificationCenterUiState(visitRows = listOf(row)),
+                actions = NotificationCenterActions(onOpen = { opened += it.id }, onDelete = { deleted += it }),
+                nowMillis = now,
+                zone = zone,
+            )
+        }
+        composeRule.onAllNodesWithText(text(R.string.notif_center_empty_title)).assertCountEquals(0)
+        composeRule.onNodeWithText(sentenceOf(row)).performTouchInput { longClick() }
+        composeRule.onNodeWithText(text(R.string.notif_center_delete_a11y)).performClick()
+        assertEquals(listOf("v1"), deleted)
+        composeRule.onNodeWithText(sentenceOf(row)).performClick()
+        assertEquals(listOf("v1"), opened)
+    }
+
+    @Test
+    fun eachLine_isOneElementForTheScreenReader_unreadSaidInWords_andReadOnesSayNothing() {
+        val unread = visitRow("v1", departure, ago = 3_600_000L)
+        val read = visitRow("v2", silence, ago = 2 * 3_600_000L, name = "Amandine", unread = false)
+        show {
+            NotificationCenterScreen(
+                NotificationCenterUiState(visitRows = listOf(unread, read)),
+                NotificationCenterActions(),
+                now,
+                zone,
+            )
+        }
+        composeRule
+            .onNodeWithText(sentenceOf(unread))
+            .assert(
+                SemanticsMatcher.expectValue(
+                    SemanticsProperties.StateDescription,
+                    text(R.string.notif_center_unread_a11y),
+                ),
+            ).assertHeightIsAtLeast(48.dp)
+        composeRule
+            .onNodeWithText(sentenceOf(read))
+            .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.StateDescription))
+        composeRule
+            .onNodeWithText(
+                text(R.string.notif_c1_title),
+            ).assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
+    }
+
+    @Test
+    fun theGroup_staysVisible_whenTheNotificationsAreOffInThePhone_decisionQ4() {
+        val row = visitRow("v1", departure, ago = 3_600_000L)
+        show {
+            NotificationCenterScreen(
+                state = NotificationCenterUiState(banner = CenterBanner.OFF, visitRows = listOf(row)),
+                actions = NotificationCenterActions(),
+                nowMillis = now,
+                zone = zone,
+            )
+        }
+        composeRule.onNodeWithText(sentenceOf(row)).assertIsDisplayed()
+        // The band of the centre stays as it was: the calm card and its one button.
+        composeRule.onNodeWithText(text(R.string.notif_center_enable_action)).assertIsDisplayed()
+        // The menu can act on the group.
+        composeRule.onNodeWithContentDescription(text(R.string.notif_center_menu_a11y)).performClick()
+        composeRule.onNodeWithText(text(R.string.notif_center_clear_all)).assertIsEnabled()
+    }
+
+    @Test
+    fun theGroup_staysVisible_whenTheGeneralSwitchOfTheAppIsOff() {
+        val row = visitRow("v1", departure, ago = 3_600_000L)
+        show {
+            NotificationCenterScreen(
+                state = NotificationCenterUiState(banner = CenterBanner.DISABLED, visitRows = listOf(row)),
+                actions = NotificationCenterActions(),
+                nowMillis = now,
+                zone = zone,
+            )
+        }
+        composeRule.onNodeWithText(text(R.string.notif_center_off_title)).assertIsDisplayed()
+        composeRule.onNodeWithText(sentenceOf(row)).assertIsDisplayed()
+    }
+
+    @Test
+    fun withTheLargestSystemText_theLinesWrapAndStayReadable() {
+        val row = visitRow("v1", silence, ago = 3_600_000L, name = "Marie-Charlotte")
+        composeRule.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 2f)) {
+                MiffTheme {
+                    Box(Modifier.fillMaxSize()) {
+                        NotificationCenterScreen(
+                            NotificationCenterUiState(visitRows = listOf(row)),
+                            NotificationCenterActions(),
+                            now,
+                            zone,
+                        )
+                    }
+                }
+            }
+        }
+        shoot("notif-p1a-large-text")
+        composeRule.onNodeWithText(sentenceOf(row)).assertIsDisplayed().assertHeightIsAtLeast(48.dp)
+        composeRule.onNodeWithText(text(R.string.notif_c1_limit)).assertIsDisplayed()
+    }
+
+    @Test
+    fun theGroupOfAnAccountWithSeveralMiffs_namesTheMiffInASmallLine() {
+        val base = visitRow("v1", departure, ago = 3_600_000L)
+        val row =
+            CenterRow(
+                base.id,
+                base.type,
+                "Famille",
+                base.createdAtMillis,
+                true,
+                visit = base.visit,
+                visitName = base.visitName,
+                miffId = base.miffId,
+            )
+        show {
+            NotificationCenterScreen(
+                NotificationCenterUiState(visitRows = listOf(row)),
+                NotificationCenterActions(),
+                now,
+                zone,
+            )
+        }
+        composeRule.onNodeWithText("Miff « Famille »", substring = true).assertExists()
     }
 }

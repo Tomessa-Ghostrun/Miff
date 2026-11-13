@@ -315,7 +315,7 @@ class NotificationScheduler(
                 }
             }
 
-            NotificationType.N6, NotificationType.N8 -> {
+            NotificationType.N6, NotificationType.N8, NotificationType.C1 -> {
                 Unit
             }
 

@@ -215,6 +215,31 @@ fun FeedScreen(
     // The header hides while the person scrolls down and is back AT ONCE when they scroll up (decision of the PM, 2026-11-06).
     // The last measured height is kept (rotation, font size): the first image already has the right room, no jump while it is measured again.
     val header = rememberSaveable(saver = CollapsingHeaderState.Saver) { CollapsingHeaderState() }
+    // NOTIF-P1A: a tap on a line of "Depuis ta dernière visite" brings the card of that person into view (the Feed of THAT Miff: it waits for it, 10 s at most, never an error).
+    val focus = notifications.focusMember
+    val focusSecondChance = notifications.secondChanceVisible
+    val focusAwaiting = agreement.isWaiting((state as? DirectoryState.Ready)?.activeId)
+    LaunchedEffect(focus, content, focusSecondChance, focusAwaiting) {
+        if (focus == null) return@LaunchedEffect
+        val index =
+            if (content?.miffId ==
+                focus.miffId
+            ) {
+                content.cards.indexOfFirst { it.member.uid == focus.uid }
+            } else {
+                -1
+            }
+        if (content?.miffId != focus.miffId) {
+            delay(FOCUS_WAIT_MILLIS)
+        } else if (index >= 0) {
+            // The items before the cards: the banners, the bubble, the card of the second chance, the card of the agreement awaited.
+            val first = content.banners.size + 1 + (if (focusSecondChance) 1 else 0) + (if (focusAwaiting) 1 else 0)
+            header.show()
+            if (reduceMotion) listState.scrollToItem(first + index) else listState.animateScrollToItem(first + index)
+        }
+        notifications.onFocusHandled(focus)
+    }
+
     LaunchedEffect(scrollToTopSignal) {
         if (scrollToTopSignal > 0) {
             header.show()
@@ -755,3 +780,6 @@ internal const val HEADER_TRAVERSAL_INDEX = -1f
 
 /** The sentence "Informations actualisées" stays this long in its node, then the node is empty again. */
 private const val REFRESH_DONE_ANNOUNCEMENT_MILLIS = 3_000L
+
+/** NOTIF-P1A: how long the Feed waits for the Miff of a tapped line to be the one shown before it forgets the request. */
+private const val FOCUS_WAIT_MILLIS = 10_000L

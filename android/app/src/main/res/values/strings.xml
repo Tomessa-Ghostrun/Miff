@@ -1065,6 +1065,17 @@
     <string name="notif_center_delete_a11y">Delete this notification</string>
     <string name="notif_center_unread_a11y">unread</string>
     <string name="notif_center_in_miff">Miff “%1$s”</string>
+    <!-- NOTIF-P1A: "Since your last visit" (ticket notifications-p1-derniere-visite.md, PM decisions of 2026-11-13); lines with no gender agreement -->
+    <string name="notif_c1_title">Since your last visit</string>
+    <string name="notif_c1_limit">These lines sum up what changed, not everything that happened.</string>
+    <string name="notif_c1_arrival">%1$s arrived at %2$s %3$s</string>
+    <string name="notif_c1_departure">%1$s left %2$s %3$s</string>
+    <string name="notif_c1_update">%1$s shared an update %2$s</string>
+    <string name="notif_c1_silence">%1$s\'s latest news: %2$s</string>
+    <string name="notif_c1_silence_vowel">%1$s\'s latest news: %2$s</string>
+    <string name="notif_c1_someone">someone</string>
+    <string name="notif_c1_moment_at_weekday">on %1$s at %2$s</string>
+    <string name="notif_c1_moment_since_weekday">%1$s at %2$s</string>
     <string name="android_notif_channel_reminders">Reminders for you</string>
     <string name="android_notif_channel_reminders_desc">A gentle reminder to check in when you turn orange or red.</string>
     <string name="android_notif_channel_reminders_quiet">Reminders for you (quiet night)</string>

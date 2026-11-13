@@ -145,6 +145,25 @@ class NotificationCenter(
             onRead(id)
         }
 
+    /**
+     * NOTIF-P1A, "Depuis ta dernière visite": the group is REPLACED by [lines] (at most 3), or removed when there is none. Unread, written with no notification of the system.
+     * Nothing is added to the tray: a line of this group never had a notification.
+     */
+    fun replaceVisitLines(lines: List<NotificationItem>) =
+        synchronized(lock) {
+            val before = state.value
+            val after = NotificationList.replaceVisit(before, lines, nowMillis())
+            if (after != before) commit(after)
+        }
+
+    /** NOTIF-P1A: removes the lines of the group for which [remove] says so (a member who left the Miff, a Miff that is gone). */
+    fun removeVisitLines(remove: (NotificationItem) -> Boolean) =
+        synchronized(lock) {
+            val before = state.value
+            val after = NotificationList.removeVisit(before, remove)
+            if (after != before) commit(after)
+        }
+
     /** "Tout effacer" (after the confirmation). */
     fun clearAll() =
         synchronized(lock) {

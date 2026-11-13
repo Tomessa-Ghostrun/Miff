@@ -34,6 +34,7 @@ import com.tomessa.miff.domain.notification.NotificationType
 import com.tomessa.miff.domain.permission.PermissionNames
 import com.tomessa.miff.domain.place.RequestsView
 import com.tomessa.miff.ui.main.DetectionHelpRoute
+import com.tomessa.miff.ui.main.FeedFocus
 import com.tomessa.miff.ui.main.TabsRoute
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
 import com.tomessa.miff.ui.permission.NotificationsPopIn
@@ -152,6 +153,9 @@ internal fun NavGraphBuilder.notificationRoutes(
                             // the row stands for is pending any more, the list opens with a neutral sentence (never an error).
                             openRequestsOf(container, requests, row, context)
                             container.tabRequests.request(MainTab.PROFILE)
+                        } else if (row.visit != null) {
+                            // "Depuis ta dernière visite": the Feed, on the card of the person the line is about (of THAT Miff, which becomes the one shown if it is not).
+                            openVisitCard(container, row)
                         } else {
                             // The screen the notification is about (never an error): the Update for N1 and N2, the Feed for the others.
                             container.tabRequests.request(
@@ -215,6 +219,29 @@ internal fun NavGraphBuilder.notificationRoutes(
             onOpenPhoneSettings = { ExternalLinks.openNotificationSettings(context) },
         )
     }
+}
+
+/**
+ * A tap on a line of "Depuis ta dernière visite": the Miff it is about becomes the Miff of the Feed (the same choice as the selector) and the Feed brings the card of the
+ * person into view. A Miff the phone no longer knows, or a person who left it: the Feed opens as it is, never an error.
+ */
+private fun openVisitCard(
+    container: AppContainer,
+    row: CenterRow,
+) {
+    val parsed = row.visit ?: return
+    val miffId = row.miffId ?: return
+    val ready = container.miffDirectory.state.value as? DirectoryState.Ready
+    if (ready != null && ready.miffs.any { it.id == miffId } && ready.activeId != miffId) {
+        try {
+            container.feedNotificationLink.onActiveMiff(miffId)
+        } catch (e: Exception) {
+            // The reminders never get in the way of the selector.
+        }
+        container.miffDirectory.select(miffId)
+    }
+    container.tabRequests.requestFocus(FeedFocus(miffId, parsed.uid))
+    container.tabRequests.request(MainTab.FEED)
 }
 
 /** The names of ALL the Miffs by identifier (the lines about a request to add a place always say which Miff they are for). */

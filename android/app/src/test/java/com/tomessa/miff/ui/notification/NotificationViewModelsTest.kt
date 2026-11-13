@@ -7,15 +7,21 @@ import com.tomessa.miff.data.notification.NotificationPreferencesStore
 import com.tomessa.miff.data.notification.NotificationSettings
 import com.tomessa.miff.data.permission.DevicePermissions
 import com.tomessa.miff.data.permission.NotificationAskStore
+import com.tomessa.miff.data.place.RequesterDirectory
+import com.tomessa.miff.domain.feed.PlaceKind
+import com.tomessa.miff.domain.notification.LastVisit
 import com.tomessa.miff.domain.notification.NotificationFamily
 import com.tomessa.miff.domain.notification.NotificationItem
 import com.tomessa.miff.domain.notification.NotificationPermissionState
 import com.tomessa.miff.domain.notification.NotificationPreferences
 import com.tomessa.miff.domain.notification.NotificationType
 import com.tomessa.miff.domain.notification.SecondChance
+import com.tomessa.miff.domain.notification.VisitKind
+import com.tomessa.miff.domain.notification.VisitLine
 import com.tomessa.miff.domain.permission.PermissionSnapshot
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -263,6 +269,80 @@ class NotificationViewModelsTest {
             assertTrue(rows.all { it.unread })
             assertEquals("Famille", rows[0].miffName)
             assertNull("a single Miff: no name", rows[1].miffName)
+        }
+
+    @Test
+    fun theGroupOfTheLastVisit_isApartFromTheDays_namedFromWhatTheAppKnowsNow_andNeverStoredWithAName() =
+        runTest(dispatcher) {
+            center.add(line("a"))
+            LastVisit
+                .items(
+                    "miff-1",
+                    listOf(VisitLine("t", VisitKind.DEPARTURE, PlaceKind.SCHOOL, now - 1_000, now - 1_000)),
+                ).forEach { center.add(it) }
+            val firstNames = MutableStateFlow(emptyMap<String, String>())
+            val vm =
+                centreModel(
+                    Phone(snap(notifications = true)),
+                    names = mapOf("miff-1" to "Famille"),
+                    firstNames = firstNames,
+                )
+            advanceUntilIdle()
+            assertEquals(
+                listOf("a"),
+                vm.uiState.value.rows
+                    .map { it.id },
+            )
+            val unnamed =
+                vm.uiState.value.visitRows
+                    .single()
+            assertEquals(NotificationType.C1, unnamed.type)
+            assertNull("the name is not known yet: the words say \"Un proche\"", unnamed.visitName)
+            assertEquals("Famille", unnamed.miffName)
+            assertEquals("miff-1", unnamed.miffId)
+            firstNames.value = mapOf(RequesterDirectory.key("miff-1", "t") to "Thomas")
+            advanceUntilIdle()
+            assertEquals(
+                "Thomas",
+                vm.uiState.value.visitRows
+                    .single()
+                    .visitName,
+            )
+            // The centre itself holds no name: the key is identifiers, a letter, a category word and a time.
+            assertTrue(center.items.value.none { it.id.contains("Thomas") })
+            // Two unread lines: the dot of the bell (never a number on the screen).
+            assertEquals(2, center.unreadCount())
+        }
+
+    @Test
+    fun aTapOnALineOfTheLastVisit_marksItRead_andLeavingTheCentreReadsTheRest() =
+        runTest(dispatcher) {
+            val items =
+                LastVisit.items(
+                    "miff-1",
+                    listOf(
+                        VisitLine(
+                            "t",
+                            VisitKind.DEPARTURE,
+                            null,
+                            now - 2_000,
+                            now - 2_000,
+                        ),
+                        VisitLine("a", VisitKind.UPDATE, null, now - 1_000, now - 1_000),
+                    ),
+                )
+            items.forEach { center.add(it) }
+            val vm = centreModel(Phone(snap(notifications = true)))
+            advanceUntilIdle()
+            // Newest first.
+            assertEquals(
+                listOf(items[1].id, items[0].id),
+                vm.uiState.value.visitRows
+                    .map { it.id },
+            )
+            vm.onOpen(vm.uiState.value.visitRows[0])
+            advanceUntilIdle()
+            assertEquals(1, center.unreadCount())
         }
 
     @Test
