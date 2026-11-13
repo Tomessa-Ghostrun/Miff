@@ -383,7 +383,7 @@ Une fois l'onboarding fini (destination « fil »), `MiffHomeHost` pose `MainShe
 1. **Barre** : verre natif d'iOS 26 (`glassEffect`) au lieu du flou Haze d'Android ; repli matériau + voile avant iOS 26 ; « Réduire la transparence » et « Augmenter le contraste » donnent le fond opaque (Android n'a pas d'API pour le premier). Posée à 22 pt du bas de l'**écran** (elle déborde sur la zone de l'indicateur d'accueil), pas 22 pt au-dessus de la zone sûre.
 2. **Icônes** : maison + petit coeur dessinés avec deux symboles du système au trait (SF Symbols `house` et `heart`) et `person`, faute de l'export vectoriel du PM ; à remplacer.
 3. **Bouton central** : *(remplacé par UPDATE-3)* actif dans tous les builds, il ouvre l'écran Update.
-4. **Langue** : la ligne ouvre les réglages de l'iPhone (décision Q4) ; pas d'écran de choix comme sur Android.
+4. **Langue** : *(remplacé le 2026-11-13, voir « Réglages > Langue dans l'app »)* la ligne ouvrait les réglages de l'iPhone (décision Q4) ; elle ouvre maintenant le même écran qu'Android.
 5. **Aide à la détection** : texte propre à iOS (localisation « Toujours » et position exacte, actualisation en arrière-plan, économie d'énergie, rouvrir Miff une fois si une détection tarde) au lieu de l'aide Oppo/Xiaomi d'Android. **À vérifier sur l'iPhone** : si balayer l'app dans le sélecteur retarde réellement la reprise des détections (le texte ne l'affirme plus).
 6. **Consentement et retrait** : le renouvellement du consentement à la localisation reste fait AVANT la coquille par l'écran existant (LOC-4a) ; le retrait de la localisation reste « Arrêter de partager » dans l'écran de la Miff. L'interrupteur « statistiques » n'est pas livré (voir le journal des changements).
 7. **Mes informations** : *(remplacé : modifiable, voir la section « Mes informations modifiable »)*.
@@ -846,6 +846,26 @@ Le workflow manuel `ios-testflight` signe par « signature automatique » avec l
 - Pour ajouter une langue : ajouter ses textes dans `Localizable.xcstrings` pour toutes les clés, puis son code dans `CFBundleLocalizations` (`project.yml`).
 - Droite-à-gauche : mise en page avec `leading`/`trailing` (jamais gauche/droite) ; la capture CI force la direction droite-à-gauche et la mise en page se retourne. Ni Baloo Thambi 2 ni Hanken Grotesk n'ont de glyphes arabes : le système utilise sa police de repli.
 - Pseudo-langue « double longueur » de la CI (`-NSDoubleLocalizedStrings YES`) : les textes sont doublés sans rien couper. Limite de l'outil : sur les textes à valeurs insérées (`%1$@`), le doublage du système fait afficher « 1$@ » dans la première moitié ; c'est un artefact de l'outil de test, pas des vraies traductions.
+
+## Réglages > Langue dans l'app (décision du PM du 2026-11-13)
+
+Retour de recette : « Langue » ouvrait les réglages de l'iPhone ; le PM veut **le même écran qu'Android** (Français, English, Langue du téléphone). Décision d'origine : une recommandation de `product-specs` (Onboarding Q11), pas une obligation d'Apple ; voir `docs/tickets/feed-profil-reglages.md` (« Décision du PM (2026-11-13) »). Recette : `docs/qa/checklists/reglages-langue-ios-recette-pm.md`.
+
+| Chemin | Rôle |
+|---|---|
+| `Models/Main/AppLanguage.swift` | Le choix (`AppLanguageChoice`), son stockage (`UserDefaults`, clé `miff.appLanguage`, une valeur), la langue effective (`AppLanguageState` : code, locale, paquet de textes), l'instantané global lu hors des vues (`AppLanguage`) et le contrôleur observable (`AppLanguageController`) |
+| `Views/Settings/LanguageView.swift` | L'écran (trois lignes, coche, VoiceOver), `AppLanguageHost` (locale de l'environnement, posé à la racine dans `MiffApp`) et `followsAppLanguage()` |
+| `Localization/L10n.swift` | Lit le paquet et la locale de la langue choisie |
+
+**Application À CHAUD, sans redémarrage** (solution retenue : c'est faisable de façon fiable) : (1) la locale de l'environnement SwiftUI suit le choix, donc `Text("cle")`, les dates et les nombres des composants du système aussi ; (2) `L10n` lit le paquet `fr.lproj` ou `en.lproj`, donc tous les textes calculés (`L10n.string`, `L10n.format`, pluriels) et ceux calculés hors vue (notifications locales, e-mail de réinitialisation) suivent ; (3) la coque (onglets) et chaque écran empilé de `MiffHomeHost` posent `followsAppLanguage()` : leur identité suit le code de langue effectif, ils sont donc refaits dans la nouvelle langue. La **pile de navigation, l'onglet choisi et les modèles gardés par l'hôte ne sont jamais refaits**. Choisir le même code (« Langue du téléphone » quand le téléphone est déjà en français) ne refait rien.
+
+**« Langue du téléphone » = exactement le comportement d'avant** : paquet principal et locale du téléphone, donc repli anglais (téléphone en allemand), pseudo-langue de la CI et captures inchangés. Le français ou l'anglais choisi n'impose que la langue de l'app : les heures du Feed gardent le choix 12 h / 24 h du téléphone.
+
+**Limites** : textes système (fenêtres d'autorisation, clavier, boutons système) dans la langue du téléphone ; une notification locale a un texte figé, reprogrammée dans la langue choisie juste après le choix (`AppLanguage.changed` écouté par `NotificationLifecycle`) et à chaque retour au premier plan ; les écrans refaits perdent leur état interne non gardé par l'hôte (seul l'écran Langue est ouvert à ce moment-là ; le Feed relit son cache local) ; la langue n'est pas envoyée au serveur (un futur push serveur devra en décider). Les écrans du Diagnostic (Debug / Internal) gardent les formats du système. **Non compilé en local (poste Windows) : la CI fait foi**, et le changement à chaud est à regarder sur l'iPhone (recette A et B).
+
+**Confidentialité et coût** : une préférence d'affichage gardée sur l'appareil, ni envoyée ni liée au compte ni dans Analytics ; 0 € ; aucune lecture ni écriture Firestore. `UserDefaults` est déjà déclaré dans `PrivacyInfo.xcprivacy` (CA92.1).
+
+**Captures de la CI** : `160-fr-langue` à `167` (écran Langue, Réglages en anglais choisi sur un téléphone en français via `-MiffAppLanguage en` — Debug seulement, rien n'est écrit —, Réglages sur téléphone anglais, droite-à-gauche, texte très grand).
 
 ## Écran de diagnostic (Debug et Internal uniquement)
 

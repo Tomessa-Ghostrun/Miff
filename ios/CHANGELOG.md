@@ -2,6 +2,25 @@
 
 ## Non publié
 
+### Réglages > Langue dans l'app (retour de recette du PM, 2026-11-13)
+
+Branche `ios/reglages-langue` (PR en brouillon). Décision du PM : « Langue » ouvre **le même écran qu'Android** (Français, English, Langue du téléphone), au lieu des réglages de l'iPhone. Le choix d'origine (ouvrir les réglages de l'iPhone) était une recommandation de `product-specs` (Onboarding Q11), pas une obligation d'Apple. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM : `docs/qa/checklists/reglages-langue-ios-recette-pm.md`. Détail : `ios/README.md`, section « Réglages > Langue dans l'app ». **0 € : aucune lecture ni écriture Firestore, aucun événement Analytics.**
+
+Ajouté :
+- Écran **Langue** (`Views/Settings/LanguageView.swift`) : trois lignes « Français », « English », « Langue du téléphone » (les deux noms jamais traduits), coche et gras sur le choix actif, VoiceOver « Français, sélectionné », lignes de 44 pt au moins, Dynamic Type, pas de bouton « Enregistrer ».
+- Choix gardé **sur l'appareil** (`UserDefaults`, une valeur `fr` / `en` / `system`, jamais envoyée ni liée au compte), « Langue du téléphone » par défaut (`Models/Main/AppLanguage.swift`).
+- **Application à chaud, sans redémarrage** : locale de l'environnement SwiftUI posée à la racine (`AppLanguageHost`), `L10n` lit le paquet `fr.lproj` / `en.lproj` du choix, la coque et les écrans empilés se refont dans la nouvelle langue (`followsAppLanguage()`), sans toucher à la pile, à l'onglet choisi ni aux modèles de l'hôte.
+- Clés `ios_settings_language_french` et `ios_settings_language_english` (préfixe `ios_` : Android les garde hors traduction, le contrôle de parité les ignore).
+- Captures de la CI `160` à `167` (écran Langue ; Réglages en anglais choisi sur un téléphone en français, `-MiffAppLanguage en`, Debug seulement).
+- Tests `AppLanguageTests` (choix, langue effective, conservation, défaut = téléphone, textes hors vue, notifications, e-mail de réinitialisation, aucun appel à `openSettingsURLString` pour la langue).
+
+Modifié :
+- La ligne « Langue » des Réglages n'ouvre plus les réglages de l'iPhone ; elle dit la langue en cours (« Langue actuelle : Français ») ; son aide VoiceOver devient « ouvre le choix de la langue ».
+- Textes et formats calculés hors des vues lisent la langue **choisie** : `L10n` (textes, valeurs, pluriels), phrases et heures du Feed, dates du voyage, heures du centre de notifications, noms de pays, **texte des notifications locales** (reprogrammées dans la nouvelle langue juste après le choix par `NotificationLifecycle`) et langue de l'**e-mail de réinitialisation** (`languageCode` de Firebase Authentication).
+- Nouvelle route `SettingsRoute.language` : absente des Réglages restreints d'un compte sans Miff, et refermée si la dernière Miff disparaît pendant qu'elle est ouverte.
+
+Limites : textes système (fenêtres d'autorisation, clavier) dans la langue du téléphone ; une notification locale a un texte figé (reprogrammée au choix et au retour au premier plan) ; les écrans refaits perdent leur état interne non gardé par l'hôte ; la langue n'est pas envoyée au serveur (un futur push serveur devra en décider).
+
 ### NOTIF-7I - Notifications, PR C : N6 « Tu es dans une zone de danger de ta Miff »
 
 Branche `ios/notifications-p0-c` (PR en brouillon, **empilée sur la PR B**). Ticket `docs/tickets/notifications.md` §20.7 (vecteurs V1 à V10), décision Q34. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM : `docs/qa/checklists/notifs-ios-recette-pm.md` (partie F). Détail : `ios/README.md`, section « Notifications ». **0 € : notification locale immédiate, aucune lecture ni écriture Firestore, aucun événement Analytics.**

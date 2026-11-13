@@ -213,6 +213,8 @@ struct MainShellView<Feed: View>: View {
                 }
             }
         }
+        // Changer la langue (Réglages > Langue) refait le contenu des onglets dans la nouvelle langue ; l'onglet choisi, lui, ne bouge pas.
+        .followsAppLanguage()
         .onPreferenceChange(TabBarTopPreference.self) { barTopY = $0 }
         // La dernière Miff a disparu : on repart du Feed.
         .onChange(of: hasNoMiff) { noMiff in

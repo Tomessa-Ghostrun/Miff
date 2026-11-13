@@ -7,17 +7,19 @@ import Foundation
 /// (« Version : %1$@ ») passe par `L10n.format`, parce que la cle partagee avec Android ne doit pas changer
 /// quand on y insere une valeur. Les cles suivent docs/contracts/i18n-keys.md.
 enum L10n {
-    static func string(_ key: String, bundle: Bundle = .main) -> String {
+    /// `bundle` : par défaut le paquet de la LANGUE CHOISIE dans Réglages > Langue (`AppLanguage.bundle` : le paquet principal quand c'est
+    /// la langue du téléphone, `fr.lproj` ou `en.lproj` sinon). Le texte suit donc le choix, même calculé hors d'une vue.
+    static func string(_ key: String, bundle: Bundle = AppLanguage.bundle) -> String {
         bundle.localizedString(forKey: key, value: nil, table: nil)
     }
 
     /// Texte avec valeurs positionnelles (`%1$@`, `%2$lld`) : l'ordre peut changer selon la langue.
     static func format(_ key: String, _ arguments: CVarArg...) -> String {
-        String(format: string(key), locale: Locale.current, arguments: arguments)
+        String(format: string(key), locale: AppLanguage.locale, arguments: arguments)
     }
 
     /// Texte avec pluriel (variantes `one`, `other`... du catalogue). Le nombre est passe au format.
     static func plural(_ key: String, count: Int) -> String {
-        String.localizedStringWithFormat(string(key), count)
+        String(format: string(key), locale: AppLanguage.locale, count)
     }
 }

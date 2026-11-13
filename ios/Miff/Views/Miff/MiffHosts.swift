@@ -25,6 +25,11 @@ enum MiffRoute: Hashable {
         self == .settings(.myInfo)
     }
 
+    /// Réglages > Langue : un compte sans Miff n'a pas cette ligne (décision du PM du 2026-11-07), donc pas cet écran non plus.
+    var isLanguageScreen: Bool {
+        self == .settings(.language)
+    }
+
     /// Les écrans des notifications : un compte sans Miff n'en a pas (rien à notifier).
     var isNotificationScreen: Bool {
         if case .settings(let screen) = self {
@@ -210,6 +215,8 @@ struct MiffHomeHost: View {
                     .swipeBackEnabled()
                     .navigationDestination(for: MiffRoute.self) { route in
                         destination(route)
+                            // Changer la langue (Réglages > Langue) refait les écrans empilés dans la nouvelle langue, sans toucher à la pile.
+                            .followsAppLanguage()
                             .toolbar(.hidden, for: .navigationBar)
                             .swipeBackEnabled()
                     }
@@ -226,7 +233,7 @@ struct MiffHomeHost: View {
         // décision du PM du 2026-11-07) ; les autres écrans des Réglages restent où ils sont.
         .onChange(of: MainShellRules.hasNoMiff(directory.state)) { noMiff in
             if noMiff {
-                path.removeAll { $0.isMyInfoScreen || $0.isNotificationScreen }
+                path.removeAll { $0.isMyInfoScreen || $0.isLanguageScreen || $0.isNotificationScreen }
             }
         }
         // Une seule lecture des Miffs par session à l'ouverture (pas une à chaque retour sur l'écran) : le contrôle auprès du

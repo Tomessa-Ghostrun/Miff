@@ -127,6 +127,15 @@ shot 95-fr-lieu-offre-danger 3 "${fr_args[@]}" -MiffPreview place-paywall-danger
 shot 95b-fr-miff-offre-deuxieme-miff 3 "${fr_args[@]}" -MiffPreview place-paywall-miff
 shot 96-en-lieu-rempli 6 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview place-form-filled
 
+# Réglages > Langue (écran dans l'app, comme Android) : téléphone en français puis en anglais, anglais CHOISI sur un téléphone en français
+# (-MiffAppLanguage, Debug seulement, rien n'est écrit), droite-à-gauche. La ligne Langue des Réglages dit la langue en cours.
+shot 160-fr-langue 2 "${fr_args[@]}" -MiffPreview lang-screen
+shot 161-fr-langue-anglais-choisi 2 "${fr_args[@]}" -MiffAppLanguage en -MiffPreview lang-screen
+shot 162-fr-reglages-anglais-choisi 2 "${fr_args[@]}" -MiffAppLanguage en -MiffPreview lang-settings
+shot 163-en-reglages 2 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview lang-settings
+shot 164-fr-reglages 2 "${fr_args[@]}" -MiffPreview lang-settings
+shot 165-fr-langue-droite-a-gauche 2 "${fr_args[@]}" -MiffForceRTL YES -MiffPreview lang-screen
+
 # La photo d'un proche en plein écran (FEED-8), dans un vrai fullScreenCover : un 3:4 (comme la capture du PM) puis le format du viseur (9:19,5).
 shot 150-fr-photo-plein-ecran-3-4 4 "${fr_args[@]}" -MiffPreview photo-3-4
 shot 151-fr-photo-plein-ecran-haute 4 "${fr_args[@]}" -MiffPreview photo-tall
@@ -166,6 +175,8 @@ shot 79-fr-miff-supprimer-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview miff-s
 shot 93-fr-feed-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-orange
 
 shot 152-fr-photo-plein-ecran-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview photo-3-4
+shot 166-fr-langue-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview lang-screen
+shot 167-fr-reglages-texte-tres-grand 2 "${fr_args[@]}" -MiffAppLanguage en -MiffPreview lang-settings
 
 xcrun simctl ui "$udid" content_size large > /dev/null 2>&1 || true
 

@@ -144,7 +144,7 @@ struct NotificationCenterView: View {
         let time = NotificationTimeText.text(
             createdAtMillis: item.createdAtMillis,
             section: section,
-            locale: .current,
+            locale: AppLanguage.locale,
             timeZone: .current
         )
         return Button {
