@@ -9,7 +9,9 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHeightIsAtLeast
@@ -159,7 +161,7 @@ class AboutScreenTest {
     fun theVersionLine_isOneElementForTheScreenReader_withItsAction() {
         show(FakeActions())
         val node = composeRule.onNodeWithText("Version 0.39.0 (build 39000)").fetchSemanticsNode()
-        val label = node.config.getOrNull(androidx.compose.ui.semantics.SemanticsActions.OnClick)?.label
+        val label = node.config.getOrNull(SemanticsActions.OnClick)?.label
         assertEquals(text(R.string.about_version_copy_hint_a11y), label)
         // The hint "Touche pour copier" is merged into the same element (one stop, not two).
         composeRule.onNodeWithText(text(R.string.android_about_copy_hint), useUnmergedTree = false).assertExists()
