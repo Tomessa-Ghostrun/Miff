@@ -177,12 +177,13 @@ private struct BubbleBlob<Content: View>: View {
                     .rotationEffect(.degrees(motion ? BubbleMotion.tilt(blob) : 0))
                     .accessibilityHidden(true)
             )
-            // Le bouton « i » (BubbleInfoButton) est posé en bas à droite, dans la marge du bas : il suit la dérive de toute la bulle, et sa
-            // couleur celle du niveau de la page.
-            .overlay(alignment: .bottomTrailing) {
-                BubbleInfoButton(level: level, action: onInfo)
-            }
             .offset(y: motion ? BubbleMotion.drift(blob) : 0)
+        }
+        // Le bouton « i » (BubbleInfoButton) est posé APRÈS le TimelineView : hors de la tache, de son mouvement et de sa dérive, il reste
+        // immobile. Son bas est celui de la boîte de la bulle, sa droite celle des cartes (même marge de la liste) ; sa couleur est celle du
+        // niveau de la page.
+        .overlay(alignment: .bottomTrailing) {
+            BubbleInfoButton(level: level, action: onInfo)
         }
     }
 }

@@ -3,8 +3,8 @@
 import XCTest
 @testable import Miff
 
-/// COULEURS-2 : le petit bouton « i » en bas à droite de la bulle du Feed (décision du PM du 2026-11-13, elle remplace « toucher la bulle ») :
-/// zone de toucher d'au moins 44 pt, aucun recouvrement du contenu (donc ni « Contacter », ni « Reprendre le partage », même à la plus grande taille
+/// COULEURS-2 : le petit bouton « i » de la bulle du Feed (décision du PM du 2026-11-13, elle remplace « toucher la bulle ») : EN DEHORS de la bulle,
+/// son bas aligné sur celui de la bulle et sa droite sur celle des cartes, de la couleur de la bulle, immobile ; zone de toucher d'au moins 44 pt, aucun recouvrement du contenu (donc ni « Contacter », ni « Reprendre le partage », même à la plus grande taille
 /// de texte), contraste sur chaque teinte, libellé parlé, présence dans chaque variante, aucune réaction au toucher de la bulle, navigation.
 /// Miroir des tests Android du même changement.
 final class BubbleInfoButtonTests: XCTestCase {
@@ -34,29 +34,78 @@ final class BubbleInfoButtonTests: XCTestCase {
         return unit?["value"] as? String
     }
 
-    func testTheTouchAreaOfTheInfoButtonIsAtLeast44PointsEvenThoughTheGlyphIsSmall() {
+    func testTheTouchAreaOfTheInfoButtonIsAtLeast44PointsEvenThoughTheDiscIsSmaller() {
         XCTAssertGreaterThanOrEqual(BubbleLayout.infoTouchSize, Spacing.minTouchTarget)
         XCTAssertGreaterThanOrEqual(BubbleLayout.infoTouchSize, 44)
-        XCTAssertLessThan(BubbleLayout.infoGlyphSize, BubbleLayout.infoTouchSize, "un glyphe discret")
+        XCTAssertLessThan(BubbleLayout.infoDiscSize, BubbleLayout.infoTouchSize, "un disque discret")
+        XCTAssertLessThan(BubbleLayout.infoGlyphSize, BubbleLayout.infoDiscSize)
     }
 
-    func testTheInfoButtonLivesInTheBottomBandWhereTheContentNeverGoes() {
+    /// Décision du PM : le bas du bouton est aligné sur le bas de la bulle, sa droite sur la droite des cartes (la boîte de la bulle a la largeur des
+    /// cartes : même marge de la liste).
+    func testTheButtonBottomIsTheBottomOfTheBubbleAndItsRightIsTheRightOfTheCards() throws {
+        for box in [CGSize(width: 288, height: 264), CGSize(width: 361, height: 264), CGSize(width: 361, height: 650)] {
+            let frames = BubbleLayout.infoButtonFrames(box: box)
+
+            XCTAssertEqual(frames.disc.maxY, box.height, accuracy: 0.001, "bas du disque = bas de la bulle")
+            XCTAssertEqual(frames.disc.maxX, box.width, accuracy: 0.001, "droite du disque = droite de la boîte (celle des cartes)")
+            XCTAssertEqual(frames.touch.maxY, box.height, accuracy: 0.001)
+            XCTAssertEqual(frames.touch.maxX, box.width, accuracy: 0.001)
+        }
+        let list = UpdatePrivacyTests.codeLines(try source("Views/Feed/FeedListView.swift")).joined(separator: "\n")
+        let blob = UpdatePrivacyTests.codeLines(try source("Views/Feed/FeedBubbleView.swift")).joined(separator: "\n")
+
+        XCTAssertTrue(list.contains("BubbleView(") && list.contains("MemberCardView("), "la bulle et les cartes sont dans la même colonne")
+        XCTAssertTrue(blob.contains(".frame(maxWidth: .infinity, minHeight: BubbleLayout.minContentHeight"), "la boîte de la bulle prend toute la largeur de la colonne")
+        XCTAssertTrue(list.contains(".padding(.horizontal, Spacing.md)"), "une seule marge de liste pour la bulle et les cartes")
+    }
+
+    /// Le bouton est EN DEHORS de la bulle : le disque et son contour ne touchent pas la tache, quelle que soit la hauteur de la bulle, même
+    /// avec l'inclinaison de la tache.
+    func testTheButtonIsOutsideTheShapeOfTheBubble() {
+        for box in [CGSize(width: 288, height: 264), CGSize(width: 361, height: 264), CGSize(width: 361, height: 650), CGSize(width: 390, height: 900)] {
+            let disc = BubbleLayout.infoButtonFrames(box: box).disc
+            let shape = FeedBubbleShape().path(in: CGRect(origin: .zero, size: box))
+            let center = CGPoint(x: disc.midX, y: disc.midY)
+
+            XCTAssertFalse(shape.contains(center), "le centre du disque est dans la tache : \(box)")
+            for step in 0..<24 {
+                let angle = Double(step) * .pi / 12
+                let point = CGPoint(x: center.x + disc.width / 2 * CGFloat(cos(angle)), y: center.y + disc.height / 2 * CGFloat(sin(angle)))
+
+                XCTAssertFalse(shape.contains(point), "le bord du disque entre dans la tache : \(box), \(step)")
+            }
+        }
+    }
+
+    func testTheButtonStaysOutOfTheMotionOfTheBubble() throws {
+        let code = UpdatePrivacyTests.codeLines(try source("Views/Feed/FeedBubbleView.swift")).joined(separator: "\n")
+        let drift = try XCTUnwrap(code.range(of: ".offset(y: motion ? BubbleMotion.drift(blob) : 0)"))
+        let button = try XCTUnwrap(code.range(of: "BubbleInfoButton(level: level, action: onInfo)"))
+
+        XCTAssertGreaterThan(button.lowerBound, drift.upperBound, "le bouton est posé après le mouvement et la dérive de la tache : immobile")
+        XCTAssertTrue(code.contains(".overlay(alignment: .bottomTrailing) {"))
+    }
+
+    func testTheButtonIsTheColourOfTheLevelShownByTheBubble() throws {
+        let code = UpdatePrivacyTests.codeLines(try source("Views/Feed/BubbleInfoButton.swift")).joined(separator: "\n")
+
+        XCTAssertTrue(code.contains("Circle().fill(level.tint)"), "le disque a la teinte de la bulle")
+        XCTAssertTrue(code.contains(".foregroundColor(level.onTint)"), "le « i » a la couleur du texte de la bulle")
+        let feed = UpdatePrivacyTests.codeLines(try source("Views/Feed/FeedBubbleView.swift")).joined(separator: "\n")
+        XCTAssertTrue(feed.contains("BubbleBlob(level: current.level, motion: motion, onInfo: onInfo)"), "il suit la page du carrousel")
+    }
+
+    func testTheTouchAreaNeverCoversTheContentEvenAtTheLargestTextSize() {
         XCTAssertTrue(BubbleLayout.infoButtonFitsBottomBand, "la zone de toucher recouvrirait le contenu")
         for height in [20.0, 100, 175, 400, 900] {
             let size = CGSize(width: 239, height: height)
             let outer = BubbleLayout.outerSize(content: size)
             let frame = BubbleLayout.contentFrame(content: size)
-            let touchTop = outer.height - BubbleLayout.infoBottomInset - BubbleLayout.infoTouchSize
+            let touch = BubbleLayout.infoButtonFrames(box: outer).touch
 
-            XCTAssertLessThanOrEqual(frame.maxY, touchTop + 0.001, "le bouton « i » chevauche un contenu de \(height) pt de haut")
+            XCTAssertLessThanOrEqual(frame.maxY + BubbleMotion.driftPoints, touch.minY + 0.001, "le bouton « i » chevauche un contenu de \(height) pt de haut")
         }
-    }
-
-    func testTheInfoButtonStaysInsideTheBubbleOnTheNarrowestPhone() {
-        // 320 pt moins les marges de la liste (16 de chaque côté) : la zone de toucher reste à l'intérieur de la boîte de la bulle.
-        let width: CGFloat = 320 - 2 * Spacing.md
-
-        XCTAssertGreaterThan(width - BubbleLayout.infoTrailingInset - BubbleLayout.infoTouchSize, 0)
     }
 
     func testAShortBubbleKeepsItsHeight() {

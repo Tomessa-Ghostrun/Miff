@@ -31,21 +31,33 @@ enum BubbleLayout {
     /// la hauteur d'une bulle courte n'a pas changé en passant la marge de 44 à 52 pour le bouton « i ».)
     static let minContentHeight: CGFloat = 160
 
-    // LE BOUTON « i » (« Comprendre les couleurs », décision du PM du 2026-11-13) : en bas à droite de la bulle, dans la bande de la marge
-    // du bas. Le glyphe est petit (discret), la zone de toucher fait au moins 44 pt.
-    /// Côté de la zone de toucher du bouton « i » (au moins `Spacing.minTouchTarget`).
+    // LE BOUTON « i » (« Comprendre les couleurs », décision du PM du 2026-11-13, précisée le 2026-11-13) : EN DEHORS de la bulle (hors de
+    // sa forme, de son mouvement et de sa dérive : il reste immobile), son BAS aligné sur le bas de la bulle et sa DROITE alignée sur la droite
+    // des cartes du Feed (la boîte de la bulle a la largeur des cartes). Il occupe le coin bas-droit de la boîte, que la tache ne couvre pas
+    // (son coin est arrondi) : la bulle n'est ni rétrécie ni déplacée, et la liste ne bouge pas.
+    /// Côté de la zone de toucher du bouton « i » (au moins `Spacing.minTouchTarget`) ; elle remonte et va vers la gauche depuis le coin.
     static let infoTouchSize: CGFloat = 44
-    /// Côté du glyphe dessiné au milieu de la zone de toucher.
-    static let infoGlyphSize: CGFloat = 22
-    /// Écart entre la zone de toucher et le bord de la bulle : à droite (à gauche en droite-à-gauche), assez pour que le glyphe reste DANS
-    /// la tache (son coin bas est arrondi), et en bas.
-    static let infoTrailingInset: CGFloat = 72
-    static let infoBottomInset: CGFloat = 8
+    /// Diamètre du disque visible, dans le coin : discret, et son bas et sa droite sont ceux de la boîte de la bulle.
+    static let infoDiscSize: CGFloat = 36
+    /// Côté du glyphe « i » dans le disque.
+    static let infoGlyphSize: CGFloat = 16
 
-    /// La zone de toucher du bouton tient tout entière dans la bande de la marge du bas : elle ne peut recouvrir ni le texte, ni « Contacter »,
-    /// ni « Reprendre le partage », quelle que soit la taille du texte.
+    /// La zone de toucher et le disque du bouton « i » dans la boîte de la bulle de la taille donnée (origine en haut à gauche).
+    static func infoButtonFrames(box: CGSize) -> (touch: CGRect, disc: CGRect) {
+        let touch = corner(of: box, side: infoTouchSize)
+        let disc = corner(of: box, side: infoDiscSize)
+        return (touch, disc)
+    }
+
+    /// Un carré de ce côté, collé au coin bas-droit de la boîte.
+    private static func corner(of box: CGSize, side: CGFloat) -> CGRect {
+        CGRect(x: box.width - side, y: box.height - side, width: side, height: side)
+    }
+
+    /// La zone de toucher tient tout entière dans la bande de la marge du bas, plus la dérive de la bulle : elle ne peut recouvrir ni le texte,
+    /// ni « Contacter », ni « Reprendre le partage », quelle que soit la taille du texte.
     static var infoButtonFitsBottomBand: Bool {
-        infoBottomInset + infoTouchSize <= verticalInset
+        infoTouchSize + BubbleMotion.driftPoints <= verticalInset
     }
 
     /// La boîte totale de la bulle pour un contenu de la taille donnée : les marges s'ajoutent de chaque côté.

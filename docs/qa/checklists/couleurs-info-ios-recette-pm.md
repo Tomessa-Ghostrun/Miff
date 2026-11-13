@@ -1,7 +1,7 @@
 # Recette iPhone de l'écran « Les couleurs de ta Miff » (COULEURS-2) : parcours pour le PM
 
 **Pour qui** : vous, sur votre iPhone 11 Pro (iOS 26.5.2), avec le build TestFlight de la branche `ios/couleurs-info`. Un compte suffit pour la plupart des étapes ; un second compte (ou l'OPPO) aide à voir une bulle orange ou rouge.
-**Ce que fait la fonctionnalité** : un petit bouton **« i »**, discret, **en bas à droite de la grande bulle colorée du Feed**, ouvre un écran poussé plein écran, **sans barre d'onglets**, qui explique les couleurs d'une personne et celles de la Miff. **Toucher la bulle elle-même ne fait rien** (décision du PM du 2026-11-13, elle remplace « toucher la bulle » du ticket). Écran **statique** : aucune lecture de données, aucun réseau, aucun événement de statistiques.
+**Ce que fait la fonctionnalité** : un petit bouton **« i »**, **à côté de la grande bulle colorée du Feed, en dehors d'elle** (en bas à droite, dans le coin que la tache ne couvre pas), ouvre un écran poussé plein écran, **sans barre d'onglets**, qui explique les couleurs d'une personne et celles de la Miff. **Toucher la bulle elle-même ne fait rien** (décision du PM du 2026-11-13, elle remplace « toucher la bulle » du ticket). Écran **statique** : aucune lecture de données, aucun réseau, aucun événement de statistiques.
 **Durée** : environ 20 minutes.
 **Spec** : `docs/tickets/couleurs-info.md` (l'entrée par le bouton « i » prime sur « toucher la bulle »). Android : `docs/qa/checklists/couleurs-info-android-recette-pm.md`.
 
@@ -13,13 +13,13 @@
 
 ## Partie 1 : le bouton « i » sur chaque bulle (8 min)
 
-1. [ ] Feed avec une bulle **verte** (« Tout va bien ») : un petit « i » dans un cercle, **sans fond ni contour**, apparaît **en bas à droite** de la bulle. Il est lisible (couleur foncée sur la teinte) mais **discret** : il ne tire pas l'œil.
+1. [ ] Feed avec une bulle **verte** (« Tout va bien ») : un petit disque de la **couleur de la bulle**, avec un « i » lisible, apparaît **dans le coin bas-droit** de la bulle, **en dehors de la tache**. Son **bas est aligné sur le bas de la bulle** et sa **droite sur la droite des cartes des membres**. Il est **immobile** pendant que la bulle bouge doucement. Il est discret mais lisible.
 2. [ ] Touchez le « i » : l'écran **« Les couleurs de ta Miff »** s'ouvre, **sans la barre d'onglets**, flèche de retour en haut à gauche.
 3. [ ] **Retour** (flèche, puis geste de retour par le bord gauche à l'ouverture suivante) : le Feed est retrouvé **tel qu'avant** (même défilement, même page de carrousel). Touchez deux fois très vite le « i » : **un seul** écran s'ouvre ; un seul retour suffit.
 4. [ ] **Toucher la bulle elle-même** (sur le texte, sur une partie colorée sans texte) **ne fait rien**.
 5. [ ] Le bouton est présent, bien placé et lisible sur chaque bulle que vous pouvez obtenir (au moins quatre) : orange ou rouge ; grise « Pas encore de nouvelles » ; grise « Personne d'autre dans cette Miff » ; « Tu as arrêté de partager » ; voyageurs (mode voyage d'un proche) ; accord de partage en attente.
-6. [ ] Le « i » est **toujours dans la bulle** (jamais à moitié sorti de la tache) et **ne touche jamais le texte**.
-7. [ ] **Carrousel** (au moins deux alertes) : le « i » est **au même endroit** sur chaque page pendant le balayage, et **prend la couleur** de la page (orange ou rouge). Il ouvre le même écran depuis chaque page. Le balayage, les pastilles (sous la bulle) et le changement de page fonctionnent comme avant.
+6. [ ] Le « i » n'est **jamais dans la forme de la bulle** (ni à moitié dedans) et **ne touche jamais le texte**. Aucune carte ne bouge : la liste est la même qu'avant (hauteur des cartes, position des cartes).
+7. [ ] **Carrousel** (au moins deux alertes) : le « i » est **au même endroit, immobile** sur chaque page pendant le balayage, et **prend la couleur** de la page (orange ou rouge). Il ouvre le même écran depuis chaque page. Le balayage, les pastilles (sous la bulle) et le changement de page fonctionnent comme avant.
 8. [ ] **Les boutons gardent leur rôle** : « **Contacter** » ouvre la messagerie et **n'ouvre pas** l'écran des couleurs ; « **Reprendre le partage** » ouvre le parcours habituel et **n'ouvre pas** l'écran. Les boutons et le « i » ne se recouvrent pas ; chacun répond à son propre toucher (essayez des deux pouces, près du « i »).
 9. [ ] **Zone de toucher** : le « i » se touche sans viser (comme un bouton normal, pas besoin de précision au millimètre).
 10. [ ] **Rien d'autre n'a changé** : l'anneau de votre photo en haut ouvre toujours le Profil ; les cartes des membres ne s'ouvrent pas sur l'écran des couleurs ; pendant le chargement, rien à toucher.
@@ -49,4 +49,4 @@
 
 - Le « i » est volontairement discret : tant qu'on ne sait pas qu'il existe, on ne trouve pas l'écran. Notez si vous l'avez trouvé sans qu'on vous le dise.
 - Aucun événement de statistiques n'est envoyé : on ne saura pas combien de personnes ouvrent l'écran tant que vous n'aurez pas décidé d'en ajouter un.
-- Les marges haut et bas de la bulle passent de 44 à 52 pt (pour loger la zone de toucher du « i ») : une bulle courte garde sa hauteur, une bulle haute (texte agrandi) gagne 16 pt.
+- Les marges haut et bas de la bulle passent de 44 à 52 pt (pour que la zone de toucher du « i » ne puisse jamais recouvrir le texte) : une bulle courte garde sa hauteur, une bulle haute (texte agrandi) gagne 16 pt.

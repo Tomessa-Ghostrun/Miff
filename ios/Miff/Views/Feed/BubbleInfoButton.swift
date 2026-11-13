@@ -1,28 +1,31 @@
 import SwiftUI
 
-// Le petit bouton « i » au bas de la bulle de la Miff (décision du PM du 2026-11-13, elle remplace « toucher la bulle ») : il ouvre l'écran
-// « Les couleurs de ta Miff ». Discret : un glyphe de 22 pt, SANS fond ni contour, dans la couleur du texte posé sur la teinte de la bulle
-// (`StatusLevel.onTint`, celle qui atteint le contraste AA sur chaque teinte : vert, orange, rouge, gris), donc il suit la page d'un carrousel.
-// La zone de toucher fait 44 pt (`BubbleLayout.infoTouchSize`) même si le glyphe est petit ; elle est posée dans la bande de la marge du bas
-// de la bulle, où le contenu n'entre jamais (voir `BubbleLayout.infoButtonFitsBottomBand`) : elle ne recouvre ni le texte, ni « Contacter »,
-// ni « Reprendre le partage », ni les pastilles du carrousel (elles sont SOUS la bulle). Le glyphe ne bouge pas avec le balayage : chaque page
-// le dessine au même endroit de sa bulle. Le reste de la bulle ne répond à aucun toucher.
+// Le petit bouton « i » de la bulle de la Miff (décision du PM du 2026-11-13) : il ouvre l'écran « Les couleurs de ta Miff ». Il est EN DEHORS de
+// la bulle (voir `BubbleLayout`) : dans le coin bas-droit de sa boîte, où la tache ne va pas, jamais dans son mouvement. Son bas est celui de la
+// bulle, sa droite celle des cartes du Feed. Un disque de la COULEUR DE LA BULLE (la teinte du niveau, celle de la page d'un carrousel) avec un
+// « i » dans la couleur du texte posé sur cette teinte (`StatusLevel.onTint`, contraste AA : au moins 4,5 pour 1 sur chaque teinte). La zone de
+// toucher fait 44 pt même si le disque en fait 36 ; elle tient dans la marge du bas de la bulle, où le contenu n'entre jamais : elle ne recouvre
+// ni le texte, ni « Contacter », ni « Reprendre le partage », ni les pastilles du carrousel (elles sont SOUS la bulle). Le reste de la bulle ne
+// répond à aucun toucher.
 struct BubbleInfoButton: View {
     let level: StatusLevel
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: "info.circle")
-                .font(.system(size: BubbleLayout.infoGlyphSize, weight: .regular))
+            Image(systemName: "info")
+                .font(.system(size: BubbleLayout.infoGlyphSize, weight: .semibold))
                 .foregroundColor(level.onTint)
-                .frame(width: BubbleLayout.infoTouchSize, height: BubbleLayout.infoTouchSize)
+                .frame(width: BubbleLayout.infoDiscSize, height: BubbleLayout.infoDiscSize)
+                .background(Circle().fill(level.tint))
+                // Le disque est collé au coin (bas et droite) ; la zone de toucher s'étend vers le haut et la gauche.
+                .frame(
+                    width: BubbleLayout.infoTouchSize, height: BubbleLayout.infoTouchSize, alignment: .bottomTrailing
+                )
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .padding(.trailing, BubbleLayout.infoTrailingInset)
-        .padding(.bottom, BubbleLayout.infoBottomInset)
-        // Le libellé est parlé tel quel, jamais « i » : « Comprendre les couleurs ».
+        // Le libellé est parlé tel quel, jamais « i » : « Comprendre les couleurs » (bouton).
         .accessibilityLabel(Text("feed_colors_bubble_action_a11y"))
     }
 }
