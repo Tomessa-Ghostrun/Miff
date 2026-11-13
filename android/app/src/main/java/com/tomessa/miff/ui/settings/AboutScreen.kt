@@ -50,7 +50,7 @@ import com.tomessa.miff.ui.theme.textBodyRegular14
  *
  *  1. TOP, two large filled cards with an icon, a clear title and a calm sentence: "Nous contacter" (moved here from Confidentialité, Q2) and "Un retour sur
  *     l'app ?" (the external form, drawn ONLY when its address is set, AP8, AP9);
- *  2. under a heading "Informations", plain list lines in the discreet style: the VERSION ("Version 0.40.0 (build 40000)", a touch copies "Miff 0.40.0 (40000)"
+ *  2. under a heading "Informations", plain list lines in the discreet style: the VERSION ("Version 0.41.0 (build 40000)", a touch copies "Miff 0.41.0 (40000)"
  *     and nothing else, AP3, Q7), the existing helps (Q6), the terms and the privacy policy (the links in Confidentialité stay, AP11) and "Licences et
  *     attributions" (AP12 to AP15).
  *
@@ -207,7 +207,7 @@ internal fun AboutSection(title: Int) {
     )
 }
 
-/** "Version 0.40.0 (build 40000)": ONE element for the screen reader, whose action is "copier la version" (AP3, AP17). Discreet style, like the lines around it. */
+/** "Version 0.41.0 (build 40000)": ONE element for the screen reader, whose action is "copier la version" (AP3, AP17). Discreet style, like the lines around it. */
 @Composable
 private fun VersionRow(
     version: AppVersion,

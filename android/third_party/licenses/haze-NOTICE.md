@@ -11,7 +11,7 @@
 | Used for | the blur of what is behind the tab bar (ticket TABBAR-GLASS). Modules `haze` (`hazeSource`) and `haze-blur` only: NOT `haze-glass` (refraction), NOT `haze-materials` |
 | Network, permission, key | none. The library draws; it reads nothing from the phone and sends nothing |
 
-The licence and the copyright notice above are shown in the "Licences et attributions" screen of the app (ABOUT-1A, version 0.40.0, `assets/licenses/licenses.json`), like those of MapLibre (BSD-2-Clause, see `android/README.md`).
+The licence and the copyright notice above are shown in the "Licences et attributions" screen of the app (ABOUT-1A, version 0.41.0, `assets/licenses/licenses.json`), like those of MapLibre (BSD-2-Clause, see `android/README.md`).
 
 Transitive redirect artifacts: Haze also brings `org.jetbrains.compose.{ui,animation-core,runtime}:*-android:1.12.1` and `org.jetbrains.androidx.lifecycle:*:2.11.0`, which are tiny redirect AARs (about 6 KB in all) that Gradle resolves to the matching `androidx` artifacts: no duplicate classes (checked by the CI build).
 

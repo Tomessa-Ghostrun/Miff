@@ -773,7 +773,7 @@ Toutes gratuites. Versions résolues (BoM Compose 2026.09.00, BoM Firebase 35.1.
 | Plugin Spotless (ktlint 1.8.0) | 8.10.4 | Apache 2.0 (ktlint : MIT) |
 | Polices Baloo Thambi 2 et Hanken Grotesk | google/fonts, commit `45e3d52` | SIL OFL 1.1 |
 
-### Écran « Licences et attributions » et sa garde (ABOUT-1A, version 0.40.0)
+### Écran « Licences et attributions » et sa garde (ABOUT-1A, version 0.41.0)
 
 L'écran Réglages > À propos et aide > Licences et attributions lit **les fichiers de l'app** (hors connexion) : `app/src/main/assets/licenses/licenses.json` (l'inventaire : familles de bibliothèques, licence de chacune, préfixes « groupe:artefact » couverts) et `assets/licenses/texts/*.txt` (le texte complet de chaque licence ; les deux polices sont des copies de `third_party/fonts/OFL-*.txt`, un test les compare).
 

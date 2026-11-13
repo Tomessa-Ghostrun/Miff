@@ -64,7 +64,7 @@ Le formulaire propose des **adresses pendant la frappe** (service Photon, public
 
 **Limite connue** : l'ouverture du formulaire relit tout depuis le serveur (pour décider des limites sur des données fraîches). Pour un compte Miff+ avec beaucoup de Miffs, c'est une dizaine de lectures par ouverture : sans effet à l'échelle de la bêta. **Signal** : voir `surveillance-quotas.md` (ratio de lectures par utilisateur actif).
 
-## Licences et attributions (reprises dans l’écran « Licences et attributions » d’Android depuis ABOUT-1A, version 0.40.0)
+## Licences et attributions (reprises dans l’écran « Licences et attributions » d’Android depuis ABOUT-1A, version 0.41.0)
 
 | Élément | Licence | À afficher |
 |---|---|---|
