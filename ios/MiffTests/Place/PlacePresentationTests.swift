@@ -9,11 +9,11 @@ final class PlacePresentationTests: XCTestCase {
 
     // MARK: - La liste (PL1, PL10, LIM1)
 
-    func testACreatorOnTheFreePlanWithTwoPlacesIsAtTheLimit() {
-        let ui = PlaceListUi(places: places(["p1", "p2"]), isCreator: true, premium: false, notice: nil)
+    func testACreatorOnTheFreePlanWithThreePlacesIsAtTheLimit() {
+        let ui = PlaceListUi(places: places(["p1", "p2", "p3"]), isCreator: true, premium: false, notice: nil)
 
         XCTAssertTrue(ui.atFreeLimit)
-        XCTAssertEqual(ui.distinctCount, 2)
+        XCTAssertEqual(ui.distinctCount, 3)
     }
 
     private func list(_ ids: [String], isCreator: Bool, premium: Bool?) -> PlaceListUi {
@@ -21,10 +21,11 @@ final class PlacePresentationTests: XCTestCase {
     }
 
     func testTheLimitIsNeverClaimedWhenThePlanIsUnknownPremiumOrTheOneWhoLooksIsAMember() {
-        XCTAssertFalse(list(["p1", "p2"], isCreator: true, premium: nil).atFreeLimit)
-        XCTAssertFalse(list(["p1", "p2"], isCreator: true, premium: true).atFreeLimit)
-        XCTAssertFalse(list(["p1", "p2"], isCreator: false, premium: false).atFreeLimit)
-        XCTAssertFalse(list(["p1"], isCreator: true, premium: false).atFreeLimit)
+        XCTAssertFalse(list(["p1", "p2", "p3"], isCreator: true, premium: nil).atFreeLimit)
+        XCTAssertFalse(list(["p1", "p2", "p3"], isCreator: true, premium: true).atFreeLimit)
+        XCTAssertFalse(list(["p1", "p2", "p3"], isCreator: false, premium: false).atFreeLimit)
+        // 2 lieux sur 3 : il reste une place.
+        XCTAssertFalse(list(["p1", "p2"], isCreator: true, premium: false).atFreeLimit)
     }
 
     func testTheFreeCounterIsOnlyForACreatorWhoseFreePlanIsKnown() {
@@ -49,11 +50,12 @@ final class PlacePresentationTests: XCTestCase {
 
     // MARK: - L'offre (LIM5)
 
-    func testOnlyTheThirdPlaceHasAnAnalyticsTriggerNothingForTheDangerZone() {
+    func testEachEntryPointHasItsOwnFixedAnalyticsTrigger() {
         XCTAssertEqual(PlacePaywall.shown(for: .limit), .paywallShown(trigger: .extraTrustedPlace))
         XCTAssertEqual(PlacePaywall.dismissed(for: .limit), .paywallDismissed(trigger: .extraTrustedPlace))
-        XCTAssertNil(PlacePaywall.shown(for: .danger))
-        XCTAssertNil(PlacePaywall.dismissed(for: .danger))
+        XCTAssertEqual(PlacePaywall.shown(for: .danger), .paywallShown(trigger: .dangerZone))
+        XCTAssertEqual(PlacePaywall.dismissed(for: .danger), .paywallDismissed(trigger: .dangerZone))
+        XCTAssertEqual(PlacePaywall.shown(for: .extraMiff), .paywallShown(trigger: .extraMiff))
     }
 
     func testThePaywallEventsCarryNoPlace() throws {
@@ -76,11 +78,14 @@ final class PlacePresentationTests: XCTestCase {
         XCTAssertNil(tracking.disappeared(), "une seule fermeture (croix, « Plus tard » ou geste retour)")
     }
 
-    func testTheDangerZonePaywallSendsNothing() {
+    func testTheDangerZonePaywallIsCountedWithItsOwnTrigger() throws {
         let tracking = PlacePaywallTracking(reason: .danger)
 
-        XCTAssertNil(tracking.appeared())
-        XCTAssertNil(tracking.disappeared())
+        let shown = try XCTUnwrap(tracking.appeared())
+        XCTAssertEqual(shown, .paywallShown(trigger: .dangerZone))
+        XCTAssertEqual(shown.params as? [String: String], ["trigger": "danger_zone"])
+        XCTAssertEqual(AnalyticsContract.validate(shown.name, params: shown.params), .allowed)
+        XCTAssertEqual(tracking.disappeared(), .paywallDismissed(trigger: .dangerZone))
     }
 
     // MARK: - « Voir sur la carte »

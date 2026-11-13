@@ -1,6 +1,7 @@
 # Contrat — lieux de la Miff du carrousel, visibles par tous les membres (onglet Profil)
 
-**Statut** : contrat partagé entre `android-dev` et `ios-dev` (décision du PM du **2026-11-11**, sans maquette ni spec Notion). Android est livré (PR `android/profil-lieux-membres`) ; **iOS est à faire** (miroir). Toute modification passe par une PR qui touche ce fichier et change les deux plateformes ensemble.
+**Statut** : contrat partagé entre `android-dev` et `ios-dev` (décision du PM du **2026-11-11**, sans maquette ni spec Notion). Android est livré (PR #181, fusionnée) ; **iOS : branche `ios/profil-lieux-membres` (miroir, PR brouillon)**. Toute modification passe par une PR qui touche ce fichier et change les deux plateformes ensemble.
+**Code iOS** : `ProfilePlacesSection` (`Views/Place/`), `ProfilePlacesPresentation` et `PlaceRowSpeech` (`Models/Place/ProfilePlacesPresentation.swift`), `ProfilePlacesViewModel` (`ViewModels/`), `MiffPlacesBook` et `PlaceViewerRole` (`Models/Place/MiffPlacesBook.swift`, testés), `FirestorePlacesReader` (`Services/Firebase/`).
 **Code Android** : `ProfilePlacesSection` (`ui/place/PlaceHosts.kt`), `ProfilePlacesViewModel` (`ui/profile/`), `MiffPlacesBook` et `PlaceViewerRole` (`domain/place/MiffPlacesBook.kt`, testés), `FirestorePlacesReader` (`data/miff/PlacesReader.kt`).
 
 ## 1. Règle produit
@@ -51,7 +52,7 @@ Sur l'onglet **Profil**, sous le carrousel « Mes Miffs », la liste des lieux d
 | `place_profile_unavailable` | Les lieux ne sont pas disponibles pour le moment. | The places aren't available right now. | liste illisible |
 | `place_list_row_type_a11y` | %1$s, %2$s | %1$s, %2$s | description parlée d'une ligne de zone de danger |
 
-Clés réutilisées : `place_list_member_hint`, `miff_places_empty`, `auth_retry_action`, `place_type_danger`, `place_list_add_action`. Les clés `place_list_title` et `place_list_title_named` ne servent plus sur le Profil Android (laissées dans les catalogues). **Les 4 clés ci-dessus sont déjà dans le catalogue iOS** (sans écran iOS) pour que le contrôle de parité reste vert.
+Clés réutilisées : `place_list_member_hint`, `miff_places_empty`, `auth_retry_action`, `place_type_danger`, `place_list_add_action`. Les clés `place_list_title` et `place_list_title_named` ne servent plus sur le Profil Android (laissées dans les catalogues). **Les 4 clés ci-dessus sont dans le catalogue iOS** (écran iOS livré par la branche `ios/profil-lieux-membres`).
 
 ## 6. Ordre des blocs de l'onglet Profil (décision du PM du 2026-11-11, inchangée)
 

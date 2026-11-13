@@ -185,13 +185,14 @@ enum FeedBuilder {
             )
         }
         let level = StatusColor.level(facts, nowMillis: context.now)
+        let stateLabel = label(member: member, isMe: isMe, status: status, level: level, context)
         // MODE VOYAGE : lu quand le statut est lu (une Miff dont les nouvelles sont cachées, ou une personne qui ne partage plus, ne montre pas de voyage).
         let travel = travelView(status, isMe: isMe, context)
         return FeedMemberCard(
             member: member,
             isMe: isMe,
             level: level,
-            label: label(member: member, isMe: isMe, status: status, level: level, context),
+            label: stateLabel,
             time: travel == nil ? timeLine(level: level, status: status, context) : travelTimeLine(travel, status),
             // Un voyageur ne mesure rien : ni niveau de batterie ni « Localisation limitée » (l'accès n'est pas dit non plus).
             battery: shownBattery(status, travel: travel, context),
@@ -208,6 +209,7 @@ enum FeedBuilder {
                 visible: status != nil,
                 nowMillis: context.now
             ),
+            labelCategory: labelCategory(of: stateLabel, status: status, context),
             traveling: isOngoing(travel)
         )
     }
@@ -253,6 +255,19 @@ enum FeedBuilder {
             return .nothing
         }
         return .travelSince(since)
+    }
+
+    /// L'emoji de l'étiquette « dans un lieu de confiance » : seulement quand la personne EST dans un lieu de confiance (l'étiquette dit alors
+    /// le lieu) et que ce lieu est dans la liste que le Feed écoute déjà (aucune lecture de plus) avec une catégorie.
+    private static func labelCategory(
+        of label: StateLabel,
+        status: MemberStatus?,
+        _ context: Context
+    ) -> PlaceCategory? {
+        guard case .at = label, let placeId = status?.placeId else {
+            return nil
+        }
+        return context.places[placeId]?.category
     }
 
     private static func label(

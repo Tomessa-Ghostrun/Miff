@@ -144,7 +144,7 @@ final class PlaceDetailViewModel: ObservableObject {
             $0.miffName = snapshot.miff.name
             $0.creatorName = creator?.displayName ?? ""
             $0.creatorIsMe = place.createdBy == uid
-            $0.canEdit = snapshot.miff.ownerUid == uid
+            $0.canEdit = PlaceViewerRole.isCreator(ownerUid: snapshot.miff.ownerUid, myUid: dependencies.currentUid())
             $0.fromCache = snapshot.fromCache
         }
     }

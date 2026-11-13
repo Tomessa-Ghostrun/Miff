@@ -53,6 +53,14 @@ final class MiffDeletion: MiffDeleter {
         guard !Task.isCancelled else {
             return .paused(.unknown)
         }
+        // Les demandes d'abord (contrat 2.8), puis les lieux : une demande porte une adresse et des coordonnées, elle ne doit jamais rester
+        // orpheline derrière une Miff supprimée.
+        if let stopped = await deletePlaceRequests(miffId: miffId) {
+            return stopped
+        }
+        guard !Task.isCancelled else {
+            return .paused(.unknown)
+        }
         if let stopped = await deletePlaces(miffId: miffId) {
             return stopped
         }
@@ -141,6 +149,50 @@ final class MiffDeletion: MiffDeleter {
                 return .paused(failure)
             }
             start += MiffWrites.placesPerLot
+        }
+        return nil
+    }
+
+    // MARK: - Étape 2b : les demandes d'ajout d'un lieu (LIEU-REQ, critère L3)
+
+    /// Les demandes et leur compteur, 5 par lot au plus (chaque suppression coûte 2 lectures de règles), AVANT les lieux et le dernier lot :
+    /// rien d'elles ne reste une fois la Miff partie. Les règles des demandes sont déployées : TOUT échec (réseau, mais aussi refus) met la
+    /// suppression en pause, jamais une Miff supprimée qui laisse des demandes orphelines (adresses et coordonnées inaccessibles).
+    private func deletePlaceRequests(miffId: String) async -> MiffDeletionResult? {
+        let store = self.store
+        let read = await guardedCall(timeoutSeconds: timeoutSeconds) {
+            try await store.readPlaceRequestLeftovers(miffId: miffId)
+        }
+        let leftovers: PlaceRequestLeftovers
+        switch read {
+        case .value(let found):
+            leftovers = found
+        case .failed(let failure, _):
+            return .paused(failure)
+        }
+        var chunks: [[String]] = []
+        var start = 0
+        let total = leftovers.requestIds.count
+        while start < total {
+            chunks.append(Array(leftovers.requestIds[start..<min(start + MiffWrites.placesPerLot, total)]))
+            start += MiffWrites.placesPerLot
+        }
+        if chunks.isEmpty && leftovers.counterExists {
+            chunks = [[]]
+        }
+        for (index, chunk) in chunks.enumerated() {
+            guard !Task.isCancelled else {
+                return .paused(.unknown)
+            }
+            let writes = PlaceRequestWrites.deleteAll(
+                miffId: miffId,
+                requestIds: chunk,
+                withCounter: leftovers.counterExists && index == chunks.count - 1
+            )
+            let deleted = await guardedCall(timeoutSeconds: timeoutSeconds) { try await store.commit(writes) }
+            if case .failed(let failure, _) = deleted {
+                return .paused(failure)
+            }
         }
         return nil
     }

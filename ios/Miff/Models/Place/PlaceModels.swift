@@ -81,7 +81,7 @@ struct Place: Equatable, CustomStringConvertible {
         )
     }
 
-    /// 1 à 20 lettres et chiffres : `p1`, `p2`, ou un identifiant tiré par le SDK. Jamais un chemin construit avec un autre texte.
+    /// 1 à 20 lettres et chiffres : `p1`, `p2`, `p3`, ou un identifiant tiré par le SDK. Jamais un chemin construit avec un autre texte.
     static func isPlaceId(_ value: String) -> Bool {
         let scalars = Array(value.unicodeScalars)
         return !scalars.isEmpty && scalars.count <= 20 && scalars.allSatisfy { scalar in

@@ -145,10 +145,17 @@ final class PlaceRulesTests: XCTestCase {
         XCTAssertEqual(slot(), .use("p1"))
         XCTAssertEqual(slot(existing: ["m1": ["p1"]]), .use("p2"))
         XCTAssertEqual(slot(existing: ["m1": ["p2"]]), .use("p1"))
+        XCTAssertEqual(slot(existing: ["m1": ["p1", "p2"]]), .use("p3"))
+        XCTAssertEqual(slot(existing: ["m1": ["p1", "p3"]]), .use("p2"))
     }
 
-    func testFreeThirdPlaceNeedsMiffPlusAndNothingIsWritten() {
-        XCTAssertEqual(slot(existing: ["m1": ["p1", "p2"]]), .needsPremium(.limit))
+    func testTheFreePlanIsThreePlacesInThreeFixedSlots() {
+        XCTAssertEqual(PlaceLimits.freePlaces, 3)
+        XCTAssertEqual(PlaceLimits.freeIds, ["p1", "p2", "p3"])
+    }
+
+    func testFreeFourthPlaceNeedsMiffPlusAndNothingIsWritten() {
+        XCTAssertEqual(slot(existing: ["m1": ["p1", "p2", "p3"]]), .needsPremium(.limit))
     }
 
     func testFreeDangerZoneNeedsMiffPlusEvenWithRoomLeft() {
@@ -165,13 +172,13 @@ final class PlaceRulesTests: XCTestCase {
     func testFreeOnePlaceInTwoMiffsCountsOnceAndTwoDifferentPlacesCountTwice() {
         // p1 dans A et dans B = UN lieu : le 2e lieu prend p2.
         XCTAssertEqual(slot(existing: ["a": ["p1"], "b": ["p1"]], distinct: 1), .use("p2"))
-        // p1 dans A et p2 dans B = DEUX lieux : la limite.
-        XCTAssertEqual(slot(existing: ["a": ["p1"], "b": ["p2"]], distinct: 2), .needsPremium(.limit))
+        // p1 dans A, p2 et p3 dans B = TROIS lieux : la limite.
+        XCTAssertEqual(slot(existing: ["a": ["p1"], "b": ["p2", "p3"]], distinct: 3), .needsPremium(.limit))
     }
 
     func testFreeTwoDifferentPlacesThatShareAnIdentifierStillCountTwo() {
-        // Écrits par une ancienne version : p1 dans A et p1 dans B sont deux lieux (le modèle les groupe à part) : la limite.
-        XCTAssertEqual(slot(existing: ["a": ["p1"], "b": ["p1"]], distinct: 2), .needsPremium(.limit))
+        // Écrits par une ancienne version : p1 dans A, p1 dans B et p2 dans A sont trois lieux (le modèle les groupe à part) : la limite.
+        XCTAssertEqual(slot(existing: ["a": ["p1", "p2"], "b": ["p1"]], distinct: 3), .needsPremium(.limit))
     }
 
     func testPremiumGetsAFreshIdentifierAnyTypeAnyNumber() {
@@ -189,9 +196,9 @@ final class PlaceRulesTests: XCTestCase {
         XCTAssertNil(PlaceQuota.forTypeChange(premium: false, from: .risk, to: .risk))
     }
 
-    func testAtFreeLimitOnlyForTheFreePlanWithTwoPlaces() {
-        XCTAssertTrue(PlaceQuota.isAtFreeLimit(premium: false, distinctPlaces: 2))
-        XCTAssertFalse(PlaceQuota.isAtFreeLimit(premium: false, distinctPlaces: 1))
+    func testAtFreeLimitOnlyForTheFreePlanWithThreePlaces() {
+        XCTAssertTrue(PlaceQuota.isAtFreeLimit(premium: false, distinctPlaces: 3))
+        XCTAssertFalse(PlaceQuota.isAtFreeLimit(premium: false, distinctPlaces: 2))
         XCTAssertFalse(PlaceQuota.isAtFreeLimit(premium: true, distinctPlaces: 7))
     }
 

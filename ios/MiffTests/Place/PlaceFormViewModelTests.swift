@@ -114,8 +114,8 @@ final class PlaceFormViewModelTests: XCTestCase {
         XCTAssertEqual(model.state.loadFailed, .generic)
     }
 
-    func testOpeningWithTwoPlacesOnTheFreePlanOpensTheOfferInsteadOfTheForm() async {
-        let places = [testPlace(id: "p1", name: "A"), testPlace(id: "p2", name: "B")]
+    func testOpeningWithThreePlacesOnTheFreePlanOpensTheOfferInsteadOfTheForm() async {
+        let places = [testPlace(id: "p1", name: "A"), testPlace(id: "p2", name: "B"), testPlace(id: "p3", name: "C")]
 
         let model = await viewModel(context: context(places: places))
 
