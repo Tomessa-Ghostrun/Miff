@@ -1,6 +1,6 @@
 # Politique de confidentialité de Miff
 
-**Version 0.1 — dernière mise à jour : 4 novembre 2026**
+**Version 1.0 — dernière mise à jour : 13 novembre 2026**
 
 Miff est une app pour savoir que tes proches vont bien, sans les déranger. Pour que ça marche, Miff traite quelques données personnelles, dont des informations liées à ta localisation. Cette page t'explique, simplement, ce qui est collecté, pourquoi, qui peut le voir, combien de temps c'est gardé, et comment garder la main.
 
@@ -185,7 +185,7 @@ Miff ne garde pas d'historique : le statut, la dernière position connue et la p
 | Code secret d'une Miff | Jusqu'à son renouvellement ou la suppression de la Miff. Quand le créateur retire un membre, le code est renouvelé automatiquement. |
 | Preuves de consentement | Tant que tu es membre de la Miff concernée (pour le consentement à la localisation et à la position) ; avec ton compte (pour les CGU). Nous ne conservons pas cette preuve après ton départ de la Miff. |
 | État de l'abonnement Miff+ | Pendant la durée de l'abonnement, puis suppression 30 jours après la suppression de ton compte. |
-| Statistiques d'usage (tant qu'elles sont activées) | **2 mois** pour les données détaillées (au niveau de chaque événement et de chaque utilisateur) : c'est la durée la plus courte proposée par Google Analytics, et nous ne l'allongeons pas. La suppression est faite par Google lors de ses traitements périodiques. Google Analytics peut garder plus longtemps des chiffres agrégés (des totaux, sans lien avec une personne). |
+| Statistiques d'usage (tant qu'elles sont activées) | **Jusqu'à 14 mois** pour les données détaillées (au niveau de chaque événement et de chaque utilisateur) : c'est la durée maximale proposée par Google Analytics dans sa version standard, et nous ne l'allongeons pas. La suppression est faite par Google lors de ses traitements périodiques : elle n'est donc pas immédiate à la fin de cette durée. Google Analytics peut garder plus longtemps des chiffres agrégés (des totaux, sans lien avec une personne). |
 | Rapports de plantage (tant qu'ils sont activés) | **90 jours**, durée indiquée par Firebase pour les rapports de plantage et les identifiants associés. Google commence ensuite à les supprimer de ses systèmes actifs et de ses sauvegardes, ce qui peut prendre un peu plus de temps. |
 | Identifiant d'installation Firebase | Conservé par Firebase tant que l'app est utilisée ; supprimé par Firebase après environ 270 jours sans utilisation de l'app (durée indiquée dans la documentation de Firebase, susceptible de changer). Il peut aussi être renouvelé si tu réinstalles l'app. |
 | Messages envoyés à notre adresse de contact | Le temps de traiter ta demande, puis 1 an, après quoi ils sont supprimés. |

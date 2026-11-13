@@ -2,6 +2,45 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.39.0] - 2026-11-13 : « Autoriser la localisation en arrière-plan » ouvre l'écran d'autorisation de Lieu du système (retour du PM sur l'OPPO)
+
+Branche `android/permission-lieu-arriere-plan`, PR brouillon ; recette `docs/qa/checklists/permission-lieu-arriere-plan-android-recette-pm.md`. Numéro de version : le dernier de `main` est 0.38.0, celui-ci prend le suivant (à renuméroter au merge si une autre PR l'a pris). Aucune permission nouvelle (`ACCESS_BACKGROUND_LOCATION` était déjà déclarée), aucune dépendance, aucune règle Firestore, aucun service payant, aucune position lue.
+
+### Corrigé
+- **Symptôme** (OPPO Find X5 Lite, Android 13, ColorOS) : à l'étape d'onboarding « Autoriser la localisation en arrière-plan », le bouton envoyait la personne dans la **page générale des paramètres de Miff**, alors qu'elle voudrait être sur l'écran où l'on règle l'autorisation de Lieu.
+- **Cause** : sur Android 11 et plus, le code envoyait **directement** vers `ACTION_APPLICATION_DETAILS_SETTINGS` pour l'étape « tout le temps », sans jamais tenter la demande standard de la permission.
+- **Correction** : sur Android 11 et plus, une fois la position précise accordée, le bouton fait la **demande standard** de `ACCESS_BACKGROUND_LOCATION` (`ActivityResultContracts.RequestPermission`). Le système n'affiche pas de fenêtre : il ouvre **lui-même** son écran d'autorisation de Lieu de l'app. Au retour, l'état est relu ; si « Toujours » est accordé, l'écran se ferme et l'étape suivante vient toute seule ; sinon le message calme et le bouton restent (« Tu peux y revenir autant de fois que nécessaire »).
+- **Repli sur les paramètres de l'app** (comportement d'avant) **seulement** si le système n'ouvre rien : demande revenue tout de suite sans que l'app ait quitté l'avant-plan et en moins d'1 s (permission déjà refusée pour de bon, demande sans effet). Dans ce cas les paramètres s'ouvrent sur le même appui, et les appuis suivants y vont directement (pas de seconde demande vouée à l'échec). **Aucune boucle** : après 3 retours sans « Toujours », le bouton ouvre aussi les paramètres de l'app. Au doute (écran reconstruit pendant la demande), on suppose que le système a bien montré son écran : jamais d'envoi aux paramètres par erreur.
+- Android 10 : inchangé (fenêtre normale du système) ; Android 9 et moins : pas d'étape arrière-plan.
+- **Même chemin partout où l'app demande l'arrière-plan** : l'écran bloquant (onboarding, reprise, retrait de la permission) **et** Réglages > Confidentialité > Localisation (bouton « Ouvrir les réglages du téléphone », seulement quand « tout le temps » manque ; sinon il ouvre la page de l'app comme avant, pour pouvoir retirer la permission). L'aide « Détection » (batterie, démarrage automatique) et la caméra du Feed restent sur la page de l'app, voulu.
+- La divulgation proéminente (exigence Google Play) reste affichée **avant** le bouton sur les deux variantes de l'écran.
+
+### Modifié
+- `domain/permission/LocationFlow.kt` : nouveau bouton `SYSTEM_BACKGROUND_SCREEN`, `LocationScreenModel.systemScreen`, `LocationAttempt` (`systemScreenTries`, `systemScreenUnavailable`), `BackgroundRequestOutcome` (`GRANTED`, `SYSTEM_UI_SEEN`, `NO_UI`), `BackgroundRoute`, `backgroundOutcome`, `afterBackgroundRequest`, `mustOpenSettings`, `canRequestBackground`, `backgroundRoute` : toute la décision est dans le domaine, testée sans téléphone.
+- `ui/permission/BackgroundLocationRequest.kt` (nouveau) : la demande standard et la veille « le système a-t-il montré quelque chose ? » (arrêt de l'app, durée), partagées par l'écran bloquant et Réglages.
+- Textes : trois étapes propres à l’écran du système, clés `android_permission_location_system_step_*` (préfixe `android_` : texte propre à Android, hors contrôle de parité iOS) (« Touche le bouton : l'écran qui règle l'accès à ta position s'ouvre », « Choisis Toujours autoriser (ou Autoriser tout le temps) », « Garde Position exacte (ou précise) activée »), en français et en anglais ; les trois étapes des paramètres de l'app restent pour le repli.
+- Tests : `PermissionDomainTest` (Android 10, 11 à 16, permission déjà accordée, refusée pour de bon, premier essai, trois essais), `PermissionGateViewModelTest`, `BackgroundRequestWatchTest`, `PermissionScreensTest` (variante « écran du système »).
+
+### À savoir
+- **Garanti** : sur Android 11 et plus, l'app demande « tout le temps » de la manière standard et **c'est le système qui ouvre son écran** (aucun intent interne vendeur, aucune page forcée). **Dépend du constructeur** : la page exacte (titre, choix, présentation) est celle de ColorOS ; on ne peut pas promettre la page de la capture sur tous les téléphones. La demande standard est l'unique voie stable et acceptée par Google Play ; les intents internes (`ACTION_MANAGE_APP_PERMISSION` et variantes vendeur) ne sont pas garantis et n'ont pas été utilisés.
+- **Limite connue** : la détection « le système n'a rien ouvert » est une heuristique (`ON_STOP` de l'app, ou réponse en 1 s ou plus) ; `shouldShowRequestPermissionRationale` n'est pas fiable pour cette permission sur Android 11 et plus et n'est donc pas utilisé. Le pire cas d'une erreur de jugement est un appui de plus avant d'arriver aux paramètres de l'app.
+- iOS : non concerné.
+
+## [0.39.0] - 2026-11-13 : l'acceptation des CGU enregistre désormais la version « 1.0 » des textes publiés
+
+Branche `android/terms-version-1-0`, PR brouillon ; même changement côté iOS (`ios/terms-version-1-0`, même valeur). Numéro de version : le dernier de `main` est 0.38.0, celui-ci prend le suivant (à renuméroter au merge si une autre PR l'a pris). Aucun texte à l'écran, aucune règle Firestore, aucune permission, aucune dépendance, aucun service payant.
+
+### Modifié
+- `ConsentVersions.TERMS` passe de « 0.1 » (numéro de travail, jamais publié) à « 1.0 », la version des CGU et de la politique de confidentialité publiées le 2026-11-13 (`docs/legal/`, PR #226). C'est la valeur écrite dans `users/{uid}.termsVersion` à la création du profil.
+- Autres versions liées aux textes légaux : aucune à changer. `ConsentVersions.ANALYTICS` (`2026-10-v01`) et `MiffSharingConsent.VERSION` (`2026-11-v03`) sont des versions propres à leur texte de consentement ; la politique de confidentialité n'a pas de version distincte (une seule version « textes »).
+- Règles Firestore vérifiées, **non modifiées** : `termsVersion` doit être une chaîne de 1 à 20 caractères (`isStr(..., 1, 20)`), « 1.0 » est valide.
+- Tests : `ProfileDocumentTest` (nouveau test qui fige « 1.0 » pour la constante et pour le document de création), `PendingConsentStoreTest` et `UserProfileRepositoryTest` (valeurs d'exemple « 0.1 » remplacées par « 1.0 »).
+- `docs/legal/README.md` §3 et §10 : documentation du changement.
+
+### À savoir
+- **Comptes créés avant ce changement : ils gardent « 0.1 », rien n'est migré** (les règles figent `termsVersion` et `termsAcceptedAt` après la création ; réécrire une preuve d'acceptation serait à éviter). Pour la preuve d'acceptation : « 0.1 » atteste l'acceptation d'un état de travail jamais publié, pas du texte 1.0. Seuls des comptes de test sont concernés tant qu'aucune version n'est distribuée à des personnes réelles. Pas de ré-acceptation (risque J32, assumé par le PM).
+- Coût : aucun.
+
 ## [0.38.0] - 2026-11-12 : Feed, la phrase « Partage ta position pour voir cette photo » ne s'affiche plus à tort (bug remonté par le PM)
 
 Branche `android/fix-photo-position-gate`, PR brouillon ; recette `docs/qa/checklists/feed-photo-gate-android-recette-pm.md`. Numéro de version : le dernier de `main` est 0.37.0, celui-ci prend le suivant (à renuméroter au merge si une autre PR l'a pris). Aucun texte, aucune règle Firestore, aucune permission, aucune dépendance, aucun service payant.
