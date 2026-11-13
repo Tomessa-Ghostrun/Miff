@@ -23,11 +23,30 @@ enum BubbleLayout {
     static let headlineMaxLines = 6
     static let headlineMinimumScale: CGFloat = 0.5
 
-    /// Marge en haut et en bas du contenu (identique).
-    static let verticalInset: CGFloat = 44
+    /// Marge en haut et en bas du contenu (identique). Elle est aussi la bande où se pose le bouton « i » (voir `infoTouchSize`) : le contenu
+    /// n'y entre JAMAIS, quelle que soit la taille du texte.
+    static let verticalInset: CGFloat = 52
 
-    /// Hauteur minimale de la zone du contenu (avant les marges) : une bulle courte reste ample, son texte au milieu.
-    static let minContentHeight: CGFloat = 176
+    /// Hauteur minimale de la zone du contenu (avant les marges) : une bulle courte reste ample, son texte au milieu. (160 + 2 x 52 = 264 :
+    /// la hauteur d'une bulle courte n'a pas changé en passant la marge de 44 à 52 pour le bouton « i ».)
+    static let minContentHeight: CGFloat = 160
+
+    // LE BOUTON « i » (« Comprendre les couleurs », décision du PM du 2026-11-13) : en bas à droite de la bulle, dans la bande de la marge
+    // du bas. Le glyphe est petit (discret), la zone de toucher fait au moins 44 pt.
+    /// Côté de la zone de toucher du bouton « i » (au moins `Spacing.minTouchTarget`).
+    static let infoTouchSize: CGFloat = 44
+    /// Côté du glyphe dessiné au milieu de la zone de toucher.
+    static let infoGlyphSize: CGFloat = 22
+    /// Écart entre la zone de toucher et le bord de la bulle : à droite (à gauche en droite-à-gauche), assez pour que le glyphe reste DANS
+    /// la tache (son coin bas est arrondi), et en bas.
+    static let infoTrailingInset: CGFloat = 72
+    static let infoBottomInset: CGFloat = 8
+
+    /// La zone de toucher du bouton tient tout entière dans la bande de la marge du bas : elle ne peut recouvrir ni le texte, ni « Contacter »,
+    /// ni « Reprendre le partage », quelle que soit la taille du texte.
+    static var infoButtonFitsBottomBand: Bool {
+        infoBottomInset + infoTouchSize <= verticalInset
+    }
 
     /// La boîte totale de la bulle pour un contenu de la taille donnée : les marges s'ajoutent de chaque côté.
     static func outerSize(content: CGSize, horizontalInset: CGFloat = BubbleLayout.horizontalInset) -> CGSize {

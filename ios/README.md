@@ -798,6 +798,21 @@ Trois PR empilées : **VOY-1I** le moteur (modèle, statut Firestore, suivi), **
 - **Accessibilité** : l'avion est décoratif ; la carte reste UN bloc lu (« Thomas, En voyage jusqu'au 15 nov., Depuis le 7 nov. ») ; la bulle annonce son titre puis la ligne ajoutée ; « Modifier » est un bouton de 44 pt nommé.
 - **Coût** : aucun (aucune lecture ni écoute de plus : le statut est déjà écouté).
 
+## Les couleurs de ta Miff (COULEURS-2, miroir d'Android COULEURS-1 / #211)
+
+Ticket `docs/tickets/couleurs-info.md` (écran, textes, règles), **avec un changement de décision du PM du 2026-11-13 qui prime sur le ticket** : l'écran ne s'ouvre PLUS en touchant la bulle ; un petit bouton **« i »** discret, en **bas à droite de la bulle de la Miff**, l'ouvre. Toucher la bulle ne fait rien. Rien n'est compilé en local (poste Windows) : la CI macOS fait foi. Recette PM : `docs/qa/checklists/couleurs-info-ios-recette-pm.md`.
+
+| Fichier | Rôle |
+|---|---|
+| `Models/Tracking/ColorsInfoDurations.swift` | Les durées (2 h, 4 h, 1 h) LUES dans `StatusThresholds`, jamais écrites ; `WholeDuration` les écrit avec le formateur du système (« 2 heures » / « 2 hours »). |
+| `Models/Feed/ColorsInfoContent.swift` | Le contenu de l'écran : une liste ordonnée de lignes, construite avec les clés `feed_colors_*` (déjà dans le catalogue, ajoutées par la PR Android) et les durées. Pur, testé. |
+| `Views/Feed/ColorsInfoView.swift` | L'écran : poussé plein écran dans la pile de `MiffHomeHost` (`MiffRoute.colorsInfo`, donc SANS barre d'onglets, retour par la flèche ou le bord), `MiffFrame` (défile), statique (aucune lecture de données, aucun réseau, aucun événement), illustrations dessinées avec `FeedAvatar` (pastille de personne) et `FeedBubbleShape` (mini-tache de la Miff), la couleur n'est jamais seule, lignes lues d'un bloc par VoiceOver, l'illustration passe au-dessus du texte aux grandes tailles. |
+| `Views/Feed/BubbleInfoButton.swift` | Le bouton « i » : glyphe de 22 pt sans fond ni contour, couleur du texte de la bulle (`StatusLevel.onTint`, contraste AA sur chaque teinte), zone de toucher de 44 pt, libellé parlé « Comprendre les couleurs » (`feed_colors_bubble_action_a11y`). |
+
+Placement (`BubbleLayout`) : la zone de toucher de 44 pt est posée dans la **bande de la marge du bas** de la bulle (marges haut et bas passées de 44 à 52 pt, hauteur minimale du contenu de 176 à 160 pt : une bulle courte garde ses 264 pt), là où le contenu n'entre jamais : le bouton ne peut donc recouvrir ni le texte, ni « Contacter », ni « Reprendre le partage », même à la plus grande taille de texte ; les pastilles du carrousel sont SOUS la bulle. Il est dessiné dans chaque `BubbleBlob` (sept variantes + chaque page du carrousel) : même position sur chaque page, couleur de la page. Un seul toucher = un seul écran (`openOnce`).
+
+Écarts : (1) bouton « i » au lieu de « toucher la bulle » (décision du PM, ci-dessus) ; (2) écran **poussé**, pas une feuille : le Feed vit dans une pile de navigation qui permet le push ; (3) la durée en minutes (aucun seuil n'en est aujourd'hui) s'écrit « 90 minutes », comme sur Android.
+
 ## Confidentialité : Analytics et Crashlytics
 
 - `Info.plist` : `FIREBASE_ANALYTICS_COLLECTION_ENABLED = NO` (la clé irréversible `..._DEACTIVATED` n'est **pas** utilisée), `FirebaseCrashlyticsCollectionEnabled = NO`, `FirebaseDataCollectionDefaultEnabled = NO` (collecte par défaut éteinte pour tous les SDK Firebase ; chaque SDK est réactivé explicitement après accord), `GOOGLE_ANALYTICS_IDFV_COLLECTION_ENABLED = NO`, signaux publicitaires et attribution désactivés, `FirebaseAutomaticScreenReportingEnabled = NO` (aucun nom d'écran dans Analytics).

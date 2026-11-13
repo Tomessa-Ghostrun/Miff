@@ -12,6 +12,8 @@ enum MiffRoute: Hashable {
     case placePaywall(PaywallReason)
     /// Un écran des Réglages (ONB-7) : poussé dans la MÊME pile que les écrans de la Miff, jamais dans une pile imbriquée.
     case settings(SettingsRoute)
+    /// « Les couleurs de ta Miff » : l'écran statique ouvert par le bouton « i » de la bulle du Feed (COULEURS-2). Aucun identifiant.
+    case colorsInfo
 
     var isSettingsScreen: Bool {
         if case .settings = self {
@@ -42,8 +44,17 @@ enum MiffRoute: Hashable {
             return id == miffId
         case .placeForm(_, let id):
             return id == miffId
-        case .create, .join, .placePaywall, .settings:
+        case .create, .join, .placePaywall, .settings, .colorsInfo:
             return false
+        }
+    }
+}
+
+extension Array where Element == MiffRoute {
+    /// Deux touchers rapprochés ouvrent un seul écran, pas deux : une route déjà au sommet de la pile n'est pas empilée une seconde fois.
+    mutating func openOnce(_ route: MiffRoute) {
+        if last != route {
+            append(route)
         }
     }
 }
@@ -108,7 +119,7 @@ struct MiffOnboardingHost: View {
                 navigate: { open(.settings($0)) },
                 onBack: { pop() }
             )
-        case .miff, .placeForm, .placeDetail, .placePaywall:
+        case .miff, .placeForm, .placeDetail, .placePaywall, .colorsInfo:
             // Pas d'écran de Miff ni de lieu avant la fin de l'onboarding : la personne n'en a pas encore.
             EmptyView()
         }
@@ -126,9 +137,7 @@ struct MiffOnboardingHost: View {
 
     /// Deux touchers rapprochés ouvrent un seul écran, pas deux.
     private func open(_ route: MiffRoute) {
-        if path.last != route {
-            path.append(route)
-        }
+        path.openOnce(route)
     }
 
     private func pop() {
@@ -285,7 +294,8 @@ struct MiffHomeHost: View {
                 onOpenMiff: { open(.miff($0)) },
                 onSignOut: { signOut() },
                 onOpenSettings: { open(.settings(.settings)) },
-                onOpenNotifications: { open(.settings(.notificationCenter)) }
+                onOpenNotifications: { open(.settings(.notificationCenter)) },
+                onOpenColors: { open(.colorsInfo) }
             )
         )
     }
@@ -325,6 +335,8 @@ struct MiffHomeHost: View {
                 places: placeContext(for: miffId),
                 onBack: { pop() }
             )
+        case .colorsInfo:
+            ColorsInfoView(onBack: { pop() })
         case .settings(let screen):
             SettingsDestinationView(
                 route: screen,
@@ -369,7 +381,7 @@ struct MiffHomeHost: View {
             )
         case .placePaywall(let reason):
             PlacePaywallView(reason: reason, tracker: environment.analyticsTracker, onClose: { pop() })
-        case .create, .join, .miff, .settings:
+        case .create, .join, .miff, .settings, .colorsInfo:
             EmptyView()
         }
     }
@@ -445,9 +457,7 @@ struct MiffHomeHost: View {
     }
 
     private func open(_ route: MiffRoute) {
-        if path.last != route {
-            path.append(route)
-        }
+        path.openOnce(route)
     }
 
     private func pop() {

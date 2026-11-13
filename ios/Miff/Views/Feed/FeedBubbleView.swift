@@ -3,7 +3,9 @@ import UIKit
 
 // La bulle de la Miff (maquettes 02 à 05) : UNE tache, de la couleur de la Miff, sous l'en-tête. Elle INFORME, elle n'alarme pas :
 // heures absolues pour l'orange et le rouge, aucun son, aucun défilement automatique, aucun point d'exclamation, jamais « en
-// sécurité ». AUCUN pictogramme dans la bulle, quelle que soit sa couleur (décision du PM, 2026-11-11) : les mots et la couleur suffisent. La phrase principale a EXACTEMENT le style des titres des autres écrans (`textDisplayHeadline`, 24 / 30, décision du PM du 2026-11-11). Plusieurs alertes forment un carrousel (les rouges
+// sécurité ». AUCUN pictogramme dans la bulle, quelle que soit sa couleur (décision du PM, 2026-11-11) : les mots et la couleur suffisent ; seule
+// exception, le petit bouton « i » en bas à droite (`BubbleInfoButton`, décision du PM du 2026-11-13), qui ouvre l'écran des couleurs : toucher
+// la bulle elle-même ne fait rien. La phrase principale a EXACTEMENT le style des titres des autres écrans (`textDisplayHeadline`, 24 / 30, décision du PM du 2026-11-11). Plusieurs alertes forment un carrousel (les rouges
 // d'abord), avec des pastilles seulement quand il y a plusieurs pages, et « Alerte précédente / suivante » pour VoiceOver.
 
 /// Une tache douce et organique (une courbe fermée lisse par dix points), comme la tache des maquettes du PM. Symétrique en
@@ -38,6 +40,8 @@ struct FeedBubbleShape: Shape {
 struct BubbleActions {
     let onMessage: (String) -> Void
     let onResumeSharing: () -> Void
+    /// Le petit bouton « i » au bas de la bulle : ouvre l'écran « Les couleurs de ta Miff ».
+    let onOpenColors: () -> Void
 }
 
 struct BubbleView: View {
@@ -69,7 +73,10 @@ struct BubbleView: View {
     private var content: some View {
         if case .alerts(let pages, _) = bubble {
             VStack(spacing: Spacing.sm) {
-                AlertCarousel(pages: pages, texts: texts, motion: motion, onMessage: actions.onMessage)
+                AlertCarousel(
+                    pages: pages, texts: texts, motion: motion,
+                    onMessage: actions.onMessage, onInfo: actions.onOpenColors
+                )
                 // MODE VOYAGE : les autres membres en voyage, sous les alertes.
                 if let travelNote {
                     Text(verbatim: texts.travelNote(travelNote))
@@ -81,7 +88,7 @@ struct BubbleView: View {
                 }
             }
         } else {
-            BubbleBlob(level: bubble.level, motion: motion) {
+            BubbleBlob(level: bubble.level, motion: motion, onInfo: actions.onOpenColors) {
                 CalmBubbleLines(
                     bubble: bubble, texts: texts, travelNote: travelNote, onResumeSharing: actions.onResumeSharing
                 )
@@ -142,6 +149,7 @@ private struct CalmBubbleLines: View {
 private struct BubbleBlob<Content: View>: View {
     let level: StatusLevel
     let motion: Bool
+    let onInfo: () -> Void
     @ViewBuilder let content: () -> Content
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
@@ -169,6 +177,11 @@ private struct BubbleBlob<Content: View>: View {
                     .rotationEffect(.degrees(motion ? BubbleMotion.tilt(blob) : 0))
                     .accessibilityHidden(true)
             )
+            // Le bouton « i » (BubbleInfoButton) est posé en bas à droite, dans la marge du bas : il suit la dérive de toute la bulle, et sa
+            // couleur celle du niveau de la page.
+            .overlay(alignment: .bottomTrailing) {
+                BubbleInfoButton(level: level, action: onInfo)
+            }
             .offset(y: motion ? BubbleMotion.drift(blob) : 0)
         }
     }
@@ -184,6 +197,7 @@ private struct AlertCarousel: View {
     let texts: FeedTexts
     let motion: Bool
     let onMessage: (String) -> Void
+    let onInfo: () -> Void
     @State private var selectedUid: String?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -194,7 +208,7 @@ private struct AlertCarousel: View {
     var body: some View {
         let current = pages[min(index, pages.count - 1)]
         VStack(spacing: Spacing.sm) {
-            BubbleBlob(level: current.level, motion: motion) {
+            BubbleBlob(level: current.level, motion: motion, onInfo: onInfo) {
                 AlertLines(page: current, texts: texts, onMessage: onMessage)
             }
             .id(current.member.uid)

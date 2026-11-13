@@ -2,6 +2,21 @@
 
 ## Non publié
 
+### COULEURS-2 - Écran « Les couleurs de ta Miff » et bouton « i » de la bulle du Feed
+
+Branche `ios/couleurs-info` (PR en brouillon). Ticket `docs/tickets/couleurs-info.md`, **modifié par une décision du PM du 2026-11-13 : un petit bouton « i » en bas à droite de la bulle ouvre l'écran ; toucher la bulle ne fait plus rien.** Miroir d'Android COULEURS-1 (#211). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM : `docs/qa/checklists/couleurs-info-ios-recette-pm.md`. Détail : `ios/README.md`, section « Les couleurs de ta Miff ». **0 € : écran statique, aucune lecture de données, aucun réseau, aucun événement de statistiques, aucune permission, aucune dépendance.**
+
+Ajouté :
+- **L'écran « Les couleurs de ta Miff »** (`ColorsInfoView`, contenu `ColorsInfoContent`) : introduction, la couleur d'une personne (vert, orange, rouge, gris, gris en voyage, zone de danger), ce qui change la couleur, la couleur de la Miff, ce que les couleurs ne disent pas. Poussé plein écran (`MiffRoute.colorsInfo`) sans barre d'onglets, contenu défilant, Dynamic Type (l'illustration passe au-dessus du texte aux grandes tailles), lignes lues d'un bloc, titres en en-têtes, anglais en repli. Les 39 clés `feed_colors_*` existent déjà (PR Android) : réutilisées telles quelles, valeurs vérifiées.
+- **Les durées** (2 h, 4 h, 1 h) sont lues dans `StatusThresholds` (`ColorsInfoDurations`) et écrites par le formateur du système ; un test prouve que changer un seuil change le texte et qu'aucun catalogue n'écrit un nombre d'heures.
+- **Le bouton « i »** (`BubbleInfoButton`) en bas à droite de chaque bulle (sept variantes, chaque page du carrousel) : glyphe de 22 pt discret, couleur du texte de la bulle (contraste AA sur chaque teinte), zone de toucher de 44 pt, libellé VoiceOver « Comprendre les couleurs ».
+- Aperçus et captures CI : `-MiffPreview colors-info`, `feed-gray`, `feed-stopped`, `feed-carousel` (`ci/screenshots.sh`, dont texte très grand et droite-à-gauche).
+- Tests : `ColorsInfoTests` (durées, ordre des blocs, textes exacts FR et EN, ton, parité, écran statique), `BubbleInfoButtonTests` (zone de toucher, aucun recouvrement du contenu, contraste, présence dans chaque variante, aucune réaction au toucher de la bulle, navigation à un seul écran).
+
+Modifié : marges haut et bas de la bulle de 44 à 52 pt et hauteur minimale du contenu de 176 à 160 pt (une bulle courte garde ses 264 pt ; une bulle haute gagne 16 pt) pour loger la zone de toucher du « i » sans recouvrir le texte. `BubbleActions`, `FeedScreenActions`, `FeedTabActions` reçoivent `onOpenColors`. « Contacter », « Reprendre le partage », le carrousel et ses pastilles ne changent pas.
+
+Écart avec le ticket : bouton « i » au lieu du toucher de la bulle (décision du PM) ; en conséquence l'action VoiceOver sur la bulle n'existe pas (le bouton porte le libellé). Limite connue : aucun test d'interface n'existe dans le projet (cible de tests unitaires seulement) : la présence du bouton dans chaque variante est vérifiée sur le code et par les captures CI ; le toucher réel est à la recette du PM. Aucun contournement de quota.
+
 ### NOTIF-7I - Notifications, PR C : N6 « Tu es dans une zone de danger de ta Miff »
 
 Branche `ios/notifications-p0-c` (PR en brouillon, **empilée sur la PR B**). Ticket `docs/tickets/notifications.md` §20.7 (vecteurs V1 à V10), décision Q34. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM : `docs/qa/checklists/notifs-ios-recette-pm.md` (partie F). Détail : `ios/README.md`, section « Notifications ». **0 € : notification locale immédiate, aucune lecture ni écriture Firestore, aucun événement Analytics.**
