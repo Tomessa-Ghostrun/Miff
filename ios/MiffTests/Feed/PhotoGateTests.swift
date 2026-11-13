@@ -280,4 +280,3 @@ final class PhotoGateTests: XCTestCase {
         XCTAssertEqual(after, .found(photo))
     }
 }
-// swiftlint:enable line_length
