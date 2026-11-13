@@ -73,7 +73,7 @@ struct LanguageRow: View {
     }
 }
 
-/// Applique la langue choisie à toute l'app : la locale de l'environnement (les `Text("cle")`, les dates et les nombres des composants du
+/// Applique la langue choisie à toute l'app : la locale de l'environnement (les textes à clé, les dates et les nombres des composants du
 /// système) suit le choix. Posé une fois, à la racine de l'app.
 struct AppLanguageHost<Content: View>: View {
     @ObservedObject var controller: AppLanguageController
