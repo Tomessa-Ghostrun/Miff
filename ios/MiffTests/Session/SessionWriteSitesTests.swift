@@ -57,7 +57,10 @@ final class SessionWriteSitesTests: XCTestCase {
         let allowed: Set<String> = [
             "Services/Firebase/FirestoreMiffStore.swift",
             "Services/Firebase/FirestoreDeviceSessionRemote.swift",
-            "Services/Firebase/FirestoreUserProfileRepository.swift"
+            "Services/Firebase/FirestoreUserProfileRepository.swift",
+            // SRV-2I : le registre des appareils (jeton de notification). Ni statut ni position : le document porte l'identifiant de la session
+            // dans son CHEMIN (les règles le comparent à la session active), pas dans un champ.
+            "Services/Firebase/FirestoreDeviceTokenRegistry.swift"
         ]
         let writers = all.filter { _, lines in
             lines.contains { $0.contains("setData(") || $0.contains("updateData(") || $0.contains(".deleteDocument(") }

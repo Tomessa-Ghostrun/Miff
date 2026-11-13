@@ -115,6 +115,9 @@ struct MiffHomeHost: View {
     @ObservedObject var directory: MiffDirectory
     /// Le message calme d'un lieu enregistré, en mémoire seulement (LOC-3).
     @ObservedObject var placeNotices: PlaceNotices
+    /// SRV-4I : la demande « ouvre le Feed de cette Miff » d'un toucher sur la notification d'un proche (comparee aux Miffs du compte AVANT d'ouvrir).
+    @ObservedObject private var pushRequests: PushOpenRequests
+    @State private var feedOpenCount = 0
     @State var path: [MiffRoute] = []
     /// Le profil de la personne (onglet Profil, Mes informations) : lu une fois par session, gardé ici pour les deux écrans.
     @StateObject private var profile: ProfileTabViewModel
@@ -140,6 +143,7 @@ struct MiffHomeHost: View {
         self.environment = environment
         _directory = ObservedObject(wrappedValue: environment.miffDirectory)
         _placeNotices = ObservedObject(wrappedValue: environment.placeNotices)
+        _pushRequests = ObservedObject(wrappedValue: environment.push.openRequests)
         let session = environment.session
         _profile = StateObject(
             wrappedValue: ProfileTabViewModel(
@@ -193,6 +197,7 @@ struct MiffHomeHost: View {
                     onCreateMiff: { createMiffFromProfile() },
                     onOpenSettings: { open(.settings($0)) },
                     tabRequests: environment.notifications.tabRequests,
+                    openFeedToken: feedOpenCount,
                     feed: { context in feedTab(context) }
                 )
                     .toolbar(.hidden, for: .navigationBar)
@@ -258,6 +263,10 @@ struct MiffHomeHost: View {
         .task {
             await watchDeletions()
         }
+        // SRV-4I : un toucher sur « {Prénom} a donné des nouvelles » (aussi à froid : la demande attend l'hôte).
+        .task(id: pushRequests.pending) {
+            await openRequestedFeed()
+        }
         .task(id: banner) {
             guard banner != nil else {
                 return
@@ -265,6 +274,27 @@ struct MiffHomeHost: View {
             try? await Task.sleep(nanoseconds: 4_000_000_000)
             banner = nil
         }
+    }
+
+    /// Ouvre le Feed de la Miff demandée par une notification, SEULEMENT si c'est une Miff du compte connecté (annuaire lu auprès du serveur si
+    /// besoin ; appartenance inconnue, Miff étrangère, propre update : rien ne s'ouvre, la demande est oubliée).
+    private func openRequestedFeed() async {
+        guard let target = pushRequests.pending else {
+            return
+        }
+        await directory.refreshIfNeeded()
+        let accepted = PushOpenRules.accepts(
+            target,
+            currentUid: environment.session.currentUid,
+            miffIds: PushServices.knownMiffIds(directory)
+        )
+        pushRequests.clear()
+        guard accepted else {
+            return
+        }
+        path.removeAll()
+        directory.select(miffId: target.miffId)
+        feedOpenCount += 1
     }
 
     /// Le flux d'annonces est ouvert AVANT la reprise : rien de ce qu'elle annonce n'est perdu.

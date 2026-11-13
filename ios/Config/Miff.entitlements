@@ -8,9 +8,14 @@
 	     Sign in with Apple (AUTH-3) : capacite a activer sur l'identifiant d'app com.tomessa.miff (developer.apple.com >
 	     Certificats, identifiants et profils > Identifiants > Capacites > Sign in with Apple) ET le fournisseur Apple dans
 	     Firebase Authentication. Sans la capacite sur l'identifiant, la signature automatique de l'archive echoue.
-	     Aucune autre entitlement : pas de localisation, pas de trousseau partage. Notifications (NOTIF-P0) : les notifications LOCALES
-	     (rappels programmes par le telephone, centre local) n'exigent AUCUNE entitlement ; la cle `aps-environment` (push, cle APNs)
-	     n'est volontairement PAS la : aucun push en phase 0 (ticket docs/tickets/notifications.md, §20). -->
+	     Notifications : les rappels LOCAUX (NOTIF-P0 : rappels programmes par le telephone, centre local) n'exigent AUCUNE entitlement.
+	     Notifications push (SRV-2I) : la capacite "Push Notifications" doit etre activee sur l'identifiant d'app com.tomessa.miff (etapes du PM :
+	     docs/dev/apns-etapes-pm.md). Valeur "development" ECRITE ICI : a la signature, Xcode la remplace par celle du profil utilise (un profil de
+	     developpement donne "development", le profil de distribution de TestFlight et de l'App Store donne "production" ; une app TestFlight utilise
+	     donc l'environnement PRODUCTION d'APNs). Le SDK Firebase Messaging detecte seul l'environnement du jeton. Voir docs/dev/fcm-ios.md.
+	     Aucune autre entitlement : pas de localisation, pas de trousseau partage. -->
+	<key>aps-environment</key>
+	<string>development</string>
 	<key>com.apple.developer.devicecheck.appattest-environment</key>
 	<string>production</string>
 	<key>com.apple.developer.applesignin</key>

@@ -110,7 +110,8 @@ elif [ "$mode" = "release" ] && [ "${MIFF_ALLOW_RELAXED_LOCATION_IN_RELEASE:-0}"
 else
   report "Info.plist : MiffLocationBlocking = ${blocking} (blocage RELÂCHÉ dans ce build, voulu ?)"
 fi
-for key in FIREBASE_ANALYTICS_COLLECTION_ENABLED FirebaseCrashlyticsCollectionEnabled FirebaseDataCollectionDefaultEnabled; do
+# SRV-2I : le service de jeton de Firebase Messaging est éteint au démarrage et la substitution automatique des méthodes de l'app est coupée.
+for key in FIREBASE_ANALYTICS_COLLECTION_ENABLED FirebaseCrashlyticsCollectionEnabled FirebaseDataCollectionDefaultEnabled FirebaseMessagingAutoInitEnabled FirebaseAppDelegateProxyEnabled; do
   value="$(plutil -extract "$key" raw -o - "$plist" 2> /dev/null || echo absent)"
   if [ "$value" = "false" ]; then
     report "Info.plist : ${key} = false (OK)"
