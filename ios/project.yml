@@ -55,10 +55,16 @@ settings:
     # L'equipe de signature n'est jamais ecrite ici : la CI la fournit (secret APPLE_TEAM_ID).
     CODE_SIGN_STYLE: Automatic
   configs:
+    # REVIEW_PROMPT = la fenêtre d'avis « Que penses-tu de Miff ? » (docs/tickets/pop-ins-avis.md, décisions du PM des 2026-11-07 et 2026-11-13) :
+    # ALLUMÉE en Debug et Internal (essais internes), ÉTEINTE en Release (aucun build de diffusion ne la contient : son code n'est même pas
+    # compilé). Même drapeau qu'Android (BuildConfig.REVIEW_PROMPT : vrai en debug, faux en release). Pour l'inclure dans la publication, après
+    # reconfirmation du PM à la porte « prêt à soumettre » : ajouter une ligne `Release: SWIFT_ACTIVE_COMPILATION_CONDITIONS: REVIEW_PROMPT`
+    # ici ET lancer le contrôle des binaires avec MIFF_ALLOW_REVIEW_PROMPT_IN_RELEASE=1 (ios/ci/check-binaries.sh) ; jamais autrement.
+    # ATTENTION : un build Internal ouvert à des testeurs EXTERNES contient la fenêtre ; la retirer de la ligne Internal avant de l'ouvrir.
     Debug:
-      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG REVIEW_PROMPT
     Internal:
-      SWIFT_ACTIVE_COMPILATION_CONDITIONS: INTERNAL
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: INTERNAL REVIEW_PROMPT
 
 targets:
   Miff:

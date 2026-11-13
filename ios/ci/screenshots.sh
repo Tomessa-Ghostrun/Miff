@@ -164,6 +164,12 @@ shot 174-fr-licences 2 "${fr_args[@]}" -MiffPreview about-licenses
 shot 175-fr-licence-depliee 2 "${fr_args[@]}" -MiffPreview about-licenses-open
 shot 176-en-a-propos 2 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview about-screen
 shot 177-fr-a-propos-droite-a-gauche 2 "${fr_args[@]}" -MiffForceRTL YES -MiffPreview about-screen
+# La fenêtre d'avis « Que penses-tu de Miff ? » (docs/tickets/pop-ins-avis.md ; build Debug seulement, drapeau REVIEW_PROMPT) : la VRAIE carte par-dessus
+# un Feed de démonstration, dans ses trois écrans (question, « Merci ! », « Merci de nous le dire ! »), puis en anglais. Aucun réseau, rien d'écrit.
+shot 180-fr-avis-question 4 "${fr_args[@]}" -MiffPreview review-question
+shot 181-fr-avis-merci 3 "${fr_args[@]}" -MiffPreview review-thanks
+shot 182-fr-avis-merci-formulaire 3 "${fr_args[@]}" -MiffPreview review-feedback
+shot 183-en-avis-question 3 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview review-question
 
 
 # Le vrai parcours de l'app (session, routage) : première ouverture = carrousel, après le splash animé.
@@ -215,6 +221,7 @@ shot 99-fr-offre-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview paywall-trial-c
 shot 99b-fr-offre-sans-achat-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview paywall-soon-cross
 shot 178-fr-a-propos-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview about-screen
 shot 179-fr-licences-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview about-licenses
+shot 184-fr-avis-question-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview review-question
 
 xcrun simctl ui "$udid" content_size large > /dev/null 2>&1 || true
 
