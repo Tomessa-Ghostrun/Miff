@@ -98,7 +98,7 @@ shot 63-fr-miff-accueil-sans-miff 2 "${fr_args[@]}" -MiffPreview miff-home-empty
 shot 64-en-miff-rejoindre-confirmation 2 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview miff-join-confirm
 shot 65-en-miff-ecran-createur 2 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview miff-screen-owner
 # MIFF-4 : retirer (question puis nouveau code), supprimer (question puis progression). Les questions sont des feuilles : attente
-# de 3 s (animation). Peu de captures exprès : le job macOS est proche de sa limite de 30 minutes (les autres états sont dans les
+# de 3 s (animation). Peu de captures exprès : l'étape des captures dure 11 à 14 min sur les runners actuels, limite 30 min dans ios.yml (les autres états sont dans les
 # previews `miff-screen-*` et se lancent à la main).
 shot 68-fr-miff-retirer 3 "${fr_args[@]}" -MiffPreview miff-screen-remove
 shot 69-fr-miff-retire-nouveau-code 3 "${fr_args[@]}" -MiffPreview miff-screen-removed
@@ -139,7 +139,7 @@ shot 153-fr-photo-plein-ecran-zones-sures-nulles 4 "${fr_args[@]}" -MiffPreview 
 # PAY-UI-I : l'écran d'offre Miff+ (ticket paywall-v2.md), plein écran. La capture 95b ci-dessus montre la variante « sans
 # achat » (la seule de la production) AVANT les 3 secondes : croix absente, emplacement réservé. Les variantes « -cross » ont un délai
 # de 0 (croix présente, comme après 3 secondes). Les états avec offre (essai, deux formules, chargement, erreurs, abonné) ne sont
-# atteints que par ces aperçus (essai et deux formules capturés ici ; chargement, indisponible, achat en cours, en attente, erreur, abonné : à lancer à la main, `-MiffPreview paywall-loading` etc., pour tenir dans les 15 min de l étape) : aucun achat n existe avant SRV-8. Prix de démonstration.
+# atteints que par ces aperçus (essai et deux formules capturés ici ; chargement, indisponible, achat en cours, en attente, erreur, abonné : à lancer à la main, `-MiffPreview paywall-loading` etc., pour garder l'étape courte, limite 30 min) : aucun achat n existe avant SRV-8. Prix de démonstration.
 shot 95c-fr-offre-sans-achat-croix 3 "${fr_args[@]}" -MiffPreview paywall-soon-cross
 shot 95e-fr-offre-essai-croix 3 "${fr_args[@]}" -MiffPreview paywall-trial-cross
 shot 95f-fr-offre-deux-formules-croix 3 "${fr_args[@]}" -MiffPreview paywall-plans-cross
@@ -179,12 +179,6 @@ shot 67-fr-miff-ecran-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview miff-scree
 shot 79-fr-miff-supprimer-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview miff-screen-delete
 shot 152-fr-photo-plein-ecran-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview photo-3-4
 shot 93-fr-feed-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-orange
-
-shot 93-fr-feed-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-orange
-
-shot 152-fr-photo-plein-ecran-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview photo-3-4
-
-
 
 shot 99-fr-offre-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview paywall-trial-cross
 shot 99b-fr-offre-sans-achat-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview paywall-soon-cross
