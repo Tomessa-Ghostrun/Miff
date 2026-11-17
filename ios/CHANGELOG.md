@@ -2,6 +2,13 @@
 
 ## Non publié
 
+### Intégration du build TestFlight 36 : retouches de fusion (client push, couleurs, fenêtre d'avis)
+
+Modifié :
+- **Un seul délégué sur le centre de notifications** : `NotificationServices.make` ne le pose plus ; `PushServices.start()` le pose et lui chaîne celui des rappels locaux (`push.delegate.next`, `docs/dev/fcm-ios.md` §7).
+- Les gestes de l'hôte de navigation liés aux notifications et aux suppressions (`openRequestedFeed`, `watchDeletions`, `openNotification`) passent dans `MiffHomeHost+Notifications.swift` : `MiffHosts.swift` repasse sous les limites de SwiftLint (500 lignes, 300 pour le type). Code déplacé, rien de nouveau.
+- Tests `NotificationPrivacyTests` mis à jour pour les notifications push : l'inscription à APNs n'existe qu'à un endroit (la source du jeton), la clé `aps-environment` est attendue, seules les lignes actives de `project.yml` comptent (pas les commentaires).
+
 ### Fenêtre d'avis « Que penses-tu de Miff ? » (miroir d'Android, décision du PM du 2026-11-13)
 
 Branche `ios/pop-in-avis`, PR brouillon. Ticket `docs/tickets/pop-ins-avis.md` (§8), recette `docs/qa/checklists/avis-ios-recette-pm.md`, détail et écarts : `ios/README.md` (« Fenêtre d'avis »). **Rien n'est compilé en local** (la CI fait foi). Aucune permission, aucune dépendance, aucun service payant.

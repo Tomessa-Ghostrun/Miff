@@ -109,7 +109,7 @@ struct MiffOnboardingHost: View {
 /// perdue ne reste visible derrière.
 @MainActor
 struct MiffHomeHost: View {
-    private let environment: AppEnvironment
+    let environment: AppEnvironment
     @ObservedObject var directory: MiffDirectory
     /// Le message calme d'un lieu enregistré, en mémoire seulement (LOC-3).
     @ObservedObject var placeNotices: PlaceNotices
@@ -133,7 +133,7 @@ struct MiffHomeHost: View {
     /// L'Update (UPDATE-3) : l'écran du bouton central, créé pour la session (la photo prise y vit, en mémoire seulement).
     @StateObject private var updateModel: UpdateViewModel
     /// La banderole courte de la suppression (reprise au lancement, fin pendant que la personne est ailleurs).
-    @State private var banner: DeletionBanner?
+    @State var banner: DeletionBanner?
     /// L'offre Miff+, quand elle est ouverte (`PaywallPresentation`).
     @State private var paywall: PaywallPresentation?
 
@@ -277,45 +277,6 @@ struct MiffHomeHost: View {
         .reviewPromptHost(environment: environment, directory: directory, onTabs: path.isEmpty && paywall == nil)
     }
 
-    /// Ouvre le Feed de la Miff demandée par une notification, SEULEMENT si c'est une Miff du compte connecté (annuaire lu auprès du serveur si
-    /// besoin ; appartenance inconnue, Miff étrangère, propre update : rien ne s'ouvre, la demande est oubliée).
-    private func openRequestedFeed() async {
-        guard let target = pushRequests.pending else {
-            return
-        }
-        await directory.refreshIfNeeded()
-        let accepted = PushOpenRules.accepts(
-            target,
-            currentUid: environment.session.currentUid,
-            miffIds: PushServices.knownMiffIds(directory)
-        )
-        pushRequests.clear()
-        guard accepted else {
-            return
-        }
-        path.removeAll()
-        directory.select(miffId: target.miffId)
-        feedOpenCount += 1
-    }
-
-    /// Le flux d'annonces est ouvert AVANT la reprise : rien de ce qu'elle annonce n'est perdu.
-    private func watchDeletions() async {
-        let deletions = environment.miffDeletions
-        let notices = deletions.notices()
-        deletions.resumePending()
-        for await notice in notices {
-            switch notice {
-            case .resumed:
-                banner = .resumed
-            case .completed(let miffId):
-                // Sur l'écran de cette Miff, c'est l'écran lui-même qui le dit : rien n'est dit deux fois.
-                if path.last != .miff(miffId) {
-                    banner = .done
-                }
-            }
-        }
-    }
-
     /// L'onglet Feed (FEED-5 à FEED-7) : il remplace l'accueil provisoire dans la coquille.
     private func feedTab(_ context: FeedShellContext) -> some View {
         FeedTab(
@@ -346,19 +307,6 @@ struct MiffHomeHost: View {
         case .openFlow:
             open(.create)
         }
-    }
-
-    /// Toucher une ligne du centre de notifications : la pile revient à la coquille et l'onglet demandé s'ouvre (le Feed, ou l'écran
-    /// Update — remplacé par le Feed dans les builds qui n'ont pas le bouton central).
-    private func openNotification(_ destination: NotificationDestination) {
-        path.removeAll()
-        if case .placeRequests(let miffId) = destination {
-            // Une ligne de demande ouvre le Profil sur la Miff concernée (sans effet si la personne n'en fait plus partie).
-            directory.select(miffId: miffId)
-        }
-        environment.notifications.tabRequests.request(
-            NotificationNavigation.tab(for: destination, showsUpdateButton: TabBarConfig.current.showsUpdateButton)
-        )
     }
 
     @ViewBuilder
