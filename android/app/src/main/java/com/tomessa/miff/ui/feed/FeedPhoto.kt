@@ -40,12 +40,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
@@ -59,9 +61,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
 import com.tomessa.miff.R
 import com.tomessa.miff.data.feed.PhotoLookup
 import com.tomessa.miff.data.feed.PhotoReader
@@ -75,7 +76,10 @@ import com.tomessa.miff.domain.feed.PhotoSlot
 import com.tomessa.miff.domain.feed.PositionFix
 import com.tomessa.miff.domain.feed.SaveRoute
 import com.tomessa.miff.domain.update.SharedPhoto
-import com.tomessa.miff.ui.components.miffScreenInsets
+import com.tomessa.miff.ui.components.MiffFullBleedDialog
+import com.tomessa.miff.ui.components.miffBottomInsets
+import com.tomessa.miff.ui.components.miffTopInset
+import com.tomessa.miff.ui.components.miffTopInsets
 import com.tomessa.miff.ui.navigation.holdForDiagnostic
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.ShapeSm
@@ -245,7 +249,8 @@ private fun NeedsPositionTile() {
 }
 
 /**
- * The photo in full screen (D24): black background, the WHOLE photo (never cropped), "Photo de {Prénom} · {heure}", the close button, the zoom by pinching, and
+ * The photo in full screen (D24, then FULL BLEED by decision of the PM, 2026-11-17): the picture covers the WHOLE screen, behind the system bars and the cut-out (centred crop,
+ * never a margin, the whole photo being saved by "Enregistrer"), "Photo de {Prénom} · {heure}", the close button, the zoom by pinching, and
  * "Voir où c'était" (the position of the photo, handed to the maps of the system) with the time of the measure. The back gesture closes it.
  */
 @Composable
@@ -270,12 +275,19 @@ internal fun PhotoFullScreen(
             opened.firstName,
             texts.since(Moment.of(photo.createdAtMillis, nowMillis, zone)),
         )
+    var boxSize by remember { mutableStateOf(IntSize.Zero) }
     var scale by remember { mutableFloatStateOf(1f) }
     var offset by remember { mutableStateOf(Offset.Zero) }
     val transform =
         rememberTransformableState { _, zoom, pan, _ ->
+            // The covering scale is the minimum (never a margin), and the drag is bounded so that no edge of the picture can leave one (see PhotoFraming).
             scale = (scale * zoom).coerceIn(1f, MAX_ZOOM)
-            offset = if (scale == 1f) Offset.Zero else offset + pan
+            offset =
+                if (scale == 1f || boxSize == IntSize.Zero) {
+                    Offset.Zero
+                } else {
+                    PhotoFraming.clampPan(offset + pan, scale, boxSize.width, boxSize.height)
+                }
         }
     val unavailable = stringResource(R.string.feed_action_unavailable)
     val closeName = stringResource(R.string.update_photo_close_a11y)
@@ -288,28 +300,28 @@ internal fun PhotoFullScreen(
         rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument(PhotoDownload.MIME_TYPE)) { target ->
             scope.launch { controller.saveTo(target, photo.jpeg) }
         }
-    Dialog(
-        onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
-    ) {
+    MiffFullBleedDialog(onDismissRequest = onDismiss) {
         Box(
             Modifier
                 .fillMaxSize()
                 .holdForDiagnostic()
                 .background(Color.Black)
+                .onSizeChanged { boxSize = it }
                 // The pinch and the drag are taken by the WHOLE screen (not only by the picture): a gesture that starts on the footer, which is drawn over the
                 // photo, still moves and zooms it. The buttons keep their own touch; the footer only takes the vertical drags when it really scrolls (see below).
-                .transformable(transform)
-                .miffScreenInsets(),
+                .transformable(transform),
         ) {
             if (bitmap != null) {
                 Image(
                     bitmap = bitmap,
                     contentDescription = null,
-                    contentScale = ContentScale.Fit,
+                    // FULL BLEED (PM, 2026-11-17): the picture covers the WHOLE window, behind the system bars and the cut-out, centred, and is cut off on the side
+                    // that overflows. Never a black margin, whatever the ratio of the photo and of the screen (see PhotoFraming). The safe areas only concern the
+                    // buttons and the footer below.
+                    contentScale = ContentScale.Crop,
+                    alignment = Alignment.Center,
                     modifier =
                         Modifier
-                            // Exactly as before the descriptions: the picture fills the safe area, whole (Fit), whatever the footer says. A test locks it.
                             .fillMaxSize()
                             .testTag(FULL_SCREEN_PHOTO_TAG)
                             .graphicsLayer(
@@ -320,57 +332,69 @@ internal fun PhotoFullScreen(
                             ),
                 )
             }
+            // A soft shade behind the status bar, so that its clock and icons (light) stay readable over a very light photo; it takes no touch.
             Box(
-                modifier =
-                    Modifier
-                        .align(Alignment.TopStart)
-                        .padding(Spacing.s)
-                        .size(Spacing.minTouchTarget)
-                        .clip(CircleShape)
-                        .clickable(role = Role.Button, onClick = onDismiss)
-                        .semantics { contentDescription = closeName },
-                contentAlignment = Alignment.Center,
-            ) {
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .height(miffTopInset() + Spacing.minTouchTarget + Spacing.m)
+                    .background(Brush.verticalGradient(listOf(colorPhotoTopShade, Color.Transparent))),
+            )
+            // The buttons stay INSIDE the safe areas (status bar, cut-out, sides), over the full-bleed picture.
+            Box(Modifier.fillMaxSize().miffTopInsets()) {
                 Box(
-                    Modifier.size(40.dp).background(colorUpdateScrim, CircleShape),
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopStart)
+                            .padding(Spacing.s)
+                            .size(Spacing.minTouchTarget)
+                            .clip(CircleShape)
+                            .clickable(role = Role.Button, onClick = onDismiss)
+                            .semantics { contentDescription = closeName },
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_loc_close),
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(22.dp),
+                    Box(
+                        Modifier.size(40.dp).background(colorUpdateScrim, CircleShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_loc_close),
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp),
+                        )
+                    }
+                }
+                // "Enregistrer la photo" (decision of the PM, 2026-11-10): the download icon at the top right, HERE only, and only on a touch. A photo that
+                // is not a well-formed JPEG, or that could not be drawn, does not offer it.
+                if (bitmap != null && canSave) {
+                    SavePhotoButton(
+                        state = saveState,
+                        modifier = Modifier.align(Alignment.TopEnd).padding(Spacing.s),
+                        onClick = {
+                            if (controller.begin()) {
+                                when (controller.route) {
+                                    SaveRoute.MEDIA_STORE -> scope.launch { controller.saveToPictures(photo.jpeg) }
+                                    SaveRoute.DOCUMENT_PICKER -> picker.launch(controller.fileName())
+                                }
+                            }
+                        },
+                    )
+                    SaveResultNote(
+                        state = saveState,
+                        onSeen = controller::acknowledge,
+                        modifier =
+                            Modifier
+                                .align(
+                                    Alignment.TopCenter,
+                                ).padding(top = Spacing.minTouchTarget + Spacing.m, start = Spacing.m, end = Spacing.m),
                     )
                 }
             }
-            // "Enregistrer la photo" (decision of the PM, 2026-11-10): the download icon at the top right, HERE only, and only on a touch. A photo that
-            // is not a well-formed JPEG, or that could not be drawn, does not offer it.
-            if (bitmap != null && canSave) {
-                SavePhotoButton(
-                    state = saveState,
-                    modifier = Modifier.align(Alignment.TopEnd).padding(Spacing.s),
-                    onClick = {
-                        if (controller.begin()) {
-                            when (controller.route) {
-                                SaveRoute.MEDIA_STORE -> scope.launch { controller.saveToPictures(photo.jpeg) }
-                                SaveRoute.DOCUMENT_PICKER -> picker.launch(controller.fileName())
-                            }
-                        }
-                    },
-                )
-                SaveResultNote(
-                    state = saveState,
-                    onSeen = controller::acknowledge,
-                    modifier =
-                        Modifier
-                            .align(
-                                Alignment.TopCenter,
-                            ).padding(top = Spacing.minTouchTarget + Spacing.m, start = Spacing.m, end = Spacing.m),
-                )
-            }
-            // The footer is drawn OVER the photo (never beside it: it takes no room from the picture). It is at most 45 % of the height and SCROLLS beyond it (a long
-            // description, a large font, a small phone), but only when it really overflows: otherwise it takes no touch at all and a gesture that starts on it goes to the
-            // photo, as before the descriptions. With a description it sits on a dark veil (white text stays readable even over a white photo).
+            // The footer is drawn OVER the photo (never beside it: it takes no room from the picture). It sits on a dark veil that reaches the bottom edge of the screen,
+            // behind the navigation bar (white text stays readable even over a white photo), and keeps its text inside the safe areas. It is at most 45 % of the height and
+            // SCROLLS beyond it (a long description, a large font, a small phone), but only when it really overflows: otherwise it takes no touch at all and a gesture that
+            // starts on it goes to the photo.
             val description = photo.description
             val footerScroll = rememberScrollState()
             Column(
@@ -379,7 +403,8 @@ internal fun PhotoFullScreen(
                         .align(Alignment.BottomCenter)
                         .fillMaxWidth()
                         .capHeightShare(FOOTER_MAX_SHARE)
-                        .then(if (description != null) Modifier.background(colorPhotoFooterVeil) else Modifier)
+                        .background(colorPhotoFooterVeil)
+                        .miffBottomInsets()
                         .verticalScroll(footerScroll, enabled = footerScroll.maxValue > 0)
                         .padding(Spacing.m),
                 verticalArrangement = Arrangement.spacedBy(Spacing.s),
@@ -565,3 +590,6 @@ private fun Modifier.capHeightShare(share: Float): Modifier =
 
 /** The veil under the footer when the photo has a description: dark enough for white text at 4.5:1 over a white photo (0.62 of black over white = #606060). */
 internal val colorPhotoFooterVeil = Color.Black.copy(alpha = 0.62f)
+
+/** A soft shade behind the status bar over the full-bleed photo (its light clock and icons stay readable on a white photo). */
+internal val colorPhotoTopShade = Color.Black.copy(alpha = 0.40f)
