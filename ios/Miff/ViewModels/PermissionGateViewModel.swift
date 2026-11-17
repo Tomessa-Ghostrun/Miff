@@ -48,6 +48,10 @@ struct PermissionGateDependencies {
     let onLeft: (String) async -> Void
     /// Les Miffs qui attendent l'accord (FEED-5 : le Feed le dit pendant que « Pas maintenant » est choisi) ; nil dans les tests qui n'en ont pas besoin.
     var awaiting: AwaitingAgreement?
+    /// SRV-2I : l'accord à être notifiée (le jeton n'est enregistré qu'avec lui) ; nil là où les notifications push n'existent pas (tests).
+    var pushConsent: PushConsentStore?
+    /// SRV-2I : appelé dès que l'accord vient d'être enregistré, pour que le registre des appareils se synchronise TOUT DE SUITE.
+    var onNotificationsAnswered: (() -> Void)?
 }
 
 /// Les réglages de la porte : l'interrupteur de COMPILATION, l'ordre « accord d'abord », la durée maximale de l'attente.
@@ -77,6 +81,8 @@ final class PermissionGateViewModel: ObservableObject {
     /// Ce que l'app fait une fois une Miff quittée (purge du cache, liste des Miffs relue).
     private let onLeft: (String) async -> Void
     private let awaiting: AwaitingAgreement?
+    private let pushConsent: PushConsentStore?
+    private let onNotificationsAnswered: (() -> Void)?
     private var reviewSubscription: AnyCancellable?
     private let consentBeforeLocation: Bool
     private let checkTimeoutSeconds: TimeInterval
@@ -102,6 +108,8 @@ final class PermissionGateViewModel: ObservableObject {
         leaver = dependencies.leaver
         onLeft = dependencies.onLeft
         awaiting = dependencies.awaiting
+        pushConsent = dependencies.pushConsent
+        onNotificationsAnswered = dependencies.onNotificationsAnswered
         locationBlocking = settings.locationBlocking
         consentBeforeLocation = settings.consentBeforeLocation
         checkTimeoutSeconds = settings.checkTimeoutSeconds
@@ -193,7 +201,27 @@ final class PermissionGateViewModel: ObservableObject {
         }
         notificationsHandled = true
         notificationsBusy = false
-        await refresh()
+        snapshot = await permissions.snapshot()
+        // L'écran portait la phrase sur l'identifiant du téléphone : si le système autorise, c'est un accord (enregistré AVANT de publier l'état,
+        // pour que l'écran ne revienne pas), et le registre se synchronise tout de suite.
+        recordPushConsentIfAuthorized()
+        publish()
+    }
+
+    private func recordPushConsentIfAuthorized() {
+        guard snapshot?.notifications == .authorized, let uid = currentUid(), let pushConsent else {
+            return
+        }
+        pushConsent.give(uid: uid)
+        onNotificationsAnswered?()
+    }
+
+    /// Autorisée dans le système, sans réponse à l'écran corrigé : l'écran revient (voir `GateInput.pushExplanationDue`).
+    private func pushExplanationDue(_ snapshot: PermissionSnapshot) -> Bool {
+        guard snapshot.notifications == .authorized, let pushConsent, let uid = currentUid() else {
+            return false
+        }
+        return !pushConsent.isGiven(uid: uid)
     }
 
     /// « Plus tard » : la fenêtre du système n'est PAS consommée (elle pourra encore s'afficher, depuis Réglages > Notifications ou la carte du
@@ -336,7 +364,8 @@ final class PermissionGateViewModel: ObservableObject {
                 locationDeferred: locationDeferred,
                 renewal: renewalState,
                 renewalDeferred: renewalDeferred,
-                consentBeforeLocation: consentBeforeLocation
+                consentBeforeLocation: consentBeforeLocation,
+                pushExplanationDue: pushExplanationDue(snapshot)
             )
         )
         let renewal: RenewalUiState?
