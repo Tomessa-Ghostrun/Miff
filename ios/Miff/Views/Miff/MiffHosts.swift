@@ -67,7 +67,7 @@ struct MiffOnboardingHost: View {
                 navigate: { open(.settings($0)) },
                 onBack: { pop() }
             )
-        case .miff, .placeForm, .placeDetail:
+        case .miff, .placeForm, .placeDetail, .colorsInfo:
             // Pas d'écran de Miff ni de lieu avant la fin de l'onboarding : la personne n'en a pas encore.
             EmptyView()
         case .placeRequestForm, .placeRequestDetail:
@@ -88,9 +88,7 @@ struct MiffOnboardingHost: View {
 
     /// Deux touchers rapprochés ouvrent un seul écran, pas deux.
     private func open(_ route: MiffRoute) {
-        if path.last != route {
-            path.append(route)
-        }
+        path.openOnce(route)
     }
 
     private func pop() {
@@ -111,10 +109,13 @@ struct MiffOnboardingHost: View {
 /// perdue ne reste visible derrière.
 @MainActor
 struct MiffHomeHost: View {
-    private let environment: AppEnvironment
+    let environment: AppEnvironment
     @ObservedObject var directory: MiffDirectory
     /// Le message calme d'un lieu enregistré, en mémoire seulement (LOC-3).
     @ObservedObject var placeNotices: PlaceNotices
+    /// SRV-4I : la demande « ouvre le Feed de cette Miff » d'un toucher sur la notification d'un proche (comparée aux Miffs du compte AVANT d'ouvrir).
+    @ObservedObject var pushRequests: PushOpenRequests
+    @State var feedOpenCount = 0
     @State var path: [MiffRoute] = []
     /// Le profil de la personne (onglet Profil, Mes informations) : lu une fois par session, gardé ici pour les deux écrans.
     @StateObject private var profile: ProfileTabViewModel
@@ -132,7 +133,7 @@ struct MiffHomeHost: View {
     /// L'Update (UPDATE-3) : l'écran du bouton central, créé pour la session (la photo prise y vit, en mémoire seulement).
     @StateObject private var updateModel: UpdateViewModel
     /// La banderole courte de la suppression (reprise au lancement, fin pendant que la personne est ailleurs).
-    @State private var banner: DeletionBanner?
+    @State var banner: DeletionBanner?
     /// L'offre Miff+, quand elle est ouverte (`PaywallPresentation`).
     @State private var paywall: PaywallPresentation?
 
@@ -140,6 +141,7 @@ struct MiffHomeHost: View {
         self.environment = environment
         _directory = ObservedObject(wrappedValue: environment.miffDirectory)
         _placeNotices = ObservedObject(wrappedValue: environment.placeNotices)
+        _pushRequests = ObservedObject(wrappedValue: environment.push.openRequests)
         let session = environment.session
         _profile = StateObject(
             wrappedValue: ProfileTabViewModel(
@@ -193,6 +195,7 @@ struct MiffHomeHost: View {
                     onCreateMiff: { createMiffFromProfile() },
                     onOpenSettings: { open(.settings($0)) },
                     tabRequests: environment.notifications.tabRequests,
+                    openFeedToken: feedOpenCount,
                     feed: { context in feedTab(context) }
                 )
                     .toolbar(.hidden, for: .navigationBar)
@@ -258,6 +261,10 @@ struct MiffHomeHost: View {
         .task {
             await watchDeletions()
         }
+        // SRV-4I : un toucher sur « {Prénom} a donné des nouvelles » (aussi à froid : la demande attend l'hôte).
+        .task(id: pushRequests.pending) {
+            await openRequestedFeed()
+        }
         .task(id: banner) {
             guard banner != nil else {
                 return
@@ -265,24 +272,9 @@ struct MiffHomeHost: View {
             try? await Task.sleep(nanoseconds: 4_000_000_000)
             banner = nil
         }
-    }
-
-    /// Le flux d'annonces est ouvert AVANT la reprise : rien de ce qu'elle annonce n'est perdu.
-    private func watchDeletions() async {
-        let deletions = environment.miffDeletions
-        let notices = deletions.notices()
-        deletions.resumePending()
-        for await notice in notices {
-            switch notice {
-            case .resumed:
-                banner = .resumed
-            case .completed(let miffId):
-                // Sur l'écran de cette Miff, c'est l'écran lui-même qui le dit : rien n'est dit deux fois.
-                if path.last != .miff(miffId) {
-                    banner = .done
-                }
-            }
-        }
+        // La fenêtre d'avis (docs/tickets/pop-ins-avis.md) : par-dessus tout, jamais pendant un écran empilé (Réglages, lieux, Miff) ni l'offre.
+        // Sans effet dans un build sans le drapeau REVIEW_PROMPT (Release).
+        .reviewPromptHost(environment: environment, directory: directory, onTabs: path.isEmpty && paywall == nil)
     }
 
     /// L'onglet Feed (FEED-5 à FEED-7) : il remplace l'accueil provisoire dans la coquille.
@@ -300,7 +292,8 @@ struct MiffHomeHost: View {
                 onOpenMiff: { open(.miff($0)) },
                 onSignOut: { signOut() },
                 onOpenSettings: { open(.settings(.settings)) },
-                onOpenNotifications: { open(.settings(.notificationCenter)) }
+                onOpenNotifications: { open(.settings(.notificationCenter)) },
+                onOpenColors: { open(.colorsInfo) }
             )
         )
     }
@@ -314,25 +307,6 @@ struct MiffHomeHost: View {
         case .openFlow:
             open(.create)
         }
-    }
-
-    /// Toucher une ligne du centre de notifications : la pile revient à la coquille et l'onglet demandé s'ouvre (le Feed, ou l'écran
-    /// Update — remplacé par le Feed dans les builds qui n'ont pas le bouton central).
-    private func openNotification(_ destination: NotificationDestination) {
-        path.removeAll()
-        if case .placeRequests(let miffId) = destination {
-            // Une ligne de demande ouvre le Profil sur la Miff concernée (sans effet si la personne n'en fait plus partie).
-            directory.select(miffId: miffId)
-        }
-        if case .feedCard(let miffId, let uid) = destination {
-            // Une ligne « Depuis ta dernière visite » : la Miff concernée devient celle du Feed (sans effet si la personne n'en fait plus
-            // partie : le Feed s'ouvre tel quel, jamais une erreur), et le Feed amène la carte du proche à l'écran.
-            directory.select(miffId: miffId)
-            environment.notifications.tabRequests.requestFocus(FeedFocus(miffId: miffId, uid: uid))
-        }
-        environment.notifications.tabRequests.request(
-            NotificationNavigation.tab(for: destination, showsUpdateButton: TabBarConfig.current.showsUpdateButton)
-        )
     }
 
     @ViewBuilder
@@ -361,6 +335,8 @@ struct MiffHomeHost: View {
                 places: placeContext(for: miffId),
                 onBack: { pop() }
             )
+        case .colorsInfo:
+            ColorsInfoView(onBack: { pop() })
         case .settings(let screen):
             SettingsDestinationView(
                 route: screen,
@@ -416,7 +392,7 @@ struct MiffHomeHost: View {
                     onPaywall: { openPlacePaywall($0, replacesForm: false) }
                 )
             )
-        case .create, .join, .miff, .settings:
+        case .create, .join, .miff, .settings, .colorsInfo:
             EmptyView()
         }
     }
@@ -460,9 +436,7 @@ struct MiffHomeHost: View {
         if case .miff(let miffId) = route {
             memberPreviews.invalidate(miffId: miffId)
         }
-        if path.last != route {
-            path.append(route)
-        }
+        path.openOnce(route)
     }
 
     private func pop() {

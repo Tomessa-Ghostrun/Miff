@@ -1246,4 +1246,26 @@
     <string name="settings_privacy_time_confirm_body">Ta répartition repartira de zéro. Cela ne change rien pour tes proches.</string>
     <string name="settings_privacy_time_confirm_action">Effacer</string>
     <string name="settings_privacy_time_done">C\'est fait : ta répartition repart de zéro.</string>
+
+    <!-- COUNTDOWN-A : compte à rebours avant l'orange (Feed et Profil). Mêmes clés qu'iOS. Les durées sont des textes du catalogue (pas le formateur du système) pour que Android et iOS écrivent exactement la même chose ; espace insécable entre le nombre et l'unité. -->
+    <string name="countdown_title">Tu es en dehors de tes lieux de confiance</string>
+    <string name="countdown_body">Tu passeras orange dans %1$s</string>
+    <string name="countdown_duration_hours_minutes">%1$d&#160;h %2$02d&#160;min</string>
+    <string name="countdown_duration_hours">%1$d&#160;h</string>
+    <string name="countdown_duration_minutes">%1$d&#160;min</string>
+    <string name="countdown_duration_less_than_minute">moins d\'1&#160;min</string>
+    <string name="countdown_a11y_label">Tu es en dehors de tes lieux de confiance. Tu passeras orange dans %1$s.</string>
+    <plurals name="countdown_a11y_hours">
+        <item quantity="one">%1$d heure</item>
+        <item quantity="many">%1$d heures</item>
+        <item quantity="other">%1$d heures</item>
+    </plurals>
+    <plurals name="countdown_a11y_minutes">
+        <item quantity="one">%1$d minute</item>
+        <item quantity="many">%1$d minutes</item>
+        <item quantity="other">%1$d minutes</item>
+    </plurals>
+    <string name="countdown_a11y_hours_and_minutes">%1$s et %2$s</string>
+    <string name="countdown_a11y_less_than_minute">moins d\'une minute</string>
+    <string name="countdown_a11y_action">Donner de tes nouvelles</string>
 </resources>

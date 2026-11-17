@@ -718,7 +718,7 @@ La carte du Profil qui montre, en anneau, comment la personne a réparti son tem
 | Effacement | déconnexion / suppression de compte / session perdue (`TrackingEngine.stop`, démontage de la session, `accountLocalDataErasers`), sortie d'une Miff (`AppContainer.onMiffLeft`, liste du serveur), 35 jours, bouton de Réglages > Confidentialité |
 | **Données de test (debug seulement)** | `src/debug/.../DemoPresence.kt` et `TimeShareDemoTools.kt` : un bloc sous la carte remplit le journal de la Miff affichée avec trois semaines de routine inventée (ou le vide). **Absent du release et de releaseLike** (le fichier de `src/release` ne dessine rien ; marqueur `TIMESHAREDEMO` cherché par la CI). |
 
-Limites : historique propre à l'appareil, qui démarre à la livraison ; événements datés à leur arrivée dans l'app (surcouches constructeur) ; **la politique de confidentialité doit être mise à jour avant la publication sur Google Play** (le téléphone garde 35 jours de changements de lieu). Voir `CHANGELOG.md` 0.42.0.
+Limites : historique propre à l'appareil, qui démarre à la livraison ; événements datés à leur arrivée dans l'app (surcouches constructeur) ; **la politique de confidentialité doit être mise à jour avant la publication sur Google Play** (le téléphone garde 35 jours de changements de lieu). Voir `CHANGELOG.md` 0.43.0.
 
 ## Mode voyage (tickets VOY-1A, VOY-2A, VOY-3A)
 

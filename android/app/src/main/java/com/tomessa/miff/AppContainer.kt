@@ -1074,7 +1074,6 @@ class AppContainer(
                         photoCache,
                         SessionTeardown { publishLedger.clear() },
                         SessionTeardown { reviewStateStore.clear() },
-                        // TIME-1 / TIME-2: the journal of the presence and the window of the chart go with the session (the engine erases the journal too, in its own stop).
                         timeShareTeardown,
                         placeNotices,
                         requesterDirectory,

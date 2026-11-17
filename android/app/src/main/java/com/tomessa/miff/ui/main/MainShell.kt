@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -74,6 +75,7 @@ import com.tomessa.miff.ui.feed.FeedUiState
 import com.tomessa.miff.ui.feed.FeedViewModel
 import com.tomessa.miff.ui.feed.LocalPhotoReader
 import com.tomessa.miff.ui.feed.LocateUiState
+import com.tomessa.miff.ui.feed.OrangeCountdownSlot
 import com.tomessa.miff.ui.feed.rememberSystemFeedActions
 import com.tomessa.miff.ui.miff.AccessLostScreen
 import com.tomessa.miff.ui.miff.AgreementUi
@@ -478,6 +480,7 @@ private fun MainNavigation(
                         refreshing = refreshing,
                         onRefresh = feedViewModel::onRefresh,
                         observe = feedViewModel::observe,
+                        observeForProfile = feedViewModel::observeForProfile,
                         photos = container.photoReader,
                         connection =
                             ConnectionHost(
@@ -980,6 +983,8 @@ fun MainTabs(
                                             onRetryFeed = feed.onRetry,
                                             onRefresh = feed.onRefresh,
                                             onOpenColors = onOpenColors,
+                                            // COUNTDOWN-A: the SAME way as the central button of the bar (the Update tab; the back gesture comes back here).
+                                            onOpenUpdate = { if (update != null) select(MainTab.UPDATE) },
                                         ),
                                     )
                                 FeedScreen(
@@ -1011,6 +1016,15 @@ fun MainTabs(
                                         Lifecycle.State.STARTED,
                                     ) { observeProfile?.invoke() }
                                 }
+                                // COUNTDOWN-A: the encart of the countdown comes from the statuses the Feed reads, and the Feed only listens while it is the tab in use: the Profile
+                                // keeps the SAME listeners (no new reading) while it is shown, so that the encart never tells what is no longer true (an update just published, an
+                                // arrival in a place of trust noticed while the Profile is open).
+                                val observeForProfile by rememberUpdatedState(feed.observeForProfile)
+                                LaunchedEffect(lifecycleOwner) {
+                                    lifecycleOwner.lifecycle.repeatOnLifecycle(
+                                        Lifecycle.State.STARTED,
+                                    ) { observeForProfile() }
+                                }
                                 ProfileTabScreen(
                                     state = profileState,
                                     scrollToTopSignal = scrollToTop,
@@ -1028,6 +1042,13 @@ fun MainTabs(
                                     popIn = profileConnection,
                                     popInSuppressed = popInSuppressed,
                                     travelContent = travelContent,
+                                    countdownContent = {
+                                        OrangeCountdownSlot(
+                                            anchor = feedContent?.myCountdown,
+                                            onOpenUpdate = { if (update != null) select(MainTab.UPDATE) },
+                                            padding = PaddingValues(bottom = Spacing.l),
+                                        )
+                                    },
                                 )
                             }
 
