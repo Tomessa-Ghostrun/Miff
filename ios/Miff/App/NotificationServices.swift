@@ -59,7 +59,8 @@ struct NotificationServices {
                 tabRequests.request(NotificationNavigation.tab(for: destination, showsUpdateButton: showsUpdate))
             }
         }
-        UNUserNotificationCenter.current().delegate = delegate
+        // Le délégué n'est PAS posé ici : un seul peut l'être sur le centre de notifications, et c'est `PushServices.start()` (messages du serveur),
+        // qui lui chaîne celui-ci par `next` (docs/dev/fcm-ios.md §7, AppEnvironment).
         return NotificationServices(
             center: center,
             preferences: preferences,

@@ -5102,6 +5102,91 @@
         }
       }
     },
+    "ios_diag_review_force": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show the window at the next return to the app"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher la fenêtre au prochain retour dans l'app"
+          }
+        }
+      }
+    },
+    "ios_diag_review_force_armed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ready: send the app to the background, then reopen it (the window never covers the Update)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prête : mets l'app en arrière-plan puis rouvre-la (la fenêtre ne couvre jamais l'Update)."
+          }
+        }
+      }
+    },
+    "ios_diag_review_reset": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reset the state of the window"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remettre à zéro l'état de la fenêtre"
+          }
+        }
+      }
+    },
+    "ios_diag_review_reset_done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "State reset: the window starts from zero (7 days, 30 days, 90 days)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "État remis à zéro : la fenêtre repart de zéro (7 jours, 30 jours, 90 jours)."
+          }
+        }
+      }
+    },
+    "ios_diag_review_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Review window (test)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fenêtre d'avis (essai)"
+          }
+        }
+      }
+    },
     "ios_feed_offline_popin_close_a11y": {
       "extractionState": "manual",
       "localizations": {
@@ -14341,6 +14426,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Te prévenir, seulement quand c'est utile !"
+          }
+        }
+      }
+    },
+    "ios_permission_notifications_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff also lets you know when someone in your circle checks in. For this, Miff saves a technical identifier of your phone, provided by Apple to send notifications. You can turn it all off at any time in your phone's settings. The examples above show what you could receive."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff te prévient aussi quand un proche donne des nouvelles. Pour cela, Miff enregistre un identifiant technique de ton téléphone, fourni par Apple pour envoyer les notifications. Tu peux tout couper à tout moment dans les réglages de ton téléphone. Les exemples ci-dessus montrent ce que tu pourrais recevoir."
           }
         }
       }
