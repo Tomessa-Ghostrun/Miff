@@ -72,11 +72,22 @@ interface NotificationAskStore {
         uid: String,
         value: SecondChance,
     ) {}
+
+    /**
+     * SRV-2: the person of this account said YES to being notified (the "Autoriser" of the pop-in, the system window answered from anywhere in the app, or the
+     * general switch of Settings turned on), AFTER the explanation that says Miff registers an identifier of the phone. The push token is registered only with
+     * it (criterion J1 of the ticket). Kept on the phone for this account; gone with the account.
+     */
+    fun pushConsent(uid: String): Boolean = false
+
+    fun markPushConsent(uid: String) {}
 }
 
 /** A flag per account in private preferences (no secret, no position). The preference file is not part of any backup (see backup_rules.xml). */
 class SharedPreferencesNotificationAskStore(
     context: Context,
+    /** Called right after a consent to be notified was written (SRV-2): the first registration must not wait for the next return to the front. */
+    private val onPushConsent: () -> Unit = {},
 ) : NotificationAskStore {
     private val prefs =
         context.applicationContext.getSharedPreferences(
@@ -95,8 +106,19 @@ class SharedPreferencesNotificationAskStore(
             .edit()
             .remove(uid)
             .remove(secondChanceKey(uid))
+            .remove(pushConsentKey(uid))
             .apply()
     }
+
+    // commit(): a registration of the token must never be allowed by a consent that was not on the disk.
+    override fun pushConsent(uid: String): Boolean = prefs.getBoolean(pushConsentKey(uid), false)
+
+    override fun markPushConsent(uid: String) {
+        prefs.edit().putBoolean(pushConsentKey(uid), true).commit()
+        onPushConsent()
+    }
+
+    private fun pushConsentKey(uid: String) = "push_consent:$uid"
 
     override fun systemAsked(): Boolean = prefs.getBoolean(KEY_SYSTEM_ASKED, false)
 

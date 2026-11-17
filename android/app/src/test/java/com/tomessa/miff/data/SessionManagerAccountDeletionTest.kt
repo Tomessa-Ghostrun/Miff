@@ -10,6 +10,7 @@ import com.tomessa.miff.data.privacy.WithdrawalStorage
 import com.tomessa.miff.data.session.LocalDataEraser
 import com.tomessa.miff.data.session.SessionManager
 import com.tomessa.miff.data.session.SessionState
+import com.tomessa.miff.data.session.SessionTeardown
 import com.tomessa.miff.data.session.SignedOutNotice
 import com.tomessa.miff.domain.auth.AppDestination
 import com.tomessa.miff.domain.auth.AuthOutcome
@@ -44,6 +45,10 @@ class SessionManagerAccountDeletionTest {
     private val marker = MemoryDeletionMarker(timeline = timeline)
     private val erasedFor = mutableListOf<String>()
 
+    // SRV-2: stands for the registration of the push, shut by the teardown of every end of session and opened again by the hook "the session is open again".
+    private var pushShut = false
+    private var reopened = 0
+
     private fun SessionManager.destination(): AppDestination? = (state.value as? SessionState.Ready)?.destination
 
     private fun run(block: suspend TestScope.(SessionHarness) -> Unit) =
@@ -52,6 +57,11 @@ class SessionManagerAccountDeletionTest {
                 SessionHarness(
                     backgroundScope,
                     deletionMarker = marker,
+                    extraTeardown = listOf(SessionTeardown { pushShut = true }),
+                    onSessionReopened = {
+                        pushShut = false
+                        reopened++
+                    },
                     localData =
                         listOf(
                             LocalDataEraser { uid ->
@@ -184,6 +194,45 @@ class SessionManagerAccountDeletionTest {
         }
 
     // --- A Miff showed up: the deletion is a cancellation, not a dead end ------------------------------------
+
+    @Test
+    fun aCancelledDeletion_opensThePushRegistrationAgain_theSessionKeepsTheSameIdentifier() =
+        run { h ->
+            h.gateway.setSignedIn("uid-1")
+            h.accounts.setLoaded(profileExists = true, hasMembership = true)
+            h.manager.start()
+            h.manager.beginAccountDeletion()
+            assertTrue("the teardown of the deletion shut the push registration", pushShut)
+            val before = reopened
+            marker.stored = null
+            h.manager.cancelAccountDeletion()
+            assertFalse("a cancelled deletion keeps the account and its session: the push opens again", pushShut)
+            assertTrue(reopened > before)
+        }
+
+    @Test
+    fun anAppRelaunchedDuringTheDeletion_thenCancelled_opensThePushRegistrationAgain() =
+        run { h ->
+            marker.stored = AccountDeletionMark("uid-1", appleLinked = false)
+            h.gateway.setSignedIn("uid-1")
+            h.accounts.setLoaded(profileExists = true, hasMembership = true)
+            h.manager.start()
+            assertEquals(AppDestination.ACCOUNT_DELETION, h.manager.destination())
+            assertTrue("the resumed deletion shut the push registration", pushShut)
+            marker.stored = null
+            h.manager.cancelAccountDeletion()
+            assertFalse(pushShut)
+        }
+
+    @Test
+    fun aSignOutLeavesThePushShut_onlyAnOpenSessionOpensItAgain() =
+        run { h ->
+            h.gateway.setSignedIn("uid-1")
+            h.accounts.setLoaded(profileExists = true, hasMembership = true)
+            h.manager.start()
+            h.manager.signOut()
+            assertTrue("signed out: the registration stays shut", pushShut)
+        }
 
     @Test
     fun aCancelledDeletion_putsTheAppBackOnTrack_withTheUsualRouting_andOneCalmMessage() =

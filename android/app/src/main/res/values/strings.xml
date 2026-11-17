@@ -914,11 +914,12 @@
     <string name="settings_subscription_source_other">Current plan</string>
     <string name="settings_subscription_no_store_note">This access doesn\'t go through a store.</string>
     <string name="settings_detection_help_title">If arrivals and departures are slow</string>
-    <string name="settings_detection_help_intro">Some phones (Oppo, Xiaomi, Samsung, Huawei...) stop apps in the background to save battery. Miff may then notice an arrival or a departure late. These settings are optional: they may help, and Miff works without them.</string>
+    <string name="settings_detection_help_intro">Some phones (Oppo, Xiaomi, Samsung, Huawei...) stop apps in the background to save battery. Miff may then notice an arrival or a departure late, or show the news of your loved ones late. These settings are optional: they may help, and Miff works without them.</string>
     <string name="settings_detection_help_step_battery">1. In the Miff settings, open \"Battery\" (or \"Power consumption\") and choose \"No restrictions\" (or \"Don\'t optimize\").</string>
     <string name="settings_detection_help_step_background">2. Allow background activity for Miff if the phone offers it.</string>
     <string name="settings_detection_help_step_autostart">3. On Oppo, OnePlus or Realme (ColorOS): also allow Miff to \"auto-start\", and do not close it by swiping it away in the list of recent apps.</string>
     <string name="settings_detection_help_step_saver">4. If you can, avoid keeping battery saver on all the time, especially while you are on the move.</string>
+    <string name="settings_detection_help_step_forcestop">5. If you use \"Force stop\" on Miff, the news of your loved ones wait until you open Miff again. That is how Android works, and nothing is lost: everything is in your Miff.</string>
     <string name="settings_detection_help_outro">The exact names of the settings change with the phone and the Android version.</string>
 
     <!-- UPDATE-1 / UPDATE-2 / FEED-4 : l'Update (photo du moment, bulle d'incitation, photo dans le Feed). -->
@@ -1002,7 +1003,7 @@
     <string name="notif_n7_title">Your travel mode has ended</string>
     <string name="notif_n7_body">Your card gets its usual colours back for your circle. Welcome back!</string>
     <string name="notif_prime_title">A reminder, only when it helps</string>
-    <string name="notif_prime_body">If you forget to check in, Miff gently reminds you, and lets you know when your Miff changes status. You choose what you get in the settings.</string>
+    <string name="notif_prime_body">If you forget to check in, Miff gently reminds you, and lets you know when someone in your circle gives news. To send you these notifications, Miff registers a technical identifier of your phone, provided by Google. You choose what you get in the settings.</string>
     <string name="notif_prime_allow">Allow</string>
     <string name="notif_prime_later">Not now</string>
     <string name="notif_prime_example_when">2 min ago</string>
@@ -1028,6 +1029,17 @@
     <string name="notif_settings_n6">When I enter a danger zone</string>
     <string name="notif_settings_n7">When my travel mode ends</string>
     <string name="notif_settings_n6_hint">You turn off the notification, not what your Miff sees.</string>
+    <!-- N9, "a loved one gave news" (SRV-2, ticket notification-update-membres.md). %1$s = the first name of the author, 20 characters at most. Keys shared with iOS. -->
+    <string name="notif_circle_update_title">%1$s checked in</string>
+    <string name="notif_circle_update_body">See it in your Miff.</string>
+    <string name="notif_center_circle_update_title">Someone in your circle checked in</string>
+    <string name="notif_settings_section_loved_ones">For your loved ones</string>
+    <string name="notif_settings_circle_update">When someone in your circle checks in</string>
+    <string name="notif_settings_circle_update_hint">A notification when someone in your Miff posts an update.</string>
+    <string name="android_notif_push_identifier_note">To send you these notifications, Miff registers a technical identifier of your phone, provided by Google.</string>
+    <string name="android_notif_channel_updates">News from your loved ones</string>
+    <string name="android_notif_channel_updates_desc">When someone in your Miff gives news by posting an update.</string>
+    <string name="android_notif_channel_updates_quiet">News from your loved ones (quiet night)</string>
     <string name="notif_settings_night_title">Quiet night</string>
     <string name="notif_settings_night_body">From 10 pm to 7 am, no sound or vibration, except when someone turns red.</string>
     <string name="notif_settings_see_all">See my notifications</string>

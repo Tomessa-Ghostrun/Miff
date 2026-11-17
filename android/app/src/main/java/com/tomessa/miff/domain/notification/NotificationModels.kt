@@ -21,6 +21,13 @@ enum class NotificationFamily {
 
     /** "Nouvelles de ta Miff": N3, N4 and N6, about the circle and the zones of the circle. */
     CIRCLE,
+
+    /**
+     * "Nouvelles des proches": N9, a member of the circle published an update (a PUSH sent by the server, the only notification that comes from another phone). Its own
+     * channel (the importance of a channel can never be raised once it exists): sound and vibration of the phone by the day (decision of the PM, 2026-11-12), the quiet
+     * version at night.
+     */
+    NEWS,
 }
 
 /**
@@ -50,6 +57,13 @@ enum class NotificationType(
      * never planned, never shown by the system, no switch in Settings. A tap leads to the list of the places of that Miff (the Profile), handled by the centre.
      */
     N8("n8", NotificationFamily.CIRCLE, NotificationDestination.FEED, quietAtNight = true),
+
+    /**
+     * SRV-2 / ticket notification-update-membres.md: "{Prénom} a donné des nouvelles", sent by the server when a member of the Miff publishes an update. The ONLY type
+     * that is not prepared by this phone alone, and the only one whose text holds a name (the first name of the author, 20 characters at most). Quiet at night
+     * (22 h to 7 h, local time of the phone = the time zone of the person), decision of the PM of 2026-11-12.
+     */
+    N9("n9", NotificationFamily.NEWS, NotificationDestination.FEED, quietAtNight = true),
     ;
 
     companion object {
@@ -75,6 +89,8 @@ data class NotificationPreferences(
     val n4: Boolean = true,
     val n6: Boolean = true,
     val n7: Boolean = true,
+    /** "Quand un proche donne des nouvelles" (N9): ON by default; it only has an effect once the phone lets Miff notify (decision Q1 of the ticket, validated). */
+    val n9: Boolean = true,
     val nightCalm: Boolean = true,
 ) {
     /** The switch of the type alone (what the screen draws, greyed when the general one is off). */
@@ -91,6 +107,8 @@ data class NotificationPreferences(
             NotificationType.N6 -> n6
 
             NotificationType.N7 -> n7
+
+            NotificationType.N9 -> n9
 
             // In the centre only, no switch of its own: always on.
             NotificationType.N8 -> true
@@ -110,8 +128,15 @@ data class NotificationPreferences(
             NotificationType.N4 -> copy(n4 = on)
             NotificationType.N6 -> copy(n6 = on)
             NotificationType.N7 -> copy(n7 = on)
+            NotificationType.N9 -> copy(n9 = on)
             NotificationType.N8 -> this
         }
+
+    /**
+     * What the server must know of this phone (`notify.updates` of the document of the device): news of the circle are wanted when the general switch AND the
+     * switch of N9 are on. The general switch off deletes the document altogether (see the registration), so this is the value of a registered phone.
+     */
+    fun wantsCircleNews(): Boolean = allows(NotificationType.N9)
 }
 
 /**

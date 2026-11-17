@@ -175,6 +175,7 @@ fun DetectionHelpScreen(onBack: () -> Unit) {
             R.string.settings_detection_help_step_background,
             R.string.settings_detection_help_step_autostart,
             R.string.settings_detection_help_step_saver,
+            R.string.settings_detection_help_step_forcestop,
         ).forEach {
             Text(
                 text = stringResource(it),
