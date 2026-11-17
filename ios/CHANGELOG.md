@@ -20,6 +20,8 @@ Modifié :
 - Nouvelle route `SettingsRoute.language` : absente des Réglages restreints d'un compte sans Miff, et refermée si la dernière Miff disparaît pendant qu'elle est ouverte.
 
 Limites : textes système (fenêtres d'autorisation, clavier) dans la langue du téléphone ; une notification locale a un texte figé (reprogrammée au choix et au retour au premier plan) ; les écrans refaits perdent leur état interne non gardé par l'hôte ; la langue n'est pas envoyée au serveur (un futur push serveur devra en décider).
+
+Corrigé (CI rouge de la PR) : (1) un commentaire de `LanguageView.swift` citait `Text("cle")` et déclenchait la règle SwiftLint maison `no_hardcoded_text` (commentaire reformulé) ; (2) `AccountLocalStorageGuardTests` échouait car `Models/Main/AppLanguage.swift` (nouveau stockage `UserDefaults`) n'était pas dans sa liste : ajouté avec sa raison (préférence d'affichage de l'appareil, non personnelle, volontairement gardée à la suppression du compte).
 ### Version des conditions enregistrée : « 1.0 » (miroir d'Android)
 
 Modifié :
