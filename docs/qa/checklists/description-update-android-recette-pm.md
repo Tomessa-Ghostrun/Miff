@@ -7,7 +7,7 @@
 ## À lire avant de commencer : les règles doivent être déployées
 
 - **Projet Firebase : `miff-3d283` uniquement.** Jamais celui de Ghostrun.
-- La description est écrite dans le document de la photo, et **Firestore ne l'accepte qu'une fois les nouvelles règles déployées** (branche `backend/description-update`, déploiement par vous, sur votre « oui » explicite).
+- La description est écrite dans le document de la photo, et **Firestore ne l'accepte qu'une fois les nouvelles règles déployées** (déjà fusionnées dans `main` par la PR #250 ; **le déploiement reste à faire par vous, sur votre « oui » explicite**, procédure `docs/dev/deploiement-regles.md`).
   - **Règles pas encore déployées** : publier **sans** description marche comme avant ; publier **avec** une description est **refusé** : l'app dit calmement « Ta photo n'est pas partie. Réessaie dans un instant. », **la photo et le texte restent à l'écran**, et « Réessayer » échoue de la même façon. C'est le comportement voulu tant que les règles ne sont pas là (étape 20). **Ne cherchez pas de bug avant le déploiement.**
   - **Règles déployées** : tout le reste de cette recette doit fonctionner.
 - **Installez l'APK de debug signé par la CI** (artefact de l'exécution Android de la PR : `gh run download <identifiant> -n miff-debug-apk`).
