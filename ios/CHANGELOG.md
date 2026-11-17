@@ -25,6 +25,10 @@ Ajouté :
 - **Les réponses au formulaire contiendront ce que la personne y écrit** (données personnelles possibles, hébergées par Google) : à ajouter à la politique de confidentialité avant d'allumer la fenêtre en diffusion.
 - Quand la PR « À propos et aide » (#222, `FeedbackForm.address`) et celle-ci seront toutes deux dans `main`, **l'adresse ne doit plus être écrite qu'à un endroit** : un test échoue sinon (`ReviewFeedbackFormTests`) ; faire lire `ReviewFeedbackForm.configuredAddress` par `FeedbackForm`.
 
+### CI iOS : limites de durée relevées (job 40 -> 60 min, étape des captures 15 -> 30 min)
+
+Aucun effet dans l'app. Le job « Build et tests » était annulé alors que tout était vert (run 43444821713 : 41 min pour 40 permises ; captures à 11 à 14 min pour 15 permises). Mesures, choix et signal de bascule : `docs/dev/ios-spike.md` §7 bis. Aucun contrôle retiré ; deux lignes de `ci/screenshots.sh` qui répétaient une capture identique sont supprimées.
+
 ### Version des conditions enregistrée : « 1.0 » (miroir d'Android)
 
 Modifié :
