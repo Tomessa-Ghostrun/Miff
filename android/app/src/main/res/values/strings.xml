@@ -1218,4 +1218,54 @@
     <string name="feed_colors_not_verdict">Orange or red doesn\'t mean something is wrong, only that there\'s been no news for a while.</string>
     <string name="feed_colors_not_delay">Your phone works out the colors from the latest information received. Without a connection they can lag a little: the feed then shows the time of the latest information.</string>
     <string name="feed_colors_bubble_action_a11y">Understand the colors</string>
+    <!-- "How your time is spread" (docs/tickets/profil-repartition-temps.md, TIME-2): the Profile card and the Privacy setting. Friendly, descriptive tone, no blame and no congratulation. -->
+    <string name="profile_timeshare_title">How your time is spread</string>
+    <string name="profile_timeshare_subtitle_7">Over the last 7 days</string>
+    <string name="profile_timeshare_subtitle_14">Over the last 14 days</string>
+    <string name="profile_timeshare_subtitle_30">Over the last 30 days</string>
+    <string name="profile_timeshare_window_7">7 days</string>
+    <string name="profile_timeshare_window_14">14 days</string>
+    <string name="profile_timeshare_window_30">30 days</string>
+    <string name="profile_timeshare_window_a11y">Period, %1$s</string>
+    <string name="profile_timeshare_window_selected_a11y">selected</string>
+    <string name="profile_timeshare_center_caption">in your trusted places</string>
+    <string name="profile_timeshare_a11y_card">How your time is spread. %1$s: %2$s.</string>
+    <string name="profile_timeshare_a11y_row">%1$s, %2$s</string>
+    <string name="profile_timeshare_a11y_danger_row">%1$s, %2$s, show details</string>
+    <plurals name="profile_timeshare_other_places">
+        <item quantity="one">%1$d other place</item>
+        <item quantity="other">%1$d other places</item>
+    </plurals>
+    <plurals name="profile_timeshare_danger_zones">
+        <item quantity="one">Danger zone</item>
+        <item quantity="other">Danger zones</item>
+    </plurals>
+    <string name="profile_timeshare_elsewhere">Elsewhere</string>
+    <string name="profile_timeshare_percent_tiny">&lt; 1%</string>
+    <string name="profile_timeshare_detail_close">Close</string>
+    <string name="profile_timeshare_summary_place_7">Over the last 7 days, you spent the most time at %1$s.</string>
+    <string name="profile_timeshare_summary_place_14">Over the last 14 days, you spent the most time at %1$s.</string>
+    <string name="profile_timeshare_summary_place_30">Over the last 30 days, you spent the most time at %1$s.</string>
+    <string name="profile_timeshare_summary_elsewhere_7">Over the last 7 days, you were mostly somewhere other than your trusted places.</string>
+    <string name="profile_timeshare_summary_elsewhere_14">Over the last 14 days, you were mostly somewhere other than your trusted places.</string>
+    <string name="profile_timeshare_summary_elsewhere_30">Over the last 30 days, you were mostly somewhere other than your trusted places.</string>
+    <string name="profile_timeshare_summary_generic_7">Here is how your time was spread over the last 7 days.</string>
+    <string name="profile_timeshare_summary_generic_14">Here is how your time was spread over the last 14 days.</string>
+    <string name="profile_timeshare_summary_generic_30">Here is how your time was spread over the last 30 days.</string>
+    <string name="profile_timeshare_privacy">This data stays on your phone. Nobody else can see it.</string>
+    <string name="profile_timeshare_not_enough">Your chart will be ready in a few days, we are looking into your situation</string>
+    <string name="profile_timeshare_paused">Tracking of your places is paused.</string>
+    <string name="profile_timeshare_travel">You are in travel mode: your chart is paused until you are back.</string>
+    <string name="profile_timeshare_sharing_stopped">You stopped sharing your status with this Miff: your chart is no longer updated for it.</string>
+    <string name="profile_timeshare_sharing_stopped_action">See this Miff</string>
+    <string name="profile_timeshare_location_needed">To measure your time in your places, Miff needs the \"Always\" location with precise position. You can also carry on without it.</string>
+    <string name="profile_timeshare_over_limit">Not all your places are tracked at the same time: the chart may be incomplete.</string>
+    <string name="profile_timeshare_error">The chart is not available right now.</string>
+    <string name="settings_privacy_time_title">Time history</string>
+    <string name="settings_privacy_time_body">To work out how your time is spread, your phone keeps for 35 days the moments you arrive at and leave your places, with no position or address. Nothing is sent: nobody else can see it.</string>
+    <string name="settings_privacy_time_erase">Erase my time history</string>
+    <string name="settings_privacy_time_confirm_title">Erase the history?</string>
+    <string name="settings_privacy_time_confirm_body">Your chart will start again from zero. This changes nothing for your loved ones.</string>
+    <string name="settings_privacy_time_confirm_action">Erase</string>
+    <string name="settings_privacy_time_done">Done: your chart starts again from zero.</string>
 </resources>

@@ -7,4 +7,9 @@
     <string name="android_diag_back">Retour à l\'application</string>
     <string name="android_diag_signed_in_refusal">Un compte est connecté sur ce téléphone : ce test le déconnecterait. Déconnecte-toi d\'abord (Réglages > Mon compte), puis lance le test.</string>
     <string name="android_diag_privacy_real_warning">Attention : ces interrupteurs changent les vrais choix de ce téléphone (mesure d\'usage et rapports de plantage), les mêmes que dans Réglages > Confidentialité.</string>
+    <string name="android_timeshare_demo_title">Données de test (builds de test seulement)</string>
+    <string name="android_timeshare_demo_body">Remplit l\'historique local de cette Miff avec trois semaines de routine inventée, pour voir le graphique sans attendre. Rien n\'est envoyé. N\'existe pas dans la version du store.</string>
+    <string name="android_timeshare_demo_fill">Remplir avec des données de test</string>
+    <string name="android_timeshare_demo_clear">Vider l\'historique de cette Miff</string>
+    <string name="android_timeshare_demo_done">C\'est fait : le graphique est recalculé.</string>
 </resources>

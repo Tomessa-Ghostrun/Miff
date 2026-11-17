@@ -7,4 +7,9 @@
     <string name="android_diag_back">Back to the app</string>
     <string name="android_diag_signed_in_refusal">An account is signed in on this phone: this test would sign it out. Sign out first (Settings > My account), then run the test.</string>
     <string name="android_diag_privacy_real_warning">Careful: these switches change the real choices of this phone (usage measurement and crash reports), the same ones as in Settings > Privacy.</string>
+    <string name="android_timeshare_demo_title">Test data (test builds only)</string>
+    <string name="android_timeshare_demo_body">Fills the local history of this Miff with three weeks of invented routine, so the chart can be seen without waiting. Nothing is sent. Does not exist in the store build.</string>
+    <string name="android_timeshare_demo_fill">Fill with test data</string>
+    <string name="android_timeshare_demo_clear">Empty this Miff\'s history</string>
+    <string name="android_timeshare_demo_done">Done: the chart is worked out again.</string>
 </resources>

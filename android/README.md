@@ -705,6 +705,21 @@ Avant tout lancement de Gradle, l'étape `gradle/actions/wrapper-validation` (é
 
 **Signal de bascule vers C** : premiers testeurs hors équipe, ou besoin de tester l'abonnement via Google Play (la facturation Play exige un APK/AAB distribué par Play).
 
+## Répartition de ton temps (tickets TIME-1 et TIME-2, `docs/tickets/profil-repartition-temps.md`)
+
+La carte du Profil qui montre, en anneau, comment la personne a réparti son temps entre les lieux de la Miff affichée, ses zones de danger et « Ailleurs » sur 7, 14 ou 30 jours. **Tout est local : aucune lecture ni écriture Firestore, aucun événement Analytics, aucune bibliothèque de graphique.**
+
+| Quoi | Où |
+|---|---|
+| Journal local (interface, fait, aucune donnée personnelle) | `domain/timeshare/PresenceLog.kt`, implémentation `data/timeshare/StoredPresenceLog.kt` (préférences privées `miff_presence_log`, exclues des sauvegardes, 35 jours) |
+| Branchement sur le moteur (un seul point d'entrée, l'instant est celui du statut) | `TrackingEngine.logPresence` / `logUnknown` |
+| Calcul pur (T1 à T23 du ticket, mêmes règles que sur iOS) | `domain/timeshare/TimeShare.kt`, états du suivi : `TimeShareHealth.kt` |
+| Carte, anneau (`Canvas`), légende, états, feuille de la zone de danger | `ui/timeshare/TimeShareCard.kt`, `TimeShareViewModel.kt` ; jetons de couleur `ui/theme/ChartColor.kt` |
+| Effacement | déconnexion / suppression de compte / session perdue (`TrackingEngine.stop`, démontage de la session, `accountLocalDataErasers`), sortie d'une Miff (`AppContainer.onMiffLeft`, liste du serveur), 35 jours, bouton de Réglages > Confidentialité |
+| **Données de test (debug seulement)** | `src/debug/.../DemoPresence.kt` et `TimeShareDemoTools.kt` : un bloc sous la carte remplit le journal de la Miff affichée avec trois semaines de routine inventée (ou le vide). **Absent du release et de releaseLike** (le fichier de `src/release` ne dessine rien ; marqueur `TIMESHAREDEMO` cherché par la CI). |
+
+Limites : historique propre à l'appareil, qui démarre à la livraison ; événements datés à leur arrivée dans l'app (surcouches constructeur) ; **la politique de confidentialité doit être mise à jour avant la publication sur Google Play** (le téléphone garde 35 jours de changements de lieu). Voir `CHANGELOG.md` 0.42.0.
+
 ## Mode voyage (tickets VOY-1A, VOY-2A, VOY-3A)
 
 Ticket `docs/tickets/mode-voyage.md`, **ouvert à tous les comptes** et **la position reste partagée** (décisions du PM du 2026-11-10). Fonctionnement et fichiers :

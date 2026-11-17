@@ -273,6 +273,7 @@ class ReleaseSigningGuardTest {
             "STARTUPMETRICSOVERLAY",
             "DEBUGAPPCHECKOFF",
             "DIAGNOSTICHOLDGESTURE",
+            "TIMESHAREDEMO",
             "PlayCoreDialogWrapperActivity",
             "default_web_client_id",
             "USE_BIOMETRIC",
