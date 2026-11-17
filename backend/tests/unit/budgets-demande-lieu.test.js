@@ -15,25 +15,25 @@ const PLACES = 'match /places/{placeId} {';
 
 test('BUDGET LIEU-REQ - coût de chaque règle (borne haute sans court-circuit) : tout changement impose de recalculer les lots et data-model.md', () => {
   const cost = (header, methods) => Object.fromEntries(methods.map((m) => [m, allow(header, m)]));
-  // get / list : créateur 1 + (membre 1 + Miff 1) ; create : premium 1 + fiche 1 + Miff 1 + compteur 1 ; delete : créateur 1 + compteur 1.
-  assert.deepEqual(cost(REQ, ['get', 'list', 'create', 'update', 'delete']), { get: 3, list: 3, create: 4, update: 0, delete: 2 });
+  // get / list : créateur 1 + (membre 1 + Miff 1) ; create : fiche 1 + Miff 1 + compteur 1 (AUCUN droit Miff+ : LIEU-DANGER-REQ) ; delete : créateur 1 + compteur 1.
+  assert.deepEqual(cost(REQ, ['get', 'list', 'create', 'update', 'delete']), { get: 3, list: 3, create: 3, update: 0, delete: 2 });
   // Compteur : lecture réservée au créateur ; écriture = créateur 1 OU membre 2 (exists + existsAfter de la demande) : 3 en borne haute.
   assert.deepEqual(cost(COUNTER, ['get', 'create', 'update', 'delete']), { get: 1, create: 3, update: 3, delete: 1 });
 });
 
 test('BUDGET LIEU-REQ - lots (comptage sans cache AVEC court-circuit, tel que documenté) : chaque lot reste à 20 - marge >= 2, et sous la borne haute du texte', () => {
   const upper = (...parts) => parts.reduce((n, p) => n + p, 0);
-  // Court-circuit : un membre n'évalue pas la branche « créateur » du compteur (lastReqId non nul) : 2 au lieu de 3 ; `type == 'trusted'` évite le premium.
+  // Court-circuit : un membre n'évalue pas la branche « créateur » du compteur (lastReqId non nul) : 2 au lieu de 3 ; la demande n'évalue plus jamais le premium (zone de danger demandable sans Miff+).
   const documented = {
     creerTrusted: 3 + 2, //  fiche 1 + Miff 1 + compteur après 1 | compteur : exists + existsAfter de la demande
-    creerRisk: 4 + 2, //  + droit Miff+ du demandeur (isPremiumOneRead)
+    creerRisk: 3 + 2, //  identique à trusted : plus de droit Miff+ du demandeur
     retirer: 2 + 2, //  créateur 1 (faux) + compteur après 1 | exists + existsAfter
     refuser: 1 + 1, //  créateur 1 | créateur 1
     accepterGratuit: 2 + 1 + 1, //  lieu p1..p3 : isOwner 2 | demande : créateur 1 | compteur : créateur 1
     accepterMiffPlus: 3 + 1 + 1, //  lieu libre ou zone de danger : isOwner 2 + premium 1
   };
   const bounds = {
-    creerTrusted: upper(allow(REQ, 'create') - model.costOfFn('isPremiumOneRead'), allow(COUNTER, 'create')),
+    creerTrusted: upper(allow(REQ, 'create'), allow(COUNTER, 'create')),
     creerRisk: upper(allow(REQ, 'create'), allow(COUNTER, 'create')),
     retirer: upper(allow(REQ, 'delete'), allow(COUNTER, 'update')),
     refuser: upper(allow(REQ, 'delete'), allow(COUNTER, 'update')),
@@ -44,8 +44,8 @@ test('BUDGET LIEU-REQ - lots (comptage sans cache AVEC court-circuit, tel que do
     assert.ok(value <= bounds[name], `${name} : ${value} documenté > borne haute ${bounds[name]}`);
     assert.ok(LIMIT - bounds[name] >= 2, `${name} : borne haute ${bounds[name]}, marge ${LIMIT - bounds[name]} < 2`);
   }
-  assert.deepEqual(documented, { creerTrusted: 5, creerRisk: 6, retirer: 4, refuser: 2, accepterGratuit: 4, accepterMiffPlus: 5 });
-  // Borne haute statique : le pire est 8 sur 20 (accepter avec un lieu Miff+), marge 12.
+  assert.deepEqual(documented, { creerTrusted: 5, creerRisk: 5, retirer: 4, refuser: 2, accepterGratuit: 4, accepterMiffPlus: 5 });
+  // Borne haute statique : le pire est 8 sur 20 (accepter avec un lieu Miff+), marge 12 ; créer une demande (trusted ou risk) : 6.
   assert.equal(Math.max(...Object.values(bounds)), 8);
 });
 
