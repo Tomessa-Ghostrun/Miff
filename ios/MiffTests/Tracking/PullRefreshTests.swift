@@ -378,3 +378,4 @@ final class PullRefreshRuntimeTests: XCTestCase {
         XCTAssertEqual(rig.store.commitAttempts, 0)
     }
 }
+// swiftlint:enable line_length

@@ -109,3 +109,4 @@ final class PullRefreshSourcesTests: XCTestCase {
         XCTAssertTrue(text.contains(".moved, .zoneEntered, .rearm, .sharingChanged, .networkBack, .accessChanged, .pulled:"))
     }
 }
+// swiftlint:enable line_length
