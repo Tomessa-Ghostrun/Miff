@@ -1,7 +1,7 @@
 package com.tomessa.miff.ui.main
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.background
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement

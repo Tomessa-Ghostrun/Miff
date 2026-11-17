@@ -65,7 +65,13 @@ class GlassTabBarConstancyTest {
     private val density = 3f
     private val config = TabBarConfig.forBuild(isInternalBuild = true)
     private val modern =
-        GlassConditions(sdkInt = 33, powerSaveMode = false, animationsRemoved = false, contrastIncreased = false, lowRamDevice = false)
+        GlassConditions(
+            sdkInt = 33,
+            powerSaveMode = false,
+            animationsRemoved = false,
+            contrastIncreased = false,
+            lowRamDevice = false,
+        )
 
     private fun text(id: Int): String = ApplicationProvider.getApplicationContext<Context>().getString(id)
 
@@ -134,7 +140,11 @@ class GlassTabBarConstancyTest {
     fun theBarIsOneSingleSurface() {
         showBar()
         composeRule.onAllNodesWithTag(TAB_BAR_TAG).assertCountEquals(1)
-        composeRule.onNodeWithTag(TAB_BAR_TAG).getUnclippedBoundsInRoot().let { assertEquals(64.dp, it.bottom - it.top) }
+        composeRule
+            .onNodeWithTag(
+                TAB_BAR_TAG,
+            ).getUnclippedBoundsInRoot()
+            .let { assertEquals(64.dp, it.bottom - it.top) }
     }
 
     @Test
@@ -154,9 +164,16 @@ class GlassTabBarConstancyTest {
                 val reference = pixel(bitmap, feed.left - 12.dp, y)
                 val cx = (central.left + central.right) / 2
                 // Inside the 64 x 48 dp entry of the central button, outside its 44 dp plate: the glass and nothing else.
-                listOf(cx - 29.dp, cx + 29.dp, (feed.right + central.left) / 2, (central.right + profile.left) / 2).forEach { x ->
+                listOf(
+                    cx - 29.dp,
+                    cx + 29.dp,
+                    (feed.right + central.left) / 2,
+                    (central.right + profile.left) / 2,
+                ).forEach { x ->
                     assertTrue(
-                        "tab $selected, $lvl: a lighter patch at $x (${Integer.toHexString(pixel(bitmap, x, y))} instead of ${Integer.toHexString(reference)})",
+                        "tab $selected, $lvl: a lighter patch at $x (${Integer.toHexString(
+                            pixel(bitmap, x, y),
+                        )} instead of ${Integer.toHexString(reference)})",
                         close(reference, pixel(bitmap, x, y), 2),
                     )
                 }
@@ -178,7 +195,9 @@ class GlassTabBarConstancyTest {
                         barVisible = true,
                         conditions = modern,
                         blurAllowed = true,
-                        bar = { glass -> MainTabBar(config = config, selected = MainTab.FEED, onSelect = {}, glass = glass) },
+                        bar = { glass ->
+                            MainTabBar(config = config, selected = MainTab.FEED, onSelect = {}, glass = glass)
+                        },
                         overlay = {
                             bubble.value?.let { color ->
                                 // A wide bubble whose bottom edge touches the top of the bar, as the one of the Update does.
@@ -202,7 +221,12 @@ class GlassTabBarConstancyTest {
         val bar = composeRule.onNodeWithTag(TAB_BAR_TAG).getUnclippedBoundsInRoot()
         val middle = (bar.left + bar.right) / 2
         // Points of the bar where a bubble just above would have been blurred in: its top, at the middle of it and beside the middle.
-        val points = listOf(middle to bar.top + 6.dp, middle - 40.dp to bar.top + 6.dp, middle + 90.dp to bar.top + 10.dp)
+        val points =
+            listOf(
+                middle to bar.top + 6.dp,
+                middle - 40.dp to bar.top + 6.dp,
+                middle + 90.dp to bar.top + 10.dp,
+            )
         val before = image()
         val withoutBubble = points.map { (x, y) -> pixel(before, x, y) }
         shoot("tabbar-constant-without-bubble", before)
@@ -213,7 +237,9 @@ class GlassTabBarConstancyTest {
         shoot("tabbar-constant-with-bubble", after)
         points.forEachIndexed { i, (x, y) ->
             assertTrue(
-                "the bubble above the bar changed the glass at ($x, $y): ${Integer.toHexString(withoutBubble[i])} -> ${Integer.toHexString(pixel(after, x, y))}",
+                "the bubble above the bar changed the glass at ($x, $y): ${Integer.toHexString(
+                    withoutBubble[i],
+                )} -> ${Integer.toHexString(pixel(after, x, y))}",
                 close(withoutBubble[i], pixel(after, x, y), 1),
             )
         }
