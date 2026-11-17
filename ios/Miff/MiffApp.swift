@@ -52,6 +52,8 @@ struct MiffApp: App {
             .notificationLifecycle(environment.notifications.reconciler)
             // SRV-2I : au premier plan et à chaque changement de la session, le registre des appareils est regardé (rien d'écrit si rien n'a changé).
             .pushLifecycle(environment.push, session: environment.sessionState)
+            // NOTIF-P1I : « Depuis ta dernière visite » compare au retour après 30 minutes ou plus loin de l'app (aucune lecture de plus).
+            .lastVisitLifecycle(environment.notifications.lastVisit)
         }
     }
 }

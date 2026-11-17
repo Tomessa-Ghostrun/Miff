@@ -38,6 +38,8 @@ struct FeedTab: View {
     @ObservedObject private var awaiting: AwaitingAgreement
     @ObservedObject private var notificationCenter: NotificationCenterService
     @ObservedObject private var secondChance: NotificationSecondChanceViewModel
+    /// NOTIF-P1I : le proche dont la carte est demandée par une ligne « Depuis ta dernière visite ».
+    @ObservedObject private var tabRequests: TabRequests
     private let reconciler: NotificationReconciler
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
@@ -79,6 +81,8 @@ struct FeedTab: View {
         )
         // L'Update ne lit pas ma fiche : le Feed la lui donne (UN seul écouteur, D19).
         dependencies.onMyStatus = { facts, stopped in myStatus.update(facts, sharingStopped: stopped) }
+        // « Depuis ta dernière visite » : l'image fraîche des proches est comparée à la dernière vue (aucune lecture de plus).
+        dependencies.onFreshPicture = environment.notifications.freshPicture
         // Les membres que le Feed a lus servent aussi aux photos de la carte du Profil : aucune lecture de plus.
         dependencies.onMembers = { miffId, members in memberPreviews.record(miffId: miffId, members: members) }
         // Les lieux que le Feed a lus servent aussi à la liste des lieux du Profil : aucune lecture de plus.
@@ -88,6 +92,7 @@ struct FeedTab: View {
         _awaiting = ObservedObject(wrappedValue: awaitingAgreement)
         _notificationCenter = ObservedObject(wrappedValue: environment.notifications.center)
         _secondChance = ObservedObject(wrappedValue: secondChance)
+        _tabRequests = ObservedObject(wrappedValue: environment.notifications.tabRequests)
         self.reconciler = reconciler
     }
 
@@ -110,7 +115,9 @@ struct FeedTab: View {
             isActive: running,
             actions: screenActions,
             notificationCenter: notificationCenter,
-            secondChance: secondChance
+            secondChance: secondChance,
+            focus: tabRequests.pendingFocus,
+            onFocusHandled: { tabRequests.consumeFocus($0) }
         )
             .environment(\.feedPhotos, photos)
             .task(id: key) {
