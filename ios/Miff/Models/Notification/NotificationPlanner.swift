@@ -97,9 +97,10 @@ enum NotificationPlanner {
         case .n4:
             return timeline.miffLevel(at: atMillis) == .red
                 && !timeline.isResponsible(at: atMillis, mode: responsibility)
-        case .n6, .n7, .n8:
+        case .n6, .n7, .n8, .c1:
             // N6 est immédiate et ne s'annule pas : rien à retirer. N7 ne dépend d'aucune couleur (voir `travelEndStillWanted`).
-            // N8 (une demande de lieu) n'est jamais une notification du système : aucune n'est programmée, rien à retirer.
+            // N8 (une demande de lieu) et C1 (depuis ta dernière visite) ne sont jamais des notifications du système : aucune n'est
+            // programmée, rien à retirer.
             return true
         }
     }
