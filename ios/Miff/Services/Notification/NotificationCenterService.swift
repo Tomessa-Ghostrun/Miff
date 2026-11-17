@@ -77,6 +77,17 @@ final class NotificationCenterService: ObservableObject {
         apply { _, now in NotificationHistory(items: [], nowMillis: now) }
     }
 
+    /// NOTIF-P1I, « Depuis ta dernière visite » : le groupe est REMPLACÉ par ces lignes (3 au plus), ou retiré s'il n'y en a aucune. Non lues,
+    /// écrites sans aucune notification du système.
+    func replaceVisitLines(_ lines: [NotificationItem]) {
+        apply { $0.replacingVisit(with: lines, nowMillis: $1) }
+    }
+
+    /// NOTIF-P1I : retire les lignes du groupe dont `remove` dit oui (un membre qui a quitté la Miff, une Miff qui n'est plus là).
+    func removeVisitLines(where remove: @escaping (NotificationItem) -> Bool) {
+        apply { $0.removingVisit(where: remove, nowMillis: $1) }
+    }
+
     /// Fin de session (déconnexion, suppression du compte, session prise par un autre appareil) : la mémoire et le fichier sont vidés.
     func purge() {
         history = NotificationHistory(nowMillis: nowMillis())

@@ -46,6 +46,8 @@ struct MiffApp: App {
             .trackingLifecycle(environment.tracking)
             // NOTIF-P0 : au retour au premier plan, à un changement d'heure ou de langue, les rappels sont réconciliés avec le système.
             .notificationLifecycle(environment.notifications.reconciler)
+            // NOTIF-P1I : « Depuis ta dernière visite » compare au retour après 30 minutes ou plus loin de l'app (aucune lecture de plus).
+            .lastVisitLifecycle(environment.notifications.lastVisit)
         }
     }
 }

@@ -104,15 +104,48 @@ final class MemoryNotificationPlanStore: NotificationPlanStoring {
     }
 }
 
+/// « Depuis ta dernière visite » : les images en mémoire (comme le fichier : un compte à la fois, vide pour un autre compte).
+final class MemoryLastVisitStore: LastVisitStoring {
+    private(set) var storedUid: String?
+    private(set) var memory = LastVisitMemory()
+    private(set) var saveCalls = 0
+    private(set) var clearCalls = 0
+
+    func load(uid: String) -> LastVisitMemory {
+        storedUid == uid ? memory : LastVisitMemory()
+    }
+
+    func save(_ memory: LastVisitMemory, uid: String) {
+        saveCalls += 1
+        storedUid = uid
+        self.memory = memory
+    }
+
+    func clear() {
+        clearCalls += 1
+        storedUid = nil
+        memory = LastVisitMemory()
+    }
+
+    /// Prépare le « fichier » comme si une session précédente l'avait écrit.
+    func seed(_ memory: LastVisitMemory, uid: String) {
+        storedUid = uid
+        self.memory = memory
+    }
+}
+
 /// Un ensemble complet de stockages en mémoire.
 struct NotificationMemory {
     let preferences = MemoryNotificationPreferencesStore()
     let center = MemoryNotificationCenterStore()
     let secondChance = MemorySecondChanceStore()
     let plan = MemoryNotificationPlanStore()
+    let lastVisit = MemoryLastVisitStore()
 
     var localData: NotificationLocalData {
-        NotificationLocalData(preferences: preferences, center: center, secondChance: secondChance, plan: plan)
+        NotificationLocalData(
+            preferences: preferences, center: center, secondChance: secondChance, plan: plan, lastVisit: lastVisit
+        )
     }
 }
 

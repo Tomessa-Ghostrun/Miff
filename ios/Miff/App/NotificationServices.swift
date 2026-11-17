@@ -21,6 +21,8 @@ struct NotificationServices {
     let responseDelegate: NotificationResponseDelegate
     /// Les prénoms derrière les lignes de demandes d'un lieu (mémoire seulement, vidés avec la session).
     let requesters: RequesterDirectory
+    /// « Depuis ta dernière visite » : compare ce que le Feed montre à ce qu'il montrait la dernière fois (aucune lecture de plus).
+    let lastVisit: LastVisitTracker
 
     static func make(currentUid: @escaping () -> String?) -> NotificationServices {
         let data = NotificationLocalData.live()
@@ -65,8 +67,22 @@ struct NotificationServices {
             localData: data,
             reconciler: reconciler,
             responseDelegate: delegate,
-            requesters: RequesterDirectory()
+            requesters: RequesterDirectory(),
+            lastVisit: LastVisitTracker(store: data.lastVisit, center: center, currentUid: currentUid)
         )
+    }
+
+    /// Ce que le Feed dit à « Depuis ta dernière visite » à chaque image fraîche de la Miff affichée : les prénoms vont en mémoire (le centre
+    /// n'en garde aucun), puis l'image est comparée et gardée. Local : rien n'est lu ni écrit sur le serveur.
+    var freshPicture: FreshPictureHandler {
+        let visit = self.lastVisit
+        let requesters = self.requesters
+        return { myUid, state, names in
+            for (uid, name) in names {
+                requesters.put(miffId: state.miffId, uid: uid, firstName: name)
+            }
+            visit.onFreshPicture(myUid: myUid, state: state)
+        }
     }
 
     /// Branche ce qui n'existe qu'une fois l'annuaire des Miffs construit : la Miff active, l'accord attendu, l'état du premier plan.
@@ -83,6 +99,8 @@ struct NotificationServices {
             deps.agreementWaiting = { awaiting.waiting.contains($0) }
             deps.isForeground = { UIApplication.shared.applicationState == .active }
         }
+        // Une Miff quittée, supprimée ou perdue : son image et ses lignes de « Depuis ta dernière visite » partent.
+        lastVisit.watch(directory)
     }
 
     /// Le suivi des lieux a détecté un nouveau statut de MA présence (arrivée, départ) : N1 et N2 sont programmées ou annulées aussitôt,
@@ -120,11 +138,15 @@ struct NotificationServices {
         let preferences = self.preferences
         let data = self.localData
         let requesters = self.requesters
+        let visit = self.lastVisit
+        let tabRequests = self.tabRequests
         return {
             await MainActor.run {
                 center.purge()
                 preferences.forget()
                 requesters.stop()
+                visit.purge()
+                tabRequests.clearFocus()
             }
             data.eraseSession()
             await SystemLocalNotificationsCleaner().removeAll()
