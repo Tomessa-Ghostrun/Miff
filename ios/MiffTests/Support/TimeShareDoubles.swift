@@ -68,8 +68,7 @@ final class MemoryPresenceHistory: PresenceHistory {
 /// Fabrique de scénarios de calcul : l'heure est en HEURES avant « maintenant » (168 h = 7 jours).
 enum TimeShareFixtures {
     /// Un segment d'une suite d'états : (état, lieu, durée en heures).
-    // swiftlint:disable:next large_tuple
-    typealias Segment = (PresenceState, String?, Double)
+    typealias Segment = (PresenceState, String?, Double) // swiftlint:disable:this large_tuple
 
     static let hour = TimeShareLimits.hourMillis
     static let now = 1_800_000_000_000

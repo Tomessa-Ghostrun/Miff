@@ -5595,6 +5595,23 @@
         }
       }
     },
+    "ios_timeshare_danger_zones_many": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danger zones"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zones de danger"
+          }
+        }
+      }
+    },
     "miff_choice_create_body": {
       "extractionState": "manual",
       "localizations": {
@@ -12149,45 +12166,15 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Danger zone"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Danger zones"
-                }
-              }
-            }
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danger zone"
           }
         },
         "fr": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Zone de danger"
-                }
-              },
-              "many": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Zones de danger"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Zones de danger"
-                }
-              }
-            }
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone de danger"
           }
         }
       }

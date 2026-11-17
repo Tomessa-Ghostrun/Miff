@@ -143,7 +143,7 @@ final class TimeShareCardTests: XCTestCase {
         let french = try bundle("fr")
         let english = try bundle("en")
         let danger = { (bundle: Bundle, count: Int) in
-            String.localizedStringWithFormat(L10n.string("profile_timeshare_danger_zones", bundle: bundle), count)
+            L10n.string(count > 1 ? "ios_timeshare_danger_zones_many" : "profile_timeshare_danger_zones", bundle: bundle)
         }
 
         XCTAssertEqual(danger(french, 1), L10n.string("place_type_danger", bundle: french), "le libellé de l'app")

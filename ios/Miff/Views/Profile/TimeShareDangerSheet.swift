@@ -13,7 +13,7 @@ struct TimeShareDangerSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             HStack(alignment: .center, spacing: Spacing.sm) {
-                Text(verbatim: L10n.plural("profile_timeshare_danger_zones", count: placesCount))
+                Text(verbatim: TimeShareTexts.dangerZones(placesCount))
                     .miffTextStyle(textDisplayTitle)
                     .foregroundColor(colorTextForm.color)
                     .frame(maxWidth: .infinity, alignment: .leading)

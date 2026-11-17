@@ -110,6 +110,7 @@ struct MiffOnboardingHost: View {
 /// rejoindre, l'écran d'une Miff). Le message unique d'une perte d'accès (décision QM8) couvre tout, pour que rien de la Miff
 /// perdue ne reste visible derrière.
 @MainActor
+// swiftlint:disable:next type_body_length
 struct MiffHomeHost: View {
     private let environment: AppEnvironment
     @ObservedObject var directory: MiffDirectory

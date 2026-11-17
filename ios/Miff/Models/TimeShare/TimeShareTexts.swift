@@ -45,10 +45,16 @@ enum TimeShareTexts {
         case .otherPlaces(let count):
             return L10n.plural("profile_timeshare_other_places", count: count)
         case .danger(let count):
-            return L10n.plural("profile_timeshare_danger_zones", count: count)
+            return dangerZones(count)
         case .elsewhere:
             return L10n.string("profile_timeshare_elsewhere")
         }
+    }
+
+    /// « Zone de danger » (un lieu) ou « Zones de danger » (plusieurs). Deux clés : Xcode refuse un pluriel qui ne cite pas le nombre ; la
+    /// clé du singulier est celle d'Android (parité), celle du pluriel est propre à iOS.
+    static func dangerZones(_ count: Int) -> String {
+        L10n.string(count > 1 ? "ios_timeshare_danger_zones_many" : "profile_timeshare_danger_zones")
     }
 
     /// La phrase de synthèse : descriptive, jamais un jugement ; ne nomme jamais la zone de danger.
