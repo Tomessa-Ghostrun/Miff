@@ -321,6 +321,9 @@ struct MainShellView<Feed: View>: View {
                 onSelect: { selected = $0 }
             )
             .background(TabBarTopReader())
+            // La barre garde son apparence d'avant : le viseur demande une barre d'état claire à la racine (`AppAppearance`), ce qui bascule le
+            // schéma de couleurs de tout l'écran ; la barre, elle, reste en schéma clair (sa variante « sur photo » gère déjà ses couleurs).
+            .environment(\.colorScheme, .light)
         }
     }
 
