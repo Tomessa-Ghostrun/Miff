@@ -12,6 +12,8 @@ struct MiffApp: App {
     private let reduceMotion: Bool
 
     init() {
+        // La langue choisie dans Réglages > Langue est lue AVANT tout le reste : aucun texte n'est calculé dans la mauvaise langue.
+        _ = AppLanguageController.shared
         FirebaseBootstrap.configureIfPossible()
         let environment = AppEnvironment.live()
         // Analytics et Crashlytics démarrent éteints (Info.plist) et le choix gardé sur l'appareil n'est PAS réappliqué :
@@ -37,8 +39,10 @@ struct MiffApp: App {
 
     var body: some Scene {
         WindowGroup {
-            SplashHost(reduceMotion: reduceMotion, isEnabled: Self.splashEnabled) {
-                RootView(environment: environment)
+            AppLanguageHost {
+                SplashHost(reduceMotion: reduceMotion, isEnabled: Self.splashEnabled) {
+                    RootView(environment: environment)
+                }
             }
             // Apparence claire imposée (les maquettes n'ont pas de mode sombre), en plus de UIUserInterfaceStyle.
             .preferredColorScheme(.light)

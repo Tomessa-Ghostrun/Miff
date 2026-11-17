@@ -9,6 +9,9 @@ enum SettingsRoute: Hashable, CaseIterable {
     case deleteAccount
     case privacy
     case detectionHelp
+    /// Réglages > Langue : français, English ou la langue du téléphone, appliqué tout de suite (miroir d'Android). Absent des Réglages
+    /// restreints d'un compte sans Miff, comme la ligne.
+    case language
     /// NOTIF-P0 : Réglages > Notifications, le centre de notifications (aussi atteint par la cloche du Feed) et l'aide « notifications
     /// coupées ».
     case notifications
@@ -46,7 +49,7 @@ enum SettingsAccess {
         guard restricted else {
             return true
         }
-        return route != .myInfo && !route.isNotificationScreen
+        return route != .myInfo && route != .language && !route.isNotificationScreen
     }
 
     /// Les écrans qu'ouvre un écran des Réglages (la liste ouvre les trois premiers, Mon compte ouvre la suppression, Confidentialité
@@ -54,7 +57,7 @@ enum SettingsAccess {
     static func children(of route: SettingsRoute) -> [SettingsRoute] {
         switch route {
         case .settings:
-            return [.myInfo, .account, .notifications, .privacy]
+            return [.myInfo, .account, .notifications, .language, .privacy]
         case .account:
             return [.deleteAccount]
         case .privacy:
@@ -63,7 +66,7 @@ enum SettingsAccess {
             return [.notificationCenter, .notificationsHelp]
         case .notificationCenter:
             return [.notificationsHelp]
-        case .myInfo, .deleteAccount, .detectionHelp, .notificationsHelp:
+        case .myInfo, .deleteAccount, .detectionHelp, .notificationsHelp, .language:
             return []
         }
     }
@@ -83,8 +86,9 @@ enum SettingsAccess {
     }
 }
 
-/// La langue en cours de l'app, pour la ligne « Langue » des Réglages. Sur iPhone la langue se choisit dans les réglages du téléphone
-/// (décision Q4 du ticket Feed / Profil / Réglages) : l'app n'a pas de sélecteur à elle, elle dit seulement laquelle elle utilise.
+/// Les noms des langues et la langue du téléphone que l'app parle. Le CHOIX de la langue (français, English, langue du téléphone) est dans
+/// `AppLanguage.swift` ; l'écran est `LanguageView` (décision du PM du 2026-11-13 : le même écran qu'Android, dans l'app, à la place de
+/// l'ouverture des réglages de l'iPhone décidée d'abord, Q4 du ticket Feed / Profil / Réglages).
 enum AppLanguageName {
     /// `preferred` : les langues de la personne dans l'ordre (`Locale.preferredLanguages`) ; `available` : les langues de l'app
     /// (`Bundle.main.localizations`). La première langue de la personne que l'app parle gagne, sinon la langue de repli (l'anglais).
@@ -106,8 +110,9 @@ enum AppLanguageName {
         return (locale.localizedString(forLanguageCode: code) ?? code).capitalized(with: locale)
     }
 
+    /// Le nom, dans sa langue, de la langue EN COURS dans l'app (le choix de la personne, ou celle du téléphone).
     static var current: String {
-        nativeName(code: code(preferred: Locale.preferredLanguages, available: Bundle.main.localizations))
+        nativeName(code: AppLanguage.code)
     }
 }
 

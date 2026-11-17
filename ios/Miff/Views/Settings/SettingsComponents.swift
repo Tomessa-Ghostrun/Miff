@@ -12,7 +12,7 @@ enum ExternalOpener {
         UIApplication.shared.open(url)
     }
 
-    /// Les réglages de l'iPhone pour Miff (c'est là que se changent la langue de l'app, la localisation et les notifications).
+    /// Les réglages de l'iPhone pour Miff (c'est là que se changent la localisation et les notifications ; la langue se change dans l'app).
     static func openSystemSettings() {
         open(URL(string: UIApplication.openSettingsURLString))
     }

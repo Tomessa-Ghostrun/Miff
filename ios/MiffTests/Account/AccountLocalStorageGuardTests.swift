@@ -11,6 +11,7 @@ final class AccountLocalStorageGuardTests: XCTestCase {
         "App/AppEnvironment.swift": "branchement des réglages ; rien de plus",
         "App/AppEnvironment+AccountDeletion.swift": "branchement des effaceurs (AccountLocalData)",
         "Services/Notification/LastVisitFileStore.swift": "dernière image vue des proches : teardown, AccountLocalData",
+        "Models/Main/AppLanguage.swift": "langue d'affichage : préférence de l'appareil, non personnelle, gardée exprès",
         "Services/Notification/NotificationCenterFileStore.swift": "centre : teardown, AccountLocalData",
         "Services/Notification/NotificationDefaultsStores.swift": "choix : teardown ; carte : AccountLocalData",
         "Services/Notification/NotificationPlanFileStore.swift": "instantané et registre : teardown, AccountLocalData",
