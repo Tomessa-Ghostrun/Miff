@@ -45,6 +45,16 @@ class PlaceMapGeometryTest {
     }
 
     @Test
+    fun theCircleIsCentredOnThePlace_forTheSmallestAndTheLargestRadius() {
+        // The framing of the map (initial zoom) is made from these bounds: the place must be in the middle of them, whatever the radius.
+        listOf(50, 800).forEach { radius ->
+            val b = PlaceMapGeometry.bounds(PlaceMapGeometry.ring(48.82927, 2.35679, radius))
+            assertEquals(48.82927, (b[0] + b[2]) / 2, 1e-5)
+            assertEquals(2.35679, (b[1] + b[3]) / 2, 1e-5)
+        }
+    }
+
+    @Test
     fun geoJson_usesADot_whateverTheLanguageOfThePhone() {
         val before = Locale.getDefault()
         try {
