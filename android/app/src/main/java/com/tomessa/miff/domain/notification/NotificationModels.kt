@@ -64,6 +64,8 @@ enum class NotificationType(
      * independent of the permission of the phone and of the general switch (decision Q4 of the PM). A tap leads to the Feed.
      */
     C1("c1", NotificationFamily.CIRCLE, NotificationDestination.FEED, quietAtNight = true),
+
+    /**
      * SRV-2 / ticket notification-update-membres.md: "{Prénom} a donné des nouvelles", sent by the server when a member of the Miff publishes an update. The ONLY type
      * that is not prepared by this phone alone, and the only one whose text holds a name (the first name of the author, 20 characters at most). Quiet at night
      * (22 h to 7 h, local time of the phone = the time zone of the person), decision of the PM of 2026-11-12.
