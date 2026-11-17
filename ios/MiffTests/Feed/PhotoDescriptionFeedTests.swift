@@ -186,7 +186,9 @@ final class PhotoDescriptionFeedTests: XCTestCase {
         XCTAssertTrue(body.contains(".frame(width: size.width, height: size.height)"))
         XCTAssertTrue(body.contains(".overlay(alignment: .bottom)"))
         XCTAssertTrue(body.contains("footerOverlay(size: size, insets: insets)"))
-        XCTAssertFalse(body.contains("safeAreaInset"), "un pied inséré dans la mise en page réduirait la photo")
+        // Le modificateur `.safeAreaInset(edge:` (qui réserverait de la place) est absent ; la LECTURE `proxy.safeAreaInsets` reste permise.
+        XCTAssertFalse(body.contains(".safeAreaInset(edge"), "un pied inséré dans la mise en page réduirait la photo")
+        XCTAssertFalse(body.contains("VStack"), "un pied empilé sous la photo réduirait la photo")
 
         // La photo : taille ENTIÈRE de l'écran, centrée, sans marge ni lien avec le pied ni la description.
         let photo = try slice(source, from: "private func photo(size: CGSize)", to: "private func clamped")
