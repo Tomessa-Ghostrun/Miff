@@ -15,6 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -35,6 +36,10 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LifecycleRegistry
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.test.core.app.ApplicationProvider
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.tracking.CountdownAnchor
@@ -82,7 +87,11 @@ class OrangeCountdownCardTest {
     private fun text(id: Int): String = context().getString(id)
 
     private fun localized(tag: String): Context =
-        context().createConfigurationContext(Configuration(context().resources.configuration).apply { setLocale(Locale.forLanguageTag(tag)) })
+        context().createConfigurationContext(
+            Configuration(context().resources.configuration).apply {
+                setLocale(Locale.forLanguageTag(tag))
+            },
+        )
 
     /** The clock of the screen, tied to the virtual time of the test: `advanceTimeBy` moves it. */
     private fun clock(): Long = base + composeRule.mainClock.currentTime
@@ -102,7 +111,17 @@ class OrangeCountdownCardTest {
             val provided = if (fontScale == null) density else Density(density.density, fontScale = fontScale)
             CompositionLocalProvider(LocalDensity provides provided) {
                 MiffTheme {
-                    Box(Modifier.padding(16.dp).let { if (widthDp != null) it.width(widthDp.dp) else it.fillMaxWidth() }) {
+                    Box(
+                        Modifier.padding(16.dp).let {
+                            if (widthDp !=
+                                null
+                            ) {
+                                it.width(widthDp.dp)
+                            } else {
+                                it.fillMaxWidth()
+                            }
+                        },
+                    ) {
                         OrangeCountdownSlot(
                             anchor = anchor,
                             onOpenUpdate = onOpen,
@@ -147,7 +166,11 @@ class OrangeCountdownCardTest {
                 1 to "moins d'1${nb}min",
             )
         for ((left, shown) in expected) {
-            val state = OrangeCountdown.at(CountdownAnchor(base), base + window - left * 1_000L) as CountdownState.Visible
+            val state =
+                OrangeCountdown.at(
+                    CountdownAnchor(base),
+                    base + window - left * 1_000L,
+                ) as CountdownState.Visible
             assertEquals("fr, $left s", shown, CountdownTexts.duration(resources, state.duration))
         }
     }
@@ -168,7 +191,11 @@ class OrangeCountdownCardTest {
                 1 to "less than 1${nb}min",
             )
         for ((left, shown) in expected) {
-            val state = OrangeCountdown.at(CountdownAnchor(base), base + window - left * 1_000L) as CountdownState.Visible
+            val state =
+                OrangeCountdown.at(
+                    CountdownAnchor(base),
+                    base + window - left * 1_000L,
+                ) as CountdownState.Visible
             assertEquals("en, $left s", shown, CountdownTexts.duration(resources, state.duration))
         }
     }
@@ -195,7 +222,10 @@ class OrangeCountdownCardTest {
         val fr = localized("fr").resources
         val en = localized("en").resources
         assertEquals("Tu es en dehors de tes lieux de confiance", fr.getString(R.string.countdown_title))
-        assertEquals("Tu passeras orange dans 1${nb}h 12${nb}min", fr.getString(R.string.countdown_body, "1${nb}h 12${nb}min"))
+        assertEquals(
+            "Tu passeras orange dans 1${nb}h 12${nb}min",
+            fr.getString(R.string.countdown_body, "1${nb}h 12${nb}min"),
+        )
         assertEquals("You're outside your trusted places", en.getString(R.string.countdown_title))
         assertEquals("You'll turn orange in 47${nb}min", en.getString(R.string.countdown_body, "47${nb}min"))
         assertEquals("Donner de tes nouvelles", fr.getString(R.string.countdown_a11y_action))
@@ -248,7 +278,10 @@ class OrangeCountdownCardTest {
     fun noLiveRegion_noAnnouncementEachMinute() {
         show(anchorLeft(72 * minute))
         val node = composeRule.onNodeWithContentDescription(label("1 heure et 12 minutes")).fetchSemanticsNode()
-        assertNull("not a live region: the value is read when the element takes the focus", node.config.getOrNull(SemanticsProperties.LiveRegion))
+        assertNull(
+            "not a live region: the value is read when the element takes the focus",
+            node.config.getOrNull(SemanticsProperties.LiveRegion),
+        )
     }
 
     @Test
@@ -325,7 +358,10 @@ class OrangeCountdownCardTest {
         composeRule.mainClock.autoAdvance = true
         composeRule.waitForIdle()
         composeRule.onAllNodesWithContentDescription("Tu es en dehors", substring = true).assertCountEquals(0)
-        assertTrue("the clock really went past the deadline", clock() > anchorLeft(2 * minute + 10_000).referenceMillis + window)
+        assertTrue(
+            "the clock really went past the deadline",
+            clock() > anchorLeft(2 * minute + 10_000).referenceMillis + window,
+        )
     }
 
     @Test
@@ -341,6 +377,8 @@ class OrangeCountdownCardTest {
         composeRule.onNodeWithContentDescription(label("10 minutes")).assertExists()
         // The person publishes an update: the reference becomes "now".
         anchor = CountdownAnchor(clock())
+        Snapshot.sendApplyNotifications()
+        composeRule.mainClock.advanceTimeByFrame()
         composeRule.mainClock.advanceTimeByFrame()
         composeRule.onNodeWithContentDescription(label("2 heures")).assertExists()
     }
@@ -350,11 +388,19 @@ class OrangeCountdownCardTest {
         composeRule.mainClock.autoAdvance = false
         var anchor by mutableStateOf<CountdownAnchor?>(null)
         composeRule.setContent {
-            MiffTheme { OrangeCountdownSlot(anchor = anchor, onOpenUpdate = {}, padding = PaddingValues(0.dp), clock = ::clock) }
+            MiffTheme {
+                OrangeCountdownSlot(
+                    anchor = anchor,
+                    onOpenUpdate = {},
+                    padding = PaddingValues(0.dp),
+                    clock = ::clock,
+                )
+            }
         }
         composeRule.mainClock.advanceTimeByFrame()
         composeRule.onAllNodesWithContentDescription("Tu es en dehors", substring = true).assertCountEquals(0)
         anchor = CountdownAnchor(clock())
+        Snapshot.sendApplyNotifications()
         composeRule.mainClock.advanceTimeBy(500)
         composeRule.onNodeWithContentDescription(label("2 heures")).assertExists()
     }
@@ -363,13 +409,31 @@ class OrangeCountdownCardTest {
     fun noTimerWhenTheScreenIsNotStarted_andTheRightValueAtTheReturn() {
         composeRule.mainClock.autoAdvance = false
         var refreshes = 0
-        show(anchorLeft(30 * minute), onRefresh = { refreshes++ })
+        val owner =
+            object : LifecycleOwner {
+                val registry = LifecycleRegistry.createUnsafe(this)
+                override val lifecycle: Lifecycle get() = registry
+            }
+        composeRule.runOnUiThread { owner.registry.currentState = Lifecycle.State.RESUMED }
+        composeRule.setContent {
+            CompositionLocalProvider(LocalLifecycleOwner provides owner) {
+                MiffTheme {
+                    OrangeCountdownSlot(
+                        anchor = anchorLeft(30 * minute),
+                        onOpenUpdate = {},
+                        padding = PaddingValues(0.dp),
+                        clock = ::clock,
+                        onRefresh = { refreshes++ },
+                    )
+                }
+            }
+        }
         composeRule.mainClock.advanceTimeByFrame()
         assertEquals(1, refreshes)
-        composeRule.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.CREATED)
+        composeRule.runOnUiThread { owner.registry.currentState = Lifecycle.State.CREATED }
         composeRule.mainClock.advanceTimeBy(10 * minute)
         assertEquals("in the background: no refresh at all", 1, refreshes)
-        composeRule.activityRule.scenario.moveToState(androidx.lifecycle.Lifecycle.State.RESUMED)
+        composeRule.runOnUiThread { owner.registry.currentState = Lifecycle.State.RESUMED }
         composeRule.mainClock.advanceTimeByFrame()
         assertEquals("one recomputation at the return, from the absolute time", 2, refreshes)
         composeRule.onNodeWithContentDescription(label("20 minutes")).assertExists()
@@ -393,10 +457,12 @@ class OrangeCountdownCardTest {
         val r = (color.red * 255).toInt()
         val g = (color.green * 255).toInt()
         val b = (color.blue * 255).toInt()
-        return abs(((argb shr 16) and 0xFF) - r) <= tolerance && abs(((argb shr 8) and 0xFF) - g) <= tolerance && abs((argb and 0xFF) - b) <= tolerance
+        return abs(((argb shr 16) and 0xFF) - r) <= tolerance && abs(((argb shr 8) and 0xFF) - g) <= tolerance &&
+            abs((argb and 0xFF) - b) <= tolerance
     }
 
-    private fun cardBounds() = composeRule.onNodeWithContentDescription("Tu es en dehors", substring = true).fetchSemanticsNode().boundsInRoot
+    private fun cardBounds() =
+        composeRule.onNodeWithContentDescription("Tu es en dehors", substring = true).fetchSemanticsNode().boundsInRoot
 
     @Test
     fun fullWindow_theWholeOutlineIsGreen_theTrackIsHidden() {
@@ -427,7 +493,10 @@ class OrangeCountdownCardTest {
         assertTrue("right side: emptied (grey track)", near(colorBorderDefault, pixel(b.right - edge, b.center.y)))
         assertTrue("top right: emptied", near(colorBorderDefault, pixel(b.right - 40f, b.top + edge)))
         assertTrue("left side: still there", near(colorStatusSafe, pixel(b.left + edge, b.center.y)))
-        assertTrue("top left, up to the top centre: still there", near(colorStatusSafe, pixel(b.left + 40f, b.top + edge)))
+        assertTrue(
+            "top left, up to the top centre: still there",
+            near(colorStatusSafe, pixel(b.left + 40f, b.top + edge)),
+        )
         assertTrue("bottom left: still there", near(colorStatusSafe, pixel(b.left + 40f, b.bottom - edge)))
         assertTrue("bottom right: emptied", near(colorBorderDefault, pixel(b.right - 40f, b.bottom - edge)))
         shoot("2-moitie")
@@ -452,11 +521,15 @@ class OrangeCountdownCardTest {
         composeRule.mainClock.advanceTimeByFrame()
         val b = cardBounds()
         val edge = 1.5f * composeRule.density.density
-        val shown = pixel(b.left + edge, b.center.y)
+        // 15 minutes left: only the last eighth of the outline remains, the end of the top edge, left of the top centre.
+        val shown = pixel(b.center.x - 100f, b.top + edge)
         val red = (shown shr 16) and 0xFF
         val green = (shown shr 8) and 0xFF
         val blue = shown and 0xFF
-        assertTrue("warmer than the pure green (more red than the green of the safe colour is not needed: it moved towards orange)", !near(colorStatusSafe, shown, 4))
+        assertTrue(
+            "warmer than the pure green (more red than the green of the safe colour is not needed: it moved towards orange)",
+            !near(colorStatusSafe, shown, 4),
+        )
         assertTrue("never red: green stays above 150 (is $green)", green > 150)
         assertTrue("never red: blue stays low", blue < 120)
         assertTrue("red channel between safe and warning", red in 200..255)
@@ -477,17 +550,21 @@ class OrangeCountdownCardTest {
     @Test
     fun theBorderSlides_over600ms_atEachMinute_andIsStillBetween() {
         composeRule.mainClock.autoAdvance = false
-        show(anchorLeft(60 * minute + 5_000))
+        show(anchorLeft(60 * minute + 30_000))
         composeRule.mainClock.advanceTimeByFrame()
-        val b = cardBounds()
-        val edge = 1.5f * composeRule.density.density
-        // 61 minutes left: the fraction is 61/120 = 0.508; at the next minute 0.5: the head sits near the bottom centre, a few pixels apart. Still between two minutes.
-        val before = pixel(b.center.x + 8f, b.bottom - edge)
-        composeRule.mainClock.advanceTimeBy(4_000)
-        assertEquals("immobile between two minutes", before, pixel(b.center.x + 8f, b.bottom - edge))
-        composeRule.mainClock.advanceTimeBy(1_100) // the boundary + a little of the slide
-        composeRule.mainClock.advanceTimeBy(700) // slide done
-        assertTrue("the slide is over after 600 ms", pixel(b.center.x + 8f, b.bottom - edge) != 0)
+
+        // 61 minutes left (0.508 of the outline): the head of the arc is a few pixels to the right of the bottom centre; at 60 minutes (0.5) it is AT the centre.
+        fun probe(): Int {
+            val b = cardBounds()
+            return pixel(b.center.x + 10f, b.bottom - 1.5f * composeRule.density.density)
+        }
+        assertTrue("61 min left: the arc covers the probe", near(colorStatusSafe, probe()))
+        composeRule.mainClock.advanceTimeBy(29_000)
+        assertTrue("immobile between two minutes", near(colorStatusSafe, probe()))
+        composeRule.mainClock.advanceTimeBy(1_050) // the boundary (at 30 s) is just passed: the slide has barely begun
+        assertTrue("it slides, it does not jump: still there 50 ms after the boundary", near(colorStatusSafe, probe()))
+        composeRule.mainClock.advanceTimeBy(750) // 600 ms are over
+        assertTrue("the slide is over: the head reached its new place", near(colorBorderDefault, probe()))
     }
 
     // --- reduce animations (CD-17) ---------------------------------------------------------------------------------------------
@@ -498,10 +575,20 @@ class OrangeCountdownCardTest {
         composeRule.mainClock.autoAdvance = false
         var anchor by mutableStateOf<CountdownAnchor?>(null)
         composeRule.setContent {
-            MiffTheme { Box(Modifier.padding(16.dp)) { OrangeCountdownSlot(anchor = anchor, onOpenUpdate = {}, padding = PaddingValues(0.dp), clock = ::clock) } }
+            MiffTheme {
+                Box(Modifier.padding(16.dp)) {
+                    OrangeCountdownSlot(
+                        anchor = anchor,
+                        onOpenUpdate = {},
+                        padding = PaddingValues(0.dp),
+                        clock = ::clock,
+                    )
+                }
+            }
         }
         composeRule.mainClock.advanceTimeByFrame()
         anchor = anchorLeft(window)
+        Snapshot.sendApplyNotifications()
         composeRule.mainClock.advanceTimeByFrame()
         composeRule.mainClock.advanceTimeByFrame()
         // Two frames (about 32 ms): without a 200 ms fade the encart is already complete.
@@ -511,7 +598,10 @@ class OrangeCountdownCardTest {
         // And the next minute is applied at once, not slid.
         composeRule.mainClock.advanceTimeBy(window / 2)
         composeRule.mainClock.advanceTimeByFrame()
-        assertTrue("instant: right half already gone", near(colorBorderDefault, pixel(cardBounds().right - edge, cardBounds().center.y)))
+        assertTrue(
+            "instant: right half already gone",
+            near(colorBorderDefault, pixel(cardBounds().right - edge, cardBounds().center.y)),
+        )
     }
 
     // --- the largest font (CD-26) ------------------------------------------------------------------------------------------------
@@ -525,7 +615,12 @@ class OrangeCountdownCardTest {
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = scale / 10f)) {
                 MiffTheme {
                     Box(Modifier.padding(16.dp).width(300.dp)) {
-                        OrangeCountdownSlot(anchor = anchorLeft(72 * minute), onOpenUpdate = {}, padding = PaddingValues(0.dp), clock = ::clock)
+                        OrangeCountdownSlot(
+                            anchor = anchorLeft(72 * minute),
+                            onOpenUpdate = {},
+                            padding = PaddingValues(0.dp),
+                            clock = ::clock,
+                        )
                     }
                 }
             }
@@ -533,10 +628,11 @@ class OrangeCountdownCardTest {
         composeRule.mainClock.advanceTimeBy(500)
         val normal = cardBounds().height
         scale = 20
+        Snapshot.sendApplyNotifications()
         composeRule.mainClock.advanceTimeBy(500)
         val big = cardBounds().height
         // Wrapped, never cut: the two lines take as many lines as they need, so the encart is clearly taller (the border follows the real outline).
-        assertTrue("the encart grew (${normal} -> ${big})", big > normal * 1.4f)
+        assertTrue("the encart grew ($normal -> $big)", big > normal * 1.4f)
         composeRule.onNodeWithContentDescription("Tu es en dehors", substring = true).assertHeightIsAtLeast(48.dp)
         shoot("5-grande-police")
     }

@@ -123,8 +123,20 @@ class OrangeCountdownTest {
     fun anchorUsesTheReferenceOfTheColour_theMostRecentOfDepartureAndUpdate() {
         val departure = reference
         val update = reference + 30 * minute
-        assertEquals(CountdownAnchor(update), OrangeCountdown.anchorOf(facts(presenceAt = departure, lastUpdate = update)))
-        assertEquals(CountdownAnchor(departure), OrangeCountdown.anchorOf(facts(presenceAt = departure, lastUpdate = reference - minute)))
+        assertEquals(
+            CountdownAnchor(update),
+            OrangeCountdown.anchorOf(facts(presenceAt = departure, lastUpdate = update)),
+        )
+        assertEquals(
+            CountdownAnchor(departure),
+            OrangeCountdown.anchorOf(
+                facts(
+                    presenceAt = departure,
+                    lastUpdate =
+                        reference - minute,
+                ),
+            ),
+        )
         assertEquals(CountdownAnchor(update), OrangeCountdown.anchorOf(facts(presenceAt = null, lastUpdate = update)))
     }
 
@@ -136,7 +148,10 @@ class OrangeCountdownTest {
         assertEquals(CountdownState.Visible(10), OrangeCountdown.at(anchor, later))
         val updated = OrangeCountdown.anchorOf(facts(presenceAt = reference, lastUpdate = later))
         assertEquals(CountdownState.Visible(120), OrangeCountdown.at(updated, later))
-        assertEquals(CountdownDuration.Hours(2), (OrangeCountdown.at(updated, later) as CountdownState.Visible).duration)
+        assertEquals(
+            CountdownDuration.Hours(2),
+            (OrangeCountdown.at(updated, later) as CountdownState.Visible).duration,
+        )
     }
 
     @Test

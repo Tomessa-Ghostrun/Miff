@@ -62,7 +62,10 @@ class FeedBuilderCountdownTest {
 
     @Test
     fun theReferenceIsTheMostRecentOfDepartureAndUpdate() {
-        val content = build(loaded(me to status(PresenceValue.OUT, presenceAgo = 60 * minute, lastUpdateAgo = 10 * minute)))
+        val content =
+            build(
+                loaded(me to status(PresenceValue.OUT, presenceAgo = 60 * minute, lastUpdateAgo = 10 * minute)),
+            )
         assertEquals(CountdownAnchor(now - 10 * minute), content.myCountdown)
     }
 
@@ -76,7 +79,13 @@ class FeedBuilderCountdownTest {
 
     @Test
     fun insideATrustedPlace_inADangerZone_unknown_onATrip_giveNothing() {
-        for (presence in listOf(PresenceValue.IN_TRUSTED, PresenceValue.IN_RISK, PresenceValue.UNKNOWN, PresenceValue.TRAVEL, null)) {
+        for (presence in listOf(
+            PresenceValue.IN_TRUSTED,
+            PresenceValue.IN_RISK,
+            PresenceValue.UNKNOWN,
+            PresenceValue.TRAVEL,
+            null,
+        )) {
             val content = build(loaded(me to status(presence, travelUntil = now + 60 * minute)))
             assertNull("presence $presence", content.myCountdown)
         }
@@ -116,6 +125,9 @@ class FeedBuilderCountdownTest {
         // No new field in the status, no place, no coordinate: one instant. The window comes from the thresholds.
         val anchor = build(loaded(me to status(PresenceValue.OUT))).myCountdown!!
         assertEquals(now - 30 * minute, anchor.referenceMillis)
-        assertEquals(StatusThresholds.ORANGE_AFTER_MILLIS, com.tomessa.miff.domain.tracking.OrangeCountdown.WINDOW_MILLIS)
+        assertEquals(
+            StatusThresholds.ORANGE_AFTER_MILLIS,
+            com.tomessa.miff.domain.tracking.OrangeCountdown.WINDOW_MILLIS,
+        )
     }
 }
