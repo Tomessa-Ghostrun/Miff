@@ -5,8 +5,14 @@ import XCTest
 /// identifiant, les autres membres et leurs prénoms (mémoire seulement) ; jamais une copie du cache ni une image hors connexion.
 @MainActor
 final class FeedViewModelVisitTests: XCTestCase {
+    private struct Call {
+        let myUid: String
+        let state: VisitState
+        let names: [String: String]
+    }
+
     private final class Calls {
-        var all: [(String, VisitState, [String: String])] = []
+        var all: [Call] = []
     }
 
     private let repo = FakeMiffRepository()
@@ -41,7 +47,9 @@ final class FeedViewModelVisitTests: XCTestCase {
             timings: FeedTimings(statusRetryDelaysMillis: [5], firstStatusAnswerMillis: 600_000, cacheGraceMillis: 30)
         )
         let calls = self.calls
-        dependencies.onFreshPicture = { myUid, state, names in calls.all.append((myUid, state, names)) }
+        dependencies.onFreshPicture = { myUid, state, names in
+            calls.all.append(Call(myUid: myUid, state: state, names: names))
+        }
         return FeedViewModel(dependencies: dependencies)
     }
 
@@ -74,10 +82,10 @@ final class FeedViewModelVisitTests: XCTestCase {
         await waitUntil { !self.calls.all.isEmpty }
 
         let call = try XCTUnwrap(calls.all.last)
-        XCTAssertEqual(call.0, "me")
-        XCTAssertEqual(call.1.miffId, testMiffId)
-        XCTAssertEqual(call.1.members.map { $0.uid }, ["a"], "jamais moi")
-        XCTAssertEqual(call.2, ["a": "Thomas"])
+        XCTAssertEqual(call.myUid, "me")
+        XCTAssertEqual(call.state.miffId, testMiffId)
+        XCTAssertEqual(call.state.members.map { $0.uid }, ["a"], "jamais moi")
+        XCTAssertEqual(call.names, ["a": "Thomas"])
         task.cancel()
         await task.value
     }
