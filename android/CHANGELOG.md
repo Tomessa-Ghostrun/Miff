@@ -2,6 +2,28 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.41.0] - 2026-11-17 : compte à rebours avant le passage à l'orange, sur le Feed et le Profil (COUNTDOWN-A)
+
+Ticket `docs/tickets/compte-a-rebours-orange.md` (spec décidée sur délégation du PM, sans ticket Notion ni maquette), recette `docs/qa/checklists/compte-a-rebours-android-recette-pm.md` ; branche `android/compte-a-rebours-orange`, PR brouillon. Numéro : le dernier de `main` est 0.40.0.
+
+### Ajouté
+- **Encart « Tu es en dehors de tes lieux de confiance / Tu passeras orange dans 1 h 12 min »** : sablier à gauche, deux lignes, petit chevron à droite, fond blanc, coins `radius/md`, ombre `shadow/default`. **Visible seulement pour la personne concernée, sur son téléphone**, quand elle est **en vert et en dehors d'un lieu de confiance** ; masqué en orange, rouge, dedans, mode voyage, partage arrêté, zone de danger, statut inconnu ou en chargement. Les autres membres ne le voient jamais (il vient du seul statut « moi » du Feed).
+- **Où** : sur le **Feed, juste sous la grande bulle colorée de la Miff** (celle du « i »), avant les cartes ; sur le **Profil, premier bloc du contenu, au-dessus de « Mes Miffs »**. Un seul composant (`OrangeCountdownSlot`) : même valeur au même instant. Apparition et disparition par un fondu de 200 ms avec une animation de hauteur (le contenu dessous suit, sans saut) ; instantanées avec « réduire les animations ».
+- **Un appui ouvre l'Update** par le même chemin que le bouton central de la barre (l'onglet Update, retour = onglet précédent). Aucune route nouvelle.
+- **Bordure dynamique** de 3 dp : piste grise (`border/default`) et arc proportionnel au temps restant, ancré en haut au centre, qui se vide dans le sens horaire (non miroité) ; `status/safe` puis, sur la dernière demi-heure, un glissement vers `status/warning` ; **jamais de rouge**. Elle glisse en 600 ms à chaque minute, immobile entre deux ; instantanée avec « réduire les animations ».
+- **Calcul** (`domain/tracking/OrangeCountdown.kt`, fonction pure, horloge injectable) : échéance = repère + `StatusThresholds.ORANGE_AFTER_MILLIS` (aucune durée recopiée), repère = **le même** que celui de la couleur (`StatusColor.reference`, ajouté et partagé), « encore vert » demandé à `StatusColor.levelByAge` (la fonction même qui colore la carte « moi »). Temps restant arrondi à la minute supérieure, plafonné à la fenêtre entière si le repère est dans le futur (horloge reculée), jamais « 0 min » ni négatif. Une update qui remet en vert déplace le repère : le décompte repart de « 2 h » (et l'encart revient après un orange).
+- **Rafraîchissement** : **une mise à jour par minute de l'échéance** (pas par minute d'horloge), seulement tant que l'encart est affiché et que l'écran est démarré (`repeatOnLifecycle(STARTED)`) ; rien en arrière-plan ni sur un autre onglet ; recalcul depuis l'heure absolue à chaque retour (première image juste).
+- **TalkBack** : un seul bouton « Tu es en dehors de tes lieux de confiance. Tu passeras orange dans 1 heure et 12 minutes. », action « Donner de tes nouvelles », sablier et chevron cachés, **pas de zone « live »** (aucune annonce chaque minute). Grandes polices : texte à la ligne, jamais coupé, zone tactile d'au moins 48 dp, sablier au plus 1,5 fois sa taille de base.
+- **Textes** `countdown_*` (FR/EN), mêmes clés qu'iOS, **ajoutées aussi au catalogue iOS** (`Localizable.xcstrings`) pour la parité CI ; préfixe `countdown` ajouté à `docs/contracts/i18n-keys.md` et à `KNOWN_PREFIXES`. Les durées sont des textes du catalogue (pas le formateur du système) pour que les deux apps écrivent la même chose, avec une espace insécable entre le nombre et l'unité.
+- Tests : `OrangeCountdownTest` (vecteurs communs du ticket, échéance, reset, repère futur, minutes de l'échéance, couleur), `FeedBuilderCountdownTest` (jamais pour un autre compte, ni voyage, partage arrêté, statut inconnu), `OrangeCountdownCardTest` (textes FR/EN, TalkBack, appui, une mise à jour par minute, rien en arrière-plan, disparition à l'échéance, reset, bordure et sens, animations, grande police).
+
+### Coûts et sécurité
+- **0 lecture et 0 écriture Firestore, aucun réseau, aucune notification, aucun événement d'analyse, aucune permission, aucune dépendance** : 0 €. Aucune donnée ajoutée au statut ni à la fiche de membre ; règles Firestore inchangées. Un seul instant (le repère) circule, jamais dans un journal (`toString` expurgé).
+
+### À savoir
+- **Écart V1** : la règle de la couleur est « plus de 2 h » (2 h 00 pile = encore vert, décision du PM du 2026-11-08), pas « ≥ ». L'encart disparaît à 2 h 00 pile (1 ms avant que la couleur passe à l'orange) : jamais d'encart sur un orange.
+- Le Profil montre ce que le Feed a lu en dernier (comme l'anneau de la photo) : l'écoute du statut ne tourne que sur le Feed.
+
 ## [0.37.0] - 2026-11-12 : notifications push entre proches, côté Android : « {Prénom} a donné des nouvelles » (SRV-2, premier lot Android)
 
 Ticket `docs/tickets/notification-update-membres.md` (§4 à §13 ; décisions du PM du 2026-11-12 : défauts validés, son et vibration selon le téléphone) et étude `docs/dev/etude-serveur-notifications-premium.md` (option A, Blaze). Branche `android/fcm-client`, PR brouillon. Numéro de version : `main` est à 0.35.0 et trois PR Android ouvertes ont aussi pris 0.33.0 et 0.34.0 ; 0.37.0 est le prochain libre (main est maintenant à 0.36.0 ; à renuméroter au merge si l’ordre change). **Ce lot ne sert à rien tant que le PM n'a pas déployé les règles Firestore du registre d'appareils ET la fonction d'envoi** (voir « À savoir »).

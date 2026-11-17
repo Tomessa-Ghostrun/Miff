@@ -1209,13 +1209,13 @@
     <string name="feed_colors_bubble_action_a11y">Understand the colors</string>
 
     <!-- COUNTDOWN-A: countdown before orange (Feed and Profile). Same keys as iOS. Durations are catalogue strings (not the system formatter) so that Android and iOS write exactly the same thing; non-breaking space between the number and the unit. -->
-    <string name="countdown_title">You're outside your trusted places</string>
-    <string name="countdown_body">You'll turn orange in %1$s</string>
+    <string name="countdown_title">You\'re outside your trusted places</string>
+    <string name="countdown_body">You\'ll turn orange in %1$s</string>
     <string name="countdown_duration_hours_minutes">%1$d&#160;h %2$02d&#160;min</string>
     <string name="countdown_duration_hours">%1$d&#160;h</string>
     <string name="countdown_duration_minutes">%1$d&#160;min</string>
     <string name="countdown_duration_less_than_minute">less than 1&#160;min</string>
-    <string name="countdown_a11y_label">You're outside your trusted places. You'll turn orange in %1$s.</string>
+    <string name="countdown_a11y_label">You\'re outside your trusted places. You\'ll turn orange in %1$s.</string>
     <plurals name="countdown_a11y_hours">
         <item quantity="one">%1$d hour</item>
         <item quantity="other">%1$d hours</item>
