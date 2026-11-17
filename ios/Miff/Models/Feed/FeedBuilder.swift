@@ -98,11 +98,14 @@ enum FeedBuilder {
             statuses: statuses,
             places: Dictionary(input.places.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         )
-        let cards = orderMembers(input.members, myUid: input.myUid).map { card($0, context) }
+        // L'ordre d'ARRIVÉE (les autres, puis moi) nourrit la bulle et les alertes, qui ne dépendent pas du tri du Feed (ticket FEED-ORDRE,
+        // A10) ; les cartes montrées sont triées par la date de la dernière update (`sortedByLastUpdate`).
+        let arrival = orderMembers(input.members, myUid: input.myUid).map { card($0, context) }
+        let cards = sortedByLastUpdate(input.members, cards: arrival, statuses: statuses)
         let mine = cards.first { $0.isMe }
-        let miffColor = miffLevel(cards.map { $0.level })
+        let miffColor = miffLevel(arrival.map { $0.level })
         let latestUpdate = statuses.values.compactMap { $0.updatedAtMillis }.max()
-        let shownBubble = bubble(context, cards: cards, latestUpdate: latestUpdate, miffLevel: miffColor)
+        let shownBubble = bubble(context, cards: arrival, latestUpdate: latestUpdate, miffLevel: miffColor)
         return FeedContent(
             miffId: input.miffId,
             miffName: input.miffName,
@@ -116,7 +119,7 @@ enum FeedBuilder {
             cards: cards,
             announceKey: announceKey(shownBubble),
             myFacts: myFacts(input, mySharing: mySharing, statuses: statuses),
-            travelNote: travelNote(under: shownBubble, cards: cards, hidden: context.hidden)
+            travelNote: travelNote(under: shownBubble, cards: arrival, hidden: context.hidden)
         )
     }
 
@@ -137,11 +140,44 @@ enum FeedBuilder {
         )
     }
 
-    /// L'ordre des cartes (décision du PM, 2026-11-07, D43) : les AUTRES membres d'abord, dans l'ordre où la liste les donne (le
-    /// créateur, puis l'ordre d'arrivée : jamais réordonné selon l'urgence), et MOI EN DERNIER. Le tri est stable : les autres
-    /// gardent exactement l'ordre reçu.
+    /// L'ordre d'ARRIVÉE (décision du PM, 2026-11-07, D43) : les AUTRES membres d'abord, dans l'ordre où la liste les donne (le créateur,
+    /// puis l'ordre d'arrivée), et MOI EN DERNIER. Il ne place plus les cartes du Feed (voir `sortedByLastUpdate`) : il garde son rôle pour
+    /// la bulle et les alertes, dont l'égalité se règle « par l'ordre des cartes » (ticket FEED-ORDRE, A10 : alertes inchangées).
     static func orderMembers(_ members: [MiffMember], myUid: String) -> [MiffMember] {
         members.filter { $0.uid != myUid } + members.filter { $0.uid == myUid }
+    }
+
+    /// Les cartes du Feed, de la dernière update la plus récente à la plus ancienne (ticket FEED-ORDRE, décisions du §3). La date est
+    /// `status.lastUpdateAt`, lue DANS les statuts déjà écoutés (aucune lecture de plus). Ma carte est triée comme les autres. Sans date
+    /// exploitable : aucun statut montré (partage arrêté, caché ou pas encore publié), mon accord attendu, OU carte « Pas encore de
+    /// nouvelles » : ces membres suivent tous les autres, dans l'ordre d'arrivée (la liste des membres), pour que l'ordre et l'étiquette ne
+    /// se contredisent jamais. Limite connue : un membre qui a publié une update manuelle avant tout départ d'un lieu garde `presence`
+    /// « unknown » (carte « Pas encore de nouvelles ») : son update ne le fait pas remonter.
+    static func sortedByLastUpdate(
+        _ members: [MiffMember],
+        cards: [FeedMemberCard],
+        statuses: [String: MemberStatus]
+    ) -> [FeedMemberCard] {
+        var byUid: [String: FeedMemberCard] = [:]
+        for card in cards {
+            byUid[card.member.uid] = card
+        }
+        let entries = members.map { member in
+            FeedOrderEntry(
+                uid: member.uid,
+                lastUpdateMillis: byUid[member.uid].flatMap { orderDate($0, statuses: statuses) }
+            )
+        }
+        return FeedOrder.sorted(entries).compactMap { byUid[$0] }
+    }
+
+    private static let undatedLabels: [StateLabel] = [.noNews, .sharingStopped, .newsHidden, .waitingAgreement]
+
+    private static func orderDate(_ card: FeedMemberCard, statuses: [String: MemberStatus]) -> Int? {
+        guard !undatedLabels.contains(card.label) else {
+            return nil
+        }
+        return statuses[card.member.uid]?.lastUpdateAtMillis
     }
 
     /// La couleur de la Miff (décision du PM) : rouge si au moins un membre est rouge ; verte si tous ceux dont le statut est connu

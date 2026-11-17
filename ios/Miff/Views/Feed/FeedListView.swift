@@ -1,6 +1,7 @@
 import SwiftUI
+import UIKit
 
-// La liste du Feed : les mentions, la bulle, les cartes des membres (moi en dernier, D43), puis « Ajouter un proche ». Une seule colonne,
+// La liste du Feed : les mentions, la bulle, les cartes des membres (de la dernière update la plus récente à la plus ancienne, FEED-ORDRE), puis « Ajouter un proche ». Une seule colonne,
 // un défilement vertical, aucune liste imbriquée. Le contenu commence SOUS l'en-tête (marge haute = sa hauteur) et passe sous la barre
 // d'onglets (la zone sûre qu'elle déclare garde la marge basse). Elle dit à l'écran où est le haut du contenu (pour l'en-tête qui se
 // masque) et accepte « tirer pour actualiser ».
@@ -48,6 +49,7 @@ struct FeedListView: View {
     /// L'origine du contenu de la vue de défilement dans la fenêtre (voir `FeedTopInset`).
     let onOrigin: (CGFloat) -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @StateObject private var order = FeedOrderModel()
 
     private static let topId = "feed-top"
 
@@ -70,9 +72,26 @@ struct FeedListView: View {
                     .padding(.bottom, Spacing.md)
                 }
                 .background(ScrollDistanceReader(onChange: onScrolled, onOrigin: onOrigin))
+                // FEED-ORDRE : tant qu'un doigt est posé ou que la liste défile, aucune carte ne change de place.
+                .background(FeedGestureWatcher { busy in order.setGestureActive(busy, animated: !reduceMotion) })
             }
             .onPreferenceChange(ContentTopKey.self) { onContentMoved($0) }
-            .refreshable { await actions.onRefresh() }
+            // Au rafraîchissement manuel, l'ordre à jour est appliqué tout de suite (sans animation ni annonce).
+            .refreshable {
+                await actions.onRefresh()
+                order.flush()
+            }
+            .onAppear {
+                order.onAnnounce = Self.announce
+                syncOrder()
+            }
+            .onChange(of: orderContext) { _ in syncOrder() }
+            // Retour sur l'onglet Feed (depuis un autre onglet ou l'arrière-plan) : l'ordre à jour, directement.
+            .onChange(of: isActive) { active in
+                if active {
+                    order.flush()
+                }
+            }
             // Retour en haut (le logo) : sans animation avec « Réduire les animations ».
             .onChange(of: scrollToTop) { _ in
                 if reduceMotion {
@@ -83,8 +102,44 @@ struct FeedListView: View {
             }
         }
         .accessibilityAction(named: Text("feed_refresh_a11y")) {
-            Task { await actions.onRefresh() }
+            Task {
+                await actions.onRefresh()
+                order.flush()
+            }
         }
+    }
+
+    // MARK: - L'ordre des cartes (FEED-ORDRE)
+
+    /// L'ordre voulu par le Feed (nil : pas de contenu, squelette ou erreur). Un changement ici ne déplace rien tout de suite : le modèle
+    /// décide s'il l'applique (aucun geste en cours) ou le garde pour la fin du geste.
+    private var orderContext: FeedOrderContext? {
+        guard let content else {
+            return nil
+        }
+        return FeedOrderContext(
+            miffId: content.miffId,
+            uids: content.cards.map { $0.member.uid },
+            myUid: content.cards.first { $0.isMe }?.member.uid ?? "",
+            callNames: Dictionary(
+                content.cards.map { ($0.member.uid, $0.member.callName) },
+                uniquingKeysWith: { first, _ in first }
+            )
+        )
+    }
+
+    private func syncOrder() {
+        if let orderContext {
+            order.update(orderContext, animated: !reduceMotion)
+        } else {
+            order.contentGone()
+        }
+    }
+
+    /// L'annonce du lecteur d'écran : NON interruptive (elle attend la fin de ce qui est dit), jamais un déplacement du focus.
+    private static func announce(_ text: String) {
+        let spoken = NSAttributedString(string: text, attributes: [.accessibilitySpeechQueueAnnouncement: true])
+        UIAccessibility.post(notification: .announcement, argument: spoken)
     }
 
     /// La marge haute du contenu (l'en-tête mesuré + `FeedTopInset.gapBelowHeader`), tout en haut : son haut est le haut du contenu, sa position
@@ -160,7 +215,8 @@ struct FeedListView: View {
             actions: actions.bubble,
             travelNote: content.travelNote
         )
-        ForEach(content.cards, id: \.member.uid) { card in
+        // Le CONTENU des cartes est toujours celui du moment ; seul leur ORDRE attend la fin d'un geste (`FeedOrderModel`).
+        ForEach(order.order.resolve(content.cards), id: \.member.uid) { card in
             MemberCardView(
                 card: card,
                 texts: texts,

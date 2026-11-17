@@ -3096,6 +3096,40 @@
         }
       }
     },
+    "feed_order_member_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ shared an update"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ a donné des nouvelles"
+          }
+        }
+      }
+    },
+    "feed_order_updated_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Feed has been updated"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le Feed a été mis à jour"
+          }
+        }
+      }
+    },
     "feed_pane_a11y": {
       "extractionState": "manual",
       "localizations": {
