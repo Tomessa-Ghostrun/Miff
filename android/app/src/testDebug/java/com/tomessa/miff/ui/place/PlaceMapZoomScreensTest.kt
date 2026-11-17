@@ -132,8 +132,9 @@ class PlaceMapZoomScreensTest {
         // Same rules as the form: the map is given the place and its real radius, nothing else (no button, a described picture).
         assertEquals(150, spec.radiusM)
         composeRule
-            .onNodeWithContentDescription(context().getString(R.string.place_map_a11y, 150, "26 rue du Volnay, 21000 Dijon, France"))
-            .assertIsDisplayed()
+            .onNodeWithContentDescription(
+                context().getString(R.string.place_map_a11y, 150, "26 rue du Volnay, 21000 Dijon, France"),
+            ).assertIsDisplayed()
     }
 
     // --- The page and the map share the fingers --------------------------------------------------------------------------------
