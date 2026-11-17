@@ -2,6 +2,20 @@
 
 ## Non publié
 
+### Viseur de l'Update en plein écran, barre d'état en clair (retour du PM sur l'iPhone 16, 2026-11-17)
+
+Recette : `docs/qa/checklists/update-camera-plein-ecran-ios-recette-pm.md`. Détail : `ios/README.md` (« Viseur plein écran »). **Rien n'est compilé ni essayé en local** (la CI fait foi) ; le simulateur n'a pas de caméra : la cause exacte ne se confirme que sur l'iPhone.
+
+Corrigé :
+- **L'aperçu de la caméra remplit tout l'écran**, derrière la barre d'état et l'île dynamique (bug : bande noire d'environ 70 pt en haut). Le calque est posé sur la fenêtre de l'app, pas sur les mesures de zone sûre de SwiftUI (nulles ou fausses sur un vrai appareil, comme pour la photo plein écran) ; `.resizeAspectFill`, aucune bande. La taille de l'écran qui fixe le recadrage de la photo vient aussi de la fenêtre.
+- **Barre d'état en clair** (heure, réseau, batterie) sur le viseur et l'aperçu de la photo : elle était noire sur le noir de la caméra, « à moitié masquée ». Un seul point (`AppAppearance`, lu par `MiffApp`) décide du schéma de couleurs ; les autres écrans restent clairs, la barre d'onglets garde son apparence.
+- **Bascule de caméra, flash et aperçu de la photo sous la zone sûre du haut**, jamais sous l'île dynamique : on ajoute seulement ce qui manque à ce que SwiftUI a posé (0 dans le cas normal), plancher de 47 pt en portrait si rien ne se lit.
+- **Ombre du haut plus légère** : zone sûre + 40 pt, de 35 % à 0 de noir (avant : 110 pt fixes à 45 %). Écart avec la fiche design (« 110 pt », proposé).
+
+Inchangé : obturateur, texte d'aide, barre d'onglets, caméra frontale par défaut, écran de refus de la caméra (mêmes zones sûres).
+
+Tests : `ViewfinderLayoutTests` (six gabarits d'iPhone dont SE, 11 Pro à encoche, 14 Pro / 16 à île dynamique, 16 Pro, Pro Max ; zones sûres nulles ; fenêtre inconnue ; plancher ; câblage `.resizeAspectFill`, schéma décidé à la racine seulement, options de démonstration Debug seulement), `AppAppearanceTests`. Captures CI 160 (viseur), 161 (zones sûres nulles), 162 (aperçu de la photo), build Debug seulement.
+
 ### Version des conditions enregistrée : « 1.0 » (miroir d'Android)
 
 Modifié :
