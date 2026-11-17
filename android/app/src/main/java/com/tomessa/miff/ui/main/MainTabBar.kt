@@ -1,6 +1,9 @@
 package com.tomessa.miff.ui.main
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.indication
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -14,10 +17,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -77,6 +81,7 @@ fun MainTabBar(
                 Modifier
                     .fillMaxWidth()
                     .height(GlassBarHeight)
+                    .testTag(TAB_BAR_TAG)
                     .glassSurface(BarShape, glass)
                     .selectableGroup(),
             horizontalArrangement = Arrangement.SpaceAround,
@@ -132,20 +137,27 @@ private fun TabItem(
             },
         )
     val tint = if (selected) palette.iconActive else palette.iconInactive
+    val interaction = remember { MutableInteractionSource() }
     Box(
         modifier =
             modifier
                 .size(width = ItemWidth, height = ItemHeight)
-                .clip(ShapeMd)
-                .background(if (selected) palette.pillActive else Color.Transparent)
+                // The pad of the tab in use is DRAWN with its rounded shape: the entry is no longer a clipped layer, so nothing of what it holds (the shadow of the
+                // plate of the central button) is cut along a 64 x 48 dp rectangle. A tab that is not in use draws nothing at all behind its icon.
+                .then(if (selected) Modifier.background(palette.pillActive, ShapeMd) else Modifier)
                 .selectable(
                     selected = selected,
                     enabled = enabled,
                     role = Role.Tab,
+                    interactionSource = interaction,
+                    // The press feedback is drawn by the layer below, which is clipped on its own.
+                    indication = null,
                     onClick = onClick,
                 ).semantics { contentDescription = name },
         contentAlignment = Alignment.Center,
     ) {
+        // Press feedback of the system, in the rounded shape of the pad, in a layer of its own (nothing else is clipped with it).
+        Box(Modifier.matchParentSize().clip(ShapeMd).indication(interaction, LocalIndication.current))
         when (tab) {
             MainTab.FEED -> {
                 Icon(
