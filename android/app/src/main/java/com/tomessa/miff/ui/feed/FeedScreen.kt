@@ -118,6 +118,8 @@ class FeedActions(
     val onRefresh: () -> Unit = {},
     /** COULEURS-1: a touch on the bubble of the Miff opens the page "Les couleurs de ta Miff" (static: no reading, nothing is kept). */
     val onOpenColors: () -> Unit = {},
+    /** COUNTDOWN-A: a touch on the countdown before orange opens the Update, by the same way as the central button of the bar (nothing new: the tab). */
+    val onOpenUpdate: () -> Unit = {},
 )
 
 /**
@@ -164,6 +166,7 @@ fun rememberSystemFeedActions(base: FeedActions): FeedActions {
             onRetryFeed = base.onRetryFeed,
             onRefresh = base.onRefresh,
             onOpenColors = base.onOpenColors,
+            onOpenUpdate = base.onOpenUpdate,
         )
     }
 }
@@ -500,15 +503,24 @@ private fun androidx.compose.foundation.lazy.LazyListScope.readyItems(
 ) {
     items(content.banners, key = { it::class.simpleName.orEmpty() }) { banner -> BannerView(banner, texts) }
     item(key = "bubble") {
-        BubbleView(
-            bubble = content.bubble,
-            announceKey = content.announceKey,
-            texts = texts,
-            onMessage = actions.onMessage,
-            onResumeSharing = { actions.onResumeSharing(content.miffId) },
-            travelNote = content.travelNote,
-            onOpenColors = actions.onOpenColors,
-        )
+        Column {
+            BubbleView(
+                bubble = content.bubble,
+                announceKey = content.announceKey,
+                texts = texts,
+                onMessage = actions.onMessage,
+                onResumeSharing = { actions.onResumeSharing(content.miffId) },
+                travelNote = content.travelNote,
+                onOpenColors = actions.onOpenColors,
+            )
+            // COUNTDOWN-A: JUST UNDER the bubble of the Miff (this big coloured blob with the "i"), before the cards; the air above it (14 dp, the spacing of the list) is
+            // inside the animated block, so that nothing jumps when it comes or goes, and nothing is left when it is absent. Mine only: the anchor is MY status.
+            OrangeCountdownSlot(
+                anchor = content.myCountdown,
+                onOpenUpdate = actions.onOpenUpdate,
+                padding = PaddingValues(top = 14.dp),
+            )
+        }
     }
     items(content.cards, key = { it.member.uid }) { card ->
         MemberCardView(

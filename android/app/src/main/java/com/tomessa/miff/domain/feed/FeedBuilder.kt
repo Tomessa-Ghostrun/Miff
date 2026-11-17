@@ -4,7 +4,9 @@ import com.tomessa.miff.domain.miff.MiffMember
 import com.tomessa.miff.domain.miff.MiffSharingConsent
 import com.tomessa.miff.domain.place.Place
 import com.tomessa.miff.domain.place.PlaceCategory
+import com.tomessa.miff.domain.tracking.CountdownAnchor
 import com.tomessa.miff.domain.tracking.MemberStatusFacts
+import com.tomessa.miff.domain.tracking.OrangeCountdown
 import com.tomessa.miff.domain.tracking.PresenceValue
 import com.tomessa.miff.domain.tracking.StatusColor
 import com.tomessa.miff.domain.tracking.StatusLevel
@@ -136,6 +138,30 @@ object FeedBuilder {
                         mySharing && !input.waitingAgreement
                     }?.let { MyPhotoFacts(it.hasPhoto, it.lastUpdateAtMillis) },
             travelNote = travelNote,
+            myCountdown = myCountdown(input, mySharing, statuses[input.myUid]),
+        )
+    }
+
+    /**
+     * COUNTDOWN-A: the anchor of the countdown before orange, from MY status only (the same facts as my card, so the encart and the card come from the same
+     * calculation). Nothing while I do not share, while my agreement is waited for, or while my status is not known (loading, "Partage de ton statut en cours…").
+     */
+    private fun myCountdown(
+        input: FeedInput,
+        mySharing: Boolean,
+        status: MemberStatus?,
+    ): CountdownAnchor? {
+        if (status == null || !mySharing || input.waitingAgreement) return null
+        // Somebody who is not in the Miff has no card and no countdown.
+        if (input.members.none { it.uid == input.myUid }) return null
+        return OrangeCountdown.anchorOf(
+            MemberStatusFacts(
+                mySharing,
+                status.presence,
+                status.presenceAtMillis,
+                status.lastUpdateAtMillis,
+                status.travelUntilMillis,
+            ),
         )
     }
 

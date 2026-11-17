@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -73,6 +74,7 @@ import com.tomessa.miff.ui.feed.FeedUiState
 import com.tomessa.miff.ui.feed.FeedViewModel
 import com.tomessa.miff.ui.feed.LocalPhotoReader
 import com.tomessa.miff.ui.feed.LocateUiState
+import com.tomessa.miff.ui.feed.OrangeCountdownSlot
 import com.tomessa.miff.ui.feed.rememberSystemFeedActions
 import com.tomessa.miff.ui.miff.AccessLostScreen
 import com.tomessa.miff.ui.miff.AgreementUi
@@ -935,6 +937,8 @@ fun MainTabs(
                                             onRetryFeed = feed.onRetry,
                                             onRefresh = feed.onRefresh,
                                             onOpenColors = onOpenColors,
+                                            // COUNTDOWN-A: the SAME way as the central button of the bar (the Update tab; the back gesture comes back here).
+                                            onOpenUpdate = { if (update != null) select(MainTab.UPDATE) },
                                         ),
                                     )
                                 FeedScreen(
@@ -982,6 +986,13 @@ fun MainTabs(
                                     popIn = profileConnection,
                                     popInSuppressed = popInSuppressed,
                                     travelContent = travelContent,
+                                    countdownContent = {
+                                        OrangeCountdownSlot(
+                                            anchor = feedContent?.myCountdown,
+                                            onOpenUpdate = { if (update != null) select(MainTab.UPDATE) },
+                                            padding = PaddingValues(bottom = Spacing.l),
+                                        )
+                                    },
                                 )
                             }
 
