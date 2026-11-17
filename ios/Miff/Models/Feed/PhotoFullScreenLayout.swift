@@ -1,8 +1,8 @@
 import CoreGraphics
 import Foundation
 
-// La mise en page du plein écran de la photo d'un proche (FEED-8, retours de la recette TestFlight). VRAI plein écran : la photo (entière, `scaledToFit`)
-// occupe TOUT l'écran, zones sûres comprises, sur fond noir ; la LÉGENDE, « Position mesurée… » et « Voir où c'était » sont POSÉES PAR-DESSUS, en bas,
+// La mise en page du plein écran de la photo d'un proche (FEED-8, retours de la recette TestFlight). VRAI plein écran, SANS AUCUNE MARGE (exigence du PM) : la photo (`scaledToFill`)
+// REMPLIT TOUT l'écran, zones sûres comprises, quel que soit son rapport (recadrage centré quand il diffère de celui de l'écran) ; la LÉGENDE, « Position mesurée… » et « Voir où c'était » sont POSÉES PAR-DESSUS, en bas,
 // sur un voile sombre (texte blanc, contraste d'au moins 4,5:1 même sur la photo la plus claire), dans la zone sûre du bas ; leur zone est BORNÉE (jamais
 // plus de 45 % de la hauteur) : en grand texte ou en paysage elle défile, et la photo n'est jamais masquée en entier. La croix et l'icône
 // « Enregistrer cette photo » restent en haut. Du Swift pur : aucune mesure de vue, aucune lecture, aucune écriture.
@@ -78,15 +78,30 @@ enum PhotoFullScreenLayout {
         )
     }
 
-    /// La taille de la photo entière (`scaledToFit`) dans la zone qui lui reste : elle REMPLIT la largeur ou la hauteur de la zone, sans jamais la
-    /// dépasser, et quelle que soit la taille propre de l'image (jamais limitée par elle : la zone décide).
-    static func fittedSize(imageSize: CGSize, in area: CGSize) -> CGSize {
+    /// La taille de la photo qui REMPLIT la zone (aspect « fill », `scaledToFill`) : le plus grand des deux rapports, de sorte que la photo touche les
+    /// QUATRE bords de la zone, quel que soit le rapport photo / écran, et quelle que soit la taille propre de l'image (jamais limitée par elle : la
+    /// zone décide). Quand les rapports diffèrent, elle DÉPASSE de la zone d'un côté (recadrage centré, voir `croppedShare`) : jamais de bande vide.
+    static func filledSize(imageSize: CGSize, in area: CGSize) -> CGSize {
         guard imageSize.width > 0, imageSize.height > 0, area.width > 0, area.height > 0 else {
             return .zero
         }
-        let scale = min(area.width / imageSize.width, area.height / imageSize.height)
+        let scale = max(area.width / imageSize.width, area.height / imageSize.height)
         return CGSize(width: imageSize.width * scale, height: imageSize.height * scale)
     }
+
+    /// La part de la photo (de 0 à moins de 1) qui sort de l'écran avec le recadrage centré : 0 quand la photo a le rapport de l'écran. Sert aux
+    /// tests et à la recette (« combien de la photo est coupé sur un écran plus allongé »).
+    static func croppedShare(imageSize: CGSize, in area: CGSize) -> CGFloat {
+        let filled = filledSize(imageSize: imageSize, in: area)
+        guard filled.width > 0, filled.height > 0 else {
+            return 0
+        }
+        return max(0, 1 - (area.width * area.height) / (filled.width * filled.height))
+    }
+
+    /// Le voile léger du HAUT (la barre d'état et les boutons sont maintenant sur la photo elle-même) : opacité de départ, en part de celle du voile
+    /// du design system (`colorPhotoCaptionScrim`, 0,70), qui s'efface vers le bas sur la hauteur de la zone sûre haute.
+    static let topScrimOpacity: Double = 0.6
 
     /// Le contraste d'un texte BLANC posé sur le voile noir d'opacité `alpha`, dans le PIRE cas (une photo toute blanche dessous), selon WCAG 2.x.
     static func whiteTextContrast(overScrimAlpha alpha: Double) -> Double {

@@ -1,7 +1,9 @@
 import SwiftUI
 import UIKit
 
-// La photo en plein écran (maquette 09, ticket §5.7, décision D24 du PM) : fond noir, la photo COMPLÈTE (jamais recadrée), « Photo de {Prénom} ·
+// La photo en plein écran (maquette 09, ticket §5.7, décision D24 du PM, puis exigence ferme du PM : AUCUNE MARGE VISIBLE, quel que soit la photo et l'appareil) : fond noir
+// derrière une photo qui REMPLIT tout l'écran (`scaledToFill`, recadrage centré quand son rapport diffère de celui de l'écran, dessinée sous la barre d'état et sous
+// l'indicateur d'accueil), « Photo de {Prénom} ·
 // {heure} », le bouton de fermeture, le zoom au pincement (1x à 4x) et au double toucher, et « Voir où c'était » (le lieu de la photo, donné à Plans,
 // COORDONNÉES SEULES, sans nom) avec l'heure PROPRE à la mesure du lieu. Fermeture : le bouton, le geste d'échappement de VoiceOver, ou un glissement
 // vers le bas (iOS ne le donne pas à un plein écran : il est refait ici).
@@ -54,7 +56,7 @@ struct PhotoFullScreen: View {
         // marges (encoche, barre d'accueil). Posé sous `.ignoresSafeArea()`, il les rendait toutes à ZÉRO (cause trouvée sur les captures de la CI :
         // la croix passait sous l'heure, le bouton sous la barre d'accueil). C'est le CONTENU, dans le lecteur, qui est étendu à l'écran ENTIER :
         // `size` est l'écran entier (zone visible + zones sûres). Pas de GeometryReader imbriqué, pas de Spacer vertical, pas de hauteur imposée :
-        // la photo est CENTRÉE dans l'écran, la croix et l'icône sont une surimpression collée en haut, la légende une surimpression collée en bas.
+        // la photo REMPLIT l'écran (centrée, recadrée au besoin), la croix et l'icône sont une surimpression collée en haut, la légende une surimpression collée en bas.
         // MARGES (retour du PM, TestFlight 32 : sur un vrai appareil le `fullScreenCover` peut annoncer des zones sûres NULLES) : on lit aussi celles
         // de la fenêtre (`PhotoSafeArea`), puis des PLANCHERS les rattrapent (haut : au moins 47 pt + 12 pt ; bas : au moins 34 pt + 16 pt), en portrait.
         GeometryReader { proxy in
@@ -77,6 +79,9 @@ struct PhotoFullScreen: View {
             }
             .frame(width: size.width, height: size.height)
             .overlay(alignment: .top) {
+                topScrim(height: insets.top)
+            }
+            .overlay(alignment: .top) {
                 topBar(insets: insets)
             }
             .overlay(alignment: .bottom) {
@@ -87,6 +92,18 @@ struct PhotoFullScreen: View {
         .preferredColorScheme(.dark)
         .accessibilityAction(.escape, onDismiss)
         .hidesInAppSwitcher()
+    }
+
+    /// Un voile léger sous la barre d'état et les boutons : la photo passe maintenant SOUS la barre d'état (aucune bande noire), l'heure et la batterie
+    /// (en clair) restent lisibles même sur une photo très claire. Le voile est le jeton du design system, s'efface vers le bas, ne reçoit aucun
+    /// toucher et n'existe pas pour VoiceOver.
+    private func topScrim(height: CGFloat) -> some View {
+        let scrim = colorPhotoCaptionScrim.color
+        let colors = [scrim.opacity(PhotoFullScreenLayout.topScrimOpacity), scrim.opacity(0)]
+        return LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom)
+        .frame(height: height)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 
     /// La croix (gauche) et l'icône « Enregistrer cette photo » (droite), face à face, SOUS la zone sûre du haut ; lues en premier par VoiceOver.
@@ -103,14 +120,15 @@ struct PhotoFullScreen: View {
         .accessibilitySortPriority(1)
     }
 
-    // MARK: - La photo complète, zoomable
+    // MARK: - La photo qui remplit tout l'écran, zoomable
 
-    /// La photo `scaledToFit` (entière, jamais recadrée, agrandie proprement par l'interpolation par défaut) dans un cadre de la taille de l'ÉCRAN
-    /// ENTIER : elle est CENTRÉE (verticalement aussi) et ne dépasse jamais l'écran.
+    /// La photo `scaledToFill` (aucune marge : elle touche les quatre bords, recadrée au centre quand son rapport diffère de celui de l'écran) dans un
+    /// cadre de la taille de l'ÉCRAN ENTIER, zones sûres comprises ; ce qui dépasse est coupé (`clipped`). Le zoom (1x = le remplissage, jamais moins)
+    /// et le déplacement (borné par `PhotoPan`, calculé sur la taille remplie) n'en font jamais apparaître un bord.
     private func photo(size: CGSize) -> some View {
         Image(uiImage: opened.image)
             .resizable()
-            .scaledToFit()
+            .scaledToFill()
             .scaleEffect(zoom)
             .offset(offset)
             .frame(width: size.width, height: size.height)

@@ -195,7 +195,8 @@ final class PhotoDescriptionFeedTests: XCTestCase {
         XCTAssertFalse(photo.lowercased().contains("description"))
         XCTAssertFalse(photo.contains("footer"))
         XCTAssertFalse(photo.contains(".padding"))
-        XCTAssertTrue(photo.contains(".scaledToFit()"))
+        XCTAssertTrue(photo.contains(".scaledToFill()"), "la photo remplit l'écran, avec ou sans description")
+        XCTAssertTrue(photo.contains(".clipped()"), "ce qui dépasse est coupé, jamais décalé")
         XCTAssertTrue(photo.contains(".frame(width: size.width, height: size.height)"))
 
         // Le pied : SEUL il lit la description, et il est une surimpression (l'estimation de hauteur ne touche pas la photo).
@@ -204,13 +205,13 @@ final class PhotoDescriptionFeedTests: XCTestCase {
     }
 
     func testThePhotoSizeComesOnlyFromTheImageAndTheScreen() {
-        // 11 Pro : zone visible 375 x 734 + zones sûres 44 en haut et 34 en bas = écran de 375 x 812 ; une photo 3:4 la remplit en largeur.
+        // 11 Pro : zone visible 375 x 734 + zones sûres 44 en haut et 34 en bas = écran de 375 x 812 ; une photo 3:4 la remplit en hauteur (coupée sur les côtés).
         let screen = PhotoFullScreenLayout.screenSize(visible: CGSize(width: 375, height: 734), top: 44, bottom: 34, leading: 0, trailing: 0)
         XCTAssertEqual(screen, CGSize(width: 375, height: 812))
-        let fitted = PhotoFullScreenLayout.fittedSize(imageSize: CGSize(width: 3_000, height: 4_000), in: screen)
-        XCTAssertEqual(fitted.width, 375, accuracy: 0.001)
-        XCTAssertEqual(fitted.height, 500, accuracy: 0.001)
-        // Ni `screenSize` ni `fittedSize` ne reçoivent le pied ni la description : leur résultat ne peut pas en dépendre.
+        let filled = PhotoFullScreenLayout.filledSize(imageSize: CGSize(width: 3_000, height: 4_000), in: screen)
+        XCTAssertEqual(filled.width, 609, accuracy: 0.5)
+        XCTAssertEqual(filled.height, 812, accuracy: 0.001)
+        // Ni `screenSize` ni `filledSize` ne reçoivent le pied ni la description : leur résultat ne peut pas en dépendre.
     }
 
     func testTheDescriptionIsWhiteOnTheSameDarkVeilSoItKeepsAtLeast45To1EvenOverAWhitePhoto() {
