@@ -196,6 +196,10 @@ final class AppEnvironment {
     let tracking: TrackingRuntime
     /// Le journal local de la détection (builds Debug et Internal seulement ; en publication il ne garde rien).
     let detectionJournal: DetectionJournal
+    /// TIME-3 : le journal local des changements de présence (répartition du temps du Profil, Réglages > Confidentialité).
+    let presenceHistory: PresenceHistory
+    /// Efface le journal de présence d'une Miff dont la personne n'est plus membre (liste des Miffs confirmée par le serveur).
+    private let presenceHistoryPruner: PresenceHistoryPruner
     /// L'Update (UPDATE-3) : la photo du moment, le bouton central coloré, la bulle d'incitation.
     let update: UpdateServices
     /// La suppression du compte (AUTH-5c) : procédure, contrôleur et retrait de l'autorisation Apple. Construite à la première demande (les
@@ -276,7 +280,9 @@ final class AppEnvironment {
                 network: networkMonitor,
                 drafts: drafts, generationCounter: trackingServices.generation,
                 deletionMarker: AccountDeletionFileMarker(),
-                localData: AccountDeletionServices.localData(updateLedger: updateServices.ledger)
+                localData: AccountDeletionServices.localData(
+                    updateLedger: updateServices.ledger, presenceHistory: trackingServices.history
+                )
             )
         )
         privacySettings = privacy
@@ -297,6 +303,8 @@ final class AppEnvironment {
         awaitingAgreement = miff.awaiting
         tracking = trackingServices.runtime
         detectionJournal = trackingServices.journal
+        presenceHistory = trackingServices.history
+        presenceHistoryPruner = PresenceHistoryPruner(history: trackingServices.history, directory: miff.directory)
         update = updateServices
         profileDrafts = drafts
         pendingConsent = pending

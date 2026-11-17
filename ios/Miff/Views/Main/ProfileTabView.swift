@@ -37,11 +37,15 @@ struct ProfileTabView: View {
     @ObservedObject var offlineRetry: OfflineRetryModel
     /// Les lieux de la Miff du carrousel (lus une fois par Miff, sans écouteur) et le message calme d'un geste.
     @ObservedObject var placesModel: ProfilePlacesViewModel
+    /// La carte « Répartition de ton temps » (TIME-4), sous le carrousel : calculée sur le téléphone d'après le journal local, pour la Miff du
+    /// carrousel, avec les lieux déjà lus ci-dessus (aucune lecture de plus).
+    @ObservedObject var timeShare: TimeShareViewModel
     @ObservedObject var placeNotices: PlaceNotices
     /// Les demandes d'ajout d'un lieu (LIEU-REQ) : celles du membre, lues avec la liste (un membre ne lit que les siennes).
     @ObservedObject var requestsModel: ProfileRequestsViewModel
     let placesContext: ProfilePlacesContext
     let actions: ProfileTabActions
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         ScrollView {
@@ -56,6 +60,7 @@ struct ProfileTabView: View {
                 }
                 .padding(.horizontal, Spacing.lg)
                 miffCards
+                timeShareSection
                 placesSection
                 // MODE VOYAGE : l'encart est le DERNIER bloc de l'écran (décision du PM après la recette du build 26).
                 TravelCardView(model: travel)
@@ -74,6 +79,18 @@ struct ProfileTabView: View {
         .onChange(of: isActive) { active in
             if !active {
                 placesContext.actions.onLeave()
+            } else {
+                // Le journal a pu changer pendant que l'onglet n'était pas regardé (le suivi y écrit même app fermée).
+                timeShare.refresh()
+            }
+        }
+        // La carte suit la Miff du carrousel et ses lieux (déjà lus) ; elle est relue au retour au premier plan.
+        .onAppear { syncTimeShare() }
+        .onChange(of: placesModel.state) { _ in syncTimeShare() }
+        .onChange(of: miffs) { _ in syncTimeShare() }
+        .onChange(of: scenePhase) { phase in
+            if phase == .active {
+                timeShare.refresh()
             }
         }
     }
@@ -176,6 +193,46 @@ struct ProfileTabView: View {
                 .padding(.horizontal, Spacing.lg)
             }
         }
+    }
+
+    /// La carte de répartition du temps de la Miff du carrousel : rien n'est dessiné (pas même une marge) tant que ses lieux n'ont pas été lus,
+    /// ni quand elle n'en a aucun (la section « Lieux » porte déjà le message).
+    @ViewBuilder
+    private var timeShareSection: some View {
+        if timeShare.display.state != .hidden {
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                TimeShareCard(
+                    display: timeShare.display,
+                    actions: TimeShareActions(
+                        onSelectWindow: { timeShare.selectWindow($0) },
+                        onRetry: { timeShare.refresh() },
+                        onOpenMiff: {
+                            if let miffId = placesModel.state.selectedMiffId {
+                                actions.onOpenMiff(miffId)
+                            }
+                        },
+                        onOpenLocationSettings: { ExternalOpener.openSystemSettings() }
+                    )
+                )
+                #if DEBUG || INTERNAL
+                // Recette : des données de test pour voir la carte sans attendre 7 jours (builds de test seulement, TS-23).
+                TimeShareDemoRow(model: timeShare)
+                #endif
+            }
+            .padding(.horizontal, Spacing.lg)
+        }
+    }
+
+    private func syncTimeShare() {
+        guard case .ready(let ready) = miffs,
+              let presentation = ProfilePlacesPresentation.make(
+                  state: placesModel.state, miffs: ready.miffs, myUid: placesContext.myUid
+              ),
+              case .list(let places) = presentation.body else {
+            timeShare.show(miffId: nil, places: nil)
+            return
+        }
+        timeShare.show(miffId: presentation.miffId, places: places)
     }
 
     /// La personne connectée a-t-elle créé cette Miff ? (le champ `ownerUid` de l'annuaire ; inconnu : non, donc un membre.)

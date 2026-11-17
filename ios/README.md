@@ -930,6 +930,57 @@ Ticket `docs/tickets/notifications-p1-derniere-visite.md` (décisions du PM du 2
 
 **Sans Mac, rien n'est compilé en local** : la CI fait foi. **À vérifier sur l'iPhone** : la ligne affichée après une fermeture forcée, le défilement jusqu'à la carte, le groupe au-dessus du flou, VoiceOver, Dynamic Type au maximum.
 
+## Répartition du temps (TIME-3 et TIME-4, miroir d'Android TIME-1 et TIME-2, ticket `docs/tickets/profil-repartition-temps.md`)
+
+La carte « Répartition de ton temps » de l'onglet Profil montre, en anneau, comment la personne a réparti **son** temps entre les lieux de la Miff du carrousel, ses zones de danger et « Ailleurs », sur 7, 14 ou 30 jours. **Tout est calculé sur le téléphone** : aucune lecture ni écriture Firestore de plus, aucun événement Analytics, aucune position lue, aucun réveil de plus. Mêmes règles de calcul et mêmes cas de test (T1 à T23) qu'Android.
+
+| Chemin | Rôle |
+|---|---|
+| `Models/TimeShare/PresenceFact.swift` | Un fait (Miff, état, lieu, heure) et les constantes partagées avec Android (7 / 14 / 30 jours, 24 h, 48 h, 35 jours, 5 lieux nommés) |
+| `Models/TimeShare/TimeShareCalculator.swift`, `TimeSharePercentages.swift` | Le calcul (contrat du ticket §6.2) et les pourcentages entiers (plus grand reste, en entiers) |
+| `Models/TimeShare/TimeShareCardState.swift`, `TimeShareTexts.swift`, `TimeShareDonutLayout.swift` | Les états de la carte (§7), les textes et la description du lecteur d'écran, la géométrie de l'anneau |
+| `Services/TimeShare/PresenceHistoryFileStore.swift` | Le journal sur disque (privé, exclu des sauvegardes, 35 jours) ; `PresenceHistoryPruner` efface le journal d'une Miff quittée ; `TimeShareContext` dit l'état du suivi (autorisations, voyage, zones) |
+| `Services/Tracking/TrackingEngine+History.swift` | Les deux points d'entrée du moteur : `noteHistory` (le fait du statut) et `noteUnknown` (temps non mesuré) |
+| `ViewModels/TimeShareViewModel.swift` | La carte pour la Miff du carrousel : lit le journal, calcule, mémorise la fenêtre |
+| `Views/Profile/TimeShareCard.swift`, `TimeShareDonut.swift`, `TimeShareLegend.swift`, `TimeShareDangerSheet.swift` | La carte, l'anneau (dessin SwiftUI, aucune bibliothèque), la légende, le détail de la zone de danger |
+| `DesignSystem/ChartTokens.swift` | La palette « graphique » (proposition, contraste 3:1 testé) |
+| `Diagnostic/TimeShareDemo.swift` | **Données de test de la recette, Debug et Internal seulement** (jamais en publication : test et contrôle de la CI) |
+
+### Le journal
+
+- **Un fait par changement de présence que le moteur calcule déjà**, avec l'instant qu'il écrit dans le statut (`presenceAt`) : le Feed et le graphique ne peuvent pas se contredire. `PresenceMachine.derive` reste l'unique calculateur. Branchement : `TrackingEngine+Events` (arrivée, départ, sortie manquée), `+Resume` (reprise du partage), `+Refresh` (lieu supprimé, déplacé ou de type modifié ; Miff qui n'est plus suivie ; départ de Miff), `+Travel` et `+TravelEnd` (début et fin d'un voyage), `+Writes` (statut de plus de 24 h abandonné), `disarm` (autorisation retirée) et `stop` (fin de session voulue).
+- **Ce qui est écrit** : identifiant de Miff, état, identifiant de lieu (lettres et chiffres, 20 au plus), heure. Une clé de zone (elle porte des coordonnées) ou un nom est refusé. Un fait identique au dernier de la même Miff n'est pas gardé ; une première présence « inconnue » non plus.
+- **Protection du fichier** : « jusqu'à la première authentification » (comme la copie locale du suivi), donc écrit téléphone verrouillé. Avant le premier déverrouillage après un redémarrage, le fait est gardé en mémoire et écrit dès que le fichier se lit (le moteur ne peut d'ailleurs pas lire sa propre copie avant). Un fichier qui existe mais ne se lit pas n'est **jamais** effacé ; un fichier abîmé est réinitialisé.
+- **Effacement** : voir CHANGELOG ; `doStop` (réveil où « personne n’est connecté » est constaté, par exemple avant le premier déverrouillage) **n’efface pas** le journal : un historique qu’on ne peut pas reconstruire ne part pas sur une supposition (limite : une déconnexion interrompue est rattrapée à la déconnexion suivante ou par la copie d’un autre compte) ; le bouton de Réglages > Confidentialité appelle `eraseFacts()` (le choix de fenêtre reste), la fin de session et la suppression du compte appellent `clearAll()`.
+
+### Écarts avec la maquette `19.webp` (à lister dans la PR ; E1 à E9 du ticket §9.1)
+
+| # | Maquette | iOS | Raison |
+|---|---|---|---|
+| E1 | « Répartition du temps » | « Répartition de **ton** temps » | Personnel (D2) |
+| E2 | « 72 % en zone sécurisée » | « 72 % dans tes lieux de confiance » | Aucune promesse de sécurité |
+| E3 | « Zone à risque » rouge vif avec ⚠️ | **« Zone de danger »** (libellé de l'app), une ligne, tranche hachurée en `chart/danger` (rouge assombri), icône d'avertissement, détail au toucher | Libellé de l'app ; ton ; jamais la couleur seule |
+| E4 | « Hors-zone » avec « ? » | « Ailleurs » avec un pictogramme neutre | Le « ? » évoque l'inconnu |
+| E5 | Vert, jaune, rouge, gris | Palette dérivée du bleu de la marque ; seule la zone de danger porte la couleur d'alerte | Cohérence avec le design system |
+| E6 | Bandeau vert avec coche et emoji de fête | Bandeau bleuté neutre, icône d'information, phrase descriptive | Pas de jugement (D13) |
+| E7 | Légende à droite | À droite par défaut, **sous l'anneau** aux grandes tailles de texte | Accessibilité |
+| E8 | — | Ligne de confidentialité et états non designés | Ticket §7 |
+| E9 | Emoji ⚽ et 🏋️ | Emoji de la table de catégories de l'app | Même glyphe que la liste des lieux |
+| iOS | Carte blanche très arrondie, ombre diffuse | Carte du carrousel au-dessus (`CardSurface`, `radiusMd`) | Cohérence avec le Profil iOS |
+| iOS | Sélecteur « 7 jours ⌄ » | Même pastille, ouvre un menu du système (choix coché) | Convention Apple |
+| iOS | Pas de texte au centre sur très grand texte | Pourcentage seul au centre, légende du centre sous l'anneau au-delà de « grand » | Rien ne déborde du trou |
+
+### Écarts avec Android et limites (TIME-3 et TIME-4)
+
+- **Anneau** : dessin à la main (`DonutSliceShape`, un point tous les 2 degrés) ; Swift Charts (`SectorMark`) exige iOS 17 alors que le minimum est iOS 16 (TS-24 confirmé).
+- **Fichier** : `isExcludedFromBackup` + `completeFileProtectionUntilFirstUserAuthentication` (équivalent iOS d'`allowBackup` / règles d'extraction).
+- **Aperçu des applications récentes** : non masqué (D17, limite connue comme pour le reste de l'app).
+- **Partage arrêté** : n'est dit que pour la Miff que le Feed affiche ; autre Miff : rien n'est affirmé (l'état de mon partage par Miff n'est lu ailleurs que par le Feed).
+- **Lieu supprimé** : le temps passé dans un lieu supprimé n'est plus compté (jamais en « Ailleurs ») dès que la liste des lieux de l'écran ne le contient plus ; l'identifiant du lieu est retiré du journal au prochain relevé des lieux par le suivi (au plus une heure, ou à la prochaine ouverture).
+- **Arrondi** : une part de moins de 1 % compte 0 ; les autres se partagent les 100 points **d'après leur propre temps** (le contrat dit « les autres totalisent 100 » sans préciser : même choix à vérifier côté Android).
+- **Sélecteur et feuille** : `Menu` et `.sheet` avec `presentationDetents` (iOS 16).
+- **À vérifier sur l'iPhone** : lisibilité de l'anneau et du texte du centre (taille 116 pt), rendu des hachures, légende aux grandes tailles de texte, VoiceOver (description unique, ligne de la zone de danger, sélecteur), écriture du journal téléphone verrouillé (recette TS-8), état « localisation insuffisante » avec le bouton des réglages.
+
 ## Confidentialité : Analytics et Crashlytics
 
 - `Info.plist` : `FIREBASE_ANALYTICS_COLLECTION_ENABLED = NO` (la clé irréversible `..._DEACTIVATED` n'est **pas** utilisée), `FirebaseCrashlyticsCollectionEnabled = NO`, `FirebaseDataCollectionDefaultEnabled = NO` (collecte par défaut éteinte pour tous les SDK Firebase ; chaque SDK est réactivé explicitement après accord), `GOOGLE_ANALYTICS_IDFV_COLLECTION_ENABLED = NO`, signaux publicitaires et attribution désactivés, `FirebaseAutomaticScreenReportingEnabled = NO` (aucun nom d'écran dans Analytics).

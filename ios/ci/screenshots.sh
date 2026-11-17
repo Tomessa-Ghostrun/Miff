@@ -130,6 +130,15 @@ shot 99-fr-profil-carrousel 3 "${fr_args[@]}" -MiffPreview profile-carousel
 shot 99b-fr-profil-carrousel-2 3 "${fr_args[@]}" -MiffPreview profile-carousel-2
 shot 99c-fr-profil-carrousel-creer 3 "${fr_args[@]}" -MiffPreview profile-carousel-create
 
+# TIME-4 : la carte « Répartition de ton temps » du Profil (Diagnostic/TimeShareScreenPreviews.swift, option -MiffPreview timeshare-*, build Debug
+# seulement) : anneau et légende avec la zone de danger, état « pas assez de données », détail de la zone de danger, anglais, et très grande
+# police (légende sous l'anneau). Les lieux et les durées sont inventés et passent par le VRAI calcul.
+shot 99d-fr-repartition-temps 3 "${fr_args[@]}" -MiffPreview timeshare-nominal
+shot 99e-fr-repartition-temps-vide 3 "${fr_args[@]}" -MiffPreview timeshare-empty
+shot 99f-fr-repartition-temps-detail-danger 3 "${fr_args[@]}" -MiffPreview timeshare-danger
+shot 99g-en-repartition-temps 3 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview timeshare-nominal
+shot 99h-fr-repartition-temps-grande-police 3 "${fr_args[@]}" -UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXL -MiffPreview timeshare-many
+
 # La photo d'un proche en plein écran (FEED-8), dans un vrai fullScreenCover : un 3:4 (comme la capture du PM) puis le format du viseur (9:19,5).
 shot 150-fr-photo-plein-ecran-3-4 4 "${fr_args[@]}" -MiffPreview photo-3-4
 shot 151-fr-photo-plein-ecran-haute 4 "${fr_args[@]}" -MiffPreview photo-tall

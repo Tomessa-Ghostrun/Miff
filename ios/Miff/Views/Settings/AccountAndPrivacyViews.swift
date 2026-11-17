@@ -114,14 +114,19 @@ struct PrivacyView: View {
     let permissions: DevicePermissions
     let onBack: () -> Void
     let onOpenDetectionHelp: () -> Void
+    /// Efface le journal local des changements de présence (la répartition du temps du Profil repart de zéro). Local : rien n'est envoyé.
+    var onEraseTimeHistory: () -> Void = {}
 
     @State private var permission: PrivacyPermissionState?
+    @State private var confirmsErase = false
+    @State private var erased = false
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         MiffFrame(title: L10n.string("settings_privacy_title"), onBack: onBack, usesCanvas: true) {
             location
             notifications
+            timeHistory
             texts
         }
         .task {
@@ -167,6 +172,35 @@ struct PrivacyView: View {
         SettingsBody(text: L10n.string("notif_privacy_body"))
         if let permission {
             SettingsBody(text: L10n.string(permission.notificationsStatusKey))
+        }
+    }
+
+    /// D15 : l'historique de temps gardé sur le téléphone, et le moyen de l'effacer (confirmation calme, puis un message). Ne change rien pour les
+    /// proches : le journal ne leur est jamais envoyé.
+    @ViewBuilder
+    private var timeHistory: some View {
+        SettingsSectionTitle(key: "settings_privacy_time_title")
+        SettingsBody(text: L10n.string("settings_privacy_time_body"))
+        Button {
+            confirmsErase = true
+        } label: {
+            Text("settings_privacy_time_erase")
+        }
+        .buttonStyle(.miffSecondaryFullWidth)
+        .alert(
+            Text("settings_privacy_time_confirm_title"),
+            isPresented: $confirmsErase,
+            actions: {
+                Button("settings_privacy_time_confirm_action", role: .destructive) {
+                    onEraseTimeHistory()
+                    erased = true
+                }
+                Button("common_cancel", role: .cancel) {}
+            },
+            message: { Text("settings_privacy_time_confirm_body") }
+        )
+        if erased {
+            MiffNotice(text: L10n.string("settings_privacy_time_done"))
         }
     }
 

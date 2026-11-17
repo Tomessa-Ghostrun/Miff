@@ -28,6 +28,8 @@ struct ProfilePlacesShell {
     /// Les demandes d'ajout d'un lieu (LIEU-REQ), sous la même liste.
     let requests: ProfileRequestsViewModel
     let context: ProfilePlacesContext
+    /// La carte « Répartition de ton temps » (TIME-4), sous le carrousel.
+    let timeShare: TimeShareViewModel
 }
 
 /// Ce que la coquille a besoin de l'Update (UPDATE-3) : le view model de l'écran, et MON statut dans la Miff affichée (la couleur du bouton
@@ -211,6 +213,7 @@ struct MainShellView<Feed: View>: View {
                         travel: travel,
                         offlineRetry: profile.offlineRetry,
                         placesModel: places.model,
+                        timeShare: places.timeShare,
                         placeNotices: places.notices,
                         requestsModel: places.requests,
                         placesContext: places.context,
