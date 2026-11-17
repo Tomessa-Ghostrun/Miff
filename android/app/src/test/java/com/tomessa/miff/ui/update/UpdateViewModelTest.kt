@@ -56,6 +56,16 @@ class UpdateViewModelTest {
         var commits = 0
         var fail = false
 
+        /** The documents built by the lots that reached the server (a failing lot builds nothing). */
+        val written = mutableListOf<DocWrite>()
+
+        /** What a failing lot throws (offline by default). */
+        var failure: Exception =
+            com.google.firebase.firestore.FirebaseFirestoreException(
+                "down",
+                com.google.firebase.firestore.FirebaseFirestoreException.Code.UNAVAILABLE,
+            )
+
         override suspend fun commit(
             uid: String,
             miffIds: List<String>,
@@ -64,12 +74,9 @@ class UpdateViewModelTest {
         ): PhotoCommit {
             commits++
             if (fail) {
-                throw com.google.firebase.firestore.FirebaseFirestoreException(
-                    "down",
-                    com.google.firebase.firestore.FirebaseFirestoreException.Code.UNAVAILABLE,
-                )
+                throw failure
             }
-            build(miffIds)
+            written += build(miffIds)
             return PhotoCommit(miffIds, emptyList(), emptyList())
         }
     }
@@ -333,5 +340,166 @@ class UpdateViewModelTest {
         now += 60_000L
         vm.onOpened(true, false, false)
         assertSame(before, vm.stage.value)
+    }
+
+    // --- The optional description (ticket description-update) --------------------------------------------------------------------------
+
+    private fun photoWrite() = store.written.first { it.path.contains("/photos/") }
+
+    @Test
+    fun aPreviewStartsWithoutADescription_andPublishingWithoutOneWritesNoKey() =
+        runTest(dispatcher) {
+            val vm = viewModel()
+            vm.toPreview()
+            assertEquals("", (vm.stage.value as UpdateStage.Preview).description)
+            vm.onPublish()
+            advanceUntilIdle()
+            assertEquals(1, store.commits)
+            assertFalse("description" in photoWrite().data)
+        }
+
+    @Test
+    fun aDescriptionTyped_isPublishedWithThePhoto_cleaned_inTheSameLot() =
+        runTest(dispatcher) {
+            val vm = viewModel()
+            vm.toPreview()
+            vm.onDescriptionChanged("  Bien   arrivé ")
+            assertEquals("  Bien   arrivé ", (vm.stage.value as UpdateStage.Preview).description)
+            vm.onPublish()
+            advanceUntilIdle()
+            assertEquals("one lot, one commit", 1, store.commits)
+            assertEquals("Bien arrivé", photoWrite().data["description"])
+            assertSame(UpdateStage.Idle, vm.stage.value)
+        }
+
+    @Test
+    fun aDescriptionOfOnlySpaces_publishesNoKey() =
+        runTest(dispatcher) {
+            val vm = viewModel()
+            vm.toPreview()
+            vm.onDescriptionChanged("   \n\t ")
+            vm.onPublish()
+            advanceUntilIdle()
+            assertFalse("description" in photoWrite().data)
+        }
+
+    @Test
+    fun theViewModel_alsoLimitsTheText_to140Units_andReturnsWhatItKept() {
+        val vm = viewModel()
+        vm.toPreview()
+        val kept = vm.onDescriptionChanged("a".repeat(200))
+        assertEquals(140, kept.length)
+        assertEquals(kept, (vm.stage.value as UpdateStage.Preview).description)
+    }
+
+    @Test
+    fun aDescriptionOutsideThePreview_isIgnored() {
+        val vm = viewModel()
+        assertEquals("", vm.onDescriptionChanged("hello"))
+        vm.onOpened(true, false, false)
+        assertEquals("", vm.onDescriptionChanged("hello"))
+        assertTrue(vm.stage.value is UpdateStage.Viewfinder)
+    }
+
+    @Test
+    fun aPublicationThatFails_keepsThePhotoAndItsDescription_andRetryingSendsBoth() =
+        runTest(dispatcher) {
+            val vm = viewModel()
+            vm.toPreview()
+            vm.onDescriptionChanged("Pas de réseau pour l'instant")
+            store.fail = true
+            vm.onPublish()
+            advanceUntilIdle()
+            val stage = vm.stage.value as UpdateStage.Preview
+            assertSame("the photo is still there", photo, stage.photo)
+            assertEquals("the description is still there", "Pas de réseau pour l'instant", stage.description)
+            assertEquals(PreviewNotice.Offline, stage.notice)
+            assertTrue("nothing was written", store.written.isEmpty())
+            store.fail = false
+            now += 31_000L
+            vm.onPublish()
+            advanceUntilIdle()
+            assertEquals("Pas de réseau pour l'instant", photoWrite().data["description"])
+            assertSame(UpdateStage.Idle, vm.stage.value)
+        }
+
+    @Test
+    fun aRefusalOfTheRules_notDeployedYet_isACalmSentence_withPhotoAndDescriptionKept() =
+        runTest(dispatcher) {
+            val vm = viewModel()
+            vm.toPreview()
+            vm.onDescriptionChanged("Bien arrivé")
+            store.failure =
+                com.google.firebase.firestore.FirebaseFirestoreException(
+                    "denied",
+                    com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED,
+                )
+            store.fail = true
+            vm.onPublish()
+            advanceUntilIdle()
+            val stage = vm.stage.value as UpdateStage.Preview
+            assertEquals(PreviewNotice.Refused, stage.notice)
+            assertEquals("Bien arrivé", stage.description)
+            assertFalse(stage.publishing)
+            assertSame(photo, stage.photo)
+        }
+
+    @Test
+    fun theDescriptionCannotBeChangedWhileThePhotoLeaves() =
+        runTest(dispatcher) {
+            val vm = viewModel()
+            vm.toPreview()
+            vm.onDescriptionChanged("avant")
+            vm.onPublish()
+            assertTrue((vm.stage.value as UpdateStage.Preview).publishing)
+            assertEquals("avant", vm.onDescriptionChanged("pendant"))
+            assertEquals("avant", (vm.stage.value as UpdateStage.Preview).description)
+            advanceUntilIdle()
+            assertEquals("avant", photoWrite().data["description"])
+        }
+
+    @Test
+    fun recommencer_theCross_andLeavingTheUpdate_forgetTheDescriptionWithThePhoto() {
+        listOf<(UpdateViewModel) -> Unit>({ it.onRetake() }, { it.onClosed() }).forEach { leave ->
+            val vm = viewModel()
+            vm.toPreview()
+            vm.onDescriptionChanged("à oublier")
+            leave(vm)
+            assertFalse(vm.stage.value is UpdateStage.Preview)
+            // A new photo starts with an empty field, never with the old text.
+            vm.onOpened(true, false, false)
+            vm.onPhotoReady(photo)
+            assertEquals("", (vm.stage.value as UpdateStage.Preview).description)
+        }
+    }
+
+    @Test
+    fun aPhotoThatWentStale_forgetsItsDescription() {
+        val vm = viewModel()
+        vm.toPreview()
+        vm.onDescriptionChanged("trop tard")
+        now += UpdatePhoto.STALE_MILLIS + 1
+        vm.onOpened(true, false, false)
+        val stage = vm.stage.value as UpdateStage.Preview
+        assertEquals(PreviewNotice.Stale, stage.notice)
+        assertEquals("", stage.description)
+    }
+
+    @Test
+    fun aPhotoStillFresh_keepsItsDescription_whenTheAppComesBack() {
+        val vm = viewModel()
+        vm.toPreview()
+        vm.onDescriptionChanged("encore là")
+        now += 60_000L
+        vm.onOpened(true, false, false)
+        assertEquals("encore là", (vm.stage.value as UpdateStage.Preview).description)
+    }
+
+    @Test
+    fun thePreview_showsNothingOfTheDescription_inItsToString() {
+        val vm = viewModel()
+        vm.toPreview()
+        vm.onDescriptionChanged("secret words")
+        assertEquals("Preview(redacted)", vm.stage.value.toString())
     }
 }

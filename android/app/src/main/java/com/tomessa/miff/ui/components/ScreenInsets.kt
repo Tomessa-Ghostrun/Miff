@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.areNavigationBarsVisible
 import androidx.compose.foundation.layout.areStatusBarsVisible
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
@@ -74,6 +75,12 @@ fun Modifier.miffTopInsets(): Modifier = composed { windowInsetsPadding(miffSafe
 
 /** Bottom and left/right sides: navigation bar (3 buttons or gestures), cut-out and keyboard. For a body, a bar or a sheet. */
 fun Modifier.miffBottomInsets(): Modifier = composed { windowInsetsPadding(miffSafeInsets().only(HorizontalAndBottom)) }
+
+/**
+ * The keyboard ALONE (nothing while it is closed), for a tab whose bottom is already kept by the floating tab bar (LocalTabBarInset): the bar hides while the keyboard
+ * is open, so this takes over and lifts the content above the keyboard, with no margin counted twice. Used by the preview of the Update (the description field).
+ */
+fun Modifier.miffKeyboardInsets(): Modifier = composed { windowInsetsPadding(WindowInsets.ime) }
 
 /** Height of the status bar and cut-out, for the rare element that must not be padded as a whole but only pushed down. */
 @Composable

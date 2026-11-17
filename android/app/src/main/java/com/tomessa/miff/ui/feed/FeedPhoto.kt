@@ -13,15 +13,19 @@ import androidx.compose.foundation.gestures.rememberTransformableState
 import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -49,6 +53,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -83,6 +88,7 @@ import com.tomessa.miff.ui.theme.colorTextPrimary
 import com.tomessa.miff.ui.theme.colorUpdateScrim
 import com.tomessa.miff.ui.theme.textBodyBold14
 import com.tomessa.miff.ui.theme.textBodyCaption
+import com.tomessa.miff.ui.theme.textBodyRegular
 import com.tomessa.miff.ui.theme.textBodyRegular14
 import com.tomessa.miff.ui.theme.textTitleBold20
 import kotlinx.coroutines.delay
@@ -285,13 +291,14 @@ internal fun PhotoFullScreen(
         onDismissRequest = onDismiss,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        Box(
+        BoxWithConstraints(
             Modifier
                 .fillMaxSize()
                 .holdForDiagnostic()
                 .background(Color.Black)
                 .miffScreenInsets(),
         ) {
+            val footerMaxHeight = maxHeight * FOOTER_MAX_SHARE
             if (bitmap != null) {
                 Image(
                     bitmap = bitmap,
@@ -357,11 +364,37 @@ internal fun PhotoFullScreen(
                             ).padding(top = Spacing.minTouchTarget + Spacing.m, start = Spacing.m, end = Spacing.m),
                 )
             }
+            // The footer is at most 45 % of the height and SCROLLS beyond it (a long description, a large font, a small phone): the photo is never hidden in full.
+            // With a description it sits on a dark veil (white text stays readable even over a white photo); without one it is exactly what it always was.
+            val description = photo.description
             Column(
-                modifier = Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(Spacing.m),
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .heightIn(max = footerMaxHeight)
+                        .then(if (description != null) Modifier.background(colorPhotoFooterVeil) else Modifier)
+                        .verticalScroll(rememberScrollState())
+                        .padding(Spacing.m),
                 verticalArrangement = Arrangement.spacedBy(Spacing.s),
             ) {
-                Text(text = title, style = textTitleBold20, color = Color.White)
+                // The description of the author, ABOVE "Photo de ...". Plain text: no link, no style, not selectable, never cut. Read before the title.
+                if (description != null) {
+                    val spoken = stringResource(R.string.update_description_shown_a11y, description)
+                    Text(
+                        text = description,
+                        style = textBodyRegular,
+                        color = Color.White,
+                        textAlign = TextAlign.Start,
+                        modifier = Modifier.fillMaxWidth().semantics { contentDescription = spoken },
+                    )
+                }
+                Text(
+                    text = title,
+                    style = textTitleBold20,
+                    color = Color.White,
+                    modifier = Modifier.semantics { heading() },
+                )
                 photo.location?.let { place ->
                     Text(
                         text =
@@ -493,3 +526,9 @@ internal fun SaveResultNote(
 }
 
 private const val MAX_ZOOM = 4f
+
+/** The footer of the full-screen photo never takes more than this share of the height; beyond it, it scrolls (the same 45 % as iOS). */
+private const val FOOTER_MAX_SHARE = 0.45f
+
+/** The veil under the footer when the photo has a description: dark enough for white text at 4.5:1 over a white photo (0.62 of black over white = #606060). */
+internal val colorPhotoFooterVeil = Color.Black.copy(alpha = 0.62f)

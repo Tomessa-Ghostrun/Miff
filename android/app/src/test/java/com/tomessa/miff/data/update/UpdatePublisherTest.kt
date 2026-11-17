@@ -151,6 +151,83 @@ class UpdatePublisherTest {
 
     private fun photoWrites() = store.commits.flatMap { it.writes }.filter { "/photos/" in it.path }
 
+// --- The optional description (ticket description-update) -----------------------------------------------------------------------------
+
+    @Test
+    fun withADescription_thePhotoDocumentCarriesIt_inTheSameLot_andNothingMoreIsWritten() =
+        runTest {
+            val result = publisher().publish(photo, description = "  Bien   arrivé ")
+            assertEquals(PublishResult.Published(1), result)
+            val commit = store.commits.single()
+            assertEquals("still two writes per Miff", 2, commit.writes.size)
+            val doc = commit.writes[0]
+            assertEquals(
+                setOf("jpeg", "createdAt", "expiresAt", "lat", "lng", "measuredAt", "description"),
+                doc.data.keys,
+            )
+            assertEquals("Bien arrivé", doc.data["description"])
+            assertFalse(
+                commit.writes[1]
+                    .data.keys
+                    .any { it.contains("escription") },
+            )
+        }
+
+    @Test
+    fun withoutADescription_orWithOnlySpaces_theDocumentIsTheOldOne() =
+        runTest {
+            publisher().publish(photo)
+            assertFalse("description" in photoWrites().single().data)
+            ledger.last = null
+            now += 60_000L
+            publisher().publish(photo, description = "   ")
+            assertFalse("description" in photoWrites().last().data)
+            assertEquals(
+                setOf("jpeg", "createdAt", "expiresAt", "lat", "lng", "measuredAt"),
+                photoWrites().last().data.keys,
+            )
+        }
+
+    @Test
+    fun severalMiffs_theSameTextIsWrittenInEachCopy() =
+        runTest {
+            myMiffs = miffIds
+            publisher().publish(photo, description = "Même texte pour tous")
+            val photos = photoWrites()
+            assertEquals(7, photos.size)
+            photos.forEach { assertEquals("Même texte pour tous", it.data["description"]) }
+        }
+
+    @Test
+    fun myOwnCard_showsMyDescription_withoutReadingTheServer() =
+        runTest {
+            publisher().publish(photo, description = "Ma description")
+            val own = cache.get(miffIds[0], uid, lastUpdateAtMillis = null, nowMillis = now)
+            assertEquals("Ma description", own!!.description)
+        }
+
+    @Test
+    fun withoutADescription_myOwnCopyHasNone_neverTheOldOne() =
+        runTest {
+            publisher().publish(photo, description = "Ancienne description")
+            now += 60_000L
+            ledger.last = null
+            publisher().publish(photo)
+            assertNull(cache.get(miffIds[0], uid, lastUpdateAtMillis = null, nowMillis = now)!!.description)
+        }
+
+    @Test
+    fun aRefusal_whenTheRulesDoNotKnowTheDescriptionYet_leavesNothing_andIsRefused() =
+        runTest {
+            store.failCall = 0
+            store.failure = FirebaseFirestoreException("no", FirebaseFirestoreException.Code.PERMISSION_DENIED)
+            val result = publisher().publish(photo, description = "Bien arrivé")
+            assertEquals(PublishResult.Refused, result)
+            // Nothing is counted, and my card shows no photo: the screen keeps the photo and its description, "Réessayer" sends both again.
+            assertNull(cache.get(miffIds[0], uid, null, now))
+            assertNull(ledger.last)
+        }
+
     // --- MODE VOYAGE -------------------------------------------------------------------------------------------------------------------
 
     @Test
