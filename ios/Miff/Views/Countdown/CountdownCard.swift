@@ -67,11 +67,13 @@ struct CountdownBorderRing: View {
     var fraction: Double
 
     var body: some View {
+        // On garde la FIN du tracé : le quart haut-droit disparaît d'abord (sens horaire), comme sur Android.
+        let kept = CountdownBorder.keptRange(fraction: fraction)
         ZStack {
             CountdownBorderShape()
                 .stroke(colorBorderDefault.color, style: StrokeStyle(lineWidth: CountdownBorder.lineWidth))
             CountdownBorderShape()
-                .trim(from: 0, to: CGFloat(fraction))
+                .trim(from: kept.from, to: kept.to)
                 .stroke(
                     CountdownBorder.color(fraction: fraction).color,
                     style: StrokeStyle(lineWidth: CountdownBorder.lineWidth, lineCap: .butt)

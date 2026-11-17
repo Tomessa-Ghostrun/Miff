@@ -90,4 +90,39 @@ final class CountdownCardLayoutTests: XCTestCase {
         let drawn = height(of: CountdownSlot(isActive: true).environment(\.countdownContext, context))
         XCTAssertEqual(drawn, 0, accuracy: 0.5)
     }
+
+    // MARK: - L'espacement (revue de la PR #244) : masqué, l'encart ne change RIEN à la mise en page d'avant
+
+    /// Un hôte tel que le Profil et le Feed : une pile qui espace de `Spacing.lg`, dont un enfant est la paire « ce qui précède + l'encart »
+    /// rangée dans une pile d'espacement 0.
+    private func column(slot: Bool, context: CountdownContext) -> some View {
+        VStack(spacing: Spacing.lg) {
+            Text(verbatim: "Haut")
+            VStack(spacing: 0) {
+                Text(verbatim: "Bulle")
+                if slot {
+                    CountdownSlot(isActive: true, topSpacing: Spacing.lg)
+                }
+            }
+            Text(verbatim: "Bas")
+        }
+        .environment(\.countdownContext, context)
+    }
+
+    func testAHiddenSlotAddsNoSpaceInsideItsHostColumn() {
+        let context = CountdownContext(status: MyStatusStore(), clock: { 1_794_063_600_000 }, openUpdate: {})
+        let without = height(of: column(slot: false, context: context))
+        let hidden = height(of: column(slot: true, context: context))
+        XCTAssertEqual(hidden, without, accuracy: 0.5, "masqué : la mise en page de main, jamais 24 pt de plus")
+    }
+
+    func testAVisibleSlotAddsItsOwnSpaceAboveAndItsCardHeight() {
+        let now = 1_794_063_600_000
+        let store = MyStatusStore()
+        store.update(facts(.out, since: now - 48 * 60_000))
+        let context = CountdownContext(status: store, clock: { now }, openUpdate: {})
+        let without = height(of: column(slot: false, context: context))
+        let shown = height(of: column(slot: true, context: context))
+        XCTAssertGreaterThanOrEqual(shown - without, Spacing.lg + Spacing.minTouchTarget - 0.5)
+    }
 }

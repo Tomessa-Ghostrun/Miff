@@ -184,6 +184,7 @@ struct MiffHomeHost: View {
                     update: UpdateShell(
                         model: updateModel,
                         status: environment.update.myStatus,
+                        ownStatus: environment.update.ownStatus,
                         onReviewAgreement: {
                             // « Revoir et accepter » : le mécanisme du Feed (`AwaitingAgreement`), que la porte des autorisations écoute.
                             environment.awaitingAgreement.requestReview()

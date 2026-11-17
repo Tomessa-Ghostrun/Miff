@@ -7,7 +7,7 @@
 
 ## À savoir avant de commencer
 
-- L'encart n'existe que **pour vous, sur votre téléphone** : jamais pour un proche, rien n'est envoyé ni lu en plus (aucune lecture, aucune écriture, aucune notification).
+- L'encart n'existe que **pour vous, sur votre téléphone** : jamais pour un proche, rien n'est envoyé (aucune écriture, aucune notification). Sur le Profil et l'Update, l'app lit **votre seul statut** (un document) pour que l'encart reste juste.
 - Il apparaît **quand vous êtes dehors de vos lieux de confiance ET encore en vert** (moins de 2 h après votre départ ou votre dernière update), et disparaît à l'orange.
 - Un défaut : capture d'écran + numéro de l'étape, puis étape suivante.
 - **Limite connue** (voir la PR) : si vous avez fait défiler le Feed au-delà de l'encart au moment où il disparaît, le contenu remonte d'un cran (iOS 16 n'offre pas de position de lecture stable). Les autres cas sont sans saut.
@@ -34,6 +34,8 @@
 12. [ ] **Un proche (deuxième compte, même Miff)** ne voit **rien** : ni encart, ni durée, ni mention sur votre carte ni dans la liste des membres. Et inversement : l'encart du proche n'est jamais sur **votre** écran.
 13. [ ] **Rentrez** dans un lieu de confiance : l'encart disparaît (fondu court). Ressortez : il revient, la durée repart de l'heure du départ.
 14. [ ] **Touchez l'encart** : l'écran **Update** s'ouvre (le même que le bouton central). Quittez sans publier : rien ne change. Publiez une update (photo) : retour sur le Feed, l'encart affiche **« 2 h »** (remis à zéro) et la bordure est **pleine**.
+14 bis. [ ] **Depuis le Profil** : touchez l'encart du **Profil**, publiez une update, puis ouvrez l'onglet **Profil** : l'encart affiche **« 2 h »**, bordure **pleine** (jamais l'ancienne durée). Même chose en passant du Feed au Profil juste après.
+14 ter. [ ] **Restez sur le Profil**, écran allumé, et **entrez** dans un lieu de confiance : en quelques secondes (selon la détection du téléphone) l'encart **disparaît**, sans quitter le Profil ; il ne dit plus « Tu es en dehors de tes lieux de confiance ». Si l'encart ne se met pas à jour, changez d'onglet puis revenez : notez-le (étape 14 ter) avec une capture.
 15. [ ] **Mode voyage** activé (Profil > Mode voyage) : l'encart disparaît. Désactivé : il revient seulement s'il y a lieu.
 16. [ ] **Arrêter le partage** de la Miff affichée : l'encart disparaît ; il revient à la reprise s'il y a lieu.
 17. [ ] **Mode avion** : l'encart **reste affiché et continue de décompter**, sans message d'erreur.

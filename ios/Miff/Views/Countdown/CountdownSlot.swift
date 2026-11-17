@@ -4,7 +4,7 @@ import SwiftUI
 // instant (les frontières de minute viennent de l'échéance, pas du moment de l'affichage).
 //
 // COÛT ET BATTERIE (ticket §2.5) : aucune lecture ni écriture Firestore, aucun réseau, aucune notification, aucun événement d'analyse. Le statut
-// vient de `MyStatusStore` (déjà nourri par l'unique écouteur du Feed) et l'heure de l'appareil. UNE mise à jour par minute, alignée sur
+// vient de `MyStatusStore` (nourri par l'écouteur du Feed, ou par celui de MON seul statut sur le Profil et l'Update) et l'heure de l'appareil. UNE mise à jour par minute, alignée sur
 // l'échéance (jamais une minuterie de 60 s qui dérive, jamais à la seconde) ; AUCUNE minuterie quand l'encart n'est pas visible (onglet quitté,
 // app en arrière-plan, encart masqué) ; au retour, la valeur est recalculée depuis l'heure absolue, dès l'image qui revient.
 //
@@ -38,11 +38,15 @@ func countdownSystemClock() -> Int {
 struct CountdownSlot: View {
     /// L'onglet qui porte l'encart est celui en usage.
     let isActive: Bool
+    /// L'espace AU-DESSUS de l'encart, porté par l'encart lui-même : masqué, l'emplacement ne prend AUCUNE place (comme Android). L'hôte
+    /// range donc le slot dans une pile d'espacement 0 avec ce qui le précède, jamais comme enfant direct d'une pile qui espace (un enfant
+    /// vide y garderait son espacement).
+    var topSpacing: CGFloat = 0
     @Environment(\.countdownContext) private var context
 
     var body: some View {
         if let context {
-            CountdownSlotContent(context: context, status: context.status, isActive: isActive)
+            CountdownSlotContent(context: context, status: context.status, isActive: isActive, topSpacing: topSpacing)
         }
     }
 }
@@ -51,6 +55,7 @@ private struct CountdownSlotContent: View {
     let context: CountdownContext
     @ObservedObject var status: MyStatusStore
     let isActive: Bool
+    let topSpacing: CGFloat
     /// Ne sert qu'à FORCER un nouveau calcul à chaque frontière de minute : la valeur affichée est toujours recalculée avec l'horloge.
     @State private var tick = 0
     @Environment(\.scenePhase) private var scenePhase
@@ -71,6 +76,7 @@ private struct CountdownSlotContent: View {
         Group {
             if case .visible(let display) = current {
                 CountdownCard(display: display, texts: CountdownTexts(), onOpen: context.openUpdate)
+                    .padding(.top, topSpacing)
                     .transition(.opacity)
             }
         }

@@ -23,6 +23,14 @@ enum CountdownBorder {
         reduceMotion ? nil : fadeSeconds
     }
 
+    /// La part du tracé GARDÉE pour une fraction `f` de bordure restante : de `1 - f` à `1`. Le tracé part du haut au centre vers la droite ;
+    /// garder la FIN fait donc disparaître d'abord le début (le quart haut-droit), puis le côté droit : la bordure se vide dans le sens
+    /// horaire. (`trim(from: 0, to: f)` garderait le début et viderait la bordure à l'envers.) `f` est borné à 0...1.
+    static func keptRange(fraction: Double) -> (from: CGFloat, to: CGFloat) {
+        let kept = CGFloat(min(1, max(0, fraction)))
+        return (from: 1 - kept, to: 1)
+    }
+
     /// 0 = `status/safe`, 1 = `status/warning` : t = (0,25 − f) / 0,25, borné. Jamais au-delà du orange, donc jamais de rouge.
     static func warmth(fraction: Double) -> Double {
         min(1, max(0, (warmingStartsBelow - fraction) / warmingStartsBelow))

@@ -1,8 +1,10 @@
 import SwiftUI
 
 /// Le contour de l'encart (rectangle à coins arrondis `radius/md`), ancré EN HAUT AU CENTRE et dessiné dans le sens HORAIRE, comme une
-/// horloge : `trim(from: 0, to: f)` garde donc la part `f` de la LONGUEUR du contour (pas d'un angle) et la bordure se vide dans le sens
-/// horaire. SwiftUI ne retourne jamais un tracé en écriture de droite à gauche : le sens est le même partout (c'est une horloge).
+/// horloge : le tracé part du haut au centre, va vers la droite, descend, revient par la gauche et finit au haut au centre. La longueur se
+/// mesure le long du contour (pas selon un angle). Pour que la bordure se vide dans le sens horaire (le quart haut-droit disparaît d'abord),
+/// on GARDE LA FIN du tracé : `trim(from: 1 - f, to: 1)` (voir `CountdownBorder.keptRange`), jamais `trim(from: 0, to: f)`, qui garderait le
+/// DÉBUT (le côté droit) et viderait la bordure à l'envers. SwiftUI ne retourne jamais un tracé en écriture de droite à gauche.
 /// Le tracé est rentré d'une demi-épaisseur : le trait reste DANS l'encart.
 struct CountdownBorderShape: Shape {
     var lineWidth: CGFloat = CountdownBorder.lineWidth

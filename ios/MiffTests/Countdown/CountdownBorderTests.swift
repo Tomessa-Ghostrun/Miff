@@ -60,6 +60,75 @@ final class CountdownBorderTests: XCTestCase {
         XCTAssertGreaterThan(quarter.minX, rect.midX - 0.5)
     }
 
+    // MARK: - La portion gardée (sens horaire : le quart haut-droit disparaît d'abord)
+
+    private func kept(_ fraction: Double) -> CGRect {
+        let range = CountdownBorder.keptRange(fraction: fraction)
+        return CountdownBorderShape().path(in: rect).trimmedPath(from: range.from, to: range.to).boundingRect
+    }
+
+    func testTheKeptRangeIsTheEndOfTheContourSoTheStartIsEmptiedFirst() {
+        XCTAssertEqual(CountdownBorder.keptRange(fraction: 1).from, 0, accuracy: 0.0001)
+        XCTAssertEqual(CountdownBorder.keptRange(fraction: 0.75).from, 0.25, accuracy: 0.0001)
+        XCTAssertEqual(CountdownBorder.keptRange(fraction: 0.5).from, 0.5, accuracy: 0.0001)
+        XCTAssertEqual(CountdownBorder.keptRange(fraction: 0.25).from, 0.75, accuracy: 0.0001)
+        for fraction in [1.0, 0.75, 0.5, 0.25, 0.01, 0] {
+            XCTAssertEqual(CountdownBorder.keptRange(fraction: fraction).to, 1, accuracy: 0.0001, "la fin est gardée")
+        }
+    }
+
+    func testTheKeptRangeIsClampedToTheContour() {
+        XCTAssertEqual(CountdownBorder.keptRange(fraction: 1.7).from, 0, accuracy: 0.0001)
+        XCTAssertEqual(CountdownBorder.keptRange(fraction: -0.3).from, 1, accuracy: 0.0001)
+    }
+
+    func testWhenFullTheWholeContourIsKept() {
+        let box = kept(1)
+        XCTAssertEqual(box.minX, inset, accuracy: 0.5)
+        XCTAssertEqual(box.maxX, rect.maxX - inset, accuracy: 0.5)
+        XCTAssertEqual(box.maxY, rect.maxY - inset, accuracy: 0.5)
+    }
+
+    func testAfterOneQuarterTheTopRightQuarterIsGoneAndTheTopCentreEndStaysDrawn() {
+        // Le quart haut-droit (de la longueur) n'atteint pas le bas : ce qui reste touche encore tout le bas et tout le côté gauche.
+        let box = kept(0.75)
+        XCTAssertEqual(box.minX, inset, accuracy: 0.5, "le côté gauche est entier")
+        XCTAssertEqual(box.maxY, rect.maxY - inset, accuracy: 0.5, "le bas est entier")
+        let removed = CountdownBorderShape().path(in: rect).trimmedPath(from: 0, to: 0.25).boundingRect
+        XCTAssertGreaterThan(removed.minX, rect.midX - 0.5, "ce qui a disparu est à droite du haut-centre")
+        XCTAssertEqual(removed.minY, inset, accuracy: 0.01, "et part du bord haut")
+    }
+
+    func testAfterHalfOnlyTheLeftHalfRemains() {
+        let box = kept(0.5)
+        XCTAssertEqual(box.minX, inset, accuracy: 0.5, "tout le côté gauche")
+        XCTAssertLessThanOrEqual(box.maxX, rect.midX + 1.0, "et rien du côté droit")
+        XCTAssertEqual(box.maxY, rect.maxY - inset, accuracy: 0.5)
+    }
+
+    func testWhenNearlyEmptyOnlyAShortSegmentLeftOfTheTopCentreRemains() {
+        let box = kept(0.1)
+        XCTAssertLessThanOrEqual(box.maxX, rect.midX + 0.5, "le bout restant finit au haut-centre")
+        XCTAssertGreaterThan(box.minX, inset, "le côté gauche a disparu")
+        XCTAssertEqual(box.minY, inset, accuracy: 0.01, "sur le bord haut")
+        XCTAssertEqual(box.height, 0, accuracy: 0.01, "rien n'est descendu")
+    }
+
+    func testTheRingKeepsTheEndOfTheContourAndNeverTheStart() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent() // Countdown
+            .deletingLastPathComponent() // MiffTests
+            .deletingLastPathComponent() // ios
+            .appendingPathComponent("Miff/Views/Countdown/CountdownCard.swift")
+        let code = try String(contentsOf: url, encoding: .utf8)
+            .components(separatedBy: .newlines)
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            .joined(separator: " ")
+        XCTAssertTrue(code.contains("CountdownBorder.keptRange(fraction: fraction)"))
+        XCTAssertTrue(code.contains(".trim(from: kept.from, to: kept.to)"))
+        XCTAssertFalse(code.contains("trim(from: 0"), "garder le DÉBUT viderait la bordure à l'envers")
+    }
+
     // MARK: - La couleur
 
     func testTheColourIsStatusSafeAboveTheLastQuarter() {
