@@ -1,6 +1,6 @@
 # Mini-ticket : Notifications P1 « Depuis ta dernière visite » (C1)
 
-**Statut** : **proposition de l'agent `product-specs`, en attente de la décision du PM** (rien n'est décidé tant que le PM n'a pas répondu à §10). Aucun développement lancé, aucun statut Notion modifié, aucune écriture dans Notion.
+**Statut** : **décidé par le PM le 2026-11-13** (toutes les valeurs par défaut de §10 sont validées, voir §11). Développement Android lancé (branche `android/notifs-derniere-visite`, PR brouillon) ; iOS ensuite (NOTIF-P1I). Aucun statut Notion modifié, aucune écriture dans Notion.
 **Rédigé le** : 2026-11-11 (agent `product-specs`). **Ticket parent** : `docs/tickets/notifications.md` (§7.5 « P1 : depuis ta dernière visite », catalogue ligne **C1**, §13 ligne « NOTIF-6A »). **Ticket Notion** : à créer par le PM ou sur son accord (non créé).
 
 **Sources lues** : `CLAUDE.md` ; `docs/tickets/notifications.md` (§1, §5.2 C1, §7.1 à 7.5, §13, §20.12 et 20.12bis) ; `docs/tickets/pop-ins-avis.md` (pour le format des mini-tickets) ; les textes du Feed et du centre dans `android/app/src/main/res/values-fr/strings.xml` (`feed_bubble_red_stale`, `feed_label_*`, `feed_place_noun_*`, `notif_center_*`).
@@ -204,5 +204,34 @@ Une branche et une PR par plateforme, **Android d'abord**. Aucun changement de r
 | **Q6** | Une **zone de danger** doit-elle produire une ligne C1 ? | **Non** (le Feed et N6 s'en chargent) |
 | **Q7** | Plus de 3 changements : **3 plus récents** sans mention du reste, ou une ligne « et d'autres nouvelles dans le Feed » (4 lignes au total) ? | **3 plus récents**, rien d'autre (« au plus 3 lignes ») |
 | **Q8** | Numérotation : renommer en **NOTIF-P1A / NOTIF-P1I** et corriger la collision du ticket parent (§13 contre §20.12) ? Pas de maquette Figma ? | **Oui** ; **pas de maquette** |
+
+---
+
+## 11. Décisions du PM, 2026-11-13
+
+Le PM a validé **toutes** les valeurs par défaut de §10, telles quelles. Elles sont **[Décidé]** et appliquées à la lettre par l'implémentation Android (NOTIF-P1A) ; iOS (NOTIF-P1I) s'y conforme.
+
+| # | Décision |
+|---|---|
+| **Q1** | **Formulation du silence : option A**, « Dernière nouvelle d'Amandine : 13 h 40 » (EN "Amandine's latest news: 1:40 PM"). Le Feed n'est **pas** harmonisé dans ce ticket (petit ticket Feed à décider séparément). |
+| **Q2** | Les lignes C1 sont **non lues, avec le point de la cloche** (jamais un chiffre), toujours **sans notification** (ni bannière, ni son, ni vibration, ni pastille sur l'icône). |
+| **Q3** | Seuil d'absence : **30 minutes** au retour au premier plan ; lancement à froid : toujours. |
+| **Q4** | C1 reste visible **quel que soit** l'état de l'autorisation des notifications du téléphone et de l'interrupteur général (ce n'est pas une notification). |
+| **Q5** | Lieu Loisir / Autre / sans catégorie : **« dans un lieu de confiance »** (le centre ne mémorise aucun nom de lieu). |
+| **Q6** | Une zone de danger ne produit **aucune** ligne C1. |
+| **Q7** | Plus de 3 changements : les **3 plus récents**, rien d'autre (pas de « +2 autres »). |
+| **Q8** | Numérotation **NOTIF-P1A / NOTIF-P1I** ; **aucune maquette** (l'implémentation liste ses écarts dans la PR). |
+
+### Précisions de rédaction et de mise en oeuvre (Android, à reprendre à l'identique sur iOS)
+
+Elles lèvent des ambiguïtés internes à ce document **sans changer une décision ci-dessus** ; chacune est signalée dans la PR.
+
+1. **Sans accord de genre, y compris pour l'arrivée (C1-6).** « Thomas est arrivé à l'école » s'accorde au genre ; la ligne « Arrivée » s'écrit donc « Thomas a rejoint l'école à 8 h 02 » (EN "Thomas arrived at school at 8:02 AM", inchangé). Les trois autres lignes sont celles de §3.3 et §4.
+2. **Dates (C1-T18)** : aujourd'hui « à 17 h 10 », hier « hier à 17 h 10 », **2 à 6 jours** avant : le jour de la semaine (« lundi à 9 h 30 »), **au-delà** : la date courte du Feed (« le 3 nov. à 9 h 30 »), parce qu'un jour de semaine nommé plus de 6 jours après ne se distingue plus du plus récent. Heure et date au format du téléphone.
+3. **Ordre et tri (§3.5)** : chaque ligne est datée de l'**instant du changement** ; pour « Silence », c'est l'instant où le proche **est devenu rouge** (dernière nouvelle + 4 h), l'**heure affichée** restant celle de sa dernière nouvelle. Une ligne par proche : la plus récente ; à instant égal, un déplacement (arrivée, départ) l'emporte sur une update (une arrivée écrit aussi la dernière update : l'update qui date de moins de 5 minutes de l'arrivée n'est pas une seconde nouvelle).
+4. **« Après un changement de Miff active » (§3.4)** : la première visite qui suit un changement de Miff active ne compare rien (l'état vu de l'autre Miff peut dater de plusieurs jours) ; chaque Miff garde néanmoins son état vu (C1-T17).
+5. **Retrait d'un membre (C1-8)** : sa ligne C1 disparaît dès que le Feed constate qu'il n'est plus dans la Miff.
+6. **Un événement daté de plus de 5 minutes dans le futur** (horloge fausse) ne produit aucune ligne ; dans la limite de 5 minutes, il est ramené à « maintenant » (C1-T19).
+7. **Prénom inconnu un instant** (lancement à froid avant que le Feed n'ait relu les membres) : « Un proche » (EN "Someone"), jamais une ligne vide ; le prénom n'est **jamais** enregistré dans le centre ni dans l'état vu (identifiant du membre seulement).
 
 *Ce document ne modifie ni le code, ni Notion, ni Figma, ni le ticket parent. Aucun texte légal n'est rédigé et aucun n'est présenté comme relu par un juriste.*

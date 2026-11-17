@@ -21,19 +21,30 @@ object NotificationTexts {
             NotificationType.N7 -> R.string.notif_n7_title
             NotificationType.N9 -> R.string.notif_center_circle_update_title
             NotificationType.N8 -> R.string.notif_n8_title
+            NotificationType.C1 -> R.string.notif_c1_title
         }
 
     @StringRes
     fun body(type: NotificationType): Int =
         when (type) {
             NotificationType.N1 -> R.string.notif_n1_body
+
             NotificationType.N2 -> R.string.notif_n2_body
+
             NotificationType.N3 -> R.string.notif_n3_body
+
             NotificationType.N4 -> R.string.notif_n4_body
+
             NotificationType.N6 -> R.string.notif_n6a_body
+
             NotificationType.N7 -> R.string.notif_n7_body
+
             NotificationType.N9 -> R.string.notif_circle_update_body
+
             NotificationType.N8 -> R.string.notif_n8_body
+
+            // The lines of C1 are whole sentences made when they are drawn (LastVisitTexts); this body is never shown.
+            NotificationType.C1 -> R.string.notif_c1_title
         }
 
     /** The label of the switch of the type in Settings > Notifications. */
@@ -55,6 +66,6 @@ object NotificationTexts {
 
             NotificationType.N9 -> R.string.notif_settings_circle_update
 
-            NotificationType.N8 -> R.string.notif_settings_n3
+            NotificationType.N8, NotificationType.C1 -> R.string.notif_settings_n3
         }
 }
