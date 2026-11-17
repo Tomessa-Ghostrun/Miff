@@ -16,6 +16,8 @@ import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.tomessa.miff.domain.update.PhotoLocation
 import com.tomessa.miff.domain.update.SharedPhoto
+import com.tomessa.miff.ui.theme.textBodyRegular
+import com.tomessa.miff.ui.theme.textTitleBold20
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -68,6 +70,43 @@ class PhotoFullScreenDescriptionTest {
 
     private fun top(node: androidx.compose.ui.test.SemanticsNodeInteraction) =
         node.fetchSemanticsNode().boundsInRoot.top
+
+    private fun styleOf(node: androidx.compose.ui.test.SemanticsNodeInteraction): androidx.compose.ui.text.TextStyle {
+        val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+        node.fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult].action!!(
+            results,
+        )
+        return results.single().layoutInput.style
+    }
+
+    @Test
+    fun withADescription_itTakesTheBigBoldStyle_andThePhotoLineTheSmallRegularOne() {
+        show("Bien arrivée")
+        val description = styleOf(rule.onNodeWithText("Bien arrivée"))
+        val line = styleOf(rule.onNode(hasText(title, substring = true)))
+        assertEquals(textTitleBold20.fontSize, description.fontSize)
+        assertEquals(textTitleBold20.fontWeight, description.fontWeight)
+        assertEquals(textBodyRegular.fontSize, line.fontSize)
+        assertEquals(textBodyRegular.fontWeight, line.fontWeight)
+        // The "Photo de ..." line is still the heading of the footer, and the description is still read first (it comes first in the footer and has its own label).
+        assertTrue(
+            rule
+                .onNode(
+                    hasText(title, substring = true),
+                ).fetchSemanticsNode()
+                .config
+                .contains(SemanticsProperties.Heading),
+        )
+        assertTrue(top(rule.onNodeWithText("Bien arrivée")) < top(rule.onNode(hasText(title, substring = true))))
+    }
+
+    @Test
+    fun withoutADescription_thePhotoLineKeepsItsBigBoldStyle() {
+        show(null)
+        val line = styleOf(rule.onNode(hasText(title, substring = true)))
+        assertEquals(textTitleBold20.fontSize, line.fontSize)
+        assertEquals(textTitleBold20.fontWeight, line.fontWeight)
+    }
 
     @Test
     fun theDescriptionIsAboveThePhotoTitle() {
@@ -122,7 +161,8 @@ class PhotoFullScreenDescriptionTest {
 
     @Test
     fun withTheLargestFont_aLongDescription_scrollsInsideTheFooter_thatStaysUnder45PercentOfTheHeight() {
-        val text = "Un très long message pour tester les grandes polices. ".repeat(3).take(140)
+        // The text measure of Robolectric has no real glyph widths (a long sentence stays on one line): the overflow is made with line breaks, 70 lines of one letter.
+        val text = "a\n".repeat(70)
         show(text, fontScale = 2f)
         val footer = rule.onNode(hasScrollAction())
         footer.assertIsDisplayed()

@@ -29,11 +29,12 @@
 
 ## Partie 2 : publier avec et sans description (A puis B) (8 min)
 
-11. [ ] **Sans description** : prenez une photo, touchez **Publier** sans rien écrire. Retour au Feed avec le message calme habituel. Chez B (ou dans votre Feed), ouvrez la photo en plein écran : **identique à avant** : « Photo de A · … », « Position mesurée … », « Voir où c'était », **aucune ligne en trop, aucun vide**.
+11. [ ] **Sans description** : prenez une photo, touchez **Publier** sans rien écrire. Retour au Feed avec le message calme habituel. Chez B (ou dans votre Feed), ouvrez la photo en plein écran : **identique à avant** (la photo remplit la largeur, centrée, comme avant) : « Photo de A · … », « Position mesurée … », « Voir où c'était », **aucune ligne en trop, aucun vide**. Le titre « Photo de A · … » est en **gros et en gras**.
 12. [ ] **Avec description** : nouvelle photo, écrivez « Je suis bien arrivée, on mange ensemble ce soir », touchez **Publier alors que le clavier est encore ouvert** : **un seul toucher suffit**, le texte complet part (même le dernier mot en cours de frappe ou corrigé par le clavier).
-13. [ ] Chez B, ouvrez la photo en plein écran : **la description est affichée au-dessus de « Photo de A · … »**, en blanc, sur un fond sombre, **texte entier, jamais coupé**, puis le titre, puis la position et « Voir où c'était ».
+13. [ ] Chez B, ouvrez la photo en plein écran : **la photo occupe exactement la même place et la même taille que sans description** (elle remplit la largeur, centrée, sans bandes noires en plus ; seul le bas est assombri par le pied). **La description est affichée au-dessus de « Photo de A · … »**, **en gros et en gras**, en blanc sur un fond sombre, **texte entier, jamais coupé** ; en dessous, **« Photo de A · … » en plus petit et normal**, puis la position et « Voir où c'était ».
 14. [ ] La **carte du Feed** (avant d'ouvrir la photo) **n'affiche pas** la description.
 15. [ ] **Ma propre photo** (chez A) : en plein écran, la description s'affiche aussi.
+15b. [ ] **Zoom et déplacement** : en plein écran avec une description, **pincez et déplacez la photo en posant les doigts sur le pied** (sur le texte) : la photo zoome et se déplace comme sans description. Un petit pied (qui tient) ne défile pas ; un pied qui déborde (grande police) défile au doigt.
 16. [ ] **Un texte fait d'espaces seulement** (tapez trois espaces) : la photo part **sans description** (le plein écran ne montre rien en plus).
 17. [ ] **Republier** : publiez une nouvelle photo **sans** description après une avec : le plein écran de la nouvelle photo **n'a pas** l'ancienne description.
 18. [ ] **Texte avec un lien** (« voir https://exemple.fr ») : affiché tel quel, **non cliquable**, non sélectionnable.
@@ -51,7 +52,7 @@
 
 ## Partie 4 : lecture, grandes polices, lecteur d'écran (6 min)
 
-27. [ ] **Grande police** : Réglages Android > Affichage > Taille de la police au maximum. Aperçu : le champ (4 lignes au plus), **Recommencer** et **Publier** restent atteignables. Plein écran avec une description de 140 caractères : le bas de l'écran **ne dépasse pas la moitié de la hauteur** (45 % au plus) et **défile** ; la photo n'est jamais cachée en entier.
+27. [ ] **Grande police** : Réglages Android > Affichage > Taille de la police au maximum. Aperçu : le champ (4 lignes au plus), **Recommencer** et **Publier** restent atteignables. Plein écran avec une description de 140 caractères : le bas de l'écran **ne dépasse pas la moitié de la hauteur** (45 % au plus) et **défile** ; la photo n'est jamais cachée en entier et **garde la même taille et la même place** que sans description.
 28. [ ] **Petit écran / paysage** (si vous pouvez) : même constat.
 29. [ ] **Photo très claire** (une feuille blanche) avec une description : le texte blanc reste lisible sur son fond sombre.
 30. [ ] **TalkBack** : sur l'aperçu, le champ est annoncé **« Description de ta photo (facultatif). Tes proches la verront avec ta photo pendant 24 h. »**, et **ce que vous avez écrit est lu** (si seul le libellé est lu et pas le texte, dites-le : c'est un point connu à ajuster). Le compteur est annoncé **« 120 caractères sur 140 » une seule fois à son apparition**, pas à chaque lettre ; la limite est annoncée une fois. Dans le plein écran, la description est lue **avant** « Photo de A », précédée de « Description : ».
