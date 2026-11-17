@@ -378,6 +378,17 @@ jobs:
           else
             bad "L'entitlement App Attest (production) est absent de l'application"
           fi
+          # Notifications push (SRV-2I) : l'entitlement aps-environment vient de la capacité "Push Notifications" de l'identifiant d'app. RAPPORTÉ, jamais
+          # bloquant (l'envoi à TestFlight reste possible sans push) ; la valeur d'une archive signée en développement est "development" : celle de la
+          # distribution (production) n'est posée qu'à l'export, et se constate sur l'iPhone (docs/dev/fcm-ios.md).
+          if [ -n "$entitlements" ]; then
+            if echo "$entitlements" | grep -q "aps-environment"; then
+              note "Entitlement Push Notifications (aps-environment) présent"
+            else
+              echo "::warning::Entitlement aps-environment absent : la capacité Push Notifications n'est pas activée sur com.tomessa.miff (docs/dev/apns-etapes-pm.md). Les notifications push ne fonctionneront pas."
+              echo "- AVERTISSEMENT : entitlement Push Notifications absent (voir docs/dev/apns-etapes-pm.md)" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
           exit "$fail"
 
       - name: Envoyer les symboles de plantage à Crashlytics (étape sans secret)
