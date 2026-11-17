@@ -34,7 +34,7 @@ class CenterRow(
     val unread: Boolean,
     /** N9 only: the first name of the author (the line says "{Prénom} a donné des nouvelles"). */
     val who: String? = null,
-    /** N9 only: the Miff the line is about, for the tap (the Feed shows it if the person belongs to it). */
+    /** N9 and C1: the Miff the line is about, for the tap (the Feed shows it if the person belongs to it). */
     val miffId: String? = null,
     /** The keys of the lines this row stands for: one, or several unread requests of the same person in the same Miff ("Léa a proposé 3 lieux"). */
     val ids: List<String> = listOf(id),
@@ -49,8 +49,6 @@ class CenterRow(
     val visit: LastVisit.Parsed? = null,
     /** C1: the first name of the member as the app knows it NOW (never stored in the centre); null when it is not known yet. */
     val visitName: String? = null,
-    /** C1: the Miff the line is about (for the tap: the Feed of THAT Miff). */
-    val miffId: String? = null,
 ) {
     /** How many requests the row stands for (1 for every other line). */
     val count: Int get() = ids.size
