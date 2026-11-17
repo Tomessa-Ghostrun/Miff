@@ -117,3 +117,4 @@ final class DescriptionPrivacyTests: XCTestCase {
         XCTAssertEqual(model.components(separatedBy: "publisher.publish(").count - 1, 1)
     }
 }
+// swiftlint:enable line_length

@@ -52,7 +52,7 @@ final class FirestorePhotoSource: PhotoSource {
             lng: (fields["lng"] as? NSNumber)?.doubleValue,
             measuredAtMillis: millis(fields["measuredAt"]),
             // Lue champ par champ, comme les autres : un type inattendu est ignoré par `SharedPhoto.fromServer`, sans erreur.
-            descriptionValue: fields["description"]
+            writtenDescription: fields["description"]
         )
         guard let photo = SharedPhoto.fromServer(raw, nowMillis: nowMillis) else {
             return .absent

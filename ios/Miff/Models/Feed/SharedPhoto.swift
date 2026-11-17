@@ -14,7 +14,7 @@ struct RawPhoto {
     var lng: Double?
     var measuredAtMillis: Int?
     /// La valeur BRUTE du champ `description` (n'importe quel type : QUELQU'UN D'AUTRE l'a écrite) ; nettoyée par `SharedPhoto.fromServer`.
-    var descriptionValue: Any?
+    var writtenDescription: Any?
 }
 
 /// La photo d'une update : le JPEG, l'heure de sa publication (heure serveur), l'heure où elle cesse d'être lisible, son lieu s'il en a un et sa
@@ -56,7 +56,7 @@ struct SharedPhoto: Equatable, CustomStringConvertible {
         // La description : seulement un texte de 1 à 140 unités, nettoyé (critère C5) ; tout autre type est ignoré, la photo reste montrée.
         return SharedPhoto(
             jpeg: jpeg, createdAtMillis: created, expiresAtMillis: expires, place: place(of: raw),
-            descriptionText: PhotoDescription.fromServer(raw.descriptionValue)
+            descriptionText: PhotoDescription.fromServer(raw.writtenDescription)
         )
     }
 

@@ -145,3 +145,4 @@ extension UpdateFixtures {
         PhotoPlace(lat: 48.85661, lng: 2.35222, measuredAtMillis: now)
     }
 }
+// swiftlint:enable line_length

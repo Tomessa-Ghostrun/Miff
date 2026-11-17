@@ -17,7 +17,7 @@ final class PhotoDescriptionFeedTests: XCTestCase {
             lat: 48.85661,
             lng: 2.35222,
             measuredAtMillis: feedNow - feedMinutes(22),
-            descriptionValue: description
+            writtenDescription: description
         )
     }
 
@@ -96,20 +96,35 @@ final class PhotoDescriptionFeedTests: XCTestCase {
         XCTAssertEqual(PhotoFullScreenLayout.footerRows(hasDescription: false, hasPlace: false), [.title])
     }
 
-    func testAFooterWithALongDescriptionScrollsInsideTheCapOf45PercentEvenOnASmallPhoneAndWithTheLargestFont() {
-        // Un petit téléphone (SE : 647 pt sous la zone sûre) : le plafond est de 45 % de la hauteur.
-        let height: CGFloat = 647
-        let cap = PhotoFullScreenLayout.footerMaxHeight(screenHeight: height)
-        XCTAssertEqual(cap, height * 0.45, accuracy: 0.001)
+    func testNoDescriptionAddsNoHeightSoTheFooterIsTheOneOfBefore() {
+        XCTAssertEqual(PhotoFullScreenLayout.descriptionHeight(unitCount: 0, fontSize: 16, lineHeight: 22, width: 343), 0)
+        XCTAssertEqual(PhotoFullScreenLayout.descriptionHeight(unitCount: 50, fontSize: 16, lineHeight: 22, width: 0), 0)
+    }
 
-        // Pied naturel : titre, position, bouton (~170) + zone sûre + 140 caractères sur 4 lignes (~4 x 22) : tient à taille normale...
-        let normal = PhotoFullScreenLayout.footerEstimate + 34 + 4 * 22
-        XCTAssertFalse(PhotoFullScreenLayout.footerScrolls(estimate: normal + PhotoFullScreenLayout.fadeHeight, screenHeight: 812))
-        // ... et défile avec la plus grande police (le texte passe à ~9 lignes, tout le pied grandit de moitié et plus) sur un petit téléphone.
-        let largest = (PhotoFullScreenLayout.footerEstimate + 34) * 2.2 + 9 * 40
-        XCTAssertTrue(PhotoFullScreenLayout.footerScrolls(estimate: largest + PhotoFullScreenLayout.fadeHeight, screenHeight: height))
-        // La photo n'est jamais masquée en entier : au moins la moitié reste visible.
-        XCTAssertLessThan(cap, height / 2)
+    func testTheDescriptionHeightGrowsWithTheLengthAndWithTheFontSize() {
+        let short = PhotoFullScreenLayout.descriptionHeight(unitCount: 20, fontSize: 16, lineHeight: 22, width: 343)
+        let full = PhotoFullScreenLayout.descriptionHeight(unitCount: 140, fontSize: 16, lineHeight: 22, width: 343)
+        let large = PhotoFullScreenLayout.descriptionHeight(unitCount: 140, fontSize: 44, lineHeight: 60, width: 343)
+
+        XCTAssertGreaterThan(full, short)
+        XCTAssertGreaterThan(large, full)
+        // 140 caractères tiennent sur environ 4 lignes en police normale (le ticket annonce « environ 4 lignes »).
+        XCTAssertEqual(full, 4 * 22 + PhotoFullScreenLayout.captionSpacing, accuracy: 0.001)
+    }
+
+    func testALongDescriptionFitsAtNormalSizeOnTallPhonesAndScrollsOnSmallOnesAndWithTheLargestFont() {
+        let fade = PhotoFullScreenLayout.fadeHeight
+        let normal = PhotoFullScreenLayout.footerEstimate + 34
+            + PhotoFullScreenLayout.descriptionHeight(unitCount: 140, fontSize: 16, lineHeight: 22, width: 343) + fade
+        XCTAssertFalse(PhotoFullScreenLayout.footerScrolls(estimate: normal, screenHeight: 812), "11 Pro : tient dans 45 %")
+        XCTAssertTrue(PhotoFullScreenLayout.footerScrolls(estimate: normal, screenHeight: 647), "iPhone SE : défile")
+
+        // La plus grande taille de texte : le pied (x 2,7), le corps (44) et l'interligne (60) grandissent ; il défile même sur un grand écran.
+        let largest = PhotoFullScreenLayout.footerEstimate * 2.7 + 34
+            + PhotoFullScreenLayout.descriptionHeight(unitCount: 140, fontSize: 44, lineHeight: 60, width: 343) + fade
+        XCTAssertTrue(PhotoFullScreenLayout.footerScrolls(estimate: largest, screenHeight: 812))
+        // La zone reste bornée à 45 % : la photo n'est jamais masquée en entier.
+        XCTAssertLessThan(PhotoFullScreenLayout.footerMaxHeight(screenHeight: 647), 647 / 2)
     }
 
     func testTheDescriptionIsWhiteOnTheSameDarkVeilSoItKeepsAtLeast45To1EvenOverAWhitePhoto() {
@@ -143,3 +158,4 @@ final class PhotoDescriptionFeedTests: XCTestCase {
         }
     }
 }
+// swiftlint:enable line_length

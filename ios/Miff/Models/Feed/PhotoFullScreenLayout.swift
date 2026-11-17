@@ -33,6 +33,23 @@ enum PhotoFullScreenLayout {
     /// large. Elle grandit avec la taille du texte (`@ScaledMetric` côté écran) ; au-delà de 45 % de la hauteur, la légende défile.
     static let footerEstimate: CGFloat = 170
 
+    /// Largeur moyenne d'un caractère de la description, en part du corps de la police (texte français, emojis compris : un emoji compte 2 unités
+    /// UTF-16 pour environ 1 corps de large). Un peu large pour couvrir la perte des fins de ligne (mots qui ne tiennent pas).
+    static let averageGlyphWidth: CGFloat = 0.52
+
+    /// La hauteur ajoutée au pied par une description de `unitCount` unités UTF-16 (0 quand il n'y en a pas) : le nombre de lignes estimé pour
+    /// `width` de large, à `lineHeight` chacune, plus l'espace sous le texte. Le corps et l'interligne passés sont DÉJÀ agrandis avec la taille du
+    /// texte du système : plus la police est grande, plus la description pèse, jusqu'à faire défiler le pied. Le plus long texte (140 unités) ne
+    /// fait jamais plus d'une dizaine de lignes à la plus grande taille : le pied, borné à 45 %, défile.
+    static func descriptionHeight(unitCount: Int, fontSize: CGFloat, lineHeight: CGFloat, width: CGFloat) -> CGFloat {
+        guard unitCount > 0, fontSize > 0, lineHeight > 0, width > 0 else {
+            return 0
+        }
+        let perLine = max(1, Int((width / (fontSize * averageGlyphWidth)).rounded(.down)))
+        let lines = (unitCount + perLine - 1) / perLine
+        return CGFloat(lines) * lineHeight + captionSpacing
+    }
+
     /// La légende défile-t-elle ? Oui quand son contenu estimé (zone sûre du bas comprise) dépasse sa hauteur maximale (grand texte, paysage).
     static func footerScrolls(estimate: CGFloat, screenHeight: CGFloat) -> Bool {
         estimate > footerMaxHeight(screenHeight: screenHeight)

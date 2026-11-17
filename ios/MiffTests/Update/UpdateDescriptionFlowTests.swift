@@ -311,3 +311,4 @@ private final class GateStore: PhotoStore {
         continuation = nil
     }
 }
+// swiftlint:enable line_length

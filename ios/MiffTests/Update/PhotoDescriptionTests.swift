@@ -196,3 +196,4 @@ final class PhotoDescriptionTests: XCTestCase {
         XCTAssertFalse(PhotoDescription.isReturnKey(old: "abc", new: "abx\n"))
     }
 }
+// swiftlint:enable line_length

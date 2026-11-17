@@ -27,7 +27,6 @@ enum UpdateWrites {
     /// La photo de l'auteur dans UNE Miff : un `set` (remplace), avec son lieu et, s'il en reste une, sa description (nettoyée ici : n'importe
     /// quel texte est accepté, la clé est omise quand il ne reste rien). nil si la photo est vide ou dépasse 150 000 octets, ou si un
     /// identifiant est mal formé : rien n'est alors construit, donc rien n'est envoyé.
-    // swiftlint:disable:next function_parameter_count
     static func photo(
         miffId: String, uid: String, photo: UpdatePhoto, place: PhotoPlace, nowMillis: Int, description: String? = nil
     ) -> DocWrite? {
