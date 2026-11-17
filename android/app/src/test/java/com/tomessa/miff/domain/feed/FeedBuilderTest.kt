@@ -143,33 +143,33 @@ class FeedBuilderTest {
     // --- Cards (C1, C7) --------------------------------------------------------------------------------------------
 
     @Test
-    fun cards_areMineLast_theOthersKeepTheOrderOfTheList_neverByUrgency() {
+    fun cards_areByLatestNews_neverByUrgency() {
         val members = listOf(member("t", "Thomas"), member(me, "Camille"), member("a", "Amandine"))
         val content =
             build(
                 members,
                 mapOf(
-                    "t" to status(PresenceValue.IN_TRUSTED),
+                    // Green (a trusted zone) but the oldest news; red (left 5 h ago) with newer news than Thomas: Amandine comes first all the same.
+                    "t" to status(PresenceValue.IN_TRUSTED, presenceAgo = 10 * hour, lastUpdateAgo = 10 * hour),
                     "a" to status(PresenceValue.OUT, presenceAgo = 5 * hour, lastUpdateAgo = 5 * hour),
-                    me to status(PresenceValue.IN_TRUSTED),
+                    me to status(PresenceValue.IN_TRUSTED, presenceAgo = minute, lastUpdateAgo = minute),
                 ),
             )
-        // Decision of the PM (2026-11-07): me last; Thomas stays before Amandine although she is red (never reordered by urgency).
-        assertEquals(listOf("t", "a", me), content.cards.map { it.member.uid })
+        // FEED-ORDRE (replaces the decision of 2026-11-07 "me last"): the most recent news first, me like anybody else, never by urgency.
+        assertEquals(listOf(me, "a", "t"), content.cards.map { it.member.uid })
         assertEquals(StatusLevel.RED, card(content, "a").level)
-        assertTrue(content.cards.last().isMe)
+        assertTrue(content.cards.first().isMe)
     }
 
     @Test
-    fun cards_meLast_whateverMyPlaceInTheList() {
+    fun cards_everyoneWithoutADate_keepTheOrderOfArrival_meIsNotForcedAnywhere() {
         val others = listOf(member("o", "Olivia"), member("t", "Thomas"), member("a", "Amandine"))
-        // First, in the middle, last: the others always come before me, in exactly the order they were given.
+        // First, in the middle, last: with no news from anybody, the order of the list stays as it is (me is no longer put last).
         listOf(0, 1, 2, 3).forEach { index ->
             val members = others.toMutableList().apply { add(index, member(me, "Camille")) }
-            assertEquals(listOf("o", "t", "a", me), FeedBuilder.orderMembers(members, me).map { it.uid })
             val content = build(members, emptyMap())
-            assertEquals(listOf("o", "t", "a", me), content.cards.map { it.member.uid })
-            assertEquals(listOf(false, false, false, true), content.cards.map { it.isMe })
+            assertEquals(members.map { it.uid }, content.cards.map { it.member.uid })
+            assertEquals(members.map { it.uid == me }, content.cards.map { it.isMe })
         }
     }
 
@@ -177,7 +177,7 @@ class FeedBuilderTest {
     fun cards_meAlone_isTheOnlyCard_andNobodyIsMissing() {
         val alone = listOf(member(me, "Camille"))
         assertEquals(listOf(me), build(alone, emptyMap()).cards.map { it.member.uid })
-        assertEquals(emptyList<String>(), FeedBuilder.orderMembers(emptyList(), me).map { it.uid })
+        assertEquals(emptyList<String>(), FeedBuilder.orderMembers(emptyList(), emptyMap()).map { it.uid })
     }
 
     @Test
