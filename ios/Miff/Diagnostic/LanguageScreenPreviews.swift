@@ -17,8 +17,7 @@ struct LanguageScreenPreview: View {
                     onOpenLanguage: {},
                     onOpenPrivacy: {},
                     onOpenNotifications: {}
-                ),
-                build: .current
+                )
             )
         } else {
             LanguageView(controller: .shared, onBack: {})
