@@ -38,7 +38,9 @@ object NotificationTexts {
             NotificationType.N6 -> R.string.notif_n6a_body
 
             NotificationType.N7 -> R.string.notif_n7_body
+
             NotificationType.N9 -> R.string.notif_circle_update_body
+
             NotificationType.N8 -> R.string.notif_n8_body
 
             // The lines of C1 are whole sentences made when they are drawn (LastVisitTexts); this body is never shown.

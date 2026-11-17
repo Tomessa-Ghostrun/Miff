@@ -67,9 +67,9 @@ import com.tomessa.miff.data.notification.AndroidNotificationTray
 import com.tomessa.miff.data.notification.AppVisibility
 import com.tomessa.miff.data.notification.FeedNotificationLink
 import com.tomessa.miff.data.notification.FeedVisitLink
-import com.tomessa.miff.data.notification.LastVisitTracker
 import com.tomessa.miff.data.notification.KnownMiffs
 import com.tomessa.miff.data.notification.KnownMiffsKeeper
+import com.tomessa.miff.data.notification.LastVisitTracker
 import com.tomessa.miff.data.notification.NotificationAuthorization
 import com.tomessa.miff.data.notification.NotificationCenter
 import com.tomessa.miff.data.notification.NotificationChannels
@@ -77,8 +77,8 @@ import com.tomessa.miff.data.notification.NotificationScheduler
 import com.tomessa.miff.data.notification.NotificationSettings
 import com.tomessa.miff.data.notification.NotificationTeardownSteps
 import com.tomessa.miff.data.notification.NotificationTray
-import com.tomessa.miff.data.notification.SharedPreferencesLastVisitStore
 import com.tomessa.miff.data.notification.SharedPreferencesKnownMiffs
+import com.tomessa.miff.data.notification.SharedPreferencesLastVisitStore
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationCenterStore
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationLedger
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationPreferencesStore
