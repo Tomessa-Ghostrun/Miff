@@ -398,34 +398,25 @@
   object-fit: cover;
 }
 
-/* Petites notifications (bulles) : statiques sous le téléphone sur mobile, flottantes dès 48 rem */
-.hero-chips {
-  position: relative;
-  z-index: 3;
-  margin-top: -2.5rem;
-  display: grid;
-  gap: 0.625rem;
-  justify-items: center;
-}
-
-.toast {
+/* Petites cartes de statut (étape 3), comme les cartes du fil de l'app */
+.mini-status {
   display: flex;
   align-items: center;
   gap: 0.75rem;
   width: 100%;
-  max-width: 19rem;
   padding: 0.625rem 0.875rem 0.625rem 0.625rem;
   border: 1px solid var(--color-border-default);
+  border-left: 0.3rem solid var(--color-brand-primary);
   border-radius: var(--radius-sm);
   background: var(--color-bg-surface);
-  box-shadow: 0 0.3rem 0.8rem rgba(0, 0, 0, 0.18);
+  box-shadow: 0 0.1rem 0.5rem rgba(0, 0, 0, 0.1);
 }
 
-.toast p {
+.mini-status p {
   margin: 0;
 }
 
-.toast-avatar {
+.mini-status-avatar {
   flex: none;
   width: 2.75rem;
   height: 2.75rem;
@@ -434,14 +425,23 @@
   object-fit: cover;
 }
 
-.toast-title {
+.mini-status-name {
   font-family: var(--font-title);
   font-size: 1rem;
   font-weight: 700;
   line-height: 1.2;
 }
 
-.toast-sub {
+.mini-status-badge {
+  width: fit-content;
+  margin-top: 0.15rem !important;
+  padding: 0.05rem 0.6rem;
+  border-radius: 0.4rem;
+  background: rgba(209, 216, 40, 0.34);
+  font-size: 0.875rem;
+}
+
+.mini-status-since {
   font-size: 0.8125rem;
   color: var(--color-text-description);
 }
@@ -576,17 +576,13 @@
   margin: 0 !important;
 }
 
-.mini-toasts {
+.mini-statuses {
   display: grid;
   gap: 0.6rem;
   padding: 0;
   border: 0;
   background: none;
   box-shadow: none;
-}
-
-.mini-toasts .toast {
-  max-width: none;
 }
 
 /* ---- Cartes de bénéfices et de cas d'usage ---- */
@@ -893,10 +889,6 @@
     grid-template-columns: 1fr;
   }
 
-  .hero-chips {
-    display: contents;
-  }
-
   .hero-visual {
     max-width: 30rem;
     padding: 1rem 0 0.5rem;
@@ -904,23 +896,6 @@
 
   .phone {
     font-size: 0.9375rem;
-  }
-
-  .hero-chips .toast {
-    position: absolute;
-    z-index: 3;
-    width: 15.5rem;
-    max-width: none;
-  }
-
-  .hero-chips .toast-1 {
-    right: -0.5rem;
-    top: 13.5rem;
-  }
-
-  .hero-chips .toast-2 {
-    left: -0.5rem;
-    bottom: 4rem;
   }
 
   .steps {
@@ -971,38 +946,5 @@
 
   .phone {
     font-size: 1rem;
-  }
-
-  .hero-chips .toast {
-    width: 17.5rem;
-  }
-
-  .hero-chips .toast-1 {
-    right: -1.25rem;
-    top: -1.25rem;
-  }
-
-  .hero-chips .toast-2 {
-    left: -3.5rem;
-  }
-}
-
-/* Mouvement : une très légère flottaison des bulles, jamais si l'utilisateur préfère moins d'animations */
-@media (min-width: 48rem) and (prefers-reduced-motion: no-preference) {
-  @keyframes float-soft {
-    from {
-      transform: translateY(0);
-    }
-    to {
-      transform: translateY(-0.4rem);
-    }
-  }
-
-  .hero-chips .toast-1 {
-    animation: float-soft 4.5s ease-in-out infinite alternate;
-  }
-
-  .hero-chips .toast-2 {
-    animation: float-soft 5.5s ease-in-out -2s infinite alternate;
   }
 }

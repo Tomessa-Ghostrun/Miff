@@ -46,14 +46,14 @@ test("journaliser : un nom d'événement qui ressemble à une donnée est rempla
   process.stderr.write = capter; // les niveaux warn/error partent sur la sortie d'erreur
   try {
     journaliser('info', 'Thomas est à Paris 48.85', { resultat: 'ok', latitude: 48.85 });
-    journaliser('warn', 'ping.test', { resultat: 'refuse' });
+    journaliser('warn', 'exemple.test', { resultat: 'refuse' });
   } finally {
     process.stdout.write = reelOut;
     process.stderr.write = reelErr;
   }
   const tout = lignes.join('');
   assert.ok(tout.includes('evenement.invalide'), tout);
-  assert.ok(tout.includes('ping.test'), tout);
+  assert.ok(tout.includes('exemple.test'), tout);
   assert.ok(!tout.includes('Thomas') && !tout.includes('48.85') && !tout.includes('latitude'), tout);
 });
 

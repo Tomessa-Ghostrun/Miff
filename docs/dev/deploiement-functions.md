@@ -8,9 +8,13 @@
 
 **Ce que « déployer » veut dire ici** : envoyer le dossier `backend/functions/` vers le projet Firebase `miff-3d283`. Une fonction envoyée est **en ligne tout de suite** et peut être appelée par n'importe quelle copie de l'application (avec la vérification App Check et la connexion exigées, voir plus bas). On ne déploie donc qu'après un « oui » explicite du PM, CI verte.
 
-**État au moment de ce document** : le dossier contient **deux fonctions**.
-- **`ping`** (SRV-1, socle) : fonction de démonstration. Elle ne lit ni n'écrit aucune donnée, ne fait aucune notification, et répond seulement « ok » à une application connectée. Aucune application ne l'appelle encore. Elle sert à vérifier que toute la chaîne (code, déploiement, région, sécurité) fonctionne. **Sans risque pour les utilisateurs, coût attendu : 0 €.**
-- **`notifierUpdate`** (SRV-4B) : la **première vraie fonction**. Quand un membre publie une update, elle envoie une notification discrète aux autres membres de sa Miff (« {Prénom} a donné des nouvelles »). **Elle lit des données (fiches de membres, jetons d'appareil) et envoie des notifications réelles** : sa mise en ligne est l'**interrupteur de mise en service** de la fonctionnalité (section 11). Elle exige un **compte de service dédié** (section 1.4) à créer **avant** son déploiement.
+**État réel au 2026-11-13** (constaté par le PM) : le dossier contient **une seule fonction**, et elle est **en ligne**.
+- **Déploiement** : le **2026-11-13**, sur le commit **`2aacad1d`**, région `europe-west9` (deux fonctions déployées ce jour-là : `ping` et `notifierUpdate`).
+- **`ping` : supprimée le 2026-11-13** (et retirée du code). C'était une fonction de démonstration (SRV-1) qui ne lisait ni n'écrivait aucune donnée et que personne n'appelait. Elle tournait avec le compte de service « Compute Engine par défaut » du projet (`29899146512-compute@developer.gserviceaccount.com`), dont les droits sont potentiellement très larges, alors qu'elle ne servait à rien. Il ne reste que `notifierUpdate` en ligne (la procédure de suppression est conservée en section 3, encadré « Retrait de `ping` », à titre d'historique).
+- **`notifierUpdate`** (SRV-4B) : la **première vraie fonction**. Quand un membre publie une update, elle envoie une notification discrète aux autres membres de sa Miff (« {Prénom} a donné des nouvelles »). **Elle lit des données (fiches de membres, jetons d'appareil) et envoie des notifications réelles** : sa mise en ligne a été l'**interrupteur de mise en service** de la fonctionnalité (section 11). Elle exige un **compte de service dédié** (section 1.4) : ses **4 rôles de projet** avant le déploiement, son **droit `run.invoker` sur le service** après le premier déploiement.
+- **Essai de bout en bout réussi le 2026-11-13** : iPhone (compte A) publie, OPPO (compte B) reçoit la notification ; journaux : `notif.update.bilan` ok, 13 lectures, 1 envoi, 2 destinataires écartés « sans appareil ». **Cet essai n'a PAS vérifié** la réception sur iPhone (APNs) : l'iPhone était du côté de l'auteur.
+- **Nettoyage des images techniques** : réglé à **2 jours** (valeur saisie par le PM au premier déploiement ; la procédure, section 3, proposait 1 jour).
+- **Reste à faire** : (1) **règle TTL de `notifState`** à poser maintenant que la collection existe (section 1.4, étape E) ; (2) **republier les textes légaux** avant l'ouverture à d'autres testeurs (ils décrivent désormais un service de notifications en ligne : ticket §15/§16, P6) ; (3) vérifier la réception sur iPhone (APNs).
 
 ---
 
@@ -73,7 +77,11 @@ npx firebase login:list
 
 `login:list` doit afficher ton compte Google (sinon : `npx firebase login`).
 
-### 1.4 Créer le compte de service dédié de `notifierUpdate` (obligatoire AVANT son déploiement, 10 minutes)
+### 1.4 Créer le compte de service dédié de `notifierUpdate` (4 rôles AVANT le déploiement, 1 droit sur le service APRÈS le premier déploiement)
+
+**En résumé, le compte `notify-update@miff-3d283.iam.gserviceaccount.com` a deux sortes de droits** (constaté le 2026-11-13) :
+- **4 rôles au niveau du PROJET** (étape B), à poser **avant** le premier déploiement ;
+- **1 droit PAR SERVICE** : `Cloud Run Invoker` (`roles/run.invoker`) **sur le seul service Cloud Run `notifierupdate`** (étape D bis), à poser **après** le premier déploiement, **parce que ce service n'existe pas avant** : Google le crée au déploiement. Sans ce droit, la fonction est bien déclenchée par Eventarc mais Cloud Run **refuse chaque appel** (voir « Erreurs possibles au premier déploiement »).
 
 **Pourquoi** : une fonction s'exécute avec une « identité » Google (un compte de service). Par défaut, c'est un compte du projet qui a souvent le rôle **Éditeur** (il peut presque tout faire dans le projet). Une fonction qui lit les fiches des membres et envoie des notifications ne doit pas avoir ce pouvoir : si elle était détournée, les dégâts seraient limités à ce que son compte a le droit de faire. On lui crée donc **son propre compte**, avec **seulement** les droits utiles. **Aucune clé n'est créée ni téléchargée** : l'identité est gérée par Google (`docs/dev/secrets.md`). Si ce compte n'existe pas au moment du déploiement, la commande **échoue** : c'est le bon comportement, rien n'est mis en ligne.
 
@@ -87,7 +95,7 @@ npx firebase login:list
 5. Clique **Créer et continuer**. **Ignore** l'étape « Accorder l'accès à ce compte » (on s'en occupe à l'étape B) : clique **Continuer**, puis **Terminé** (« Done » ; sans rien ajouter à l'étape « Accorder aux utilisateurs l'accès »).
 6. **Ne crée aucune clé** (onglet « Clés » du compte : il doit rester vide). Si on te propose de télécharger un fichier `.json`, **refuse**.
 
-**Étape B : lui donner les 4 rôles, et rien d'autre**
+**Étape B : lui donner les 4 rôles de projet** (le droit sur le service vient à l'étape D bis, après le déploiement)
 1. Ouvre https://console.cloud.google.com/iam-admin/iam (projet `miff-3d283`) et clique **Accorder l'accès** (« Grant access »).
 2. Dans « Nouveaux comptes principaux », colle `notify-update@miff-3d283.iam.gserviceaccount.com`.
 3. Ajoute ces **quatre rôles** (bouton « Ajouter un autre rôle » pour chacun) :
@@ -101,6 +109,7 @@ npx firebase login:list
 
 4. **Enregistrer.**
 5. **N'ajoute jamais** : Éditeur, Propriétaire, Administrateur Firebase, ni un rôle « Admin » de Firestore. Si une erreur au déploiement demande un autre droit pour **ce** compte, copie le message à Claude plutôt que d'ajouter un rôle large.
+6. **N'ajoute pas `Cloud Run Invoker` ici** : au niveau du projet, il donnerait le droit d'appeler **tous** les services Cloud Run du projet. Il se pose **sur le seul service `notifierupdate`** (étape D bis).
 
 **Étape C : donner à TON compte le droit d'utiliser ce compte de service**
 Pour déployer une fonction « qui tourne sous » un compte de service, le compte Google qui déploie (le tien) doit avoir le rôle **Utilisateur du compte de service** (« Service Account User », `roles/iam.serviceAccountUser`) **sur ce compte**.
@@ -110,10 +119,33 @@ Pour déployer une fonction « qui tourne sous » un compte de service, le compt
 4. Si tu es **Propriétaire** du projet, tu as déjà ce droit : l'ajouter ne fait pas de mal et rend la règle explicite.
 
 **Étape D : vérifier (30 secondes)**
-Sur la page IAM, la ligne `notify-update@miff-3d283.iam.gserviceaccount.com` doit afficher **exactement ces 4 rôles** et aucun autre. Sur la page du compte, l'onglet « Clés » est vide. Note la date dans la conversation avec Claude.
+- **Avant le premier déploiement** : sur la page IAM du projet, la ligne `notify-update@miff-3d283.iam.gserviceaccount.com` doit afficher **exactement ces 4 rôles** et aucun autre (pas de « Cloud Run Invoker » à cet endroit : il n'apparaît **jamais** dans la page IAM du projet, puisqu'il est posé sur le service). Sur la page du compte, l'onglet « Clés » est vide.
+- **Après le premier déploiement et l'étape D bis** : la page IAM du projet montre toujours **4 rôles** (pas 5), et, dans les **Permissions du service `notifierupdate`** (Google Cloud > Cloud Run > cocher le service > **Permissions**), la ligne `notify-update@…` porte **Cloud Run Invoker**.
+- Note la date dans la conversation avec Claude.
 
-**Étape E : activer la suppression automatique de `notifState` (durée de vie, « TTL »)**
-La fonction note dans la collection `notifState` (accessible à la fonction seulement, jamais à une application) la date de la dernière update traitée par auteur, pour ne jamais notifier deux fois et ne pas dépasser une notification par heure. Ces lignes contiennent des identifiants : elles doivent disparaître seules au bout de 2 jours.
+**Étape D bis : après le premier déploiement, poser `Cloud Run Invoker` sur le seul service `notifierupdate`** (confirmé en production le 2026-11-13)
+
+**Pourquoi** : `notifierUpdate` est déclenchée par Eventarc, qui appelle le service Cloud Run de la fonction **en se faisant passer pour le compte `notify-update@…`**. Cloud Run n'accepte l'appel que si ce compte a la permission `run.routes.invoke`, que donne le rôle `Cloud Run Invoker`. Ce droit se pose **sur le service**, qui **n'existe qu'après le premier déploiement** : on ne peut donc pas le poser plus tôt. **Jamais au niveau du projet, jamais « Allow public access »** (ni `allUsers`, ni `allAuthenticatedUsers`) : la fonction n'a aucune raison d'être appelable par n'importe qui.
+
+*Façon 1, dans la console Google Cloud (libellés anglais de la console ; vérifie en haut que le projet est `miff-3d283`) :*
+1. Ouvre https://console.cloud.google.com/run (projet `miff-3d283`) : la **liste des services Cloud Run**.
+2. **Coche** la case à gauche du service **`notifierupdate`** (région `europe-west9`) : un panneau s'ouvre à droite.
+3. Dans ce panneau, ouvre **Permissions**.
+4. Clique **Add principal**.
+5. **New principals** : colle `notify-update@miff-3d283.iam.gserviceaccount.com`.
+6. **Role** : choisis **Cloud Run Invoker** (dans le sélecteur : « Cloud Run » > « Cloud Run Invoker »).
+7. **Save.**
+
+*Façon 2, dans Cloud Shell (le terminal intégré à la console Google Cloud, bouton « Activate Cloud Shell » en haut à droite ; la commande vise explicitement le projet et le service) :*
+```bash
+gcloud run services add-iam-policy-binding notifierupdate --region=europe-west9 --member="serviceAccount:notify-update@miff-3d283.iam.gserviceaccount.com" --role="roles/run.invoker" --project=miff-3d283
+```
+La commande affiche la politique mise à jour, avec une ligne `role: roles/run.invoker` et le membre `serviceAccount:notify-update@…`.
+
+Ensuite, vérifie l'étape D (second point) et lis les journaux (section 4, vérification 4). **Ne donne ce droit à aucun autre compte, sur aucun autre service.**
+
+**Étape E : activer la suppression automatique de `notifState` (durée de vie, « TTL »), après la première notification**
+La fonction note dans la collection `notifState` (accessible à la fonction seulement, jamais à une application) la date de la dernière update traitée par auteur, pour ne jamais notifier deux fois et ne pas dépasser une notification par heure. Ces lignes contiennent des identifiants : elles doivent disparaître seules au bout de 2 jours. **À poser APRÈS la première notification** : la collection n'existe qu'à partir de ce moment (**elle a été créée le 2026-11-13 ; la règle TTL reste à poser**).
 1. Ouvre la **console Google Cloud** (https://console.cloud.google.com/firestore), projet **`miff-3d283`** > **Firestore** > menu de gauche **Time-to-live** (« TTL » ; la durée de vie est configurée à cet endroit, pas dans la console Firebase) *(libellé non vérifié ; en cas de doute, copie ce que tu vois à Claude)*.
 2. **Créer une règle** (« Create policy ») : **groupe de collections** `notifState`, **champ** `expireAt`. **Enregistrer.**
 3. À savoir : la suppression est « typiquement dans les 24 h » après l'échéance (documentation Google) et n'est pas gratuite à l'usage sur Blaze (négligeable : une suppression par Miff active et par 2 jours). Tant que la règle n'est pas créée, rien ne casse : les lignes restent, voilà tout (quelques centaines d'octets par Miff).
@@ -133,8 +165,8 @@ La fonction ne trouve des destinataires que si les **règles Firestore des jeton
 | 4 | Revue de sécurité faite, « oui » du PM écrit | Conversation avec Claude | Un « oui » pour ce commit |
 | 5 | Alerte de budget en place (section 1.1) | Console Google Cloud > Facturation > Budgets et alertes | Le budget `Miff 5 EUR par mois` existe |
 | 6 | Tu notes l'état actuel | Console Firebase > **Functions** : liste des fonctions en ligne | Capture d'écran de la liste (plan B) |
-| 7 | **Pour `notifierUpdate` seulement** : le compte de service dédié existe avec ses 4 rôles et sans clé (section 1.4, étapes A à D) | Google Cloud > IAM | La ligne `notify-update@miff-3d283…` montre exactement 4 rôles |
-| 8 | **Pour `notifierUpdate` seulement** : les règles des jetons d'appareil sont déployées, la suppression automatique `notifState` est activée (sections 1.4 E et F) | `deploiement-regles.md`, console Firestore | Règle TTL visible ; règles publiées |
+| 7 | **Pour `notifierUpdate` seulement** : le compte de service dédié existe avec ses **4 rôles de projet** et sans clé (section 1.4, étapes A à D). **Le droit `Cloud Run Invoker` sur le service n'est PAS à poser avant** : il se pose après le premier déploiement (étape D bis ; pour un redéploiement, il est déjà en place) | Google Cloud > IAM | La ligne `notify-update@miff-3d283…` montre exactement 4 rôles |
+| 8 | **Pour `notifierUpdate` seulement** : les règles des jetons d'appareil sont déployées (section 1.4 F) ; la règle TTL `notifState` est posée **après la première notification** (section 1.4 E) | `deploiement-regles.md`, console Firestore | Règles publiées ; règle TTL visible dès que la collection existe |
 | 9 | **Pour `notifierUpdate` seulement** : les textes légaux (SRV-3) sont publiés et aucune fiche de store ne dit encore « pas de notification » (ticket §15/§16, P6) | Conversation avec Claude | « Oui » du PM écrit |
 
 ---
@@ -156,19 +188,40 @@ npx firebase deploy --only functions --project miff-3d283
 
 **Si la CLI refuse `nodejs24`** (message du type « runtime not supported » ou « unsupported Node.js version ») : ne force rien et préviens Claude. Le repli prévu est **Node 22** : dans `backend/firebase.json` (`"runtime": "nodejs22"`), dans `backend/functions/package.json` (`"engines": { "node": "22" }`) et dans `backend/tests/unit/functions-config.test.js` (valeurs attendues). Le code est identique ; `firebase-admin` 14 demande Node 22 ou plus, donc compatible.
 
+### Retrait de `ping` (à faire UNE fois, après la fusion de la PR qui la retire du code)
+
+**Fait le 2026-11-13 : `ping` a été supprimée chez Google** (constaté par le PM). Cette section est conservée à titre d'historique et au cas où elle réapparaîtrait.
+
+`ping` est retirée du code, mais **elle serait restée en ligne chez Google** tant qu'on ne la supprimait pas : retirer le code ne supprime rien tout seul. La commande exacte qui a été utilisée (Git Bash ou PowerShell) :
+
+```bash
+cd C:\dev\miff-deploy\backend
+npx firebase functions:delete ping --region europe-west9 --project miff-3d283
+```
+
+- La CLI demande confirmation : **relis que le nom affiché est bien `ping`**, puis réponds oui. Ne supprime aucune autre fonction (surtout pas `notifierUpdate`).
+- Cette commande ne touche **pas** `notifierUpdate` ni aucune donnée (`ping` n'en avait aucune). Elle ne peut pas être « recréée par accident » : le code de `main` ne contient plus `ping`, donc un futur `deploy --only functions` ne la remet pas en ligne (et un test de la CI échouerait si quelqu'un la rajoutait).
+- Vérification : `npx firebase functions:list --project miff-3d283` ne doit plus lister que `notifierUpdate` (région `europe-west9`, compte de service `notify-update@…`).
+- Si tu lances un déploiement complet **avant** cette suppression, la CLI proposera de supprimer `ping` (« absente du code ») : réponds **oui pour `ping` uniquement**, après avoir lu la liste (voir le tableau ci-dessous).
+- Pas de retour de service à craindre : personne n'appelle `ping`. Si, contre toute attente, une application l'appelait, l'appel échouerait simplement (le résultat n'était pas utilisé).
+
 ### Les questions que la commande peut te poser
 
 | Question (en anglais) | Ta réponse |
 |---|---|
 | Activer des services Google (Cloud Functions, Artifact Registry, Cloud Build…) | Elle les active d'elle-même si besoin ; si elle demande confirmation : **oui**. Activer un service ne coûte rien en soi. |
-| `No cleanup policy detected for repositories in europe-west9 … This may result in a small monthly bill as container images accumulate over time.` suivi de `How many days do you want to keep container images before they're deleted?` | **Tape `1` puis Entrée** (1 jour : c'est la valeur proposée par défaut, durée de rétention courte). Cette règle supprime automatiquement les anciennes « boîtes » techniques de tes fonctions que Google conserve sinon indéfiniment (petite facture mensuelle qui monte avec le temps). Si la CLI te pose plutôt une question oui/non à ce sujet, réponds **oui**. Si tu la rates, la commande `npx firebase functions:artifacts:setpolicy --project miff-3d283` permet de la définir après coup. |
-| Une demande de suppression de fonctions absentes du code (`The following functions are found in your project but do not exist in your local source code`) | Lis la liste. **Si elle contient autre chose que ce que tu attends, réponds NON** et préviens Claude. Au premier déploiement, cette question n'apparaît pas. |
+| `No cleanup policy detected for repositories in europe-west9 … This may result in a small monthly bill as container images accumulate over time.` suivi de `How many days do you want to keep container images before they're deleted?` | **Tape `2` puis Entrée** (2 jours : valeur retenue par le PM au premier déploiement du 2026-11-13 ; 1 jour, la valeur proposée par défaut par la CLI, convient aussi : durée de rétention courte dans les deux cas). Cette règle supprime automatiquement les anciennes « boîtes » techniques de tes fonctions que Google conserve sinon indéfiniment (petite facture mensuelle qui monte avec le temps). Si la CLI te pose plutôt une question oui/non à ce sujet, réponds **oui**. Si tu la rates, la commande `npx firebase functions:artifacts:setpolicy --project miff-3d283` permet de la définir après coup. |
+| Une demande de suppression de fonctions absentes du code (`The following functions are found in your project but do not exist in your local source code`) | Lis la liste **en entier** avant de répondre. **Oui seulement si la liste ne contient QUE `ping`** (c'est la fonction retirée du code, voir l'encadré ci-dessous). **Si elle contient autre chose (par exemple `notifierUpdate`, ou un nom que tu ne reconnais pas), réponds NON** et préviens Claude : une fonction absente du code peut venir d'une erreur de dossier ou de commit. Ne passe jamais `--force` (il répond « oui » à ta place). Si tu as déjà supprimé `ping` avec la commande ci-dessous, la question n'apparaît plus. |
 | Tout message qui parle d'**instances minimales** ou d'un **coût minimum** | **Non**, annule (`Ctrl+C`) et préviens Claude : le dépôt n'en prévoit jamais (une instance minimale est facturée même sans trafic). |
 
 La CLI se termine par `Deploy complete!`. En cas d'erreur, **rien de cassé n'est mis en ligne** : l'ancienne version reste (au premier déploiement, il n'y a simplement rien).
 
-### Erreurs possibles au premier déploiement (non vérifiées, de connaissance générale)
+### Erreurs possibles au premier déploiement
 
+Les deux premières ont été **rencontrées et résolues le 2026-11-13** ; les suivantes sont de connaissance générale (non vérifiées).
+
+- **(a) Erreur « Permission denied » liée à l'« Eventarc Service Agent »** (au moment de créer le déclencheur) : c'est un droit que Google vient d'accorder à son propre agent de service et qui met **quelques minutes** à se propager. **Attends quelques minutes, puis relance exactement la même commande.** Ne donne aucun rôle à personne pour « faire passer » l'erreur.
+- **(b) Après un déploiement réussi, les journaux affichent « The request was not authenticated… The IAM principal lacks {run.routes.invoke} permission »** : la fonction est bien déclenchée par Eventarc, mais Cloud Run **refuse chaque appel** (rien ne part, aucune notification). Cause : le compte `notify-update@…` n'a pas encore le droit d'appeler le service. **Correction** : poser `Cloud Run Invoker` (`roles/run.invoker`) à ce compte **sur le seul service `notifierupdate`** (section 1.4, **étape D bis**, deux façons). **Jamais** au niveau du projet, **jamais** « Allow public access ». Un droit IAM ne demande en principe pas de redéploiement (connaissance générale, non vérifiée ici : il peut mettre quelques minutes à se propager) ; refais ensuite l'essai de la section 11.4.
 - Message disant qu'un **droit manque pour la construction** (Cloud Build / compte de service) : ne donne **aucun rôle large** (Propriétaire, Éditeur) « pour que ça passe ». Copie le message à Claude : il te dira le rôle précis à accorder.
 - Message parlant de **facturation** : vérifie que le projet est bien relié au compte de facturation (Firebase > Utilisation et facturation > plan Blaze).
 
@@ -178,23 +231,24 @@ La CLI se termine par `Deploy complete!`. En cas d'erreur, **rien de cassé n'es
 
 | # | Vérification | Où | OK si |
 |---|---|---|---|
-| 1 | La fonction est en ligne | Console Firebase > projet **Miff** > **Functions** (ou la commande `npx firebase functions:list --project miff-3d283`) | `ping` apparaît, région **europe-west9**, environnement 2e génération, Node.js 24 |
-| 2 | Les limites sont bien appliquées | Cliquer sur la fonction > détails (ou Google Cloud > Cloud Run > service de la fonction) | `ping` : instances maximales **3**, mémoire **128 Mio**, délai **30 s**, instances minimales **0**. `notifierUpdate` : instances maximales **5**, mémoire **256 Mio**, délai **30 s**, instances minimales **0**, compte de service **`notify-update@miff-3d283…`** (et non le compte « Compute Engine default ») |
-| 3 | Aucune erreur | Onglet **Journaux** de `ping` (section 5) | Aucun message rouge « Error » |
-| 4 | Pas de dépense | Google Cloud > Facturation > Rapports (le lendemain) | 0 € pour Cloud Functions |
-| 5 | Tu notes le déploiement | Date, commit déployé (8 caractères), version précédente | Dans un fichier à toi ou dans la conversation avec Claude |
+| 1 | La fonction est en ligne | Console Firebase > projet **Miff** > **Functions** (ou la commande `npx firebase functions:list --project miff-3d283`) | `notifierUpdate` apparaît (et **plus `ping`**, une fois supprimée), région **europe-west9**, environnement 2e génération, Node.js 24 |
+| 2 | Les limites sont bien appliquées | Cliquer sur la fonction > détails (ou Google Cloud > Cloud Run > service de la fonction) | `notifierUpdate` : instances maximales **5**, mémoire **256 Mio**, délai **30 s**, instances minimales **0**, compte de service **`notify-update@miff-3d283…`** (et non le compte « Compute Engine default ») |
+| 3 | Aucune erreur | Onglet **Journaux** de `notifierUpdate` (section 5) | Aucun message rouge « Error » |
+| 4 | **Les appels ne sont pas refusés** (premier déploiement : le droit `Cloud Run Invoker` est-il posé ?) | Journaux (section 5) après une vraie update de test (section 11.4) ; le droit est visible dans Cloud Run > cocher le service `notifierupdate` > **Permissions** | **Aucun message « The request was not authenticated… » ni « lacks {run.routes.invoke} permission »**, et une ligne `notif.update.bilan` apparaît. Sinon : section 1.4, étape D bis |
+| 5 | Pas de dépense | Google Cloud > Facturation > Rapports (le lendemain) | 0 € pour Cloud Functions |
+| 6 | Tu notes le déploiement | Date, commit déployé (8 caractères), version précédente | Dans un fichier à toi ou dans la conversation avec Claude |
 
-> `ping` ne peut pas être appelée depuis un navigateur : elle exige que l'**application** (vérifiée par App Check) soit connectée. Une réponse « refusée » à un essai maladroit est le **bon** comportement. Le premier vrai appel viendra avec les tickets suivants (SRV-2 et suivants). D'ici là, la vérification est : « la fonction est en ligne, avec les bonnes limites, sans erreur ».
+> `notifierUpdate` n'a **aucun point d'entrée appelable depuis un navigateur ni une application** : elle se déclenche seule quand une photo d'update est écrite dans Firestore. Il n'y a donc rien à « essayer » à la main : la vérification est « la fonction est en ligne, avec les bonnes limites et le bon compte de service, sans erreur », puis le test de la section 11.4. **`ping` ne doit plus apparaître** dans la liste (sinon : section 3, « Retrait de `ping` »).
 
 ---
 
 ## 5. Lire les journaux (logs)
 
-Les journaux disent ce que chaque fonction a fait. **Nos journaux APPLICATIFS (ce que le code de Miff écrit) ne contiennent jamais de position, de nom, de jeton ni d'adresse e-mail** (règle codée et testée : un message de journal est un petit code comme `ping.ok`, avec au plus un résultat et un nombre). **Mais** les journaux TECHNIQUES de la plateforme Google (Cloud Run / Cloud Logging, journaux de requêtes) gardent l'**adresse IP et le user-agent** de l'appelant : c'est une donnée personnelle que Miff ne maîtrise pas, à citer dans la politique de confidentialité (point RGPD, risque assumé par le PM, décision du 2026-10-23).
+Les journaux disent ce que chaque fonction a fait. **Nos journaux APPLICATIFS (ce que le code de Miff écrit) ne contiennent jamais de position, de nom, de jeton ni d'adresse e-mail** (règle codée et testée : un message de journal est un petit code comme `notif.update.bilan`, avec au plus un résultat et un nombre). **Mais** les journaux TECHNIQUES de la plateforme Google (Cloud Run / Cloud Logging, journaux de requêtes) gardent l'**adresse IP et le user-agent** de l'appelant : c'est une donnée personnelle que Miff ne maîtrise pas, à citer dans la politique de confidentialité (point RGPD, risque assumé par le PM, décision du 2026-10-23).
 
 - **Console Firebase** : projet **Miff** > **Functions** > onglet **Journaux** (filtre par fonction et par gravité).
 - **Console Google Cloud** : https://console.cloud.google.com/logs (choisir le projet `miff-3d283`, filtrer « Ressource : Cloud Run Revision » ou la fonction).
-- **Ligne de commande** : `npx firebase functions:log --project miff-3d283 --only ping -n 30` (les 30 dernières lignes).
+- **Ligne de commande** : `npx firebase functions:log --project miff-3d283 --only notifierUpdate -n 30` (les 30 dernières lignes).
 
 Niveaux : `INFO` = normal ; `WARNING` = à regarder si ça se répète (par exemple une demande refusée) ; `ERROR` = quelque chose a échoué : copie le message à Claude.
 
@@ -209,9 +263,9 @@ Par ordre de simplicité :
 1. **La supprimer** (propre, réversible : on redéploie le même code plus tard) :
    ```bash
    cd C:\dev\miff-deploy\backend
-   npx firebase functions:delete ping --region europe-west9 --project miff-3d283
+   npx firebase functions:delete <nomDeLaFonction> --region europe-west9 --project miff-3d283
    ```
-   La CLI demande confirmation : relis le nom de la fonction avant de répondre oui. **Attention** : tant que la fonction est présente dans le code de `main`, le déploiement suivant la remettra en ligne ; demande à Claude de la retirer du code (PR) avant de redéployer.
+   (Exemple réel, déjà décidé : le retrait de `ping`, section 3, encadré « Retrait de `ping` » : `npx firebase functions:delete ping --region europe-west9 --project miff-3d283`.) La CLI demande confirmation : relis le nom de la fonction avant de répondre oui. **Attention** : tant que la fonction est présente dans le code de `main`, le déploiement suivant la remettra en ligne ; demande à Claude de la retirer du code (PR) avant de redéployer. Inversement, une fonction supprimée **et** absente du code ne revient pas.
 2. **Pause rapide sans suppression** (si la console le permet) : Google Cloud > Cloud Run > cliquer le service de la fonction > onglet Sécurité > exiger l'authentification (ce qui bloque les appels publics). *Libellés non vérifiés : à confirmer dans la console ; en cas de doute, utilise la suppression.*
 3. **Plafond de dépense** (section 1.2) : à 100 %, Google met les fonctions en pause tout seul jusqu'au mois suivant.
 4. **Dernier recours, urgence financière** : prévenir Claude avant toute désactivation de la facturation du projet (conséquences sur Firestore et sur l'application non vérifiées).
@@ -231,7 +285,7 @@ cd backend
 npx firebase deploy --only functions --project miff-3d283 --message "Retour arriere vers <identifiant>"
 ```
 
-Comme les anciennes « boîtes » techniques sont supprimées après 1 jour (section 3), le retour arrière **reconstruit** le code : compte quelques minutes.
+Comme les anciennes « boîtes » techniques sont supprimées après 2 jours (section 3), le retour arrière **reconstruit** le code : compte quelques minutes.
 
 **Méthode B — supprimer la fonction fautive** (section 6, option 1) quand le problème est urgent et que la fonction n'est pas indispensable.
 
@@ -248,9 +302,9 @@ Après un retour arrière : prévenir Claude (agent `backend-data`) pour corrige
 | Coût mensuel total (Firestore + fonctions) | ≈ 0 $ | ≈ 0,5 $ | ≈ 12 $ |
 | Dont les fonctions elles-mêmes | 0 $ | 0 $ | 0 $ (≈ 75 % du quota gratuit) |
 
-- **Tant qu'on est sur `ping` seule : 0 €.** Les 2 millions d'invocations par mois sont gratuites ; `ping` n'est appelée par personne.
+- **Tant qu'aucune notification n'est envoyée : 0 €.** Les 2 millions d'invocations par mois sont gratuites ; `notifierUpdate` ne s'exécute que lorsqu'un membre publie une update (la fonction `ping`, qui ne servait à rien, est retirée).
 - Le coût dominant n'est **pas** les fonctions, mais les lectures Firestore de l'application elle-même (au-delà de 50 000 par jour). Voir `surveillance-quotas.md`.
-- Lignes annexes, non chiffrées ici et normalement de l'ordre de quelques centimes : stockage des « boîtes » techniques (limité par la règle de 1 jour), journaux, construction (120 minutes par jour gratuites). **Non vérifié** : à lire dans Google Cloud > Facturation > Rapports après quelques semaines.
+- Lignes annexes, non chiffrées ici et normalement de l'ordre de quelques centimes : stockage des « boîtes » techniques (limité par la règle de 2 jours), journaux, construction (120 minutes par jour gratuites). **Non vérifié** : à lire dans Google Cloud > Facturation > Rapports après quelques semaines.
 - **Cloud Scheduler** (utile plus tard pour « plus de nouvelles ») : 3 tâches gratuites **par compte de facturation**, pas par projet. Si le compte de facturation est partagé avec Ghostrun, il faut compter les tâches des deux projets.
 - Seuil à surveiller : **toute facture Blaze supérieure à 5 € par mois** = revue de l'usage avant de continuer (suggestion de l'étude, à fixer par le PM).
 
@@ -282,10 +336,10 @@ Chaque garde-fou ci-dessous est dans `backend/functions/src/options.ts` et **vé
 
 Une fonction s'exécute avec un « compte de service » (l'identité qu'elle présente à Google). Par défaut, c'est le **compte « Compute » par défaut du projet, qui a souvent le rôle Éditeur** : très large (il pourrait lire et modifier presque tout le projet). Aucune clé n'est en jeu, mais si une faille permettait de détourner une fonction, ce rôle large serait celui de l'attaquant.
 
-- **`ping` ne touche ni Firestore ni FCM** : l'identité par défaut est tolérée pour elle seule.
-- **Avant SRV-4 (première fonction qui lit Firestore ou envoie une notification)** : créer un compte de service **dédié** (par exemple nommé `miff-functions`) avec **uniquement** les rôles nécessaires, puis le brancher dans le code avec l'option `serviceAccount` (le **nom** du compte, jamais une clé). Jamais le rôle Éditeur ni Propriétaire.
-- Rôles (confirmés dans la documentation Google le 2026-11-12 pour `notifierUpdate`, voir section 1.4) : accès aux données Firestore (rôle « Utilisateur Cloud Datastore » ; **attention**, un compte de service ignore les règles de sécurité Firestore : ce rôle donne donc accès à toute la base, positions comprises, d'où l'importance de ne l'attribuer qu'aux fonctions qui en ont besoin), envoi de notifications (« Firebase Cloud Messaging API Admin »), et écriture des journaux.
-- Création et attribution des rôles : **par le PM** dans la console Google Cloud > IAM, **pas à pas en section 1.4** (compte `notify-update`, rôles confirmés pour `notifierUpdate`, droit « Utilisateur du compte de service » pour celui qui déploie).
+- **Aucune exception à l'identité par défaut** : la seule fonction qui la gardait, `ping` (qui ne touchait aucune donnée), a été retirée parce que ce compte (« Compute Engine par défaut ») a potentiellement des droits très larges pour un bénéfice nul. La liste d'exceptions du code est **vide**, et un test de la CI le vérifie.
+- **Pour toute fonction (lecture Firestore, envoi de notification, ou autre)** : créer un compte de service **dédié** (par exemple nommé `miff-functions`) avec **uniquement** les rôles nécessaires, puis le brancher dans le code avec l'option `serviceAccount` (le **nom** du compte, jamais une clé). Jamais le rôle Éditeur ni Propriétaire.
+- Rôles (confirmés dans la documentation Google le 2026-11-12 pour `notifierUpdate`, voir section 1.4) : **4 rôles de projet** : accès aux données Firestore (rôle « Utilisateur Cloud Datastore » ; **attention**, un compte de service ignore les règles de sécurité Firestore : ce rôle donne donc accès à toute la base, positions comprises, d'où l'importance de ne l'attribuer qu'aux fonctions qui en ont besoin), envoi de notifications (« Firebase Cloud Messaging API Admin »), réception des événements (« Récepteur d'événements Eventarc ») et écriture des journaux. **Plus 1 droit par service** (confirmé en production le 2026-11-13) : `Cloud Run Invoker` (`roles/run.invoker`) **sur le seul service Cloud Run de la fonction** (`notifierupdate`), à poser après le premier déploiement. Toute future fonction déclenchée par Eventarc aura le même besoin, **sur son propre service**.
+- Création et attribution des rôles : **par le PM** dans la console Google Cloud > IAM, **pas à pas en section 1.4** (compte `notify-update`, 4 rôles de projet, droit `run.invoker` sur le service après le déploiement, droit « Utilisateur du compte de service » pour celui qui déploie).
 - Le test `garde-couts.test.mjs` n'accepte `serviceAccount` que sous la forme `serviceAccount: "nom-de-compte-dedie"` (jamais un compte par défaut, jamais une valeur calculée), et refuse tout compte au nom évoquant Éditeur, administrateur ou propriétaire.
 
 ### Scripts d'installation des dépendances
@@ -298,7 +352,7 @@ Deux dépendances de Firebase ont un script d'installation : `@firebase/util` et
 
 - Il faudrait créer une **clé de compte de service** avec le droit de déployer des fonctions (un droit très large), la stocker comme secret GitHub et la renouveler. `docs/dev/secrets.md` interdit d'en créer.
 - Un déploiement automatique sur une fusion supprimerait le « oui » explicite du PM.
-- Les fonctions s'exécutent avec une **identité gérée par Google** : aucune clé n'existe, ni côté dépôt, ni côté code. L'identité par défaut est cependant trop large (voir §9 bis) : `ping` (qui ne touche à aucune donnée) la garde, mais **toute fonction métier, dont `notifierUpdate`, utilise un compte de service dédié aux droits minimaux** (section 1.4) ; un test refuse toute fonction métier sans compte dédié explicite.
+- Les fonctions s'exécutent avec une **identité gérée par Google** : aucune clé n'existe, ni côté dépôt, ni côté code. L'identité par défaut est cependant trop large (voir §9 bis) : **toute fonction, dont `notifierUpdate`, utilise un compte de service dédié aux droits minimaux** (section 1.4) ; un test refuse toute fonction sans compte dédié explicite.
 
 Si ce choix change un jour, il se prend par une décision écrite du PM, avec une clé à portée minimale et les tests `project-guard.test.js` / `functions-config.test.js` adaptés en conséquence.
 
@@ -340,14 +394,14 @@ Ces nombres sont **additionnés par la fonction elle-même** (chaque lecture est
 
 ### 11.3 La mettre en ligne (c'est l'interrupteur de mise en service)
 
-**Prérequis** : section 1.4 (compte de service, TTL, règles des jetons), checklist de la section 2, textes légaux publiés, applications avec jetons distribuées (SRV-2A / SRV-2I). **Le « oui » du PM est écrit dans la conversation avec Claude.** Tant que la fonction n'est pas déployée, les apps enregistrent des jetons mais **rien n'est envoyé**.
+**Prérequis** : section 1.4 (compte de service et ses 4 rôles, règles des jetons), checklist de la section 2, textes légaux publiés, applications avec jetons distribuées (SRV-2A / SRV-2I). **Le « oui » du PM est écrit dans la conversation avec Claude.** Tant que la fonction n'est pas déployée, les apps enregistrent des jetons mais **rien n'est envoyé**. **Après le tout premier déploiement** : poser `Cloud Run Invoker` sur le service (section 1.4, étape D bis), puis la règle TTL après la première notification (étape E). **État : déployée le 2026-11-13** (commit `2aacad1d`).
 
 ```bash
 cd C:\dev\miff-deploy\backend
 npx firebase deploy --only functions:notifierUpdate --project miff-3d283
 ```
 
-(`--only functions:notifierUpdate` ne touche pas à `ping`. Les questions possibles sont celles de la section 3.) **Un échec du type « le compte de service n'existe pas » ou « permission `iam.serviceAccounts.actAs` refusée »** veut dire que la section 1.4 (étape A ou C) n'est pas terminée. **Ne contourne pas** en demandant de retirer l'option de compte dans le code : préviens Claude.
+(`--only functions:notifierUpdate` ne touche à aucune autre fonction. Les questions possibles sont celles de la section 3.) **Un échec du type « le compte de service n'existe pas » ou « permission `iam.serviceAccounts.actAs` refusée »** veut dire que la section 1.4 (étape A ou C) n'est pas terminée. **Ne contourne pas** en demandant de retirer l'option de compte dans le code : préviens Claude.
 
 ### 11.4 La tester après déploiement avec un compte de test
 
@@ -355,8 +409,11 @@ Matériel : **deux comptes de test** dans **une même Miff de test**, les deux a
 1. Le compte 1 publie une update. Attendu : le compte 2 reçoit « {Prénom} a donné des nouvelles » en quelques secondes (2 minutes au plus), **sans photo ni lieu** ; le compte 1 ne reçoit rien.
 2. Journaux (section 5) : `npx firebase functions:log --only notifierUpdate -n 30 --project miff-3d283`. Attendu : une ligne `notif.update.bilan` avec `envoyes: 1`, `lectures: 7` (2 comptes : 1 contrôle préalable + 1 Miff + 2 fiches + 1 session + 1 téléphone + 1 vérification finale), `ecritures: 1`, **sans aucun nom, identifiant ni jeton**. Une ligne `notif.update.fcm-erreur` avec `code` 8 = clé APNs absente ou refusée côté Apple (ticket §12, étape du PM) ; `code` 1 = jeton inconnu (purgé) ; `code` 3 ou 4 = panne passagère de Google.
 3. Le compte 1 publie une 2e update **dans l'heure** : pas de nouvelle notification (`notif.update.ignore`, `motif: plafond`), la photo est visible dans le Feed.
-4. Console Firebase > Firestore : la collection `notifState` contient un document par Miff de test, **sans nom ni jeton** (que des dates) ; la règle TTL est visible.
+4. Console Firebase > Firestore : la collection `notifState` contient un document par Miff de test, **sans nom ni jeton** (que des dates) ; la règle TTL est visible (**à poser après cette première notification**, section 1.4 E).
 5. Console Firebase > Functions : instances maximales 5, mémoire 256 Mio, compte `notify-update@…`.
+6. Journaux : **aucun** message « The request was not authenticated… » (sinon, section 1.4 D bis).
+
+**Essai réel du 2026-11-13** : iPhone (compte A) publie, OPPO (compte B) reçoit ; `notif.update.bilan` ok, **13 lectures**, **1 envoi**, **2 écartés « sans appareil »**.
 
 Le reste du scénario est dans la recette PM (`docs/qa/checklists/notif-update-membres-recette-pm.md`).
 
@@ -376,6 +433,9 @@ Méthode A ou B de la section 7. Après un retour arrière ou une suppression : 
 
 - La **livraison réelle** par Firebase Cloud Messaging (jeton valide, délai, OPPO/ColorOS, application balayée ou « forcée à l'arrêt »).
 - **APNs** : la clé `.p8` dans la console Firebase, l'environnement de production de TestFlight, le rendu des clés de texte (`notif_circle_update_title` / `_body`) par le système, le niveau « passif », le son du téléphone.
-- Le **rôle FCM** du compte de service (le rôle `roles/firebasecloudmessaging.admin` suffit-il seul ? attendu : oui).
-- Le **déclencheur de production** (Eventarc) avec le compte dédié : droit `eventarc.eventReceiver` ; si les événements n'arrivent pas, copier le message à Claude (un droit `run.invoker` sur le service peut manquer : à confirmer, jamais de rôle large).
-- La **suppression automatique (TTL)** de `notifState`.
+- La **suppression automatique (TTL)** de `notifState` (règle à poser après la première notification, étape 1.4 E ; l'effet réel n'est visible qu'après l'échéance de 2 jours).
+- La **réception sur iPhone** (APNs) : l'essai du 2026-11-13 a vérifié l'envoi vers Android (OPPO) seulement.
+
+**Confirmé le 2026-11-13, au premier déploiement** (essai de bout en bout, iPhone compte A publie, OPPO compte B reçoit) :
+- Le **rôle FCM** du compte de service : `roles/firebasecloudmessaging.admin` **suffit seul** (1 envoi réussi).
+- Le **déclencheur de production** (Eventarc) avec le compte dédié : les 4 rôles de projet (dont `eventarc.eventReceiver`) **ne suffisent pas** : il faut en plus `Cloud Run Invoker` (`roles/run.invoker`) **sur le service `notifierupdate`** (section 1.4, étape D bis). Sans lui : « The request was not authenticated… lacks {run.routes.invoke} permission ». Ce point, noté « à confirmer au premier déploiement », est **confirmé le 2026-11-13**.

@@ -38,7 +38,7 @@ L'accueil est une vraie page de présentation, mobile d'abord, qui donne envie d
 
 | Ancre | Contenu |
 |---|---|
-| (héros) | Pastille « Bientôt sur iPhone et Android », titre « Savoir que tes proches vont bien, sans les déranger. », texte d'accroche, boutons « Bientôt… » + lien « Être prévenu(e) du lancement », trois points (gratuit pour commencer, aucune publicité, tu choisis ce que tu partages), maquette de téléphone (écran « Ma Miff ») avec deux petites notifications |
+| (héros) | Pastille « Bientôt sur iPhone et Android », titre « Savoir que tes proches vont bien, sans les déranger. », texte d'accroche, boutons « Bientôt… » + lien « Être prévenu(e) du lancement », trois points (gratuit pour commencer, aucune publicité, tu choisis ce que tu partages), maquette de téléphone (écran principal : bandeau « Tout va bien », cartes des proches ; **aucune fausse notification** : Miff n'envoie pas de notification d'arrivée ni de départ, voir `docs/legal/`) |
 | `#how` | Comment ça marche, 3 étapes : rejoindre/créer une Miff avec un code secret, choisir les lieux de confiance, tes proches savent que tu vas bien (chaque étape a un mini-écran) |
 | `#benefits` | Rassurer sans surveiller : aucune conversation imposée, tu choisis ce que tu partages, un statut simple et pas ton trajet, un coup d'œil et c'est rassurant |
 | `#trust` | Confiance et vie privée (section bleue) : accord d'abord, tu gardes la main, seulement ton cercle (qui voit ton statut **et ta dernière position connue**, avec réciprocité), pas d'historique de trajets (mais une dernière position gardée), pas de publicité ni de revente ; encadré « Qui voit quoi ? » ; phrase disant que la localisation « Toujours » est nécessaire pour utiliser l'app (décision du PM du 2026-11-01) ; lien vers la politique de confidentialité |
@@ -66,7 +66,7 @@ L'accueil est une vraie page de présentation, mobile d'abord, qui donne envie d
 - Tout est local (zéro ressource externe : la CSP du site le refuse de toute façon). Images de la page : `web/src/assets/img/` (3 portraits WebP de 128 px, 1 miniature de salon WebP de 520 px, 3 SVG légers de fond, de carte et de coche), ensemble d’environ 30 Ko. `width` et `height` partout, `alt=""` pour le décoratif, `loading="lazy"` hors du héros ; l'illustration du héros est décrite une seule fois (`role="img"` + `aria-label`).
 - **Origine et licences des photos** : les portraits et le salon viennent du carrousel de bienvenue (`design/exports/onboarding-photos/`, licence **Pexels**, usage commercial libre, crédit non obligatoire ; auteurs dans `CREDITS.md`). Par courtoisie, la page les crédite (Nino Sanger, Talal Hakim, Christina Morillo, Lisa Anna, via Pexels) et précise que ce sont des **modèles, pas des utilisateurs de Miff** (la licence interdit de suggérer un parrainage). Elles sont présentées comme des exemples d'écran, jamais comme des témoignages.
 - Les « maquettes de téléphone » et les mini-écrans sont du **HTML et du CSS** reproduisant l'écran « Ma Miff » (maquette `design/exports/feed/`), l'écran « Rejoindre une Miff » et l'écran « Nouveau lieu » du carrousel. Un seul écart volontaire avec l'app : le bandeau dit « Tout le monde va bien » au lieu de « Tout le monde est en sécurité » (l'accueil ne doit promettre aucune sécurité).
-- `landing.css` (environ 18 Ko, 6 Ko compressés avec site.css) n'est chargé que sur `/`, `/fr/` et `/en/`. Une très légère flottaison des deux notifications du héros n'existe que si le visiteur n'a pas demandé moins d'animations (`prefers-reduced-motion`).
+- `landing.css` (environ 18 Ko, 6 Ko compressés avec site.css) n'est chargé que sur `/`, `/fr/` et `/en/`. Aucune animation.
 - **Regénérer les images** (rarement utile) : `node web/tools/make-landing-images.mjs` (Chrome ou Edge installé ; `web/tools/chrome-cdp.mjs` pilote le navigateur sans dépendance ; l'image de partage est rendue depuis `web/tools/og-image.html` avec le logo officiel). Ces outils ne sont ni publiés ni lancés par le build ou la CI ; les fichiers générés sont versionnés.
 - Captures locales : `node scripts/preview-web.mjs`, puis un navigateur (le dossier `.preview/` est ignoré par git).
 - **Limites connues** : (1) le poids de la page est dominé par les deux polices TTF complètes (0,44 Mo, cachées un an) reprises d’`android/` ; piste si le score mobile doit monter : les convertir en WOFF2 et les réduire aux caractères latins (outil à ajouter, non fait ici) ; (2) aucun test automatique dans un vrai navigateur dans la CI (les captures et la redirection ont été vérifiées à la main avec Chrome piloté par `web/tools/chrome-cdp.mjs`) ; (3) l’audit Lighthouse n’a pas pu être lancé dans cet environnement.
@@ -162,6 +162,37 @@ cd web
 ```
 
 (Firebase CLI : celle de `backend/` après `npm ci`, ou une installation globale. **Toujours** `--project miff-3d283`.) Le fichier `web/firebase.json` déclenche automatiquement le garde-fou `scripts/web-predeploy-check.mjs` avant l'envoi : il **annule** le déploiement s'il reste un champ à compléter, si la clé web est absente, si le site est périmé ou construit en démonstration, si la commande vient d'une CI ou vise un autre projet que `miff-3d283`. (Ce hook n'a pas pu être essayé en vrai : aucun déploiement n'est autorisé dans ce travail ; à constater lors du premier déploiement, qui échoue de toute façon par sécurité si le hook ne s'exécute pas depuis `web/`.)
+
+### Première mise en ligne (13 novembre 2026) : déroulé complet, dans l'ordre
+
+Le site n'a **jamais** été publié : c'est une première mise en ligne complète. Textes en version 1.0 datés du 13 novembre 2026 (`docs/legal/README.md` §10). **Pages publiées** (adresse de base `https://miff-3d283.web.app`) : accueil `/fr/` et `/en/` (`/` choisit la langue), conditions `/fr/cgu` et `/en/terms`, confidentialité `/fr/confidentialite` et `/en/privacy`, suppression de compte `/fr/supprimer-mon-compte` et `/en/delete-account`, nouveau mot de passe `/reset-password` (une seule page, FR/EN selon le lien), page d'erreur `404`. Ces adresses sont celles que les apps ouvrent déjà (CGU et confidentialité).
+
+Ce que **le PM fait lui-même** (aucun agent ne le fait) :
+
+1. **Console, §6 points 1 à 5** : enregistrer l'application Web dans le projet `miff-3d283` et copier la clé `apiKey` (« AIza… ») ; restreindre cette clé dans Google Cloud (sites `https://miff-3d283.web.app/*` et `https://miff-3d283.firebaseapp.com/*`, API « Identity Toolkit » seulement) ; vérifier les domaines autorisés d'Authentication ; activer Hosting (Spark, aucun paiement) ; **ne pas** encore changer le modèle d'e-mail « Réinitialisation du mot de passe » (point 4) : le faire **après** le déploiement, sinon les e-mails pointeraient vers une page qui n'existe pas encore.
+2. **Console, actions de `docs/legal/README.md` §3** : action 1 (Google Analytics : conservation à 14 mois, « réinitialiser à chaque nouvelle activité » désactivé), action 2 conseillée, et action 4 (stratégie TTL `notifState` / `expireAt` dans Firestore) : sans elles, la politique publiée serait inexacte sur la durée des statistiques et des états de notification.
+3. **Outil Firebase** (une fois) : `cd backend` puis `npm ci --ignore-scripts`, puis `.
+ode_modules.binirebase.cmd login:list` : ton compte doit apparaître (sinon `.
+ode_modules.binirebase.cmd login`). Ton compte Google voit aussi le projet `ghostrun-app` : chaque commande porte `--project miff-3d283`.
+4. **Prévisualiser** (PowerShell, racine du dépôt) : `node scripts/preview-web.mjs`, ouvrir `http://127.0.0.1:5000/`, parcourir les 10 pages en FR et en EN, puis `Ctrl+C`. Dire « oui » ou lister ce qui ne va pas.
+5. **Construire la vraie version** (la clé reste dans cette seule fenêtre ; ne la colle ni dans une conversation ni dans un fichier) :
+   ```
+   $env:MIFF_WEB_API_KEY = "AIza…"
+   node scripts/build-web.mjs
+   ```
+   La commande doit afficher « démo=false, clé=présente, emplacements à compléter=0 ».
+6. **Dernier contrôle, sans rien envoyer** : `node scripts/web-predeploy-check.mjs` (doit se terminer sans refus).
+7. **Donner le « oui, déploie » explicite** dans la conversation, puis :
+   ```
+   cd web
+   ..ackend
+ode_modules.binirebase.cmd deploy --only hosting --project miff-3d283
+   ```
+   Le hook `predeploy` n'a jamais été essayé pour de vrai : s'il échoue, il annule le déploiement (c'est voulu), **ne pas le contourner**, relever le message et le transmettre.
+8. **Après le déploiement** : ouvrir les 10 pages sur `https://miff-3d283.web.app` ; puis console Authentication > Modèles > Réinitialisation du mot de passe > « Personnaliser l'URL d'action » : `https://miff-3d283.web.app/reset-password` (§6 point 4), et faire la **vérification OBLIGATOIRE** ci-dessous (e-mail réel, deux navigateurs). En cas de problème : « Rollback » (ci-dessous).
+9. **Renseigner l'adresse de la politique** dans les fiches de stores plus tard (`https://miff-3d283.web.app/en/privacy` et `/fr/confidentialite`) : rien à faire maintenant.
+
+Points à connaître avant de dire « oui » : (a) la page d'accueil dit que l'app n'est **pas encore disponible** (boutons de stores désactivés, lien « Être prévenu(e) du lancement » = e-mail à l'adresse de contact) : il n'existe donc aucun lien de store à fournir ; (b) le nom, l'adresse postale et l'e-mail de l'éditeur (`web/site.config.json`) deviennent **publics** à la mise en ligne ; (c) les textes décrivent la notification « {Prénom} a donné des nouvelles » alors que la fonction serveur n'est pas encore déployée ; (d) les apps envoient encore `termsVersion` « 0.1 » (`docs/legal/README.md` §3).
 
 ### Vérification OBLIGATOIRE au premier déploiement (clé restreinte par site)
 

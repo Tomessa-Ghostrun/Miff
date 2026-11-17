@@ -7,8 +7,8 @@
       "nav": true,
       "bodyClass": "page-home",
       "styles": ["/assets/landing.css"],
-      "fr": { "url": "/fr/", "title": "Miff : savoir que tes proches vont bien, sans les déranger", "navLabel": "Accueil", "description": "Miff prévient ton cercle de confiance quand tu arrives ou pars d’un lieu qui compte, sans message à écrire. Gratuit pour commencer, bientôt sur iPhone et Android." },
-      "en": { "url": "/en/", "title": "Miff: know your loved ones are okay, without bothering them", "navLabel": "Home", "description": "Miff lets your circle of trust know when you arrive at or leave a place that matters, with no message to write. Free to start, coming soon on iPhone and Android." }
+      "fr": { "url": "/fr/", "title": "Miff : savoir que tes proches vont bien, sans les déranger", "navLabel": "Accueil", "description": "Miff montre à ton cercle que tu vas bien quand tu arrives ou pars d’un lieu qui compte, sans message à écrire. Gratuit pour commencer, bientôt sur iPhone et Android." },
+      "en": { "url": "/en/", "title": "Miff: know your loved ones are okay, without bothering them", "navLabel": "Home", "description": "Miff shows your circle of trust that you are okay when you arrive at or leave a place that matters, with no message to write. Free to start, coming soon on iPhone and Android." }
     },
     {
       "id": "terms",

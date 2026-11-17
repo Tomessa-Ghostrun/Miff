@@ -761,6 +761,9 @@
     <string name="permission_location_step_1">Touche le bouton : les paramètres de Miff s\'ouvrent</string>
     <string name="permission_location_step_2">Choisis Autorisations, puis Position</string>
     <string name="permission_location_step_3">Choisis Autoriser tout le temps et garde Position précise activée</string>
+    <string name="android_permission_location_system_step_1">Touche le bouton : l\'écran qui règle l\'accès à ta position s\'ouvre</string>
+    <string name="android_permission_location_system_step_2">Choisis Toujours autoriser (ou Autoriser tout le temps)</string>
+    <string name="android_permission_location_system_step_3">Garde Position exacte (ou précise) activée</string>
     <string name="miff_consent3_title">Ce que tu partages avec cette Miff</string>
     <string name="miff_consent3_create">En créant cette Miff, tu partages ton statut et ta dernière position connue avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff.</string>
     <string name="miff_consent3_join">En rejoignant cette Miff, tu partages ton statut et ta dernière position connue avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff.</string>
@@ -889,11 +892,12 @@
     <string name="settings_subscription_source_other">Offre en cours</string>
     <string name="settings_subscription_no_store_note">Cet accès ne passe pas par un store.</string>
     <string name="settings_detection_help_title">Si les arrivées et départs tardent</string>
-    <string name="settings_detection_help_intro">Certains téléphones (Oppo, Xiaomi, Samsung, Huawei...) arrêtent les applications en arrière-plan pour économiser la batterie. Miff peut alors repérer une arrivée ou un départ avec du retard. Ces réglages sont facultatifs : ils peuvent aider, et Miff fonctionne sans.</string>
+    <string name="settings_detection_help_intro">Certains téléphones (Oppo, Xiaomi, Samsung, Huawei...) arrêtent les applications en arrière-plan pour économiser la batterie. Miff peut alors repérer une arrivée ou un départ avec du retard, ou afficher avec retard les nouvelles de tes proches. Ces réglages sont facultatifs : ils peuvent aider, et Miff fonctionne sans.</string>
     <string name="settings_detection_help_step_battery">1. Dans les réglages de Miff, ouvre « Batterie » (ou « Consommation d\'énergie ») et choisis « Aucune restriction » (ou « Ne pas optimiser »).</string>
     <string name="settings_detection_help_step_background">2. Autorise l\'activité en arrière-plan de Miff si le téléphone le propose.</string>
     <string name="settings_detection_help_step_autostart">3. Sur Oppo, OnePlus ou Realme (ColorOS) : autorise aussi le « démarrage automatique » de Miff, et ne la ferme pas en la balayant dans la liste des applications récentes.</string>
     <string name="settings_detection_help_step_saver">4. Si possible, évite l\'économiseur de batterie en continu, surtout pendant tes déplacements.</string>
+    <string name="settings_detection_help_step_forcestop">5. Si tu utilises « Forcer l\'arrêt » sur Miff, les nouvelles de tes proches attendent que tu rouvres Miff. C\'est ainsi qu\'Android fonctionne, et rien n\'est perdu : tout est dans ta Miff.</string>
     <string name="settings_detection_help_outro">Les noms exacts des réglages changent selon le téléphone et la version d\'Android.</string>
 
     <!-- UPDATE-1 / UPDATE-2 / FEED-4 : l'Update (photo du moment, bulle d'incitation, photo dans le Feed). -->
@@ -977,7 +981,7 @@
     <string name="notif_n7_title">Ton mode voyage est terminé</string>
     <string name="notif_n7_body">Ta carte reprend ses couleurs chez tes proches. Bon retour !</string>
     <string name="notif_prime_title">Un rappel, seulement quand c\'est utile</string>
-    <string name="notif_prime_body">Si tu oublies de donner de tes nouvelles, Miff te le rappelle doucement, et te dit quand ta Miff change d\'état. Tu choisis ce que tu reçois dans les réglages.</string>
+    <string name="notif_prime_body">Si tu oublies de donner de tes nouvelles, Miff te le rappelle doucement, et te prévient quand un proche donne des siennes. Pour t\'envoyer ces notifications, Miff enregistre un identifiant technique de ton téléphone, fourni par Google. Tu choisis ce que tu reçois dans les réglages.</string>
     <string name="notif_prime_allow">Autoriser</string>
     <string name="notif_prime_later">Plus tard</string>
     <string name="notif_prime_example_when">Il y a 2 min</string>
@@ -1003,6 +1007,17 @@
     <string name="notif_settings_n6">Quand j\'entre dans une zone de danger</string>
     <string name="notif_settings_n7">Quand mon mode voyage se termine</string>
     <string name="notif_settings_n6_hint">Tu coupes la notification, pas ce que ta Miff voit.</string>
+    <!-- N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de l'auteur, 20 caractères au plus. Clés partagées avec iOS. -->
+    <string name="notif_circle_update_title">%1$s a donné des nouvelles</string>
+    <string name="notif_circle_update_body">Retrouve-les dans ta Miff.</string>
+    <string name="notif_center_circle_update_title">Un proche a donné des nouvelles</string>
+    <string name="notif_settings_section_loved_ones">Pour tes proches</string>
+    <string name="notif_settings_circle_update">Quand un proche donne des nouvelles</string>
+    <string name="notif_settings_circle_update_hint">Une notification quand un proche de ta Miff publie une update.</string>
+    <string name="android_notif_push_identifier_note">Pour t\'envoyer ces notifications, Miff enregistre un identifiant technique de ton téléphone, fourni par Google.</string>
+    <string name="android_notif_channel_updates">Nouvelles des proches</string>
+    <string name="android_notif_channel_updates_desc">Quand un proche de ta Miff donne des nouvelles en publiant une update.</string>
+    <string name="android_notif_channel_updates_quiet">Nouvelles des proches (nuit calme)</string>
     <string name="notif_settings_night_title">Nuit calme</string>
     <string name="notif_settings_night_body">De 22 h à 7 h, ni son ni vibration, sauf pour un passage au rouge.</string>
     <string name="notif_settings_see_all">Voir mes notifications</string>

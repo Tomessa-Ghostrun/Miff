@@ -99,7 +99,7 @@ final class ProfileViewModelTests: XCTestCase {
         let harness = SessionHarness()
         harness.gateway.setSignedIn("uid-1", method: .google)
         harness.gateway.name = displayName
-        harness.pending.save(PendingConsent(uid: "uid-1", termsVersion: "0.1", analyticsAccepted: true))
+        harness.pending.save(PendingConsent(uid: "uid-1", termsVersion: "1.0", analyticsAccepted: true))
         await harness.manager.startAndResolve()
         let profiles = FakeProfiles()
         let avatars = FakeAvatars()

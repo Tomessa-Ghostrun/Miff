@@ -31,7 +31,7 @@ final class LocalStoresTests: XCTestCase {
 
     func testTheAcceptanceIsTiedToTheAccountThatGaveIt() throws {
         let store = UserDefaultsPendingConsentStore(defaults: try defaults())
-        let consent = PendingConsent(uid: "uid-1", termsVersion: "0.1", analyticsAccepted: true)
+        let consent = PendingConsent(uid: "uid-1", termsVersion: "1.0", analyticsAccepted: true)
 
         store.save(consent)
 
@@ -41,7 +41,7 @@ final class LocalStoresTests: XCTestCase {
 
     func testClearingForgetsTheAcceptance() throws {
         let store = UserDefaultsPendingConsentStore(defaults: try defaults())
-        store.save(PendingConsent(uid: "uid-1", termsVersion: "0.1", analyticsAccepted: false))
+        store.save(PendingConsent(uid: "uid-1", termsVersion: "1.0", analyticsAccepted: false))
 
         store.clear()
 

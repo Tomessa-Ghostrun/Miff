@@ -8,8 +8,11 @@ import com.google.firebase.firestore.FieldValue
  * 2026-10-28). Shared constants with iOS: change them with the text.
  */
 object ConsentVersions {
-    /** Terms of service and privacy policy: the published version of docs/legal (1 to 20 characters, rules). */
-    const val TERMS = "0.1"
+    /**
+     * Terms of service and privacy policy: the published version of docs/legal, "1.0" since 2026-11-13 (1 to 20
+     * characters, rules). Accounts created before that keep "0.1": the rules freeze the value after creation.
+     */
+    const val TERMS = "1.0"
 
     /** Text of the line about statistics / crash reports. Format AAAA-MM-vNN (rules: the version cannot go back). */
     const val ANALYTICS = "2026-10-v01"

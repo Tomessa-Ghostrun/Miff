@@ -303,6 +303,7 @@ class SessionHarness(
     onAccountResolved: (String) -> Unit = {},
     deletionMarker: com.tomessa.miff.data.account.AccountDeletionMarker? = null,
     localData: List<com.tomessa.miff.data.session.LocalDataEraser> = emptyList(),
+    onSessionReopened: () -> Unit = {},
     timeline: Timeline = Timeline(),
 ) {
     val timeline = timeline
@@ -370,5 +371,6 @@ class SessionHarness(
             onAccountResolved = onAccountResolved,
             deletionMarker = deletionMarker,
             localData = localData,
+            onSessionReopened = onSessionReopened,
         )
 }

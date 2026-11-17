@@ -157,13 +157,121 @@ class PermissionDomainTest {
     }
 
     @Test
-    fun android11Plus_afterTheFirstWindowGaveThePreciseOne_theButtonGoesToTheSettings_withoutAnError() {
+    fun android11Plus_afterTheFirstWindowGaveThePreciseOne_theButtonAsksTheSystemForItsOwnScreen_withoutAnError() {
         val after = snap(fine = true, coarse = true)
         val attempt = LocationFlow.afterDialog(after, canAskAgain = true)
-        assertFalse("the settings step is normal, not an error", attempt.error)
+        assertFalse("the next step is normal, not an error", attempt.error)
         val model = LocationFlow.model(after, attempt)
-        assertEquals(LocationButton.OPEN_SETTINGS, model.button)
+        // The standard request (the system opens its own screen of the permission), NOT the settings of the app.
+        assertEquals(LocationButton.SYSTEM_BACKGROUND_SCREEN, model.button)
         assertTrue(model.steps)
+        assertTrue(model.systemScreen)
+    }
+
+    @Test
+    fun android11Plus_everyVersionFrom30_asksTheSystemFirst_onTheFirstTry() {
+        for (sdk in listOf(30, 31, 32, 33, 34, 35, 36)) {
+            val whileUsing = snap(sdk = sdk, fine = true, coarse = true)
+            assertEquals(
+                "sdk $sdk",
+                LocationButton.SYSTEM_BACKGROUND_SCREEN,
+                LocationFlow.button(whileUsing, LocationAttempt()),
+            )
+        }
+    }
+
+    @Test
+    fun android11Plus_theSettingsOfTheApp_onlyWhenTheSystemOpenedNothing() {
+        val whileUsing = snap(sdk = 33, fine = true, coarse = true)
+        val noScreen =
+            LocationFlow.afterBackgroundRequest(whileUsing, BackgroundRequestOutcome.NO_UI, LocationAttempt())
+        assertTrue(noScreen.systemScreenUnavailable)
+        // The settings open on that same tap, and the state is judged when the person comes back: no message before.
+        assertTrue(noScreen.awaitingSettings)
+        assertFalse(noScreen.error)
+        assertTrue(LocationFlow.mustOpenSettings(whileUsing, BackgroundRequestOutcome.NO_UI))
+        val model = LocationFlow.model(whileUsing, noScreen)
+        assertEquals(LocationButton.OPEN_SETTINGS, model.button)
+        assertFalse(model.systemScreen)
+        assertTrue(model.steps)
+    }
+
+    @Test
+    fun android11Plus_theSystemScreenSeen_withoutTheRightChoice_showsTheCalmMessage_andStaysOnTheSystemScreen() {
+        val whileUsing = snap(sdk = 33, fine = true, coarse = true)
+        val attempt =
+            LocationFlow.afterBackgroundRequest(whileUsing, BackgroundRequestOutcome.SYSTEM_UI_SEEN, LocationAttempt())
+        assertTrue(attempt.error)
+        assertFalse(attempt.systemScreenUnavailable)
+        assertFalse(attempt.awaitingSettings)
+        assertEquals(1, attempt.systemScreenTries)
+        assertFalse(LocationFlow.mustOpenSettings(whileUsing, BackgroundRequestOutcome.SYSTEM_UI_SEEN))
+        assertEquals(LocationButton.SYSTEM_BACKGROUND_SCREEN, LocationFlow.button(whileUsing, attempt))
+    }
+
+    @Test
+    fun android11Plus_noLoop_afterThreeTriesWithoutTheRightChoice_theSettingsOfTheAppTakeOver() {
+        val whileUsing = snap(sdk = 33, fine = true, coarse = true)
+        var attempt = LocationAttempt()
+        repeat(LocationFlow.MAX_SYSTEM_SCREEN_TRIES - 1) {
+            attempt = LocationFlow.afterBackgroundRequest(whileUsing, BackgroundRequestOutcome.SYSTEM_UI_SEEN, attempt)
+            assertEquals(LocationButton.SYSTEM_BACKGROUND_SCREEN, LocationFlow.button(whileUsing, attempt))
+        }
+        attempt = LocationFlow.afterBackgroundRequest(whileUsing, BackgroundRequestOutcome.SYSTEM_UI_SEEN, attempt)
+        assertEquals(LocationButton.OPEN_SETTINGS, LocationFlow.button(whileUsing, attempt))
+        // The message stays calm and the person is never blocked: the way to the settings is the button itself.
+        assertTrue(attempt.error)
+        assertFalse(LocationFlow.mustOpenSettings(whileUsing, BackgroundRequestOutcome.SYSTEM_UI_SEEN))
+    }
+
+    @Test
+    fun android11Plus_grantedInTheSystemScreen_noMessage_andTheScreenIsDone() {
+        val given = full
+        val attempt =
+            LocationFlow.afterBackgroundRequest(
+                given,
+                BackgroundRequestOutcome.GRANTED,
+                LocationAttempt(error = true, systemScreenTries = 2),
+            )
+        assertFalse(attempt.error)
+        assertEquals(0, attempt.systemScreenTries)
+        assertFalse(LocationFlow.mustOpenSettings(given, BackgroundRequestOutcome.GRANTED))
+        // A request that came back at once while everything is in fact granted never sends to the settings.
+        assertFalse(LocationFlow.mustOpenSettings(given, BackgroundRequestOutcome.NO_UI))
+    }
+
+    @Test
+    fun backgroundOutcome_tellsWhatTheSystemDid() {
+        assertEquals(BackgroundRequestOutcome.GRANTED, LocationFlow.backgroundOutcome(true, 10, false))
+        // Back at once, the app never left the front: nothing was shown.
+        assertEquals(BackgroundRequestOutcome.NO_UI, LocationFlow.backgroundOutcome(false, 120, false))
+        assertEquals(
+            BackgroundRequestOutcome.NO_UI,
+            LocationFlow.backgroundOutcome(false, LocationFlow.MIN_SYSTEM_UI_MS - 1, false),
+        )
+        // The app was stopped (a full screen of the system), or the person took time (a panel over the app): something was shown.
+        assertEquals(BackgroundRequestOutcome.SYSTEM_UI_SEEN, LocationFlow.backgroundOutcome(false, 120, true))
+        assertEquals(
+            BackgroundRequestOutcome.SYSTEM_UI_SEEN,
+            LocationFlow.backgroundOutcome(false, LocationFlow.MIN_SYSTEM_UI_MS, false),
+        )
+        // Start unknown (the screen was rebuilt): a doubt never sends the person to the settings.
+        assertEquals(BackgroundRequestOutcome.SYSTEM_UI_SEEN, LocationFlow.backgroundOutcome(false, null, false))
+    }
+
+    @Test
+    fun backgroundRoute_requestWhileTheSystemCanAnswer_settingsOtherwise() {
+        // First try, "all the time" missing and the precise location given (Android 10+): the standard request.
+        assertTrue(LocationFlow.canRequestBackground(snap(sdk = 33, fine = true)))
+        assertTrue(LocationFlow.canRequestBackground(snap(sdk = 29, fine = true)))
+        assertEquals(BackgroundRoute.REQUEST_FROM_SYSTEM, LocationFlow.backgroundRoute(true, false))
+        // Refused for good / no effect (the system answered at once): the settings of the app, no second request.
+        assertEquals(BackgroundRoute.OPEN_APP_SETTINGS, LocationFlow.backgroundRoute(true, true))
+        // Already granted, no precise location, or before Android 10: nothing to ask on its own.
+        assertFalse(LocationFlow.canRequestBackground(full))
+        assertFalse(LocationFlow.canRequestBackground(snap(sdk = 33)))
+        assertFalse(LocationFlow.canRequestBackground(snap(sdk = 28, fine = true)))
+        assertEquals(BackgroundRoute.OPEN_APP_SETTINGS, LocationFlow.backgroundRoute(false, false))
     }
 
     @Test

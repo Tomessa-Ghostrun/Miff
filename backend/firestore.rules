@@ -9,7 +9,7 @@ rules_version = '2';
 // connue R-LIEU-POS ; renouvellement d'un consentement actif R-LIEU-3), puis le 2026-11-05 (SESS-1 temps 1) et le 2026-11-06
 // (R-PHOTO-LOC), puis le 2026-11-10 (fichier de `main` de ce jour : 3 lieux gratuits p1/p2/p3, mode voyage, R-LIEU-1 au plus tard
 // à cette date ; informations du PM, non vérifiables par l'agent, à confirmer dans la console : Firestore > Règles). NON DÉPLOYÉ :
-// SESS-1 temps 2 (deviceIdRequired() = true) et, depuis la PR backend/lieu-demande, la demande d'ajout d'un lieu (LIEU-REQ-A, point 13). Et, depuis la PR backend/jetons-appareil, les jetons d'appareil (SRV-2R, point 14). Tout déploiement suit la procédure
+// SESS-1 temps 2 (deviceIdRequired() = true) et, depuis la PR backend/lieu-demande, la demande d'ajout d'un lieu (LIEU-REQ-A, point 13). Et, depuis la PR backend/jetons-appareil, les jetons d'appareil (SRV-2R, point 14). Et, depuis la PR backend/description-update, la description facultative d'une photo d'update (DESC-R, clé « description » de validPhoto). Tout déploiement suit la procédure
 // docs/dev/deploiement-regles.md et l'accord explicite du PM.
 //
 // Principes :
@@ -804,11 +804,19 @@ service cloud.firestore {
 
     // Photo de la dernière update (au plus une par membre et par Miff).
     // Clés : jpeg, createdAt, expiresAt, lat, lng, measuredAt, TOUTES obligatoires (R-PHOTO-LOC : une photo est toujours localisée). PAS de deviceId (SESS-1).
+    // + description (DESC-R, ticket docs/tickets/description-update.md) : texte libre FACULTATIF de 1 à 140 unités UTF-16 (même comptage que les noms,
+    // isStr), « absente plutôt que vide » : jamais null, jamais "" (le client n'écrit la clé que si le texte nettoyé n'est pas vide). La règle ne peut pas
+    // juger les espaces seuls, les retours à la ligne ni les caractères de contrôle : le nettoyage (trim, retours à la ligne remplacés) est un contrat du
+    // client. Donnée saisie librement, pouvant contenir des données personnelles : même durée de vie, même lecture et mêmes suppressions que la photo
+    // (aucune règle de lecture ni de suppression ne change). Contrôle pur sur les données : aucune lecture de règles de plus.
+    // Republication : « set » sans fusion = le document est ÉCRASÉ, description comprise (une republication sans description l'efface) ; une mise à jour
+    // PARTIELLE (update / merge) qui ne touche pas la clé GARDE l'ancienne description (document fusionné jugé) : le contrat du client impose « set ».
     function validPhoto(miffId, uid) {
       let d = request.resource.data;
       let s = getAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)).data.sharing;
-      return d.keys().hasOnly(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt'])
+      return d.keys().hasOnly(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt', 'description'])
         && d.keys().hasAll(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt'])
+        && (!('description' in d) || isStr(d.description, 1, 140))
         && d.jpeg is bytes && d.jpeg.size() > 0 && d.jpeg.size() <= 150000
         && d.createdAt == request.time
         && d.expiresAt is timestamp

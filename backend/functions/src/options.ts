@@ -42,13 +42,13 @@ export const FONCTIONS_AVEC_RETRY_AUTORISEES: readonly string[] = [];
 export const DECLENCHEURS_AUTORISES: readonly string[] = ["callableTrigger", "eventTrigger"];
 
 /**
- * Fonctions autorisees a tourner avec l'identite PAR DEFAUT du projet : uniquement celles qui ne touchent a aucune donnee (`ping`).
- * Toute fonction metier declare un compte de service DEDIE (option serviceAccount, litteral) ; le test garde-couts.test.mjs le verifie.
+ * Fonctions autorisees a tourner avec l'identite PAR DEFAUT du projet : AUCUNE. La seule qui en beneficiait (`ping`, fonction de demonstration
+ * SRV-1) a ete retiree. Toute fonction declare un compte de service DEDIE (option serviceAccount, litteral) ; le test garde-couts.test.mjs le verifie.
  */
-export const FONCTIONS_IDENTITE_PAR_DEFAUT_AUTORISEES: readonly string[] = ["ping"];
+export const FONCTIONS_IDENTITE_PAR_DEFAUT_AUTORISEES: readonly string[] = [];
 
 // Identite d'execution : par defaut, le compte "Compute" par defaut du projet, qui a SOUVENT le role Editeur (tres large).
-// AVANT toute fonction qui touche Firestore ou FCM (SRV-4), creer un compte de service DEDIE aux roles minimaux et le brancher
+// Toute fonction cree donc un compte de service DEDIE aux roles minimaux et le branche
 // avec l'option `serviceAccount` (nom du compte dedie, JAMAIS une cle, JAMAIS le compte par defaut). Voir docs/dev/secrets.md.
 // Le test garde-couts.test.mjs n'accepte `serviceAccount` que sous cette forme.
 

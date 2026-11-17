@@ -3,6 +3,7 @@ package com.tomessa.miff.data
 import android.app.Application
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.tomessa.miff.data.notification.SharedPreferencesKnownMiffs
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationCenterStore
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationPreferencesStore
 import com.tomessa.miff.data.permission.SharedPreferencesNotificationAskStore
@@ -88,7 +89,7 @@ class NotificationAskStoreTest {
             .edit()
             .putString(
                 "items",
-                """[{"id":"a","type":"n9","createdAt":1},{"id":"b","type":"n2","miffId":"m","createdAt":2}]""",
+                """[{"id":"a","type":"n99","createdAt":1},{"id":"b","type":"n2","miffId":"m","createdAt":2}]""",
             ).commit()
         assertEquals(listOf("b"), store.load().map { it.id })
 
@@ -98,6 +99,79 @@ class NotificationAskStoreTest {
         store.save(items)
         store.clear()
         assertTrue(store.load().isEmpty())
+    }
+
+    @Test
+    fun theConsentToBeNotifiedIsPerAccount_nothingByDefault_survivesARestart_andGoesWithTheAccount() {
+        assertFalse(store().pushConsent("uid-1"))
+        store().markPushConsent("uid-1")
+        assertTrue(store().pushConsent("uid-1"))
+        assertFalse("another account has not agreed", store().pushConsent("uid-2"))
+        assertTrue("a new instance finds it again", SharedPreferencesNotificationAskStore(context).pushConsent("uid-1"))
+        store().forget("uid-1")
+        assertFalse(store().pushConsent("uid-1"))
+    }
+
+    @Test
+    fun theMiffsOfTheAccount_surviveAColdStart_areForOneAccountOnly_andGoWithTheSession() {
+        val known = SharedPreferencesKnownMiffs(context)
+        assertFalse("nothing remembered: unknown means no", known.contains("u1", "m1"))
+        known.remember("u1", setOf("m1", "m2"))
+        val cold = SharedPreferencesKnownMiffs(context)
+        assertTrue(cold.contains("u1", "m1"))
+        assertFalse(cold.contains("u1", "zz"))
+        assertFalse("another account has none of them", cold.contains("u2", "m1"))
+        cold.forget("u1", "m1")
+        assertFalse(cold.contains("u1", "m1"))
+        assertTrue(cold.contains("u1", "m2"))
+        cold.forget("u2", "m2")
+        assertTrue("forgetting for another account changes nothing", cold.contains("u1", "m2"))
+        known.remember("u2", setOf("m9"))
+        assertFalse("the list of the previous account is replaced", known.contains("u1", "m2"))
+        // A list that comes from the cache of the phone can add but never remove.
+        known.remember("u2", setOf("m10"), onlyAdd = true)
+        assertTrue(known.contains("u2", "m9") && known.contains("u2", "m10"))
+        known.remember("u3", setOf("m11"), onlyAdd = true)
+        assertFalse("another account starts over", known.contains("u2", "m9"))
+        assertTrue(known.contains("u3", "m11"))
+        known.clear()
+        assertFalse(known.contains("u2", "m9"))
+    }
+
+    @Test
+    fun theConsentTellsWhoListens_soTheFirstRegistrationDoesNotWait() {
+        var calls = 0
+        val asks = SharedPreferencesNotificationAskStore(context, onPushConsent = { calls++ })
+        assertEquals(0, calls)
+        asks.markPushConsent("uid-1")
+        assertEquals(1, calls)
+        assertTrue(asks.pushConsent("uid-1"))
+    }
+
+    @Test
+    fun aLineOfTheNewsKeepsTheFirstNameOfTheAuthor_andNoOtherTypeDoes() {
+        val store = SharedPreferencesNotificationCenterStore(context)
+        val items =
+            listOf(
+                NotificationItem("n9|u|a|1", NotificationType.N9, "miff", 5L, who = "Amandine"),
+                NotificationItem("n6|m|p|1", NotificationType.N6, "miff", 6L),
+            )
+        store.save(items)
+        val loaded = store.load()
+        assertEquals("Amandine", loaded.first { it.type == NotificationType.N9 }.who)
+        assertEquals(null, loaded.first { it.type == NotificationType.N6 }.who)
+        store.clear()
+        assertTrue("gone with the session", store.load().isEmpty())
+    }
+
+    @Test
+    fun theSwitchOfTheNewsIsKeptOnThePhone_onByDefault() {
+        val store = SharedPreferencesNotificationPreferencesStore(context)
+        assertTrue(store.load().n9)
+        store.save(NotificationPreferences(n9 = false))
+        assertFalse(SharedPreferencesNotificationPreferencesStore(context).load().n9)
+        store.clear()
+        assertTrue(store.load().n9)
     }
 
     @Test

@@ -36,7 +36,7 @@ export interface ChampsJournal {
 
 const CHAMPS_NOMBRES = ["code", "nombre", "dureeMs", "examines", "envoyes", "ecartes", "purges", "lectures", "ecritures"];
 const CHAMPS_AUTORISES = ["resultat", "motif", ...CHAMPS_NOMBRES];
-/** Nom d'evenement : un code fixe ecrit dans le source (ex. "ping.ok"), jamais une donnee d'utilisateur. */
+/** Nom d'evenement : un code fixe ecrit dans le source (ex. "notif.update.bilan"), jamais une donnee d'utilisateur. */
 const MOTIF_EVENEMENT = /^[a-z][a-z0-9_.-]{0,39}$/;
 
 /** Renvoie uniquement des valeurs sures ; exporte pour les tests (la TypeScript ne protege pas un appel venu de JavaScript). */

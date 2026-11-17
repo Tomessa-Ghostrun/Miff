@@ -8,11 +8,13 @@ import com.tomessa.miff.ui.theme.colorBgSurface
 import com.tomessa.miff.ui.theme.colorStatusDanger
 import com.tomessa.miff.ui.theme.colorStatusDangerText
 import com.tomessa.miff.ui.theme.colorStatusDangerTint
+import com.tomessa.miff.ui.theme.colorStatusNeutralTint
 import com.tomessa.miff.ui.theme.colorStatusSafeText
 import com.tomessa.miff.ui.theme.colorStatusSafeTint
 import com.tomessa.miff.ui.theme.colorStatusWarningText
 import com.tomessa.miff.ui.theme.colorStatusWarningTint
 import com.tomessa.miff.ui.theme.colorTextError
+import com.tomessa.miff.ui.theme.colorTextForm
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -81,6 +83,36 @@ class ColorContrastTest {
         ).forEach { (name, pair) ->
             val ratio = contrast(pair.first, overWhite(pair.second))
             assertTrue("status/$name-text on its tint has contrast $ratio, below 4.5", ratio >= 4.5)
+        }
+    }
+
+    private fun over(
+        tint: Color,
+        background: Color,
+    ): Color {
+        val a = tint.alpha
+        return Color(
+            red = tint.red * a + background.red * (1 - a),
+            green = tint.green * a + background.green * (1 - a),
+            blue = tint.blue * a + background.blue * (1 - a),
+        )
+    }
+
+    /** COULEURS-1 v2: the "i" of the bubble is a disc in the tint of the level (over the page) with the "i" in the text colour of the level. */
+    @Test
+    fun infoGlyphIsReadableOnItsDiscOnEveryBackgroundAndEveryLevel() {
+        val levels =
+            listOf(
+                "safe" to (colorStatusSafeText to colorStatusSafeTint),
+                "warning" to (colorStatusWarningText to colorStatusWarningTint),
+                "danger" to (colorStatusDangerText to colorStatusDangerTint),
+                "neutral" to (colorTextForm to colorStatusNeutralTint),
+            )
+        listOf(colorBgSurface, colorBgCanvas, colorBgGradientEnd).forEach { background ->
+            levels.forEach { (name, pair) ->
+                val ratio = contrast(pair.first, over(pair.second, background))
+                assertTrue("the i on the $name disc over $background has contrast $ratio, below 4.5", ratio >= 4.5)
+            }
         }
     }
 }

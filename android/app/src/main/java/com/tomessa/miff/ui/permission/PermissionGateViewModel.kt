@@ -10,6 +10,7 @@ import com.tomessa.miff.data.miff.RenewalMiff
 import com.tomessa.miff.data.permission.DevicePermissions
 import com.tomessa.miff.data.permission.NotificationAskStore
 import com.tomessa.miff.domain.notification.SecondChanceRules
+import com.tomessa.miff.domain.permission.BackgroundRequestOutcome
 import com.tomessa.miff.domain.permission.GateInput
 import com.tomessa.miff.domain.permission.GateScreen
 import com.tomessa.miff.domain.permission.LocationAttempt
@@ -146,6 +147,8 @@ class PermissionGateViewModel(
         currentUid()?.let(asked::markShown)
         notificationsHandled = true
         snapshot = permissions.snapshot()
+        // SRV-2: "Autoriser" on the pop-in (which now says Miff registers an identifier of the phone) and the phone lets Miff notify: the consent to be notified, per account.
+        if (snapshot.notifications) currentUid()?.let(asked::markPushConsent)
         publish()
     }
 
@@ -167,6 +170,17 @@ class PermissionGateViewModel(
         snapshot = permissions.snapshot()
         attempt = LocationFlow.afterDialog(snapshot, canAskAgain)
         publish()
+    }
+
+    /**
+     * The request for "all the time" came back (Android 11+: the system opened its own screen of the permission, or nothing). The state is read
+     * again. Returns true when the screen must now open the settings of the app itself, because the system opened nothing.
+     */
+    fun onBackgroundRequestAnswered(outcome: BackgroundRequestOutcome): Boolean {
+        snapshot = permissions.snapshot()
+        attempt = LocationFlow.afterBackgroundRequest(snapshot, outcome, attempt)
+        publish()
+        return LocationFlow.mustOpenSettings(snapshot, outcome)
     }
 
     fun onSettingsOpened() {

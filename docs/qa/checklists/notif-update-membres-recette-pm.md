@@ -13,8 +13,8 @@ Les vecteurs V1 à V13 du ticket §19, la forme exacte des messages (Android : d
 | # | Prérequis | Où / comment |
 |---|---|---|
 | P1 | Alerte de budget Blaze en place | `docs/dev/deploiement-functions.md` §1.1 |
-| P2 | **Compte de service dédié** `notify-update@miff-3d283.iam.gserviceaccount.com` créé avec ses 4 rôles et **sans clé**, et le droit « Utilisateur du compte de service » pour votre compte | `deploiement-functions.md` §1.4 A à D |
-| P3 | Règle **TTL** sur `notifState.expireAt` créée | `deploiement-functions.md` §1.4 E |
+| P2 | **Compte de service dédié** `notify-update@miff-3d283.iam.gserviceaccount.com` créé avec ses 4 rôles de projet et **sans clé**, et le droit « Utilisateur du compte de service » pour votre compte ; **après le premier déploiement** : le droit « Cloud Run Invoker » sur le seul service `notifierupdate` (sans lui, aucune notification : les journaux disent « request was not authenticated ») | `deploiement-functions.md` §1.4 A à D, puis D bis |
+| P3 | Règle **TTL** sur `notifState.expireAt` créée (**après la première notification**, la collection n'existant qu'à partir de là) | `deploiement-functions.md` §1.4 E |
 | P4 | **Règles Firestore des jetons d'appareil déployées** (branche `backend/jetons-appareil`, SRV-2R) : c'est vous qui tapez la commande, sur « oui » | `docs/dev/deploiement-regles.md` |
 | P5 | **Applications avec enregistrement du jeton** installées sur l'OPPO et l'iPhone (SRV-2A / SRV-2I), notifications autorisées, réglage « Quand un proche donne des nouvelles » activé | recettes SRV-2A / SRV-2I |
 | P6 | **Clé APNs `.p8`** déposée par vous dans la console Firebase du projet **Miff** (jamais ailleurs), capacité Push Notifications activée | ticket §12 |

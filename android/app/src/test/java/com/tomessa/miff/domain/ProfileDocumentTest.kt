@@ -136,6 +136,13 @@ class ProfileDocumentTest {
     }
 
     @Test
+    fun termsVersionIsTheOnePublishedInDocsLegal() {
+        // docs/legal, version 1.0 published on 2026-11-13. Change this value with the texts (and with iOS).
+        assertEquals("1.0", ConsentVersions.TERMS)
+        assertEquals("1.0", ProfileDocument.forCreation("Léa", "Martin", null, phone, accepted)["termsVersion"])
+    }
+
+    @Test
     fun namesAreTrimmed_andBoundedLikeTheRules() {
         assertEquals("Léa", ProfileDocument.forCreation("  Léa ", "Martin", null, phone, declined)["firstName"])
         listOf("", "   ", "x".repeat(51)).forEach { bad ->

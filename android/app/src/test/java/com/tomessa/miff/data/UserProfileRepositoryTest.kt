@@ -266,13 +266,13 @@ class UserProfileRepositoryTest {
 
     @Test
     fun hasTermsVersion_onlyForANonEmptyString() {
-        assertTrue(snapshot(terms = "0.1").hasTermsVersion)
+        assertTrue(snapshot(terms = "1.0").hasTermsVersion)
         listOf(null, "", 1, 0.1, true).forEach { assertFalse("$it", snapshot(terms = it).hasTermsVersion) }
     }
 
     @Test
     fun withoutAProfile_everyFlagIsFalse_whateverTheRawValues() {
-        val s = snapshot(exists = false, membership = true, consent = true, phone = "+33612345678", terms = "0.1")
+        val s = snapshot(exists = false, membership = true, consent = true, phone = "+33612345678", terms = "1.0")
         assertFalse(s.profileExists)
         assertFalse(s.hasMembership)
         assertFalse(s.analyticsConsentEnabled)
@@ -282,7 +282,7 @@ class UserProfileRepositoryTest {
 
     @Test
     fun theOtherFlagsFollowTheProfile() {
-        val s = snapshot(membership = true, consent = true, phone = "+33612345678", terms = "0.1")
+        val s = snapshot(membership = true, consent = true, phone = "+33612345678", terms = "1.0")
         assertTrue(s.profileExists && s.hasMembership && s.analyticsConsentEnabled && s.hasPhone && s.hasTermsVersion)
     }
 

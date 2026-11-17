@@ -118,3 +118,45 @@ Après un retour arrière : refaire les vérifications de la section 3, et prév
 - Le déploiement manuel prend moins d'une minute et reste une décision humaine.
 
 Si ce choix change un jour, il se prend par une décision écrite du PM, avec une clé à portée minimale et le test `project-guard.test.js` adapté en conséquence.
+
+---
+
+## 7. Déploiement des règles de la description (DESC-R)
+
+**Quoi** : la clé facultative `description` (texte de 1 à 140 unités) du document `miffs/{id}/photos/{uid}` (fonction `validPhoto`). Contexte et tests : `backend/data-model.md` (section « description facultative de la photo d'update »), `backend/rules-test-plan.md` section 27, contrat des clients `docs/dev/description-update-clients.md`. **Coût : 0 €.** Aucune Cloud Function à déployer : `notifierUpdate` n'est pas modifiée.
+
+**Quand** : seulement après la fusion de la PR `backend/description-update` **et** un « oui » explicite du PM pour **ce** déploiement. **Avant** la livraison de tout build Android ou iOS qui écrit une description (sinon la production refuse la photo entière, clé inconnue). Rien n'est déployé par un agent.
+
+### Avant (en plus de la checklist de la section 1)
+
+| # | Vérification | OK si |
+|---|---|---|
+| 1 | Le dossier `C:\dev\miff-deploy` est sur le commit de `main` qui contient la PR DESC-R (`git -C C:\dev\miff-deploy log -1 --format=%H` ; `git -C C:\dev\miff-deploy status` propre) | Le commit est celui de la fusion, aucune modification locale |
+| 2 | **Contenu du fichier : ce déploiement publie TOUT `backend/firestore.rules` de ce commit**, pas seulement la description. Compare avec la version en ligne (`git log --oneline -- backend/firestore.rules` depuis le dernier déploiement noté) et **liste ce qui part en même temps** : l'en-tête du fichier indique ce qui reste NON DÉPLOYÉ (au 2026-11-17 : la demande d'ajout d'un lieu LIEU-REQ-A et les jetons d'appareil SRV-2R, si ce n'est pas déjà fait) | Tu sais exactement ce qui sera publié ; tu as dit « oui » en le sachant |
+| 3 | La CI de ce commit est verte (dont `gitleaks` et le test de budgets) | Coche verte |
+
+### La commande
+
+Depuis un terminal (PowerShell ou Git Bash) :
+
+```bash
+cd C:\dev\miff-deploy\backend
+npx firebase deploy --only firestore:rules --project miff-3d283 --message "DESC-R description facultative, commit <8 premiers caracteres>"
+```
+
+Essai à blanc facultatif (vérifie la syntaxe auprès du projet, ne publie rien) : même commande avec `--dry-run`. Jamais d'autre projet, jamais `--force`, jamais `firebase use`.
+
+### Après (vérifications)
+
+| # | Vérification | OK si |
+|---|---|---|
+| 1 | Console Firebase > Firestore Database > **Règles** : date de publication, puis fonction `validPhoto` | La date a changé ; `validPhoto` contient `'description'` dans la liste de clés autorisées et la ligne `isStr(d.description, 1, 140)` |
+| 2 | Attendre quelques minutes (propagation), puis **avec une application déjà installée (sans description)** : publier une update (photo seule) | Elle part comme avant ; ses proches la voient (aucune régression des anciens clients) |
+| 3 | Ouvrir une photo ancienne (écrite avant) | Elle s'ouvre comme avant, aucune erreur |
+| 4 | **Quand DESC-A (Android) puis DESC-I (iOS) existent** : publier une update **avec** une description de 1 puis de 140 caractères depuis un compte de test, la lire depuis un second compte (qui a publié sa position) | La description s'affiche au-dessus de « Photo de … » ; un compte sans position publiée ne voit ni photo ni description |
+| 5 | Le lendemain : Firestore Database > **Utilisation** | Pas d'écart de lectures (la description n'ajoute aucune lecture) |
+| 6 | Tu notes le déploiement (date, commit, version précédente) | Noté |
+
+### Retour arrière
+
+Mêmes méthodes qu'à la section 4. **Sans danger pour les données** : redéployer le fichier précédent retire seulement l'autorisation d'écrire `description` ; les photos déjà écrites avec une description restent lisibles (la lecture ne vérifie pas la forme) et expirent en 24 h. Effet visible : une application qui publie une description verrait sa **photo entière** refusée tant que les règles sont revenues en arrière (message calme, la photo et la description restent à l'écran).

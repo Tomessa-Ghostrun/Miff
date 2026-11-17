@@ -25,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.tomessa.miff.AppContainer
 import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
+import com.tomessa.miff.domain.permission.LocationFlow
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorActionPrimary
@@ -43,6 +44,8 @@ import com.tomessa.miff.ui.theme.textBodyRegular14
 class LocationPrivacyUi(
     val permissionComplete: Boolean = false,
     val waitingMiffNames: List<String> = emptyList(),
+    /** Only "all the time" is missing and the phone can ask for it on its own (Android 10+): the button then asks the system (see [LocationFlow.backgroundRoute]). */
+    val backgroundRequestable: Boolean = false,
 ) {
     override fun toString(): String = "LocationPrivacyUi(redacted)"
 }
@@ -52,17 +55,19 @@ class LocationPrivacyUi(
 fun rememberLocationPrivacy(container: AppContainer): LocationPrivacyUi {
     val waiting by container.awaitingAgreement.waiting.collectAsStateWithLifecycle()
     val directory by container.miffDirectory.state.collectAsStateWithLifecycle()
-    var complete by remember { mutableStateOf(container.devicePermissions.snapshot().locationComplete) }
-    LifecycleEventEffect(
-        Lifecycle.Event.ON_RESUME,
-    ) { complete = container.devicePermissions.snapshot().locationComplete }
+    var snapshot by remember { mutableStateOf(container.devicePermissions.snapshot()) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { snapshot = container.devicePermissions.snapshot() }
     val names =
         (directory as? DirectoryState.Ready)
             ?.miffs
             ?.filter { it.id in waiting }
             ?.map { it.name }
             .orEmpty()
-    return LocationPrivacyUi(complete, names)
+    return LocationPrivacyUi(
+        permissionComplete = snapshot.locationComplete,
+        waitingMiffNames = names,
+        backgroundRequestable = LocationFlow.canRequestBackground(snapshot),
+    )
 }
 
 /** The block under "Localisation": the state of the permission, the true sentence, one line per Miff that waits, the help link. */
@@ -170,6 +175,7 @@ fun DetectionHelpScreen(onBack: () -> Unit) {
             R.string.settings_detection_help_step_background,
             R.string.settings_detection_help_step_autostart,
             R.string.settings_detection_help_step_saver,
+            R.string.settings_detection_help_step_forcestop,
         ).forEach {
             Text(
                 text = stringResource(it),

@@ -226,4 +226,74 @@ class MiffDirectoryTest {
                     .name,
             )
         }
+
+    // --- A tap on a notification of the circle (N9) --------------------------------------------------------------------------------
+
+    @Test
+    fun aTapOnANotification_showsThatMiff_whenTheListIsThere_andThePersonBelongsToIt() =
+        runTest {
+            val directory = directory()
+            repo.myMiffsResult =
+                loaded(listOf(MiffSummary(MIFF_ID, "A"), MiffSummary(OTHER_MIFF_ID, "B")), premium = true)
+            directory.refresh()
+            directory.preselect(OTHER_MIFF_ID)
+            assertEquals(OTHER_MIFF_ID, (directory.state.value as DirectoryState.Ready).activeId)
+            assertEquals(OTHER_MIFF_ID, active.value)
+        }
+
+    @Test
+    fun aTapOnANotification_beforeTheListIsLoaded_waitsForTheFirstListAndIsUsedOnce() =
+        runTest {
+            val directory = directory()
+            directory.preselect(OTHER_MIFF_ID)
+            assertTrue(directory.state.value is DirectoryState.Loading)
+            repo.myMiffsResult =
+                loaded(listOf(MiffSummary(MIFF_ID, "A"), MiffSummary(OTHER_MIFF_ID, "B")), premium = true)
+            directory.refresh()
+            assertEquals(OTHER_MIFF_ID, (directory.state.value as DirectoryState.Ready).activeId)
+            // Used once: the person then chooses the first one, and a refresh does not undo it.
+            directory.select(MIFF_ID)
+            directory.refresh()
+            assertEquals(MIFF_ID, (directory.state.value as DirectoryState.Ready).activeId)
+        }
+
+    @Test
+    fun aTapNamingAMiffThePersonDoesNotBelongTo_isIgnored_neverAnError() =
+        runTest {
+            val directory = directory()
+            repo.myMiffsResult = loaded(listOf(MiffSummary(MIFF_ID, "A")))
+            directory.refresh()
+            directory.preselect("someoneElsesMiff")
+            assertEquals(MIFF_ID, (directory.state.value as DirectoryState.Ready).activeId)
+            // Before the list: the unknown one waits, and is dropped at the first list (not kept on the disk).
+            val fresh = directory()
+            fresh.preselect("someoneElsesMiff")
+            repo.myMiffsResult = loaded(listOf(MiffSummary(MIFF_ID, "A")))
+            fresh.refresh()
+            assertEquals(MIFF_ID, (fresh.state.value as DirectoryState.Ready).activeId)
+        }
+
+    @Test
+    fun aTapWithAMalformedIdentifier_isIgnored() =
+        runTest {
+            val directory = directory()
+            directory.preselect("https://evil.example/x")
+            directory.preselect("")
+            repo.myMiffsResult =
+                loaded(listOf(MiffSummary(MIFF_ID, "A"), MiffSummary(OTHER_MIFF_ID, "B")), premium = true)
+            directory.refresh()
+            assertEquals(MIFF_ID, (directory.state.value as DirectoryState.Ready).activeId)
+        }
+
+    @Test
+    fun theSignOutForgetsAWaitingRequest_itNeverReachesTheNextAccount() =
+        runTest {
+            val directory = directory()
+            directory.preselect(OTHER_MIFF_ID)
+            directory.stop()
+            repo.myMiffsResult =
+                loaded(listOf(MiffSummary(MIFF_ID, "A"), MiffSummary(OTHER_MIFF_ID, "B")), premium = true)
+            directory.refresh()
+            assertEquals(MIFF_ID, (directory.state.value as DirectoryState.Ready).activeId)
+        }
 }

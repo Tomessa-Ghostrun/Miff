@@ -3,6 +3,8 @@
   Gabarit de l'image de partage (Open Graph / Twitter), 1200 x 630 px. Outil de développement : non publié.
   Rendu par web/tools/make-landing-images.mjs (adresse : /web/tools/og-image.html?lang=fr ou ?lang=en).
   Reprend le logo officiel (design/assets/logo/master), les polices et les couleurs du design system.
+  Montre la bulle « Tout va bien » et deux cartes de statut du Feed (comme la maquette de l'accueil) : Miff n'envoie
+  aucune notification d'arrivée ni de départ, il ne faut donc jamais représenter de telles notifications ici.
   Les photos sont celles du carrousel de bienvenue (licence Pexels, voir design/exports/onboarding-photos/CREDITS.md).
 -->
 <html>
@@ -25,30 +27,42 @@ body {
 .blob-b { width: 520px; height: 420px; left: -180px; bottom: -200px; border-radius: 45% 55% 40% 60% / 55% 45% 55% 45%; opacity: 0.16; }
 .logo { position: absolute; left: 72px; top: 64px; width: 232px; height: 90px; }
 .pill {
-  position: absolute; left: 72px; top: 196px;
+  position: absolute; left: 72px; top: 188px;
   display: inline-block; padding: 8px 20px; border-radius: 999px;
   background: #ffffff; border: 2px solid #043cd1; color: #043cd1;
   font-weight: 700; font-size: 24px;
 }
 h1 {
-  position: absolute; left: 72px; top: 262px; width: 620px;
+  position: absolute; left: 72px; top: 252px; width: 620px;
   font-family: "Baloo Thambi 2", sans-serif; font-weight: 800;
-  font-size: 66px; line-height: 1.08; color: #222222;
+  font-size: 64px; line-height: 1.08; color: #222222;
 }
+html[lang="en"] h1 { font-size: 56px; }
 h1 em { font-style: normal; color: #043cd1; }
-.chip {
-  position: absolute; display: flex; align-items: center; gap: 18px;
-  width: 410px; padding: 16px 20px 16px 16px;
-  background: #ffffff; border: 1px solid #d9d9d9; border-radius: 12px;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+.lead {
+  position: absolute; left: 72px; top: 506px; width: 600px;
+  font-size: 26px; line-height: 1.3; color: #4b4b4a;
 }
-.chip img { width: 76px; height: 76px; border-radius: 50%; border: 4px solid #043cd1; object-fit: cover; }
-.chip b { display: block; font-family: "Baloo Thambi 2", sans-serif; font-size: 28px; line-height: 1.15; }
-.chip span { display: block; font-size: 22px; color: #4b4b4a; margin-top: 4px; }
-.chip-1 { right: 56px; top: 112px; }
-.chip-2 { right: 100px; top: 262px; }
-.chip-3 { right: 40px; top: 412px; }
-.dot { position: absolute; right: 52px; top: 96px; width: 30px; height: 30px; border-radius: 50%; background: #d1d828; }
+.banner {
+  position: absolute; right: 52px; top: 70px; width: 440px; height: 168px;
+  padding: 34px 40px 0; border-radius: 55% 45% 50% 50% / 55% 50% 50% 45%;
+  background: rgba(209, 216, 40, 0.42);
+}
+.banner b { display: block; font-family: "Baloo Thambi 2", sans-serif; font-weight: 800; font-size: 46px; line-height: 1.1; }
+.banner span { display: block; font-size: 22px; color: #4b4b4a; margin-top: 4px; }
+.banner svg { position: absolute; right: 44px; bottom: 30px; width: 40px; height: 40px; fill: #d1d828; }
+.card {
+  position: absolute; right: 52px; width: 440px; padding: 20px 22px 20px 20px;
+  display: flex; align-items: center; gap: 20px;
+  background: #ffffff; border: 1px solid #d9d9d9; border-left: 8px solid #d1d828; border-radius: 10px;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.14);
+}
+.card img { flex: none; width: 84px; height: 84px; border-radius: 50%; border: 4px solid #d1d828; object-fit: cover; }
+.card b { display: block; font-family: "Baloo Thambi 2", sans-serif; font-weight: 700; font-size: 32px; line-height: 1.1; }
+.card .badge { display: inline-block; margin-top: 6px; padding: 2px 14px; border-radius: 8px; background: rgba(209, 216, 40, 0.42); font-size: 22px; }
+.card .since { display: block; margin-top: 8px; font-size: 20px; color: #4b4b4a; }
+.card-1 { top: 256px; }
+.card-2 { top: 432px; }
 </style>
 </head>
 <body>
@@ -57,35 +71,43 @@ h1 em { font-style: normal; color: #043cd1; }
 <img class="logo" src="/design/assets/logo/master/miff-wordmark-color.svg" alt="">
 <span class="pill" id="pill"></span>
 <h1 id="title"></h1>
-<div class="dot"></div>
-<div class="chip chip-1"><img src="/web/src/assets/img/avatar-thomas.webp" alt=""><div><b id="c1t"></b><span id="c1s"></span></div></div>
-<div class="chip chip-2"><img src="/web/src/assets/img/avatar-maman.webp" alt=""><div><b id="c2t"></b><span id="c2s"></span></div></div>
-<div class="chip chip-3"><img src="/web/src/assets/img/avatar-amandine.webp" alt=""><div><b id="c3t"></b><span id="c3s"></span></div></div>
+<p class="lead" id="lead"></p>
+<div class="banner"><b id="bt"></b><span id="bs"></span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 0l3 9 9 3-9 3-3 9-3-9-9-3 9-3z"/></svg></div>
+<div class="card card-1"><img src="/web/src/assets/img/avatar-amandine.webp" alt=""><div><b id="n1"></b><span class="badge" id="b1"></span><span class="since" id="s1"></span></div></div>
+<div class="card card-2"><img src="/web/src/assets/img/avatar-thomas.webp" alt=""><div><b id="n2"></b><span class="badge" id="b2"></span><span class="since" id="s2"></span></div></div>
 <script>
+// Textes repris de web/src/landing.json (maquette de l'accueil).
 const texts = {
   fr: {
     pill: 'Bientôt sur iPhone et Android',
     title: 'Savoir que tes proches vont bien, <em>sans les déranger.</em>',
-    c1: ['Thomas est bien arrivé à l’école', 'Il y a 2 min.'],
-    c2: ['Maman vient de quitter le travail', 'À l’instant'],
-    c3: ['Amandine est rentrée à la maison', 'Il y a 5 min.'],
+    lead: 'Miff montre à ton cercle que tu vas bien, sans message à écrire.',
+    banner: ['Tout va bien', 'Dernière nouvelle il y a 2 min'],
+    c1: ['Amandine', 'À l’école', 'Depuis 8 min'],
+    c2: ['Thomas', 'À la maison', 'Depuis 12 min'],
   },
   en: {
     pill: 'Coming soon on iPhone and Android',
     title: 'Know your loved ones are okay, <em>without bothering them.</em>',
-    c1: ['Thomas got to school safely', '2 min ago.'],
-    c2: ['Mum just left work', 'Just now'],
-    c3: ['Amandine is back home', '5 min ago.'],
+    lead: 'Miff shows your circle that you are okay, with no message to write.',
+    banner: ['All good', 'Latest news 2 min ago'],
+    c1: ['Amandine', 'At school', 'For 8 min'],
+    c2: ['Thomas', 'At home', 'For 12 min'],
   },
 };
 const lang = new URLSearchParams(location.search).get('lang') === 'en' ? 'en' : 'fr';
 const t = texts[lang];
 document.documentElement.lang = lang;
-document.getElementById('pill').textContent = t.pill;
+const set = (id, value) => { document.getElementById(id).textContent = value; };
+set('pill', t.pill);
 document.getElementById('title').innerHTML = t.title;
-[['c1', t.c1], ['c2', t.c2], ['c3', t.c3]].forEach(([id, [title, sub]]) => {
-  document.getElementById(`${id}t`).textContent = title;
-  document.getElementById(`${id}s`).textContent = sub;
+set('lead', t.lead);
+set('bt', t.banner[0]);
+set('bs', t.banner[1]);
+[['1', t.c1], ['2', t.c2]].forEach(([i, [name, badge, since]]) => {
+  set(`n${i}`, name);
+  set(`b${i}`, badge);
+  set(`s${i}`, since);
 });
 </script>
 </body>
