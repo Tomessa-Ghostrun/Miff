@@ -155,6 +155,13 @@ shot 95m-en-offre-essai-croix 3 -AppleLanguages "(en)" -AppleLocale en_US -MiffP
 # un Feed de démonstration, (question, puis « Merci de nous le dire ! »), et plus bas en très grand texte ; « Merci ! » et l'anglais : `-MiffPreview review-thanks` à la main (l'étape est limitée en temps). Aucun réseau, rien d'écrit.
 shot 160-fr-avis-question 4 "${fr_args[@]}" -MiffPreview review-question
 shot 162-fr-avis-merci-formulaire 3 "${fr_args[@]}" -MiffPreview review-feedback
+# ABOUT-1I : Réglages > À propos et aide (les VRAIS écrans, états fixes : Diagnostic/AboutScreenPreviews.swift, build Debug seulement).
+# La liste des Réglages (ligne « À propos et aide » en dernier), l'écran (contact et retour en cartes EN HAUT, « Informations » en
+# lignes discrètes dessous), les licences, l'écran en anglais et au plus grand texte. Peu de captures : l'étape est saturée.
+shot 170-fr-reglages-a-propos-ligne 2 "${fr_args[@]}" -MiffPreview about-settings
+shot 172-fr-a-propos 2 "${fr_args[@]}" -MiffPreview about-screen
+shot 174-fr-licences 2 "${fr_args[@]}" -MiffPreview about-licenses
+shot 176-en-a-propos 2 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview about-screen
 
 
 # Le vrai parcours de l'app (session, routage) : première ouverture = carrousel, après le splash animé.
@@ -200,6 +207,7 @@ shot 167-fr-reglages-texte-tres-grand 2 "${fr_args[@]}" -MiffAppLanguage en -Mif
 shot 99-fr-offre-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview paywall-trial-cross
 shot 99b-fr-offre-sans-achat-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview paywall-soon-cross
 shot 164-fr-avis-question-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview review-question
+shot 178-fr-a-propos-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview about-screen
 
 xcrun simctl ui "$udid" content_size large > /dev/null 2>&1 || true
 

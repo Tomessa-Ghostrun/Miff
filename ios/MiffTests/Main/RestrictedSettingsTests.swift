@@ -5,13 +5,13 @@ import XCTest
 /// « Confidentialité », et la suppression du compte reste atteignable, et seulement par Réglages > Mon compte.
 final class RestrictedSettingsTests: XCTestCase {
     func testAnAccountWithoutMiffSeesOnlyMyAccountAndPrivacy() {
-        XCTAssertEqual(SettingsAccess.rows(restricted: true), [.account, .privacy])
+        XCTAssertEqual(SettingsAccess.rows(restricted: true), [.account, .privacy, .about])
     }
 
     func testAnAccountWithMiffsSeesEveryRow() {
         XCTAssertEqual(
             SettingsAccess.rows(restricted: false),
-            [.myInfo, .account, .notifications, .language, .privacy]
+            [.myInfo, .account, .notifications, .language, .privacy, .about]
         )
     }
 
@@ -49,7 +49,7 @@ final class RestrictedSettingsTests: XCTestCase {
     func testAnAccountWithoutMiffReachesTheDeletionThroughMyAccountOnly() {
         let reachable = SettingsAccess.reachable(restricted: true)
 
-        XCTAssertEqual(reachable, [.settings, .account, .deleteAccount, .privacy, .detectionHelp])
+        XCTAssertEqual(reachable, [.settings, .account, .deleteAccount, .privacy, .detectionHelp, .about, .licenses])
         XCTAssertFalse(reachable.contains(.myInfo))
         // Un seul écran ouvre la suppression : Mon compte.
         let parents = SettingsRoute.allCases.filter { SettingsAccess.children(of: $0).contains(.deleteAccount) }
