@@ -204,6 +204,16 @@ test('notifierUpdate : n\'écrit jamais dans photos/ (pas de boucle sur elle-mê
   assert.doesNotMatch(declencheur, /\.data\(\)|\.set\(|\.update\(|\.delete\(/);
 });
 
+test("DESC-R : la description facultative d'une photo n'entre jamais dans la fonction (ni lue, ni copiée dans un message, une charge FCM, un journal ou notifState)", () => {
+  for (const { f, texte } of sources) {
+    // Code seulement (les commentaires qui expliquent l'absence de lecture restent permis) : aucun accès, clé ou nom de champ « description ».
+    assert.doesNotMatch(code(texte), /description/i, `${f} : la description d'une photo ne doit jamais apparaître dans le code de la fonction`);
+  }
+  // Le déclencheur ne transmet au traitement que l'identifiant de la Miff, celui de l'auteur et createdAt (jamais le document, jamais .data()).
+  const declencheur = code(sources.find((x) => nomDe(x.f) === 'notifierUpdate.ts').texte);
+  assert.ok(declencheur.includes('{ miffId: evenement.params.miffId, auteurUid: evenement.params.uid, createdAt: apres.get("createdAt") }'), "le déclencheur ne transmet que miffId, auteurUid et createdAt");
+});
+
 test('notifierUpdate : jamais de sujet FCM (topic) ni d\'envoi multiple : un message par appareil', () => {
   for (const { f, texte } of sources) {
     assert.doesNotMatch(code(texte), /\btopic\b|subscribeToTopic|sendEachForMulticast|sendMulticast|sendAll\b/, `${f} : sujets et envois multiples interdits`);
