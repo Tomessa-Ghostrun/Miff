@@ -11,7 +11,7 @@ struct FeedScreenPreview: View {
     @StateObject private var offlineRetry = OfflineRetryModel(network: AlwaysOnlineMonitor())
 
     private static let miffId = "AbCdEfGhIjKlMnOpQrSt"
-    private static let now = 1_794_063_600_000
+    private static let now = CountdownPreviewSupport.now
 
     private var summary: MiffSummary {
         MiffSummary(id: Self.miffId, name: "Les Mfouka")
@@ -46,19 +46,26 @@ struct FeedScreenPreview: View {
         guard name != "feed-gray" else {
             return [:]
         }
+        // COMPTE À REBOURS : MA carte est verte, dehors d'un lieu (le décompte est dans le contexte, voir `body`).
+        let mine = CountdownPreviewSupport.myFacts(for: name).map { facts in
+            MemberStatus(
+                presence: facts.presence, placeId: nil, presenceAtMillis: facts.presenceAtMillis,
+                lastUpdateAtMillis: nil, hasPhoto: false, batteryPct: 80, locationAccess: nil, updatedAtMillis: Self.now
+            )
+        }
         let lea = MemberStatus(
             presence: presence, placeId: nil, presenceAtMillis: Self.now - ago, lastUpdateAtMillis: nil,
             hasPhoto: false, batteryPct: 80, locationAccess: nil, updatedAtMillis: Self.now
         )
         guard name == "feed-carousel" else {
-            return ["lea": lea]
+            return ["me": mine, "lea": lea].compactMapValues { $0 }
         }
         // Deux alertes : Léa rouge (sortie depuis 6 h) et Sam orange (sortie depuis 3 h).
         let sam = MemberStatus(
             presence: .out, placeId: nil, presenceAtMillis: Self.now - 3 * 60 * 60 * 1000, lastUpdateAtMillis: nil,
             hasPhoto: false, batteryPct: 60, locationAccess: nil, updatedAtMillis: Self.now
         )
-        return ["lea": lea, "sam": sam]
+        return ["me": mine, "lea": lea, "sam": sam].compactMapValues { $0 }
     }
 
     private var members: [MiffMember] {
@@ -125,7 +132,7 @@ struct FeedScreenPreview: View {
                 locate: .idle,
                 texts: FeedTexts(),
                 topInset: layout.listInset,
-                isActive: false,
+                isActive: CountdownPreviewSupport.remainingMillis(for: name) != nil,
                 agreementWaiting: false,
                 secondChanceDue: false,
                 scrollToTop: layout.scrollToTop,
@@ -138,6 +145,7 @@ struct FeedScreenPreview: View {
                 Rectangle().fill(Color.pink).frame(height: 1).padding(.top, layout.listInset)
             }
         }
+        .environment(\.countdownContext, CountdownPreviewSupport.context(for: name))
     }
 }
 #endif

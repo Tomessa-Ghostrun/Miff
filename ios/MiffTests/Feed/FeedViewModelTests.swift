@@ -26,9 +26,12 @@ final class FeedViewModelTests: XCTestCase {
         return UInt64(max(millis, 0)) * 1_000_000
     }
 
-    private func makeModel(timings: FeedTimings = FeedTimings(
-        statusRetryDelaysMillis: [5], firstStatusAnswerMillis: 600_000, cacheGraceMillis: 30
-    )) async -> FeedViewModel {
+    private func makeModel(
+        timings: FeedTimings = FeedTimings(
+            statusRetryDelaysMillis: [5], firstStatusAnswerMillis: 600_000, cacheGraceMillis: 30
+        ),
+        onMyStatus: ((MyStatusFacts?, Bool) -> Void)? = nil
+    ) async -> FeedViewModel {
         repo.myMiffsResult = .loaded(
             MyMiffs(miffs: [MiffSummary(id: testMiffId, name: "Chez nous")], lost: [], premium: false, fromCache: false)
         )
@@ -40,19 +43,21 @@ final class FeedViewModelTests: XCTestCase {
         )
         await directory.refresh()
         let now = clock
-        return FeedViewModel(
-            dependencies: FeedDependencies(
-                directory: directory,
-                repository: repo,
-                services: FeedServices(statuses: statuses, positions: positions, refresher: refresher),
-                network: network,
-                awaiting: awaiting,
-                currentUid: { "me" },
-                clock: { now.value },
-                sleep: { millis in try? await Task.sleep(nanoseconds: FeedViewModelTests.nanoseconds(millis)) },
-                timings: timings
-            )
+        var dependencies = FeedDependencies(
+            directory: directory,
+            repository: repo,
+            services: FeedServices(statuses: statuses, positions: positions, refresher: refresher),
+            network: network,
+            awaiting: awaiting,
+            currentUid: { "me" },
+            clock: { now.value },
+            sleep: { millis in try? await Task.sleep(nanoseconds: FeedViewModelTests.nanoseconds(millis)) },
+            timings: timings
         )
+        if let onMyStatus {
+            dependencies.onMyStatus = onMyStatus
+        }
+        return FeedViewModel(dependencies: dependencies)
     }
 
     private func observe(_ model: FeedViewModel) -> Task<Void, Never> {
@@ -75,6 +80,25 @@ final class FeedViewModelTests: XCTestCase {
             return value
         }
         return nil
+    }
+
+    // MARK: - MON statut : donné pendant l'observation seulement (compte à rebours du Profil, revue de la PR #244)
+
+    func testMyStatusIsGivenWhileTheFeedObservesAndNeverByALateRecomputeAfterwards() async {
+        let calls = TestBox<Int>(0)
+        let model = await makeModel(onMyStatus: { _, _ in calls.value += 1 })
+        let task = observe(model)
+        miffData([other, mine])
+        await waitUntil { self.statuses.active == 1 }
+        statuses.emit(["a": feedStatus(.inTrusted, departedAgo: feedMinutes(12)), "me": feedStatus(.out, placeId: nil, departedAgo: feedMinutes(30))])
+        await waitUntil { self.content(model) != nil }
+        XCTAssertGreaterThan(calls.value, 0, "pendant l'observation, le Feed donne MON statut")
+
+        await stop(task)
+        let before = calls.value
+        // Un calcul tardif (l'accord d'une autre Miff change) ne remplace pas ce que l'écoute de mon seul statut a mis à jour depuis.
+        awaiting.replace([testOtherMiffId])
+        XCTAssertEqual(calls.value, before, "hors observation, une copie périmée n'écrase rien")
     }
 
     // MARK: - Ce qui est lu, quand
