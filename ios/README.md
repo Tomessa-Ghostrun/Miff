@@ -911,6 +911,21 @@ Sans maquette ni spec Notion. Contrat partagé : `docs/contracts/profile-places-
 - **Écarts avec Android** : aucun fonctionnel. Sur iOS la liste n'existait pas sur le Profil (elle n'était que dans l'écran de la Miff), il n'y a donc pas d'écoute à supprimer. Les onglets restent vivants sous la pile de navigation : le retour d'un lieu ou d'un formulaire est détecté par `onAppear` du Profil (relecture si périmée).
 - **À vérifier sur l'iPhone** : le retour d'un formulaire (la liste se met à jour en un court instant), l'absence de saut de mise en page quand la liste apparaît, VoiceOver sur une zone de danger, Dynamic Type au maximum.
 
+## Compte à rebours avant le passage à l'orange (COUNTDOWN-I, miroir d'Android COUNTDOWN-A)
+
+Ticket `docs/tickets/compte-a-rebours-orange.md`, recette `docs/qa/checklists/compte-a-rebours-ios-recette-pm.md`. Un encart (sablier, « Tu es en dehors de tes lieux de confiance », « Tu passeras orange dans … », bordure qui se vide) pour la **seule personne concernée**, quand elle est dehors d'un lieu de confiance et encore en vert.
+
+| Fichier | Rôle |
+|---|---|
+| `Models/Countdown/CountdownRules.swift` | Fonction pure `state(MON statut, partage arrêté, heure)` : masqué ou visible (minutes affichées, fraction de bordure, instant du prochain changement). Réutilise `UpdatePrompt.level` / `StatusColor.level` et `StatusThresholds` |
+| `Models/Countdown/CountdownTexts.swift` | Textes `countdown_*` : durées écrites, durée parlée, nom VoiceOver |
+| `Models/Countdown/CountdownBorder.swift` | Couleur (safe vers warning, jamais rouge), durées d'animation, « Réduire les animations » |
+| `Views/Countdown/` | `CountdownCard` (l'encart), `CountdownBorderShape` (contour, haut-centre, sens horaire), `CountdownSlot` (état, veille d'une minute alignée sur l'échéance, contexte d'environnement) |
+
+Câblage : `MainShellView` donne à l'environnement `countdownContext` (MON statut `MyStatusStore`, l'heure, « ouvrir l'Update » = `selected = .update`, comme le bouton central) ; `FeedListView` place le `CountdownSlot` juste après la bulle, `ProfileTabView` en premier bloc. Sans contexte (aperçus), rien n'est dessiné. **Aucune lecture ni écriture Firestore**, aucun nouveau champ, aucune notification, aucun événement d'analyse.
+
+Écarts et limites : voir la PR et `CHANGELOG.md`. La bulle d'incitation (orange et rouge seulement) et l'encart (vert seulement) ne sont jamais visibles ensemble.
+
 ## Confidentialité : Analytics et Crashlytics
 
 - `Info.plist` : `FIREBASE_ANALYTICS_COLLECTION_ENABLED = NO` (la clé irréversible `..._DEACTIVATED` n'est **pas** utilisée), `FirebaseCrashlyticsCollectionEnabled = NO`, `FirebaseDataCollectionDefaultEnabled = NO` (collecte par défaut éteinte pour tous les SDK Firebase ; chaque SDK est réactivé explicitement après accord), `GOOGLE_ANALYTICS_IDFV_COLLECTION_ENABLED = NO`, signaux publicitaires et attribution désactivés, `FirebaseAutomaticScreenReportingEnabled = NO` (aucun nom d'écran dans Analytics).

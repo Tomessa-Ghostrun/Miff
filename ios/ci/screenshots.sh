@@ -159,6 +159,10 @@ splash_args=(-MiffSkipSplash YES)
 shot 90-fr-feed-bulle-verte 3 "${fr_args[@]}" -MiffPreview feed-green
 shot 91-fr-feed-bulle-orange 3 "${fr_args[@]}" -MiffPreview feed-orange
 shot 92-fr-feed-bulle-rouge 3 "${fr_args[@]}" -MiffPreview feed-red
+# COUNTDOWN-I : le compte à rebours (Feed plein, Feed dans la dernière demi-heure, Profil à 1 h). Peu de captures : l'étape est saturée.
+shot 94-fr-feed-compte-a-rebours-plein 3 "${fr_args[@]}" -MiffPreview feed-countdown-full
+shot 94b-fr-feed-compte-a-rebours-dernier-quart 3 "${fr_args[@]}" -MiffPreview feed-countdown-last
+shot 94c-fr-profil-compte-a-rebours 3 "${fr_args[@]}" -MiffPreview profile-countdown-half
 
 # Mode sombre du système : l'app doit rester claire.
 xcrun simctl ui "$udid" appearance dark > /dev/null 2>&1 || true
@@ -179,6 +183,7 @@ shot 67-fr-miff-ecran-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview miff-scree
 shot 79-fr-miff-supprimer-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview miff-screen-delete
 shot 152-fr-photo-plein-ecran-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview photo-3-4
 shot 93-fr-feed-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-orange
+shot 93b-fr-feed-compte-a-rebours-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-countdown-last
 
 shot 93-fr-feed-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-orange
 

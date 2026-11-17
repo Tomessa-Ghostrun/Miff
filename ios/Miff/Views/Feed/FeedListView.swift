@@ -160,6 +160,8 @@ struct FeedListView: View {
             actions: actions.bubble,
             travelNote: content.travelNote
         )
+        // COMPTE À REBOURS (COUNTDOWN-I) : juste sous la bulle de la Miff, au-dessus des cartes ; rien quand il n'y a pas lieu de l'afficher.
+        CountdownSlot(isActive: isActive)
         ForEach(content.cards, id: \.member.uid) { card in
             MemberCardView(
                 card: card,

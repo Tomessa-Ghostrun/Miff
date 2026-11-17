@@ -2,6 +2,22 @@
 
 ## Non publié
 
+### Compte à rebours avant le passage à l'orange, Feed et Profil (COUNTDOWN-I ; miroir d'Android COUNTDOWN-A)
+
+Ticket `docs/tickets/compte-a-rebours-orange.md` (décidé sur délégation du PM, 2026-11-13), recette `docs/qa/checklists/compte-a-rebours-ios-recette-pm.md`. **Rien n'est compilé en local** (la CI fait foi). Coût : **0 €**, aucune lecture ni écriture Firestore, aucun réseau, aucune notification, aucun événement d'analyse, aucune dépendance.
+
+Ajouté :
+- **Un encart, seulement pour la personne concernée, sur son téléphone** : quand elle est **dehors** de ses lieux de confiance et **encore en vert**, « Tu es en dehors de tes lieux de confiance » / « Tu passeras orange dans 1 h 12 min », sablier à gauche, chevron discret, bordure dynamique. Sur le **Feed juste sous la bulle de la Miff** (au-dessus des cartes) et en **premier bloc du Profil** (au-dessus de « Mes Miffs ») : un seul composant (`CountdownSlot`), donc la même valeur au même instant. Un toucher ouvre l'écran Update par le point d'entrée existant (le bouton central de la barre d'onglets). Masqué : dedans, jamais passé par un lieu, orange, rouge, mode voyage, zone de danger, partage arrêté, statut pas encore connu (sans clignotement).
+- **Une fonction pure** `CountdownRules.state` (MON statut, partage arrêté, heure) : le niveau vient de `UpdatePrompt.level` donc de `StatusColor.level` (le même calcul que l'anneau de ma photo), la fenêtre est `StatusThresholds.orangeAfterMillis` (jamais « 2 h » recopié), le repère est le plus récent du départ et de la dernière update (une update remet à « 2 h »), un repère dans le futur est plafonné à 2 h. Temps restant arrondi à la minute supérieure (vecteurs communs du ticket testés).
+- **Textes** `countdown_*` (FR/EN, mêmes clés et mêmes textes qu'Android) : les durées sont écrites par le catalogue, jamais par le formateur du système ; espace insécable entre le nombre et l'unité. Préfixe `countdown` ajouté au contrat des clés et au script de parité.
+- **Bordure** : piste `border/default` 3 pt, arc ancré en haut au centre qui se vide dans le sens horaire (longueur mesurée le long du contour), `status/safe` puis dégradé vers `status/warning` sur la dernière demi-heure, jamais de rouge. Glissement de 600 ms à chaque frontière de minute, fondu de 200 ms ; **instantanés** avec « Réduire les animations ».
+- **Rafraîchissement** : une mise à jour par minute, alignée sur l'échéance (pas de minuterie qui dérive, jamais à la seconde), aucune minuterie quand l'onglet n'est pas regardé, que l'app est en arrière-plan ou que l'encart est masqué ; à la reprise la valeur est recalculée depuis l'heure absolue.
+- **VoiceOver** : un seul bouton, nom « Tu es en dehors de tes lieux de confiance. Tu passeras orange dans 1 heure et 12 minutes. », indication « Donner de tes nouvelles » (l'équivalent iOS de l'étiquette d'action d'Android), sablier et chevron cachés, aucune annonce chaque minute. Dynamic Type au maximum : le texte passe à la ligne, l'encart grandit.
+- Aperçus de captures (Debug seulement) : `-MiffPreview feed-countdown-full`, `feed-countdown-last`, `profile-countdown-half`.
+- Tests : règles d'affichage de chaque cas, échéance (E - 1 ms, E, E + 1 ms), reset, repère, plafond, rafraîchissement, vecteurs de format et de bordure, textes FR/EN, sens et ancrage de la bordure, couleurs, animations, mise en page (44 pt, grande taille), jamais pour un autre compte.
+
+Écarts avec le ticket (voir la PR) : à 2 h 00 pile le niveau reste vert dans le code (« plus de 2 h »), l'encart disparaît 1 ms plus tôt (r = 0) ; le contenu sous l'encart remonte d'un cran s'il disparaît alors que la liste est défilée plus bas (pas de position de lecture stable en SwiftUI iOS 16) ; la minuterie existante de la coquille (couleur du bouton central, bulle d'incitation) n'a pas été touchée : elle peut avoir jusqu'à une minute de retard sur l'encart.
+
 ### Version des conditions enregistrée : « 1.0 » (miroir d'Android)
 
 Modifié :

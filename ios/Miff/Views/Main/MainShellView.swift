@@ -175,6 +175,10 @@ struct MainShellView<Feed: View>: View {
         MainShellRules.bubbleVisible(prompt: prompt, selected: shownTab, barVisible: barVisible)
     }
 
+    private var countdownContext: CountdownContext {
+        CountdownContext(status: myStatus, clock: countdownSystemClock, openUpdate: { selected = .update })
+    }
+
     private var cleanupKey: CleanupKey {
         CleanupKey(ready: activeMiffId != nil, facts: myStatus.facts)
     }
@@ -236,6 +240,8 @@ struct MainShellView<Feed: View>: View {
                         .environment(\.tabBarTopY, barVisible ? barTopY : nil)
                 }
             }
+            // Le compte à rebours (Feed et Profil) lit MON statut et ouvre l'écran Update par le point d'entrée existant (le bouton central).
+            .environment(\.countdownContext, countdownContext)
             .background(
                 // L'écouteur du créateur sur UNE Miff, branché seulement pendant que l'app est devant (LIEU-REQ-C).
                 ProfileRequestsWatcher(model: places.requests, miffs: miffs, myUid: places.context.myUid)

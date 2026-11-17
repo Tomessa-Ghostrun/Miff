@@ -55,6 +55,9 @@ struct ProfileTabView: View {
                     }
                 }
                 .padding(.horizontal, Spacing.lg)
+                // COMPTE À REBOURS (COUNTDOWN-I) : premier bloc de contenu, au-dessus de « Mes Miffs » ; rien quand il n'y a pas lieu de l'afficher.
+                CountdownSlot(isActive: isActive)
+                    .padding(.horizontal, Spacing.lg)
                 miffCards
                 placesSection
                 // MODE VOYAGE : l'encart est le DERNIER bloc de l'écran (décision du PM après la recette du build 26).

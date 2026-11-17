@@ -60,7 +60,7 @@ struct ScreenPreview: View {
         case _ where name.hasPrefix("place-"):
             // Les lieux de confiance (formulaire, liste, détail, offre) : voir `PlaceScreenPreview`.
             PlaceScreenPreview(name: name)
-        case _ where name.hasPrefix("profile-carousel"):
+        case _ where name.hasPrefix("profile-carousel") || name.hasPrefix("profile-countdown"):
             // L'onglet Profil et son carrousel de Miffs : voir `ProfileScreenPreview`.
             ProfileScreenPreview(name: name)
         case _ where name.hasPrefix("feed-"):
