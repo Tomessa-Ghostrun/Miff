@@ -2,7 +2,7 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
-## [0.43.0] - 2026-11-17 : zoom sur l'aperçu de carte d'un lieu (LIEU-ZOOM)
+## [0.44.0] - 2026-11-17 : zoom sur l'aperçu de carte d'un lieu (LIEU-ZOOM)
 
 Demande directe du PM (« je te laisse faire », sans ticket Notion ni maquette), ticket `docs/tickets/lieu-carte-zoom.md`, recette `docs/qa/checklists/lieu-carte-zoom-android-recette-pm.md` ; branche `android/lieu-carte-zoom`, PR brouillon. Numéro provisoire (à renuméroter au merge si l'ordre change). iOS en parallèle (même comportement).
 
@@ -22,6 +22,31 @@ Demande directe du PM (« je te laisse faire », sans ticket Notion ni maquette)
 ### À savoir
 - **Écarts avec une demande générique** : pas de boutons + / − (décision du PM) ; zoom limité à ±3 niveaux autour du cadrage ; pas de déplacement de la carte.
 - **Non testable sur la JVM** : la carte native elle-même (gestes réels, fluidité sur l'OPPO) : recette PM.
+
+## [0.43.0] - 2026-11-17 : ordre du Feed par date de dernière update (FEED-ORDRE)
+
+Ticket `docs/tickets/feed-ordre-derniere-update.md` (PR docs #254 ; décisions par défaut du §3 appliquées, le PM ayant délégué la validation des specs), recette `docs/qa/checklists/feed-ordre-android-recette-pm.md` ; branche `android/feed-ordre-derniere-update`, PR brouillon. Numéro de version **provisoire** : `main` porte déjà deux en-têtes 0.41.0 et les PR #245 et #252 prennent 0.42.0 (#224 : 0.41.0) ; 0.43.0 est un numéro plausible, **à renuméroter au merge** (par le coordinateur). **Aucune règle Firestore modifiée, aucune lecture ni écriture de plus, aucune permission, aucune dépendance, aucun service payant, rien à déployer.**
+
+### Changé
+- **Les cartes du Feed sont classées de la nouvelle la plus récente à la plus ancienne** (`status.lastUpdateAt`), **ma carte comprise** : elle n'est plus forcée en dernière position (décision du 2026-11-07 remplacée ; le ticket parlait de « moi en premier », le code mettait « moi en dernier »). Sans date exploitable (aucun statut lisible, partage désactivé, infos masquées, carte « Pas encore de nouvelles » sans update postérieure au premier statut, voir « Cas signalé » plus bas) : **après tous les autres**, dans l'ordre d'arrivée dans la Miff. À dates égales : ordre d'arrivée (déjà stable : créateur, arrivée, identifiant). Seules les dates **stockées** sont comparées : l'horloge du téléphone qui regarde n'intervient pas. Le tri n'est **pas** un tri par urgence ; bandeau, alertes, couleurs, sélecteur de Miff et états neutres inchangés.
+- Code : `FeedBuilder.orderMembers(members, newsAtMillis)` (fonction pure, nouvelle signature) et `FeedBuilder.newsDate(label, status)` ; `CardOrderGate` ; la date d'une carte est lue **après** l'étiquette de la carte, pour que l'ordre et le badge ne se contredisent jamais.
+
+### Ajouté
+- **L'ordre ne bouge pas sous le doigt** (`CardOrderGate`, domaine pur) : le **contenu** d'une carte se met à jour tout de suite, mais son **changement de place** attend la fin d'un défilement (inertie comprise) ou d'un appui (doigt posé, même sur « Message » / « Appeler » : le geste est observé sans être consommé), puis **un seul** réordonnancement final, avec un glissement doux (`animateItem`, ressort sans rebond). Chaque carte garde l'identité du membre : un appui en cours n'atteint jamais le proche d'une autre carte. Au **retour sur le Feed** (onglet, premier plan) et au **rafraîchissement manuel**, l'ordre à jour est appliqué **directement** (fenêtre de 4 s, comptée sur l'horloge monotone `SystemClock.elapsedRealtime()` : sans glissement ni annonce ; un doigt posé retient toujours l'ordre, remis à zéro à ON_STOP / ON_START). **Animations réduites** : aucune animation. Changer de Miff : ordre affiché tel quel.
+- **Accessibilité** : le focus de TalkBack ne bouge pas (cartes à clé stable) ; annonce **polie** (région vive, jamais interruptive) une seule fois par application d'ordre, seulement si l'ordre change vraiment : « {Prénom} a donné des nouvelles » (EN « {Name} shared an update ») **seulement si ce proche arrive en tête de liste**, sinon « Le Feed a été mis à jour » (plusieurs cartes bougent, ou une carte monte sans arriver en tête) ; **aucune** pour ma propre carte, pour une arrivée ou un départ de membre, ni au retour sur le Feed. Clés `feed_order_updated_one_a11y` / `feed_order_updated_many_a11y` (fr / en), **ajoutées au catalogue iOS** (`Localizable.xcstrings`, `%@` pour le prénom) ; parité vérifiée par `check-i18n-parity`.
+- Tests : `FeedOrderTest` (**tableau de cas commun avec iOS** : A1 à A5, égalité, sans date, sans statut, présence inconnue avec date, partage coupé, un seul membre, ma carte au milieu, 100 exécutions mélangées ; changement d'ordre ; porte `CardOrderGate` : rien ne bouge pendant un geste, un seul ordre final, carte qui part ou arrive, retour sur le Feed, rafraîchissement, changement de Miff) ; `FeedBuilderTest` mis à jour (plus de « moi en dernier »).
+
+### Cas signalé par le ticket : mise à jour manuelle avant tout départ d'un lieu
+Constaté dans le code : un membre qui publie une update **avant** d'avoir quitté un lieu de confiance garde `presence = "unknown"` (l'écriture de l'update ne touche pas la présence) ; `StatusColor` le met en **neutre** et sa carte affiche **« Pas encore de nouvelles »**. Décision par défaut (retour de la revue indépendante) : pour l'**ordre seulement**, cette carte compte comme datée quand `lastUpdateAt` est **strictement postérieur** à `presenceAt` (le premier statut écrit les deux à la même heure serveur : un `lastUpdateAt` plus tard ne peut être qu'une update manuelle) ; elle **remonte** alors avec sa date. À égalité (partage tout juste activé) elle reste **en fin**. **Le libellé « Pas encore de nouvelles » de cette carte reste inchangé** : qu'elle dise une nouvelle relève de la règle N4 de la couleur et du texte de la carte, question posée au PM (ticket §10). Tests : `presenceUnknownAfterAManualUpdate_rises_butStaysLastWhenTheTimesAreEqual`, `newsDate_*`, cas du tableau commun.
+
+### Heure utilisée pour les updates (ticket §6, « Horloges décalées »)
+- **Update manuelle** : `lastUpdateAt` est **déjà** `FieldValue.serverTimestamp()` (`TrackingWrites.photoStatus`) : rien à changer.
+- **Arrivée dans un lieu de confiance** : `lastUpdateAt` = l'heure de l'événement détecté par le téléphone (heure d'appareil, bornée par les règles à −24 h / +5 min) ; non modifié (le passer à l'heure serveur changerait la couleur et les notifications, hors périmètre). Limite connue : une horloge décalée peut classer une arrivée de quelques minutes à quelques heures à côté de sa vraie place.
+
+### Choix « économiques » et limites connues
+- **Coût : 0 €** : le tri se fait sur l'appareil à partir des statuts déjà lus (aucune lecture en plus ; `PhotoReader` et les écouteurs sont inchangés). Signal de surveillance : aucun nouveau.
+- « Mise à jour publiée » = tout signal « tout va bien » (manuel **ou** arrivée automatique) : le modèle ne distingue pas les deux (ticket §2 et question 1). Si une arrivée qui fait remonter une carte gêne, il faudra un champ « dernière update manuelle » (règles Firestore à déployer par le PM, deux apps à modifier).
+- **iOS** : à suivre (`ios/feed-ordre-derniere-update`), mêmes cas de test, mêmes clés de texte (déjà dans le catalogue iOS).
 
 ## [0.42.0] - 2026-11-17 : compte à rebours avant le passage à l'orange, sur le Feed et le Profil (COUNTDOWN-A)
 
