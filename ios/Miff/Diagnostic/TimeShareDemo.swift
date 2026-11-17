@@ -7,7 +7,45 @@ import SwiftUI
 // téléphone. Elles ne sont JAMAIS écrites : gardées en mémoire, elles remplacent à l'écran ce que dit le journal, et disparaissent à la
 // relance de l'app ; le vrai journal n'est pas touché. Le libellé dit toujours « données de test ».
 
+/// Ce que montrent les données de test : rien (le vrai journal), un graphique (30 jours d'habitudes) ou « pas assez de données » à 2 jours (« dans
+/// 5 jours ») ou à 6 jours (« dans 1 jour »).
+enum TimeShareDemoMode {
+    case off
+    case chart
+    case twoDays
+    case sixDays
+
+    var next: TimeShareDemoMode {
+        switch self {
+        case .off:
+            return .chart
+        case .chart:
+            return .twoDays
+        case .twoDays:
+            return .sixDays
+        case .sixDays:
+            return .off
+        }
+    }
+
+    /// Combien de jours d'historique inventer ; nil : le vrai journal.
+    var historyDays: Int? {
+        switch self {
+        case .off:
+            return nil
+        case .chart:
+            return TimeShareDemoData.chartDays
+        case .twoDays:
+            return 2
+        case .sixDays:
+            return 6
+        }
+    }
+}
+
 enum TimeShareDemoData {
+    /// Jours d'historique de la démonstration du graphique (plus de 7, pour que les trois fenêtres aient de la matière).
+    static let chartDays = 31
     /// Le marqueur que la CI cherche dans l'exécutable de publication : présent en Debug et Internal, ABSENT en publication.
     static let marker = "TIMESHAREDEMO-V1"
 
@@ -25,6 +63,7 @@ enum TimeShareDemoData {
         miffId: String,
         places: [TimeSharePlace],
         nowMillis: Int,
+        historyDays: Int = TimeShareDemoData.chartDays,
         calendar: Calendar = .current
     ) -> [PresenceFact] {
         let trusted = places.filter { $0.type == .trusted }
@@ -34,7 +73,7 @@ enum TimeShareDemoData {
         let leisure = trusted.dropFirst(2).first
         var facts: [PresenceFact] = []
         let today = calendar.startOfDay(for: Date(timeIntervalSince1970: Double(nowMillis) / 1000))
-        for back in stride(from: 31, through: 0, by: -1) {
+        for back in stride(from: historyDays, through: 0, by: -1) {
             guard let day = calendar.date(byAdding: .day, value: -back, to: today) else {
                 continue
             }
@@ -73,12 +112,25 @@ enum TimeShareDemoData {
 struct TimeShareDemoRow: View {
     @ObservedObject var model: TimeShareViewModel
 
+    private var label: String {
+        switch model.demoMode {
+        case .off:
+            return "ios_diag_timeshare_demo_chart"
+        case .chart:
+            return "ios_diag_timeshare_demo_two_days"
+        case .twoDays:
+            return "ios_diag_timeshare_demo_six_days"
+        case .sixDays:
+            return "ios_diag_timeshare_demo_off"
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
             Button {
-                model.toggleDemo()
+                model.cycleDemo()
             } label: {
-                Text(model.demoOn ? "ios_diag_timeshare_demo_off" : "ios_diag_timeshare_demo_on")
+                Text(LocalizedStringKey(label))
             }
             .buttonStyle(.miffSecondaryFullWidth)
             Text("ios_diag_timeshare_demo_caption")

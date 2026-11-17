@@ -25,8 +25,10 @@ enum TimeShareCalculator {
         nowMillis: Int
     ) -> TimeShareOutcome {
         let totals = measure(facts: facts, places: places, windowDays: windowDays, nowMillis: nowMillis)
-        guard totals.measured >= TimeShareLimits.minimumMeasuredMillis else {
-            return .notEnough(measuredMillis: totals.measured)
+        // Le journal de cette Miff doit avoir au moins 7 jours (son premier enregistrement) ET du temps mesuré dans la fenêtre choisie.
+        let elapsed = facts.first.map { max(0, nowMillis - $0.atMillis) } ?? 0
+        guard elapsed >= TimeShareLimits.minimumHistoryMillis, totals.measured > 0 else {
+            return .notEnough(daysLeft: TimeShareLimits.daysLeft(elapsedMillis: elapsed))
         }
         return .ready(result(totals: totals, places: places, windowDays: windowDays))
     }
@@ -134,8 +136,7 @@ enum TimeShareCalculator {
             measuredMillis: totals.measured,
             rows: rows,
             dangerDetails: dangerDetails(totals: totals, places: places, rows: rows),
-            trustedPercent: trusted,
-            synthesis: synthesis(rows)
+            trustedPercent: trusted
         )
     }
 
@@ -204,35 +205,6 @@ enum TimeShareCalculator {
                 percent: percent,
                 isUnderOnePercent: percent == 0
             )
-        }
-    }
-
-    /// La phrase de synthèse (ticket §5.4) : la plus grande part d'après les durées réelles. Un lieu de confiance nommé, ou « Ailleurs » :
-    /// le lieu ou « surtout ailleurs » ; « {n} autres lieux » ou « Zone de danger » (même à égalité avec une autre) : la phrase générique,
-    /// qui ne nomme jamais la zone de danger. Égalité entre un lieu nommé et « Ailleurs » : le premier de la légende.
-    private static func synthesis(_ rows: [TimeShareRow]) -> TimeShareSynthesis {
-        guard let largest = rows.map({ $0.millis }).max() else {
-            return .generic
-        }
-        let tied = rows.filter { $0.millis == largest }
-        let touchesDangerOrOthers = tied.contains { row in
-            switch row.kind {
-            case .danger, .otherPlaces:
-                return true
-            case .place, .elsewhere:
-                return false
-            }
-        }
-        guard !touchesDangerOrOthers, let first = tied.first else {
-            return .generic
-        }
-        switch first.kind {
-        case .place:
-            return first.name.map { .mostAtPlace($0) } ?? .generic
-        case .elsewhere:
-            return .mostlyElsewhere
-        case .danger, .otherPlaces:
-            return .generic
         }
     }
 }

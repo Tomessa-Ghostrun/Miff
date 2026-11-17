@@ -951,7 +951,7 @@ La carte « Répartition de ton temps » de l'onglet Profil montre, en anneau, c
 
 | Chemin | Rôle |
 |---|---|
-| `Models/TimeShare/PresenceFact.swift` | Un fait (Miff, état, lieu, heure) et les constantes partagées avec Android (7 / 14 / 30 jours, 24 h, 48 h, 35 jours, 5 lieux nommés) |
+| `Models/TimeShare/PresenceFact.swift` | Un fait (Miff, état, lieu, heure) et les constantes partagées avec Android (7 / 14 / 30 jours, 7 jours d’historique, 48 h, 35 jours, 5 lieux nommés, 4 lignes de légende) |
 | `Models/TimeShare/TimeShareCalculator.swift`, `TimeSharePercentages.swift` | Le calcul (contrat du ticket §6.2) et les pourcentages entiers (plus grand reste, en entiers) |
 | `Models/TimeShare/TimeShareCardState.swift`, `TimeShareTexts.swift`, `TimeShareDonutLayout.swift` | Les états de la carte (§7), les textes et la description du lecteur d'écran, la géométrie de l'anneau |
 | `Services/TimeShare/PresenceHistoryFileStore.swift` | Le journal sur disque (privé, exclu des sauvegardes, 35 jours) ; `PresenceHistoryPruner` efface le journal d'une Miff quittée ; `TimeShareContext` dit l'état du suivi (autorisations, voyage, zones) |
@@ -968,20 +968,25 @@ La carte « Répartition de ton temps » de l'onglet Profil montre, en anneau, c
 - **Protection du fichier** : « jusqu'à la première authentification » (comme la copie locale du suivi), donc écrit téléphone verrouillé. Avant le premier déverrouillage après un redémarrage, le fait est gardé en mémoire et écrit dès que le fichier se lit (le moteur ne peut d'ailleurs pas lire sa propre copie avant). Un fichier qui existe mais ne se lit pas n'est **jamais** effacé ; un fichier abîmé est réinitialisé.
 - **Effacement** : voir CHANGELOG ; `doStop` (réveil où « personne n’est connecté » est constaté, par exemple avant le premier déverrouillage) **n’efface pas** le journal : un historique qu’on ne peut pas reconstruire ne part pas sur une supposition (limite : une déconnexion interrompue est rattrapée à la déconnexion suivante ou par la copie d’un autre compte) ; le bouton de Réglages > Confidentialité appelle `eraseFacts()` (le choix de fenêtre reste), la fin de session et la suppression du compte appellent `clearAll()`.
 
-### Écarts avec la maquette `19.webp` (à lister dans la PR ; E1 à E9 du ticket §9.1)
+### Mise en page de la maquette `19.webp` (retours du PM du 2026-11-17, après test sur Android) et écarts
+
+La carte reprend la maquette au plus près ; **couleurs et emoji restent ceux de l'app**.
+
+- **Seuil de 7 jours** : tant que le premier enregistrement du journal de la Miff a moins de 7 jours (ou que rien n'est mesuré dans la fenêtre), **aucun graphique et aucun sélecteur** : seulement « Ton graphique arrive dans X jours, nous analysons tes habitudes » (wording figé par le PM, pluriel du catalogue : « dans 1 jour »). X = 7 − jours ENTIERS écoulés depuis le premier enregistrement, jamais sous 1 (6 jours et 2 h : « 1 jour »), 7 sans enregistrement (`TimeShareLimits.daysLeft`). Recalculé à l'affichage du Profil et à la reprise de la scène, pas de minuterie. **Risque assumé par le PM** : « nous analysons tes habitudes » peut laisser croire à une analyse côté serveur alors que tout reste sur le téléphone (dit juste en dessous) ; le texte n'est affiché que si le suivi est actif.
+- **Disposition** : carte blanche à coins de 20 pt ; en-tête = pastille verte, « Répartition du temps », « Sur les N derniers jours », sélecteur « 7 jours ⌄ » à droite ; **légende à gauche** (pastille, emoji, nom, % à droite) limitée aux **4 parts les plus longues** ; **anneau plus petit (108 pt) à droite** avec TOUTES les tranches ; au centre le % en zone de confiance et « en zone de confiance ». La description du lecteur d'écran liste TOUTES les parts.
+- **Encart de synthèse** (remplace « sans coche verte ni emoji de fête ») : fond vert très léger, coche, « Tu as passé x % de ton temps dans tes zones de confiance », 🎉 à droite ; **affiché chaque fois que le graphique l'est** : **risque de ton signalé** (x très bas : félicitation à côté d'un 3 %), décision du PM assumée. Ne nomme jamais la zone de danger.
+- **Couleurs** : lieux de confiance = **nuances de vert et de bleu de Miff** en alternance (`chart/1` à `chart/5`, contraste ≥ 3:1 testé) ; **zone de danger = exactement `status/danger`**, le rouge de la bulle du Feed (hachures et icône conservées) ; **« Ailleurs » = #D4D7DF**, le gris relevé sur la maquette (plus clair que 3:1 : il est toujours accompagné de son nom et de son %). Tokens à valider par `design-system`.
 
 | # | Maquette | iOS | Raison |
 |---|---|---|---|
-| E1 | « Répartition du temps » | « Répartition de **ton** temps » | Personnel (D2) |
-| E2 | « 72 % en zone sécurisée » | « 72 % dans tes lieux de confiance » | Aucune promesse de sécurité |
-| E3 | « Zone à risque » rouge vif avec ⚠️ | **« Zone de danger »** (libellé de l'app), une ligne, tranche hachurée en `chart/danger` (rouge assombri), icône d'avertissement, détail au toucher | Libellé de l'app ; ton ; jamais la couleur seule |
+| E1 | « Répartition du temps » | Identique | Retour du PM (remplace « de ton temps ») |
+| E2 | « 72 % en zone sécurisée » | « en zone de confiance » | Aucune promesse de sécurité |
+| E3 | « Zone à risque » rouge avec ⚠️ | **« Zone de danger »** (libellé de l'app), une ligne, hachurée, icône d'avertissement, détail au toucher ; légende limitée à 4 parts : le détail n'est atteignable que si la zone de danger en fait partie | Libellé de l'app ; ton ; jamais la couleur seule |
 | E4 | « Hors-zone » avec « ? » | « Ailleurs » avec un pictogramme neutre | Le « ? » évoque l'inconnu |
-| E5 | Vert, jaune, rouge, gris | Palette dérivée du bleu de la marque ; seule la zone de danger porte la couleur d'alerte | Cohérence avec le design system |
-| E6 | Bandeau vert avec coche et emoji de fête | Bandeau bleuté neutre, icône d'information, phrase descriptive | Pas de jugement (D13) |
-| E7 | Légende à droite | À droite par défaut, **sous l'anneau** aux grandes tailles de texte | Accessibilité |
-| E8 | — | Ligne de confidentialité et états non designés | Ticket §7 |
-| E9 | Emoji ⚽ et 🏋️ | Emoji de la table de catégories de l'app | Même glyphe que la liste des lieux |
-| iOS | Carte blanche très arrondie, ombre diffuse | Carte du carrousel au-dessus (`CardSurface`, `radiusMd`) | Cohérence avec le Profil iOS |
+| E5 | Donut à gauche, légende à droite | **Légende à gauche, anneau à droite** (demande du PM) ; sous l'anneau aux grandes tailles de texte | Retour du PM ; accessibilité |
+| E6 | Bandeau vert, coche, 🎉 | Identique (nuance de vert de la palette) | Retour du PM |
+| E7 | — | Ligne de confidentialité, états non designés | Ticket §7 |
+| E8 | Emoji ⚽ et 🏋️ | Emoji de la table de catégories de l'app | Même glyphe que la liste des lieux |
 | iOS | Sélecteur « 7 jours ⌄ » | Même pastille, ouvre un menu du système (choix coché) | Convention Apple |
 | iOS | Pas de texte au centre sur très grand texte | Pourcentage seul au centre, légende du centre sous l'anneau au-delà de « grand » | Rien ne déborde du trou |
 
@@ -994,7 +999,7 @@ La carte « Répartition de ton temps » de l'onglet Profil montre, en anneau, c
 - **Lieu supprimé** : le temps passé dans un lieu supprimé n'est plus compté (jamais en « Ailleurs ») dès que la liste des lieux de l'écran ne le contient plus ; l'identifiant du lieu est retiré du journal au prochain relevé des lieux par le suivi (au plus une heure, ou à la prochaine ouverture).
 - **Arrondi** : une part de moins de 1 % compte 0 ; les autres se partagent les 100 points **d'après leur propre temps** (le contrat dit « les autres totalisent 100 » sans préciser : même choix à vérifier côté Android).
 - **Sélecteur et feuille** : `Menu` et `.sheet` avec `presentationDetents` (iOS 16).
-- **À vérifier sur l'iPhone** : lisibilité de l'anneau et du texte du centre (taille 116 pt), rendu des hachures, légende aux grandes tailles de texte, VoiceOver (description unique, ligne de la zone de danger, sélecteur), écriture du journal téléphone verrouillé (recette TS-8), état « localisation insuffisante » avec le bouton des réglages.
+- **À vérifier sur l'iPhone** : lisibilité de l'anneau et du texte du centre (taille 108 pt), rendu des hachures, légende aux grandes tailles de texte, VoiceOver (description unique, ligne de la zone de danger, sélecteur), écriture du journal téléphone verrouillé (recette TS-8), état « localisation insuffisante » avec le bouton des réglages.
 
 ## Confidentialité : Analytics et Crashlytics
 

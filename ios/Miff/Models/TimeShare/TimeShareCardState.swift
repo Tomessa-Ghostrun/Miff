@@ -30,8 +30,8 @@ enum TimeShareCardState: Equatable, CustomStringConvertible {
     case travel
     case sharingStopped
     case locationInsufficient
-    /// Moins de 24 h mesurées, suivi actif : l'anneau vide et le texte figé par le PM.
-    case notEnough
+    /// Moins de 7 jours d'historique, suivi actif : l'anneau vide et le texte figé par le PM.
+    case notEnough(daysLeft: Int)
     /// Assez de données ; `pause` : le suivi est arrêté maintenant (ligne calme sous l'anneau).
     case nominal(TimeShareResult, pause: Bool)
 
@@ -58,7 +58,7 @@ enum TimeShareCardState: Equatable, CustomStringConvertible {
             return .hidden
         case .some(.ready(let result)):
             return .nominal(result, pause: conditions.trackingStopped)
-        case .some(.notEnough):
+        case .some(.notEnough(let daysLeft)):
             // Le texte « nous analysons ta situation » n'est dit QUE si le suivi est actif : sinon, la vraie raison (risque R6 du ticket).
             if conditions.travelActive {
                 return .travel
@@ -69,7 +69,7 @@ enum TimeShareCardState: Equatable, CustomStringConvertible {
             if conditions.locationInsufficient {
                 return .locationInsufficient
             }
-            return .notEnough
+            return .notEnough(daysLeft: daysLeft)
         }
     }
 }

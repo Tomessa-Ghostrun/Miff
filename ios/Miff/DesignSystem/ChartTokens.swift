@@ -1,39 +1,44 @@
 import SwiftUI
 
-// Palette « graphique » de la carte « Répartition de ton temps » (ticket « Profil, répartition du temps » §15.1, écart E5). PROPOSITION de
-// TIME-4, à valider par `design-system` (TIME-0 n'était pas livré : aucune palette dessinée) : dérivée du bleu de la marque
-// (`action/primary` #043CD1 et teintes) et du jaune-vert de la marque ASSOMBRI pour tenir 3:1 sur le fond blanc de la carte ; AUCUNE teinte
-// rouge, orange ou jaune-vert de statut, sauf la zone de danger (seule exception, légèrement assombrie pour tenir 3:1, avec hachures et
-// icône : la couleur n'est jamais seule). Contrastes sur #FFFFFF, vérifiés par `ChartTokensTests` (>= 3:1).
+// Palette de la carte « Répartition du temps » (ticket « Profil, répartition du temps » §15.1, retour du PM du 2026-11-17 après test sur Android).
+// PROPOSITION de TIME-4, à valider par `design-system` (TIME-0 n'était pas livré) : les lieux de confiance sont des NUANCES DE VERT et de
+// BLEU de Miff, en alternance (vert, bleu, vert, bleu, vert) ; le vert de la marque (#D1D828) est assombri parce qu'il n'atteint pas 3:1
+// sur le blanc de la carte ; le bleu est celui des actions (`action/primary` #043CD1) et ses teintes. La zone de danger est EXACTEMENT le
+// rouge de la bulle de statut danger (`status/danger`), avec hachures et icône : la couleur n'est jamais seule. « Ailleurs » est le gris
+// de la maquette du PM (#D4D7DF relevé sur la capture), plus clair que 3:1 : il est toujours accompagné de son nom et de son pourcentage
+// dans la légende et dans la description du lecteur d'écran. Contrastes sur #FFFFFF vérifiés par `TimeShareCardTests`.
 // Noms de code : `chart/1`... du ticket, en lowerCamelCase comme les autres tokens (colorChart1...).
 
-/// `chart/1` : bleu de la marque (`action/primary`).
-let colorChart1 = ColorToken(hex: 0x043CD1)
-/// `chart/2` : jaune-vert de la marque assombri (le jaune-vert d'origine n'atteint pas 3:1 sur blanc).
-let colorChart2 = ColorToken(hex: 0x828619)
-/// `chart/3` : indigo, un bleu de la marque tiré vers le violet.
-let colorChart3 = ColorToken(hex: 0x6A4FD6)
-/// `chart/4` : bleu-cyan.
-let colorChart4 = ColorToken(hex: 0x1F8FB8)
-/// `chart/5` : bleu nuit.
-let colorChart5 = ColorToken(hex: 0x14246B)
-/// `chart/reserve` : couleur de réserve (une 6e catégorie plus tard, sans refonte), bleu clair de la marque.
-let colorChartReserve = ColorToken(hex: 0x6C8FEA)
+/// `chart/1` : vert de la marque assombri.
+let colorChart1 = ColorToken(hex: 0x7E8316)
+/// `chart/2` : bleu des actions (`action/primary`).
+let colorChart2 = ColorToken(hex: 0x043CD1)
+/// `chart/3` : vert de la marque, nuance plus claire.
+let colorChart3 = ColorToken(hex: 0x8F951A)
+/// `chart/4` : bleu clair.
+let colorChart4 = ColorToken(hex: 0x4C78E8)
+/// `chart/5` : vert de la marque, nuance foncée.
+let colorChart5 = ColorToken(hex: 0x4F5A0A)
+/// `chart/reserve` : couleur de réserve (une 6e catégorie plus tard, sans refonte), bleu nuit.
+let colorChartReserve = ColorToken(hex: 0x14297F)
 /// `chart/other` : « {n} autres lieux », bleu-gris.
 let colorChartOthers = ColorToken(hex: 0x7A86B8)
-/// `chart/elsewhere` : « Ailleurs », gris neutre.
-let colorChartElsewhere = ColorToken(hex: 0x8A8989)
-/// `chart/danger` : « Zone de danger », la couleur d'alerte douce (`status/danger` #FF5650 un peu assombrie : 4:1 au lieu de 3,1:1).
-/// Toujours accompagnée de hachures, de l'icône d'avertissement et des mots ; jamais utilisée pour du texte.
-let colorChartDanger = ColorToken(hex: 0xE8403A)
+/// `chart/elsewhere` : « Ailleurs », le gris de la maquette du PM.
+let colorChartElsewhere = ColorToken(hex: 0xD4D7DF)
+/// `chart/danger` : « Zone de danger » : le rouge de la bulle de statut danger (`status/danger`), jamais utilisé pour du texte.
+let colorChartDanger = colorStatusDanger
 /// Le fond de l'anneau vide (état « pas assez de données ») : un gris très clair, décoratif.
 let colorChartEmpty = ColorToken(hex: 0xEFEFEF)
+/// Le vert de la pastille d'en-tête, de la coche et de l'encart de synthèse (teintes très légères du vert `chart/1`).
+let colorChartGreenTint = colorChart1.withAlpha(0.12)
+let colorChartGreenTintStrong = colorChart1.withAlpha(0.22)
 
 enum ChartTokens {
     /// Les cinq couleurs des lieux de confiance nommés, dans l'ordre de la légende.
     static let places: [ColorToken] = [colorChart1, colorChart2, colorChart3, colorChart4, colorChart5]
 
-    /// Les couleurs qui doivent tenir 3:1 sur la carte blanche (tranches et pastilles de la légende).
+    /// Les couleurs qui doivent tenir 3:1 sur la carte blanche (tranches et pastilles de la légende) : tout sauf « Ailleurs » (gris de la
+    /// maquette, décision du PM).
     static let all: [NamedToken<ColorToken>] = [
         NamedToken("colorChart1", colorChart1),
         NamedToken("colorChart2", colorChart2),
@@ -42,7 +47,6 @@ enum ChartTokens {
         NamedToken("colorChart5", colorChart5),
         NamedToken("colorChartReserve", colorChartReserve),
         NamedToken("colorChartOthers", colorChartOthers),
-        NamedToken("colorChartElsewhere", colorChartElsewhere),
         NamedToken("colorChartDanger", colorChartDanger)
     ]
 }

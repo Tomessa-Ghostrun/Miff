@@ -67,15 +67,6 @@ struct TimeShareDangerDetail: Equatable, CustomStringConvertible {
     }
 }
 
-/// Ce que dit la phrase de synthèse (ticket §5.4) : descriptive, jamais un jugement, ne nomme jamais la zone de danger.
-enum TimeShareSynthesis: Equatable {
-    /// La plus grande part est un lieu de confiance nommé.
-    case mostAtPlace(String)
-    case mostlyElsewhere
-    /// Plus grande part = « {n} autres lieux » ou « Zone de danger » (ou égalité avec elle).
-    case generic
-}
-
 struct TimeShareResult: Equatable, CustomStringConvertible {
     let windowDays: Int
     let measuredMillis: Int
@@ -83,7 +74,17 @@ struct TimeShareResult: Equatable, CustomStringConvertible {
     let dangerDetails: [TimeShareDangerDetail]
     /// Au centre de l'anneau : la somme des lieux de confiance SEULEMENT (ni zone de danger ni « Ailleurs »).
     let trustedPercent: Int
-    let synthesis: TimeShareSynthesis
+
+    /// Les parts montrées dans la légende (retour du PM) : les 4 où le temps passé est le plus long, dans l'ordre de l'anneau. L'anneau, lui,
+    /// garde TOUTES les tranches, et la description du lecteur d'écran les liste toutes.
+    static let legendLimit = 4
+
+    var legendIndices: [Int] {
+        let ranked = rows.indices.sorted { left, right in
+            rows[left].millis != rows[right].millis ? rows[left].millis > rows[right].millis : left < right
+        }
+        return Array(ranked.prefix(Self.legendLimit)).sorted()
+    }
 
     var description: String {
         "TimeShareResult(redacted)"
@@ -91,8 +92,9 @@ struct TimeShareResult: Equatable, CustomStringConvertible {
 }
 
 enum TimeShareOutcome: Equatable, CustomStringConvertible {
-    /// Moins de 24 h mesurées dans la fenêtre : aucun pourcentage.
-    case notEnough(measuredMillis: Int)
+    /// Moins de 7 jours d'historique (ou rien de mesuré dans la fenêtre) : aucun graphique, aucun pourcentage.
+    /// `daysLeft` : les jours qui restent avant les 7 jours d'historique (de 7 à 1), pour « Ton graphique arrive dans X jours ».
+    case notEnough(daysLeft: Int)
     case ready(TimeShareResult)
 
     var description: String {

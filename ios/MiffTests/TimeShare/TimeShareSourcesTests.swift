@@ -184,7 +184,7 @@ final class TimeShareSourcesTests: XCTestCase {
                 continue
             }
             for line in try linesOutsideTestBlocks(relative) {
-                let names = ["TimeShareDemoData", "TimeShareDemoRow", "toggleDemo", "demoOn"]
+                let names = ["TimeShareDemoData", "TimeShareDemoRow", "TimeShareDemoMode", "cycleDemo", "demoMode"]
                 for name in names where line.contains(name) {
                     offenders.append("\(relative) : \(line)")
                 }
@@ -230,5 +230,29 @@ final class TimeShareSourcesTests: XCTestCase {
         let facts = TimeShareDemoData.facts(miffId: "m1", places: [], nowMillis: TimeShareFixtures.now)
 
         XCTAssertTrue(facts.allSatisfy { $0.state == .out && $0.placeId == nil })
+    }
+
+    func testTheDemoDataCanShowTheNotEnoughDataStateAtTwoAndSixDays() {
+        let places = [TimeSharePlace(id: "p1", name: "Maison", type: .trusted, category: .home)]
+        let now = TimeShareFixtures.now
+        let expected: [(days: Int, left: Int)] = [(2, 5), (6, 1)]
+
+        for item in expected {
+            let facts = TimeShareDemoData.facts(miffId: "m1", places: places, nowMillis: now, historyDays: item.days)
+            let outcome = TimeShareCalculator.compute(facts: facts, places: places, windowDays: 7, nowMillis: now)
+
+            XCTAssertEqual(outcome, .notEnough(daysLeft: item.left), "\(item.days) jours d'historique")
+        }
+    }
+
+    func testTheDemoCyclesThroughEveryStateAndComesBack() {
+        var mode = TimeShareDemoMode.off
+        var seen: [Int?] = []
+        for _ in 0..<4 {
+            mode = mode.next
+            seen.append(mode.historyDays)
+        }
+
+        XCTAssertEqual(seen, [TimeShareDemoData.chartDays, 2, 6, nil])
     }
 }

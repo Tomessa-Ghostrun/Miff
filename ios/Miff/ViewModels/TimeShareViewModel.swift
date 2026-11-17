@@ -25,8 +25,9 @@ struct TimeShareDisplay: Equatable, CustomStringConvertible {
 final class TimeShareViewModel: ObservableObject {
     @Published private(set) var display: TimeShareDisplay
     #if DEBUG || INTERNAL
-    /// Données de test (builds Debug et Internal SEULEMENT, critère TS-23) : montrées à la place du journal, en mémoire, jamais écrites.
-    @Published private(set) var demoOn = false
+    /// Données de test (builds Debug et Internal SEULEMENT, critère TS-23) : montrées à la place du journal, en mémoire, jamais écrites ;
+    /// elles montrent le graphique OU l'état « pas assez de données ».
+    @Published private(set) var demoMode = TimeShareDemoMode.off
     #endif
 
     private let history: PresenceHistory
@@ -82,9 +83,9 @@ final class TimeShareViewModel: ObservableObject {
     }
 
     #if DEBUG || INTERNAL
-    /// Affiche (ou retire) les données de test de la recette. N'existe pas dans le build de publication.
-    func toggleDemo() {
-        demoOn.toggle()
+    /// Passe à l'état suivant des données de test de la recette (rien, graphique, pas assez de données). N'existe pas en publication.
+    func cycleDemo() {
+        demoMode = demoMode.next
         refresh()
     }
     #endif
@@ -126,8 +127,9 @@ final class TimeShareViewModel: ObservableObject {
     /// Les faits de la Miff : ceux du journal (ou, dans les builds de test quand les données de test sont allumées, ceux de la démonstration).
     private func read(miffId: String, places: [TimeSharePlace]) -> PresenceHistoryRead {
         #if DEBUG || INTERNAL
-        if demoOn {
-            return .facts(TimeShareDemoData.facts(miffId: miffId, places: places, nowMillis: clock()))
+        if let days = demoMode.historyDays {
+            let facts = TimeShareDemoData.facts(miffId: miffId, places: places, nowMillis: clock(), historyDays: days)
+            return .facts(facts)
         }
         #endif
         return history.read(miffId: miffId)

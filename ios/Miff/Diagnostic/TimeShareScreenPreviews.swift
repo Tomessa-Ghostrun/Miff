@@ -67,7 +67,7 @@ struct TimeShareScreenPreview: View {
     private var state: TimeShareCardState {
         switch name {
         case "timeshare-empty":
-            return .notEnough
+            return .notEnough(daysLeft: 5)
         case "timeshare-location":
             return .locationInsufficient
         case "timeshare-travel":

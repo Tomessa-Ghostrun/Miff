@@ -66,8 +66,17 @@ enum TimeShareLimits {
     static let defaultWindowDays = 7
     static let hourMillis = 3_600_000
     static let dayMillis = 24 * hourMillis
-    /// En dessous, « pas assez de données » (aucun pourcentage) : 24 h de temps mesuré dans la fenêtre.
-    static let minimumMeasuredMillis = 24 * hourMillis
+    /// Tant que le PREMIER enregistrement du journal de la Miff a moins de 7 jours, « pas assez de données » : aucun graphique, aucun
+    /// pourcentage (retour du PM, 2026-11-17 : le seuil de 24 h du ticket d'origine est remplacé). Il faut en plus du temps MESURÉ dans la fenêtre.
+    static let minimumHistoryMillis = 7 * dayMillis
+
+    /// « Ton graphique arrive dans X jours » : les jours qui restent avant les 7 jours d'historique, d'après le temps écoulé depuis le PREMIER
+    /// enregistrement du journal de la Miff (aucun enregistrement : 0 écoulé, donc 7). Jamais moins de 1 tant que le graphique n'est pas
+    /// affichable (6 jours et 2 h écoulés : « 1 jour »), jamais plus de 7. Les jours écoulés sont comptés ENTIERS (6 j 23 h : 6 jours écoulés).
+    static func daysLeft(elapsedMillis: Int) -> Int {
+        let elapsedDays = max(0, elapsedMillis) / dayMillis
+        return min(7, max(1, 7 - elapsedDays))
+    }
     /// Un état n'est compté que 48 h au plus sans nouveau fait : au-delà, non mesuré (sortie manquée, téléphone éteint, app tuée).
     static let openStateCapMillis = 48 * hourMillis
     /// Les faits plus vieux sont effacés (ils ne peuvent plus compter dans aucune fenêtre : 30 jours + 48 h de plafond < 35 jours).

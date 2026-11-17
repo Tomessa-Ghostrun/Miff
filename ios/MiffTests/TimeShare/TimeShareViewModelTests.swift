@@ -99,7 +99,7 @@ final class TimeShareViewModelTests: XCTestCase {
         card.show(miffId: miff, places: [place("p1", "Maison")])
         await waitUntil { card.display.state != .hidden }
 
-        XCTAssertEqual(card.display.state, .notEnough)
+        XCTAssertEqual(card.display.state, .notEnough(daysLeft: 7))
     }
 
     func testWithoutDataTheRealReasonIsToldInsteadOfWeAreLookingIntoYourSituation() async {
@@ -146,7 +146,42 @@ final class TimeShareViewModelTests: XCTestCase {
         card.refresh()
         await waitUntil { card.display.state != .unavailable }
 
-        XCTAssertEqual(card.display.state, .notEnough)
+        XCTAssertEqual(card.display.state, .notEnough(daysLeft: 7))
+    }
+
+    // MARK: - « Ton graphique arrive dans X jours »
+
+    func testAFreshJournalCountsTheDaysLeftFromItsFirstRecord() async {
+        // Un journal tout neuf dont le premier fait date de 3 jours : « dans 4 jours ».
+        for fact in TimeShareFixtures.timeline([(.trusted, "p1", 30), (.out, nil, 42)], miff: miff, aged: false) {
+            history.record(fact)
+        }
+        let card = model()
+
+        card.show(miffId: miff, places: [place("p1", "Maison")])
+        await waitUntil { card.display.state != .hidden }
+
+        XCTAssertEqual(card.display.state, .notEnough(daysLeft: 4))
+    }
+
+    func testTheDaysLeftAreRecomputedWhenTheProfileComesBackAndErasingStartsAgainFromSeven() async {
+        for fact in TimeShareFixtures.timeline([(.trusted, "p1", 30), (.out, nil, 42)], miff: miff, aged: false) {
+            history.record(fact)
+        }
+        var nowMillis = TimeShareFixtures.now
+        let card = TimeShareViewModel(history: history, context: context, clock: { nowMillis })
+        card.show(miffId: miff, places: [place("p1", "Maison")])
+        await waitUntil { card.display.state == .notEnough(daysLeft: 4) }
+
+        // Deux jours plus tard (retour sur le Profil, reprise de la scène) : 5 jours écoulés, il en reste 2.
+        nowMillis += 2 * TimeShareLimits.dayMillis
+        card.refresh()
+        await waitUntil { card.display.state == .notEnough(daysLeft: 2) }
+        XCTAssertEqual(card.display.state, .notEnough(daysLeft: 2))
+
+        card.eraseHistory()
+        await waitUntil { card.display.state == .notEnough(daysLeft: 7) }
+        XCTAssertEqual(card.display.state, .notEnough(daysLeft: 7))
     }
 
     // MARK: - La fenêtre et l'effacement
@@ -190,12 +225,12 @@ final class TimeShareViewModelTests: XCTestCase {
         let card = model()
         card.show(miffId: miff, places: [place("p1", "Maison")])
         await waitUntil { card.display.state != .hidden }
-        XCTAssertNotEqual(card.display.state, .notEnough)
+        XCTAssertNotEqual(card.display.state, .notEnough(daysLeft: 7))
 
         card.eraseHistory()
-        await waitUntil { card.display.state == .notEnough }
+        await waitUntil { card.display.state == .notEnough(daysLeft: 7) }
 
-        XCTAssertEqual(card.display.state, .notEnough)
+        XCTAssertEqual(card.display.state, .notEnough(daysLeft: 7))
         XCTAssertEqual(history.eraseFactsCalls, 1)
         XCTAssertEqual(history.clearAllCalls, 0, "seul le journal part : l'effacement manuel ne déconnecte rien")
     }
@@ -208,10 +243,10 @@ final class TimeShareViewModelTests: XCTestCase {
 
         card.show(miffId: miff, places: [place("p1", "Maison")])
         await waitUntil { card.display.state != .hidden }
-        XCTAssertEqual(card.display.state, .notEnough, "les faits d'une autre Miff ne comptent pas")
+        XCTAssertEqual(card.display.state, .notEnough(daysLeft: 7), "les faits d'une autre Miff ne comptent pas")
 
         card.show(miffId: "other", places: [place("p1", "Maison")])
-        await waitUntil { card.display.state != .notEnough }
+        await waitUntil { card.display.state != .notEnough(daysLeft: 7) }
 
         if case .nominal = card.display.state {
             return

@@ -57,16 +57,14 @@ enum TimeShareTexts {
         L10n.string(count > 1 ? "ios_timeshare_danger_zones_many" : "profile_timeshare_danger_zones")
     }
 
-    /// La phrase de synthèse : descriptive, jamais un jugement ; ne nomme jamais la zone de danger.
-    static func synthesis(_ synthesis: TimeShareSynthesis, window: Int) -> String {
-        switch synthesis {
-        case .mostAtPlace(let name):
-            return L10n.format("profile_timeshare_summary_place_\(window)", name)
-        case .mostlyElsewhere:
-            return L10n.string("profile_timeshare_summary_elsewhere_\(window)")
-        case .generic:
-            return L10n.string("profile_timeshare_summary_generic_\(window)")
-        }
+    /// « Ton graphique arrive dans 3 jours, nous analysons tes habitudes » : wording FIGÉ par le PM, pluriel du catalogue (« dans 1 jour »).
+    static func notEnough(daysLeft: Int) -> String {
+        L10n.plural("profile_timeshare_not_enough", count: daysLeft)
+    }
+
+    /// L'encart de synthèse (maquette du PM) : « Tu as passé 72 % de ton temps dans tes zones de confiance ». Ne nomme jamais la zone de danger.
+    static func summary(trustedPercent: Int, locale: Locale = .current) -> String {
+        L10n.format("profile_timeshare_summary", percent(trustedPercent, locale: locale))
     }
 
     // MARK: - Pour le lecteur d'écran

@@ -14,7 +14,7 @@ final class TimeShareCardTests: XCTestCase {
     // MARK: - Les états et leur priorité
 
     func testNoPlaceOrNoPlacesYetMeansHidden() {
-        let outcome = TimeShareOutcome.notEnough(measuredMillis: 0)
+        let outcome = TimeShareOutcome.notEnough(daysLeft: 7)
 
         XCTAssertEqual(
             TimeShareCardState.make(
@@ -38,12 +38,12 @@ final class TimeShareCardTests: XCTestCase {
     }
 
     func testTheStoppedTrackingReasonsComeBeforeNotEnoughDataInThisOrder() {
-        let outcome = TimeShareOutcome.notEnough(measuredMillis: 0)
+        let outcome = TimeShareOutcome.notEnough(daysLeft: 7)
         func state(_ conditions: TimeShareConditions) -> TimeShareCardState {
             TimeShareCardState.make(places: [Scn.home], readFailed: false, outcome: outcome, conditions: conditions)
         }
 
-        XCTAssertEqual(state(TimeShareConditions()), .notEnough)
+        XCTAssertEqual(state(TimeShareConditions()), .notEnough(daysLeft: 7))
         XCTAssertEqual(state(TimeShareConditions(locationInsufficient: true)), .locationInsufficient)
         XCTAssertEqual(state(TimeShareConditions(sharingStopped: true, locationInsufficient: true)), .sharingStopped)
         XCTAssertEqual(
@@ -53,14 +53,14 @@ final class TimeShareCardTests: XCTestCase {
     }
 
     func testTheOverTwentyZonesNoteDoesNotChangeTheState() {
-        let outcome = TimeShareOutcome.notEnough(measuredMillis: 0)
+        let outcome = TimeShareOutcome.notEnough(daysLeft: 7)
 
         let state = TimeShareCardState.make(
             places: [Scn.home], readFailed: false, outcome: outcome,
             conditions: TimeShareConditions(overWatchedLimit: true)
         )
 
-        XCTAssertEqual(state, .notEnough)
+        XCTAssertEqual(state, .notEnough(daysLeft: 7))
     }
 
     func testEnoughDataIsNominalAndAStoppedTrackingOnlyAddsAPauseLine() throws {
@@ -90,7 +90,8 @@ final class TimeShareCardTests: XCTestCase {
             "profile_timeshare_center_caption", "profile_timeshare_a11y_card", "profile_timeshare_a11y_row",
             "profile_timeshare_a11y_danger_row", "profile_timeshare_a11y_list", "profile_timeshare_elsewhere",
             "profile_timeshare_percent_tiny", "profile_timeshare_detail_close", "profile_timeshare_privacy",
-            "profile_timeshare_not_enough", "profile_timeshare_paused", "profile_timeshare_travel",
+            "profile_timeshare_not_enough", "profile_timeshare_summary", "profile_timeshare_paused",
+            "profile_timeshare_travel",
             "profile_timeshare_sharing_stopped", "profile_timeshare_sharing_stopped_action",
             "profile_timeshare_location_needed", "profile_timeshare_over_limit", "profile_timeshare_error",
             "profile_timeshare_other_places", "profile_timeshare_danger_zones", "settings_privacy_time_title",
@@ -99,8 +100,7 @@ final class TimeShareCardTests: XCTestCase {
         ]
         for window in TimeShareLimits.windowsDays {
             for base in [
-                "profile_timeshare_subtitle", "profile_timeshare_window", "profile_timeshare_summary_place",
-                "profile_timeshare_summary_elsewhere", "profile_timeshare_summary_generic"
+                "profile_timeshare_subtitle", "profile_timeshare_window"
             ] {
                 keys.append("\(base)_\(window)")
             }
@@ -113,15 +113,19 @@ final class TimeShareCardTests: XCTestCase {
         }
     }
 
-    func testTheFrozenWordingOfTheNotEnoughDataStateIsExactInBothLanguages() throws {
-        XCTAssertEqual(
-            L10n.string("profile_timeshare_not_enough", bundle: try bundle("fr")),
-            "Ton graphique arrive dans quelques jours, nous analysons ta situation"
-        )
-        XCTAssertEqual(
-            L10n.string("profile_timeshare_not_enough", bundle: try bundle("en")),
-            "Your chart will be ready in a few days, we are looking into your situation"
-        )
+    func testTheFrozenWordingOfTheNotEnoughDataStateIsExactAndPluralisedInBothLanguages() throws {
+        let french = try bundle("fr")
+        let english = try bundle("en")
+        func text(_ bundle: Bundle, _ days: Int) -> String {
+            String.localizedStringWithFormat(L10n.string("profile_timeshare_not_enough", bundle: bundle), days)
+        }
+
+        XCTAssertEqual(text(french, 7), "Ton graphique arrive dans 7 jours, nous analysons tes habitudes")
+        XCTAssertEqual(text(french, 3), "Ton graphique arrive dans 3 jours, nous analysons tes habitudes")
+        XCTAssertEqual(text(french, 1), "Ton graphique arrive dans 1 jour, nous analysons tes habitudes")
+        XCTAssertEqual(text(english, 7), "Your chart arrives in 7 days, we're analysing your habits")
+        XCTAssertEqual(text(english, 1), "Your chart arrives in 1 day, we're analysing your habits")
+        XCTAssertEqual(TimeShareTexts.notEnough(daysLeft: 2).contains("2"), true)
     }
 
     func testThePrivacyLineAndTheErasingConfirmationAreExactInFrench() throws {
@@ -167,27 +171,30 @@ final class TimeShareCardTests: XCTestCase {
         XCTAssertEqual(format(english, 3), "3 other places")
     }
 
-    func testTheSentencesAreCalmAndNeverNameTheDangerZone() throws {
-        for language in ["fr", "en"] {
-            let bundle = try bundle(language)
-            for window in TimeShareLimits.windowsDays {
-                for kind in ["place", "elsewhere", "generic"] {
-                    let key = "profile_timeshare_summary_\(kind)_\(window)"
-                    let text = L10n.string(key, bundle: bundle)
-                    XCTAssertFalse(text.localizedCaseInsensitiveContains("danger"), text)
-                    XCTAssertFalse(text.contains("!"), "aucun point d'exclamation : \(text)")
-                    XCTAssertFalse(text.contains("🎉"), text)
-                    XCTAssertFalse(text.contains("✓"), text)
-                }
-            }
+    func testTheSummaryIsTheOneOfTheMockUpAndNeverNamesTheDangerZone() throws {
+        let french = try bundle("fr")
+        let english = try bundle("en")
+        func text(_ bundle: Bundle) -> String {
+            String(format: L10n.string("profile_timeshare_summary", bundle: bundle), "72 %")
         }
+
+        XCTAssertEqual(text(french), "Tu as passé 72 % de ton temps dans tes zones de confiance")
+        XCTAssertEqual(text(english), "You spent 72 % of your time in your trusted zones")
+        for bundle in [french, english] {
+            XCTAssertFalse(text(bundle).localizedCaseInsensitiveContains("danger"))
+        }
+        XCTAssertTrue(TimeShareTexts.summary(trustedPercent: 72, locale: Locale(identifier: "en_US")).contains("72%"))
     }
 
-    func testTheSentenceHasOneTextPerWindowWithItsNumber() {
+    func testTheHeaderTextsAreTheOnesOfTheMockUp() throws {
+        let french = try bundle("fr")
+
+        XCTAssertEqual(L10n.string("profile_timeshare_title", bundle: french), "Répartition du temps")
+        XCTAssertEqual(L10n.string("profile_timeshare_center_caption", bundle: french), "en zone de confiance")
+        XCTAssertEqual(L10n.string("profile_timeshare_subtitle_14", bundle: french), "Sur les 14 derniers jours")
         for window in TimeShareLimits.windowsDays {
             XCTAssertTrue(TimeShareTexts.subtitle(window: window).contains("\(window)"))
             XCTAssertTrue(TimeShareTexts.windowLabel(window).contains("\(window)"))
-            XCTAssertTrue(TimeShareTexts.synthesis(.generic, window: window).contains("\(window)"))
         }
     }
 
@@ -270,7 +277,19 @@ final class TimeShareCardTests: XCTestCase {
             XCTAssertFalse(reddish, "\(token.name) : aucune teinte rouge ou orange hors de la zone de danger")
             XCTAssertFalse(statusYellowGreen, token.name)
         }
-        XCTAssertNotEqual(colorChartDanger, colorStatusDanger, "légèrement assombrie pour tenir 3:1")
+        XCTAssertEqual(colorChartDanger, colorStatusDanger, "exactement le rouge de la bulle de statut danger")
+    }
+
+    func testTheTrustedPlacesAreShadesOfMiffGreenAndBlueAndElsewhereIsTheGreyOfTheMockUp() {
+        // Vert, bleu, vert, bleu, vert : la teinte dominante alterne.
+        for (index, token) in ChartTokens.places.enumerated() {
+            let green = token.green > token.blue && token.red > 0x40
+            let blue = token.blue > token.red && token.blue > token.green
+            XCTAssertTrue(index.isMultiple(of: 2) ? green : blue, token.hexString)
+        }
+        XCTAssertEqual(colorChart2, colorActionPrimary, "le bleu de Miff")
+        XCTAssertEqual(colorChartElsewhere.hexString, "#D4D7DF", "le gris relevé sur la maquette du PM")
+        XCTAssertEqual(colorChartDanger.hexString, colorStatusDanger.hexString)
     }
 
     func testThePlaceColoursAreDistinctAndTheListKeepsOneSpareColour() {

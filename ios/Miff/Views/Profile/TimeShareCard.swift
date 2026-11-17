@@ -1,11 +1,13 @@
 import SwiftUI
 
-// La carte « Répartition de ton temps » de l'onglet Profil (ticket « Profil, répartition du temps », TIME-4), sous le carrousel de Miffs :
-// en-tête (pastille, titre, sous-titre, sélecteur 7 / 14 / 30 jours), anneau avec le pourcentage « dans tes lieux de confiance », légende
-// (pastille, emoji, nom, %), phrase de synthèse neutre, et la ligne de confidentialité, toujours visible. Tout est calculé sur le téléphone ;
-// rien n'est envoyé. Accessibilité : l'anneau est décoratif, UNE description dit tout (le NOM de la catégorie, jamais l'emoji), le sélecteur
-// est annoncé « Période, 7 jours » (le choix actuel « choisi »), la ligne de la zone de danger est un bouton qui ouvre le détail ; aux grandes
-// tailles de texte la légende passe SOUS l'anneau. La couleur d'alerte n'apparaît QUE sur la tranche et la ligne « Zone de danger ».
+// La carte « Répartition du temps » de l'onglet Profil (ticket « Profil, répartition du temps », TIME-4), sous le carrousel de Miffs, mise en
+// page d'après la maquette du PM (retour du 2026-11-17) : carte blanche très arrondie ; en-tête (pastille verte, titre, « Sur les N derniers
+// jours », sélecteur déroulant à droite) ; légende à GAUCHE (les 4 parts les plus longues : pastille, emoji, nom, % à droite) et anneau plus
+// petit à DROITE (toutes les tranches), avec au centre le pourcentage en zone de confiance ; encart vert très léger « Tu as passé x % de ton temps
+// dans tes zones de confiance » avec la coche et 🎉 ; ligne de confidentialité, toujours visible. Tout est calculé sur le téléphone ; rien n'est
+// envoyé. Accessibilité : l'anneau est décoratif, UNE description liste TOUTES les parts (le NOM de la catégorie, jamais l'emoji), le sélecteur est
+// annoncé « Période, 7 jours » (le choix actuel « choisi »), la ligne de la zone de danger est un bouton qui ouvre le détail ; aux grandes tailles de
+// texte la légende passe SOUS l'anneau. Sans 7 jours de données : pas de graphique, pas de sélecteur, seulement le texte figé par le PM.
 
 /// Les gestes de la carte.
 struct TimeShareActions {
@@ -24,7 +26,7 @@ struct TimeShareCard: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var showsDanger = false
 
-    /// Aux grandes tailles de texte (accessibilité), la légende passe sous l'anneau et le sélecteur sous le titre.
+    /// Aux grandes tailles de texte (accessibilité), l'anneau passe au-dessus de la légende et le sélecteur sous le titre.
     private var stacked: Bool {
         typeSize.isAccessibilitySize
     }
@@ -34,7 +36,9 @@ struct TimeShareCard: View {
         typeSize <= .large
     }
 
-    private static let donutSize: CGFloat = 116
+    private static let donutSize: CGFloat = 108
+    /// Le rayon de la carte de la maquette (plus arrondie que les cartes du design system, voir l'écart listé dans la PR).
+    private static let cornerRadius: CGFloat = 20
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
@@ -42,7 +46,13 @@ struct TimeShareCard: View {
             content
             privacyLine
         }
-        .modifier(CardSurface())
+        .padding(Spacing.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
+                .fill(colorBgSurface.color)
+                .miffShadow(shadowDefault)
+        )
         .accessibilityElement(children: .contain)
         .sheet(isPresented: $showsDanger) {
             dangerSheet
@@ -51,21 +61,20 @@ struct TimeShareCard: View {
 
     // MARK: - L'en-tête
 
+    /// Le sélecteur et le sous-titre n'existent qu'avec le graphique.
     private var showsPeriod: Bool {
-        switch display.state {
-        case .nominal, .notEnough:
+        if case .nominal = display.state {
             return true
-        case .hidden, .unavailable, .travel, .sharingStopped, .locationInsufficient:
-            return false
         }
+        return false
     }
 
     private var header: some View {
         let layout = stacked ? AnyLayout(VStackLayout(alignment: .leading, spacing: Spacing.sm))
-            : AnyLayout(HStackLayout(alignment: .top, spacing: Spacing.sm))
+            : AnyLayout(HStackLayout(alignment: .center, spacing: Spacing.sm))
         return layout {
             if !stacked {
-                CardTile(symbol: "chart.bar.fill")
+                headerIcon
             }
             titles
             if !stacked {
@@ -75,6 +84,16 @@ struct TimeShareCard: View {
                 periodMenu
             }
         }
+    }
+
+    /// La pastille d'icône verte de la maquette : un disque vert très léger avec le pictogramme en vert.
+    private var headerIcon: some View {
+        Image(systemName: "chart.bar.fill")
+            .font(.system(size: 18, weight: .semibold))
+            .foregroundColor(colorChart1.color)
+            .frame(width: 40, height: 40)
+            .background(Circle().fill(colorChartGreenTintStrong.color))
+            .accessibilityHidden(true)
     }
 
     private var titles: some View {
@@ -113,7 +132,7 @@ struct TimeShareCard: View {
             }
             .padding(.horizontal, Spacing.md)
             .frame(minHeight: Spacing.minTouchTarget)
-            .overlay(Capsule().stroke(colorBorderStrong.color, lineWidth: strokeHairline))
+            .overlay(Capsule().stroke(colorBorderDefault.color, lineWidth: strokeHairline))
             .contentShape(Capsule())
         }
         .accessibilityLabel(Text(verbatim: L10n.format("profile_timeshare_window_a11y", current)))
@@ -152,8 +171,8 @@ struct TimeShareCard: View {
         case .locationInsufficient:
             message("profile_timeshare_location_needed")
             action("update_action_open_settings", actions.onOpenLocationSettings)
-        case .notEnough:
-            notEnough
+        case .notEnough(let daysLeft):
+            notEnough(daysLeft)
         case .nominal(let result, let pause):
             nominal(result, pause: pause)
         }
@@ -174,13 +193,17 @@ struct TimeShareCard: View {
         .buttonStyle(.miffSecondaryFullWidth)
     }
 
-    /// Moins de 24 h mesurées, suivi actif : l'anneau vide et neutre (décor) et le texte figé par le PM.
-    private var notEnough: some View {
+    /// Moins de 7 jours d'historique, suivi actif : PAS de graphique, l'anneau vide et neutre (décor) et le texte figé par le PM.
+    private func notEnough(_ daysLeft: Int) -> some View {
         let layout = stacked ? AnyLayout(VStackLayout(alignment: .leading, spacing: Spacing.md))
             : AnyLayout(HStackLayout(alignment: .center, spacing: Spacing.md))
         return layout {
+            Text(verbatim: TimeShareTexts.notEnough(daysLeft: daysLeft))
+                .miffTextStyle(textBodyRegular14)
+                .foregroundColor(colorTextDescription.color)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
             TimeShareDonut(slices: [], size: 88)
-            message("profile_timeshare_not_enough")
         }
     }
 
@@ -189,7 +212,7 @@ struct TimeShareCard: View {
     @ViewBuilder
     private func nominal(_ result: TimeShareResult, pause: Bool) -> some View {
         chart(result)
-        synthesis(result)
+        summary(result)
         if pause {
             note("profile_timeshare_paused")
         }
@@ -198,21 +221,25 @@ struct TimeShareCard: View {
         }
     }
 
-    private func hasDanger(_ result: TimeShareResult) -> Bool {
-        !result.dangerDetails.isEmpty
-    }
-
-    /// L'anneau et la légende. Pour le lecteur d'écran : l'anneau (caché, décoratif) est remplacé par UNE description qui dit tout ; les lignes de
-    /// la légende ne sont pas relues (pas de doublon), sauf celle de la zone de danger, un bouton qui ouvre le détail.
+    /// La légende à gauche (4 parts au plus) et l'anneau à droite ; sous les très grandes tailles de texte, l'anneau passe au-dessus. Pour le
+    /// lecteur d'écran : l'anneau (caché, décoratif) est remplacé par UNE description qui liste TOUTES les parts ; les lignes de la légende ne
+    /// sont pas relues (pas de doublon), sauf celle de la zone de danger, un bouton qui ouvre le détail.
     private func chart(_ result: TimeShareResult) -> some View {
         let layout = stacked ? AnyLayout(VStackLayout(alignment: .center, spacing: Spacing.md))
             : AnyLayout(HStackLayout(alignment: .center, spacing: Spacing.md))
         let styles = TimeShareDonutLayout.styles(for: result.rows)
         return layout {
-            donutColumn(result)
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(Text(verbatim: TimeShareTexts.spokenSummary(result)))
-            legend(result, styles: styles)
+            if stacked {
+                donutColumn(result)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text(verbatim: TimeShareTexts.spokenSummary(result)))
+                legend(result, styles: styles)
+            } else {
+                legend(result, styles: styles)
+                donutColumn(result)
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(Text(verbatim: TimeShareTexts.spokenSummary(result)))
+            }
         }
     }
 
@@ -222,51 +249,37 @@ struct TimeShareCard: View {
                 TimeShareDonut(slices: TimeShareDonutLayout.slices(for: result), size: Self.donutSize)
                 VStack(spacing: 0) {
                     Text(verbatim: TimeShareTexts.percent(result.trustedPercent))
-                        .miffTextStyle(textTitleBold24)
+                        .miffTextStyle(textTitleBold20)
                         .foregroundColor(colorTextForm.color)
                         .lineLimit(1)
                         .minimumScaleFactor(0.5)
                     if captionInside {
                         Text("profile_timeshare_center_caption")
                             .miffTextStyle(textCaptionMicro10)
-                            .foregroundColor(colorTextDescription.color)
+                            .foregroundColor(colorTextForm.color)
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
                     }
                 }
-                .frame(width: Self.donutSize * 0.6)
+                .frame(width: Self.donutSize * 0.58)
                 // Le texte du centre tient dans le trou de l'anneau : sa taille suit le texte du système jusqu'à cette limite.
                 .dynamicTypeSize(...DynamicTypeSize.xxLarge)
             }
             if !captionInside {
                 Text("profile_timeshare_center_caption")
                     .miffTextStyle(textBodyCaption)
-                    .foregroundColor(colorTextDescription.color)
+                    .foregroundColor(colorTextForm.color)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .frame(maxWidth: stacked ? .infinity : Self.donutSize + Spacing.md)
+        .frame(maxWidth: stacked ? .infinity : Self.donutSize + Spacing.xs)
     }
 
     private func legend(_ result: TimeShareResult, styles: [TimeShareSliceStyle]) -> some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            ForEach(Array(result.rows.enumerated()), id: \.offset) { index, row in
-                if case .danger = row.kind {
-                    Button {
-                        showsDanger = true
-                    } label: {
-                        TimeShareLegendRow(row: row, style: styles[index], opensDetail: true)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(Text(verbatim: TimeShareTexts.spokenDangerRow(row)))
-                    .accessibilityAddTraits(.isButton)
-                } else {
-                    // Déjà dite par la description de l'anneau.
-                    TimeShareLegendRow(row: row, style: styles[index])
-                        .accessibilityHidden(true)
-                }
+            ForEach(result.legendIndices, id: \.self) { index in
+                legendRow(result.rows[index], style: styles[index])
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -274,22 +287,46 @@ struct TimeShareCard: View {
         .accessibilityLabel(Text("profile_timeshare_a11y_list"))
     }
 
-    /// La phrase de synthèse, dans un bandeau doux neutre : descriptive, sans coche verte ni emoji de fête, sans objectif ni comparaison ; ne
-    /// nomme jamais la zone de danger.
-    private func synthesis(_ result: TimeShareResult) -> some View {
-        HStack(alignment: .top, spacing: Spacing.sm) {
-            Image(systemName: "info.circle")
-                .foregroundColor(colorActionPrimary.color)
+    @ViewBuilder
+    private func legendRow(_ row: TimeShareRow, style: TimeShareSliceStyle) -> some View {
+        if case .danger = row.kind {
+            Button {
+                showsDanger = true
+            } label: {
+                TimeShareLegendRow(row: row, style: style, opensDetail: true)
+            }
+            .buttonStyle(.plain)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text(verbatim: TimeShareTexts.spokenDangerRow(row)))
+            .accessibilityAddTraits(.isButton)
+        } else {
+            // Déjà dite par la description de l'anneau.
+            TimeShareLegendRow(row: row, style: style)
                 .accessibilityHidden(true)
-            Text(verbatim: TimeShareTexts.synthesis(result.synthesis, window: result.windowDays))
+        }
+    }
+
+    /// L'encart de synthèse de la maquette : fond vert très léger, coche, « Tu as passé x % de ton temps dans tes zones de confiance » et 🎉 à
+    /// droite. Affiché dans tous les cas où le graphique l'est (décision du PM : le ton est assumé, y compris pour un très petit pourcentage) ;
+    /// ne nomme jamais la zone de danger.
+    private func summary(_ result: TimeShareResult) -> some View {
+        HStack(alignment: .center, spacing: Spacing.sm) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 22))
+                .foregroundColor(colorChart1.color)
+                .accessibilityHidden(true)
+            Text(verbatim: TimeShareTexts.summary(trustedPercent: result.trustedPercent))
                 .miffTextStyle(textBodyRegular14)
                 .foregroundColor(colorTextForm.color)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
+            Text(verbatim: "🎉")
+                .miffTextStyle(textBodyLarge)
+                .accessibilityHidden(true)
         }
         .padding(Spacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: radiusMd, style: .continuous).fill(colorActionPrimaryTint10.color))
+        .background(RoundedRectangle(cornerRadius: radiusMd, style: .continuous).fill(colorChartGreenTint.color))
     }
 
     /// Une ligne calme sous l'anneau (suivi en pause, zones non toutes suivies).
@@ -319,6 +356,10 @@ struct TimeShareCard: View {
     }
 
     // MARK: - Le détail de la zone de danger
+
+    private func hasDanger(_ result: TimeShareResult) -> Bool {
+        !result.dangerDetails.isEmpty
+    }
 
     @ViewBuilder
     private var dangerSheet: some View {

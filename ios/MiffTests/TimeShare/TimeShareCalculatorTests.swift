@@ -98,16 +98,68 @@ final class TimeShareCalculatorTests: XCTestCase {
         XCTAssertEqual(result.rows.map { $0.percent }, [71, 29])
     }
 
-    func testT9UnderTwentyFourHoursMeasuredThereIsNoChart() {
-        let outcome = Scn.compute(Scn.timeline([(.trusted, "p1", 20)]), places: [Scn.home])
+    func testT9UnderSevenDaysOfHistoryThereIsNoChart() {
+        // 20 h mesurées dans un journal tout neuf : « Ton graphique arrive dans 7 jours ».
+        let outcome = Scn.compute(Scn.timeline([(.trusted, "p1", 20)], aged: false), places: [Scn.home])
 
-        XCTAssertEqual(outcome, .notEnough(measuredMillis: 20 * hour))
+        XCTAssertEqual(outcome, .notEnough(daysLeft: 7))
     }
 
-    func testT9bExactlyTwentyFourHoursIsEnough() {
-        let outcome = Scn.compute(Scn.timeline([(.trusted, "p1", 24)]), places: [Scn.home])
+    func testT9bExactlySevenDaysOfHistoryIsEnough() {
+        // Le premier enregistrement a exactement 7 jours (168 h) : le graphique s'affiche.
+        let segments: [TimeShareFixtures.Segment] = [(.trusted, "p1", 40), (.out, nil, 40), (.trusted, "p1", 40), (.out, nil, 48)]
+        let facts = Scn.timeline(segments, aged: false)
 
-        XCTAssertNotNil(Scn.ready(outcome))
+        XCTAssertNotNil(Scn.ready(Scn.compute(facts, places: [Scn.home])))
+    }
+
+    func testT9cOneHourShortOfSevenDaysIsStillNotEnough() {
+        let segments: [TimeShareFixtures.Segment] = [(.trusted, "p1", 40), (.out, nil, 40), (.trusted, "p1", 40), (.out, nil, 47)]
+        let facts = Scn.timeline(segments, aged: false)
+
+        XCTAssertEqual(Scn.compute(facts, places: [Scn.home]), .notEnough(daysLeft: 1))
+    }
+
+    func testT9dSevenDaysOfHistoryButNothingMeasuredInTheWindowIsNotEnough() {
+        // Rien de mesuré (voyage, suivi arrêté) : pas de graphique, jamais « dans 0 jour ».
+        let facts = Scn.timeline([(.unknown, nil, 100)])
+
+        XCTAssertEqual(Scn.compute(facts, places: [Scn.home]), .notEnough(daysLeft: 1))
+    }
+
+    // MARK: - « Ton graphique arrive dans X jours »
+
+    func testTheDaysLeftFollowTheWholeDaysSinceTheFirstRecord() {
+        func left(_ days: Int, _ extraHours: Int = 0, _ extraMinutes: Int = 0) -> Int {
+            let elapsed = days * TimeShareLimits.dayMillis + extraHours * hour + extraMinutes * 60_000
+            return TimeShareLimits.daysLeft(elapsedMillis: elapsed)
+        }
+
+        XCTAssertEqual(left(0), 7, "aucun jour écoulé")
+        XCTAssertEqual(left(0, 23, 59), 7, "23 h 59 : toujours 0 jour entier")
+        XCTAssertEqual(left(1), 6)
+        XCTAssertEqual(left(3), 4)
+        XCTAssertEqual(left(5, 12), 2)
+        XCTAssertEqual(left(6), 1)
+        XCTAssertEqual(left(6, 2), 1, "6 jours et 2 h : « dans 1 jour »")
+        XCTAssertEqual(left(6, 23, 59), 1, "jamais sous 1 tant que le graphique n'est pas affichable")
+        XCTAssertEqual(left(9), 1, "jamais sous 1")
+    }
+
+    func testAnEmptyJournalAndAFutureFirstRecordSayTheMaximum() {
+        XCTAssertEqual(Scn.compute([], places: [Scn.home]), .notEnough(daysLeft: 7))
+        XCTAssertEqual(TimeShareLimits.daysLeft(elapsedMillis: -5 * hour), 7)
+        let future = [Scn.fact(.trusted, "p1", hoursAgo: -3)]
+        XCTAssertEqual(Scn.compute(future, places: [Scn.home]), .notEnough(daysLeft: 7))
+    }
+
+    func testTheDaysLeftOfTheOutcomeCountFromTheFirstFactOfTheJournal() {
+        let places = [Scn.home]
+        let threeDays = [Scn.fact(.trusted, "p1", hoursAgo: 72)]
+        let sixDaysTwoHours = [Scn.fact(.trusted, "p1", hoursAgo: 146), Scn.fact(.out, nil, hoursAgo: 100)]
+
+        XCTAssertEqual(Scn.compute(threeDays, places: places), .notEnough(daysLeft: 4))
+        XCTAssertEqual(Scn.compute(sixDaysTwoHours, places: places), .notEnough(daysLeft: 1))
     }
 
     func testT10SevenPlacesGiveFiveNamedAndTwoOthers() throws {
@@ -185,7 +237,6 @@ final class TimeShareCalculatorTests: XCTestCase {
         XCTAssertEqual(result.rows.map { $0.kind }, [.elsewhere])
         XCTAssertEqual(result.rows.first?.percent, 100)
         XCTAssertEqual(result.trustedPercent, 0)
-        XCTAssertEqual(result.synthesis, .mostlyElsewhere)
     }
 
     func testT15AFreePlanWithOnePlaceHasTwoParts() throws {
@@ -254,7 +305,7 @@ final class TimeShareCalculatorTests: XCTestCase {
         XCTAssertTrue(result.dangerDetails.isEmpty)
     }
 
-    func testT21WhenTheDangerZoneIsTheBiggestPartTheSentenceIsGeneric() throws {
+    func testT21TheDangerZoneAsTheBiggestPartIsStillOneLineAndNotInTheCentre() throws {
         let facts = Scn.timeline([
             (.trusted, "p1", 10), (.danger, "r1", 20), (.out, nil, 10), (.danger, "r1", 20), (.out, nil, 10)
         ])
@@ -262,9 +313,9 @@ final class TimeShareCalculatorTests: XCTestCase {
         // Deux faits « danger » du même lieu séparés par « dehors » : 40 h de danger, 10 h de Maison, 20 h dehors.
         let result = try XCTUnwrap(Scn.ready(Scn.compute(facts, places: [Scn.home, Scn.risk1])))
 
-        XCTAssertEqual(result.synthesis, .generic)
-        let sentence = TimeShareTexts.synthesis(result.synthesis, window: 7)
-        XCTAssertFalse(sentence.localizedCaseInsensitiveContains("danger"), "ne nomme jamais la zone de danger")
+        XCTAssertEqual(result.rows.map { $0.kind }, [.place("p1"), .danger(1), .elsewhere])
+        XCTAssertEqual(result.rows.map { $0.millis }.max(), result.rows[1].millis)
+        XCTAssertEqual(result.trustedPercent, result.rows[0].percent, "le centre ne compte que les lieux de confiance")
     }
 
     func testT22APlaceWhoseTypeChangedIsNotMeasuredAnymore() {
@@ -297,29 +348,15 @@ final class TimeShareCalculatorTests: XCTestCase {
         XCTAssertEqual(tally.measured, 40 * hour, "les 60 h de voyage sont non mesurées")
     }
 
-    // MARK: - La phrase de synthèse (§5.4)
+    // MARK: - L'encart de synthèse
 
-    func testTheSentenceNamesTheBiggestTrustedPlace() throws {
-        let facts = Scn.timeline([(.trusted, "p1", 30), (.out, nil, 10)])
-
-        let result = try XCTUnwrap(Scn.ready(Scn.compute(facts, places: [Scn.home])))
-
-        XCTAssertEqual(result.synthesis, .mostAtPlace("Maison"))
-    }
-
-    func testATieWithTheDangerZoneOrOtherPlacesIsGeneric() throws {
-        let facts = Scn.timeline([(.trusted, "p1", 24), (.out, nil, 5), (.danger, "r1", 24)])
-
+    func testTheSummaryGivesTheCentrePercentAndNeverNamesTheDangerZone() throws {
+        let facts = Scn.timeline([(.trusted, "p1", 30), (.danger, "r1", 10), (.out, nil, 10)])
         let result = try XCTUnwrap(Scn.ready(Scn.compute(facts, places: [Scn.home, Scn.risk1])))
 
-        XCTAssertEqual(result.synthesis, .generic)
-    }
+        let text = TimeShareTexts.summary(trustedPercent: result.trustedPercent, locale: Locale(identifier: "en_US"))
 
-    func testATieBetweenAPlaceAndElsewhereNamesThePlace() throws {
-        let facts = Scn.timeline([(.trusted, "p1", 24), (.out, nil, 24)])
-
-        let result = try XCTUnwrap(Scn.ready(Scn.compute(facts, places: [Scn.home])))
-
-        XCTAssertEqual(result.synthesis, .mostAtPlace("Maison"))
+        XCTAssertTrue(text.contains("60%"), text)
+        XCTAssertFalse(text.localizedCaseInsensitiveContains("danger"))
     }
 }

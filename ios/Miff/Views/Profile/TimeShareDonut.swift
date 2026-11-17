@@ -80,7 +80,7 @@ struct TimeShareDonut: View {
     let size: CGFloat
 
     /// L'épaisseur de l'anneau, en part du diamètre.
-    static let thicknessRatio: CGFloat = 0.19
+    static let thicknessRatio: CGFloat = 0.2
 
     private var thickness: CGFloat {
         size * Self.thicknessRatio

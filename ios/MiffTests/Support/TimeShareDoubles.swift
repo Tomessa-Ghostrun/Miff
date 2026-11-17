@@ -91,10 +91,20 @@ enum TimeShareFixtures {
 
     /// Une suite d'états qui finit à « maintenant » : chaque segment (état, lieu, durée en heures) commence quand le précédent finit.
     /// Les segments se SUIVENT : deux segments identiques de suite n'en feraient qu'un (T5), donc on les alterne.
-    static func timeline(_ segments: [TimeShareFixtures.Segment], miff: String = "m1") -> [PresenceFact] {
+    /// `aged` (par défaut) : le journal a plus de 7 jours (un premier fait « inconnue » ancien, non mesuré) ; faux : le premier fait est
+    /// celui du premier segment (un journal tout neuf).
+    static func timeline(
+        _ segments: [TimeShareFixtures.Segment],
+        miff: String = "m1",
+        aged: Bool = true
+    ) -> [PresenceFact] {
         let total = segments.reduce(0.0) { $0 + $1.2 }
         var cursor = now - Int(total * Double(hour))
         var facts: [PresenceFact] = []
+        if aged {
+            let old = min(now - 8 * TimeShareLimits.dayMillis, cursor - hour)
+            facts.append(PresenceFact(miffId: miff, state: .unknown, placeId: nil, atMillis: old))
+        }
         for (state, placeId, hours) in segments {
             facts.append(PresenceFact(miffId: miff, state: state, placeId: placeId, atMillis: cursor))
             cursor += Int(hours * Double(hour))
