@@ -16,6 +16,10 @@ Inchangé : obturateur, texte d'aide, barre d'onglets, caméra frontale par déf
 
 Tests : `ViewfinderLayoutTests` (six gabarits d'iPhone dont SE, 11 Pro à encoche, 14 Pro / 16 à île dynamique, 16 Pro, Pro Max ; zones sûres nulles ; fenêtre inconnue ; plancher ; câblage `.resizeAspectFill`, schéma décidé à la racine seulement, options de démonstration Debug seulement), `AppAppearanceTests`. Captures CI 160 (viseur) et 161 (zones sûres nulles), build Debug seulement (l'aperçu de la photo, `-MiffPreview update-preview`, se lance à la main : l'étape des captures est saturée, 15 min). Le doublon des captures 93 et 152 (grand texte) est retiré du script.
 
+### CI iOS : limites de durée relevées (job 40 -> 60 min, étape des captures 15 -> 30 min)
+
+Aucun effet dans l'app. Le job « Build et tests » était annulé alors que tout était vert (run 43444821713 : 41 min pour 40 permises ; captures à 11 à 14 min pour 15 permises). Mesures, choix et signal de bascule : `docs/dev/ios-spike.md` §7 bis. Aucun contrôle retiré ; deux lignes de `ci/screenshots.sh` qui répétaient une capture identique sont supprimées.
+
 ### Version des conditions enregistrée : « 1.0 » (miroir d'Android)
 
 Modifié :
