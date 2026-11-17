@@ -69,6 +69,7 @@ import com.tomessa.miff.ui.feed.ColorsInfoScreen
 import com.tomessa.miff.ui.feed.FeedActions
 import com.tomessa.miff.ui.feed.FeedHost
 import com.tomessa.miff.ui.feed.FeedMe
+import com.tomessa.miff.ui.feed.FeedNote
 import com.tomessa.miff.ui.feed.FeedScreen
 import com.tomessa.miff.ui.feed.FeedUiState
 import com.tomessa.miff.ui.feed.FeedViewModel
@@ -332,6 +333,7 @@ private fun MainNavigation(
                                     waitingAgreement = container.awaitingAgreement.waiting,
                                     notifications = container.feedNotificationLink,
                                     visits = container.feedVisitLink,
+                                    presence = container.presenceRefresh,
                                 )
                             }
                         },
@@ -405,6 +407,23 @@ private fun MainNavigation(
             val profileRequests by profileRequestsViewModel.state.collectAsStateWithLifecycle()
             val notificationsState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
             val focusMember by container.tabRequests.pendingFocus.collectAsStateWithLifecycle()
+            // FEED-REFRESH-POSITION: the one calm note of "Actualiser" (the access to the location is not enough to refresh my position): a short toast, no screen, no button.
+            val noteContext = LocalContext.current
+            val positionNotRefreshed = stringResource(R.string.feed_refresh_position_unavailable)
+            LaunchedEffect(feedViewModel, positionNotRefreshed) {
+                feedViewModel.notes.collect { note ->
+                    when (note) {
+                        FeedNote.PositionNotRefreshed -> {
+                            Toast
+                                .makeText(
+                                    noteContext,
+                                    positionNotRefreshed,
+                                    Toast.LENGTH_LONG,
+                                ).show()
+                        }
+                    }
+                }
+            }
             val requestNotificationWindow =
                 rememberNotificationPermissionRequest(onAnswered = notificationsViewModel::onSystemWindowAnswered)
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { notificationsViewModel.refresh() }
