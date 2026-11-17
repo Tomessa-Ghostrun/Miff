@@ -205,7 +205,7 @@ s.tc('RQ12', 'S3 : lecture et écriture directe du compteur par un membre : get 
   await assertFails(commit(h.db('zoe'), [setMerge(counterPath(), counterOwner(0))]));
 });
 
-s.tc('RQ13', 'S4 : `risk` : DEMANDABLE par tout membre, gratuit ou Miff+, actif, expiré, désactivé ou sans document d'abonnement (LIEU-DANGER-REQ) ; la liste des types reste fermée ; `trusted` accepté pour tous', async (h) => {
+s.tc('RQ13', 'S4 : `risk` : DEMANDABLE par tout membre, gratuit ou Miff+, actif, expiré, désactivé ou sans document d\'abonnement (LIEU-DANGER-REQ) ; la liste des types reste fermée ; `trusted` accepté pour tous', async (h) => {
   await addMember(h, 'dave');
   await addMember(h, 'frank');
   await assertSucceeds(create(h, 'bob', 1, { type: 'risk' })); // gratuit, sans document d'abonnement
