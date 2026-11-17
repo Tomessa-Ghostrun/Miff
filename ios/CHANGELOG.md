@@ -17,6 +17,7 @@ Ajouté :
 - Tests : règles d'affichage de chaque cas, échéance (E - 1 ms, E, E + 1 ms), reset, repère, plafond, rafraîchissement, vecteurs de format et de bordure, textes FR/EN, sens et ancrage de la bordure, couleurs, animations, mise en page (44 pt, grande taille), jamais pour un autre compte.
 
 Écarts avec le ticket (voir la PR) : à 2 h 00 pile le niveau reste vert dans le code (« plus de 2 h »), l'encart disparaît 1 ms plus tôt (r = 0) ; le contenu sous l'encart remonte d'un cran s'il disparaît alors que la liste est défilée plus bas (pas de position de lecture stable en SwiftUI iOS 16) ; la minuterie existante de la coquille (couleur du bouton central, bulle d'incitation) n'a pas été touchée : elle peut avoir jusqu'à une minute de retard sur l'encart.
+
 ### CI iOS : limites de durée relevées (job 40 -> 60 min, étape des captures 15 -> 30 min)
 
 Aucun effet dans l'app. Le job « Build et tests » était annulé alors que tout était vert (run 43444821713 : 41 min pour 40 permises ; captures à 11 à 14 min pour 15 permises). Mesures, choix et signal de bascule : `docs/dev/ios-spike.md` §7 bis. Aucun contrôle retiré ; deux lignes de `ci/screenshots.sh` qui répétaient une capture identique sont supprimées.
