@@ -10,6 +10,13 @@ struct ViewfinderWindowReading {
     let size: CGSize?
     /// Les zones sûres à respecter : le plus grand, côté par côté, de celles du lecteur et de celles de la fenêtre.
     let insets: EdgeInsets
+
+    /// Les mêmes zones sûres, pour le calcul pur (`ViewfinderLayout`).
+    var layoutInsets: ViewfinderLayout.Insets {
+        ViewfinderLayout.Insets(
+            top: insets.top, leading: insets.leading, bottom: insets.bottom, trailing: insets.trailing
+        )
+    }
 }
 
 enum ViewfinderWindow {
@@ -49,10 +56,7 @@ private struct TopSafeAreaFloor: ViewModifier {
         GeometryReader { proxy in
             let reading = ViewfinderWindow.read(proxy: proxy.safeAreaInsets)
             let screen = ViewfinderLayout.screenSize(
-                visible: proxy.size,
-                top: reading.insets.top, bottom: reading.insets.bottom,
-                leading: reading.insets.leading, trailing: reading.insets.trailing,
-                window: reading.size
+                visible: proxy.size, insets: reading.layoutInsets, window: reading.size
             )
             let portrait = ViewfinderLayout.isPortrait(screen)
             let inset = ViewfinderLayout.topInset(readTop: reading.insets.top, isPortrait: portrait)

@@ -14,7 +14,7 @@ Corrigé :
 
 Inchangé : obturateur, texte d'aide, barre d'onglets, caméra frontale par défaut, écran de refus de la caméra (mêmes zones sûres).
 
-Tests : `ViewfinderLayoutTests` (six gabarits d'iPhone dont SE, 11 Pro à encoche, 14 Pro / 16 à île dynamique, 16 Pro, Pro Max ; zones sûres nulles ; fenêtre inconnue ; plancher ; câblage `.resizeAspectFill`, schéma décidé à la racine seulement, options de démonstration Debug seulement), `AppAppearanceTests`. Captures CI 160 (viseur), 161 (zones sûres nulles), 162 (aperçu de la photo), build Debug seulement.
+Tests : `ViewfinderLayoutTests` (six gabarits d'iPhone dont SE, 11 Pro à encoche, 14 Pro / 16 à île dynamique, 16 Pro, Pro Max ; zones sûres nulles ; fenêtre inconnue ; plancher ; câblage `.resizeAspectFill`, schéma décidé à la racine seulement, options de démonstration Debug seulement), `AppAppearanceTests`. Captures CI 160 (viseur) et 161 (zones sûres nulles), build Debug seulement (l'aperçu de la photo, `-MiffPreview update-preview`, se lance à la main : l'étape des captures est saturée, 15 min). Le doublon des captures 93 et 152 (grand texte) est retiré du script.
 
 ### Version des conditions enregistrée : « 1.0 » (miroir d'Android)
 

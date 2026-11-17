@@ -8,6 +8,14 @@ import Foundation
 // Du Swift pur : aucune mesure de vue, aucune lecture, aucune écriture.
 
 enum ViewfinderLayout {
+    /// Les quatre zones sûres, en points.
+    struct Insets: Equatable {
+        var top: CGFloat = 0
+        var leading: CGFloat = 0
+        var bottom: CGFloat = 0
+        var trailing: CGFloat = 0
+    }
+
     /// Plancher de la zone sûre du haut, en portrait, quand NI le lecteur de géométrie NI la fenêtre n'annoncent rien (l'encoche : 47 pt).
     /// Il ne vaut qu'à ce moment-là : dès qu'une vraie valeur est lue (île dynamique, encoche, barre d'état d'un iPhone SE), elle gagne.
     static let topInsetFloor: CGFloat = 47
@@ -20,14 +28,13 @@ enum ViewfinderLayout {
 
     /// La taille de l'écran ENTIER : celle de la fenêtre quand elle est connue (c'est la vérité, quoi que disent les zones sûres du lecteur de
     /// géométrie), sinon la zone visible plus les zones sûres annoncées.
-    static func screenSize(
-        visible: CGSize, top: CGFloat, bottom: CGFloat, leading: CGFloat, trailing: CGFloat, window: CGSize?
-    ) -> CGSize {
+    static func screenSize(visible: CGSize, insets: Insets, window: CGSize?) -> CGSize {
         if let window, window.width > 0, window.height > 0 {
             return window
         }
         return PhotoFullScreenLayout.screenSize(
-            visible: visible, top: top, bottom: bottom, leading: leading, trailing: trailing
+            visible: visible,
+            top: insets.top, bottom: insets.bottom, leading: insets.leading, trailing: insets.trailing
         )
     }
 

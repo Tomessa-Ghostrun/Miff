@@ -32,7 +32,7 @@ final class ViewfinderLayoutTests: XCTestCase {
         for device in devices {
             // Le cas du bug : le lecteur annonce des zones sûres NULLES alors que sa zone visible, elle, les exclut déjà.
             let screen = ViewfinderLayout.screenSize(
-                visible: visible(device), top: 0, bottom: 0, leading: 0, trailing: 0, window: device.size
+                visible: visible(device), insets: ViewfinderLayout.Insets(), window: device.size
             )
             XCTAssertEqual(screen, device.size, device.name)
         }
@@ -41,14 +41,17 @@ final class ViewfinderLayoutTests: XCTestCase {
     func testWithoutAWindowTheScreenIsTheVisibleAreaPlusTheInsets() {
         for device in devices {
             let screen = ViewfinderLayout.screenSize(
-                visible: visible(device), top: device.safeTop, bottom: device.safeBottom,
-                leading: 0, trailing: 0, window: nil
+                visible: visible(device),
+                insets: ViewfinderLayout.Insets(top: device.safeTop, bottom: device.safeBottom),
+                window: nil
             )
             XCTAssertEqual(screen, device.size, device.name)
         }
         // Une fenêtre sans taille (pas encore posée) n'est pas crue.
         let unsized = ViewfinderLayout.screenSize(
-            visible: CGSize(width: 393, height: 700), top: 59, bottom: 93, leading: 0, trailing: 0, window: .zero
+            visible: CGSize(width: 393, height: 700),
+            insets: ViewfinderLayout.Insets(top: 59, bottom: 93),
+            window: .zero
         )
         XCTAssertEqual(unsized, CGSize(width: 393, height: 852))
     }
@@ -75,7 +78,7 @@ final class ViewfinderLayoutTests: XCTestCase {
         // rectangle sont ceux de l'écran entier (iPhone 16).
         let window = CGSize(width: 393, height: 852)
         let screen = ViewfinderLayout.screenSize(
-            visible: CGSize(width: 393, height: 679), top: 0, bottom: 0, leading: 0, trailing: 0, window: window
+            visible: CGSize(width: 393, height: 679), insets: ViewfinderLayout.Insets(), window: window
         )
         let aspect = UpdatePhotoFormat.boundedAspect(widthPx: Int(screen.width), heightPx: Int(screen.height))
         let rect = ViewfinderLayout.previewRect(in: CGRect(origin: .zero, size: screen), aspect: aspect)

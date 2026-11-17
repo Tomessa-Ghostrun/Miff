@@ -777,7 +777,7 @@ Constat du PM : « l'écran n'est pas en full screen, il est coupé en haut » (
 - **Barre d'état en clair** sur le viseur et l'aperçu (`lightStatusBar`, `AppAppearance`) : SwiftUI ne donne le style de la barre d'état que par le schéma de couleurs ; la racine (`MiffApp`) est donc le SEUL endroit qui le décide, et les écrans sombres le demandent (demandes comptées). La barre d'onglets garde son apparence (schéma clair forcé sur elle). Les autres écrans restent clairs.
 - **Ombre du haut** : plus de 110 pt fixes à 45 %, mais la zone sûre + 40 pt, de 35 % à 0 (une très légère ombre sans bord net) ; la barre d'état étant claire, elle suffit. Écart avec `design/screens/update.md` §5 (« dégradé de 110 pt », proposé, non décidé).
 - **Inchangés** : position de l'obturateur (48 pt au-dessus de la barre), texte d'aide, barre d'onglets, caméra frontale par défaut, ratio borné 9:21 à 9:16. Paysage : non autorisé (portrait seulement) ; mode sombre : l'app reste claire (seule la barre d'état change sur ces deux écrans).
-- **Captures de la CI** (`-MiffPreview update-viewfinder`, `update-preview`, build Debug seulement) : aplat turquoise cerclé de magenta à la place de la caméra ; `-MiffForceZeroSafeArea YES` simule des zones sûres nulles (le plancher et la fenêtre doivent tenir).
+- **Captures de la CI** (`-MiffPreview update-viewfinder` en CI ; `update-preview` à la main ; build Debug seulement) : aplat turquoise cerclé de magenta à la place de la caméra ; `-MiffForceZeroSafeArea YES` simule des zones sûres nulles (le plancher et la fenêtre doivent tenir).
 
 ## L'écran d'offre Miff+ : maquettes, états, croix différée de 3 secondes (PAY-UI-I, miroir d'Android PAY-UI-A)
 

@@ -124,10 +124,7 @@ struct ViewfinderView: View {
             // est la plus grande de celle du lecteur et de celle de la fenêtre (`ViewfinderLayout`).
             let reading = ViewfinderWindow.read(proxy: proxy.safeAreaInsets)
             let full = ViewfinderLayout.screenSize(
-                visible: proxy.size,
-                top: reading.insets.top, bottom: reading.insets.bottom,
-                leading: reading.insets.leading, trailing: reading.insets.trailing,
-                window: reading.size
+                visible: proxy.size, insets: reading.layoutInsets, window: reading.size
             )
             let aspect = UpdatePhotoFormat.boundedAspect(widthPx: Int(full.width), heightPx: Int(full.height))
             let portrait = ViewfinderLayout.isPortrait(full)
