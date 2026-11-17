@@ -5,7 +5,7 @@
 
 ## 1. Contexte
 
-Quand on crée un lieu (« Nouveau lieu ») ou qu'on en modifie un (« Modifier le lieu »), le formulaire montre, sous « Rayon », un **aperçu de carte** : le point de l'adresse choisie et un cercle qui suit le curseur de rayon. Aujourd'hui cet aperçu est **une carte figée** (aucun geste) : on ne peut pas regarder les alentours du lieu. Le PM veut pouvoir **zoomer et dézoomer** dessus.
+Quand on crée un lieu (« Nouveau lieu »), qu'on en modifie un (« Modifier le lieu ») ou qu'on ouvre son détail depuis la liste, l'écran montre (dans le formulaire, sous « Rayon ») un **aperçu de carte** : le point de l'adresse choisie et un cercle qui suit le curseur de rayon. Aujourd'hui cet aperçu est **une carte figée** (aucun geste) : on ne peut pas regarder les alentours du lieu. Le PM veut pouvoir **zoomer et dézoomer** dessus.
 
 **État technique constaté** : l'aperçu n'est **pas** une image statique payante. C'est déjà une **carte interactive MapLibre Native** (open source, BSD-2-Clause) avec les **tuiles d'OpenFreeMap** (gratuit, sans clé), dont les gestes étaient simplement coupés. Le zoom ne demande donc **ni nouveau SDK, ni nouvelle dépendance, ni clé, ni compte**.
 
@@ -22,7 +22,7 @@ Quand on crée un lieu (« Nouveau lieu ») ou qu'on en modifie un (« Modifier 
 | Z7 | Rayon qui change pendant que la personne a zoomé | La carte **se recadre sur le cercle** (le zoom choisi est remis au cadrage). Idem si l'adresse change. | Prévisible : le cadre suit le rayon, comme avant. Alternative écartée : garder le zoom au risque de perdre le cercle de vue. |
 | Z8 | Retour, rotation | Le zoom choisi **revient** après une rotation de l'écran ou un passage vers un autre écran (retour). Il repart du cadrage si le formulaire est quitté puis rouvert. | Moins de surprise ; l'état est gardé comme distance (en niveaux) au cadrage, pas comme position. |
 | Z9 | Défilement de la page | **Un doigt** qui commence sur la carte fait défiler la page, comme avant. Dès qu'un **deuxième doigt** touche la carte, la page lâche le geste (pas de saut pendant un pincement) et le reprend à la fin. | Le formulaire est une page qui défile, la carte occupe 176 dp de haut. |
-| Z10 | Où | **Formulaire seulement** (création et modification). Le **détail** d'un lieu garde la carte figée avec « Voir sur la carte » (qui ouvre l'application de cartes du système, déjà zoomable). | Périmètre demandé. À étendre au détail si le PM le souhaite (un paramètre). |
+| Z10 | Où | **Formulaire** (création et modification) **et détail d'un lieu** (celui qui s'ouvre depuis la liste « Lieux de confiance », y compris le détail d'une demande de lieu), mêmes gestes, mêmes bornes, mêmes règles. « Voir sur la carte » (application de cartes du système) reste. | Extension demandée par le PM après la recette de l'APK v1 (2026-11-17). |
 | Z11 | Choix du point | **Inchangé** : le point est choisi **par l'adresse** (suggestions), jamais en touchant la carte. Le zoom ne peut donc **jamais déplacer le lieu**, ni changer le rayon. | Le zoom est de la lecture seule. |
 
 ## 3. Comportement
@@ -44,7 +44,7 @@ Quand on crée un lieu (« Nouveau lieu ») ou qu'on en modifie un (« Modifier 
 - **LZ8** Rotation de l'écran ou retour d'un autre écran : le zoom choisi est conservé.
 - **LZ9** Sans réseau ou tuiles indisponibles : phrase calme existante « La carte n'est pas disponible pour le moment. Ton lieu est bien placé, tu peux continuer. » avec « Réessayer » ; le formulaire reste utilisable.
 - **LZ10** Aucun bouton + / − (choix assumé du PM). La carte reste décrite en une phrase pour le lecteur d'écran (adresse et rayon).
-- **LZ11** Le détail d'un lieu garde la carte figée.
+- **LZ11** Sur le détail d'un lieu (lecture, y compris pour un membre non créateur et pour le détail d'une demande), la carte se zoome et se dézoome avec les mêmes gestes, bornes et règles que dans le formulaire ; un doigt sur la carte fait défiler la page de détail, un pincement ne la fait pas défiler.
 - **LZ12** Aucune permission nouvelle, aucune clé, aucune donnée nouvelle envoyée à un tiers (voir §7), aucun journal de coordonnées.
 
 ## 5. Cas limites
@@ -60,7 +60,7 @@ Quand on crée un lieu (« Nouveau lieu ») ou qu'on en modifie un (« Modifier 
 
 - **Logique pure** (`PlaceMapZoomTest`) : plage de zoom autour du cadrage (3 niveaux de chaque côté), planchers et plafonds absolus, valeurs aberrantes (NaN, infini), distance au cadrage, restitution après rotation, valeur sauvegardée invalide.
 - **Géométrie** (`PlaceMapGeometryTest`) : le cercle est centré sur le lieu pour 50 m et 800 m ; rayon réel de chaque point.
-- **Écrans** (`PlaceMapZoomScreensTest`, JVM) : le formulaire donne `zoomable` à la carte, avec le point et le rayon choisis ; zone de danger (rouge) zoomable aussi ; pas de carte sans adresse ; détail figé ; carte décrite pour le lecteur d'écran ; un doigt ne bloque pas le défilement de la page ; un deuxième doigt le bloque puis le rend ; geste annulé rend la main.
+- **Écrans** (`PlaceMapZoomScreensTest`, JVM) : le formulaire et le détail d'un lieu donnent `zoomable` à la carte, avec le point et le rayon choisis ; zone de danger (rouge) zoomable aussi ; pas de carte sans adresse ; carte décrite pour le lecteur d'écran ; un doigt ne bloque pas le défilement de la page ; un deuxième doigt le bloque puis le rend ; geste annulé rend la main.
 - **Garde-fou de code** (`PlacePrivacyTest`) : seuls le zoom et le double toucher sont activés ; jamais de couche « ma position ».
 - **Sur téléphone** (carte native, non testable sur la JVM) : recette PM `docs/qa/checklists/lieu-carte-zoom-android-recette-pm.md`.
 
@@ -73,4 +73,4 @@ Quand on crée un lieu (« Nouveau lieu ») ou qu'on en modifie un (« Modifier 
 
 ## 8. Parité iOS
 
-Même comportement avec MapKit : pincer et double toucher seulement ; pas de déplacement, de rotation ni d'inclinaison ; lieu au centre ; limites de zoom de facteur 8 de chaque côté du cadrage initial ; cercle en mètres ; recadrage quand le rayon ou l'adresse change ; zoom conservé à la rotation ; détail figé ; **aucun bouton + / −**.
+Même comportement avec MapKit : pincer et double toucher seulement ; pas de déplacement, de rotation ni d'inclinaison ; lieu au centre ; limites de zoom de facteur 8 de chaque côté du cadrage initial ; cercle en mètres ; recadrage quand le rayon ou l'adresse change ; zoom conservé à la rotation ; détail d'un lieu zoomable de la même façon ; **aucun bouton + / −**.

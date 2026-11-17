@@ -87,7 +87,7 @@ import org.maplibre.android.style.sources.GeoJsonSource
 
 /**
  * What the map draws: a point and a circle. [description] is what a screen reader says instead of the picture. [zoomable]: the
- * person may pinch or double-tap to zoom (the form); otherwise the map is a still picture (the detail of a place).
+ * person may pinch or double-tap to zoom (the form and the detail of a place); otherwise the map is a still picture.
  */
 class PlaceMapSpec(
     val lat: Double,

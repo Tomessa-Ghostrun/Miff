@@ -6,7 +6,7 @@
 
 ## Ce qui change
 
-Dans **« Nouveau lieu »** et **« Modifier le lieu »**, l'aperçu de carte (sous « Rayon ») se **zoome et se dézoome avec les doigts** : pincer, double toucher. La carte ne se déplace pas : le lieu reste au centre. **Pas de boutons + / −** : c'est un choix assumé du PM. Le détail d'un lieu garde la carte figée.
+Dans **« Nouveau lieu »**, **« Modifier le lieu »** et le **détail d'un lieu** (ouvert depuis la liste « Lieux de confiance »), l'aperçu de carte se **zoome et se dézoome avec les doigts** : pincer, double toucher. La carte ne se déplace pas : le lieu reste au centre. **Pas de boutons + / −** : c'est un choix assumé du PM.
 
 ## Préparation
 
@@ -27,7 +27,9 @@ Dans **« Nouveau lieu »** et **« Modifier le lieu »**, l'aperçu de carte (s
 - [ ] **10. Rotation.** Zoomez, puis tournez le téléphone (paysage) et revenez : le zoom choisi est conservé (ou, au pire, la carte revient au cadrage complet : notez-le). Même chose en allant dans une autre application puis en revenant.
 - [ ] **11. Modifier un lieu existant.** Ouvrez un lieu existant (Modifier) : la carte est zoomable de la même façon.
 - [ ] **12. Zone de danger.** Choisissez le type « zone de danger » (Miff+) : cercle rouge, zoomable de la même façon.
-- [ ] **13. Détail figé.** Ouvrez le détail d'un lieu (lecture) : la carte **n'est pas zoomable** ; « Voir sur la carte » ouvre l'application de cartes du système.
+- [ ] **13. Détail d'un lieu.** Profil > Lieux de confiance > touchez un lieu : la carte du **détail** se zoome et se dézoome comme dans le formulaire (pincer, double toucher), le lieu reste au centre, le cercle garde son rayon réel, mêmes limites (jamais le monde entier). Pas de boutons + / −. « Voir sur la carte » ouvre toujours l'application de cartes du système.
+- [ ] **13b. Page de détail qui défile.** Sur le détail, faites défiler la page **avec un doigt qui commence sur la carte** : la page défile ; **pincez sur la carte** : la page ne bouge pas pendant le pincement ; relevez les doigts : elle défile de nouveau. Si le détail est assez long pour défiler (police agrandie), vérifiez-le aussi dans ce cas.
+- [ ] **13c. Lieu d'un autre (membre non créateur) et demande de lieu.** Avec un second compte (ou, si vous n'avez pas de membre, avec le détail d'une demande en attente), la carte du détail se zoome de la même façon.
 - [ ] **14. Grande police.** Réglages du téléphone > Taille de police maximale : le formulaire reste utilisable, la carte garde sa hauteur et son zoom.
 - [ ] **15. Fluidité.** Le zoom est fluide sur l'OPPO (pas de saccade ni de carte qui clignote).
 

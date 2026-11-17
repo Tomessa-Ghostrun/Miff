@@ -214,6 +214,7 @@ private fun Content(
                     radiusM = place.radiusM,
                     danger = danger,
                     description = stringResource(R.string.place_map_a11y, place.radiusM, address),
+                    zoomable = true,
                 ),
             height = MAP_HEIGHT,
         )
