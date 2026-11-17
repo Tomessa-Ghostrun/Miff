@@ -32,6 +32,10 @@ struct FeedScreen: View {
     /// NOTIF-P0 : le point de la cloche (non lu) et la carte « deuxième chance ».
     @ObservedObject var notificationCenter: NotificationCenterService
     @ObservedObject var secondChance: NotificationSecondChanceViewModel
+    /// NOTIF-P1I : la carte de ce proche est amenée à l'écran (un toucher sur une ligne « Depuis ta dernière visite »).
+    var focus: FeedFocus?
+    /// Le Feed a pris la demande (ou n'a trouvé aucune carte) : elle est oubliée.
+    var onFocusHandled: (FeedFocus) -> Void = { _ in }
 
     @State private var selectorOpen = false
     /// FEED-8 : la photo ouverte en plein écran. Rien n'en est gardé une fois fermée, ni quand le Feed quitte l'écran.
@@ -172,7 +176,9 @@ struct FeedScreen: View {
             actions: listActions,
             onContentMoved: layout.onContentMoved,
             onScrolled: layout.onScrolled,
-            onOrigin: layout.onOrigin
+            onOrigin: layout.onOrigin,
+            focus: focus,
+            onFocusHandled: onFocusHandled
         )
     }
 

@@ -324,6 +324,12 @@ struct MiffHomeHost: View {
             // Une ligne de demande ouvre le Profil sur la Miff concernée (sans effet si la personne n'en fait plus partie).
             directory.select(miffId: miffId)
         }
+        if case .feedCard(let miffId, let uid) = destination {
+            // Une ligne « Depuis ta dernière visite » : la Miff concernée devient celle du Feed (sans effet si la personne n'en fait plus
+            // partie : le Feed s'ouvre tel quel, jamais une erreur), et le Feed amène la carte du proche à l'écran.
+            directory.select(miffId: miffId)
+            environment.notifications.tabRequests.requestFocus(FeedFocus(miffId: miffId, uid: uid))
+        }
         environment.notifications.tabRequests.request(
             NotificationNavigation.tab(for: destination, showsUpdateButton: TabBarConfig.current.showsUpdateButton)
         )
