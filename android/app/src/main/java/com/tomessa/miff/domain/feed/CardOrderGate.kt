@@ -51,7 +51,8 @@ class CardOrderGate {
     }
 
     /**
-     * The order to draw. [hold] is true while a gesture is under way (scroll, fling, a finger down). Idempotent for the same arguments: the screen may call it
+     * The order to draw. [hold] is true while a gesture is under way (scroll, fling, a finger down). [nowMillis] is a MONOTONE clock (`SystemClock.elapsedRealtime()`):
+     * a change of the wall clock or of the time zone never opens or closes the direct window. Idempotent for the same arguments: the screen may call it
      * at every recomposition. The first call, and a change of [miffId], show [live] as it is, without animation or announcement.
      */
     fun resolve(
@@ -81,15 +82,20 @@ class CardOrderGate {
             shown = kept
             return view(kept)
         }
-        if (before == live) return view(before)
+        if (before == live) {
+            // No change: the glide of an earlier change is over (a card that arrives or a later held order must not glide by leftover).
+            animate = false
+            return view(before)
+        }
         val direct = nowMillis < directUntilMillis
         shown = live
         animate = !direct
         if (!direct) {
-            // Nothing is said when the order of the members present before AND after did not change, nor for my own card moving alone.
+            // Nothing is said when the order of the members present before AND after did not change, nor for my own card moving alone. A member is named
+            // only when he or she arrives at the TOP of the list ("{Prénom} a donné des nouvelles"); any other movement is "Le Feed a été mis à jour".
             val change = CardOrderChange.of(before, live)
             if (change != null && (change.mover == null || change.mover != myUid)) {
-                announcement = OrderAnnouncement(++announcements, change.mover)
+                announcement = OrderAnnouncement(++announcements, change.mover?.takeIf { it == live.firstOrNull() })
             }
         }
         return view(live)
@@ -98,7 +104,7 @@ class CardOrderGate {
     private fun view(order: List<String>) = CardOrderView(order, animate, announcement)
 
     companion object {
-        /** How long, after a return to the Feed or a refresh, the order is applied directly. */
+        /** How long, after a return to the Feed or a refresh, the order is applied directly (counted on a MONOTONE clock, see [CardOrderGate.resolve]). */
         const val DIRECT_WINDOW_MILLIS = 4_000L
     }
 }

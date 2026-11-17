@@ -45,10 +45,11 @@ class FeedOrderTest {
         presence: PresenceValue? = PresenceValue.IN_TRUSTED,
         lastUpdateAgo: Long?,
         hasPhoto: Boolean = false,
+        presenceAgo: Long = 20 * hour,
     ) = MemberStatus(
         presence = presence,
         placeId = null,
-        presenceAtMillis = now - 20 * hour,
+        presenceAtMillis = now - presenceAgo,
         lastUpdateAtMillis = lastUpdateAgo?.let { now - it },
         hasPhoto = hasPhoto,
         batteryPct = 80,
@@ -81,6 +82,7 @@ class FeedOrderTest {
         ages: Map<String, Long?>,
         presences: Map<String, PresenceValue?> = emptyMap(),
         sharingOff: Set<String> = emptySet(),
+        manualAfterActivation: Set<String> = emptySet(),
     ): List<String> {
         val statuses =
             ages
@@ -90,7 +92,24 @@ class FeedOrderTest {
                     ) {
                         null
                     } else {
-                        uid to status(presences[uid] ?: PresenceValue.IN_TRUSTED, ago)
+                        val presence = presences[uid] ?: PresenceValue.IN_TRUSTED
+                        val presenceAgo =
+                            if (presence ==
+                                PresenceValue.UNKNOWN
+                            ) {
+                                ago + (
+                                    if (uid in
+                                        manualAfterActivation
+                                    ) {
+                                        10 * hour
+                                    } else {
+                                        0L
+                                    }
+                                )
+                            } else {
+                                20 * hour
+                            }
+                        uid to status(presence, ago, presenceAgo = presenceAgo)
                     }
                 }.toMap()
         return build(members.map { member(it, it !in sharingOff) }, statuses).cards.map { it.member.uid }
@@ -106,6 +125,8 @@ class FeedOrderTest {
         val expected: List<String>,
         val presences: Map<String, PresenceValue?> = emptyMap(),
         val sharingOff: Set<String> = emptySet(),
+        /** Members whose presence is `unknown` and who published an update AFTER the first status (otherwise both times are equal: sharing just activated). */
+        val manualAfterActivation: Set<String> = emptySet(),
     )
 
     private val orderTable =
@@ -147,11 +168,19 @@ class FeedOrderTest {
                 listOf("d", "b", "a", "c"),
             ),
             Case(
-                "A3 presence unknown (even with a date) is without a date",
+                "A3 presence unknown, sharing just activated (equal times) is without a date",
                 listOf("a", "b", "c"),
                 mapOf("a" to 1L, "b" to 2L, "c" to 3L),
                 listOf("b", "c", "a"),
                 presences = mapOf("a" to PresenceValue.UNKNOWN),
+            ),
+            Case(
+                "A3 presence unknown but a manual update after the activation: it rises with its date",
+                listOf("a", "b", "c"),
+                mapOf("a" to 2L, "b" to 1L, "c" to 3L),
+                listOf("b", "a", "c"),
+                presences = mapOf("a" to PresenceValue.UNKNOWN),
+                manualAfterActivation = setOf("a"),
             ),
             Case(
                 "A3 sharing stopped is without a date",
@@ -211,6 +240,7 @@ class FeedOrderTest {
                     },
                     case.presences,
                     case.sharingOff,
+                    case.manualAfterActivation,
                 ),
             )
         }
@@ -241,12 +271,34 @@ class FeedOrderTest {
     }
 
     @Test
-    fun newsDate_isTheLastUpdate_exceptWhenTheCardSaysNoNews() {
+    fun newsDate_isTheLastUpdate_exceptWhenTheCardSaysNoNewsAndNothingFollowedTheFirstStatus() {
         val s = status(lastUpdateAgo = hour)
         val expected = now - hour
         assertEquals(expected, FeedBuilder.newsDate(StateLabel.Danger, s))
         assertEquals(expected, FeedBuilder.newsDate(StateLabel.TravelEnded, s))
         assertNull(FeedBuilder.newsDate(StateLabel.NoNews, s))
+        // "Pas encore de nouvelles" with presence unknown: dated only by an update strictly AFTER the first status.
+        val unknownAfter = status(PresenceValue.UNKNOWN, lastUpdateAgo = hour, presenceAgo = 2 * hour)
+        assertEquals(expected, FeedBuilder.newsDate(StateLabel.NoNews, unknownAfter))
+        assertNull(
+            FeedBuilder.newsDate(
+                StateLabel.NoNews,
+                status(PresenceValue.UNKNOWN, lastUpdateAgo = hour, presenceAgo = hour),
+            ),
+        )
+        assertNull(
+            FeedBuilder.newsDate(
+                StateLabel.NoNews,
+                status(PresenceValue.UNKNOWN, lastUpdateAgo = 2 * hour, presenceAgo = hour),
+            ),
+        )
+        assertNull(
+            FeedBuilder.newsDate(
+                StateLabel.NoNews,
+                status(PresenceValue.UNKNOWN, lastUpdateAgo = null, presenceAgo = hour),
+            ),
+        )
+        assertNull(FeedBuilder.newsDate(StateLabel.NoNews, status(null, lastUpdateAgo = hour, presenceAgo = 2 * hour)))
         assertNull(FeedBuilder.newsDate(StateLabel.SharingStopped, s))
         assertNull(FeedBuilder.newsDate(StateLabel.NewsHidden, s))
         assertNull(FeedBuilder.newsDate(StateLabel.WaitingAgreement, s))
@@ -271,21 +323,34 @@ class FeedOrderTest {
     }
 
     @Test
-    fun presenceUnknownAfterAManualUpdate_staysAfterTheOthers_likeItsBadge() {
-        // The case flagged by the ticket: a manual update before any departure leaves `presence = unknown`; the card says "Pas encore de nouvelles", so it is
-        // without a usable date and the order never contradicts the badge.
+    fun presenceUnknownAfterAManualUpdate_rises_butStaysLastWhenTheTimesAreEqual() {
+        // The case flagged by the ticket: a manual update before any departure leaves `presence = unknown`. Sharing just activated: `presenceAt` and
+        // `lastUpdateAt` are the same server time, the card has no news and stays last. After a manual update `lastUpdateAt` is later: the card rises with
+        // its date (the wording stays "Pas encore de nouvelles": question left to the PM).
         val members = listOf("a", "b", "c").map { member(it) }
-        val content =
+        val manual =
             build(
                 members,
                 mapOf(
-                    "a" to status(PresenceValue.UNKNOWN, lastUpdateAgo = minute, hasPhoto = true),
+                    "a" to
+                        status(PresenceValue.UNKNOWN, lastUpdateAgo = minute, hasPhoto = true, presenceAgo = 3 * hour),
                     "b" to status(lastUpdateAgo = 5 * hour),
                     "c" to status(lastUpdateAgo = 6 * hour),
                 ),
             )
-        assertEquals(listOf("b", "c", "a"), content.cards.map { it.member.uid })
-        assertEquals(StateLabel.NoNews, content.cards.last().label)
+        assertEquals(listOf("a", "b", "c"), manual.cards.map { it.member.uid })
+        assertEquals(StateLabel.NoNews, manual.cards.first().label)
+        val activation =
+            build(
+                members,
+                mapOf(
+                    "a" to status(PresenceValue.UNKNOWN, lastUpdateAgo = minute, presenceAgo = minute),
+                    "b" to status(lastUpdateAgo = 5 * hour),
+                    "c" to status(lastUpdateAgo = 6 * hour),
+                ),
+            )
+        assertEquals(listOf("b", "c", "a"), activation.cards.map { it.member.uid })
+        assertEquals(StateLabel.NoNews, activation.cards.last().label)
     }
 
     @Test
@@ -355,10 +420,29 @@ class FeedOrderTest {
         assertEquals(listOf("c", "a", "b"), first.order)
         assertTrue(first.animate)
         assertEquals("c", first.announcement?.mover)
-        // The screen recomposes: same order, same glide, same announcement (same id: it is said once).
+        // The screen recomposes: same order, same announcement (same id: it is said once); the glide is over, a later change must not inherit it.
         val again = gateAt(gate, listOf("c", "a", "b"))
         assertEquals(first.announcement?.id, again.announcement?.id)
-        assertTrue(again.animate)
+        assertFalse(again.animate)
+    }
+
+    @Test
+    fun gate_aMemberIsNamedOnlyWhenArrivingAtTheTop_otherwiseTheFeedWasUpdated() {
+        val toTop = gateAt(settledGate(listOf("a", "b", "c")), listOf("c", "a", "b"))
+        assertEquals("c", toTop.announcement?.mover)
+        // "c" rises but not to the top: the general sentence, nobody is named.
+        val notTop = gateAt(settledGate(listOf("a", "b", "c")), listOf("a", "c", "b"))
+        assertNotNull(notTop.announcement)
+        assertNull(notTop.announcement?.mover)
+    }
+
+    @Test
+    fun gate_theDirectWindowIsCountedOnTheGivenClock_notOnAnyWallClock() {
+        val gate = settledGate(listOf("a", "b", "c"))
+        gate.applyDirectlyUntil(5_000L)
+        // The clock given (monotone) is before the end of the window: direct. At the end exactly: it glides again.
+        assertFalse(gateAt(gate, listOf("b", "a", "c"), t = 4_999L).animate)
+        assertTrue(gateAt(gate, listOf("a", "b", "c"), t = 5_000L).animate)
     }
 
     @Test

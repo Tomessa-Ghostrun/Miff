@@ -163,16 +163,37 @@ object FeedBuilder {
     /**
      * The date a card is sorted by (FEED-ORDRE, ticket section 3, decisions 1 and 3): `lastUpdateAt` of the status, the last "tout va bien" signal (a manual
      * update or an arrival in a trusted place; it survives the expiry of the photo and costs no extra read). Null ("without a usable date", last) for a card
-     * that says "Pas encore de nouvelles", "Partage désactivé", "Informations masquées" or the wait for my agreement, and when the status holds no date:
-     * the order and the badge of a card never contradict each other.
+     * that says "Partage désactivé", "Informations masquées" or the wait for my agreement, and when the status holds no date.
+     *
+     * The card "Pas encore de nouvelles" (`presence = unknown`) is also without a date, EXCEPT when the member published an update AFTER the first status
+     * (`lastUpdateAt` strictly after `presenceAt`): the first status writes both with the same server time, so a later `lastUpdateAt` can only be a manual
+     * update made before any departure from a place. That card rises with its date; the wording of the card stays "Pas encore de nouvelles" (question left to
+     * the PM, ticket section 10). Equal times (sharing just activated) stay last.
      */
     internal fun newsDate(
         label: StateLabel,
         status: MemberStatus?,
     ): Long? =
         when (label) {
-            StateLabel.NoNews, StateLabel.SharingStopped, StateLabel.NewsHidden, StateLabel.WaitingAgreement -> null
-            else -> status?.lastUpdateAtMillis
+            StateLabel.SharingStopped, StateLabel.NewsHidden, StateLabel.WaitingAgreement -> {
+                null
+            }
+
+            StateLabel.NoNews -> {
+                val entry = status?.presenceAtMillis
+                val update = status?.lastUpdateAtMillis
+                if (status?.presence == PresenceValue.UNKNOWN && entry != null && update != null &&
+                    update > entry
+                ) {
+                    update
+                } else {
+                    null
+                }
+            }
+
+            else -> {
+                status?.lastUpdateAtMillis
+            }
         }
 
     /**

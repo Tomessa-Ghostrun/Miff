@@ -3,7 +3,7 @@
 **Pour qui** : vous, sur l'OPPO Find X5 Lite (Android 13), avec **deux comptes dans la même Miff** (votre OPPO + un second téléphone ou l'iPhone 11 Pro). Aucune connaissance technique requise.
 **Durée** : 10 minutes. **Ce qu'on vérifie** : les cartes du Feed sont classées du proche qui a donné des nouvelles le plus récemment au plus ancien, **ma carte comprise**, et la liste ne bouge jamais sous votre doigt.
 **Avant** : installer l'APK de la PR « Android : ordre du Feed » (artefact de la CI, jamais un APK construit à la main). Ticket : `docs/tickets/feed-ordre-derniere-update.md`.
-**À savoir** : « donner des nouvelles » veut dire ici la **dernière nouvelle enregistrée** : une update publiée depuis l'écran Update **ou** l'arrivée détectée dans un lieu de confiance (le modèle de données ne sait pas les distinguer, voir le ticket, question 1). Un proche dont la carte dit **« Pas encore de nouvelles »** reste **après** tous les autres, même s'il a publié une update avant son premier départ d'un lieu (voir « Écarts connus »).
+**À savoir** : « donner des nouvelles » veut dire ici la **dernière nouvelle enregistrée** : une update publiée depuis l'écran Update **ou** l'arrivée détectée dans un lieu de confiance (le modèle de données ne sait pas les distinguer, voir le ticket, question 1). Un proche qui vient d'activer son partage (carte « Pas encore de nouvelles », aucune update depuis) reste **après** tous les autres ; s'il a publié une update avant son premier départ d'un lieu, sa carte **remonte** mais garde le texte « Pas encore de nouvelles » (voir « Écarts connus »).
 
 ## 1. L'ordre
 
@@ -11,7 +11,7 @@
 |---|---|---|
 | 1 | Ouvrir le Feed avec au moins 3 cartes qui ont des nouvelles : elles sont de la **plus récente** à la plus ancienne (l'heure/le jour affiché sur chaque carte va dans ce sens) | [ ] |
 | 2 | **Ma carte** n'est plus forcément en dernier ni en premier : elle se place selon ma dernière nouvelle, comme les autres | [ ] |
-| 3 | Un proche dont la carte dit **« Pas encore de nouvelles »** ou **« Partage désactivé »** est **après** tous ceux qui ont des nouvelles | [ ] |
+| 3 | Un proche dont la carte dit **« Pas encore de nouvelles »** (partage tout juste activé) ou **« Partage désactivé »** est **après** tous ceux qui ont des nouvelles | [ ] |
 | 4 | Une carte **rouge ou orange** ne remonte **pas** parce qu'elle est rouge ou orange (le tri n'est pas un tri par urgence) ; le bandeau d'alertes en haut est inchangé | [ ] |
 | 5 | Fermer complètement l'app et la rouvrir : **le même ordre** (rien ne « clignote » entre deux ouvertures) | [ ] |
 
@@ -33,12 +33,12 @@ Le second compte publie une update (écran Update) pendant que vous êtes sur le
 | # | Vérifier | OK |
 |---|---|---|
 | 12 | Réglages > Accessibilité > **Supprimer les animations** : une carte qui change de place **saute** sans glisser | [ ] |
-| 13 | TalkBack : quand l'ordre change, une annonce **discrète** (sans couper la lecture en cours) dit « *Prénom* a donné des nouvelles » (ou « Le Feed a été mis à jour » si plusieurs cartes bougent) ; **le focus ne saute pas** | [ ] |
+| 13 | TalkBack : quand l'ordre change, une annonce **discrète** (sans couper la lecture en cours) dit « *Prénom* a donné des nouvelles » si ce proche arrive **en tête**, sinon « Le Feed a été mis à jour » ; **le focus ne saute pas** | [ ] |
 | 14 | Pas d'annonce pour **ma** carte, ni en revenant sur l'onglet Feed | [ ] |
 
 ## Écarts connus, à ne pas signaler comme des défauts
 - **Une arrivée automatique fait aussi remonter la carte** (par exemple « arrivé à la maison ») : voir le ticket, questions 1 et 2.
-- **Update manuelle avant tout départ d'un lieu** : tant que le proche n'a jamais quitté un lieu de confiance, sa carte dit « Pas encore de nouvelles » et reste en bas, même après une update. C'est cohérent avec ce que dit la carte ; le changer demande de revoir ce texte (hors périmètre de ce ticket).
+- **Update manuelle avant tout départ d'un lieu** : la carte du proche **remonte** avec sa date, mais dit encore « Pas encore de nouvelles » tant qu'il n'a jamais quitté un lieu de confiance. Le texte est inchangé volontairement : la question (faut-il qu'elle dise une nouvelle ?) est posée au PM (ticket §10).
 - **Horloge d'un téléphone décalée** : l'ordre peut être faussé de quelques minutes, au pire quelques heures (acceptable en MVP, voir le ticket).
 - **Fenêtre de 4 secondes** : juste après un retour sur le Feed ou un rafraîchissement, un changement d'ordre est appliqué directement (sans glissement ni annonce).
 

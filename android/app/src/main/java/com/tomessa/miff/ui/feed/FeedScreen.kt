@@ -1,5 +1,6 @@
 package com.tomessa.miff.ui.feed
 
+import android.os.SystemClock
 import android.widget.Toast
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
@@ -231,14 +232,17 @@ fun FeedScreen(
         remember {
             CardOrderGate().also {
                 it.applyDirectlyUntil(
-                    System.currentTimeMillis() + CardOrderGate.DIRECT_WINDOW_MILLIS,
+                    SystemClock.elapsedRealtime() + CardOrderGate.DIRECT_WINDOW_MILLIS,
                 )
             }
         }
     LifecycleEventEffect(Lifecycle.Event.ON_START) {
-        orderGate.applyDirectlyUntil(System.currentTimeMillis() + CardOrderGate.DIRECT_WINDOW_MILLIS)
+        orderGate.applyDirectlyUntil(SystemClock.elapsedRealtime() + CardOrderGate.DIRECT_WINDOW_MILLIS)
     }
     var fingerDown by remember { mutableStateOf(false) }
+    // A touch cut short by the system (the app goes to the background with a finger down) never leaves the order held back for good.
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { fingerDown = false }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { fingerDown = false }
     val orderView =
         if (content == null) {
             orderGate.reset()
@@ -254,7 +258,7 @@ fun FeedScreen(
                 live = content.cards.map { it.member.uid },
                 hold = fingerDown || listState.isScrollInProgress,
                 refreshing = refreshing,
-                nowMillis = System.currentTimeMillis(),
+                nowMillis = SystemClock.elapsedRealtime(),
             )
         }
     val shownCards = content?.cards.orEmpty().inOrder(orderView?.order.orEmpty())

@@ -141,7 +141,7 @@ data class MyPhotoFacts(
     val lastUpdateAtMillis: Long?,
 )
 
-/** One card: a member, me included. MY card is the LAST of the list (no Localiser, no Message, no Appeler on it). */
+/** One card: a member, me included. MY card is sorted like the others (FEED-ORDRE) and has no Localiser, no Message, no Appeler. */
 data class MemberCard(
     val member: MiffMember,
     val isMe: Boolean,

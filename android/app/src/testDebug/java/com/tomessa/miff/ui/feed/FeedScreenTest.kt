@@ -37,6 +37,7 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.up
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
@@ -613,6 +614,54 @@ class FeedScreenTest {
         composeRule.waitForIdle()
         assertTrue(cardTop("Amandine") < cardTop("Thomas"))
         assertTrue(cardTop("Thomas") < cardTop("Camille"))
+    }
+
+    @Test
+    fun cards_aPressOnAButton_duringAHeldReorder_stillReachesTheRightPerson() {
+        val calls = mutableListOf<String>()
+        val people =
+            listOf(
+                member(me, "Camille"),
+                member("t", "Thomas", phone = "+33611111111"),
+                member("a", "Amandine", phone = "+33622222222"),
+            )
+
+        fun news(amandineAgo: Long) =
+            ready(
+                content(
+                    people,
+                    mapOf(
+                        me to status(ago = 3 * hour),
+                        "t" to status(),
+                        "a" to status(ago = amandineAgo, placeId = "p2"),
+                    ),
+                ),
+            )
+        var current by mutableStateOf(news(6 * hour))
+        show {
+            FeedScreen(
+                state = directory,
+                scrollToTopSignal = 0,
+                onRetry = {},
+                onSelect = {},
+                onCreate = {},
+                onJoin = {},
+                feed = current,
+                me = FeedMe("CM"),
+                actions = FeedActions(onCall = { calls += it }),
+            )
+        }
+        val call = composeRule.onNodeWithContentDescription("Appeler Thomas")
+        // The finger is on "Appeler" of Thomas when Amandine gives news: nothing moves under it.
+        call.performTouchInput { down(center) }
+        current = news(minute)
+        composeRule.waitForIdle()
+        assertTrue("held while the finger is down", cardTop("Thomas") < cardTop("Amandine"))
+        // The finger leaves: the tap reaches THOMAS, then the order is applied.
+        call.performTouchInput { up() }
+        composeRule.waitForIdle()
+        assertEquals(listOf("+33611111111"), calls)
+        assertTrue(cardTop("Amandine") < cardTop("Thomas"))
     }
 
     @Test
