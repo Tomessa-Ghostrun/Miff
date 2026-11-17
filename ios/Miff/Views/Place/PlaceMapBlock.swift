@@ -9,6 +9,8 @@ struct PlaceMapBlock: View {
     let radiusM: Int
     let isDanger: Bool
     var emoji: String?
+    /// Vrai dans le formulaire (création et modification) : la carte se zoome par gestes. Faux dans le détail : carte fixe.
+    var isZoomable = false
     let height: CGFloat
 
     @State private var failed = false
@@ -23,6 +25,7 @@ struct PlaceMapBlock: View {
                     radiusM: radiusM,
                     isDanger: isDanger,
                     emoji: emoji,
+                    isZoomable: isZoomable,
                     onLoadFailed: { failed = true }
                 )
                 .id(attempt)
