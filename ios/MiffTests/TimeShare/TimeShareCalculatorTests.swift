@@ -107,14 +107,18 @@ final class TimeShareCalculatorTests: XCTestCase {
 
     func testT9bExactlySevenDaysOfHistoryIsEnough() {
         // Le premier enregistrement a exactement 7 jours (168 h) : le graphique s'affiche.
-        let segments: [TimeShareFixtures.Segment] = [(.trusted, "p1", 40), (.out, nil, 40), (.trusted, "p1", 40), (.out, nil, 48)]
+        let segments: [TimeShareFixtures.Segment] = [
+            (.trusted, "p1", 40), (.out, nil, 40), (.trusted, "p1", 40), (.out, nil, 48)
+        ]
         let facts = Scn.timeline(segments, aged: false)
 
         XCTAssertNotNil(Scn.ready(Scn.compute(facts, places: [Scn.home])))
     }
 
     func testT9cOneHourShortOfSevenDaysIsStillNotEnough() {
-        let segments: [TimeShareFixtures.Segment] = [(.trusted, "p1", 40), (.out, nil, 40), (.trusted, "p1", 40), (.out, nil, 47)]
+        let segments: [TimeShareFixtures.Segment] = [
+            (.trusted, "p1", 40), (.out, nil, 40), (.trusted, "p1", 40), (.out, nil, 47)
+        ]
         let facts = Scn.timeline(segments, aged: false)
 
         XCTAssertEqual(Scn.compute(facts, places: [Scn.home]), .notEnough(daysLeft: 1))
