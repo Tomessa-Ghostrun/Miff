@@ -1222,7 +1222,7 @@
     <string name="feed_colors_not_delay">Your phone works out the colors from the latest information received. Without a connection they can lag a little: the feed then shows the time of the latest information.</string>
     <string name="feed_colors_bubble_action_a11y">Understand the colors</string>
     <!-- "How your time is spread" (docs/tickets/profil-repartition-temps.md, TIME-2): the Profile card and the Privacy setting. Friendly, descriptive tone, no blame and no congratulation. -->
-    <string name="profile_timeshare_title">How your time is spread</string>
+    <string name="profile_timeshare_title">Time breakdown</string>
     <string name="profile_timeshare_subtitle_7">Over the last 7 days</string>
     <string name="profile_timeshare_subtitle_14">Over the last 14 days</string>
     <string name="profile_timeshare_subtitle_30">Over the last 30 days</string>
@@ -1231,8 +1231,8 @@
     <string name="profile_timeshare_window_30">30 days</string>
     <string name="profile_timeshare_window_a11y">Period, %1$s</string>
     <string name="profile_timeshare_window_selected_a11y">selected</string>
-    <string name="profile_timeshare_center_caption">in your trusted places</string>
-    <string name="profile_timeshare_a11y_card">How your time is spread. %1$s: %2$s.</string>
+    <string name="profile_timeshare_center_caption">in trusted places</string>
+    <string name="profile_timeshare_a11y_card">Time breakdown. %1$s: %2$s.</string>
     <string name="profile_timeshare_a11y_row">%1$s, %2$s</string>
     <string name="profile_timeshare_a11y_danger_row">%1$s, %2$s, show details</string>
     <plurals name="profile_timeshare_other_places">
@@ -1244,17 +1244,12 @@
     <string name="profile_timeshare_elsewhere">Elsewhere</string>
     <string name="profile_timeshare_percent_tiny">&lt; 1%</string>
     <string name="profile_timeshare_detail_close">Close</string>
-    <string name="profile_timeshare_summary_place_7">Over the last 7 days, you spent the most time at %1$s.</string>
-    <string name="profile_timeshare_summary_place_14">Over the last 14 days, you spent the most time at %1$s.</string>
-    <string name="profile_timeshare_summary_place_30">Over the last 30 days, you spent the most time at %1$s.</string>
-    <string name="profile_timeshare_summary_elsewhere_7">Over the last 7 days, you were mostly somewhere other than your trusted places.</string>
-    <string name="profile_timeshare_summary_elsewhere_14">Over the last 14 days, you were mostly somewhere other than your trusted places.</string>
-    <string name="profile_timeshare_summary_elsewhere_30">Over the last 30 days, you were mostly somewhere other than your trusted places.</string>
-    <string name="profile_timeshare_summary_generic_7">Here is how your time was spread over the last 7 days.</string>
-    <string name="profile_timeshare_summary_generic_14">Here is how your time was spread over the last 14 days.</string>
-    <string name="profile_timeshare_summary_generic_30">Here is how your time was spread over the last 30 days.</string>
+    <string name="profile_timeshare_summary">You spent %1$s of your time in your trusted places</string>
     <string name="profile_timeshare_privacy">This data stays on your phone. Nobody else can see it.</string>
-    <string name="profile_timeshare_not_enough">Your chart will be ready in a few days, we are looking into your situation</string>
+    <plurals name="profile_timeshare_not_enough">
+        <item quantity="one">Your chart arrives in %1$d day, we\'re analysing your habits</item>
+        <item quantity="other">Your chart arrives in %1$d days, we\'re analysing your habits</item>
+    </plurals>
     <string name="profile_timeshare_paused">Tracking of your places is paused.</string>
     <string name="profile_timeshare_travel">You are in travel mode: your chart is paused until you are back.</string>
     <string name="profile_timeshare_sharing_stopped">You stopped sharing your status with this Miff: your chart is no longer updated for it.</string>

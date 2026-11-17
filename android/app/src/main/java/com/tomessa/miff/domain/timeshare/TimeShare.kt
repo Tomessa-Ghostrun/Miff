@@ -17,8 +17,11 @@ object TimeShareRules {
     const val HOUR_MILLIS = 60L * 60L * 1000L
     const val DAY_MILLIS = 24L * HOUR_MILLIS
 
-    /** Under this measured time the chart would mislead: "pas assez de données" (D8). */
-    const val MIN_MEASURED_MILLIS = 24L * HOUR_MILLIS
+    /**
+     * The chart appears only when the journal of the Miff goes back at least this far: 7 days elapsed since its FIRST recorded fact (decision of the PM, 2026-11-17, which
+     * replaces the 24 h of the first version). Before that: "pas assez de données", whatever the window chosen, and the window selector is not shown either.
+     */
+    const val MIN_HISTORY_MILLIS = 7L * DAY_MILLIS
 
     /** A state is counted 48 h at most without a new fact (D9): beyond, "not measured". */
     const val MAX_STATE_MILLIS = 48L * HOUR_MILLIS
@@ -70,23 +73,22 @@ class Slice(
     override fun toString(): String = "Slice(redacted)"
 }
 
-/** Which sentence sums the chart up (section 5.4). It never names the danger zone. */
-enum class SummaryKind { PLACE, ELSEWHERE, GENERIC }
-
 sealed interface TimeShareResult {
-    /** Less than 24 h measured in the window: no percentage at all. */
+    /** The journal goes back less than 7 days, or nothing was measured in the window: no chart, no percentage at all. */
     class NotEnoughData(
         val measuredMillis: Long,
-    ) : TimeShareResult
+        /** How far back the journal of the Miff goes (from its first fact to now); 0 when it has none. */
+        val historyMillis: Long,
+    ) : TimeShareResult {
+        /** The number of days left before the chart can be shown (see [TimeShare.daysLeft]). */
+        val daysLeft: Int get() = TimeShare.daysLeft(historyMillis)
+    }
 
     class Ready(
         val slices: List<Slice>,
         val measuredMillis: Long,
         /** The share in the trusted places only (places and other places; never the danger zone nor "Ailleurs"). */
         val centerPercent: Int,
-        val summary: SummaryKind,
-        /** The place named by the sentence when [summary] is [SummaryKind.PLACE]. */
-        val summaryPlaceId: String?,
     ) : TimeShareResult {
         override fun toString(): String = "Ready(redacted)"
     }
@@ -104,9 +106,29 @@ object TimeShare {
         nowMillis: Long,
     ): TimeShareResult {
         val tally = tally(facts, places, windowDays, nowMillis)
-        if (tally.measured < TimeShareRules.MIN_MEASURED_MILLIS) return TimeShareResult.NotEnoughData(tally.measured)
+        val history = history(facts, nowMillis)
+        // The rule of the chart: the journal covers 7 days since its first fact AND something was measured in the window (nothing to share out otherwise).
+        if (history < TimeShareRules.MIN_HISTORY_MILLIS || tally.measured <= 0L) {
+            return TimeShareResult.NotEnoughData(tally.measured, history)
+        }
         return build(tally)
     }
+
+    /**
+     * "Ton graphique arrive dans X jours": X = 7 days minus the days elapsed since the first fact of the journal, rounded UP so that it never goes under 1 while the chart cannot be
+     * shown (6 days and 2 h elapsed: 1 day), and 7 with no fact at all (decision of the PM, 2026-11-17: this wording is fixed, no variant). Recomputed at each display, no timer.
+     */
+    fun daysLeft(historyMillis: Long): Int {
+        val remaining = (TimeShareRules.MIN_HISTORY_MILLIS - historyMillis).coerceAtLeast(0L)
+        val days = ((remaining + TimeShareRules.DAY_MILLIS - 1) / TimeShareRules.DAY_MILLIS).toInt()
+        return days.coerceIn(1, (TimeShareRules.MIN_HISTORY_MILLIS / TimeShareRules.DAY_MILLIS).toInt())
+    }
+
+    /** Elapsed time from the first fact of the journal to now (0 without a fact; a first fact in the future counts 0). */
+    fun history(
+        facts: List<LoggedPresence>,
+        nowMillis: Long,
+    ): Long = facts.firstOrNull()?.let { (nowMillis - it.atMillis).coerceAtLeast(0L) } ?: 0L
 
     /** The time of each category inside the window, before any rounding (exposed to be tested: T2, T3, T4, T8, T11, T16, T22, T23). */
     class Tally(
@@ -256,28 +278,13 @@ object TimeShare {
             }
         val center =
             slices.filter { it.kind == SliceKind.PLACE || it.kind == SliceKind.OTHER_PLACES }.sumOf { it.percent }
-        val (summary, summaryPlace) = summarize(slices)
-        return TimeShareResult.Ready(slices, measured, center, summary, summaryPlace)
+        return TimeShareResult.Ready(slices, measured, center)
     }
 
     private fun longestFirst(times: Map<String, Long>): List<Map.Entry<String, Long>> =
         times.entries
             .filter { it.value > 0 }
             .sortedWith(compareByDescending<Map.Entry<String, Long>> { it.value }.thenBy { it.key })
-
-    /**
-     * The sentence: the biggest share when it is a named place or "Ailleurs"; anything else, or a tie with "autres lieux" or the danger zone, is the generic sentence (T21).
-     * An equal time between a named place and "Ailleurs": the first of the legend, the place.
-     */
-    private fun summarize(slices: List<Slice>): Pair<SummaryKind, String?> {
-        val biggest = slices.maxOfOrNull { it.millis } ?: return SummaryKind.GENERIC to null
-        val tied = slices.filter { it.millis == biggest }
-        if (tied.any { it.kind == SliceKind.DANGER || it.kind == SliceKind.OTHER_PLACES }) {
-            return SummaryKind.GENERIC to null
-        }
-        val first = tied.first()
-        return if (first.kind == SliceKind.PLACE) SummaryKind.PLACE to first.placeId else SummaryKind.ELSEWHERE to null
-    }
 
     /**
      * Whole percentages of [times] over [total] that add up to exactly [target] (the method of the largest remainder, on integers: no rounding error). When [target] is 100,

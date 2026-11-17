@@ -3,12 +3,15 @@ package com.tomessa.miff.ui.timeshare
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import com.tomessa.miff.ui.theme.chartPlaceColors
+import com.tomessa.miff.ui.theme.colorActionPrimary
 import com.tomessa.miff.ui.theme.colorBgSurface
 import com.tomessa.miff.ui.theme.colorChartDanger
 import com.tomessa.miff.ui.theme.colorChartElsewhere
 import com.tomessa.miff.ui.theme.colorChartOther
 import com.tomessa.miff.ui.theme.colorChartReserve
+import com.tomessa.miff.ui.theme.colorStatusDanger
 import com.tomessa.miff.ui.theme.colorStatusDangerText
+import com.tomessa.miff.ui.theme.colorStatusSafeText
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -239,14 +242,10 @@ class TimeShareRulesTest {
 
     @Test
     fun everyColourOfTheRing_reachesThreeToOneAgainstTheWhiteCard() {
+        // "Ailleurs" is the light grey of the mockup (under 3:1 on purpose, see ChartColor.kt); every other colour of the ring reaches 3:1.
         val all =
             chartPlaceColors.mapIndexed { i, c -> "chart${i + 1}" to c } +
-                listOf(
-                    "other" to colorChartOther,
-                    "elsewhere" to colorChartElsewhere,
-                    "danger" to colorChartDanger,
-                    "reserve" to colorChartReserve,
-                )
+                listOf("other" to colorChartOther, "danger" to colorChartDanger, "reserve" to colorChartReserve)
         all.forEach { (name, color) ->
             val ratio = contrast(color, colorBgSurface)
             assertTrue("$name has a contrast of $ratio against the card, below 3", ratio >= 3.0)
@@ -258,22 +257,22 @@ class TimeShareRulesTest {
     }
 
     @Test
-    fun theFivePlacesHaveFiveDifferentColours_noneIsAStatusColour() {
+    fun thePalette_isMiffGreenAndBlueForThePlaces_theExactDangerRed_andTheGreyOfTheMockup() {
         assertEquals(5, chartPlaceColors.toSet().size)
-        // No red, orange or yellow-green of the statuses among the colours of the places (only the danger zone uses the colour of the danger).
-        val statusHues = listOf(0xFFD1D828, 0xFFFFB650, 0xFFFF5650).map { it.toInt() }
-        (chartPlaceColors + colorChartOther + colorChartElsewhere + colorChartReserve).forEach {
-            assertFalse(it.toArgb() in statusHues)
+        // Blues and greens alternate, so that neighbours are told apart (the ring and the legend follow the same order).
+        assertEquals(colorActionPrimary.toArgb(), chartPlaceColors[0].toArgb())
+        assertEquals(colorStatusSafeText.toArgb(), chartPlaceColors[3].toArgb())
+        (chartPlaceColors + colorChartOther + colorChartReserve).forEach {
             val argb = it.toArgb()
             val red = (argb shr 16) and 0xFF
-            val blue = argb and 0xFF
             val green = (argb shr 8) and 0xFF
-            assertFalse(
-                "a warm colour is a status colour: ${Integer.toHexString(argb)}",
-                red > 200 && blue < 100 && green < 200,
-            )
+            val blue = argb and 0xFF
+            // Green or blue, never a warm colour: neither the red of the danger nor an orange.
+            assertTrue("not a green or a blue: ${Integer.toHexString(argb)}", blue > red || green > red)
         }
-        assertEquals(colorChartDanger.toArgb(), 0xFFFF5650.toInt())
+        // The danger zone is EXACTLY the red of the danger status of the bubble, "Ailleurs" the grey of the mockup.
+        assertEquals(colorStatusDanger.toArgb(), colorChartDanger.toArgb())
+        assertEquals(0xFFD9D9D9.toInt(), colorChartElsewhere.toArgb())
     }
 
     // --- The texts (TS-15, TS-17, TS-22) --------------------------------------------------------------------------------------------------------------------------
@@ -293,18 +292,8 @@ class TimeShareRulesTest {
         val fr = strings("src/main/res/values-fr/strings.xml")
         val en = strings("src/main/res/values/strings.xml")
         assertEquals(fr.keys, en.keys)
-        assertTrue(fr.size >= 35)
+        assertTrue(fr.size >= 28)
         assertEquals(plurals("src/main/res/values-fr/strings.xml"), plurals("src/main/res/values/strings.xml"))
-        // The wording of "pas assez de données" is the PM's, word for word.
-        assertEquals(
-            "Ton graphique arrive dans quelques jours, nous analysons ta situation",
-            fr["profile_timeshare_not_enough"],
-        )
-        assertEquals(
-            "Your chart will be ready in a few days, we are looking into your situation",
-            en["profile_timeshare_not_enough"],
-        )
-        // The confirmation of the erasure is the one of the ticket.
         assertEquals("Effacer l\\'historique ?", fr["settings_privacy_time_confirm_title"])
         assertEquals(
             "Ta répartition repartira de zéro. Cela ne change rien pour tes proches.",
@@ -335,14 +324,27 @@ class TimeShareRulesTest {
     }
 
     @Test
-    fun theSentenceOfTheChart_neverNamesTheDangerZone_neverGivesAPercentage() {
+    fun theSentenceOfTheBand_neverNamesTheDangerZone_andTheWordingOfTheStatesIsTheOneFixedByThePm() {
         val fr = strings("src/main/res/values-fr/strings.xml")
         val en = strings("src/main/res/values/strings.xml")
         listOf(fr, en).forEach { language ->
-            language.filterKeys { it.startsWith("profile_timeshare_summary_") }.forEach { (key, value) ->
-                assertFalse("$key names the danger zone", Regex("(?i)danger|risk").containsMatchIn(value))
-                assertFalse("$key gives a percentage", Regex("[0-9]\\s*(%|pour cent|percent)").containsMatchIn(value))
-            }
+            val sentence = language.getValue("profile_timeshare_summary")
+            assertFalse("the band names the danger zone", Regex("(?i)danger|risk").containsMatchIn(sentence))
+            assertTrue("the band has the figure", sentence.contains("%1\$s"))
         }
+        assertEquals("Tu as passé %1\$s de ton temps dans tes zones de confiance", fr["profile_timeshare_summary"])
+        // The wording of "pas assez de données", with its plural (decision of the PM, 2026-11-17), is in the plurals.
+        val plural =
+            read(
+                "src/main/res/values-fr/strings.xml",
+            ).substringAfter("<plurals name=\"profile_timeshare_not_enough\">").substringBefore("</plurals>")
+        assertTrue(plural.contains("Ton graphique arrive dans %1\$d jour, nous analysons tes habitudes"))
+        assertTrue(plural.contains("Ton graphique arrive dans %1\$d jours, nous analysons tes habitudes"))
+        val enPlural =
+            read(
+                "src/main/res/values/strings.xml",
+            ).substringAfter("<plurals name=\"profile_timeshare_not_enough\">").substringBefore("</plurals>")
+        assertTrue(enPlural.contains("Your chart arrives in %1\$d day, we\\'re analysing your habits"))
+        assertTrue(enPlural.contains("Your chart arrives in %1\$d days, we\\'re analysing your habits"))
     }
 }

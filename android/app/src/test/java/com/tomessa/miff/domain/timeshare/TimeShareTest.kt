@@ -193,26 +193,79 @@ class TimeShareTest {
     // --- T9 to T16 ----------------------------------------------------------------------------------------------------------------------------------
 
     @Test
-    fun t9_underTwentyFourHoursMeasured_isNotEnoughData() {
-        val result = compute(listOf(LoggedPresence(now - 20 * hour, PresenceValue.IN_TRUSTED, "home")), listOf(home))
+    fun t9_underSevenDaysOfHistory_isNotEnoughData_evenWithPlentyMeasured() {
+        // A journal of 3 days (72 h, all measured): the chart waits for 7 days (decision of the PM, 2026-11-17; it used to be 24 h measured).
+        val facts =
+            listOf(
+                LoggedPresence(now - 72 * hour, PresenceValue.IN_TRUSTED, "home"),
+                LoggedPresence(now - 36 * hour, PresenceValue.OUT, null),
+            )
+        val result = compute(facts, listOf(home))
         assertTrue(result is TimeShareResult.NotEnoughData)
-        assertEquals(20 * hour, (result as TimeShareResult.NotEnoughData).measuredMillis)
+        result as TimeShareResult.NotEnoughData
+        assertEquals(72 * hour, result.historyMillis)
+        assertTrue(result.measuredMillis > 24 * hour)
     }
 
     @Test
-    fun theThresholdIsExactlyTwentyFourHours() {
-        assertTrue(
-            compute(
-                listOf(LoggedPresence(now - 24 * hour, PresenceValue.IN_TRUSTED, "home")),
-                listOf(home),
-            ) is TimeShareResult.Ready,
-        )
-        assertTrue(
-            compute(
-                listOf(LoggedPresence(now - 24 * hour + 1, PresenceValue.IN_TRUSTED, "home")),
-                listOf(home),
-            ) is TimeShareResult.NotEnoughData,
-        )
+    fun daysLeft_isSevenMinusTheDaysElapsed_roundedUp_neverUnderOne_andSevenWithNoJournal() {
+        val day = TimeShareRules.DAY_MILLIS
+        val minute = 60_000L
+        assertEquals(7, TimeShare.daysLeft(0))
+        assertEquals(7, TimeShare.daysLeft(1))
+        assertEquals(7, TimeShare.daysLeft(hour))
+        assertEquals(6, TimeShare.daysLeft(day))
+        assertEquals(6, TimeShare.daysLeft(day + hour))
+        assertEquals(4, TimeShare.daysLeft(3 * day))
+        // To the hour: 5 days exactly leaves 2; one minute less leaves 3.
+        assertEquals(2, TimeShare.daysLeft(5 * day))
+        assertEquals(2, TimeShare.daysLeft(5 * day + minute))
+        assertEquals(3, TimeShare.daysLeft(5 * day - minute))
+        // Never under 1 while the chart cannot be shown: 6 days and 2 h elapsed is "1 jour".
+        assertEquals(1, TimeShare.daysLeft(6 * day))
+        assertEquals(1, TimeShare.daysLeft(6 * day + 2 * hour))
+        assertEquals(1, TimeShare.daysLeft(7 * day - minute))
+        assertEquals(1, TimeShare.daysLeft(7 * day))
+        assertEquals(1, TimeShare.daysLeft(30 * day))
+    }
+
+    @Test
+    fun theNotEnoughDataResult_carriesTheDaysLeft_fromTheFirstFact() {
+        // No fact at all: 7.
+        assertEquals(7, (compute(emptyList(), listOf(home)) as TimeShareResult.NotEnoughData).daysLeft)
+        // First fact 3 days ago: 4.
+        val three = listOf(LoggedPresence(now - 3 * TimeShareRules.DAY_MILLIS, PresenceValue.IN_TRUSTED, "home"))
+        assertEquals(4, (compute(three, listOf(home)) as TimeShareResult.NotEnoughData).daysLeft)
+        // First fact 6 days and 2 h ago: 1.
+        val six =
+            listOf(LoggedPresence(now - 6 * TimeShareRules.DAY_MILLIS - 2 * hour, PresenceValue.IN_TRUSTED, "home"))
+        assertEquals(1, (compute(six, listOf(home)) as TimeShareResult.NotEnoughData).daysLeft)
+    }
+
+    @Test
+    fun theThresholdIsExactlySevenDaysSinceTheFirstFact() {
+        val week = 7 * TimeShareRules.DAY_MILLIS
+
+        fun at(back: Long) =
+            listOf(
+                LoggedPresence(now - back, PresenceValue.IN_TRUSTED, "home"),
+                LoggedPresence(now - back + 10 * hour, PresenceValue.OUT, null),
+            )
+        assertTrue(compute(at(week), listOf(home)) is TimeShareResult.Ready)
+        assertTrue(compute(at(week - 1), listOf(home)) is TimeShareResult.NotEnoughData)
+        // The window chosen does not change the rule: 30 days with 8 days of history show the chart.
+        assertTrue(compute(at(8 * TimeShareRules.DAY_MILLIS), listOf(home), days = 30) is TimeShareResult.Ready)
+    }
+
+    @Test
+    fun sevenDaysOfHistory_butNothingMeasuredInTheWindow_isNotEnoughData() {
+        // Journal of 10 days, but everything after the first facts is unknown: nothing to share out.
+        val facts =
+            listOf(
+                LoggedPresence(now - 10 * TimeShareRules.DAY_MILLIS, PresenceValue.OUT, null),
+                LoggedPresence(now - 10 * TimeShareRules.DAY_MILLIS + hour, PresenceValue.UNKNOWN, null),
+            )
+        assertTrue(compute(facts, listOf(home)) is TimeShareResult.NotEnoughData)
     }
 
     @Test
@@ -311,7 +364,6 @@ class TimeShareTest {
         assertEquals(0, result.centerPercent)
         assertEquals(listOf(SliceKind.ELSEWHERE), result.slices.map { it.kind })
         assertEquals(100, result.percent(SliceKind.ELSEWHERE))
-        assertEquals(SummaryKind.ELSEWHERE, result.summary)
     }
 
     @Test
@@ -384,36 +436,6 @@ class TimeShareTest {
         // A danger zone that exists, where no time was spent: still no line (never "0 %").
         val noTime = ready(compute(listOf(inPlace(0.0, "home"), out(30.0), unknown(60.0)), listOf(home, risk1)))
         assertTrue(noTime.slices.none { it.kind == SliceKind.DANGER })
-    }
-
-    @Test
-    fun t21_whenTheDangerZoneIsTheBiggestShare_theSentenceIsTheGenericOne() {
-        val facts = listOf(inPlace(0.0, "home"), inRisk(20.0, "risk1"), out(60.0), unknown(90.0))
-        val result = ready(compute(facts, listOf(home, risk1)))
-        assertEquals(SliceKind.DANGER, result.slices.maxByOrNull { it.millis }!!.kind)
-        assertEquals(SummaryKind.GENERIC, result.summary)
-        assertNull(result.summaryPlaceId)
-    }
-
-    @Test
-    fun aTieWithTheDangerZone_isAlsoTheGenericSentence() {
-        // home 30 h = danger 30 h.
-        val facts = listOf(inPlace(0.0, "home"), inRisk(30.0, "risk1"), out(60.0), unknown(80.0))
-        val result = ready(compute(facts, listOf(home, risk1)))
-        assertEquals(SummaryKind.GENERIC, result.summary)
-    }
-
-    @Test
-    fun theBiggestPlace_namesItself_inTheSentence() {
-        val result =
-            ready(
-                compute(
-                    listOf(inPlace(0.0, "home"), out(40.0), inPlace(50.0, "sport"), out(60.0), unknown(80.0)),
-                    listOf(home, sport),
-                ),
-            )
-        assertEquals(SummaryKind.PLACE, result.summary)
-        assertEquals("home", result.summaryPlaceId)
     }
 
     @Test

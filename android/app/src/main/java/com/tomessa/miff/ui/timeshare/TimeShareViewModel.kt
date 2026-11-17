@@ -9,7 +9,6 @@ import com.tomessa.miff.domain.place.PlaceCategory
 import com.tomessa.miff.domain.timeshare.PlaceRef
 import com.tomessa.miff.domain.timeshare.PresenceLog
 import com.tomessa.miff.domain.timeshare.SliceKind
-import com.tomessa.miff.domain.timeshare.SummaryKind
 import com.tomessa.miff.domain.timeshare.TimeShare
 import com.tomessa.miff.domain.timeshare.TimeShareResult
 import com.tomessa.miff.domain.timeshare.TimeShareRules
@@ -62,15 +61,16 @@ class DetailItem(
 }
 
 sealed interface TimeShareBody {
-    /** Less than 24 h measured. */
-    data object NotEnough : TimeShareBody
+    /** The journal goes back less than 7 days (or nothing was measured): no chart, no selector. */
+    data class NotEnough(
+        /** The days left before the chart can be shown, 1 to 7 ("Ton graphique arrive dans X jours"). */
+        val daysLeft: Int,
+    ) : TimeShareBody
 
     class Chart(
         val items: List<LegendItem>,
+        /** The share in the trusted places (centre of the ring and sentence under it). */
         val centerPercent: Int,
-        val summary: SummaryKind,
-        /** The name of the place the sentence names, when [summary] is [SummaryKind.PLACE]. */
-        val summaryPlaceName: String?,
     ) : TimeShareBody {
         override fun toString(): String = "Chart(redacted)"
     }
@@ -196,7 +196,7 @@ class TimeShareViewModel(
         val status = tracking.of(miffId)
         val body =
             when (result) {
-                is TimeShareResult.NotEnoughData -> TimeShareBody.NotEnough
+                is TimeShareResult.NotEnoughData -> TimeShareBody.NotEnough(result.daysLeft)
                 is TimeShareResult.Ready -> chart(result, places)
             }
         return TimeShareUiState.Shown(miffId, days, body, status)
@@ -261,12 +261,7 @@ class TimeShareViewModel(
                     }
                 }
             }
-        return TimeShareBody.Chart(
-            items,
-            result.centerPercent,
-            result.summary,
-            result.summaryPlaceId?.let { byId[it]?.name },
-        )
+        return TimeShareBody.Chart(items, result.centerPercent)
     }
 }
 

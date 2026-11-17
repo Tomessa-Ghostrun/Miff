@@ -429,13 +429,12 @@ class TrackingEnginePresenceLogTest {
             env.now = start + 18 * hour
             engine.onTransition(TransitionKind.ENTER, home.key, env.now)
             env.now = start + 28 * hour
-            val result =
-                TimeShare.compute(log.facts(miffA), listOf(PlaceRef("home", PlaceType.TRUSTED)), 7, env.now)
-            assertTrue(result is TimeShareResult.Ready)
-            val slices = (result as TimeShareResult.Ready).slices
-            assertEquals(listOf(SliceKind.PLACE, SliceKind.ELSEWHERE), slices.map { it.kind })
-            assertEquals(71, slices[0].percent)
-            assertEquals(29, slices[1].percent)
-            assertEquals(71, result.centerPercent)
+            // 28 h of journal: under the 7 days the chart waits for (4 days left to wait... 7 days minus a day and a bit), but the measure is already right.
+            val tally = TimeShare.tally(log.facts(miffA), listOf(PlaceRef("home", PlaceType.TRUSTED)), 7, env.now)
+            assertEquals(20 * hour, tally.trusted["home"])
+            assertEquals(8 * hour, tally.elsewhere)
+            val result = TimeShare.compute(log.facts(miffA), listOf(PlaceRef("home", PlaceType.TRUSTED)), 7, env.now)
+            assertTrue(result is TimeShareResult.NotEnoughData)
+            assertEquals(6, (result as TimeShareResult.NotEnoughData).daysLeft)
         }
 }

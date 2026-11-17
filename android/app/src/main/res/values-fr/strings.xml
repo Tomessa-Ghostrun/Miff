@@ -1201,7 +1201,7 @@
     <string name="feed_colors_not_delay">Ton téléphone calcule les couleurs à partir des dernières informations reçues. Sans connexion, elles peuvent avoir un peu de retard : le fil indique alors l\'heure des dernières informations.</string>
     <string name="feed_colors_bubble_action_a11y">Comprendre les couleurs</string>
     <!-- Répartition de ton temps (docs/tickets/profil-repartition-temps.md, TIME-2) : carte du Profil et réglage de Confidentialité. Tutoiement, ton descriptif, aucun reproche ni félicitation. -->
-    <string name="profile_timeshare_title">Répartition de ton temps</string>
+    <string name="profile_timeshare_title">Répartition du temps</string>
     <string name="profile_timeshare_subtitle_7">Sur les 7 derniers jours</string>
     <string name="profile_timeshare_subtitle_14">Sur les 14 derniers jours</string>
     <string name="profile_timeshare_subtitle_30">Sur les 30 derniers jours</string>
@@ -1210,8 +1210,8 @@
     <string name="profile_timeshare_window_30">30 jours</string>
     <string name="profile_timeshare_window_a11y">Période, %1$s</string>
     <string name="profile_timeshare_window_selected_a11y">choisi</string>
-    <string name="profile_timeshare_center_caption">dans tes lieux de confiance</string>
-    <string name="profile_timeshare_a11y_card">Répartition de ton temps. %1$s : %2$s.</string>
+    <string name="profile_timeshare_center_caption">en zone de confiance</string>
+    <string name="profile_timeshare_a11y_card">Répartition du temps. %1$s : %2$s.</string>
     <string name="profile_timeshare_a11y_row">%1$s, %2$s</string>
     <string name="profile_timeshare_a11y_danger_row">%1$s, %2$s, afficher le détail</string>
     <plurals name="profile_timeshare_other_places">
@@ -1224,17 +1224,13 @@
     <string name="profile_timeshare_elsewhere">Ailleurs</string>
     <string name="profile_timeshare_percent_tiny">&lt; 1 %</string>
     <string name="profile_timeshare_detail_close">Fermer</string>
-    <string name="profile_timeshare_summary_place_7">Sur les 7 derniers jours, c\'est à %1$s que tu as passé le plus de temps.</string>
-    <string name="profile_timeshare_summary_place_14">Sur les 14 derniers jours, c\'est à %1$s que tu as passé le plus de temps.</string>
-    <string name="profile_timeshare_summary_place_30">Sur les 30 derniers jours, c\'est à %1$s que tu as passé le plus de temps.</string>
-    <string name="profile_timeshare_summary_elsewhere_7">Sur les 7 derniers jours, tu as surtout été ailleurs que dans tes lieux de confiance.</string>
-    <string name="profile_timeshare_summary_elsewhere_14">Sur les 14 derniers jours, tu as surtout été ailleurs que dans tes lieux de confiance.</string>
-    <string name="profile_timeshare_summary_elsewhere_30">Sur les 30 derniers jours, tu as surtout été ailleurs que dans tes lieux de confiance.</string>
-    <string name="profile_timeshare_summary_generic_7">Voici comment ton temps s\'est réparti sur les 7 derniers jours.</string>
-    <string name="profile_timeshare_summary_generic_14">Voici comment ton temps s\'est réparti sur les 14 derniers jours.</string>
-    <string name="profile_timeshare_summary_generic_30">Voici comment ton temps s\'est réparti sur les 30 derniers jours.</string>
+    <string name="profile_timeshare_summary">Tu as passé %1$s de ton temps dans tes zones de confiance</string>
     <string name="profile_timeshare_privacy">Ces données restent sur ton téléphone. Personne d\'autre ne peut les voir.</string>
-    <string name="profile_timeshare_not_enough">Ton graphique arrive dans quelques jours, nous analysons ta situation</string>
+    <plurals name="profile_timeshare_not_enough">
+        <item quantity="one">Ton graphique arrive dans %1$d jour, nous analysons tes habitudes</item>
+        <item quantity="many">Ton graphique arrive dans %1$d jours, nous analysons tes habitudes</item>
+        <item quantity="other">Ton graphique arrive dans %1$d jours, nous analysons tes habitudes</item>
+    </plurals>
     <string name="profile_timeshare_paused">Le suivi de tes lieux est en pause.</string>
     <string name="profile_timeshare_travel">Tu es en mode voyage : ta répartition est en pause jusqu\'à ton retour.</string>
     <string name="profile_timeshare_sharing_stopped">Tu as arrêté de partager ton statut avec cette Miff : ta répartition n\'est plus mise à jour pour elle.</string>

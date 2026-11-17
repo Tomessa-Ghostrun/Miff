@@ -5,7 +5,6 @@ import com.tomessa.miff.domain.place.PlaceCategory
 import com.tomessa.miff.domain.place.PlaceType
 import com.tomessa.miff.domain.timeshare.PresenceLog
 import com.tomessa.miff.domain.timeshare.SliceKind
-import com.tomessa.miff.domain.timeshare.SummaryKind
 import com.tomessa.miff.domain.timeshare.TimeShareRules
 import com.tomessa.miff.domain.timeshare.TimeShareTracking
 import com.tomessa.miff.domain.timeshare.TrackingHealth
@@ -61,9 +60,10 @@ class TimeShareViewModelTest {
     private fun viewModel(presence: PresenceLog = log) =
         TimeShareViewModel(presence, windows, tracking, nowMillis = { now }, dispatcher = dispatcher)
 
-    /** 30 h at home, 10 h out, 8 h at the sport place, 6 h in the park: 54 h. */
+    /** 30 h at home, 12 h out, 8 h at the sport place, 6 h in the park: 56 h, from 7 days ago. */
     private fun fillAWeek(miffId: String = "miffA") {
-        val start = now - 100 * hour
+        // The journal goes back exactly 7 days: the chart is shown.
+        val start = now - 7 * TimeShareRules.DAY_MILLIS
         log.record(miffId, PresenceValue.IN_TRUSTED, "home", start)
         log.record(miffId, PresenceValue.OUT, null, start + 30 * hour)
         log.record(miffId, PresenceValue.IN_TRUSTED, "sport", start + 40 * hour)
@@ -113,17 +113,29 @@ class TimeShareViewModelTest {
         assertEquals("miffA", vm.shown().miffId)
         dispatcher.scheduler.runCurrent()
         assertEquals("miffB", vm.shown().miffId)
-        assertEquals(TimeShareBody.NotEnough, vm.shown().body)
+        assertTrue(vm.shown().body is TimeShareBody.NotEnough)
     }
 
     // --- The states ---------------------------------------------------------------------------------------------------------------------------------------
+
+    @Test
+    fun withAJournalOfThreeDays_itIsNotEnoughData_withTheDaysLeft_andAfterAnErasureItStartsAtSeven() {
+        log.record("miffA", PresenceValue.IN_TRUSTED, "home", now - 3 * TimeShareRules.DAY_MILLIS)
+        val vm = viewModel()
+        vm.onInputs("miffA", places)
+        dispatcher.scheduler.runCurrent()
+        assertEquals(4, (vm.shown().body as TimeShareBody.NotEnough).daysLeft)
+        log.clear()
+        dispatcher.scheduler.runCurrent()
+        assertEquals(7, (vm.shown().body as TimeShareBody.NotEnough).daysLeft)
+    }
 
     @Test
     fun withNothingInTheJournal_itIsNotEnoughData_whateverTheWindow() {
         val vm = viewModel()
         vm.onInputs("miffA", places)
         dispatcher.scheduler.runCurrent()
-        assertEquals(TimeShareBody.NotEnough, vm.shown().body)
+        assertTrue(vm.shown().body is TimeShareBody.NotEnough)
         assertEquals(7, vm.shown().windowDays)
         assertEquals(TrackingHealth.ACTIVE, vm.shown().tracking.health)
     }
@@ -163,9 +175,8 @@ class TimeShareViewModelTest {
         val danger = chart.items.first { it.kind == SliceKind.DANGER }
         assertEquals(listOf("Le parc"), danger.details.map { it.name })
         assertEquals(danger.percent, danger.details.sumOf { it.percent })
-        // The sentence names the biggest place (a name of the current list), and the shares close the ring.
-        assertEquals(SummaryKind.PLACE, chart.summary)
-        assertEquals("Maison", chart.summaryPlaceName)
+        // The shares close the ring.
+        assertEquals(chart.items.filter { it.kind == SliceKind.PLACE }.sumOf { it.percent }, chart.centerPercent)
         assertEquals(1f, chart.items.sumOf { it.share.toDouble() }.toFloat(), 0.001f)
     }
 
@@ -260,7 +271,7 @@ class TimeShareViewModelTest {
         val vm = viewModel()
         vm.onInputs("miffA", places)
         dispatcher.scheduler.runCurrent()
-        assertEquals(TimeShareBody.NotEnough, vm.shown().body)
+        assertTrue(vm.shown().body is TimeShareBody.NotEnough)
         fillAWeek()
         dispatcher.scheduler.runCurrent()
         assertTrue(vm.shown().body is TimeShareBody.Chart)
@@ -275,7 +286,7 @@ class TimeShareViewModelTest {
         assertTrue(vm.shown().body is TimeShareBody.Chart)
         log.clear()
         dispatcher.scheduler.runCurrent()
-        assertEquals(TimeShareBody.NotEnough, vm.shown().body)
+        assertTrue(vm.shown().body is TimeShareBody.NotEnough)
     }
 
     @Test

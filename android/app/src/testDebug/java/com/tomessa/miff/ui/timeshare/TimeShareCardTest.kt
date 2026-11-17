@@ -14,12 +14,14 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsNode
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -32,14 +34,12 @@ import androidx.test.core.app.ApplicationProvider
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.place.PlaceCategory
 import com.tomessa.miff.domain.timeshare.SliceKind
-import com.tomessa.miff.domain.timeshare.SummaryKind
 import com.tomessa.miff.domain.timeshare.TimeShareTracking
 import com.tomessa.miff.domain.timeshare.TrackingHealth
 import com.tomessa.miff.ui.theme.MiffTheme
 import com.tomessa.miff.ui.theme.colorBgCanvas
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -51,9 +51,10 @@ import java.text.NumberFormat
 import java.util.Locale
 
 /**
- * The card "Répartition de ton temps" on the JVM (Robolectric, no phone; docs/tickets/profil-repartition-temps.md sections 5, 7 and 9): its blocks, the exact texts in French, the
- * states, the selector, the detail of the danger zone, the way it is read by a screen reader and the largest font. The figures are those of the mockup of the PM (Maison 48, Sport
- * 24, Zone de danger 12, Ailleurs 16). Pictures are written to `build/screenshots/timeshare-*.png`.
+ * The card "Répartition du temps" on the JVM (Robolectric, no phone; docs/tickets/profil-repartition-temps.md sections 5, 7 and 9, layout of the PM of 2026-11-17): the header, the legend
+ * on the left with its four lines, the exact texts in French, the green band with the party emoji, the states without a chart (with the number of days left), the selector, the detail of
+ * the danger zone, the way it is read by a screen reader and the largest font. The figures are those of the mockup (Maison 48, Sport 24, Zone de danger 12, Ailleurs 16).
+ * Pictures: `build/screenshots/timeshare-*.png`.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -65,11 +66,6 @@ class TimeShareCardTest {
     private fun context(): Context = ApplicationProvider.getApplicationContext()
 
     private fun text(id: Int): String = context().getString(id)
-
-    private fun text(
-        id: Int,
-        vararg args: Any,
-    ): String = context().getString(id, *args)
 
     private fun pct(value: Int): String = NumberFormat.getPercentInstance(Locale.FRENCH).format(value / 100.0)
 
@@ -105,8 +101,6 @@ class TimeShareCardTest {
                     item(SliceKind.ELSEWHERE, null, null, 16),
                 ),
             centerPercent = 72,
-            summary = SummaryKind.PLACE,
-            summaryPlaceName = "Maison",
         )
 
     private fun shown(
@@ -155,20 +149,66 @@ class TimeShareCardTest {
     // --- The nominal card ---------------------------------------------------------------------------------------------------------------------------------
 
     @Test
-    fun theNominalCard_hasTheTitle_theSubtitle_theSelector_theLegend_theSentence_andThePrivacyLine() {
+    fun theNominalCard_hasTheHeader_theLegend_theCentre_theBand_andThePrivacyLine() {
         show(shown())
-        node("Répartition de ton temps").assertIsDisplayed()
+        node("Répartition du temps").assertIsDisplayed()
         node("Sur les 7 derniers jours").assertIsDisplayed()
         node("7 jours").assertIsDisplayed()
         node("Maison").assertIsDisplayed()
         node("Sport").assertIsDisplayed()
         node("Zones de danger").assertIsDisplayed()
         node("Ailleurs").assertIsDisplayed()
-        node(pct(72)).assertIsDisplayed()
-        node("dans tes lieux de confiance").assertIsDisplayed()
-        node("Sur les 7 derniers jours, c'est à Maison que tu as passé le plus de temps.").assertIsDisplayed()
+        // The centre: the share in the trusted places, in big, and "en zone de confiance" under it (the same figure is in the band).
+        nodes(pct(72)).assertCountEquals(1)
+        node("en zone de confiance").assertIsDisplayed()
         node("Ces données restent sur ton téléphone. Personne d'autre ne peut les voir.").assertIsDisplayed()
         shoot("nominal")
+    }
+
+    @Test
+    fun theBand_saysTheShareInTheTrustedZones_withTheTick_andThePartyEmoji_andNeverTheDangerZone() {
+        show(shown())
+        val sentence = "Tu as passé ${pct(72)} de ton temps dans tes zones de confiance"
+        node(sentence).assertIsDisplayed()
+        node("🎉").assertExists()
+        assertFalse(sentence.contains("danger", ignoreCase = true))
+    }
+
+    @Test
+    fun theBand_isTheSame_whateverTheFigure() {
+        show(shown(TimeShareBody.Chart(mockup.items, 3)))
+        node("Tu as passé ${pct(3)} de ton temps dans tes zones de confiance").assertIsDisplayed()
+        node("🎉").assertExists()
+    }
+
+    @Test
+    fun theLegendHasTheFourBiggestShares_theRingKeepsAll_theDescriptionListsAll() {
+        val six =
+            TimeShareBody.Chart(
+                items =
+                    listOf(
+                        item(SliceKind.PLACE, "Maison", PlaceCategory.HOME, 30, rank = 0),
+                        item(SliceKind.PLACE, "Sport", PlaceCategory.SPORT, 20, rank = 1),
+                        item(SliceKind.PLACE, "Bureau", PlaceCategory.WORK, 18, rank = 2),
+                        item(SliceKind.PLACE, "Chez Léa", PlaceCategory.RELATIVE, 14, rank = 3),
+                        item(SliceKind.PLACE, "Club", PlaceCategory.LEISURE, 8, rank = 4),
+                        item(SliceKind.ELSEWHERE, null, null, 10),
+                    ),
+                centerPercent = 90,
+            )
+        show(shown(six))
+        listOf("Maison", "Sport", "Bureau", "Chez Léa").forEach { node(it).assertExists() }
+        // "Ailleurs" (10 %) and "Club" (8 %) are the smallest shares: not in the four lines, but in the full description for the screen reader.
+        nodes("Club").assertCountEquals(0)
+        nodes("Ailleurs").assertCountEquals(0)
+        val described =
+            composeRule
+                .onAllNodes(
+                    hasContentDescription("Club ${pct(8)}, Ailleurs ${pct(10)}", substring = true),
+                ).fetchSemanticsNodes()
+                .size
+        assertEquals(1, described)
+        shoot("six-parts")
     }
 
     @Test
@@ -181,58 +221,11 @@ class TimeShareCardTest {
                         item(SliceKind.PLACE, "Coin", null, 0, rank = 1, tiny = true),
                     ),
                 centerPercent = 100,
-                summary = SummaryKind.PLACE,
-                summaryPlaceName = "Maison",
             )
         show(shown(tiny))
-        // 100 % is in the centre and on the line of the place.
+        // 100 % is in the centre, on the line of the place and in the band.
         nodes(pct(100)).assertCountEquals(2)
         node(text(R.string.profile_timeshare_percent_tiny)).assertIsDisplayed()
-        assertTrue(text(R.string.profile_timeshare_percent_tiny).contains("<"))
-    }
-
-    @Test
-    fun theSentenceNamesNoDangerZone_andTheElsewhereAndGenericVariantsAreTheTextsOfTheTicket() {
-        show(shown(TimeShareBody.Chart(mockup.items, 72, SummaryKind.ELSEWHERE, null), days = 14))
-        node(
-            "Sur les 14 derniers jours, tu as surtout été ailleurs que dans tes lieux de confiance.",
-        ).assertIsDisplayed()
-    }
-
-    @Test
-    fun theGenericSentence_forThirtyDays() {
-        show(shown(TimeShareBody.Chart(mockup.items, 72, SummaryKind.GENERIC, null), days = 30))
-        node("Voici comment ton temps s'est réparti sur les 30 derniers jours.").assertIsDisplayed()
-        node("Sur les 30 derniers jours").assertIsDisplayed()
-        node("30 jours").assertIsDisplayed()
-    }
-
-    @Test
-    fun noCongratulationNoJudgement_inAnyTextOfTheCard() {
-        val all =
-            listOf(
-                R.string.profile_timeshare_title,
-                R.string.profile_timeshare_summary_place_7,
-                R.string.profile_timeshare_summary_elsewhere_7,
-                R.string.profile_timeshare_summary_generic_7,
-                R.string.profile_timeshare_not_enough,
-                R.string.profile_timeshare_paused,
-                R.string.profile_timeshare_travel,
-                R.string.profile_timeshare_sharing_stopped,
-                R.string.profile_timeshare_location_needed,
-                R.string.profile_timeshare_over_limit,
-                R.string.profile_timeshare_error,
-                R.string.profile_timeshare_privacy,
-            ).map { text(it) }
-        all.forEach { sentence ->
-            assertFalse("no exclamation mark: $sentence", sentence.contains("!"))
-            assertFalse(
-                "no congratulation or reproach: $sentence",
-                Regex(
-                    "(?i)bravo|félicit|tant mieux|dommage|attention|danger",
-                ).containsMatchIn(sentence.replace("zone de danger", "")),
-            )
-        }
     }
 
     // --- The selector -----------------------------------------------------------------------------------------------------------------------------------------
@@ -247,6 +240,13 @@ class TimeShareCardTest {
         node("30 jours").assertIsDisplayed()
         node("14 jours").performClick()
         assertEquals(14, chosen)
+    }
+
+    @Test
+    fun theSubtitleFollowsTheWindow() {
+        show(shown(days = 30))
+        node("Sur les 30 derniers jours").assertIsDisplayed()
+        node("30 jours").assertIsDisplayed()
     }
 
     // --- The danger zone ----------------------------------------------------------------------------------------------------------------------------------------
@@ -269,22 +269,13 @@ class TimeShareCardTest {
     fun aSingleDangerPlace_isTheSingularLabel() {
         val one =
             item(SliceKind.DANGER, null, null, 12, count = 1, details = listOf(DetailItem("Le parc", null, 12, false)))
-        show(shown(TimeShareBody.Chart(listOf(mockup.items[0], one, mockup.items[3]), 48, SummaryKind.GENERIC, null)))
+        show(shown(TimeShareBody.Chart(listOf(mockup.items[0], one, mockup.items[3]), 48)))
         node("Zone de danger").assertIsDisplayed()
     }
 
     @Test
     fun noDangerLine_whenThereIsNoTimeInADangerZone() {
-        show(
-            shown(
-                TimeShareBody.Chart(
-                    listOf(mockup.items[0], mockup.items[1], mockup.items[3]),
-                    72,
-                    SummaryKind.PLACE,
-                    "Maison",
-                ),
-            ),
-        )
+        show(shown(TimeShareBody.Chart(listOf(mockup.items[0], mockup.items[1], mockup.items[3]), 72)))
         nodes("Zones de danger").assertCountEquals(0)
         nodes("Zone de danger").assertCountEquals(0)
     }
@@ -294,30 +285,18 @@ class TimeShareCardTest {
     @Test
     fun theChartIsDescribedByOneSentence_theRingAndTheEmojiAreNotRead() {
         show(shown())
-        val expected = "Répartition de ton temps. Sur les 7 derniers jours : Maison ${pct(
+        val expected = "Répartition du temps. Sur les 7 derniers jours : Maison ${pct(
             48,
         )}, Sport ${pct(24)}, Zones de danger ${pct(12)}, Ailleurs ${pct(16)}."
-        val described = composeRule.onAllNodesWithContentDescriptionSafe(expected)
+        val described = composeRule.onAllNodes(hasContentDescription(expected)).fetchSemanticsNodes().size
         assertEquals("one description of the chart", 1, described)
-        // The emoji of the categories is never part of what is read.
-        listOf("🏠", "⚽").forEach { emoji ->
-            val read =
-                composeRule.onRoot(useUnmergedTree = false).fetchSemanticsNode().let { root ->
-                    collect(root).any { it.contains(emoji) }
-                }
-            assertFalse("the emoji $emoji must not be read", read)
+        val root = composeRule.onRoot(useUnmergedTree = false).fetchSemanticsNode()
+        listOf("🏠", "⚽", "🎉").forEach { emoji ->
+            assertFalse("the emoji $emoji must not be read", collect(root).any { it.contains(emoji) })
         }
     }
 
-    private fun androidx.compose.ui.test.junit4.ComposeContentTestRule.onAllNodesWithContentDescriptionSafe(
-        description: String,
-    ): Int =
-        onAllNodes(
-            androidx.compose.ui.test
-                .hasContentDescription(description),
-        ).fetchSemanticsNodes().size
-
-    private fun collect(node: androidx.compose.ui.semantics.SemanticsNode): List<String> {
+    private fun collect(node: SemanticsNode): List<String> {
         val own =
             listOfNotNull(
                 node.config.getOrNull(SemanticsProperties.ContentDescription)?.joinToString(" "),
@@ -326,30 +305,46 @@ class TimeShareCardTest {
         return own + node.children.flatMap { collect(it) }
     }
 
-    // --- The states -------------------------------------------------------------------------------------------------------------------------------------------
+    // --- The states: no chart, no selector ----------------------------------------------------------------------------------------------------------------
 
     @Test
-    fun notEnoughData_isTheWordingFixedByThePm_withTheEmptyRing_andTheConfidentialityLine() {
-        show(shown(TimeShareBody.NotEnough))
-        node("Ton graphique arrive dans quelques jours, nous analysons ta situation").assertIsDisplayed()
+    fun underSevenDays_noChartAndNoSelector_onlyTheWordingFixedByThePm_withTheDaysLeft() {
+        show(shown(TimeShareBody.NotEnough(daysLeft = 4)))
+        node("Répartition du temps").assertIsDisplayed()
+        node("Ton graphique arrive dans 4 jours, nous analysons tes habitudes").assertIsDisplayed()
         node("Ces données restent sur ton téléphone. Personne d'autre ne peut les voir.").assertIsDisplayed()
-        // No percentage, no legend.
+        // No selector, no subtitle, no legend, no band.
+        nodes("7 jours").assertCountEquals(0)
+        nodes("Sur les 7 derniers jours").assertCountEquals(0)
         nodes("Ailleurs").assertCountEquals(0)
+        nodes("en zone de confiance").assertCountEquals(0)
         shoot("pas-assez-de-donnees")
     }
 
     @Test
+    fun theWordingIsSingularForOneDay_andSevenWithNoJournalYet() {
+        show(shown(TimeShareBody.NotEnough(daysLeft = 1)))
+        node("Ton graphique arrive dans 1 jour, nous analysons tes habitudes").assertIsDisplayed()
+    }
+
+    @Test
+    fun theWordingSaysSevenDays_whenTheJournalIsEmpty() {
+        show(shown(TimeShareBody.NotEnough(daysLeft = 7)))
+        node("Ton graphique arrive dans 7 jours, nous analysons tes habitudes").assertIsDisplayed()
+    }
+
+    @Test
     fun aTripWithNoData_saysTheChartIsPaused_withoutAnyButton() {
-        show(shown(TimeShareBody.NotEnough, health = TrackingHealth.TRAVEL))
+        show(shown(TimeShareBody.NotEnough(4), health = TrackingHealth.TRAVEL))
         node("Tu es en mode voyage : ta répartition est en pause jusqu'à ton retour.").assertIsDisplayed()
-        nodes("Ton graphique arrive dans quelques jours, nous analysons ta situation").assertCountEquals(0)
+        nodes("Ton graphique arrive dans 4 jours, nous analysons tes habitudes").assertCountEquals(0)
     }
 
     @Test
     fun aSharingStoppedWithNoData_offersTheScreenOfTheMiff() {
         var opened: String? = null
         show(
-            shown(TimeShareBody.NotEnough, health = TrackingHealth.SHARING_STOPPED),
+            shown(TimeShareBody.NotEnough(4), health = TrackingHealth.SHARING_STOPPED),
             TimeShareActions(onOpenMiff = {
                 opened =
                     it
@@ -364,11 +359,15 @@ class TimeShareCardTest {
 
     @Test
     fun aLocationThatIsNotEnough_withNoData_saysWhatIsNeeded_andOffersTheExistingStep() {
-        show(shown(TimeShareBody.NotEnough, health = TrackingHealth.LOCATION_INSUFFICIENT))
+        show(shown(TimeShareBody.NotEnough(4), health = TrackingHealth.LOCATION_INSUFFICIENT))
         node(
             "Pour mesurer ton temps dans tes lieux, Miff a besoin de la localisation « Toujours » avec la position précise. Tu peux aussi continuer sans.",
         ).assertIsDisplayed()
-        node(text(R.string.permission_location_action)).assertIsDisplayed().assertHeightIsAtLeast(48.dp)
+        composeRule
+            .onNodeWithText(
+                text(R.string.permission_location_action),
+            ).assertIsDisplayed()
+            .assertHeightIsAtLeast(48.dp)
     }
 
     @Test
@@ -387,6 +386,18 @@ class TimeShareCardTest {
     }
 
     @Test
+    fun theTextsOfTheStates_haveNoExclamationMark() {
+        listOf(
+            R.string.profile_timeshare_paused,
+            R.string.profile_timeshare_travel,
+            R.string.profile_timeshare_sharing_stopped,
+            R.string.profile_timeshare_location_needed,
+            R.string.profile_timeshare_over_limit,
+            R.string.profile_timeshare_error,
+        ).forEach { assertFalse(text(it).contains("!")) }
+    }
+
+    @Test
     fun aFailedReading_isACalmSentence_andARetryThatWorks() {
         var retried = 0
         show(TimeShareUiState.Failed, TimeShareActions(onRetry = { retried++ }))
@@ -398,43 +409,35 @@ class TimeShareCardTest {
     @Test
     fun hiddenAndLoading_drawNothingAtFirst() {
         show(TimeShareUiState.Hidden)
-        nodes("Répartition de ton temps").assertCountEquals(0)
+        nodes("Répartition du temps").assertCountEquals(0)
     }
 
     @Test
-    fun loading_showsNothingBefore300ms_thenAQuietPlaceholder() {
+    fun loading_showsNothingBefore300ms_thenAQuietPlaceholderWithoutWords() {
         composeRule.mainClock.autoAdvance = false
         show(TimeShareUiState.Loading)
         composeRule.mainClock.advanceTimeBy(100)
-        nodes("Répartition de ton temps").assertCountEquals(0)
+        nodes("Répartition du temps").assertCountEquals(0)
         composeRule.mainClock.advanceTimeBy(400)
-        // Still no words: the placeholder has no text, only quiet shapes.
-        nodes("Répartition de ton temps").assertCountEquals(0)
+        nodes("Répartition du temps").assertCountEquals(0)
     }
 
     // --- The largest font -----------------------------------------------------------------------------------------------------------------------------------
 
     @Test
-    fun atTheLargestFont_theLegendGoesUnderTheRing_andEverythingStaysReadable() {
+    fun atTheLargestFont_theRingGoesAboveTheLegend_andEverythingStaysReadable() {
         show(shown(), fontScale = 2f)
-        // The card is taller than the screen at this size: the pictures below show it all; here every block must exist (the tab scrolls).
         node("Maison").assertExists()
         node(pct(72)).assertExists()
-        node("dans tes lieux de confiance").assertExists()
+        node("en zone de confiance").assertExists()
         node("Ces données restent sur ton téléphone. Personne d'autre ne peut les voir.").assertExists()
         shoot("police-200")
     }
 
     @Test
     fun atTheLargestFont_theStatesAreReadable_too() {
-        show(shown(TimeShareBody.NotEnough, health = TrackingHealth.SHARING_STOPPED), fontScale = 2f)
+        show(shown(TimeShareBody.NotEnough(4), health = TrackingHealth.SHARING_STOPPED), fontScale = 2f)
         node("Voir cette Miff").assertIsDisplayed()
         shoot("police-200-partage-arrete")
-    }
-
-    @Test
-    fun otherStatesForThePictures() {
-        show(shown(TimeShareBody.NotEnough))
-        shoot("etat-vide")
     }
 }

@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -53,6 +54,9 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -67,7 +71,6 @@ import com.tomessa.miff.domain.place.Place
 import com.tomessa.miff.domain.place.PlaceCategory
 import com.tomessa.miff.domain.timeshare.PresenceLog
 import com.tomessa.miff.domain.timeshare.SliceKind
-import com.tomessa.miff.domain.timeshare.SummaryKind
 import com.tomessa.miff.domain.timeshare.TimeShareRules
 import com.tomessa.miff.domain.timeshare.TimeShareTracking
 import com.tomessa.miff.domain.timeshare.TrackingHealth
@@ -89,9 +92,13 @@ import com.tomessa.miff.ui.theme.colorBgPlaceholder
 import com.tomessa.miff.ui.theme.colorBgSurface
 import com.tomessa.miff.ui.theme.colorBorderDefault
 import com.tomessa.miff.ui.theme.colorBorderStrong
+import com.tomessa.miff.ui.theme.colorChartBadge
+import com.tomessa.miff.ui.theme.colorChartBadgeIcon
 import com.tomessa.miff.ui.theme.colorChartDanger
 import com.tomessa.miff.ui.theme.colorChartElsewhere
 import com.tomessa.miff.ui.theme.colorChartOther
+import com.tomessa.miff.ui.theme.colorChartSummaryBg
+import com.tomessa.miff.ui.theme.colorChartSummaryTick
 import com.tomessa.miff.ui.theme.colorStatusDangerText
 import com.tomessa.miff.ui.theme.colorTextDescription
 import com.tomessa.miff.ui.theme.colorTextForm
@@ -103,12 +110,14 @@ import com.tomessa.miff.ui.theme.textBodyCaption
 import com.tomessa.miff.ui.theme.textBodyRegular
 import com.tomessa.miff.ui.theme.textBodyRegular14
 import com.tomessa.miff.ui.theme.textDisplayTitle
-import com.tomessa.miff.ui.theme.textTitleBold24
+import com.tomessa.miff.ui.theme.textTitleBold20
 import kotlinx.coroutines.delay
 import java.text.NumberFormat
 
 /*
- * "Répartition de ton temps", the card of the Profile (docs/tickets/profil-repartition-temps.md, TIME-2; mockup 19.webp of the PM, gaps listed in the PR).
+ * "Répartition du temps", the card of the Profile (docs/tickets/profil-repartition-temps.md, TIME-2; mockup 19.webp of the PM, gaps listed in the PR). Layout of the PM (2026-11-17):
+ * header (green badge, title, "Sur les N derniers jours", selector), the LEGEND on the left (the four biggest shares) and the small RING on the right, then the green band with the
+ * tick, the sentence and the party emoji. No chart before 7 days of history: the words only, without selector.
  * Everything is drawn by Compose itself (a ring on a Canvas): no chart library. No colour is written here, only tokens (ui/theme/ChartColor.kt). Nothing is logged.
  *
  * Accessibility (section 9.2): the ring is decorative (hidden), the legend carries the same words as the ring (emoji + name + percentage, in the order of the slices), ONE
@@ -241,10 +250,12 @@ private fun ShownCard(
     actions: TimeShareActions,
     modifier: Modifier,
 ) {
+    val chart = state.body as? TimeShareBody.Chart
     CardFrame(modifier) {
-        Header(state.windowDays, actions.onWindowChosen)
+        // The selector and the subtitle exist only with the chart (before 7 days of history there is nothing to choose a window for).
+        Header(windowDays = state.windowDays, withChart = chart != null, onWindowChosen = actions.onWindowChosen)
         when (val body = state.body) {
-            TimeShareBody.NotEnough -> NotEnough(state, actions)
+            is TimeShareBody.NotEnough -> NotEnough(state, body, actions)
             is TimeShareBody.Chart -> ChartBody(body, state)
         }
         PrivacyLine()
@@ -256,12 +267,15 @@ private fun ShownCard(
 @Composable
 private fun Header(
     windowDays: Int,
+    withChart: Boolean,
     onWindowChosen: (Int) -> Unit,
 ) {
     // A large font: the selector goes UNDER the title (a word is never cut in two to make room for it).
-    if (LocalDensity.current.fontScale >= LARGE_FONT_SCALE) {
+    if (!withChart) {
+        HeaderTitle(windowDays, withSubtitle = false, modifier = Modifier.fillMaxWidth())
+    } else if (LocalDensity.current.fontScale >= LARGE_FONT_SCALE) {
         Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            HeaderTitle(windowDays, Modifier.fillMaxWidth())
+            HeaderTitle(windowDays, withSubtitle = true, modifier = Modifier.fillMaxWidth())
             WindowSelector(windowDays, onWindowChosen)
         }
     } else {
@@ -270,15 +284,17 @@ private fun Header(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
-            HeaderTitle(windowDays, Modifier.weight(1f))
+            HeaderTitle(windowDays, withSubtitle = true, modifier = Modifier.weight(1f))
             WindowSelector(windowDays, onWindowChosen)
         }
     }
 }
 
+/** The badge (a green disc with the three bars, as on the mockup), the title and, with the chart, "Sur les N derniers jours". */
 @Composable
 private fun HeaderTitle(
     windowDays: Int,
+    withSubtitle: Boolean,
     modifier: Modifier,
 ) {
     Row(
@@ -288,13 +304,13 @@ private fun HeaderTitle(
     ) {
         // The badge is decorative: the title says it.
         Box(
-            modifier = Modifier.size(BADGE_SIZE).clip(CircleShape).background(colorActionPrimaryTint10),
+            modifier = Modifier.size(BADGE_SIZE).clip(CircleShape).background(colorChartBadge),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 painter = painterResource(R.drawable.ic_timeshare_chart),
                 contentDescription = null,
-                tint = colorActionPrimary,
+                tint = colorChartBadgeIcon,
                 modifier = Modifier.size(Spacing.l),
             )
         }
@@ -305,7 +321,7 @@ private fun HeaderTitle(
                 color = colorTextPrimary,
                 modifier = Modifier.semantics { heading() },
             )
-            Text(text = subtitle(windowDays), style = textBodyRegular14, color = colorTextDescription)
+            if (withSubtitle) Text(text = subtitle(windowDays), style = textBodyRegular14, color = colorTextDescription)
         }
     }
 }
@@ -350,7 +366,7 @@ private fun WindowSelector(
                     .semantics(mergeDescendants = true) { contentDescription = spoken },
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(text = label, style = textBodyBold14, color = colorTextForm)
+            Text(text = label, style = textBodyRegular, color = colorTextForm)
             Icon(
                 painter = painterResource(R.drawable.ic_arrow_drop_down),
                 contentDescription = null,
@@ -393,7 +409,7 @@ private fun ChartBody(
     var detailOpen by remember { mutableStateOf(false) }
     val danger = body.items.firstOrNull { it.kind == SliceKind.DANGER }
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        // A large font (or a narrow screen): the legend goes UNDER the ring and the caption leaves its centre, so that nothing is cut.
+        // A large font (or a narrow screen): the ring goes ABOVE the legend and the caption leaves its centre, so that nothing is cut.
         val stacked = LocalDensity.current.fontScale >= LARGE_FONT_SCALE || maxWidth < NARROW_WIDTH
         Column(
             modifier = Modifier.fillMaxWidth().semantics { contentDescription = description },
@@ -418,13 +434,14 @@ private fun ChartBody(
                 }
                 Legend(body, onOpenDanger = { detailOpen = true }, modifier = Modifier.fillMaxWidth())
             } else {
+                // As the mockup of the PM: the legend on the left, the (small) ring on the right.
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Spacing.m),
                 ) {
-                    Donut(body, RING_SIZE, centerCaption = true)
                     Legend(body, onOpenDanger = { detailOpen = true }, modifier = Modifier.weight(1f))
+                    Donut(body, RING_SIZE, centerCaption = true)
                 }
             }
         }
@@ -455,8 +472,14 @@ private fun ChartBody(
             color = colorTextDescription,
         )
     }
-    SummaryBand(body, state.windowDays)
+    SummaryBand(body)
     if (detailOpen && danger != null) DangerDetailSheet(danger, onDismiss = { detailOpen = false })
+}
+
+/** The four biggest shares only (the ring keeps every slice): the legend of the mockup has four lines. Kept in the order of the ring. */
+private fun legendItems(items: List<LegendItem>): List<LegendItem> {
+    val biggest = items.sortedByDescending { it.share }.take(LEGEND_LINES).toSet()
+    return items.filter { it in biggest }
 }
 
 @Composable
@@ -500,7 +523,7 @@ private fun Legend(
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Spacing.xs)) {
-        body.items.forEach { item ->
+        legendItems(body.items).forEach { item ->
             if (item.kind == SliceKind.DANGER) {
                 DangerRow(item, onOpenDanger)
             } else {
@@ -627,7 +650,7 @@ private fun Donut(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(horizontal = Spacing.s),
         ) {
-            Text(text = centerText, style = textTitleBold24, color = colorTextPrimary)
+            Text(text = centerText, style = textTitleBold20, color = colorTextPrimary)
             if (centerCaption) {
                 Text(
                     text = stringResource(R.string.profile_timeshare_center_caption),
@@ -685,71 +708,46 @@ private fun DrawScope.drawHatch(
 
 // --- Sentence, privacy, states -----------------------------------------------------------------------------------------------------------------------
 
+/**
+ * The band under the chart, as the mockup of the PM: a very light green, a tick on the left, "Tu as passé 72 % de ton temps dans tes zones de confiance" (the figure in bold) and
+ * the party emoji on the right. Shown whenever the chart is. It never names the danger zone.
+ */
 @Composable
-private fun SummaryBand(
-    body: TimeShareBody.Chart,
-    windowDays: Int,
-) {
+private fun SummaryBand(body: TimeShareBody.Chart) {
+    val figure = percentText(body.centerPercent, tiny = false)
+    val sentence = stringResource(R.string.profile_timeshare_summary, figure)
     val text =
-        when (body.summary) {
-            SummaryKind.PLACE -> {
-                val name = body.summaryPlaceName
-                if (name != null) {
-                    stringResource(summaryPlaceRes(windowDays), name)
-                } else {
-                    stringResource(summaryGenericRes(windowDays))
-                }
-            }
-
-            SummaryKind.ELSEWHERE -> {
-                stringResource(summaryElsewhereRes(windowDays))
-            }
-
-            SummaryKind.GENERIC -> {
-                stringResource(summaryGenericRes(windowDays))
+        remember(sentence, figure) {
+            buildAnnotatedString {
+                append(sentence)
+                val start = sentence.indexOf(figure)
+                if (start >= 0) addStyle(SpanStyle(fontWeight = FontWeight.Bold), start, start + figure.length)
             }
         }
     Row(
         modifier =
             Modifier
                 .fillMaxWidth()
-                .clip(ShapeMd)
-                .background(colorActionPrimaryTint10)
-                .padding(Spacing.m)
+                .clip(BandShape)
+                .background(colorChartSummaryBg)
+                .padding(horizontal = Spacing.m, vertical = Spacing.s + Spacing.xs)
                 .semantics(mergeDescendants = true) {},
         horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
-            painter = painterResource(R.drawable.ic_loc_info),
+            painter = painterResource(R.drawable.ic_check_circle),
             contentDescription = null,
-            tint = colorActionPrimary,
-            modifier = Modifier.size(Spacing.l),
+            tint = colorChartSummaryTick,
+            modifier = Modifier.size(Spacing.xl - Spacing.xs),
         )
         Text(text = text, style = textBodyRegular14, color = colorTextForm, modifier = Modifier.weight(1f))
+        // Decorative: the sentence says everything.
+        Box(modifier = Modifier.clearAndSetSemantics {}) {
+            Text(text = PARTY_EMOJI, fontSize = with(LocalDensity.current) { PARTY_SIZE.toSp() })
+        }
     }
 }
-
-private fun summaryPlaceRes(days: Int): Int =
-    when (days) {
-        14 -> R.string.profile_timeshare_summary_place_14
-        30 -> R.string.profile_timeshare_summary_place_30
-        else -> R.string.profile_timeshare_summary_place_7
-    }
-
-private fun summaryElsewhereRes(days: Int): Int =
-    when (days) {
-        14 -> R.string.profile_timeshare_summary_elsewhere_14
-        30 -> R.string.profile_timeshare_summary_elsewhere_30
-        else -> R.string.profile_timeshare_summary_elsewhere_7
-    }
-
-private fun summaryGenericRes(days: Int): Int =
-    when (days) {
-        14 -> R.string.profile_timeshare_summary_generic_14
-        30 -> R.string.profile_timeshare_summary_generic_30
-        else -> R.string.profile_timeshare_summary_generic_7
-    }
 
 @Composable
 private fun PrivacyLine() {
@@ -772,57 +770,40 @@ private fun PrivacyLine() {
     }
 }
 
-/** Less than 24 h measured, or a tracking that is not running: a neutral empty ring and the words that are TRUE for the situation (never the colour of an alert). */
+/** Under 7 days of history, or a tracking that is not running: no chart at all, only the words that are TRUE for the situation (never the colour of an alert). */
 @Composable
 private fun NotEnough(
     state: TimeShareUiState.Shown,
+    body: TimeShareBody.NotEnough,
     actions: TimeShareActions,
 ) {
     val kind = notEnoughKind(state.tracking.health)
     val text =
-        stringResource(
-            when (kind) {
-                NotEnoughKind.COMING_SOON -> R.string.profile_timeshare_not_enough
-                NotEnoughKind.TRAVEL -> R.string.profile_timeshare_travel
-                NotEnoughKind.SHARING_STOPPED -> R.string.profile_timeshare_sharing_stopped
-                NotEnoughKind.LOCATION_NEEDED -> R.string.profile_timeshare_location_needed
-            },
-        )
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-        val stacked = LocalDensity.current.fontScale >= LARGE_FONT_SCALE || maxWidth < NARROW_WIDTH
-        val ring: @Composable () -> Unit = {
-            Canvas(
-                modifier = Modifier.size(if (stacked) RING_SIZE_EMPTY_STACKED else RING_SIZE).clearAndSetSemantics {},
-            ) {
-                val stroke = this.size.minDimension * RING_RATIO
-                drawSlice(colorBgPlaceholder.copy(alpha = 0.5f), START_ANGLE, 360f, stroke)
+        when (kind) {
+            // "Ton graphique arrive dans X jours, nous analysons tes habitudes": the wording fixed by the PM, with its plural (1 jour / X jours).
+            NotEnoughKind.COMING_SOON -> {
+                pluralStringResource(
+                    R.plurals.profile_timeshare_not_enough,
+                    body.daysLeft,
+                    body.daysLeft,
+                )
+            }
+
+            NotEnoughKind.TRAVEL -> {
+                stringResource(R.string.profile_timeshare_travel)
+            }
+
+            NotEnoughKind.SHARING_STOPPED -> {
+                stringResource(R.string.profile_timeshare_sharing_stopped)
+            }
+
+            NotEnoughKind.LOCATION_NEEDED -> {
+                stringResource(R.string.profile_timeshare_location_needed)
             }
         }
-        val words: @Composable (Modifier) -> Unit = { modifier ->
-            Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-                Text(text = text, style = textBodyRegular, color = colorTextForm)
-                NotEnoughAction(kind, state, actions)
-            }
-        }
-        if (stacked) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(Spacing.m),
-            ) {
-                ring()
-                words(Modifier.fillMaxWidth())
-            }
-        } else {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Spacing.m),
-            ) {
-                ring()
-                words(Modifier.weight(1f))
-            }
-        }
+    Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+        Text(text = text, style = textBodyRegular, color = colorTextForm)
+        NotEnoughAction(kind, state, actions)
     }
 }
 
@@ -948,19 +929,22 @@ private fun DangerDetailSheet(
     }
 }
 
-private val CardShape = ShapeMd
+private val CardShape = RoundedCornerShape(20.dp)
 private val BADGE_SIZE = 40.dp
-private val RING_SIZE = 136.dp
+private const val LEGEND_LINES = 4
+private val RING_SIZE = 120.dp
 private val EMOJI_SIZE = 18.dp
+private val PARTY_SIZE = 24.dp
+private val BandShape = RoundedCornerShape(16.dp)
+private const val PARTY_EMOJI = "\uD83C\uDF89"
 private val RING_SIZE_LARGE = 200.dp
-private val RING_SIZE_EMPTY_STACKED = 160.dp
 private val DOT_SIZE = 10.dp
 private val ROW_HEIGHT = 32.dp
 private val HATCH_STEP = 5.dp
 private val HATCH_WIDTH = 1.5.dp
-private val NARROW_WIDTH = 300.dp
+private val NARROW_WIDTH = 270.dp
 private const val LARGE_FONT_SCALE = 1.3f
-private const val RING_RATIO = 0.16f
+private const val RING_RATIO = 0.2f
 private const val START_ANGLE = -90f
 private const val GAP_DEGREES = 3f
 private const val MIN_SWEEP_DEGREES = 1f

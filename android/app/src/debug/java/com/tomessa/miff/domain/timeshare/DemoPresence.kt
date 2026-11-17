@@ -16,8 +16,14 @@ object DemoPresence {
     /** Looked for in the release bundle by the CI: it must never be there. */
     const val MARKER = "TIMESHAREDEMO"
 
-    /** The days of test data (the longest window of the card is 30; a few weeks are enough to see the three windows differ). */
+    /** The days of test data that show the CHART (the journal goes back more than 7 days; the longest window is 30, three weeks are enough to see the windows differ). */
     const val DAYS = 21
+
+    /** Test data that does NOT show the chart yet (under 7 days of history): the card says "Ton graphique arrive dans 5 jours" (2 days of data)... */
+    const val TWO_DAYS = 2
+
+    /** ... or "dans 1 jour" (6 days of data: the last day before the chart). */
+    const val SIX_DAYS = 6
 
     /**
      * A believable routine over the last [DAYS] days, in the time zone [zone], for the places given as (identifier, type): nights at the first trusted place, the working days at the
@@ -28,6 +34,7 @@ object DemoPresence {
         places: List<Pair<String, PlaceType>>,
         now: Long,
         zone: ZoneId = ZoneId.systemDefault(),
+        days: Int = DAYS,
     ): List<LoggedPresence> {
         val trusted = places.filter { it.second == PlaceType.TRUSTED }.map { it.first }
         if (trusted.isEmpty()) return emptyList()
@@ -55,7 +62,7 @@ object DemoPresence {
             if (millis < now) out += LoggedPresence(millis, presence, place)
         }
         val today = Instant.ofEpochMilli(now).atZone(zone).toLocalDate()
-        for (offset in DAYS downTo 0) {
+        for (offset in days downTo 0) {
             val day = today.minusDays(offset.toLong())
             val weekday = day.dayOfWeek.value in 1..5
             add(at(day, LocalTime.of(0, 0)), PresenceValue.IN_TRUSTED, home)
@@ -94,8 +101,9 @@ object DemoPresence {
         miffId: String,
         places: List<Pair<String, PlaceType>>,
         now: Long = System.currentTimeMillis(),
+        days: Int = DAYS,
     ) {
         log.forgetMiff(miffId)
-        facts(places, now).forEach { log.record(miffId, it.presence, it.placeId, it.atMillis) }
+        facts(places, now, days = days).forEach { log.record(miffId, it.presence, it.placeId, it.atMillis) }
     }
 }

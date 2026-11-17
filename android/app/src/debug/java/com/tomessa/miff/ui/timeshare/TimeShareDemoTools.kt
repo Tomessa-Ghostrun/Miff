@@ -67,6 +67,22 @@ object TimeShareDemoTools {
                 color = colorTextDescription,
             )
             MiffSecondaryButton(
+                text = stringResource(R.string.android_timeshare_demo_fill_two),
+                onClick = {
+                    DemoPresence.fill(log, miffId, places.map { it.id to it.type }, days = DemoPresence.TWO_DAYS)
+                    filled = true
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            MiffSecondaryButton(
+                text = stringResource(R.string.android_timeshare_demo_fill_six),
+                onClick = {
+                    DemoPresence.fill(log, miffId, places.map { it.id to it.type }, days = DemoPresence.SIX_DAYS)
+                    filled = true
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            MiffSecondaryButton(
                 text = stringResource(R.string.android_timeshare_demo_fill),
                 onClick = {
                     DemoPresence.fill(log, miffId, places.map { it.id to it.type })

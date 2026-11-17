@@ -12398,13 +12398,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "How your time is spread. %1$@: %2$@."
+            "value": "Time breakdown. %1$@: %2$@."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Répartition de ton temps. %1$@ : %2$@."
+            "value": "Répartition du temps. %1$@ : %2$@."
           }
         }
       }
@@ -12449,13 +12449,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "in your trusted places"
+            "value": "in trusted places"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "dans tes lieux de confiance"
+            "value": "en zone de confiance"
           }
         }
       }
@@ -12566,15 +12566,45 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Your chart will be ready in a few days, we are looking into your situation"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Your chart arrives in %1$lld day, we're analysing your habits"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Your chart arrives in %1$lld days, we're analysing your habits"
+                }
+              }
+            }
           }
         },
         "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ton graphique arrive dans quelques jours, nous analysons ta situation"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Ton graphique arrive dans %1$lld jour, nous analysons tes habitudes"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Ton graphique arrive dans %1$lld jours, nous analysons tes habitudes"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Ton graphique arrive dans %1$lld jours, nous analysons tes habitudes"
+                }
+              }
+            }
           }
         }
       }
@@ -12673,6 +12703,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "< 1 %"
+          }
+        }
+      }
+    },
+    "profile_timeshare_summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You spent %1$@ of your time in your trusted places"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu as passé %1$@ de ton temps dans tes zones de confiance"
           }
         }
       }
@@ -12779,172 +12826,19 @@
         }
       }
     },
-    "profile_timeshare_summary_elsewhere_14": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Over the last 14 days, you were mostly somewhere other than your trusted places."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sur les 14 derniers jours, tu as surtout été ailleurs que dans tes lieux de confiance."
-          }
-        }
-      }
-    },
-    "profile_timeshare_summary_elsewhere_30": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Over the last 30 days, you were mostly somewhere other than your trusted places."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sur les 30 derniers jours, tu as surtout été ailleurs que dans tes lieux de confiance."
-          }
-        }
-      }
-    },
-    "profile_timeshare_summary_elsewhere_7": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Over the last 7 days, you were mostly somewhere other than your trusted places."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sur les 7 derniers jours, tu as surtout été ailleurs que dans tes lieux de confiance."
-          }
-        }
-      }
-    },
-    "profile_timeshare_summary_generic_14": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Here is how your time was spread over the last 14 days."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Voici comment ton temps s\\'est réparti sur les 14 derniers jours."
-          }
-        }
-      }
-    },
-    "profile_timeshare_summary_generic_30": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Here is how your time was spread over the last 30 days."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Voici comment ton temps s\\'est réparti sur les 30 derniers jours."
-          }
-        }
-      }
-    },
-    "profile_timeshare_summary_generic_7": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Here is how your time was spread over the last 7 days."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Voici comment ton temps s\\'est réparti sur les 7 derniers jours."
-          }
-        }
-      }
-    },
-    "profile_timeshare_summary_place_14": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Over the last 14 days, you spent the most time at %1$@."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sur les 14 derniers jours, c\\'est à %1$@ que tu as passé le plus de temps."
-          }
-        }
-      }
-    },
-    "profile_timeshare_summary_place_30": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Over the last 30 days, you spent the most time at %1$@."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sur les 30 derniers jours, c\\'est à %1$@ que tu as passé le plus de temps."
-          }
-        }
-      }
-    },
-    "profile_timeshare_summary_place_7": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Over the last 7 days, you spent the most time at %1$@."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sur les 7 derniers jours, c\\'est à %1$@ que tu as passé le plus de temps."
-          }
-        }
-      }
-    },
     "profile_timeshare_title": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "How your time is spread"
+            "value": "Time breakdown"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Répartition de ton temps"
+            "value": "Répartition du temps"
           }
         }
       }
