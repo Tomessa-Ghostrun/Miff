@@ -434,6 +434,9 @@
     <string name="feed_refresh_a11y">Refresh</string>
     <string name="feed_refresh_started_a11y">Refreshing</string>
     <string name="feed_refresh_done_a11y">Up to date</string>
+    <!-- FEED-ORDRE: polite screen-reader announcement when the order of the cards changes. %1$s = the first name of the member. Keys shared with iOS. -->
+    <string name="feed_order_updated_one_a11y">%1$s shared an update</string>
+    <string name="feed_order_updated_many_a11y">The Feed was updated</string>
     <string name="feed_loading_a11y">Loading your feed</string>
     <string name="feed_card_you_sees">What your loved ones see of you</string>
     <string name="feed_card_message_a11y">Message %1$s</string>
