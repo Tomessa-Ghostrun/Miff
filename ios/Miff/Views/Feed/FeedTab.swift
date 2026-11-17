@@ -87,6 +87,9 @@ struct FeedTab: View {
         dependencies.onMembers = { miffId, members in memberPreviews.record(miffId: miffId, members: members) }
         // Les lieux que le Feed a lus servent aussi à la liste des lieux du Profil : aucune lecture de plus.
         dependencies.onPlaces = { miffId, places in profilePlaces.seedFromFeed(miffId: miffId, places: places) }
+        // « Tirer pour actualiser » revérifie aussi MA présence : le suivi des lieux s'en charge (une fois par 30 s au plus, rien sans accord).
+        let tracking = environment.tracking
+        dependencies.onPullOwnPresence = { tracking.feedPulled() }
         _model = StateObject(wrappedValue: FeedViewModel(dependencies: dependencies))
         _photos = StateObject(wrappedValue: environment.makeFeedPhotos())
         _awaiting = ObservedObject(wrappedValue: awaitingAgreement)

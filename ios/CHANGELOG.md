@@ -2,6 +2,24 @@
 
 ## Non publié
 
+### « Tirer pour actualiser » revérifie aussi MA présence (REFRESH-POS-I, demande du PM du 2026-11-17, miroir d'Android)
+
+Branche `ios/feed-refresh-position`, PR brouillon. Ticket `docs/tickets/feed-refresh-position.md`, recette `docs/qa/checklists/feed-refresh-position-ios-recette-pm.md`, détail : `ios/README.md`. **Rien n'est compilé en local** (la CI fait foi). Aucune dépendance, aucune permission, aucun service payant, aucun texte nouveau.
+
+Constat : le geste ne relisait **que les proches** ; il ne revérifiait pas ma présence et ne mesurait aucune position.
+
+Ajouté :
+- Au geste, le Feed **demande** au suivi de revérifier MA présence, **sans l'attendre** (l'indicateur ne dépend pas de la position). Le moteur fait le reste avec sa machinerie habituelle (nouvelle raison de passage `pulled`, sans batterie) : **une mesure de position ponctuelle et fraîche** (jamais la position réutilisée), recalcul de la présence par rapport aux lieux de mes Miffs, **un statut écrit seulement si la présence change**, la dernière position republiée seulement si le garde-fou habituel (15 min, 250 m, 2 min) le permet, journalisation par le journal local du graphique de temps comme toute présence (rien de dupliqué).
+- **Limite de fréquence : une revérification par 30 s au plus, ouverture de l'app comprise** (`TrackingLimits.pullMinIntervalMillis`, `TrackingRuntime.feedPulled`). Hors connexion, le geste se termine tout de suite comme avant et ne demande rien.
+- **Sans « Toujours » + position exacte, ou sans partage** : rien n'est mesuré ni envoyé ; aucun message ajouté (l'écran de la localisation prend déjà la place du Feed quand l'autorisation manque). **En mode voyage** : aucun statut de présence, la position reste rafraîchie comme à l'ouverture de l'app (décision du PM du 2026-11-10).
+- **Instant du statut** : celui où le système répond « dedans / dehors » (heure de détection), jamais une heure inventée ; comme pour une ouverture de l'app.
+- Journal local des builds de test : ligne `wakePull`. Aucune coordonnée, aucun événement Analytics, aucune donnée stockée en plus. Annonce VoiceOver inchangée.
+- Tests : `PullRefreshEngineTests`, `PullRefreshRuntimeTests`, `FeedPullOwnPresenceTests`, `PullRefreshSourcesTests` (déclenchement, limite de 30 s, autorisation absente, hors connexion, délai, aucune écriture si inchangé, mode voyage, sources).
+
+Choix économiques : 0 lecture de plus tant que la copie locale a moins d'une heure, 0 écriture si rien ne change, au plus une mesure `requestLocation` (100 m) par 30 s ; 0 €. **Signal de bascule** : une batterie qui chute avec l'usage du geste, ou beaucoup de lignes `wakePull` dans le journal d'un build Internal : monter la limite de 30 s.
+
+À décider par le PM (ticket §3) : message quand l'autorisation manque, geste en mode voyage, heure de la dernière position rafraîchie à chaque geste. **Politique de confidentialité** : préciser « ou quand tu actualises le Feed » (rien modifié ici).
+
 ### Intégration du build TestFlight 36 : retouches de fusion (client push, couleurs, fenêtre d'avis)
 
 Modifié :

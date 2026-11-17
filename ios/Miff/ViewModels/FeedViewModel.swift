@@ -6,7 +6,8 @@ import Foundation
 //   « Localiser » est vidée dès que le Feed quitte l'écran), jamais dans un journal, un événement Analytics (le Feed n'en envoie
 //   aucun) ni un rapport de plantage ; chaque type qui en porte un cache son contenu dans `description` ;
 // - le Feed n'écrit JAMAIS (0 écriture, 0 suppression) : il écoute la Miff (membres, lieux, comme l'écran de la Miff) et ses statuts,
-//   et lit UNE position par toucher sur « Localiser » ;
+//   et lit UNE position par toucher sur « Localiser ». Au geste « tirer pour actualiser » il DEMANDE au suivi des lieux de revérifier MA
+//   présence (`onPullOwnPresence`), sans mesurer, écrire ni recevoir de position : c'est le moteur du suivi qui le fait, avec ses gardes ;
 // - les écoutes n'existent QUE pendant que le Feed est à l'écran : l'écran appelle `observe(miffId:)` dans une tâche qui s'arrête
 //   quand l'app passe en arrière-plan ou que l'onglet change ; rien n'écoute une Miff que personne ne regarde, et une seule Miff (la
 //   Miff active) est écoutée ;
@@ -106,6 +107,10 @@ struct FeedDependencies {
     /// Les lieux de la Miff affichée, DÉJÀ lus par l'écoute : la liste des lieux du Profil les réutilise (zéro lecture de plus). Seulement
     /// quand le serveur les a confirmés : une copie du téléphone encore vide n'est jamais donnée (le Profil lit alors la Miff une fois).
     var onPlaces: (String, [Place]) -> Void = { _, _ in }
+    /// « Tirer pour actualiser » : demande au suivi des lieux de revérifier MA présence (`TrackingRuntime.feedPulled`). Rend la main tout de
+    /// suite, ne donne ni ne reçoit aucune position, et ne bloque jamais l'actualisation. La limite de fréquence (30 s) et toutes les gardes
+    /// (autorisation « Toujours » + position exacte, partage, mode voyage) sont celles du suivi.
+    var onPullOwnPresence: @MainActor () -> Void = {}
 }
 
 @MainActor

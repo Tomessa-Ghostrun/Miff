@@ -133,7 +133,10 @@ extension TrackingEngine {
         if !resumed.isEmpty {
             state = presenceAfterResume(state, miffIds: resumed, fix: fix, now: now)
         }
-        if reason == .opened {
+        // À l'ouverture et quand la personne tire le Feed : le système redit « dedans / dehors » pour ce que la position contredit.
+        // C'est ainsi que MA présence est recalculée par le moteur habituel (`onZoneState`), l'heure écrite étant celle où le système
+        // répond (règle des événements de zone, jamais une heure inventée), et rien n'est écrit si rien ne change.
+        if reason == .opened || reason == .pulled {
             await recheckStates(state, fix: fix)
         }
         // Au-delà de 20 zones, le choix est refait avec la position fraîche.
@@ -182,13 +185,14 @@ extension TrackingEngine {
     }
 
     /// BATT-3 : seules l'ouverture de l'app et sa sortie peuvent réutiliser la dernière position du système (moins de deux minutes).
-    /// JAMAIS l'entrée dans une zone ni le réarmement, le déplacement, le retour du réseau, un changement de partage ou d'accès : la
-    /// personne vient de bouger, ou c'est le moment de vérifier, et une position de deux minutes serait fausse.
+    /// JAMAIS l'entrée dans une zone ni le réarmement, le déplacement, le retour du réseau, un changement de partage ou d'accès, ni le
+    /// geste « tirer pour actualiser » : la personne vient de bouger, ou c'est le moment de vérifier, et une position de deux minutes
+    /// serait fausse.
     static func mayReuseSystemFix(for reason: Reason) -> Bool {
         switch reason {
         case .opened, .backgrounded:
             return true
-        case .moved, .zoneEntered, .rearm, .sharingChanged, .networkBack, .accessChanged:
+        case .moved, .zoneEntered, .rearm, .sharingChanged, .networkBack, .accessChanged, .pulled:
             return false
         }
     }
@@ -229,7 +233,7 @@ extension TrackingEngine {
         switch reason {
         case .sharingChanged, .rearm, .networkBack, .accessChanged:
             return true
-        case .opened, .backgrounded, .moved, .zoneEntered:
+        case .opened, .backgrounded, .moved, .zoneEntered, .pulled:
             break
         }
         if state.checkedAtMillis == 0 || now - state.checkedAtMillis > TrackingLimits.placesRereadMillis {

@@ -291,7 +291,7 @@ extension TrackingEngine {
             return true
         case .opened:
             return state.checkedAtMillis == 0 || pass.now - state.checkedAtMillis > TrackingLimits.placesRereadMillis
-        case .backgrounded, .moved, .zoneEntered, .accessChanged:
+        case .backgrounded, .moved, .zoneEntered, .accessChanged, .pulled:
             return false
         }
     }
