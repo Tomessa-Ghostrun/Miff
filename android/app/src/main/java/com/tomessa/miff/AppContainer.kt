@@ -66,8 +66,10 @@ import com.tomessa.miff.data.notification.AndroidNotificationPresenter
 import com.tomessa.miff.data.notification.AndroidNotificationTray
 import com.tomessa.miff.data.notification.AppVisibility
 import com.tomessa.miff.data.notification.FeedNotificationLink
+import com.tomessa.miff.data.notification.FeedVisitLink
 import com.tomessa.miff.data.notification.KnownMiffs
 import com.tomessa.miff.data.notification.KnownMiffsKeeper
+import com.tomessa.miff.data.notification.LastVisitTracker
 import com.tomessa.miff.data.notification.NotificationAuthorization
 import com.tomessa.miff.data.notification.NotificationCenter
 import com.tomessa.miff.data.notification.NotificationChannels
@@ -76,6 +78,7 @@ import com.tomessa.miff.data.notification.NotificationSettings
 import com.tomessa.miff.data.notification.NotificationTeardownSteps
 import com.tomessa.miff.data.notification.NotificationTray
 import com.tomessa.miff.data.notification.SharedPreferencesKnownMiffs
+import com.tomessa.miff.data.notification.SharedPreferencesLastVisitStore
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationCenterStore
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationLedger
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationPreferencesStore
@@ -168,6 +171,7 @@ import com.tomessa.miff.domain.auth.SignInProvider
 import com.tomessa.miff.domain.miff.JoinAttemptLimiter
 import com.tomessa.miff.domain.notification.CircleNewsKeys
 import com.tomessa.miff.domain.notification.SnapshotMember
+import com.tomessa.miff.domain.notification.VisitState
 import com.tomessa.miff.domain.paywall.MonotonicClock
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.profile.GooglePhotoPrefill
@@ -490,6 +494,41 @@ class AppContainer(
     }
 
     /**
+     * NOTIF-P1A, "Depuis ta dernière visite": compares the picture of the Miff the Feed shows with the one of the last visit when the app was just opened, and keeps the picture
+     * the Feed last showed. Local: no read or write of Firestore, no event, no log, no notification of the system.
+     */
+    val lastVisitTracker: LastVisitTracker by lazy {
+        LastVisitTracker(
+            store = SharedPreferencesLastVisitStore(context),
+            center = notificationCenter,
+            sessionValid = ::notificationSessionValid,
+        )
+    }
+
+    /** What the Feed tells "Depuis ta dernière visite": the first names go to memory (the centre stores none), the comparison runs on the worker of the notifications. */
+    val feedVisitLink: FeedVisitLink by lazy {
+        object : FeedVisitLink {
+            override fun onFreshPicture(
+                myUid: String,
+                state: VisitState,
+                firstNames: Map<String, String>,
+            ) {
+                firstNames.forEach { (uid, name) -> requesterDirectory.put(state.miffId, uid, name) }
+                notificationScope.launch { lastVisitTracker.onFreshPicture(myUid, state) }
+            }
+        }
+    }
+
+    /** The app came to the front: after 30 minutes or more away (or a cold start) the next fresh picture of the Feed is compared. In order with [lastVisitBackground]. */
+    fun lastVisitForeground() {
+        notificationScope.launch { lastVisitTracker.onForeground() }
+    }
+
+    fun lastVisitBackground() {
+        notificationScope.launch { lastVisitTracker.onBackground() }
+    }
+
+    /**
      * Is somebody signed in on this phone with the session of [uid]? Answered on the PHONE (no read of the server, no wait): the account, the identifier of the session
      * and the three markers (replaced by another phone, deletion under way, sign-out under way). A reminder never leaves for an account that is not the one in use.
      */
@@ -529,6 +568,8 @@ class AppContainer(
                             notificationScheduler.onMiffsKnown(
                                 state.miffs.map { it.id }.toSet(),
                             )
+                            // The picture and the lines of a Miff that is gone (left, deleted, access lost) go too; a list that only the cache vouches for decides nothing.
+                            if (!state.fromCache) lastVisitTracker.onMiffsKnown(state.miffs.map { it.id }.toSet())
                         }
                     }
                 }
@@ -549,6 +590,7 @@ class AppContainer(
                     knownMiffsKeeper::onSessionEnded,
                     notificationScheduler::clearAll,
                     notificationCenter::purge,
+                    lastVisitTracker::purge,
                     notificationSettings::reset,
                     notificationTray::cancelAll,
                     tabRequests::clear,
@@ -803,6 +845,7 @@ class AppContainer(
         miffDirectory.expectDeparture(miffId)
         knownMiffsKeeper.onLeft(miffId)
         notificationScope.launch { notificationScheduler.onMiffGone(miffId) }
+        notificationScope.launch { lastVisitTracker.onMiffGone(miffId) }
         cachePurger.markPurgePending()
         cachePurger.purge()
         miffDirectory.refresh()

@@ -12,6 +12,7 @@ import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.data.miff.MiffDirectory
 import com.tomessa.miff.data.miff.MiffRepository
 import com.tomessa.miff.data.notification.FeedNotificationLink
+import com.tomessa.miff.data.notification.FeedVisitLink
 import com.tomessa.miff.domain.feed.FeedBuilder
 import com.tomessa.miff.domain.feed.FeedContent
 import com.tomessa.miff.domain.feed.FeedInput
@@ -22,6 +23,7 @@ import com.tomessa.miff.domain.feed.PositionLookup
 import com.tomessa.miff.domain.feed.StatusesView
 import com.tomessa.miff.domain.miff.MiffObservation
 import com.tomessa.miff.domain.miff.MiffSnapshot
+import com.tomessa.miff.domain.notification.LastVisit
 import com.tomessa.miff.domain.notification.SnapshotMember
 import com.tomessa.miff.domain.place.ReadPlaces
 import com.tomessa.miff.domain.profile.ReadMembers
@@ -158,6 +160,8 @@ class FeedViewModel(
     private val connectionGate: ConnectionGate = ConnectionGate(network),
     /** NOTIF-4A: told what the Feed read (the snapshot the reminders are planned from) and the choice of another Miff. Local; nothing is read or written because of it. */
     private val notifications: FeedNotificationLink = FeedNotificationLink.None,
+    /** NOTIF-P1A, "Depuis ta dernière visite": told the picture of the Miff shown, ONLY when it is fresh (confirmed by the server). Local; nothing is read or written because of it. */
+    private val visits: FeedVisitLink = FeedVisitLink.None,
 ) : ViewModel() {
     val directoryState: StateFlow<DirectoryState> = directory.state
 
@@ -189,6 +193,12 @@ class FeedViewModel(
                     ReadPlaces(data.miffId, data.snapshot.places)
                 }
             }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    /**
+     * NOTIF-P1A: the server has spoken since the Feed came to the screen (or since the Miff changed): what [statusView] holds is the present. Without it, the statuses kept in
+     * memory from before an absence would be taken for fresh ones.
+     */
+    private val serverConfirmed = MutableStateFlow(false)
 
     /** The wait for the server's confirmation of a cached answer is over (see [cacheGraceMillis]). */
     private val cacheGraceOver = MutableStateFlow(false)
@@ -320,6 +330,38 @@ class FeedViewModel(
         }
     }
 
+    /**
+     * NOTIF-P1A: the picture of the Miff shown, as facts, when it is FRESH: the server confirmed the statuses, the phone is online, my sharing is on ([LastVisit.sample] says
+     * null otherwise). Nothing is read; a failure there never reaches the Feed.
+     */
+    private fun tellVisit() {
+        if (!serverConfirmed.value) return
+        val ready = uiState.value as? FeedUiState.Ready ?: return
+        val data = piece.value as? MiffPiece.Data ?: return
+        if (data.miffId != ready.content.miffId) return
+        val me = currentUid() ?: return
+        val state =
+            LastVisit.sample(
+                miffId = data.miffId,
+                members = data.snapshot.members,
+                places = data.snapshot.places,
+                myUid = me,
+                statuses = statusView.value,
+                waitingAgreement = data.miffId in waitingAgreement.value,
+                offline = offline.value || staleAfterRefresh.value,
+                nowMillis = nowMillis(),
+            ) ?: return
+        val names =
+            data.snapshot.members
+                .filter { it.uid != me }
+                .associate { it.uid to it.callName }
+        try {
+            visits.onFreshPicture(me, state, names)
+        } catch (e: Exception) {
+            // The comparison never gets in the way of the Feed.
+        }
+    }
+
     private fun compute(
         dir: DirectoryState,
         piece: MiffPiece?,
@@ -376,8 +418,18 @@ class FeedViewModel(
      */
     suspend fun observe() {
         try {
+            serverConfirmed.value = false
             coroutineScope {
                 launch { network.onlineChanges().collect { online -> offline.value = !online } }
+                // "Depuis ta dernière visite": every fresh picture of the Miff shown is told to the comparison (which keeps what was seen).
+                launch {
+                    combine(
+                        uiState,
+                        statusView,
+                        piece,
+                        serverConfirmed,
+                    ) { _, _, _, _ -> }.collect { tellVisit() }
+                }
                 launch { tickEachMinute() }
                 // No network (or no answer for a while) and nothing to show: the pop-in and the attempts every 10 s. Stops with the screen.
                 launch {
@@ -435,6 +487,7 @@ class FeedViewModel(
         // Neither the wait for the server's confirmation nor the mention "Dernières informations de…" of ANOTHER Miff follows to this one.
         cacheGraceOver.value = false
         staleAfterRefresh.value = false
+        serverConfirmed.value = false
         coroutineScope {
             launch {
                 repository.observe(miffId).collect { observation -> handle(miffId, observation) }
@@ -532,6 +585,7 @@ class FeedViewModel(
                                 }
                             } else {
                                 attempt = 0
+                                serverConfirmed.value = true
                                 cacheGrace?.cancel()
                                 cacheGrace = null
                                 // The server has spoken: nothing is stale any more.
@@ -609,6 +663,7 @@ class FeedViewModel(
                 if (fresh != null) {
                     // What the server just said, confirmed: the mode "copie du cache" is left, the colours are recomputed from it.
                     statusView.value = StatusesView.Loaded(fresh, fromCache = false)
+                    serverConfirmed.value = true
                     tellNotifications(miffId, fresh)
                     if (!listening) {
                         cacheGraceOver.value = true
