@@ -2,6 +2,23 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.41.0] - 2026-11-17 : barre d'onglets, plus de rectangle clair et un rendu constant (retour du PM sur l'OPPO)
+
+Retour du PM (capture sur OPPO Find X5 Lite, Android 13) : « il y a un rectangle blanc à l'intérieur de la barre et j'ai l'impression que l'opacité n'est pas la même tout le temps ; supprime le rectangle blanc et fais en sorte que l'opacité soit la même tout le temps ». Branche `android/tabbar-rectangle-opacite`, PR brouillon, recette `docs/qa/checklists/tabbar-android-recette-pm.md`. Numéro : le dernier de `main` est 0.40.0 (à renuméroter au merge si une autre PR l'a pris). Android seulement. Aucune donnée, permission, dépendance (Haze reste en 2.0.1, la 2.1.0 de Dependabot n'est pas touchée), texte ou service payant. **Aucun appareil n'était disponible sur le poste de développement et la capture du PM n'est pas dans le dépôt : la cause est établie par lecture du code et par des tests de pixels, elle reste à confirmer sur l'OPPO (recette).**
+
+### Corrigé
+- **Cause la plus probable du rectangle et des variations : la bulle « Donne des nouvelles » et le message de confirmation étaient dessinés DANS le contenu que le verre enregistre pour se flouter.** Ils reposent juste au-dessus de la barre (la pointe de la bulle est à 4 dp) et le flou de 28 dp les étalait dans le haut de la barre : une tache claire ou colorée, au milieu (là où pointe la bulle), qui apparaît et disparaît avec la bulle ou le message. `GlassTabHost` gagne un emplacement `overlay` dessiné par-dessus les onglets **mais hors de la source du flou** ; `MainTabs` y met `UpdateBottomLayer`. Position, taille, marges et comportement de la bulle sont inchangés.
+- **Le bouton central n'est plus dans une couche découpée.** Chaque entrée de 64 x 48 dp était un calque rogné à coins arrondis qui contenait la plaque blanche et son ombre (ombre coupée suivant un rectangle 64 x 48 autour du bouton, et feedback au toucher compris dans le même calque). La pastille de l'onglet actif est maintenant **dessinée** avec sa forme arrondie, et le feedback du toucher (celui du système, inchangé) vit dans un calque rogné **à part** : plus aucun rectangle ne contient le bouton. Formes extérieures, tailles, positions, pastille, plaque, anneau et pastille de couleur : inchangés.
+
+### Constant
+- **Un seul voile, une seule fonction** : `glassVeil(niveau, palette)` donne la couleur du voile (blanc 32 % pour le verre clair avec flou, rayon de flou 28 dp) ; elle ne dépend d'**aucun** contenu, d'aucun défilement, d'aucun onglet. La barre est une seule surface (`TAB_BAR_TAG`), dessinée une fois.
+- **Ce qui peut encore changer l'aspect, par conception** (documenté dans la recette, à décider avec le PM si ce n'est pas voulu) : (1) un verre translucide montre ce qui passe dessous, plus clair ou plus sombre ; (2) les **replis** : barre pleine blanche en économiseur de batterie (dont celui que l'OPPO active seul à faible batterie) et animations supprimées, voile plus dense sans flou avant Android 12 / appareil modeste, barre sombre sur l'écran photo. Les deux derniers sont des exigences d'accessibilité et de batterie de la spec ; je ne les ai pas supprimés.
+- Vérifié : la barre n'existe que sur les onglets (les écrans empilés, comme Réglages, ne l'affichent pas), et elle est retirée pendant que le clavier est ouvert (test existant `withTheKeyboardUp_theBarIsGone_andTheTabsAreToldZero`).
+
+### Tests
+- `GlassTabBarConstancyTest` (nouveau, Robolectric, captures dans `build/screenshots/tabbar-constant-*`) : voile fixe par niveau et variante, rayon 28 dp ; la barre est une seule surface ; aucune tache plus claire à côté du bouton central ni entre les entrées, quel que soit l'onglet actif et le niveau ; une bulle blanche posée au-dessus de la barre ne change pas un pixel du verre. Tests existants (`GlassTabBarTest`, `TabBarContentMarginTest`, `TabBarInsetRuleTest`) inchangés et verts.
+
+
 ## [0.41.0] - 2026-11-13 : centre de notifications, « Depuis ta dernière visite » (NOTIF-P1A)
 
 Ticket `docs/tickets/notifications-p1-derniere-visite.md` (décisions du PM du 2026-11-13, §11 : toutes les valeurs par défaut validées), recette `docs/qa/checklists/notifs-derniere-visite-android-recette-pm.md` ; branche `android/notifs-derniere-visite`, PR brouillon. Numéro de version : le dernier de `main` est 0.38.0, celui-ci prend le suivant (à renuméroter au merge si une autre PR l'a pris). **Aucune notification, aucune lecture ni écriture Firestore, aucune permission, aucune dépendance, aucun service payant, aucune règle de sécurité modifiée.**
