@@ -148,6 +148,7 @@ class DescriptionFieldTest {
     @Test
     fun whileThePhotoLeaves_theFieldCannotBeEdited() {
         show(initial = "Fixe", enabled = false)
-        field().assertIsNotEnabled()
+        // A field that cannot be edited has no "set text" action any more: it is found by its text.
+        rule.onNodeWithText("Fixe").assertIsNotEnabled()
     }
 }
