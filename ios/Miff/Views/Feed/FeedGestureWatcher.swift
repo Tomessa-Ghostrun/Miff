@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+// swiftlint:disable:next duplicate_imports
 import UIKit.UIGestureRecognizerSubclass
 
 // Dit au Feed quand la personne a le doigt posé (sur la liste OU sur un bouton d'une carte) ou fait défiler la liste (même quand la liste

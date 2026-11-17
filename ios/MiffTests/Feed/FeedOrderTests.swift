@@ -356,3 +356,4 @@ final class FeedOrderTests: XCTestCase {
         XCTAssertNil(FeedOrderChange.announcement(from: ["a", "b"], to: ["a", "b"], myUid: "me"))
     }
 }
+// swiftlint:enable line_length
