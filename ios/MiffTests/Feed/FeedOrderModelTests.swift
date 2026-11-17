@@ -119,7 +119,7 @@ final class FeedOrderModelTests: XCTestCase {
 
         model.update(context(["c", "me", "a", "b"]), animated: true)
 
-        XCTAssertEqual(announced, [L10n.string("feed_order_updated_a11y")])
+        XCTAssertEqual(announced, [L10n.string("ios_feed_order_updated_a11y")])
     }
 
     func testTheAnnouncementTextsExistInBothLanguages() {
@@ -127,9 +127,9 @@ final class FeedOrderModelTests: XCTestCase {
         let generic = FeedOrderModel.text(for: .generic, names: names)
         let unreadable = FeedOrderModel.text(for: .member(uid: "a"), names: ["a": ""])
 
-        XCTAssertNotEqual(member, "feed_order_member_a11y")
+        XCTAssertNotEqual(member, "ios_feed_order_member_a11y")
         XCTAssertTrue(member?.contains("Thomas") == true)
-        XCTAssertNotEqual(generic, "feed_order_updated_a11y")
+        XCTAssertNotEqual(generic, "ios_feed_order_updated_a11y")
         XCTAssertEqual(unreadable, generic, "sans prénom lisible : la phrase générale")
     }
 }

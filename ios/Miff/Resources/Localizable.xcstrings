@@ -3096,7 +3096,7 @@
         }
       }
     },
-    "feed_order_member_a11y": {
+    "ios_feed_order_member_a11y": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -3113,7 +3113,7 @@
         }
       }
     },
-    "feed_order_updated_a11y": {
+    "ios_feed_order_updated_a11y": {
       "extractionState": "manual",
       "localizations": {
         "en": {

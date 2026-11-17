@@ -98,11 +98,11 @@ final class FeedOrderModel: ObservableObject {
         switch announcement {
         case .member(let uid):
             guard let name = names[uid], !name.isEmpty else {
-                return L10n.string("feed_order_updated_a11y")
+                return L10n.string("ios_feed_order_updated_a11y")
             }
-            return L10n.format("feed_order_member_a11y", name)
+            return L10n.format("ios_feed_order_member_a11y", name)
         case .generic:
-            return L10n.string("feed_order_updated_a11y")
+            return L10n.string("ios_feed_order_updated_a11y")
         }
     }
 }
