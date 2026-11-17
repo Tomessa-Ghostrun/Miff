@@ -9,7 +9,7 @@ struct PlaceMapBlock: View {
     let radiusM: Int
     let isDanger: Bool
     var emoji: String?
-    /// Vrai dans le formulaire (création et modification) : la carte se zoome par gestes. Faux dans le détail : carte fixe.
+    /// Vrai dans le formulaire (création, modification) et dans le détail d'un lieu : la carte se zoome par gestes. Faux : carte fixe.
     var isZoomable = false
     let height: CGFloat
 

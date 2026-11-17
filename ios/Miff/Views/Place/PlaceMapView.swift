@@ -7,7 +7,7 @@ import UIKit
 // déclare aucune pour les lieux (ticket LOC-4). Les tuiles viennent d'Apple (aucune clé, aucun compte) ; MapKit affiche lui-même sa
 // mention légale. Rien n'est journalisé.
 //
-// ZOOM (ticket `lieu-carte-zoom`, formulaire seulement) : le zoom et le déplacement de MapKit restent éteints. Le zoom est refait ici
+// ZOOM (ticket `lieu-carte-zoom`, formulaire et détail d'un lieu) : le zoom et le déplacement de MapKit restent éteints. Le zoom est refait ici
 // (pincer, double toucher, toucher à deux doigts) pour que le CENTRE reste toujours le lieu, que les bornes soient celles de
 // `PlaceMapZoom`, et que la carte ne puisse jamais déplacer le point par accident (le lieu se choisit par l'adresse, pas sur la
 // carte). Un doigt qui glisse sur la carte fait défiler l'écran, comme partout ailleurs. Pas de bouton + / − : choix du PM.
@@ -20,7 +20,7 @@ struct PlaceMapView: UIViewRepresentable {
     let isDanger: Bool
     /// L'emoji de la catégorie, posé dans le repère (nil : le simple point, avant le choix d'une catégorie ou pour un ancien lieu).
     var emoji: String?
-    /// Vrai dans le formulaire : la carte se zoome par gestes. Faux (détail d'un lieu) : la carte reste fixe.
+    /// Vrai (formulaire et détail d'un lieu) : la carte se zoome par gestes. Faux : la carte reste fixe.
     var isZoomable = false
     let onLoadFailed: () -> Void
 

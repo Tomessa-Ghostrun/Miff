@@ -1,18 +1,18 @@
-# Mini-ticket : zoomer et dézoomer sur la carte d'un lieu (formulaire de création et de modification)
+# Mini-ticket : zoomer et dézoomer sur la carte d'un lieu (formulaire de création et de modification, et détail du lieu)
 
 **Statut** : demande du PM du 2026-11-17, « je te laisse faire », sans maquette ni ticket Notion. Rédigé par l'agent `ios-dev` (aucun agent `android-dev` n'avait poussé son texte à ce moment : la partie commune ci-dessous est écrite pour que les deux plateformes aient **le même comportement** ; la section Android reste à compléter par son agent). Aucun statut Notion modifié, rien écrit dans Notion.
 **Convention** : [Décidé PM] = dit par le PM. [Défaut] = décision par défaut prise ici, contestable.
 
 ## 1. Contexte
 
-Dans le formulaire d'un lieu (création et modification), la section « Périmètre » montre une carte avec le point du lieu et le cercle du rayon. Aujourd'hui la carte est **fixe** : cadrée automatiquement pour que le cercle tienne, sans aucun geste. Le PM veut pouvoir **zoomer et dézoomer** dessus.
+Dans le formulaire d'un lieu (création et modification), la section « Périmètre » montre une carte avec le point du lieu et le cercle du rayon. Aujourd'hui la carte est **fixe** : cadrée automatiquement pour que le cercle tienne, sans aucun geste. Le PM veut pouvoir **zoomer et dézoomer** dessus. **Extension demandée par le PM le 2026-11-17, pour les deux plateformes : le même zoom sur l'aperçu de carte de l'écran de détail d'un lieu** (celui qu'on ouvre en touchant un lieu dans la liste).
 
 État de départ côté iOS (relu dans le code) : `MKMapView` interactive mais volontairement bridée (zoom, déplacement, rotation éteints), hauteur de 176 pt dans un `ScrollView`, cadrage = `PlaceMapLayout.visibleMeters` (4,8 fois le rayon, jamais moins de 400 m). **Le lieu ne se choisit pas sur la carte** : il vient de l'adresse choisie dans les suggestions ; la carte ne fait que le montrer.
 
 ## 2. Décisions
 
 - **[Décidé PM, 2026-11-17] Pas de boutons + / − sur la carte. Le zoom se fait uniquement par gestes (pincer, double toucher).** Le PM accepte que ce point ne couvre pas l'accessibilité (VoiceOver, grande police, personnes qui ne peuvent pas pincer) : **choix assumé du PM**, hors périmètre de ce ticket. Rien n'est ajouté pour compenser (ni bouton, ni action VoiceOver de réglage).
-- **[Défaut] Seule la carte du formulaire se zoome.** La carte du détail d'un lieu (lecture seule) reste fixe : la demande parle de créer et de modifier. Étendre au détail ne coûte qu'un paramètre (`isZoomable` sur iOS) : à dire au PM s'il le veut.
+- **[Décidé PM] La carte du formulaire ET celle du détail d'un lieu se zooment**, avec les mêmes gestes, les mêmes bornes et les mêmes règles (cercle à l'échelle réelle, centre sur le lieu). La carte du détail est dans une page qui défile, comme le formulaire : même règle de défilement.
 - **[Défaut] Le centre ne bouge jamais : c'est le lieu.** Pas de déplacement de la carte (un doigt qui glisse sur la carte **fait défiler l'écran**, comme avant). Zoomer ne peut donc ni déplacer le lieu ni changer l'adresse choisie. Le lieu se choisit toujours par l'adresse, jamais par un toucher sur la carte.
 - **[Défaut] Gestes** : pincer (continu) ; **double toucher = un cran plus près** (moitié de la hauteur montrée) ; **toucher à deux doigts = un cran plus loin** (le double), comme l'app Plans. Pas de rotation, pas d'inclinaison, pas de boussole.
 - **[Défaut] Bornes, en hauteur de carte montrée** (la même définition sur les deux plateformes, à l'équivalent du niveau de zoom près) : **le plus près = 100 m** ; **le plus loin = 22 fois le rayon** (le diamètre du cercle garde au moins 1/11 de la hauteur : environ 16 pt sur 176 pt), donc 1 100 m pour 50 m de rayon, 17 600 m pour 800 m. Le cadrage de départ est toujours dans les bornes.
@@ -40,7 +40,7 @@ Dans le formulaire d'un lieu (création et modification), la section « Périmè
 - **Z7** Glisser un doigt sur la carte fait défiler le formulaire ; pincer ne le fait pas défiler.
 - **Z8** Changer d'adresse remet le cadrage de départ ; bouger le curseur de rayon garde le zoom de la personne.
 - **Z9** Hors connexion : même message calme qu'avant, aucun blocage de l'enregistrement.
-- **Z10** La carte du détail d'un lieu reste fixe. Aucune permission de localisation, aucune clé, aucune dépendance, aucun appel réseau de plus que les tuiles de la carte.
+- **Z10** Les critères Z1 à Z9 valent aussi pour la carte du détail d'un lieu (lecture seule : le lieu, l'adresse et le rayon ne changent évidemment jamais). Aucune permission de localisation, aucune clé, aucune dépendance, aucun appel réseau de plus que les tuiles de la carte.
 
 ## 5. Cas limites
 
@@ -48,7 +48,7 @@ Valeurs de pincement absurdes (échelle nulle, négative, infinie) : rien ne cha
 
 ## 6. Tests
 
-Règles pures testées (`PlaceMapZoomTests`) : bornes pour tous les rayons du curseur, départ dans les bornes, pincement (rapprocher / éloigner / borné / absurde), double toucher et deux doigts (jusqu'aux bornes), cercle visible au plus loin, zoom gardé ou ramené au changement de rayon, plage du curseur inchangée. Tests de source : centre fixe, aucun déplacement ni bouton, aucune position de personne, seul le formulaire est zoomable, aucune clé ni dépendance de cartes. Les gestes eux-mêmes (UI) ne sont pas testés unitairement : recette PM sur iPhone.
+Règles pures testées (`PlaceMapZoomTests`) : bornes pour tous les rayons du curseur, départ dans les bornes, pincement (rapprocher / éloigner / borné / absurde), double toucher et deux doigts (jusqu'aux bornes), cercle visible au plus loin, zoom gardé ou ramené au changement de rayon, plage du curseur inchangée. Tests de source : centre fixe, aucun déplacement ni bouton, aucune position de personne, le formulaire et le détail sont zoomables, tous deux dans une page qui défile (le défilement est suspendu pendant un pincement), aucune clé ni dépendance de cartes. Les gestes eux-mêmes (UI) ne sont pas testés unitairement : recette PM sur iPhone.
 
 ## 7. Coût
 

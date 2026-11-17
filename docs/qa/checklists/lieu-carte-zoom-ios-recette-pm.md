@@ -7,7 +7,7 @@
 
 - **Zoom uniquement par gestes**, **sans boutons + / −** : choix assumé du PM, l'accessibilité de ce point n'est pas couverte.
 - Deux doigts qui s'écartent ou se resserrent : zoom continu. **Double toucher** : un cran plus près. **Toucher à deux doigts** : un cran plus loin. **Un seul doigt qui glisse** : l'écran défile, la carte ne bouge pas.
-- Seul le **formulaire** (création et modification) se zoome ; la carte du **détail** d'un lieu reste fixe.
+- Le **formulaire** (création et modification) ET le **détail** d'un lieu (celui qu'on ouvre en touchant un lieu dans la liste) se zooment de la même façon.
 - Un défaut : capture d'écran (ou enregistrement d'écran) + numéro de l'étape, puis étape suivante.
 
 ## Parcours
@@ -22,7 +22,7 @@
 8. [ ] **Le rayon** : zoomez, puis bougez le **curseur de rayon** de 50 m à 800 m : le cercle suit à l'échelle réelle, **le zoom que vous avez fait est gardé** (la carte ne revient pas au départ à chaque cran), la valeur du curseur ne change pas quand vous zoomez. À 50 m, le cercle reste visible au plus loin ; à 800 m aussi.
 9. [ ] **Autre adresse** : choisissez une autre suggestion : la carte revient au **cadrage de départ** sur le nouveau lieu.
 10. [ ] **Type et catégorie** : passez en « Zone de danger » (cercle rouge) et choisissez une catégorie (emoji dans le repère) : le zoom est gardé, le cercle et le repère gardent leurs couleurs.
-11. [ ] **Enregistrez**, puis ouvrez le lieu : le **détail** montre la carte **fixe** (pas de zoom). Touchez « Modifier » : la carte du formulaire **se zoome** de la même façon. Le rayon enregistré est celui du curseur, pas celui du zoom.
+11. [ ] **Enregistrez**, puis, dans la liste des lieux, **touchez le lieu** pour ouvrir son **détail**. Sa carte **se zoome** de la même façon (pincer, double toucher, toucher à deux doigts), mêmes bornes, cercle à l'échelle réelle, le lieu reste au centre. **Un doigt qui glisse sur la carte fait défiler la page** ; **un pincement ne la fait pas défiler**. L'adresse, le rayon affiché et « Voir sur la carte » ne changent pas. Touchez « Modifier » : la carte du formulaire se zoome pareil ; le rayon enregistré est celui du curseur, pas celui du zoom.
 12. [ ] **Réduire les animations** (Réglages > Accessibilité > Animations) : le double toucher recadre **sans animation**.
 13. [ ] **Hors connexion** : mode avion, ouvrez le formulaire d'un lieu existant puis zoomez : si des tuiles manquent, la phrase calme « Ton lieu est bien placé, tu peux continuer » avec « Réessayer » peut remplacer la carte, **sans bloquer l'enregistrement**. Réseau remis puis « Réessayer » : la carte revient au cadrage de départ.
 14. [ ] **Pas de position** : aucune demande d'autorisation de localisation n'apparaît en zoomant, aucun point bleu « ma position » sur la carte.
@@ -31,5 +31,4 @@
 
 - Le **trait pointillé** du cercle garde-t-il la même épaisseur à tous les niveaux de zoom ? (point que je n'ai pas pu vérifier sans Mac)
 - Le **double toucher** est-il trop sensible ou trop long à réagir ?
-- Faut-il que la carte du **détail** se zoome aussi ?
 - Un **indice** « pincez pour zoomer » serait-il utile ?

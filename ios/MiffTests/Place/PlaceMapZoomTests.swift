@@ -171,14 +171,29 @@ final class PlaceMapZoomTests: XCTestCase {
         XCTAssertFalse(map.contains("userTrackingMode"))
     }
 
-    func testOnlyTheFormMakesTheMapZoomableNotTheDetail() throws {
+    func testTheFormAndTheDetailOfAPlaceBothMakeTheMapZoomable() throws {
         let form = try read("Miff/Views/Place/PlaceFormChoices.swift")
         let detail = try read("Miff/Views/Place/PlaceDetailView.swift")
         let block = try read("Miff/Views/Place/PlaceMapBlock.swift")
 
         XCTAssertTrue(form.contains("isZoomable: true"))
-        XCTAssertFalse(detail.contains("isZoomable"))
+        XCTAssertTrue(detail.contains("isZoomable: true"))
         XCTAssertTrue(block.contains("var isZoomable = false"))
+        XCTAssertTrue(block.contains("isZoomable: isZoomable"))
+    }
+
+    func testBothScreensKeepTheMapInAScrollViewWhichThePinchSuspends() throws {
+        let form = try read("Miff/Views/Place/PlaceFormView.swift")
+        let detail = try read("Miff/Views/Place/PlaceDetailView.swift")
+        let map = try read("Miff/Views/Place/PlaceMapView.swift")
+
+        // Les deux écrans défilent : un pincement suspend le UIScrollView parent puis le rend (fin, annulation, échec, libération).
+        XCTAssertTrue(form.contains("ScrollView"))
+        XCTAssertTrue(detail.contains("ScrollView"))
+        XCTAssertTrue(map.contains("scroll.isScrollEnabled = false"))
+        XCTAssertTrue(map.contains("pausedScroll?.isScrollEnabled = true"))
+        XCTAssertTrue(map.contains("case .ended, .cancelled, .failed:"))
+        XCTAssertTrue(map.contains("deinit"))
     }
 
     func testTheMapStillNeedsNoKeyNoPackageAndNoNetworkAddress() throws {
