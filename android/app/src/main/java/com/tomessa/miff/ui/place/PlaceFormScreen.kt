@@ -913,8 +913,9 @@ private fun TypeSection(
             TypeCard(
                 type = PlaceType.RISK,
                 selected = state.type == PlaceType.RISK,
-                // A free account sees at once that this one is Miff+ (design decision 11): no surprise when touching it.
-                locked = !state.premium && state.type != PlaceType.RISK,
+                // A free CREATOR sees at once that this one is Miff+ (design decision 11): no surprise when touching it. Never in the form of a REQUEST:
+                // any member may ask for a danger zone (decision of the PM, 2026-11-17), the plan of the creator counts at the acceptance.
+                locked = state.dangerLocked,
                 enabled = state.canEditAddress,
                 onClick = { actions.onTypeSelected(PlaceType.RISK) },
                 modifier = cardModifier,

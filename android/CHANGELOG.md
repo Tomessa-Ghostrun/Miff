@@ -2,6 +2,32 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.45.0] - 2026-11-18 : un membre gratuit peut DEMANDER une zone de danger (LIEU-DANGER-REQ)
+
+Demande directe du PM (2026-11-17, sans ticket Notion ni maquette) ; ticket `backend-data` `docs/tickets/lieu-danger-demande-gratuite.md` (PR `backend/demande-lieu-danger`), recette `docs/qa/checklists/lieu-danger-demande-android-recette-pm.md` ; branche `android/lieu-danger-demande`, PR brouillon. Numéro de version **provisoire** : trois PR ouvertes (#252, #260, #262) prennent déjà 0.44.0 ; 0.45.0 est à **renuméroter au merge** (par le coordinateur). **Aucune dépendance, aucune permission, aucun service payant, aucune clé.**
+
+> **À déployer par le PM AVANT de tester avec un membre gratuit : les règles Firestore de la PR `backend/demande-lieu-danger`.** Les règles actuellement fusionnées refusent toute demande `risk` d'un demandeur non Miff+ (`backend/firestore.rules`, règle de création de `placeRequests` : `type == 'trusted' || isPremiumOneRead(demandeur)`). Sans ce déploiement, l'app envoie bien la demande mais le serveur la refuse, et le membre voit à tort « Cette Miff a déjà plusieurs demandes en attente. Réessaie un peu plus tard. » (ce n'est pas un bug de l'app). Le côté créateur (accepter / refuser) n'a **pas** besoin des nouvelles règles.
+
+### Changé
+- **Demander un lieu : « Zone de danger » est libre pour tous les membres**, gratuits ou Miff+. Dans le formulaire « Proposer un lieu » : plus de pastille Miff+, plus d'offre à la sélection ; le choix se fait comme « Zone de confiance ». Le formulaire de **création directe** d'un lieu (réservé au créateur) **ne change pas** : « Zone de danger » reste marquée Miff+ et ouvre l'offre pour un créateur gratuit (idem pour passer un lieu existant en zone de danger).
+- **L'abonnement du demandeur n'est plus lu** à l'ouverture du formulaire ni à l'envoi (une lecture de moins ; un abonnement illisible ne bloque plus le formulaire). Seul compte l'abonnement du **créateur**, à l'acceptation.
+- **Gestion d'un refus du serveur** : un refus n'est plus jamais interprété comme « zone de danger sans Miff+ » ; il suit les autres causes (course sur l'emplacement, plafond de 3, plafond de 10 par Miff, Miff disparue), avec les mêmes phrases calmes qu'avant.
+- Code : `DangerZoneRights` (`domain/place/PlaceRules.kt`) : **la matrice des droits en un seul endroit** (demander / accepter / déclarer), utilisée par le formulaire (`PlaceFormState.dangerLocked`), les quotas (`PlaceQuota.forCreate`, `forTypeChange(asRequest)`) et l'acceptation. `RequestContext` perd son champ `premium` ; `RequestSubmitResult.NeedsPremium` disparaît.
+
+### Inchangé, vérifié par des tests (côté créateur)
+- **Créateur gratuit qui reçoit une demande de zone de danger** : il la **voit** comme les autres (étiquette « Zone de danger »), peut la **refuser** sans condition (aucune lecture d'abonnement) ; **Accepter** lit son abonnement **sur le serveur**, ouvre l'offre Miff+ **avant toute écriture**, et la demande **reste en attente** ; fermer l'offre la laisse telle quelle ; abonnement illisible : message calme existant, jamais d'offre à tort. **Créateur Miff+** : l'acceptation crée le lieu `risk` (lot de 3) comme avant.
+- **Le demandeur ne voit rien de plus** : « En attente » jusqu'à l'acceptation (le lieu apparaît), le refus ou l'expiration à 30 jours (décision du ticket backend §3.4 : ne pas révéler l'abonnement du créateur, ton non anxiogène). Aucune nouvelle chaîne de texte.
+- Cas limites : créateur qui **perd** son Miff+ avec des demandes `risk` en attente (elles restent, refus possible, acceptation = offre) ; qui le **retrouve** (la même demande s'accepte sans ressaisie) ; créateur gratuit qui **possède déjà** un lieu `risk` (il compte parmi ses 3 lieux ; une autre zone de danger = offre, une zone de confiance avec de la place passe) ; quotas inchangés (3 demandes par membre, y compris 3 zones de danger ; 10 par Miff).
+
+### Tests
+`DangerZoneMatrixTest` (matrice gratuit / Miff+ × demander / accepter / déclarer + cas limites, sur les vrais chemins de code) ; `PlaceRequestFormViewModelTest`, `PlaceRequestRepositoryTest`, `ProfileRequestsCreatorViewModelTest` mis à jour ou complétés ; `PlaceScreensTest` (pas de pastille Miff+ dans le formulaire de demande, gratuit comme Miff+).
+
+### Choix « économiques » et limites connues
+- **Coût : 0 €**, une lecture Firestore **en moins** par demande (plus de lecture de l'abonnement du demandeur) ; aucune écriture de plus.
+- **Limite connue (assumée par le PM, ticket backend Q2)** : n'importe quel membre peut proposer une zone de danger ; le garde-fou est le créateur (acceptation volontaire, Miff+).
+- **Question laissée au PM** : l'offre Miff+ ouverte par « Accepter » reste **l'écran unique décidé le 2026-11-12** (aucune phrase propre à l'entrée). Les chaînes `place_request_paywall_danger` / `place_request_paywall_limit` (« La demande reste en attente, tu peux aussi la refuser ») existent depuis la PR de la demande mais ne sont affichées nulle part ; le ticket backend §3.3 suggère de les utiliser. Les afficher irait contre la règle « un seul contenu, sans variante par entrée » du paywall : non fait sans décision.
+- **iOS** : `ios/lieu-danger-demande` (PR #264), même matrice.
+
 ## [0.43.0] - 2026-11-17 : ordre du Feed par date de dernière update (FEED-ORDRE)
 
 Ticket `docs/tickets/feed-ordre-derniere-update.md` (PR docs #254 ; décisions par défaut du §3 appliquées, le PM ayant délégué la validation des specs), recette `docs/qa/checklists/feed-ordre-android-recette-pm.md` ; branche `android/feed-ordre-derniere-update`, PR brouillon. Numéro de version **provisoire** : `main` porte déjà deux en-têtes 0.41.0 et les PR #245 et #252 prennent 0.42.0 (#224 : 0.41.0) ; 0.43.0 est un numéro plausible, **à renuméroter au merge** (par le coordinateur). **Aucune règle Firestore modifiée, aucune lecture ni écriture de plus, aucune permission, aucune dépendance, aucun service payant, rien à déployer.**

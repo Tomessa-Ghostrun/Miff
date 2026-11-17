@@ -16,6 +16,7 @@ import com.tomessa.miff.domain.miff.MiffName
 import com.tomessa.miff.domain.place.AddressSearch
 import com.tomessa.miff.domain.place.AddressSearchResult
 import com.tomessa.miff.domain.place.AddressSuggestion
+import com.tomessa.miff.domain.place.DangerZoneRights
 import com.tomessa.miff.domain.place.DefaultMiffChoice
 import com.tomessa.miff.domain.place.OwnedMiff
 import com.tomessa.miff.domain.place.PaywallReason
@@ -138,6 +139,10 @@ data class PlaceFormState(
     val changed: Boolean get() = initial == null || initial != snapshot
 
     val busy: Boolean get() = saving || deleting
+
+    /** "Zone de danger" carries the Miff+ pill and opens the offer: never in the form of a request (see [DangerZoneRights]). */
+    val dangerLocked: Boolean
+        get() = DangerZoneRights.isLockedInForm(mode == PlaceFormMode.REQUEST, premium, type)
 
     /** What the foot says: the last message, or (request mode) the limit of 3 as long as it holds: typing in a field clears a message, never this one. */
     val displayedMessage: PlaceMessage?
@@ -282,7 +287,8 @@ class PlaceFormViewModel(
                 mutableState.update {
                     it.copy(
                         loading = false,
-                        premium = loaded.premium,
+                        // The plan is not read (and `premium` stays false): a member asks for any type, danger zone included; the creator's plan counts at the acceptance.
+                        // The form never uses `premium` in this mode (see [DangerZoneRights.isLockedInForm]).
                         // The Miff is fixed: ONE chip, no picker (the same component as a creator with a single Miff).
                         owned = listOf(OwnedMiff(target, loaded.miffName, 0L)),
                         selectedMiffIds = listOf(target),
@@ -482,11 +488,21 @@ class PlaceFormViewModel(
         mutableState.update { it.copy(radiusM = PlaceRadius.snap(raw)) }
     }
 
-    /** A free account that touches "Zone de danger": the offer opens and the choice stays "Zone de confiance" (criterion LIM3). */
+    /**
+     * A free CREATOR that touches "Zone de danger": the offer opens and the choice stays "Zone de confiance" (criterion LIM3). In the form of a REQUEST nobody is
+     * stopped, free or Miff+: the creator, who must be Miff+ to accept it, decides (decision of the PM, 2026-11-17).
+     */
     fun onTypeSelected(type: PlaceType) {
         val state = mutableState.value
         if (state.busy || state.loading || state.loadFailed != null || type == state.type) return
-        val reason = PlaceQuota.forTypeChange(state.premium, state.type, type)
+        val reason =
+            PlaceQuota.forTypeChange(
+                state.premium,
+                state.type,
+                type,
+                asRequest =
+                    state.mode == PlaceFormMode.REQUEST,
+            )
         if (reason != null) {
             mutableState.update { it.copy(paywall = reason) }
             return
@@ -614,10 +630,6 @@ class PlaceFormViewModel(
                 RequestSubmitResult.Queued -> {
                     notices.requestSent(queued = true)
                     mutableState.update { it.copy(saving = false, end = PlaceFormEnd.SAVED) }
-                }
-
-                is RequestSubmitResult.NeedsPremium -> {
-                    mutableState.update { it.copy(saving = false, paywall = result.reason) }
                 }
 
                 RequestSubmitResult.MemberLimit -> {

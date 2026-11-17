@@ -1,6 +1,5 @@
 package com.tomessa.miff.data.place
 
-import com.tomessa.miff.data.miff.EntitlementRead
 import com.tomessa.miff.data.miff.Guarded
 import com.tomessa.miff.data.miff.MiffRead
 import com.tomessa.miff.data.miff.guardedCall
@@ -18,7 +17,6 @@ import com.tomessa.miff.domain.place.PlaceRequestLimits
 import com.tomessa.miff.domain.place.PlaceRequestSlots
 import com.tomessa.miff.domain.place.PlaceRequestWrites
 import com.tomessa.miff.domain.place.PlaceSlot
-import com.tomessa.miff.domain.place.PlaceType
 import com.tomessa.miff.domain.place.PlaceWrites
 import com.tomessa.miff.domain.place.RequesterState
 import kotlinx.coroutines.CancellationException
@@ -32,12 +30,14 @@ import kotlinx.coroutines.withTimeoutOrNull
  * exception message. Every failure leaves this file as a [MiffFailure] (no message, no path).
  */
 
-/** What the form of a request needs to know about the person before it opens (everything read from the SERVER: a limit is never decided on a copy). */
+/**
+ * What the form of a request needs to know before it opens (everything read from the SERVER: a limit is never decided on a copy). The plan of the person
+ * is NOT read: any member, free or Miff+, may ask for any type of place, danger zone included (decision of the PM, 2026-11-17); only the plan of the creator
+ * counts, at the acceptance.
+ */
 class RequestContext(
     /** The name of the Miff the request is for (shown in the form, the Miff is fixed). */
     val miffName: String,
-    /** Miff+ (an active entitlement that has not expired): only decides whether the danger zone is offered. The rules decide for real. */
-    val premium: Boolean,
     /** The pending requests of the person in this Miff (not expired). */
     val mine: List<PlaceRequest>,
 ) {
@@ -69,11 +69,6 @@ sealed interface RequestSubmitResult {
 
     /** No network: the phone keeps the request and sends it when it can (criterion M11). The rules judge it then. */
     data object Queued : RequestSubmitResult
-
-    /** Nothing was sent: the danger zone is Miff+ (a member who is not Miff+ cannot ask for one). */
-    data class NeedsPremium(
-        val reason: PaywallReason,
-    ) : RequestSubmitResult
 
     /** Nothing was sent: the person already has 3 pending requests in this Miff (criterion M5). */
     data object MemberLimit : RequestSubmitResult
@@ -274,12 +269,6 @@ class FirestorePlaceRequestRepository(
         uid: String,
         miffId: String,
     ): RequestContextLoad {
-        // An unknown plan is NOT "free" for the danger zone: a failed read says "try again" instead of locking or opening it on a guess.
-        val premium =
-            when (val read = guarded { places.readEntitlement(uid) }) {
-                is Guarded.Value -> isActive(read.value)
-                is Guarded.Failed -> return RequestContextLoad.Failed(read.failure)
-            }
         val details =
             when (val read = guarded { places.readMiff(miffId) }) {
                 is Guarded.Value -> {
@@ -314,7 +303,7 @@ class FirestorePlaceRequestRepository(
         mine.forEach { queued.remove("$miffId|${it.id}") }
         val (expired, alive) = mine.partition { it.isExpired(nowMillis()) }
         val stillThere = expired.filter { withdraw(it) !is RequestWithdrawResult.Done }
-        return RequestContextLoad.Loaded(RequestContext(details.name, premium, alive + stillThere))
+        return RequestContextLoad.Loaded(RequestContext(details.name, alive + stillThere))
     }
 
     override suspend fun readMine(
@@ -326,12 +315,6 @@ class FirestorePlaceRequestRepository(
             is Guarded.Failed -> MineRead.Failed(read.failure)
         }
 
-    /** Miff+ = an active entitlement that has not expired. No document at all = not Miff+. */
-    private fun isActive(read: EntitlementRead?): Boolean {
-        val expires = read?.expiresAtMillis ?: return false
-        return read.active && expires > nowMillis()
-    }
-
     // --- Writing ------------------------------------------------------------------------------------------------
 
     override suspend fun submit(
@@ -342,12 +325,7 @@ class FirestorePlaceRequestRepository(
         online: Boolean,
     ): RequestSubmitResult {
         if (draft.problem != null) return RequestSubmitResult.Failed(MiffFailure.UNKNOWN)
-        // The danger zone is Miff+ for the person who asks (D5): decided BEFORE anything is sent, the rules only repeat it.
-        if (draft.type == PlaceType.RISK &&
-            !context.premium
-        ) {
-            return RequestSubmitResult.NeedsPremium(PaywallReason.DANGER)
-        }
+        // A danger zone is asked like any other place, whatever the plan of the person (decision of the PM, 2026-11-17): no plan is read, nothing is blocked here.
         // 3 pending requests at most (M5): no write is tried at the 4th. The slots waiting in the phone's queue count too.
         val waiting = queuedIds(miffId, uid)
         val taken = context.mine.map { it.id }.toSet() + waiting
@@ -413,17 +391,9 @@ class FirestorePlaceRequestRepository(
             if (gone) return RequestSubmitResult.MiffUnavailable
         }
         if (failure != MiffFailure.REFUSED) return RequestSubmitResult.Failed(failure)
-        // A refusal on a Miff that is still there (contract of the backend, section 4): three causes are told apart, the last one is the limit of the Miff.
-        // (a) a danger zone and the plan ended since the form opened: the offer, nothing else to do.
-        if (draft.type == PlaceType.RISK) {
-            val read = guarded { places.readEntitlement(uid) }
-            if (read is Guarded.Value &&
-                !isActive(read.value)
-            ) {
-                return RequestSubmitResult.NeedsPremium(PaywallReason.DANGER)
-            }
-        }
-        // (b) a race on the slot (another phone took it): the requests are read again and, if a slot is free, the lot is sent once more.
+        // A refusal on a Miff that is still there (contract of the backend, section 4): two causes are told apart, the last one is the limit of the Miff.
+        // The type is NOT a cause: a danger zone is asked by a free member like any other place (decision of the PM, 2026-11-17), the rules no longer read his plan.
+        // (a) a race on the slot (another phone took it): the requests are read again and, if a slot is free, the lot is sent once more.
         val freshRead = guarded { store.readMine(miffId, uid, fromServer = true) }
         // Even reading the person's own requests is refused: it is not the limit of the Miff, the requests are simply not available yet.
         if (freshRead is Guarded.Failed &&
@@ -438,7 +408,7 @@ class FirestorePlaceRequestRepository(
             val outcome = guarded { store.commit(PlaceRequestWrites.create(uid, miffId, slot, draft)) }
             return if (outcome is Guarded.Value) RequestSubmitResult.Done(again) else RequestSubmitResult.MiffLimit
         }
-        // (c) all the slots were free: the Miff holds all the requests it takes (10), or the counter drifted too high.
+        // (b) all the slots were free: the Miff holds all the requests it takes (10), or the counter drifted too high.
         return RequestSubmitResult.MiffLimit
     }
 
