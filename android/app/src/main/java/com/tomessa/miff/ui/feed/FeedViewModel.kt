@@ -471,6 +471,35 @@ class FeedViewModel(
         }
     }
 
+    /**
+     * COUNTDOWN-A: what the Profile tab needs to keep the encart "Tu es en dehors de tes lieux de confiance" TRUE while it is the tab in use (the screen calls it from
+     * `repeatOnLifecycle(STARTED)`, like [observe], and the two never run together: the tabs exclude each other). The SAME listeners as the Feed (the Miff shown and its statuses,
+     * so no new kind of reading: my own status is in them), the network and the minute, for as long as the Profile is on screen: an update published from the encart, or an arrival
+     * in a place of trust noticed while the Profile is open, changes the encart at once instead of leaving what the Feed last read.
+     *
+     * It leaves out everything that belongs to the Feed alone: the comparison "Depuis ta dernière visite" (a change must not be taken for SEEN by a tab that does not show it), the
+     * pop-in "Pas de connexion" and its attempts (the Profile has its own), and the sheet "Localiser". What is already read for this Miff stays on screen while the listeners are
+     * attached again (no flash of the encart on each entry), see [observeMiff].
+     */
+    suspend fun observeForProfile() {
+        coroutineScope {
+            launch { network.onlineChanges().collect { online -> offline.value = !online } }
+            launch { tickEachMinute() }
+            launch {
+                combine(
+                    directory.state.map { (it as? DirectoryState.Ready)?.activeId }.distinctUntilChanged(),
+                    restarts,
+                ) { id, _ -> id }.collectLatest { id ->
+                    if (id == null) {
+                        piece.value = null
+                    } else {
+                        observeMiff(id, resume = true)
+                    }
+                }
+            }
+        }
+    }
+
     /** The colour is recomputed with the clock, once per minute, aligned on the minute: no reading of the server. */
     private suspend fun tickEachMinute() {
         while (true) {
@@ -480,14 +509,26 @@ class FeedViewModel(
         }
     }
 
-    private suspend fun observeMiff(miffId: String) {
-        piece.value = MiffPiece.Loading(miffId)
-        // What was said about another Miff is never drawn on this one.
-        statusView.value = StatusesView.Waiting
-        // Neither the wait for the server's confirmation nor the mention "Dernières informations de…" of ANOTHER Miff follows to this one.
-        cacheGraceOver.value = false
-        staleAfterRefresh.value = false
-        serverConfirmed.value = false
+    /**
+     * [resume] (the Profile tab only): the listeners are attached again for the Miff that is ALREADY read and confirmed by the server, and what is shown is kept until they answer
+     * (the Feed starts from the skeleton instead, as it always did). Never for another Miff: what was said about one is not drawn on another.
+     */
+    private suspend fun observeMiff(
+        miffId: String,
+        resume: Boolean = false,
+    ) {
+        val keep =
+            resume && (piece.value as? MiffPiece.Data)?.miffId == miffId &&
+                (statusView.value as? StatusesView.Loaded)?.fromCache == false
+        if (!keep) {
+            piece.value = MiffPiece.Loading(miffId)
+            // What was said about another Miff is never drawn on this one.
+            statusView.value = StatusesView.Waiting
+            // Neither the wait for the server's confirmation nor the mention "Dernières informations de…" of ANOTHER Miff follows to this one.
+            cacheGraceOver.value = false
+            staleAfterRefresh.value = false
+            serverConfirmed.value = false
+        }
         coroutineScope {
             launch {
                 repository.observe(miffId).collect { observation -> handle(miffId, observation) }
@@ -573,6 +614,10 @@ class FeedViewModel(
                     when (feed) {
                         is StatusFeed.Data -> {
                             waitingTimeout.cancel()
+                            // The Profile attached the listener again over what the server had confirmed: the copy of the cache that comes first is not the present and must not
+                            // replace it (the encart would flash away and back). Offline nothing better will come, so the copy is taken (it holds an update just published).
+                            val confirmed = (statusView.value as? StatusesView.Loaded)?.fromCache == false
+                            if (feed.fromCache && confirmed && !offline.value) return@collect
                             if (feed.fromCache) {
                                 // A copy of the cache is NOT an answer of the server: it does not give the attempts back (a listener that
                                 // keeps ending right after its cached answer must not be attached again every 10 s, for ever).
