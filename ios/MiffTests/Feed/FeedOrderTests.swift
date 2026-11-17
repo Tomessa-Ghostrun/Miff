@@ -102,9 +102,9 @@ final class FeedOrderTests: XCTestCase {
         XCTAssertEqual(order(members, statuses), ["b", "a", "stopped", "none", "unknown", "me"])
     }
 
-    func testAMemberWhoPublishedBeforeAnyDepartureStillSaysNoNewsAndFollowsTheOthers() {
-        // Limite connue du ticket (§6) : `presence = unknown` avec une `lastUpdateAt` d'une update manuelle. La carte dit « Pas encore de
-        // nouvelles » : l'ordre et l'étiquette ne se contredisent pas, la carte suit tous les membres datés.
+    func testAManualUpdateBeforeAnyDepartureMakesTheCardRiseButItsLabelStaysNoNews() {
+        // Le cas du ticket (§6) : `presence = unknown` et `lastUpdateAt` strictement plus récent que `presenceAt` (update manuelle après
+        // l'activation du partage). L'étiquette ne change pas ; la date est `lastUpdateAt`.
         let members = [feedMember("a"), feedMember("manual"), feedMember("b")]
         let statuses = [
             "manual": feedStatus(.unknown, placeId: nil, departedAgo: feedHours(2), updatedAgo: feedMinutes(1)),
@@ -113,8 +113,56 @@ final class FeedOrderTests: XCTestCase {
 
         let content = buildFeed(feedInput(members: members, statuses: statuses))
 
-        XCTAssertEqual(content.card("manual")?.label, .noNews)
-        XCTAssertEqual(content.cards.map { $0.member.uid }, ["b", "a", "manual"])
+        XCTAssertEqual(content.card("manual")?.label, .noNews, "« Pas encore de nouvelles » ne change pas")
+        XCTAssertEqual(content.cards.map { $0.member.uid }, ["manual", "b", "a"])
+    }
+
+    func testSharingJustActivatedHasNoDateBecauseBothTimesAreEqual() {
+        let members = [feedMember("a"), feedMember("fresh"), feedMember("b")]
+        let statuses = [
+            "fresh": feedStatus(.unknown, placeId: nil, departedAgo: feedMinutes(1), updatedAgo: feedMinutes(1)),
+            "b": updated(feedHours(3)),
+        ]
+
+        XCTAssertEqual(order(members, statuses), ["b", "a", "fresh"], "le premier statut garde son rang d'arrivée, après les datés")
+    }
+
+    func testAnUpdateOlderThanTheStateIsNotADate() {
+        // Un voyage arrêté à la main : `presence` revient à unknown, `presenceAt` est récent, `lastUpdateAt` est conservé (plus ancien).
+        let members = [feedMember("a"), feedMember("stopped"), feedMember("b")]
+        let statuses = [
+            "stopped": feedStatus(.unknown, placeId: nil, departedAgo: feedMinutes(5), updatedAgo: feedHours(30)),
+            "b": updated(feedHours(3)),
+        ]
+
+        XCTAssertEqual(order(members, statuses), ["b", "a", "stopped"])
+    }
+
+    func testAMissingTimeNeverGivesADateToANoNewsCard() {
+        let members = [feedMember("a"), feedMember("noStart"), feedMember("b")]
+        let statuses = [
+            "noStart": feedStatus(.unknown, placeId: nil, departedAgo: nil, updatedAgo: feedMinutes(1)),
+            "b": updated(feedHours(3)),
+        ]
+
+        XCTAssertEqual(order(members, statuses), ["b", "a", "noStart"], "une date qu'on ne peut pas justifier n'en est pas une")
+    }
+
+    func testAnEndedTravelHasNoDateUnlessAnUpdateCameAfterItsStart() {
+        func travelEnded(updatedAgo: Int) -> MemberStatus {
+            var status = feedStatus(.travel, placeId: nil, departedAgo: feedHours(30), updatedAgo: updatedAgo)
+            status.travelUntilMillis = feedNow - feedHours(2)
+            status.travelUntilDay = "2026-11-07"
+            return status
+        }
+        let members = [feedMember("a"), feedMember("away"), feedMember("b")]
+
+        let kept = buildFeed(feedInput(members: members, statuses: ["away": travelEnded(updatedAgo: feedHours(40)), "b": updated(feedHours(3))]))
+        let published = buildFeed(feedInput(members: members, statuses: ["away": travelEnded(updatedAgo: feedHours(10)), "b": updated(feedHours(3))]))
+
+        XCTAssertEqual(kept.card("away")?.label, .travelEnded)
+        XCTAssertEqual(kept.cards.map { $0.member.uid }, ["b", "a", "away"], "lastUpdateAt conservé de avant le voyage : pas de date")
+        XCTAssertEqual(published.cards.map { $0.member.uid }, ["b", "away", "a"], "une update publiée pendant le voyage est une date")
     }
 
     func testWhenIStopSharingOrMyAgreementIsAwaitedNobodyHasADate() {
@@ -275,6 +323,19 @@ final class FeedOrderTests: XCTestCase {
             FeedOrderChange.announcement(from: ["a", "b", "c"], to: ["b", "a", "c"], myUid: "me"),
             .member(uid: "b"),
             "une permutation : celui qui monte"
+        )
+    }
+
+    func testASingleRiserWhoDoesNotReachTheTopIsAnnouncedByTheGeneralSentence() {
+        XCTAssertEqual(
+            FeedOrderChange.announcement(from: ["a", "b", "c", "d"], to: ["a", "c", "b", "d"], myUid: "me"),
+            .generic,
+            "c a monté d'une place sans arriver en tête : pas de prénom"
+        )
+        XCTAssertEqual(
+            FeedOrderChange.announcement(from: ["a", "b", "me"], to: ["a", "me", "b"], myUid: "me"),
+            .generic,
+            "ma carte ne reste muette que lorsqu'elle arrive en tête"
         )
     }
 

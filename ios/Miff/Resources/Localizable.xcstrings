@@ -3096,36 +3096,36 @@
         }
       }
     },
-    "ios_feed_order_member_a11y": {
+    "feed_order_updated_many_a11y": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ shared an update"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%1$@ a donné des nouvelles"
-          }
-        }
-      }
-    },
-    "ios_feed_order_updated_a11y": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The Feed has been updated"
+            "value": "The Feed was updated"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Le Feed a été mis à jour"
+          }
+        }
+      }
+    },
+    "feed_order_updated_one_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ shared an update"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ a donné des nouvelles"
           }
         }
       }

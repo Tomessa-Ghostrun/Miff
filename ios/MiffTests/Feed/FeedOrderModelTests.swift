@@ -119,7 +119,45 @@ final class FeedOrderModelTests: XCTestCase {
 
         model.update(context(["c", "me", "a", "b"]), animated: true)
 
-        XCTAssertEqual(announced, [L10n.string("ios_feed_order_updated_a11y")])
+        XCTAssertEqual(announced, [L10n.string("feed_order_updated_many_a11y")])
+    }
+
+    func testAfterAReturnToTheFeedTheOrderIsAppliedDirectlyForFourSecondsOnTheMonotonicClock() {
+        var now: TimeInterval = 1_000
+        let model = makeModel()
+        model.uptime = { now }
+        model.update(context(["a", "b", "c", "me"]), animated: true)
+
+        model.flush()
+        now += FeedOrderModel.directWindow - 0.5
+        model.update(context(["c", "a", "b", "me"]), animated: true)
+
+        XCTAssertEqual(model.order.shown, ["c", "a", "b", "me"])
+        XCTAssertTrue(announced.isEmpty, "dans la fenêtre : ni animation ni annonce")
+
+        now += 1
+        model.update(context(["b", "c", "a", "me"]), animated: true)
+
+        XCTAssertEqual(model.order.shown, ["b", "c", "a", "me"])
+        XCTAssertEqual(announced.count, 1, "la fenêtre est fermée : le changement est annoncé")
+    }
+
+    func testAGestureStillHoldsTheOrderInsideTheDirectWindowAndItsEndIsDirect() {
+        var now: TimeInterval = 1_000
+        let model = makeModel()
+        model.uptime = { now }
+        model.update(context(["a", "b", "c", "me"]), animated: true)
+        model.openDirectWindow()
+        model.setGestureActive(true, animated: true)
+
+        model.update(context(["c", "a", "b", "me"]), animated: true)
+        XCTAssertEqual(model.order.shown, ["a", "b", "c", "me"], "un geste retient toujours l'ordre")
+
+        now += 1
+        model.setGestureActive(false, animated: true)
+
+        XCTAssertEqual(model.order.shown, ["c", "a", "b", "me"])
+        XCTAssertTrue(announced.isEmpty)
     }
 
     func testTheAnnouncementTextsExistInBothLanguages() {
@@ -127,9 +165,9 @@ final class FeedOrderModelTests: XCTestCase {
         let generic = FeedOrderModel.text(for: .generic, names: names)
         let unreadable = FeedOrderModel.text(for: .member(uid: "a"), names: ["a": ""])
 
-        XCTAssertNotEqual(member, "ios_feed_order_member_a11y")
+        XCTAssertNotEqual(member, "feed_order_updated_one_a11y")
         XCTAssertTrue(member?.contains("Thomas") == true)
-        XCTAssertNotEqual(generic, "ios_feed_order_updated_a11y")
+        XCTAssertNotEqual(generic, "feed_order_updated_many_a11y")
         XCTAssertEqual(unreadable, generic, "sans prénom lisible : la phrase générale")
     }
 }

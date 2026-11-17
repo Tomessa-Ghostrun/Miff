@@ -149,10 +149,7 @@ enum FeedBuilder {
 
     /// Les cartes du Feed, de la dernière update la plus récente à la plus ancienne (ticket FEED-ORDRE, décisions du §3). La date est
     /// `status.lastUpdateAt`, lue DANS les statuts déjà écoutés (aucune lecture de plus). Ma carte est triée comme les autres. Sans date
-    /// exploitable : aucun statut montré (partage arrêté, caché ou pas encore publié), mon accord attendu, OU carte « Pas encore de
-    /// nouvelles » : ces membres suivent tous les autres, dans l'ordre d'arrivée (la liste des membres), pour que l'ordre et l'étiquette ne
-    /// se contredisent jamais. Limite connue : un membre qui a publié une update manuelle avant tout départ d'un lieu garde `presence`
-    /// « unknown » (carte « Pas encore de nouvelles ») : son update ne le fait pas remonter.
+    /// exploitable (voir `orderDate`) : ces membres suivent tous les autres, dans l'ordre d'arrivée (la liste des membres).
     static func sortedByLastUpdate(
         _ members: [MiffMember],
         cards: [FeedMemberCard],
@@ -171,13 +168,28 @@ enum FeedBuilder {
         return FeedOrder.sorted(entries).compactMap { byUid[$0] }
     }
 
-    private static let undatedLabels: [StateLabel] = [.noNews, .sharingStopped, .newsHidden, .waitingAgreement]
-
+    /// La date de tri d'une carte (ticket FEED-ORDRE, §3 #1 et #3) : `lastUpdateAt` du statut, SAUF pour les cartes sans date exploitable
+    /// (nil, après toutes les autres) : « Partage désactivé », « Informations masquées », mon accord attendu. Une carte « Pas encore de
+    /// nouvelles » ou « Voyage terminé » n'a de date QUE si une update a été publiée APRÈS le début de son état : `lastUpdateAt` strictement
+    /// plus récent que `presenceAt`. C'est le cas d'une update manuelle avant tout départ d'un lieu (`presence = unknown`, l'étiquette ne
+    /// change pas). Pas de date quand les deux sont égaux (premier statut, à l'activation du partage : les deux valent l'heure du serveur),
+    /// quand `lastUpdateAt` est plus ancien (fin d'un voyage : `lastUpdateAt` conservé, `presenceAt` récent) ou qu'une des deux manque :
+    /// jamais une date qu'on ne peut pas justifier.
     private static func orderDate(_ card: FeedMemberCard, statuses: [String: MemberStatus]) -> Int? {
-        guard !undatedLabels.contains(card.label) else {
+        guard let status = statuses[card.member.uid] else {
             return nil
         }
-        return statuses[card.member.uid]?.lastUpdateAtMillis
+        switch card.label {
+        case .sharingStopped, .newsHidden, .waitingAgreement:
+            return nil
+        case .noNews, .travelEnded:
+            guard let update = status.lastUpdateAtMillis, let start = status.presenceAtMillis, update > start else {
+                return nil
+            }
+            return update
+        default:
+            return status.lastUpdateAtMillis
+        }
     }
 
     /// La couleur de la Miff (décision du PM) : rouge si au moins un membre est rouge ; verte si tous ceux dont le statut est connu

@@ -60,6 +60,11 @@ struct FeedGestureWatcher: UIViewRepresentable {
             }
         }
 
+        /// Oublie tous les doigts, sans rien publier (reprise de la scène : un « fin de toucher » perdu ne doit jamais bloquer l'ordre).
+        func clear() {
+            touching.removeAll()
+        }
+
         private func finish(_ touches: Set<UITouch>) {
             touching.subtract(touches)
             if touching.isEmpty {
@@ -87,6 +92,7 @@ struct FeedGestureWatcher: UIViewRepresentable {
         private var touching = false
         private var scrolling = false
         private var reportedBusy = false
+        private var sceneTokens: [NSObjectProtocol] = []
         /// Après le dernier mouvement de la liste, ce délai sans nouveau mouvement (et sans doigt) termine le geste.
         private static let settleDelay: TimeInterval = 0.25
 
@@ -120,12 +126,32 @@ struct FeedGestureWatcher: UIViewRepresentable {
             observation = scrollView.observe(\.contentOffset, options: [.new]) { [weak self] scroll, _ in
                 self?.moved(scroll)
             }
+            // Un doigt ou un défilement « coincé » (l'app quitte l'écran en plein geste) est oublié au départ et à la reprise de la scène.
+            let center = NotificationCenter.default
+            let names = [UIApplication.willResignActiveNotification, UIApplication.didBecomeActiveNotification]
+            sceneTokens = names.map { name in
+                center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                    self?.resetGesture()
+                }
+            }
+        }
+
+        /// Plus aucun doigt ni défilement en cours : le geste est terminé (et dit comme tel au Feed, qui applique l'ordre en attente).
+        private func resetGesture() {
+            observer?.clear()
+            settleTimer?.invalidate()
+            settleTimer = nil
+            touching = false
+            scrolling = false
+            publish()
         }
 
         /// Détache tout : plus aucun observateur ni minuteur. Rien n'est publié ici (la vue peut être retirée en pleine mise à jour de
         /// l'écran) : le Feed termine lui-même un geste resté en cours quand il revient à l'écran (`FeedOrderModel.flush`).
         func detach() {
             observation = nil
+            sceneTokens.forEach { NotificationCenter.default.removeObserver($0) }
+            sceneTokens = []
             settleTimer?.invalidate()
             settleTimer = nil
             if let observer {

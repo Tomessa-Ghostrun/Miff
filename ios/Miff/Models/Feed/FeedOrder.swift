@@ -56,8 +56,8 @@ enum FeedOrderAnnouncement: Equatable {
 
 enum FeedOrderChange {
     /// L'annonce d'un changement d'ordre, ou nil : rien n'a changé entre les membres présents des deux côtés (une arrivée ou un départ ne
-    /// s'annonce pas), ou c'est MA carte qui a monté (jamais d'annonce pour elle). Une seule carte qui monte : son prénom ; sinon, la phrase
-    /// générale.
+    /// s'annonce pas), ou c'est MA carte qui est arrivée en tête (jamais d'annonce pour elle). Une seule carte qui monte ET arrive en tête de
+    /// la liste : son prénom ; sinon (plusieurs cartes, ou une carte qui monte sans arriver en tête), la phrase générale.
     static func announcement(from old: [String], to new: [String], myUid: String) -> FeedOrderAnnouncement? {
         let common = Set(old).intersection(new)
         let before = old.filter { common.contains($0) }
@@ -68,7 +68,7 @@ enum FeedOrderChange {
         let risers = before.filter { uid in
             moved(uid, from: before, to: after) && singleMover(uid, before: before, after: after)
         }
-        guard risers.count == 1, let riser = risers.first else {
+        guard risers.count == 1, let riser = risers.first, new.first == riser else {
             return .generic
         }
         return riser == myUid ? nil : .member(uid: riser)

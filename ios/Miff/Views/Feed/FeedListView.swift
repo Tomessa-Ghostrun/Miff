@@ -124,8 +124,9 @@ struct FeedListView: View {
                 .background(FeedGestureWatcher { busy in order.setGestureActive(busy, animated: !reduceMotion) })
             }
             .onPreferenceChange(ContentTopKey.self) { onContentMoved($0) }
-            // Au rafraîchissement manuel, l'ordre à jour est appliqué tout de suite (sans animation ni annonce).
+            // Au rafraîchissement manuel, l'ordre à jour est appliqué directement, au début (fenêtre de 4 s) et à la fin, sans animation ni annonce.
             .refreshable {
+                order.openDirectWindow()
                 await actions.onRefresh()
                 order.flush()
             }
@@ -152,6 +153,7 @@ struct FeedListView: View {
         }
         .accessibilityAction(named: Text("feed_refresh_a11y")) {
             Task {
+                order.openDirectWindow()
                 await actions.onRefresh()
                 order.flush()
             }

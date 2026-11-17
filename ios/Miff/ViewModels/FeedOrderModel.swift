@@ -28,9 +28,28 @@ final class FeedOrderModel: ObservableObject {
     /// Appelé quand l'ordre change réellement, jamais à l'arrivée sur l'écran ni pour ma carte. Branché sur le lecteur d'écran par la vue.
     var onAnnounce: (String) -> Void = { _ in }
 
+    /// L'horloge MONOTONE (le temps écoulé depuis le démarrage du téléphone) de la fenêtre « directe » : jamais l'heure du mur, qu'un
+    /// changement d'heure ou de fuseau ferait sauter. Remplaçable dans les tests.
+    var uptime: () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }
+
+    /// Combien de temps, après un retour sur le Feed ou un rafraîchissement, un nouvel ordre est appliqué directement (sans animation ni
+    /// annonce) : les données arrivent un instant après le retour. Même durée qu'Android (4 s).
+    static let directWindow: TimeInterval = 4
+
     private var gestureActive = false
     private var context: FeedOrderContext?
+    private var directUntil = -TimeInterval.infinity
     private static let moveDuration = 0.35
+
+    private var inDirectWindow: Bool {
+        uptime() < directUntil
+    }
+
+    /// Ouvre la fenêtre « directe » : jusqu'à sa fin, un nouvel ordre est appliqué sans animation ni annonce (un geste en cours retient
+    /// toujours l'ordre).
+    func openDirectWindow() {
+        directUntil = max(directUntil, uptime() + Self.directWindow)
+    }
 
     /// Un nouvel ordre calculé pour la Miff affichée. L'ordre à jour est appliqué tout de suite au premier affichage et quand la Miff change
     /// (sans animation) ; sinon il attend la fin du geste. `animated` : faux avec « Réduire les animations ».
@@ -40,7 +59,8 @@ final class FeedOrderModel: ObservableObject {
         if miffChanged {
             order.reset()
         }
-        perform(animated: animated && !miffChanged, announcing: !miffChanged) {
+        let direct = miffChanged || inDirectWindow
+        perform(animated: animated && !direct, announcing: !direct) {
             $0.receive(next.uids, gestureActive: gestureActive, immediate: miffChanged)
         }
     }
@@ -59,14 +79,16 @@ final class FeedOrderModel: ObservableObject {
         }
         gestureActive = active
         if !active {
-            perform(animated: animated, announcing: true) { $0.gestureEnded() }
+            let direct = inDirectWindow
+            perform(animated: animated && !direct, announcing: !direct) { $0.gestureEnded() }
         }
     }
 
-    /// Retour sur l'onglet, rafraîchissement manuel : l'ordre à jour est appliqué tout de suite, sans animation ni annonce, quel que soit
-    /// l'état du geste.
+    /// Retour sur l'onglet, fin d'un rafraîchissement manuel : l'ordre à jour est appliqué tout de suite, sans animation ni annonce, quel que
+    /// soit l'état du geste (un geste « resté en cours » est terminé), et la fenêtre « directe » s'ouvre pour ce qui arrive juste après.
     func flush() {
         gestureActive = false
+        openDirectWindow()
         perform(animated: false, announcing: false) { $0.flush() }
     }
 
@@ -98,11 +120,11 @@ final class FeedOrderModel: ObservableObject {
         switch announcement {
         case .member(let uid):
             guard let name = names[uid], !name.isEmpty else {
-                return L10n.string("ios_feed_order_updated_a11y")
+                return L10n.string("feed_order_updated_many_a11y")
             }
-            return L10n.format("ios_feed_order_member_a11y", name)
+            return L10n.format("feed_order_updated_one_a11y", name)
         case .generic:
-            return L10n.string("ios_feed_order_updated_a11y")
+            return L10n.string("feed_order_updated_many_a11y")
         }
     }
 }
