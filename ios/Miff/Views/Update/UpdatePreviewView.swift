@@ -5,6 +5,9 @@ import UIKit
 // coins arrondis, fond sombre autour), ENTIÈRE et à son ratio ; la croix (même effet que « Recommencer », D22), « Recommencer » et « Publier »
 // DESSOUS. Ce qui est dessiné est le JPEG même qui sera publié (reflet de la caméra frontale compris, D37) : l'aperçu dit la vérité. Rien n'a
 // quitté le téléphone à ce stade, et aucune position n'est mesurée (elle l'est au toucher de « Publier », D33).
+// La DESCRIPTION facultative (ticket description-update) : un champ SOUS la photo, avant les lignes de visibilité ; « Publier » n'en dépend jamais.
+// Clavier ouvert, la barre d'onglets est déjà masquée par la coquille et le contenu remonte au-dessus du clavier : c'est la PHOTO (zone souple) qui se
+// réduit, jamais le champ ni « Recommencer » / « Publier ». Un toucher sur la photo ou le fond ferme le clavier et ne fait rien d'autre.
 
 /// Ce que l'aperçu demande au reste de l'app.
 struct UpdateActions {
@@ -23,17 +26,32 @@ struct UpdatePreviewView: View {
     let miffCount: Int
     let onRetake: () -> Void
     let onPublish: () -> Void
+    let onDescriptionChange: (String) -> Void
     let actions: UpdateActions
 
     @State private var image: UIImage?
+    @FocusState private var descriptionFocused: Bool
 
     var body: some View {
         ZStack {
-            colorUpdateStage.color.ignoresSafeArea()
+            colorUpdateStage.color
+                .ignoresSafeArea()
+                .contentShape(Rectangle())
+                .onTapGesture { descriptionFocused = false }
+                .accessibilityHidden(true)
             VStack(spacing: 0) {
                 photoFrame
                     .padding(.horizontal, Spacing.md)
                     .padding(.vertical, Spacing.sm)
+                DescriptionField(
+                    text: state.descriptionText,
+                    limitHit: state.descriptionLimitHit,
+                    enabled: !state.publishing,
+                    focus: $descriptionFocused,
+                    onChange: onDescriptionChange
+                )
+                .padding(.horizontal, Spacing.md)
+                .padding(.bottom, Spacing.sm)
                 visibilityLines
                     .padding(.horizontal, Spacing.md)
                 buttons
@@ -57,6 +75,13 @@ struct UpdatePreviewView: View {
         }
     }
 
+    /// « Publier » et « Réessayer » ferment d'abord le clavier (la carte calme est alors entièrement visible), puis publient : UN seul toucher.
+    /// Le mot en cours de composition est déjà dans le modèle (le champ remonte chaque changement, composition comprise).
+    private func publish() {
+        descriptionFocused = false
+        onPublish()
+    }
+
     // MARK: - La photo
 
     private var photoFrame: some View {
@@ -72,6 +97,8 @@ struct UpdatePreviewView: View {
                     Image(uiImage: image)
                         .resizable()
                         .frame(width: CGFloat(fitted.width), height: CGFloat(fitted.height))
+                        .contentShape(Rectangle())
+                        .onTapGesture { descriptionFocused = false }
                         .accessibilityHidden(true)
                 }
                 // La croix fait ce que fait « Recommencer » (D22) : retour au viseur, photo oubliée, rien publié, rien demandé.
@@ -83,7 +110,7 @@ struct UpdatePreviewView: View {
                     VStack {
                         Spacer(minLength: 0)
                         UpdateNoticeCard(
-                            notice: notice, canRetry: !state.publishing, onRetry: onPublish, actions: actions
+                            notice: notice, canRetry: !state.publishing, onRetry: publish, actions: actions
                         )
                         .padding(Spacing.sm)
                     }
@@ -130,7 +157,7 @@ struct UpdatePreviewView: View {
         HStack(spacing: Spacing.sm) {
             Spacer(minLength: 0)
             RetakeButton(enabled: !state.publishing, onTap: onRetake)
-            PublishButton(enabled: state.canPublish, onTap: onPublish)
+            PublishButton(enabled: state.canPublish, onTap: publish)
         }
     }
 }

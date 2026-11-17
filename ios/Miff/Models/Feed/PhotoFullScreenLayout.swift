@@ -33,6 +33,30 @@ enum PhotoFullScreenLayout {
     /// large. Elle grandit avec la taille du texte (`@ScaledMetric` côté écran) ; au-delà de 45 % de la hauteur, la légende défile.
     static let footerEstimate: CGFloat = 170
 
+    /// La même estimation QUAND il y a une description : « Photo de … » passe alors au corps 16 (22 pt de haut au lieu de 26) et la description porte
+    /// seule le grand titre. Le titre et le lieu sont comptés sur une ligne chacun avec de la marge, le bouton à 44 pt : sans cette réduction,
+    /// presque toute description ferait défiler le pied sur un iPhone de 812 pt (une zone de voile vide, jusqu'à 45 % de l'écran).
+    static let footerEstimateWithDescription: CGFloat = 130
+
+    /// Largeur moyenne d'un caractère de la description, en part du corps de la police : la description est en GRAS (titre 20/26), donc plus large
+    /// que le corps normal (texte français, emojis compris : un emoji compte 2 unités UTF-16 pour environ 1 corps de large). Un peu large pour
+    /// couvrir la perte des fins de ligne (mots qui ne tiennent pas).
+    static let averageGlyphWidth: CGFloat = 0.56
+
+    /// La hauteur ajoutée au pied par une description de `unitCount` unités UTF-16 (0 quand il n'y en a pas) : le nombre de lignes estimé pour
+    /// `width` de large, à `lineHeight` chacune, plus l'espace sous le texte. Le corps et l'interligne passés sont DÉJÀ agrandis avec la taille du
+    /// texte du système (titre 20 pt, interligne 26 pt avant agrandissement) : plus la police est grande, plus la description pèse, jusqu'à faire
+    /// défiler le pied. Le plus long texte (140 unités) ne fait jamais plus d'une quinzaine de lignes à la plus grande taille : le pied, borné à
+    /// 45 %, défile.
+    static func descriptionHeight(unitCount: Int, fontSize: CGFloat, lineHeight: CGFloat, width: CGFloat) -> CGFloat {
+        guard unitCount > 0, fontSize > 0, lineHeight > 0, width > 0 else {
+            return 0
+        }
+        let perLine = max(1, Int((width / (fontSize * averageGlyphWidth)).rounded(.down)))
+        let lines = (unitCount + perLine - 1) / perLine
+        return CGFloat(lines) * lineHeight + captionSpacing
+    }
+
     /// La légende défile-t-elle ? Oui quand son contenu estimé (zone sûre du bas comprise) dépasse sa hauteur maximale (grand texte, paysage).
     static func footerScrolls(estimate: CGFloat, screenHeight: CGFloat) -> Bool {
         estimate > footerMaxHeight(screenHeight: screenHeight)
@@ -72,7 +96,40 @@ enum PhotoFullScreenLayout {
     }
 }
 
+/// Le niveau typographique d'une ligne de texte du pied (retour du PM sur la recette Android de la description).
+enum PhotoFooterTextLevel: Equatable {
+    /// Le grand titre : gras, 20 pt (`textTitleBold20`).
+    case heading
+    /// Le texte courant : normal, 16 pt (`textBodyRegular`).
+    case body
+}
+
+/// Les lignes du pied du plein écran, de haut en bas.
+enum PhotoFooterRow: Hashable {
+    /// La description de l'auteur (facultative).
+    case description
+    /// « Photo de {Prénom} · {heure} ».
+    case title
+    /// « Position mesurée … », et « Voir où c'était » (quand la photo a un lieu).
+    case place
+}
+
 extension PhotoFullScreenLayout {
+    /// L'ordre du pied : la DESCRIPTION d'abord (quand il y en a une), puis « Photo de … », puis le lieu. Sans description, le pied est exactement celui
+    /// d'avant : aucune ligne vide, aucun libellé « pas de description ».
+    static func footerRows(hasDescription: Bool, hasPlace: Bool) -> [PhotoFooterRow] {
+        (hasDescription ? [PhotoFooterRow.description] : []) + [.title] + (hasPlace ? [.place] : [])
+    }
+
+    /// Le niveau de la DESCRIPTION de l'auteur : toujours le grand titre (c'est elle que le proche vient lire).
+    static let descriptionLevel = PhotoFooterTextLevel.heading
+
+    /// Le niveau de « Photo de {Prénom} · {heure} » : le grand titre comme avant quand il n'y a PAS de description (pied inchangé) ; le texte
+    /// courant, plus petit, quand une description existe (elle prend alors le titre). L'en-tête VoiceOver reste « Photo de … » dans les deux cas.
+    static func titleLevel(hasDescription: Bool) -> PhotoFooterTextLevel {
+        hasDescription ? .body : .heading
+    }
+
     /// Le décalage de la croix et de l'icône depuis le bord HAUT de l'écran : le plus grand de la zone sûre lue et du plancher (47 pt), plus 12 pt.
     /// Le plancher ne vaut qu'en portrait (en paysage il n'y a pas d'encoche en haut : le plancher ferait perdre de la place pour rien).
     static func topMargin(safeInset: CGFloat, isPortrait: Bool) -> CGFloat {

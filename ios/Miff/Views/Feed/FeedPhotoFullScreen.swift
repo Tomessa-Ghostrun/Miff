@@ -9,6 +9,10 @@ import UIKit
 // CONFIDENTIALITÉ : la photo et son lieu ne sont que dans la mémoire de l'écran, jamais un fichier de l'app, un journal ou un événement ; la SEULE
 // écriture dans Photos est celle du toucher de l'icône (ajout seul, sans lieu, `PhotosLibrarySaver`) ; l'écran est masqué dans la vignette du
 // sélecteur d'applications (`hidesInAppSwitcher`) comme le reste du Feed. Rien n'est conservé à la fermeture.
+// La DESCRIPTION facultative de l'auteur (ticket description-update) est dans le pied, AU-DESSUS de « Photo de … » : du texte BRUT (`Text(verbatim:)` :
+// aucun Markdown, aucun lien, aucune détection de numéro ou d'adresse, aucune sélection ni copie), dans le style du GRAND TITRE (gras 20, Dynamic Type ;
+// « Photo de … » passe alors au corps 16 normal, retour du PM), jamais tronquée ; le pied reste borné à 45 % de la hauteur et défile au-delà (la hauteur de la description est ESTIMÉE par `PhotoFullScreenLayout.descriptionHeight` : aucune
+// mesure de vue ici, comme pour le reste du pied). Elle ne va jamais ailleurs qu'à l'écran : « Enregistrer cette photo » n'enregistre que l'image.
 
 struct PhotoFullScreen: View {
     let opened: OpenedPhoto
@@ -29,6 +33,12 @@ struct PhotoFullScreen: View {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     /// La hauteur du contenu de la légende (sans la zone sûre), qui grandit avec la taille du texte : elle décide si la légende défile.
     @ScaledMetric(relativeTo: .body) private var footerEstimate: CGFloat = PhotoFullScreenLayout.footerEstimate
+    /// La même hauteur quand il y a une description (« Photo de … » est alors au corps 16, plus petit).
+    @ScaledMetric(relativeTo: .body)
+    private var describedFooterEstimate: CGFloat = PhotoFullScreenLayout.footerEstimateWithDescription
+    /// Le corps et l'interligne de la description (20 et 26 pt, jeton `textTitleBold20`, style `title3`), qui grandissent avec la taille du texte.
+    @ScaledMetric(relativeTo: .title3) private var authorTextSize: CGFloat = 20
+    @ScaledMetric(relativeTo: .title3) private var authorLineHeight: CGFloat = 26
 
     private static let maxZoom: CGFloat = 4
     private static let doubleTapZoom: CGFloat = 2
@@ -211,8 +221,16 @@ struct PhotoFullScreen: View {
     private func footerOverlay(size: CGSize, insets: EdgeInsets) -> some View {
         let scrim = (reduceTransparency ? colorPhotoCaptionScrim.withAlpha(1) : colorPhotoCaptionScrim).color
         let cap = PhotoFullScreenLayout.footerMaxHeight(screenHeight: size.height)
+        // Sans description, `descriptionExtra` vaut 0 : l'estimation d'avant, inchangée.
+        let hasDescription = opened.photo.descriptionText != nil
+        let descriptionExtra = PhotoFullScreenLayout.descriptionHeight(
+            unitCount: opened.photo.descriptionText?.utf16.count ?? 0, fontSize: authorTextSize,
+            lineHeight: authorLineHeight, width: size.width - 2 * Spacing.md - insets.leading - insets.trailing
+        )
         let scrolls = PhotoFullScreenLayout.footerScrolls(
-            estimate: footerEstimate + insets.bottom + PhotoFullScreenLayout.fadeHeight, screenHeight: size.height
+            estimate: (hasDescription ? describedFooterEstimate : footerEstimate) + insets.bottom + descriptionExtra
+                + PhotoFullScreenLayout.fadeHeight,
+            screenHeight: size.height
         )
         return VStack(spacing: 0) {
             LinearGradient(colors: [scrim.opacity(0), scrim], startPoint: .top, endPoint: .bottom)
@@ -232,15 +250,26 @@ struct PhotoFullScreen: View {
         }
     }
 
+    /// Le pied, de haut en bas : la DESCRIPTION (s'il y en a une), « Photo de … », puis le lieu. L'ordre est celui de `PhotoFullScreenLayout.footerRows`.
     private func footer(insets: EdgeInsets) -> some View {
-        VStack(alignment: .leading, spacing: PhotoFullScreenLayout.captionSpacing) {
-            Text(verbatim: title)
-                .miffTextStyle(textTitleBold20)
-                .foregroundColor(colorUpdateOnPhoto.color)
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityAddTraits(.isHeader)
-            if let place = opened.photo.place {
-                placeSection(place)
+        let hasDescription = opened.photo.descriptionText != nil
+        let rows = PhotoFullScreenLayout.footerRows(hasDescription: hasDescription, hasPlace: opened.photo.place != nil)
+        return VStack(alignment: .leading, spacing: PhotoFullScreenLayout.captionSpacing) {
+            ForEach(rows, id: \.self) { row in
+                switch row {
+                case .description:
+                    writtenDescriptionRow
+                case .title:
+                    Text(verbatim: title)
+                        .miffTextStyle(style(for: PhotoFullScreenLayout.titleLevel(hasDescription: hasDescription)))
+                        .foregroundColor(colorUpdateOnPhoto.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityAddTraits(.isHeader)
+                case .place:
+                    if let place = opened.photo.place {
+                        placeSection(place)
+                    }
+                }
             }
         }
         .padding(.horizontal, Spacing.md)
@@ -249,6 +278,27 @@ struct PhotoFullScreen: View {
         .padding(.top, PhotoFullScreenLayout.captionTopPadding)
         .padding(.bottom, insets.bottom)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Le jeton de police d'un niveau du pied : grand titre (gras 20) ou texte courant (16).
+    private func style(for level: PhotoFooterTextLevel) -> TextStyleToken {
+        level == .heading ? textTitleBold20 : textBodyRegular
+    }
+
+    /// La description de l'auteur : texte BRUT, grand titre (gras 20), entière (jamais de « … »), lue par VoiceOver AVANT le titre et précédée de
+    /// « Description : ».
+    @ViewBuilder
+    private var writtenDescriptionRow: some View {
+        if let description = opened.photo.descriptionText {
+            Text(verbatim: description)
+                .miffTextStyle(style(for: PhotoFullScreenLayout.descriptionLevel))
+                .foregroundColor(colorUpdateOnPhoto.color)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, PhotoFullScreenLayout.captionSpacing)
+                .accessibilityLabel(Text(verbatim: L10n.format("update_description_shown_a11y", description)))
+        }
     }
 
     @ViewBuilder

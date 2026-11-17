@@ -2,7 +2,7 @@ import Foundation
 
 // CONFIDENTIALITÉ, pour ce fichier (FEED-8) : la photo de la dernière update d'un proche, avec le lieu où elle a été prise. Elle vit en
 // MÉMOIRE seulement, pour la session (le cache est vidé à la déconnexion) : jamais dans un fichier de l'app, ni dans la photothèque, ni dans un
-// journal, un événement, un rapport de plantage ou le presse-papiers. `description` ne montre rien. Ce qui vient du réseau a été écrit par
+// journal, un événement, un rapport de plantage ou le presse-papiers. `description` ne montre rien (pas même la DESCRIPTION facultative que l'auteur a écrite). Ce qui vient du réseau a été écrit par
 // QUELQU'UN D'AUTRE : tout est vérifié avant d'être utilisé (`fromServer`). Miroir de `SharedPhoto.kt` d'Android.
 
 /// Les champs d'un document `miffs/{id}/photos/{uid}` tels que le serveur les décrit, AVANT toute vérification.
@@ -13,15 +13,28 @@ struct RawPhoto {
     var lat: Double?
     var lng: Double?
     var measuredAtMillis: Int?
+    /// La valeur BRUTE du champ `description` (n'importe quel type : QUELQU'UN D'AUTRE l'a écrite) ; nettoyée par `SharedPhoto.fromServer`.
+    var writtenDescription: Any?
 }
 
-/// La photo d'une update : le JPEG, l'heure de sa publication (heure serveur), l'heure où elle cesse d'être lisible, et son lieu s'il en a un.
+/// La photo d'une update : le JPEG, l'heure de sa publication (heure serveur), l'heure où elle cesse d'être lisible, son lieu s'il en a un et sa
+/// DESCRIPTION si l'auteur en a écrit une (texte de 1 à 140 unités, déjà nettoyé : voir `PhotoDescription` ; nil = aucune). Elle vit et meurt avec la photo.
 struct SharedPhoto: Equatable, CustomStringConvertible {
     let jpeg: Data
     let createdAtMillis: Int
     let expiresAtMillis: Int
     /// Le lieu de la photo et l'heure de la MESURE (pas celle de la photo : les deux peuvent différer de quelques minutes).
     let place: PhotoPlace?
+    /// Ce que l'auteur a écrit au sujet de sa photo (jamais montré dans un journal : `description` reste « redacted »).
+    let descriptionText: String?
+
+    init(jpeg: Data, createdAtMillis: Int, expiresAtMillis: Int, place: PhotoPlace?, descriptionText: String? = nil) {
+        self.jpeg = jpeg
+        self.createdAtMillis = createdAtMillis
+        self.expiresAtMillis = expiresAtMillis
+        self.place = place
+        self.descriptionText = descriptionText
+    }
 
     var description: String {
         "SharedPhoto(redacted)"
@@ -40,7 +53,11 @@ struct SharedPhoto: Equatable, CustomStringConvertible {
               let created = raw.createdAtMillis, let expires = raw.expiresAtMillis, expires > nowMillis else {
             return nil
         }
-        return SharedPhoto(jpeg: jpeg, createdAtMillis: created, expiresAtMillis: expires, place: place(of: raw))
+        // La description : seulement un texte de 1 à 140 unités, nettoyé (critère C5) ; tout autre type est ignoré, la photo reste montrée.
+        return SharedPhoto(
+            jpeg: jpeg, createdAtMillis: created, expiresAtMillis: expires, place: place(of: raw),
+            descriptionText: PhotoDescription.fromServer(raw.writtenDescription)
+        )
     }
 
     private static func place(of raw: RawPhoto) -> PhotoPlace? {
