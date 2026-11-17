@@ -926,6 +926,25 @@ Câblage : `MainShellView` donne à l'environnement `countdownContext` (MON stat
 
 Écarts et limites : voir la PR et `CHANGELOG.md`. La bulle d'incitation (orange et rouge seulement) et l'encart (vert seulement) ne sont jamais visibles ensemble.
 
+## Notifications : « Depuis ta dernière visite » (NOTIF-P1I, miroir d'Android NOTIF-P1A, PR #223)
+
+Ticket `docs/tickets/notifications-p1-derniere-visite.md` (décisions du PM du 2026-11-13, §11), recette `docs/qa/checklists/notifs-derniere-visite-ios-recette-pm.md`. **Pas de maquette** (les lignes du centre existantes + un titre de groupe). Même logique que sur Android : à l'**ouverture** (lancement, ou retour au premier plan après **30 minutes ou plus** ; `scenePhase` : `.background` note l'heure, `.active` décide), la PROCHAINE image **fraîche** du Feed (statuts confirmés par le serveur, en ligne, mon partage actif, accord non attendu) est comparée à celle que le Feed montrait la fois d'avant ; **1 à 3 lignes** au plus, une par proche, sous « Depuis ta dernière visite » **au-dessus d'« Aujourd'hui »**, avec la phrase de limite. **Aucune notification** (ni bannière, ni son, ni pastille sur l'icône), **aucune permission, aucune lecture ni écriture Firestore de plus, aucun événement Analytics**.
+
+| Chemin | Rôle |
+|---|---|
+| `Models/Notification/LastVisit.swift`, `LastVisit+Lines.swift` | Logique PURE (miroir de `LastVisit.kt`) : image du Feed (`sample`), comparaison (`compare`, vecteurs C1-T1 à C1-T20), clé et lecture d'une ligne, jours (aujourd'hui, hier, jour de la semaine de 2 à 6 jours, date courte), remplacement du groupe dans `NotificationHistory`. |
+| `Models/Notification/LastVisitTexts.swift` | Les phrases, faites à l'AFFICHAGE (prénom connu maintenant, heure au format du téléphone) ; clés `notif_c1_*` du catalogue (identiques à celles d'Android : parité vérifiée). |
+| `Services/Notification/LastVisitTracker.swift` | Ouverture, comparaison, image gardée, purge ; suit l'annuaire des Miffs (une Miff quittée, supprimée ou perdue emporte son image et ses lignes). |
+| `Services/Notification/LastVisitFileStore.swift` | UN fichier du stockage privé (Application Support), exclu des sauvegardes, propre à un compte, **écrit de façon synchrone** (fermeture forcée : la comparaison part de ce qui était AFFICHÉ). Seulement des identifiants, le mot de la présence, la catégorie du lieu et des heures : **jamais un prénom ni un nom de lieu**. Effacé à la déconnexion, à la suppression du compte et à la perte d'une Miff. |
+| `ViewModels/FeedViewModel+Visit.swift` | Ce que le Feed dit à la comparaison (seulement pendant une observation en cours, image fraîche, hors connexion exclu). |
+| `Views/Notification/LastVisitLifecycle.swift` | Cycle de vie de la scène. |
+
+**Spécificités iOS.** (1) `scenePhase` : un passage par `.inactive` (centre de contrôle, sélecteur d'applications) n'est pas une absence. (2) **Fermeture forcée** : l'image gardée suit l'écran et est écrite tout de suite. (3) **Notifications du téléphone coupées ou jamais demandées** : le centre reste flou avec son unique bouton, mais le groupe « Depuis ta dernière visite » reste **visible au-dessus du flou** (décision Q4 : ce n'est pas une notification) ; il n'est jamais dessiné sous le flou, et il est marqué lu en quittant l'écran (le reste, caché, ne l'est pas). (4) Toucher une ligne : la Miff concernée devient celle du Feed, qui défile jusqu'à la carte du proche (`ScrollViewReader`, sans animation avec « Réduire les animations » ; si la Miff n'est pas celle montrée, le Feed attend 10 s au plus, jamais une erreur).
+
+**Écarts avec Android.** Aucun fonctionnel. Techniques : la comparaison tourne sur le fil principal (Android : un fil de travail) ; l'image est liée au compte (`uid`) dans le fichier ; la suppression d'une Miff passe par l'annuaire (liste confirmée par le serveur) et non par un appel à la sortie. **Écart du ticket repris tel quel** : « a rejoint l'école à 8 h 02 » (pas d'accord de genre).
+
+**Sans Mac, rien n'est compilé en local** : la CI fait foi. **À vérifier sur l'iPhone** : la ligne affichée après une fermeture forcée, le défilement jusqu'à la carte, le groupe au-dessus du flou, VoiceOver, Dynamic Type au maximum.
+
 ## Confidentialité : Analytics et Crashlytics
 
 - `Info.plist` : `FIREBASE_ANALYTICS_COLLECTION_ENABLED = NO` (la clé irréversible `..._DEACTIVATED` n'est **pas** utilisée), `FirebaseCrashlyticsCollectionEnabled = NO`, `FirebaseDataCollectionDefaultEnabled = NO` (collecte par défaut éteinte pour tous les SDK Firebase ; chaque SDK est réactivé explicitement après accord), `GOOGLE_ANALYTICS_IDFV_COLLECTION_ENABLED = NO`, signaux publicitaires et attribution désactivés, `FirebaseAutomaticScreenReportingEnabled = NO` (aucun nom d'écran dans Analytics).

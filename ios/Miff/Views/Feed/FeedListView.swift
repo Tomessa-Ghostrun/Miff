@@ -47,9 +47,57 @@ struct FeedListView: View {
     let onScrolled: (CGFloat) -> Void
     /// L'origine du contenu de la vue de défilement dans la fenêtre (voir `FeedTopInset`).
     let onOrigin: (CGFloat) -> Void
+    /// NOTIF-P1I : la carte de ce proche est amenée à l'écran (un toucher sur une ligne « Depuis ta dernière visite »).
+    var focus: FeedFocus?
+    var onFocusHandled: (FeedFocus) -> Void = { _ in }
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private static let topId = "feed-top"
+    /// Combien de temps le Feed attend que la Miff d'une ligne touchée soit celle qu'il montre, avant d'oublier la demande (jamais une erreur).
+    private static let focusWaitNanos: UInt64 = 10_000_000_000
+
+    private static func cardId(_ uid: String) -> String {
+        "feed-card-\(uid)"
+    }
+
+    /// Ce qui relance la recherche de la carte : la demande, la Miff montrée et ses cartes.
+    private struct FocusKey: Equatable {
+        let focus: FeedFocus?
+        let miffId: String?
+        let cardUids: [String]
+    }
+
+    private var focusKey: FocusKey {
+        FocusKey(focus: focus, miffId: content?.miffId, cardUids: content?.cards.map { $0.member.uid } ?? [])
+    }
+
+    /// Amène la carte du proche à l'écran quand la Miff demandée est celle du Feed ; sinon attend (10 s au plus). La demande est ensuite
+    /// oubliée, qu'une carte ait été trouvée ou non (un proche parti de la Miff : le Feed reste tel quel).
+    private func bringIntoView(_ proxy: ScrollViewProxy) async {
+        guard let focus else {
+            return
+        }
+        guard let content, content.miffId == focus.miffId else {
+            try? await Task.sleep(nanoseconds: Self.focusWaitNanos)
+            if !Task.isCancelled {
+                onFocusHandled(focus)
+            }
+            return
+        }
+        if content.cards.contains(where: { $0.member.uid == focus.uid }) {
+            // Un instant pour que la liste soit posée (l'onglet vient peut-être d'apparaître).
+            try? await Task.sleep(nanoseconds: 150_000_000)
+            guard !Task.isCancelled else {
+                return
+            }
+            if reduceMotion {
+                proxy.scrollTo(Self.cardId(focus.uid), anchor: .center)
+            } else {
+                withAnimation { proxy.scrollTo(Self.cardId(focus.uid), anchor: .center) }
+            }
+        }
+        onFocusHandled(focus)
+    }
 
     private var content: FeedContent? {
         if case .ready(let value) = feed {
@@ -73,6 +121,7 @@ struct FeedListView: View {
             }
             .onPreferenceChange(ContentTopKey.self) { onContentMoved($0) }
             .refreshable { await actions.onRefresh() }
+            .task(id: focusKey) { await bringIntoView(proxy) }
             // Retour en haut (le logo) : sans animation avec « Réduire les animations ».
             .onChange(of: scrollToTop) { _ in
                 if reduceMotion {
@@ -170,6 +219,7 @@ struct FeedListView: View {
                 actions: actions.card,
                 photoContext: PhotoSlotContext(miffId: content.miffId, offline: content.isOffline, active: isActive)
             )
+            .id(Self.cardId(card.member.uid))
         }
         addLovedOne(content)
     }

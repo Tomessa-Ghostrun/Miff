@@ -18,6 +18,18 @@ Ajouté :
 
 Écarts avec le ticket (voir la PR) : à 2 h 00 pile le niveau reste vert dans le code (« plus de 2 h »), l'encart disparaît 1 ms plus tôt (r = 0) ; le contenu sous l'encart remonte d'un cran s'il disparaît alors que la liste est défilée plus bas (pas de position de lecture stable en SwiftUI iOS 16) ; la minuterie existante de la coquille (couleur du bouton central, bulle d'incitation) n'a pas été touchée : elle peut avoir jusqu'à une minute de retard sur l'encart.
 
+### Notifications : « Depuis ta dernière visite » dans le centre (NOTIF-P1I ; miroir d'Android PR #223, décisions du PM du 2026-11-13)
+
+Recette : `docs/qa/checklists/notifs-derniere-visite-ios-recette-pm.md`. Détail : `ios/README.md`. **Rien n'est compilé en local** (la CI fait foi).
+
+Ajouté :
+- **Au plus 3 lignes** sous « Depuis ta dernière visite », au-dessus d'« Aujourd'hui », avec la phrase de limite, comparant ce que le Feed montre à ce qu'il montrait à la dernière ouverture (lancement, ou retour après 30 minutes ou plus). **Point sur la cloche** (jamais un chiffre), **aucune notification**, aucun son, aucune pastille, aucune permission, **0 lecture et 0 écriture Firestore de plus**. Rien hors connexion ni sur une copie du cache.
+- Quatre phrases sans accord de genre : « a rejoint… », « a quitté… », « a donné de ses nouvelles », « Dernière nouvelle de {Prénom} : {heure} » (silence de plus de 4 h, formulation A). Jour de la semaine de 2 à 6 jours, puis date courte. « Un proche » / « Someone » si le prénom n'est pas encore connu.
+- Un fichier local (`LastVisitFileStore`) : identifiants, mot de la présence, catégorie du lieu et heures seulement, **jamais de prénom ni de nom de lieu** ; exclu des sauvegardes ; écrit tout de suite (fermeture forcée : la comparaison part de ce qui était affiché) ; effacé à la déconnexion, à la suppression du compte et au départ ou à la perte d'une Miff.
+- Notifications du téléphone coupées ou jamais demandées : le groupe reste visible **au-dessus** du centre flou (jamais dessiné sous le flou). Toucher une ligne ouvre le Feed sur la carte du proche (Miff concernée sélectionnée).
+- `NotificationType.c1` (ligne du centre seulement, hors périmètre des notifications du système), clés `notif_c1_*` du catalogue (mêmes textes qu'Android), VoiceOver « {phrase}, non lu », anglais.
+- Tests : vecteurs C1-T1 à C1-T20 (`LastVisitTests`, `LastVisitSampleTests`), phrases FR / EN du vrai catalogue, suivi (ouverture, 30 minutes, fermeture forcée, Miff perdue, déconnexion), fichier, écran du centre, Feed (image fraîche seulement).
+
 ### CI iOS : limites de durée relevées (job 40 -> 60 min, étape des captures 15 -> 30 min)
 
 Aucun effet dans l'app. Le job « Build et tests » était annulé alors que tout était vert (run 43444821713 : 41 min pour 40 permises ; captures à 11 à 14 min pour 15 permises). Mesures, choix et signal de bascule : `docs/dev/ios-spike.md` §7 bis. Aucun contrôle retiré ; deux lignes de `ci/screenshots.sh` qui répétaient une capture identique sont supprimées.

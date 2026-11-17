@@ -10,7 +10,7 @@ const mut = (id, why, edits, tests, equivalent) => ({ id, why, edits, tests, ...
 
 const READABLE_END = '        || positionPublished(miffId);';
 const LOCATION_CLAUSE = '\n          && (resource == null || photoLocationReadable(miffId, uid, resource.data));';
-const KEYS = "return d.keys().hasOnly(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt'])";
+const KEYS = "return d.keys().hasOnly(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt', 'description'])";
 const HAS_ALL = "&& d.keys().hasAll(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt'])";
 const HAS_ALL_THREE = "&& d.keys().hasAll(['jpeg', 'createdAt', 'expiresAt'])";
 const COORDS = 'return isCoordinate(d.lat, 90) && isCoordinate(d.lng, 180)';
@@ -27,7 +27,7 @@ export const PHOTO_MUTATIONS = [
     [edit(KEYS, 'return true')],
     ['PL2', 'PL6']),
   mut('PL2-photo-deviceId', "la photo accepte une clé deviceId (SESS-1 : elle n'en porte pas)",
-    [edit(KEYS, "return d.keys().hasOnly(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt', 'deviceId'])")],
+    [edit(KEYS, "return d.keys().hasOnly(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt', 'description', 'deviceId'])")],
     ['PL2', 'PL16', 'PL17']),
   mut('PL1-localisation-facultative', 'la localisation redevient FACULTATIVE (retour à la version du 2026-11-05) : une photo sans lat, lng ni measuredAt est acceptée',
     [
@@ -59,9 +59,41 @@ export const PHOTO_MUTATIONS = [
   mut('PL6-lng-borne-etroite', 'la longitude 180 de la photo est refusée',
     [edit(COORDS, 'return isCoordinate(d.lat, 90) && isCoordinate(d.lng, 179)')], ['PL6']),
 
+  // --- Écriture : description facultative (DESC-R, ticket docs/tickets/description-update.md, critère R9) ---------------------------
+  mut('PD-description-sans-controle', "la clé description est acceptée avec n'importe quelle valeur (aucun contrôle de type ni de longueur : nombre, null, texte de 1000 unités)",
+    [edit("&& (!('description' in d) || isStr(d.description, 1, 140))", '')],
+    ['PD1', 'PD2', 'PD3', 'PD9']),
+  mut('PD-description-longueur-max', 'la description peut dépasser 140 unités (limite portée à 100000)',
+    [edit('isStr(d.description, 1, 140)', 'isStr(d.description, 1, 100000)')],
+    ['PD1', 'PD3', 'PD9']),
+  mut('PD-description-longueur-140-etroite', 'la description est limitée à 139 unités (une description de 140 refusée à tort)',
+    [edit('isStr(d.description, 1, 140)', 'isStr(d.description, 1, 139)')],
+    ['PD1', 'PD3', 'PD9']),
+  mut('PD-description-vide', 'la description vide ("") est acceptée (minimum 0 au lieu de 1)',
+    [edit('isStr(d.description, 1, 140)', 'isStr(d.description, 0, 140)')],
+    ['PD2', 'PD5', 'PD9']),
+  mut('PD-description-nulle', 'la description nulle (null) est acceptée comme une clé absente',
+    [edit("&& (!('description' in d) || isStr(d.description, 1, 140))", "&& (!('description' in d) || d.description == null || isStr(d.description, 1, 140))")],
+    ['PD2', 'PD5', 'PD9']),
+  mut('PD-description-type', "la description peut être d'un autre type que du texte (le contrôle de type est retiré, la longueur de size() reste évaluée)",
+    [edit("&& (!('description' in d) || isStr(d.description, 1, 140))", "&& (!('description' in d) || (d.description.size() >= 1 && d.description.size() <= 140))")],
+    ['PD2']),
+  mut('PD-description-obligatoire', 'la description devient OBLIGATOIRE (ajoutée à hasAll) : une photo sans description est refusée',
+    [edit(HAS_ALL, "&& d.keys().hasAll(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt', 'description'])")],
+    ['PD1', 'PD4', 'PD6', 'PD9', 'PL1', 'PL16']),
+  mut('PD-description-cle-fermee', "la clé description n'est plus autorisée (retour en arrière des règles : toute photo avec description est refusée)",
+    [edit(KEYS, "return d.keys().hasOnly(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt'])")],
+    ['PD1', 'PD3', 'PD5', 'PD6', 'PD7', 'PD8', 'PD9', 'PL16']),
+  mut('PD-description-cles-ouvertes', 'la photo accepte des clés inconnues à côté de la description',
+    [edit(KEYS, 'return true')],
+    ['PD4']),
+  mut('PD-description-seule', "la mise à jour « description seule » est acceptée : createdAt n'est plus imposé à l'heure du serveur",
+    [edit('&& d.createdAt == request.time', '&& true', 4, 4)],
+    ['PD5']),
+
   // --- Écriture : heure de la mesure (décision du PM du 2026-11-06) ----------------------------------------
   mut('PL18-cles-measuredAt-fermee', "measuredAt n'est plus une clé autorisée de la photo (toute photo valide est refusée)",
-    [edit(KEYS, "return d.keys().hasOnly(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng'])")],
+    [edit(KEYS, "return d.keys().hasOnly(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'description'])")],
     ['PL18', 'PL1']),
   mut('PL18-mesure-sans-controle', "l'heure de mesure n'est plus contrôlée du tout (ni type, ni bornes) : une photo avec measuredAt nulle ou d'un autre type est acceptée",
     [edit(MEASURE_TYPE, '', 2, 2), edit(MEASURE_PAST, '', 2, 2), edit(MEASURE_FUTURE_END, ';')],
@@ -110,7 +142,7 @@ export const PHOTO_MUTATIONS = [
     ['PL7', 'PL9', 'PL10', 'PL11', 'PL23']),
   mut('PL7-sans-position-publiee', "la lecture d'une photo localisée n'exige plus d'avoir publié sa propre position",
     [edit(READABLE_END, '        || isSignedIn();')],
-    ['PL7', 'PL10', 'PL23']),
+    ['PL7', 'PL10', 'PL23', 'PD7']),
   mut('PL8-auteur-sans-position', "l'auteur ne relit plus sa propre photo localisée sans position publiée",
     [edit(AUTHOR_THEN_POSITION, '\n        || positionPublished')],
     ['PL8', 'PL23']),

@@ -3,6 +3,7 @@ package com.tomessa.miff.ui.main
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -29,6 +30,7 @@ import com.tomessa.miff.ui.theme.GlassBorderWidth
 import com.tomessa.miff.ui.theme.GlassCentralPlate
 import com.tomessa.miff.ui.theme.GlassConditions
 import com.tomessa.miff.ui.theme.GlassLevel
+import com.tomessa.miff.ui.theme.GlassPalette
 import com.tomessa.miff.ui.theme.GlassPolicy
 import com.tomessa.miff.ui.theme.GlassVariant
 import com.tomessa.miff.ui.theme.ShadowDefault
@@ -88,6 +90,12 @@ fun GlassTabHost(
     conditions: GlassConditions = rememberGlassConditions(),
     /** The switch of the fallback ([GlassPolicy.BLUR_ALLOWED]); a parameter so that the tests can force it either way. */
     blurAllowed: Boolean = GlassPolicy.BLUR_ALLOWED,
+    /**
+     * What floats just above the bar (the bubble and the calm message of the Update). Drawn OVER the tabs but OUTSIDE the recorded source: the blur
+     * only ever sees the tabs, so a bubble that comes and goes can never bleed its colour (a lighter patch, at the middle of the bar) into the glass.
+     * It receives [LocalTabBarInset] like the tabs.
+     */
+    overlay: @Composable BoxScope.() -> Unit = {},
     content: @Composable () -> Unit,
 ) {
     val level = GlassPolicy.level(conditions, variant, blurAllowed)
@@ -99,6 +107,7 @@ fun GlassTabHost(
         Box(modifier = Modifier.fillMaxSize().then(if (blurring) Modifier.hazeSource(hazeState) else Modifier)) {
             CompositionLocalProvider(LocalTabBarInset provides inset, content = content)
         }
+        CompositionLocalProvider(LocalTabBarInset provides inset) { overlay() }
         if (barVisible) {
             Box(modifier = Modifier.align(Alignment.BottomCenter).onSizeChanged { barHeightPx = it.height }) {
                 bar(TabBarGlass(variant, level, if (blurring) hazeState else null))
@@ -108,20 +117,35 @@ fun GlassTabHost(
 }
 
 /**
+ * THE veil of the bar for a level and a palette: ONE colour, fixed (the light glass at the BLUR level is white 32 %, validated by the PM on 2026-11-11).
+ * It depends on nothing but the level and the variant: not on the content behind, not on the scroll, not on the tab. Pure, so that the tests pin it.
+ */
+internal fun glassVeil(
+    level: GlassLevel,
+    palette: GlassPalette,
+): Color =
+    when (level) {
+        GlassLevel.BLUR -> palette.tint
+        GlassLevel.NO_BLUR -> palette.tintNoBlur
+        GlassLevel.OPAQUE -> palette.surfaceOpaque
+    }
+
+/** Tag of the surface of the bar (tests). */
+const val TAB_BAR_TAG = "main_tab_bar"
+
+/**
  * The glass: shadow, rounded clip, blur of what is behind (BLUR only), veil, hairline. At the OPAQUE level nothing is transparent
  * and there is no hairline (the mockups: a plain white or `#222222` bar with the shadow).
+ *
+ * The WHOLE bar is this ONE surface, drawn once, on the row that holds the three entries: the entries add nothing to it (no background but the pad of the
+ * tab in use, and the plate of the central button). Do not stack a second layer under or over the bar.
  */
 fun Modifier.glassSurface(
     shape: Shape,
     glass: TabBarGlass,
 ): Modifier {
     val palette = glassPalette(glass.variant)
-    val veil =
-        when (glass.level) {
-            GlassLevel.BLUR -> palette.tint
-            GlassLevel.NO_BLUR -> palette.tintNoBlur
-            GlassLevel.OPAQUE -> palette.surfaceOpaque
-        }
+    val veil = glassVeil(glass.level, palette)
     val blurred =
         if (glass.level == GlassLevel.BLUR && glass.hazeState != null) {
             // No noise, no colour effect of the library: the veil above is ours, so that the contrasts of the spec are the real ones.

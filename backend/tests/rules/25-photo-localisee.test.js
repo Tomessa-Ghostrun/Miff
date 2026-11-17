@@ -341,8 +341,9 @@ s.tc('PL16', 'revue de schéma : la photo est le SEUL document, avec la position
   const keysOf = (fn) => listOf(fn, 'hasOnly');
   const photoKeys = keysOf('validPhoto');
   const SIX = ['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt'];
-  if (JSON.stringify(photoKeys) !== JSON.stringify(SIX)) throw new Error(`clés de photo inattendues : ${photoKeys}`);
-  // Localisation OBLIGATOIRE : hasAll porte les six mêmes clés (aucune clé facultative).
+  // DESC-R : la septième clé, FACULTATIVE, est `description` (autorisée par hasOnly, absente de hasAll : voir PD9 du fichier 33).
+  if (JSON.stringify(photoKeys) !== JSON.stringify([...SIX, 'description'])) throw new Error(`clés de photo inattendues : ${photoKeys}`);
+  // Localisation OBLIGATOIRE : hasAll porte les six clés d'origine (aucune clé de localisation facultative).
   const required = listOf('validPhoto', 'hasAll');
   if (JSON.stringify(required) !== JSON.stringify(SIX)) throw new Error(`clés obligatoires de photo inattendues : ${required}`);
   const forbidden = ['latitude', 'longitude', 'coords', 'coordinates', 'geopoint', 'position', 'address', 'accuracy', 'deviceId'];
