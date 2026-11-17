@@ -44,8 +44,9 @@ struct MiffApp: App {
                     RootView(environment: environment)
                 }
             }
-            // Apparence claire imposée (les maquettes n'ont pas de mode sombre), en plus de UIUserInterfaceStyle.
-            .preferredColorScheme(.light)
+            // Apparence claire imposée (les maquettes n'ont pas de mode sombre), en plus de UIUserInterfaceStyle ; seule exception : la barre
+            // d'état en clair sur le viseur et l'aperçu de l'Update (voir `AppAppearance`).
+            .modifier(AppColorSchemeModifier())
             // Retour de la fenêtre de connexion Google.
             .onOpenURL { url in
                 _ = GIDSignIn.sharedInstance.handle(url)

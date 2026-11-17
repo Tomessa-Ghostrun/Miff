@@ -41,9 +41,13 @@ struct UpdatePreviewView: View {
                     .padding(.top, Spacing.sm)
                     .padding(.bottom, UpdateLayout.previewButtonsBottomMargin)
             }
-            // La photo et les boutons restent au-dessus de la barre d'onglets (hauteur mesurée, jamais écrite en dur).
+            // La photo et les boutons restent sous la zone sûre du haut (barre d'état, île dynamique) et au-dessus de la barre d'onglets
+            // (hauteurs mesurées, jamais écrites en dur).
+            .topSafeAreaFloor()
             .aboveTabBar()
         }
+        // Fond sombre : la barre d'état (heure, réseau, batterie) passe en clair tant que l'aperçu est à l'écran.
+        .lightStatusBar()
         .onAppear {
             if image == nil {
                 image = UIImage(data: state.photo.jpeg)

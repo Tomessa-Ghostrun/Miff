@@ -142,6 +142,13 @@ shot 151-fr-photo-plein-ecran-haute 4 "${fr_args[@]}" -MiffPreview photo-tall
 # Zones sures annoncees NULLES (cas du fullScreenCover sur un vrai appareil) : les planchers (47 pt + 12 pt en haut, 34 pt + 16 pt en bas) doivent tenir.
 shot 153-fr-photo-plein-ecran-zones-sures-nulles 4 "${fr_args[@]}" -MiffPreview photo-tall -MiffForceZeroSafeArea YES
 
+# Update : le viseur PLEIN ECRAN (retour du PM, iPhone 16 : bande noire en haut). Le simulateur n'a pas de camera : l'apercu est un aplat
+# turquoise cerclé de magenta qui doit toucher les QUATRE bords (derriere la barre d'etat et l'ile dynamique) ; la bascule et le flash
+# restent SOUS la zone sure ; la barre d onglets est la vraie. 161 : zones sures annoncees NULLES (planchers). Seulement 2 captures et
+# 2 s d attente (etape saturee : 15 min). L apercu apres la photo se verifie sur l iPhone (recette PM).
+shot 160-fr-update-viseur-plein-ecran 2 "${fr_args[@]}" -MiffPreview update-viewfinder
+shot 161-fr-update-viseur-zones-sures-nulles 2 "${fr_args[@]}" -MiffPreview update-viewfinder -MiffForceZeroSafeArea YES
+
 # PAY-UI-I : l'écran d'offre Miff+ (ticket paywall-v2.md), plein écran. La capture 95b ci-dessus montre la variante « sans
 # achat » (la seule de la production) AVANT les 3 secondes : croix absente, emplacement réservé. Les variantes « -cross » ont un délai
 # de 0 (croix présente, comme après 3 secondes). Les états avec offre (essai, deux formules, chargement, erreurs, abonné) ne sont

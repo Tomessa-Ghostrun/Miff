@@ -43,8 +43,7 @@ enum UpdateLayout {
     static let roundButtonSize: CGFloat = 48
     static let roundButtonDisc: CGFloat = 40
     static let roundButtonIcon: CGFloat = 22
-    /// Le dégradé sombre en haut du viseur (lisibilité de l'heure sur une façade claire).
-    static let topGradientHeight: CGFloat = 110
+    // Le dégradé sombre en haut du viseur n'a plus de hauteur fixe (110 pt avant) : il suit la zone sûre du haut, voir `ViewfinderLayout`.
     /// La bulle : 16 pt des bords, arrondi 20, queue 22 x 11 dont la pointe s'arrête 4 pt au-dessus de la barre.
     static let bubbleSideMargin: CGFloat = 16
     static let bubbleCorner: CGFloat = 20
