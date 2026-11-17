@@ -241,8 +241,8 @@ class FeedViewModelTest {
             feed.trySend(StatusFeed.Data(mapOf("me" to status(), "t" to status()), fromCache = false))
             runCurrent()
             val content = vm.content()
-            // Me LAST (decision of the PM, 2026-11-07).
-            assertEquals(listOf("t", "a", "me"), content.cards.map { it.member.uid })
+            // FEED-ORDRE: by latest news, me like the others (equal dates: order of arrival); Amandine has no status yet: last.
+            assertEquals(listOf("me", "t", "a"), content.cards.map { it.member.uid })
             assertTrue(content.bubble is Bubble.AllGood)
             job.cancel()
         }

@@ -99,7 +99,6 @@ Modifié :
 
 Écart : une carte hors écran de la liste paresseuse n'est pas instanciée, donc sans animation visible ; pas de test d'interface automatisé du geste (recette sur iPhone). Une update manuelle ou une arrivée dans un lieu font toutes deux remonter la carte (même champ `lastUpdateAt`, question 1 du ticket).
 
-
 ### Notifications : « Depuis ta dernière visite » dans le centre (NOTIF-P1I ; miroir d'Android PR #223, décisions du PM du 2026-11-13)
 
 Recette : `docs/qa/checklists/notifs-derniere-visite-ios-recette-pm.md`. Détail : `ios/README.md`. **Rien n'est compilé en local** (la CI fait foi).
