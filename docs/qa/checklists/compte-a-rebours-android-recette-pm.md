@@ -33,6 +33,9 @@
 11. [ ] **Touchez l'encart** (Feed puis Profil) : l'écran **Update** s'ouvre, exactement comme avec le **bouton central** de la barre. Le geste retour revient à l'onglet d'où vous veniez.
 12. [ ] Retour **sans publier** : l'encart est inchangé (même décompte).
 13. [ ] **Publiez une update** (photo) : au retour sur le Feed, l'encart **repart à « 2 h »** (reset). Si vous étiez **orange ou rouge** avant l'update, l'encart **réapparaît** à « 2 h » après l'update.
+   - **Depuis le Profil** (CD-24) : sur l'onglet **Profil**, touchez l'encart, publiez une update, puis revenez : l'encart du **Profil** repart à « 2 h » tout de suite (pas l'ancien temps, pas besoin de passer par le Feed). Idem si vous étiez orange ou rouge : il revient à « 2 h ».
+   - **Arrivée pendant que vous êtes sur le Profil** (CD-22) : restez sur l'onglet **Profil**, écran allumé, et entrez dans un lieu de confiance : une fois l'arrivée détectée (quelques minutes, surtout sur OPPO), l'encart **disparaît** ; il ne dit jamais « Tu es en dehors de tes lieux de confiance » alors que vous êtes dedans. Sans réseau, mêmes résultats avec un léger délai.
+   - Pas de clignotement : en passant du Feed au Profil et inversement, l'encart reste en place.
 14. [ ] *(Test rapide, facultatif)* **Heure du téléphone** : Réglages > Date et heure, **désactivez l'heure automatique** et avancez l'heure de **1 h 40** : l'encart indique environ **20 min** et la bordure est chaude ; avancez de **30 min de plus** : il disparaît et la carte devient orange. **Remettez ensuite l'heure automatique** avant tout autre test (une update publiée avec une fausse heure fausse les calculs).
 
 ## Partie 4 : économie, arrière-plan, hors connexion (3 min)

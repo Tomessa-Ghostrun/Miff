@@ -137,6 +137,8 @@ class FeedHost(
     val refreshing: Boolean = false,
     val onRefresh: () -> Unit = {},
     val observe: suspend () -> Unit = {},
+    /** COUNTDOWN-A: what the Profile tab runs while it is the tab in use, so that the encart of the countdown it carries stays true (see [FeedViewModel.observeForProfile]). */
+    val observeForProfile: suspend () -> Unit = {},
     /** FEED-4: where the photos are read (null: no photo is drawn). */
     val photos: PhotoReader? = null,
     /** The pop-in "Pas de connexion" (state and buttons): shown only while the Feed has nothing to show. */

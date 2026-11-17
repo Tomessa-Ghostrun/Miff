@@ -461,6 +461,7 @@ private fun MainNavigation(
                         refreshing = refreshing,
                         onRefresh = feedViewModel::onRefresh,
                         observe = feedViewModel::observe,
+                        observeForProfile = feedViewModel::observeForProfile,
                         photos = container.photoReader,
                         connection =
                             ConnectionHost(
@@ -984,6 +985,15 @@ fun MainTabs(
                                     lifecycleOwner.lifecycle.repeatOnLifecycle(
                                         Lifecycle.State.STARTED,
                                     ) { observeProfile?.invoke() }
+                                }
+                                // COUNTDOWN-A: the encart of the countdown comes from the statuses the Feed reads, and the Feed only listens while it is the tab in use: the Profile
+                                // keeps the SAME listeners (no new reading) while it is shown, so that the encart never tells what is no longer true (an update just published, an
+                                // arrival in a place of trust noticed while the Profile is open).
+                                val observeForProfile by rememberUpdatedState(feed.observeForProfile)
+                                LaunchedEffect(lifecycleOwner) {
+                                    lifecycleOwner.lifecycle.repeatOnLifecycle(
+                                        Lifecycle.State.STARTED,
+                                    ) { observeForProfile() }
                                 }
                                 ProfileTabScreen(
                                     state = profileState,
