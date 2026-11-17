@@ -1,6 +1,6 @@
 # Miff Terms of Use
 
-**Version 1.0 — last updated: November 13, 2026**
+**Version 1.1 — last updated: November 17, 2026**
 
 Welcome to Miff. These terms explain how to use the app, what you can expect from it, and what we expect from you. We tried to write them simply. To learn how your data is processed, also read the [Privacy Policy](politique-confidentialite.en.md).
 
@@ -28,7 +28,7 @@ Miff is published by **Tomessa MFOUKA (individual)**, **76 rue Marx Dormoy, 7501
 Miff is an app to **know your loved ones are okay, without bothering them**.
 - You create or join a **"Miff"**: your circle of trust (family, friends, partner…). You join a Miff with a **secret code**.
 - The creator of the Miff defines **trusted places** (home, school, work…), with their address, visible to all the members.
-- If you have agreed, your phone detects when you arrive at or leave a trusted place, and your circle sees an automatic **status** and your **last known location**, without you having to do anything. You can also **share news** by hand by publishing a photo, taken with the app's camera (no text); it is published with the place where it was taken.
+- If you have agreed, your phone detects when you arrive at or leave a trusted place, and your circle sees an automatic **status** and your **last known location**, without you having to do anything. You can also **share news** by hand by publishing a photo, taken with the app's camera, to which you can add a short optional description (140 characters at most); it is published with the place where it was taken.
 
 ## 3. Accepting these terms
 
@@ -64,14 +64,14 @@ You must use Miff having the legal capacity to commit yourself, or with the agre
 The core of Miff is sharing your status related to trusted places. Here are our commitments and yours.
 
 - **It is never automatic without your knowledge.** Sharing with a Miff only starts after your explicit consent, given Miff by Miff, separate from your click on "Join". Nobody can turn it on for you.
-- **You can stop it at any time**, without justification, in the app settings. Stopping deletes your status, your photo (with its place) and your last known location for that Miff. Your loved ones then simply see "sharing turned off", without any alert message.
+- **You can stop it at any time**, without justification, in the app settings. Stopping deletes your status, your photo (with its description and its place) and your last known location for that Miff. Your loved ones then simply see "sharing turned off", without any alert message.
 - **What your loved ones see.** If you share, the members of your Miff see your status (for example "at home") and **your last known location, with the time**. **Miff only keeps that last location** (latitude, longitude, time of the measurement) **and, if you publish a photo, the place where it was taken for 24 hours**, **with no history of trips**: each new location replaces the previous one. This is not live tracking.
-- **Your photo and its place.** If you publish a photo, it is **always published with the place where it was taken**, measured by your phone at that moment (with the time of that measurement). This place stays attached to the photo for 24 hours, even if your last known location changes in the meantime, and it does not tell where you are now.
+- **Your photo and its place.** If you publish a photo, it is **always published with the place where it was taken**, measured by your phone at that moment (with the time of that measurement). This place stays attached to the photo for 24 hours, even if your last known location changes in the meantime, and it does not tell where you are now. If you add a description to your photo (see article 8), it is published with the photo, to the same people and for the same duration.
 - **Who sees it**: only the members of the same Miff whose sharing is on, and only if they also share theirs. This also applies to the place of your photo: a member who does not share their location cannot open your photo. The creator of the Miff has no extra rights.
-- **Erasure**: your location, your photo and its place are erased when you stop sharing, leave the Miff, are removed from the Miff, or when the Miff or your account is deleted. After 24 hours, your location is only shown hidden, with its date, and your photo can no longer be read (they stay stored until they are replaced or erased). Details are in the Privacy Policy.
+- **Erasure**: your location, your photo (with its description) and its place are erased when you stop sharing, leave the Miff, are removed from the Miff, or when the Miff or your account is deleted. After 24 hours, your location is only shown hidden, with its date, and your photo can no longer be read (they stay stored until they are replaced or erased). Details are in the Privacy Policy.
 - **Reciprocity**: to see other people's status and location, you must share yours.
 - **Miff needs "Always" location** (in the background, even when the app is closed, with precise location) to work. Without it, the app asks for it again and cannot be used normally. You can withdraw it at any time in your phone settings: this has no effect on your account, but Miff stops working until it is restored. Notifications, on the other hand, are optional.
-- **Telling your loved ones when you give news.** When you publish a photo, the other members of your Miff who share their location and kept notifications turned on receive a quiet notification "{First name} gave news". It shows only your first name: no photo, no place, no Miff name. You can turn off the notifications you receive at any time, in the app or in your phone's settings. They may arrive late or not arrive: this is not an emergency service. The details are in the Privacy Policy.
+- **Telling your loved ones when you give news.** When you publish a photo, the other members of your Miff who share their location and kept notifications turned on receive a quiet notification "{First name} gave news". It shows only your first name: no photo, no description, no place, no Miff name. You can turn off the notifications you receive at any time, in the app or in your phone's settings. They may arrive late or not arrive: this is not an emergency service. The details are in the Privacy Policy.
 - **Danger zones (Miff+)**: the creator of a Miff can set up a "danger zone". If you enter a danger zone, your status is shown in red to the members of your Miff. This is information tied to a place the creator chose, not a judgement about you. Today, Miff sends no notification about it.
 - **Only use Miff with respect for people.** Miff is made for people who know they are sharing their status and location, and who agree to it. **It is forbidden to use Miff to follow, monitor or control someone without their knowledge or against their will** (including by using a Miff's places or danger zones to control someone), or to pressure someone into sharing. If a person does not want to share, that is their right.
 
@@ -79,22 +79,25 @@ The core of Miff is sharing your status related to trusted places. Here are our 
 
 You agree not to:
 - use Miff to harass, threaten, control, intimidate or harm anyone;
-- post content (profile photo, "Share news" photos) that is illegal, violent, hateful, sexually explicit, or that infringes others' rights;
+- post content (profile photo, "Share news" photos and their description) that is illegal, violent, hateful, sexually explicit, or that infringes others' rights;
 - publish an intimate or nude photo of a person without their agreement, or content that puts a minor at risk;
+- write in a description anything unlawful, hateful or threatening, or anything that harms another person (insults, harassment, private information about someone published without their agreement);
 - impersonate someone else;
 - save a person's address as a trusted place without their agreement, or use it to control them;
 - try to access data that is not yours, try to guess secret codes, bypass the app's protections, or disrupt the service (for example by sending requests in bulk);
 - copy, decompile or misuse the app or its services, except as the law allows;
 - use Miff for commercial or advertising purposes.
 
-## 8. Your content: photos
+## 8. Your content: photos and descriptions
 
-- You remain the owner of your content (profile photo, photos you publish). You only authorise us to host it and display it to the members of your Miffs, in order to run the service.
-- **How it works.** A "Share news" photo is taken live with the app's camera (never from your gallery), with no text, and published with the place where it was taken. It is only visible to the members of your Miffs. **It is no longer visible after 24 hours** and is deleted afterwards (see the Privacy Policy).
+- You remain the owner of your content (profile photo, photos you publish, descriptions you write). You only authorise us to host it and display it to the members of your Miffs, in order to run the service.
+- **How it works.** A "Share news" photo is taken live with the app's camera (never from your gallery) and published with the place where it was taken. You can add an optional **description** to it: a short free text (140 characters at most), written by you under the preview. The photo and its description are only visible to the members of your Miffs who also share their location. **They are no longer visible after 24 hours** and are deleted afterwards (see the Privacy Policy).
 - **Respect others**: do not post a photo showing a person without their agreement, and do not post a photo of a child over whom you do not have parental authority. You are responsible for the content you send.
-- A member of a Miff can keep a copy of what they see: by taking a screenshot, or by tapping "Save this photo" in the full-screen view of a photo (they only do so if they choose to). A saved copy is a file on their phone, outside Miff. We cannot prevent it, nor erase these copies: only send what you are comfortable showing your circle.
-- **Reporting content or behaviour.** Write to us at **tomessa.mfouka@gmail.com**, stating the Miff and the first name of the member concerned. We check this address at least once a week. Miff is not an emergency service: if a photo shows someone in danger, call the emergency services (112).
-- **What we do, and do not do.** We do not analyse photos automatically: we only look at them if someone reports them. We may remove content that does not comply with these terms, and suspend or delete the account of its author (article 12).
+- **Your description is your content, and your responsibility.** You write it freely: Miff does not write it, does not suggest it and does not check it before it is published. Write what you would be comfortable saying in front of your circle, following the rules of article 7: nothing unlawful or hateful, nothing that harms someone. Avoid putting private information about another person without their agreement, and think twice before writing very sensitive information (for example about your health): your loved ones will see it. You are responsible for what you write.
+- A member of a Miff can keep a copy of what they see: by taking a screenshot (which also shows the description), or by tapping "Save this photo" in the full-screen view of a photo (they only do so if they choose to; only the photo is saved). A saved copy is a file on their phone, outside Miff. We cannot prevent it, nor erase these copies: only send what you are comfortable showing your circle.
+- **Reporting content (a photo or a description) or behaviour.** Write to us at **tomessa.mfouka@gmail.com**, stating the Miff and the first name of the member concerned. We check this address at least once a week. Miff is not an emergency service: if a photo or a description suggests that someone is in danger, call the emergency services (112).
+- **What we do, and do not do.** We do not analyse photos or descriptions automatically: we only look at them if someone reports them. We may remove content (a photo or a description) that does not comply with these terms, and suspend or delete the account of its author (article 12).
+- **What Miff does not offer today.** We do not filter in advance what is written in a description, and the app currently has neither a button to report a photo or a description, nor a way to block a member. This is a known limit, not a guarantee: reporting is done by e-mail (see above), and if someone makes you uncomfortable, you can leave the Miff (see below).
 - **If someone makes you uncomfortable**, you can leave the Miff at any time, and the creator of a Miff can remove a member (article 5).
 
 ## 9. Free Miff and Miff+
