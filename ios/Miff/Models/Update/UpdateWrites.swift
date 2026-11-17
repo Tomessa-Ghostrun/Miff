@@ -4,8 +4,11 @@ import Foundation
 // `validPhotoLocation`, `validStatus`). Miroir d'`UpdateWrites.kt` d'Android.
 // - Le document de la PHOTO a exactement ces clés : `jpeg`, `createdAt`, `expiresAt`, et TOUJOURS `lat`, `lng`, `measuredAt` ensemble
 //   (décision du PM du 2026-11-06 : pas de photo sans position ; les règles acceptent les trois ou aucune, le client n'en envoie jamais
-//   une sans les autres, ni `deviceId`). Il est écrit avec `set` (jamais une mise à jour partielle) : la nouvelle photo REMPLACE
-//   l'ancienne, donc aucune coordonnée d'une photo précédente ne survit.
+//   une sans les autres, ni `deviceId`). Il est écrit avec `set` (jamais une mise à jour partielle, jamais de fusion) : la nouvelle photo
+//   REMPLACE l'ancienne, donc aucune coordonnée ni aucune description d'une photo précédente ne survit.
+// - La DESCRIPTION facultative (ticket description-update) : la clé `description` n'est écrite QUE si le texte nettoyé n'est pas vide (1 à 140
+//   unités UTF-16, voir `PhotoDescription`), et elle est ABSENTE sinon : jamais `null`, jamais un texte vide (les règles refusent les deux). Le
+//   même texte va dans chaque Miff du lot. Elle n'est ni dans le statut ni dans un autre document (`updateText` reste `null`).
 // - `createdAt` est l'heure du SERVEUR (les règles l'exigent), `expiresAt` celle du téléphone + 23 h (les règles tolèrent 25 h : deux
 //   heures de marge pour un téléphone en avance).
 // - Le STATUT ne porte AUCUNE coordonnée et jamais `presence`, `placeId`, `presenceAt` (R-LIEU-1 : le document fusionné les garde) ; il
@@ -21,14 +24,18 @@ enum UpdateWrites {
         MiffId.isValid(miffId) && !uid.isEmpty && !uid.contains("/")
     }
 
-    /// La photo de l'auteur dans UNE Miff : un `set` (remplace), avec son lieu. nil si la photo est vide ou dépasse 150 000 octets, ou si un
+    /// La photo de l'auteur dans UNE Miff : un `set` (remplace), avec son lieu et, s'il en reste une, sa description (nettoyée ici : n'importe
+    /// quel texte est accepté, la clé est omise quand il ne reste rien). nil si la photo est vide ou dépasse 150 000 octets, ou si un
     /// identifiant est mal formé : rien n'est alors construit, donc rien n'est envoyé.
-    static func photo(miffId: String, uid: String, photo: UpdatePhoto, place: PhotoPlace, nowMillis: Int) -> DocWrite? {
+    // swiftlint:disable:next function_parameter_count
+    static func photo(
+        miffId: String, uid: String, photo: UpdatePhoto, place: PhotoPlace, nowMillis: Int, description: String? = nil
+    ) -> DocWrite? {
         guard isWritable(miffId: miffId, uid: uid),
               !photo.jpeg.isEmpty, photo.jpeg.count <= UpdatePhotoFormat.maxBytes else {
             return nil
         }
-        let fields: [String: FieldValueSpec] = [
+        var fields: [String: FieldValueSpec] = [
             "jpeg": .bytes(photo.jpeg),
             "createdAt": .serverTimestamp,
             "expiresAt": .timestamp(millis: nowMillis + photoLifetimeMillis),
@@ -36,6 +43,9 @@ enum UpdateWrites {
             "lng": .double(place.lng),
             "measuredAt": .timestamp(millis: place.measuredAtMillis)
         ]
+        if let text = description.flatMap(PhotoDescription.normalize) {
+            fields["description"] = .string(text)
+        }
         return DocWrite(path: "miffs/\(miffId)/photos/\(uid)", kind: .set, data: fields)
     }
 
@@ -83,7 +93,8 @@ enum UpdateWrites {
         context: PublishContext
     ) -> [DocWrite] {
         guard let photoWrite = Self.photo(
-            miffId: miffId, uid: uid, photo: photo, place: place, nowMillis: context.nowMillis
+            miffId: miffId, uid: uid, photo: photo, place: place, nowMillis: context.nowMillis,
+            description: context.photoDescription
         ), let status = photoStatus(
             miffId: miffId, uid: uid, photoPublished: true, batteryPct: context.batteryPct, deviceId: context.deviceId
         ) else {
@@ -104,9 +115,23 @@ enum UpdateWrites {
     }
 }
 
-/// Ce qui est commun à toutes les Miffs d'un lot de publication : l'heure du téléphone, la batterie et l'identifiant de la session.
-struct PublishContext: Equatable {
+/// Ce qui est commun à toutes les Miffs d'un lot de publication : l'heure du téléphone, la batterie, l'identifiant de la session et la
+/// description facultative de la photo (le MÊME texte dans chaque Miff). Elle ne montre rien de la description.
+struct PublishContext: Equatable, CustomStringConvertible {
     let nowMillis: Int
     let batteryPct: Int?
     let deviceId: String
+    /// Ce que la personne a écrit sous l'aperçu (n'importe quel texte : il est nettoyé à l'écriture, et la clé est omise s'il ne reste rien).
+    var photoDescription: String?
+
+    init(nowMillis: Int, batteryPct: Int?, deviceId: String, photoDescription: String? = nil) {
+        self.nowMillis = nowMillis
+        self.batteryPct = batteryPct
+        self.deviceId = deviceId
+        self.photoDescription = photoDescription
+    }
+
+    var description: String {
+        "PublishContext(redacted)"
+    }
 }

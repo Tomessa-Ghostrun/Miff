@@ -143,6 +143,12 @@ shot 153-fr-photo-plein-ecran-zones-sures-nulles 4 "${fr_args[@]}" -MiffPreview 
 shot 160-fr-update-viseur-plein-ecran 2 "${fr_args[@]}" -MiffPreview update-viewfinder
 shot 161-fr-update-viseur-zones-sures-nulles 2 "${fr_args[@]}" -MiffPreview update-viewfinder -MiffForceZeroSafeArea YES
 
+# DESC-I : la description facultative d'une update. 162 : l'apercu de la photo avec une description de plus de 120 caracteres (champ sous la photo,
+# compteur discret « 128/140 ») ; 163 : la photo en plein ecran avec une description AU-DESSUS de « Photo de ... ». Seulement 2 captures (etape
+# saturee, 30 min). Le clavier ouvert, la saisie et les grandes polices se verifient sur l'iPhone (recette PM).
+shot 162-fr-update-apercu-description 2 "${fr_args[@]}" -MiffPreview update-preview-description
+shot 163-fr-photo-plein-ecran-description 4 "${fr_args[@]}" -MiffPreview photo-description
+
 # PAY-UI-I : l'écran d'offre Miff+ (ticket paywall-v2.md), plein écran. La capture 95b ci-dessus montre la variante « sans
 # achat » (la seule de la production) AVANT les 3 secondes : croix absente, emplacement réservé. Les variantes « -cross » ont un délai
 # de 0 (croix présente, comme après 3 secondes). Les états avec offre (essai, deux formules, chargement, erreurs, abonné) ne sont

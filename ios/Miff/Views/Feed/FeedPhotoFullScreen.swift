@@ -9,6 +9,9 @@ import UIKit
 // CONFIDENTIALITÉ : la photo et son lieu ne sont que dans la mémoire de l'écran, jamais un fichier de l'app, un journal ou un événement ; la SEULE
 // écriture dans Photos est celle du toucher de l'icône (ajout seul, sans lieu, `PhotosLibrarySaver`) ; l'écran est masqué dans la vignette du
 // sélecteur d'applications (`hidesInAppSwitcher`) comme le reste du Feed. Rien n'est conservé à la fermeture.
+// La DESCRIPTION facultative de l'auteur (ticket description-update) est dans le pied, AU-DESSUS de « Photo de … » : du texte BRUT (`Text(verbatim:)` :
+// aucun Markdown, aucun lien, aucune détection de numéro ou d'adresse, aucune sélection ni copie), au corps 16 (Dynamic Type), jamais tronquée ; le pied
+// reste borné à 45 % de la hauteur et défile au-delà. Elle ne va jamais ailleurs qu'à l'écran : « Enregistrer cette photo » n'enregistre que l'image.
 
 struct PhotoFullScreen: View {
     let opened: OpenedPhoto
@@ -25,6 +28,8 @@ struct PhotoFullScreen: View {
     @State private var offsetBase: CGSize = .zero
     @State private var mapUnavailable = false
     @State private var photoArea: CGSize = .zero
+    /// La hauteur NATURELLE du pied quand la photo a une description (mesurée : un texte libre ne s'estime pas) ; 0 tant qu'elle n'est pas connue.
+    @State private var measuredFooter: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     /// La hauteur du contenu de la légende (sans la zone sûre), qui grandit avec la taille du texte : elle décide si la légende défile.
@@ -211,8 +216,11 @@ struct PhotoFullScreen: View {
     private func footerOverlay(size: CGSize, insets: EdgeInsets) -> some View {
         let scrim = (reduceTransparency ? colorPhotoCaptionScrim.withAlpha(1) : colorPhotoCaptionScrim).color
         let cap = PhotoFullScreenLayout.footerMaxHeight(screenHeight: size.height)
+        let hasDescription = opened.photo.descriptionText != nil
+        // Sans description : l'estimation d'avant, inchangée. Avec une description : la hauteur MESURÉE du pied (voir `measuredFooter`).
+        let estimate = hasDescription ? measuredFooter : footerEstimate + insets.bottom
         let scrolls = PhotoFullScreenLayout.footerScrolls(
-            estimate: footerEstimate + insets.bottom + PhotoFullScreenLayout.fadeHeight, screenHeight: size.height
+            estimate: estimate + PhotoFullScreenLayout.fadeHeight, screenHeight: size.height
         )
         return VStack(spacing: 0) {
             LinearGradient(colors: [scrim.opacity(0), scrim], startPoint: .top, endPoint: .bottom)
@@ -221,26 +229,41 @@ struct PhotoFullScreen: View {
             if scrolls {
                 ScrollView {
                     footer(insets: insets)
+                        .measuredFooterHeight(hasDescription)
                         .frame(minHeight: cap - PhotoFullScreenLayout.fadeHeight, alignment: .bottom)
                 }
                 .frame(maxHeight: cap - PhotoFullScreenLayout.fadeHeight)
                 .background(scrim)
             } else {
                 footer(insets: insets)
+                    .measuredFooterHeight(hasDescription)
                     .background(scrim)
             }
         }
+        .onPreferenceChange(FooterHeightKey.self) { measuredFooter = $0 }
     }
 
+    /// Le pied, de haut en bas : la DESCRIPTION (s'il y en a une), « Photo de … », puis le lieu. L'ordre est celui de `PhotoFullScreenLayout.footerRows`.
     private func footer(insets: EdgeInsets) -> some View {
-        VStack(alignment: .leading, spacing: PhotoFullScreenLayout.captionSpacing) {
-            Text(verbatim: title)
-                .miffTextStyle(textTitleBold20)
-                .foregroundColor(colorUpdateOnPhoto.color)
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityAddTraits(.isHeader)
-            if let place = opened.photo.place {
-                placeSection(place)
+        let rows = PhotoFullScreenLayout.footerRows(
+            hasDescription: opened.photo.descriptionText != nil, hasPlace: opened.photo.place != nil
+        )
+        return VStack(alignment: .leading, spacing: PhotoFullScreenLayout.captionSpacing) {
+            ForEach(rows, id: \.self) { row in
+                switch row {
+                case .description:
+                    descriptionRow
+                case .title:
+                    Text(verbatim: title)
+                        .miffTextStyle(textTitleBold20)
+                        .foregroundColor(colorUpdateOnPhoto.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityAddTraits(.isHeader)
+                case .place:
+                    if let place = opened.photo.place {
+                        placeSection(place)
+                    }
+                }
             }
         }
         .padding(.horizontal, Spacing.md)
@@ -249,6 +272,21 @@ struct PhotoFullScreen: View {
         .padding(.top, PhotoFullScreenLayout.captionTopPadding)
         .padding(.bottom, insets.bottom)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// La description de l'auteur : texte BRUT, corps 16, entière (jamais de « … »), lue par VoiceOver AVANT le titre et précédée de « Description : ».
+    @ViewBuilder
+    private var descriptionRow: some View {
+        if let description = opened.photo.descriptionText {
+            Text(verbatim: description)
+                .miffTextStyle(textBodyRegular)
+                .foregroundColor(colorUpdateOnPhoto.color)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, PhotoFullScreenLayout.captionSpacing)
+                .accessibilityLabel(Text(verbatim: L10n.format("update_description_shown_a11y", description)))
+        }
     }
 
     @ViewBuilder
@@ -286,5 +324,30 @@ struct PhotoFullScreen: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// La hauteur naturelle du pied, remontée par `measuredFooterHeight` (seulement quand la photo a une description).
+private struct FooterHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
+private extension View {
+    /// Mesure la hauteur naturelle de la vue (avant tout cadre imposé) quand `enabled` ; sinon ne fait rien.
+    @ViewBuilder
+    func measuredFooterHeight(_ enabled: Bool) -> some View {
+        if enabled {
+            background(
+                GeometryReader { proxy in
+                    Color.clear.preference(key: FooterHeightKey.self, value: proxy.size.height)
+                }
+            )
+        } else {
+            self
+        }
     }
 }

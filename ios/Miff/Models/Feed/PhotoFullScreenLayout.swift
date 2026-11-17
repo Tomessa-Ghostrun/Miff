@@ -72,7 +72,23 @@ enum PhotoFullScreenLayout {
     }
 }
 
+/// Les lignes du pied du plein écran, de haut en bas.
+enum PhotoFooterRow: Hashable {
+    /// La description de l'auteur (facultative).
+    case description
+    /// « Photo de {Prénom} · {heure} ».
+    case title
+    /// « Position mesurée … », et « Voir où c'était » (quand la photo a un lieu).
+    case place
+}
+
 extension PhotoFullScreenLayout {
+    /// L'ordre du pied : la DESCRIPTION d'abord (quand il y en a une), puis « Photo de … », puis le lieu. Sans description, le pied est exactement celui
+    /// d'avant : aucune ligne vide, aucun libellé « pas de description ».
+    static func footerRows(hasDescription: Bool, hasPlace: Bool) -> [PhotoFooterRow] {
+        (hasDescription ? [PhotoFooterRow.description] : []) + [.title] + (hasPlace ? [.place] : [])
+    }
+
     /// Le décalage de la croix et de l'icône depuis le bord HAUT de l'écran : le plus grand de la zone sûre lue et du plancher (47 pt), plus 12 pt.
     /// Le plancher ne vaut qu'en portrait (en paysage il n'y a pas d'encoche en haut : le plancher ferait perdre de la place pour rien).
     static func topMargin(safeInset: CGFloat, isPortrait: Bool) -> CGFloat {

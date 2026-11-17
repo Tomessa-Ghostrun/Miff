@@ -28,12 +28,13 @@ struct UpdateScreenPreview: View {
 
     @ViewBuilder
     private var screen: some View {
-        if name == "update-preview" {
+        if name.hasPrefix("update-preview") {
             UpdatePreviewView(
-                state: PreviewState(photo: Self.samplePhoto),
+                state: previewState,
                 miffCount: 2,
                 onRetake: {},
                 onPublish: {},
+                onDescriptionChange: { _ in },
                 actions: UpdateActions()
             )
         } else {
@@ -46,6 +47,17 @@ struct UpdateScreenPreview: View {
                 onUnavailable: {}
             )
         }
+    }
+
+    /// `update-preview` : l'aperçu sans description ; `update-preview-description` : une description de plus de 120 caractères (le compteur « 128/140 » est
+    /// alors visible, le champ sur 3 lignes). Jamais écrit nulle part : un état fixe de démonstration, Debug seulement.
+    private var previewState: PreviewState {
+        var state = PreviewState(photo: Self.samplePhoto)
+        if name == "update-preview-description" {
+            state.descriptionText = "Bien arrivée, on se retrouve ce soir pour dîner ensemble. "
+                + "Je te raconte tout à la maison, ne t'inquiète pas, tout va très bien !"
+        }
+        return state
     }
 
     /// Une photo de démonstration au format du viseur (9:19,5) : un dégradé, un cadre blanc et « HAUT » / « BAS » pour voir qu'elle est entière.
