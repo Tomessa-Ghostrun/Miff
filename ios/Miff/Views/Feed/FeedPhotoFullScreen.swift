@@ -34,8 +34,8 @@ struct PhotoFullScreen: View {
     /// La hauteur du contenu de la légende (sans la zone sûre), qui grandit avec la taille du texte : elle décide si la légende défile.
     @ScaledMetric(relativeTo: .body) private var footerEstimate: CGFloat = PhotoFullScreenLayout.footerEstimate
     /// Le corps et l'interligne de la description (16 et 22 pt, jeton `textBodyRegular`), qui grandissent avec la taille du texte.
-    @ScaledMetric(relativeTo: .body) private var descriptionFontSize: CGFloat = 16
-    @ScaledMetric(relativeTo: .body) private var descriptionLineHeight: CGFloat = 22
+    @ScaledMetric(relativeTo: .body) private var authorTextSize: CGFloat = 16
+    @ScaledMetric(relativeTo: .body) private var authorLineHeight: CGFloat = 22
 
     private static let maxZoom: CGFloat = 4
     private static let doubleTapZoom: CGFloat = 2
@@ -220,8 +220,8 @@ struct PhotoFullScreen: View {
         let cap = PhotoFullScreenLayout.footerMaxHeight(screenHeight: size.height)
         // Sans description, `descriptionExtra` vaut 0 : l'estimation d'avant, inchangée.
         let descriptionExtra = PhotoFullScreenLayout.descriptionHeight(
-            unitCount: opened.photo.descriptionText?.utf16.count ?? 0, fontSize: descriptionFontSize,
-            lineHeight: descriptionLineHeight, width: size.width - 2 * Spacing.md - insets.leading - insets.trailing
+            unitCount: opened.photo.descriptionText?.utf16.count ?? 0, fontSize: authorTextSize,
+            lineHeight: authorLineHeight, width: size.width - 2 * Spacing.md - insets.leading - insets.trailing
         )
         let scrolls = PhotoFullScreenLayout.footerScrolls(
             estimate: footerEstimate + insets.bottom + descriptionExtra + PhotoFullScreenLayout.fadeHeight,
