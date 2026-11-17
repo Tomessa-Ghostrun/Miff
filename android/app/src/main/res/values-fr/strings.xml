@@ -1216,11 +1216,8 @@
         <item quantity="many">%1$d autres lieux</item>
         <item quantity="other">%1$d autres lieux</item>
     </plurals>
-    <plurals name="profile_timeshare_danger_zones">
-        <item quantity="one">Zone de danger</item>
-        <item quantity="many">Zones de danger</item>
-        <item quantity="other">Zones de danger</item>
-    </plurals>
+    <string name="profile_timeshare_danger_zone">Zone de danger</string>
+    <string name="profile_timeshare_danger_zones">Zones de danger</string>
     <string name="profile_timeshare_elsewhere">Ailleurs</string>
     <string name="profile_timeshare_percent_tiny">&lt; 1 %</string>
     <string name="profile_timeshare_detail_close">Fermer</string>

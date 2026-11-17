@@ -120,6 +120,8 @@ class TimeShareRulesTest {
         // Sign-out, deletion of the account, session lost: the teardown of the session and the erasers of the account.
         assertTrue(Regex("presenceLog\\.clear\\(\\)\\s+timeShareWindow\\.clear\\(\\)").containsMatchIn(container))
         assertTrue(Regex("reviewStateStore,\\s+presenceLog,\\s+timeShareWindow").containsMatchIn(container))
+        // ... and the teardown that does it is in the list of the session.
+        assertTrue(Regex("reviewStateStore\\.clear\\(\\) \\},\\s+timeShareTeardown,").containsMatchIn(container))
         // A Miff that is left on purpose, or that is gone from the list the server confirmed.
         assertTrue(container.contains("presenceLog.forgetMiff(miffId)"))
         assertTrue(container.contains("if (!state.fromCache) presenceLog.retainOnly("))

@@ -12077,49 +12077,36 @@
         }
       }
     },
+    "profile_timeshare_danger_zone": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danger zone"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zone de danger"
+          }
+        }
+      }
+    },
     "profile_timeshare_danger_zones": {
       "extractionState": "manual",
       "localizations": {
         "en": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Danger zone"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Danger zones"
-                }
-              }
-            }
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danger zones"
           }
         },
         "fr": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Zone de danger"
-                }
-              },
-              "many": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Zones de danger"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "Zones de danger"
-                }
-              }
-            }
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zones de danger"
           }
         }
       }

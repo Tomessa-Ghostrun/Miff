@@ -468,12 +468,17 @@ private fun describe(
     return stringResource(R.string.profile_timeshare_a11y_card, subtitle(windowDays), parts.joinToString(", "))
 }
 
+/** "Zone de danger" for one place, "Zones de danger" for several (two texts, not a plural: the number is not in the sentence). */
+@Composable
+private fun dangerLabel(count: Int): String =
+    stringResource(if (count == 1) R.string.profile_timeshare_danger_zone else R.string.profile_timeshare_danger_zones)
+
 @Composable
 private fun labelOf(item: LegendItem): String =
     when (item.kind) {
         SliceKind.PLACE -> item.name.orEmpty()
         SliceKind.OTHER_PLACES -> pluralStringResource(R.plurals.profile_timeshare_other_places, item.count, item.count)
-        SliceKind.DANGER -> pluralStringResource(R.plurals.profile_timeshare_danger_zones, item.count)
+        SliceKind.DANGER -> dangerLabel(item.count)
         SliceKind.ELSEWHERE -> stringResource(R.string.profile_timeshare_elsewhere)
     }
 
@@ -904,7 +909,7 @@ private fun DangerDetailSheet(
             ) {
                 Mark(R.drawable.ic_loc_warning, colorStatusDangerText)
                 Text(
-                    text = pluralStringResource(R.plurals.profile_timeshare_danger_zones, item.count),
+                    text = dangerLabel(item.count),
                     style = textDisplayTitle,
                     color = colorTextForm,
                 )

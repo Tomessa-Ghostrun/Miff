@@ -1236,10 +1236,8 @@
         <item quantity="one">%1$d other place</item>
         <item quantity="other">%1$d other places</item>
     </plurals>
-    <plurals name="profile_timeshare_danger_zones">
-        <item quantity="one">Danger zone</item>
-        <item quantity="other">Danger zones</item>
-    </plurals>
+    <string name="profile_timeshare_danger_zone">Danger zone</string>
+    <string name="profile_timeshare_danger_zones">Danger zones</string>
     <string name="profile_timeshare_elsewhere">Elsewhere</string>
     <string name="profile_timeshare_percent_tiny">&lt; 1%</string>
     <string name="profile_timeshare_detail_close">Close</string>

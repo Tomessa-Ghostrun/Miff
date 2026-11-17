@@ -1039,6 +1039,14 @@ class AppContainer(
         SubscriptionRepository(store = FirestoreSubscriptionStore(), currentUid = { authGateway.currentUid })
     }
 
+    /** TIME-1 / TIME-2: the journal of the presence and the window of the chart go with the session (the engine erases the journal too, in its own stop). */
+    private val timeShareTeardown: SessionTeardown by lazy {
+        SessionTeardown {
+            presenceLog.clear()
+            timeShareWindow.clear()
+        }
+    }
+
     val sessionManager: SessionManager by lazy {
         StartupTrace.section("Miff.container.sessionManager") {
             SessionManager(
@@ -1067,10 +1075,7 @@ class AppContainer(
                         SessionTeardown { publishLedger.clear() },
                         SessionTeardown { reviewStateStore.clear() },
                         // TIME-1 / TIME-2: the journal of the presence and the window of the chart go with the session (the engine erases the journal too, in its own stop).
-                        SessionTeardown {
-                            presenceLog.clear()
-                            timeShareWindow.clear()
-                        },
+                        timeShareTeardown,
                         placeNotices,
                         requesterDirectory,
                         addressSearch,
