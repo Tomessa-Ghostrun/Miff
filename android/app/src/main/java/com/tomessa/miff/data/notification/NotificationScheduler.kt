@@ -322,8 +322,8 @@ class NotificationScheduler(
                 }
             }
 
-            // N6 is shown at once, N8 is only a line of the centre, N9 comes from the server: none of them waits for an hour.
-            NotificationType.N6, NotificationType.N8, NotificationType.N9 -> {
+            // N6 is shown at once, N8 and C1 are only lines of the centre, N9 comes from the server: none of them waits for an hour.
+            NotificationType.N6, NotificationType.N8, NotificationType.N9, NotificationType.C1 -> {
                 Unit
             }
 

@@ -375,7 +375,7 @@ Aucune donnée ne quitte l'appareil en P0. Le centre est **effacé** avec le cac
 
 ### 7.5 P1 : « depuis ta dernière visite »
 
-À l'ouverture : compare, **sans lecture supplémentaire** (les statuts sont déjà lus par le Feed), l'état actuel de chaque proche à l'état vu à la précédente visite. Affiche **au plus 3 lignes** dans le centre (« Thomas a quitté l'école à 17 h 10 », « Pas de nouvelles d'Amandine depuis 13 h 40 »). **Limite connue et dite** : un statut est **écrasé** (un seul document par membre, `data-model.md` §2.7) : on ne voit pas l'historique (arrivée puis départ), seulement la différence. **Aucune notification n'est émise.**
+À l'ouverture : compare, **sans lecture supplémentaire** (les statuts sont déjà lus par le Feed), l'état actuel de chaque proche à l'état vu à la précédente visite. Affiche **au plus 3 lignes** dans le centre (« Thomas a quitté l'école à 17 h 10 », « Dernière nouvelle d'Amandine : 13 h 40 » : formulation **A**, décidée par le PM le 2026-11-13, qui remplace « Pas de nouvelles d'Amandine depuis 13 h 40 » ; voir `notifications-p1-derniere-visite.md`). **Limite connue et dite** : un statut est **écrasé** (un seul document par membre, `data-model.md` §2.7) : on ne voit pas l'historique (arrivée puis départ), seulement la différence. **Aucune notification n'est émise.**
 
 ---
 
@@ -653,8 +653,8 @@ Une branche et une PR par plateforme et par ticket ; **Android d'abord**, puis i
 | **NOTIF-3A** | **Android : moteur de rappels A1 / A2 (+ A3)** | Fonction pure `plan`, réconciliation, alarme inexacte, boot / heure / fuseau, annulation, plafonds, textes, nuit | **L** | NOTIF-1A, 2A ; **Tracking** (point de départ), **Update** (annulation) ; avant eux : jeu de données de test | **Spark** |
 | **NOTIF-4A** | **Android : centre de notifications** | Cloche, liste, états, local, rétention, routage au toucher, purge | M | NOTIF-3A (ou jeu de test) ; Feed | **Spark** |
 | **NOTIF-5A** | **Android : action rapide « Je vais bien »** | §10.3 | S à M | NOTIF-3A ; Update | **Spark** |
-| **NOTIF-6A** | **Android : « depuis ta dernière visite »** (P1) | §7.5 | S | NOTIF-4A ; Feed (statuts) | **Spark** |
-| **NOTIF-1I à 6I** | **iOS** : mêmes livrables ; textes figés, catégories d'actions, aucune vérification avant affichage ; TestFlight sur iPhone 11 Pro | — | Idem | Équivalents Android ; INIT-4 | **Spark** |
+| **NOTIF-P1A** | **Android : « depuis ta dernière visite »** (P1) : renommé le 2026-11-13 (décision Q8 du PM) pour lever la collision avec **NOTIF-6A** (« centre local », §20.12) ; mini-ticket `notifications-p1-derniere-visite.md` | §7.5 | S | NOTIF-4A ; Feed (statuts) | **Spark** |
+| **NOTIF-1I à 6I** (la livraison « depuis ta dernière visite » iOS est **NOTIF-P1I**) | **iOS** : mêmes livrables ; textes figés, catégories d'actions, aucune vérification avant affichage ; TestFlight sur iPhone 11 Pro | — | Idem | Équivalents Android ; INIT-4 | **Spark** |
 | **NOTIF-S1** | **Serveur P2** : jetons d'appareil, fonction « statut écrit » → push (B1 à B5), clôture B2, regroupement, filtrage des préférences, langue du destinataire | L | Décision Blaze (Q3, Q4) ; backend `data-model.md` §2.10 | **Blaze** |
 | **NOTIF-S2** | **Serveur P2** : fonction planifiée « silence » (B1), avancement des échéances | L | NOTIF-S1 | **Blaze** |
 | **NOTIF-7A / 7I** | **Clients P2** : jetons, réception, canaux Android, extension de service iOS, clé APNs | M / M à L | NOTIF-S1 | **Blaze** |
