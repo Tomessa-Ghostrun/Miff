@@ -11,17 +11,16 @@ final class PlaceRequestFormViewModelTests: XCTestCase {
     private let network = FakeNetwork()
     private let notices = PlaceNotices()
 
-    private func requestContext(premium: Bool = false, mine: [PlaceRequest] = []) -> RequestContext {
-        RequestContext(miffName: "Famille", premium: premium, mine: mine)
+    private func requestContext(mine: [PlaceRequest] = []) -> RequestContext {
+        RequestContext(miffName: "Famille", mine: mine)
     }
 
     private func viewModel(
-        premium: Bool = false,
         mine: [PlaceRequest] = [],
         load: RequestContextLoad? = nil,
         withRepository: Bool = true
     ) async -> PlaceFormViewModel {
-        requests.prepareResult = load ?? .loaded(requestContext(premium: premium, mine: mine))
+        requests.prepareResult = load ?? .loaded(requestContext(mine: mine))
         let dependencies = PlaceFormDependencies(
             repository: repo,
             search: search,
@@ -217,19 +216,20 @@ final class PlaceRequestFormViewModelTests: XCTestCase {
         XCTAssertTrue(model.state.messageIsCalm)
     }
 
-    // MARK: - La zone de danger (critères M7 et M8)
+    // MARK: - La zone de danger (décision du PM du 2026-11-17 : tout membre peut la DEMANDER)
 
-    func testAMemberWhoIsNotPremiumGetsTheOfferInsteadOfADangerZone() async {
-        let model = await viewModel(premium: false)
+    func testAMemberCanChooseADangerZoneWithoutAnyOfferOrLock() async {
+        let model = await viewModel()
 
         model.onTypeSelected(.risk)
 
-        XCTAssertEqual(model.state.type, .trusted, "le choix reste « zone de confiance »")
-        XCTAssertEqual(model.state.paywall, .danger)
+        XCTAssertEqual(model.state.type, .risk, "le choix est pris tel quel : aucune offre pour une demande")
+        XCTAssertNil(model.state.paywall)
+        XCTAssertFalse(model.state.premium, "l'abonnement n'est même pas lu pour une demande")
     }
 
-    func testAPremiumMemberCanChooseADangerZoneAndAskForIt() async {
-        let model = await viewModel(premium: true)
+    func testADangerZoneIsSubmittedAsAskedAndNeverOpensTheOffer() async {
+        let model = await viewModel()
         await fill(model)
 
         model.onTypeSelected(.risk)
@@ -237,20 +237,15 @@ final class PlaceRequestFormViewModelTests: XCTestCase {
         await waitUntil { model.state.end != nil }
 
         XCTAssertNil(model.state.paywall)
+        XCTAssertEqual(model.state.end, .saved)
         XCTAssertEqual(requests.submitted.first?.type, .risk)
     }
 
-    func testTheOfferIsOpenedWhenTheSendingFindsThePlanEnded() async {
-        requests.submitResult = .needsPremium(.danger)
-        let model = await viewModel(premium: true)
-        await fill(model)
-
-        model.onSave()
-        await waitUntil { model.state.paywall != nil }
-
-        XCTAssertEqual(model.state.paywall, .danger)
-        XCTAssertNil(model.state.end)
-        XCTAssertFalse(model.state.saving)
+    func testTheCreationFormStillOffersMiffPlusForADangerZone() {
+        // Le créateur qui DÉCLARE directement une zone de danger garde l'offre (R-LIEU-6) : seule la demande a changé.
+        XCTAssertEqual(PlaceQuota.forTypeChange(premium: false, from: .trusted, to: .risk), .danger)
+        XCTAssertNil(PlaceQuota.forRequestTypeChange(to: .risk))
+        XCTAssertNil(PlaceQuota.forRequestTypeChange(to: .trusted))
     }
 
     // MARK: - Ce qui reste d'un lieu

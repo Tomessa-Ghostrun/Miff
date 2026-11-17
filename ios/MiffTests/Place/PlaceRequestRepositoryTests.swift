@@ -44,8 +44,8 @@ final class PlaceRequestRepositoryTests: XCTestCase {
         places.entitlement = EntitlementRead(active: true, expiresAtMillis: now.value + 10_000)
     }
 
-    private func context(premium: Bool = false, mine: [PlaceRequest] = []) -> RequestContext {
-        RequestContext(miffName: "Famille", premium: premium, mine: mine)
+    private func context(mine: [PlaceRequest] = []) -> RequestContext {
+        RequestContext(miffName: "Famille", mine: mine)
     }
 
     private func submit(
@@ -75,9 +75,8 @@ final class PlaceRequestRepositoryTests: XCTestCase {
 
     // MARK: - Préparer
 
-    func testPrepareReadsThePlanTheMiffAndTheRequestsOfThePersonFromTheServer() async {
+    func testPrepareReadsTheMiffAndTheRequestsOfThePersonFromTheServerAndNeverThePlan() async {
         setUpMiff()
-        premium()
         requests.requests = [testRequest(slot: 2)]
 
         let load = await repository().prepare(uid: uid, miffId: testMiffId)
@@ -86,7 +85,6 @@ final class PlaceRequestRepositoryTests: XCTestCase {
             return XCTFail("le formulaire devrait pouvoir s'ouvrir")
         }
         XCTAssertEqual(loaded.miffName, "Famille")
-        XCTAssertTrue(loaded.premium)
         XCTAssertEqual(loaded.mine.map { $0.id }, ["\(uid)_2"])
         XCTAssertEqual(requests.reads, ["server"], "l'emplacement se choisit sur le serveur, jamais sur une copie")
         XCTAssertTrue(requests.commits.isEmpty && requests.enqueued.isEmpty, "rien n'est écrit à l'ouverture")
@@ -102,13 +100,16 @@ final class PlaceRequestRepositoryTests: XCTestCase {
         XCTAssertEqual(missing, .unavailable)
     }
 
-    func testPrepareWithAnUnknownPlanFailsInsteadOfGuessingFree() async {
+    func testPrepareDoesNotDependOnTheSubscriptionOfThePersonWhoAsks() async {
+        // Demander un lieu, zone de danger comprise, est permis à tout membre (2026-11-17) : un abonnement illisible ne bloque pas le formulaire.
         setUpMiff()
         places.entitlementFailure = offline()
 
         let load = await repository().prepare(uid: uid, miffId: testMiffId)
 
-        XCTAssertEqual(load, .failed(.offline), "un abonnement inconnu n'est pas « gratuit »")
+        guard case .loaded = load else {
+            return XCTFail("le formulaire s'ouvre sans connaître l'abonnement")
+        }
     }
 
     func testPrepareLostAccessToTheMiffIsUnavailableButANetworkCutIsNot() async {
@@ -200,21 +201,49 @@ final class PlaceRequestRepositoryTests: XCTestCase {
         XCTAssertTrue(requests.reads.isEmpty)
     }
 
-    func testADangerZoneNeedsPremiumForThePersonWhoAsksAndWritesNothing() async {
-        let result = await submit(testRequestDraft(type: .risk), context: context(premium: false))
-
-        XCTAssertEqual(result, .needsPremium(.danger))
-        XCTAssertTrue(requests.commits.isEmpty && requests.enqueued.isEmpty)
-    }
-
-    func testAPremiumMemberCanAskForADangerZone() async {
-        let result = await submit(testRequestDraft(type: .risk), context: context(premium: true))
+    func testAMemberWhoIsNotPremiumCanAskForADangerZoneAndNoSubscriptionIsRead() async {
+        // Pas d'abonnement dans la boutique de test : un demandeur gratuit.
+        places.entitlement = nil
+        let result = await submit(testRequestDraft(type: .risk))
 
         guard case .done(let sent) = result else {
-            return XCTFail("un demandeur Miff+ peut demander une zone de danger")
+            return XCTFail("tout membre peut demander une zone de danger")
+        }
+        XCTAssertEqual(sent.type, .risk)
+        XCTAssertEqual(requests.commits.count, 1)
+        XCTAssertFalse(places.calls.contains("entitlement"), "aucun abonnement lu pour demander")
+        XCTAssertEqual(requests.commits[0][0].data["type"], .string("risk"))
+        let expectedId = PlaceRequestLimits.idOf(uid: uid, slot: 1)
+        XCTAssertEqual(
+            requests.commits[0][0].path,
+            PlaceRequestWrites.requestPath(miffId: testMiffId, requestId: expectedId)
+        )
+    }
+
+    func testAPremiumMemberAsksForADangerZoneExactlyLikeAFreeOne() async {
+        premium()
+        let free = await submit(testRequestDraft(type: .risk))
+        guard case .done(let sent) = free else {
+            return XCTFail("un demandeur Miff+ peut aussi demander une zone de danger")
         }
         XCTAssertEqual(sent.type, .risk)
         XCTAssertEqual(requests.commits[0][0].data["type"], .string("risk"))
+    }
+
+    func testADangerZoneRequestKeepsTheSameLimitsAsAnyRequest() async {
+        let full = context(mine: [testRequest(slot: 1), testRequest(slot: 2), testRequest(slot: 3)])
+
+        let result = await submit(testRequestDraft(type: .risk), context: full)
+
+        XCTAssertEqual(result, .memberLimit, "3 demandes en attente au plus, danger ou non")
+        XCTAssertTrue(requests.commits.isEmpty && requests.enqueued.isEmpty)
+    }
+
+    func testADangerZoneRequestMadeOfflineIsKeptLikeAnyOther() async {
+        let result = await submit(testRequestDraft(type: .risk), online: false)
+
+        XCTAssertEqual(result, .queued)
+        XCTAssertEqual(requests.enqueued.count, 1)
     }
 
     func testAnInvalidDraftIsRefusedBeforeAnythingIsSent() async {
@@ -301,14 +330,16 @@ final class PlaceRequestRepositoryTests: XCTestCase {
         XCTAssertEqual(requests.commits.count, 0)
     }
 
-    func testARefusedDangerZoneAfterThePlanEndedIsTheOfferAgain() async {
+    func testARefusedDangerZoneIsNeverAnOfferAndNeverReadsTheSubscription() async {
+        // Plus d'offre pour le demandeur : un refus du serveur est une phrase calme, jamais Miff+.
         setUpMiff()
         places.entitlement = EntitlementRead(active: true, expiresAtMillis: now.value - 1)
         requests.commitFailures = [refused()]
 
-        let result = await submit(testRequestDraft(type: .risk), context: context(premium: true))
+        let result = await submit(testRequestDraft(type: .risk))
 
-        XCTAssertEqual(result, .needsPremium(.danger))
+        XCTAssertEqual(result, .miffLimit)
+        XCTAssertFalse(places.calls.contains("entitlement"))
     }
 
     func testARaceOnTheSlotIsRetriedOnceWithTheFreeSlot() async {

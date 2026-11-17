@@ -64,7 +64,8 @@ struct PlaceRadiusSection: View {
 }
 
 /// « Type » : « Zone de confiance » (choisie au départ) ou « Zone de danger ». Pour un compte gratuit, la zone de danger porte la
-/// pastille « Miff+ » AVANT d'être touchée ; la toucher ouvre l'offre et le choix reste « Zone de confiance » (critère LIM3). Les
+/// pastille « Miff+ » AVANT d'être touchée ; la toucher ouvre l'offre et le choix reste « Zone de confiance » (critère LIM3). Dans le
+/// formulaire d'une DEMANDE, ni pastille ni offre : tout membre peut demander une zone de danger (décision du PM du 2026-11-17). Les
 /// deux cartes s'empilent aux grandes tailles de texte.
 struct PlaceTypeSection: View {
     let state: PlaceFormState
@@ -91,12 +92,17 @@ struct PlaceTypeSection: View {
         }
     }
 
+    /// La pastille « Miff+ » sur la zone de danger : seulement pour un compte gratuit qui CRÉE ou MODIFIE un lieu, jamais pour une demande.
+    private var dangerIsLocked: Bool {
+        state.mode != .request && !state.premium && state.type != .risk
+    }
+
     @ViewBuilder
     private var cards: some View {
         PlaceTypeCard(type: .trusted, isSelected: state.type == .trusted, isLocked: false) {
             actions.onTypeSelected(.trusted)
         }
-        PlaceTypeCard(type: .risk, isSelected: state.type == .risk, isLocked: !state.premium && state.type != .risk) {
+        PlaceTypeCard(type: .risk, isSelected: state.type == .risk, isLocked: dangerIsLocked) {
             actions.onTypeSelected(.risk)
         }
     }
