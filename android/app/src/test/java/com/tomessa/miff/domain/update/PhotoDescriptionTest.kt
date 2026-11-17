@@ -249,4 +249,12 @@ class PhotoDescriptionTest {
         assertEquals("SharedPhoto(redacted)", withText.toString())
         assertFalse(withText.toString().contains("secret"))
     }
+
+    @Test
+    fun limited_showsNothingOfTheText_inItsToString() {
+        val limited = PhotoDescription.limitInput("secret words")
+        assertEquals("Limited(redacted)", limited.toString())
+        assertFalse(limited.toString().contains("secret"))
+        assertEquals("the text itself stays readable", "secret words", limited.text)
+    }
 }

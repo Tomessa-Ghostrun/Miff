@@ -486,6 +486,23 @@ class UpdateViewModelTest {
     }
 
     @Test
+    fun aPublicationRefusedBecauseThePhotoIsStale_forgetsItsDescription_likeIos() =
+        runTest(dispatcher) {
+            val vm = viewModel()
+            vm.toPreview()
+            vm.onDescriptionChanged("trop tard")
+            // The photo becomes stale while the preview stays open (no return to the foreground in between): the publisher refuses it.
+            now += UpdatePhoto.STALE_MILLIS + 1
+            vm.onPublish()
+            advanceUntilIdle()
+            val stage = vm.stage.value as UpdateStage.Preview
+            assertEquals(PreviewNotice.Stale, stage.notice)
+            assertEquals("", stage.description)
+            assertFalse(stage.publishing)
+            assertEquals(0, store.commits)
+        }
+
+    @Test
     fun aPhotoStillFresh_keepsItsDescription_whenTheAppComesBack() {
         val vm = viewModel()
         vm.toPreview()

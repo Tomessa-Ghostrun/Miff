@@ -308,7 +308,12 @@ class UpdateViewModel(
                     }
 
                     else -> {
-                        if (now != null) mutableStage.value = now.copy(publishing = false, notice = noticeOf(result))
+                        if (now != null) {
+                            // A photo older than 5 minutes is forgotten, and so is its description (same as iOS). After any other failure the description STAYS.
+                            val kept = if (result == PublishResult.Stale) "" else now.description
+                            mutableStage.value =
+                                now.copy(publishing = false, notice = noticeOf(result), description = kept)
+                        }
                     }
                 }
             }

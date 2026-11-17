@@ -20,7 +20,10 @@ object PhotoDescription {
     data class Limited(
         val text: String,
         val wasCut: Boolean,
-    )
+    ) {
+        // PRIVACY: the text is what the person wrote, it must never reach a log, a crash report or a message by accident (same rule as SharedPhoto).
+        override fun toString(): String = "Limited(redacted)"
+    }
 
     /**
      * What the field keeps while the person types or pastes: control, invisible and direction characters removed, tabs and line breaks become one space each,
