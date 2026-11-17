@@ -331,6 +331,7 @@ private fun MainNavigation(
                                     currentUid = { container.authGateway.currentUid },
                                     waitingAgreement = container.awaitingAgreement.waiting,
                                     notifications = container.feedNotificationLink,
+                                    visits = container.feedVisitLink,
                                 )
                             }
                         },
@@ -403,6 +404,7 @@ private fun MainNavigation(
                 viewModel(key = profileRequestsKey(scopeKey), factory = profileRequestsFactory(container))
             val profileRequests by profileRequestsViewModel.state.collectAsStateWithLifecycle()
             val notificationsState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
+            val focusMember by container.tabRequests.pendingFocus.collectAsStateWithLifecycle()
             val requestNotificationWindow =
                 rememberNotificationPermissionRequest(onAnswered = notificationsViewModel::onSystemWindowAnswered)
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { notificationsViewModel.refresh() }
@@ -473,6 +475,8 @@ private fun MainNavigation(
                                 onOpenCenter = { navController.openNotificationCenter() },
                                 onSecondChanceEnable = requestNotificationWindow,
                                 onSecondChanceLater = notificationsViewModel::onSecondChanceLater,
+                                focusMember = focusMember,
+                                onFocusHandled = container.tabRequests::consumeFocus,
                             ),
                     ),
                 tabRequests = container.tabRequests,
@@ -907,9 +911,20 @@ fun MainTabs(
                 profileDot = profileDot,
             )
         },
+        // The bubble and the calm message are drawn OVER the tabs but OUTSIDE what the glass records: otherwise their colour was blurred into the top of the bar
+        // (a lighter patch at the middle of it, which came and went with the bubble). Measured by the host WITH the safe area under the bar: the bubble sits
+        // just above the card of the bar (its own 4 dp of air included).
+        overlay = {
+            UpdateBottomLayer(
+                barInset = LocalTabBarInset.current,
+                prompt = if (bubbleShown) prompt else PromptLevel.NONE,
+                confirmation = confirmation,
+                maxBodyHeight = (LocalConfiguration.current.screenHeightDp * BUBBLE_MAX_SCREEN_SHARE).dp,
+                onBubbleHeight = { bubbleHeightPx = it },
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
+        },
     ) {
-        // Measured by the host WITH the safe area under the bar: the bubble sits just above the card of the bar (its own 4 dp of air included).
-        val barInset = LocalTabBarInset.current
         Box(modifier = Modifier.fillMaxSize()) {
             holder.SaveableStateProvider(selected) {
                 Box(Modifier.fillMaxSize()) {
@@ -1022,15 +1037,6 @@ fun MainTabs(
                     }
                 }
             }
-            // The calm message and the bubble share ONE column above the bar: they can never overlap (the message goes above the bubble).
-            UpdateBottomLayer(
-                barInset = barInset,
-                prompt = if (bubbleShown) prompt else PromptLevel.NONE,
-                confirmation = confirmation,
-                maxBodyHeight = (LocalConfiguration.current.screenHeightDp * BUBBLE_MAX_SCREEN_SHARE).dp,
-                onBubbleHeight = { bubbleHeightPx = it },
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
         }
     }
     // The review window sits over the tabs and their bar. The condition on the build flag is a constant: in a release build the whole call is removed.

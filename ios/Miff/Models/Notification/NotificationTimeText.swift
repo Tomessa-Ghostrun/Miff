@@ -22,4 +22,9 @@ enum NotificationTimeText {
         let parts = unread ? [title, time, L10n.string("notif_center_unread_a11y")] : [title, time]
         return parts.joined(separator: ", ")
     }
+
+    /// Une ligne « Depuis ta dernière visite » : sa phrase porte déjà son heure, VoiceOver lit « {phrase}, non lu » (critère C1-9).
+    static func spokenLabel(sentence: String, unread: Bool) -> String {
+        unread ? [sentence, L10n.string("notif_center_unread_a11y")].joined(separator: ", ") : sentence
+    }
 }

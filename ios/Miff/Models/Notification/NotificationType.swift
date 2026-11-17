@@ -13,6 +13,8 @@ enum NotificationDestination: Equatable {
     case profile
     /// Une ligne N8 : le Profil, sur la Miff concernée (la liste des lieux y montre les demandes à valider).
     case placeRequests(miffId: String)
+    /// Une ligne « Depuis ta dernière visite » : le Feed, sur la carte de ce proche (de cette Miff).
+    case feedCard(miffId: String, uid: String)
 }
 
 /// Les notifications de la phase 0 (N1 à N4, N6, et N7 du mode voyage). N5 (prévenir les autres membres d'une entrée en zone de danger) est ABANDONNÉE : elle exige
@@ -33,8 +35,12 @@ enum NotificationType: String, CaseIterable, Codable, Equatable {
     /// DEMANDE D'AJOUT D'UN LIEU (LIEU-REQ §7.1) : une ligne du centre pour le créateur, jamais une notification du système, jamais un
     /// réglage (HORS PÉRIMÈTRE, voir `allCases`). Ses mots se font à l'affichage (`PlaceRequestLines`).
     case n8
+    /// DEPUIS TA DERNIÈRE VISITE (NOTIF-P1I, ticket notifications-p1-derniere-visite.md) : au plus 3 lignes du centre sur ce qui a changé pour
+    /// les proches depuis la dernière ouverture. Comme N8, une ligne du centre SEULEMENT : jamais une notification du système (ni bannière, ni
+    /// son, ni pastille), jamais un réglage, et indépendante de l'autorisation du téléphone. Ses mots se font à l'affichage (`LastVisit`).
+    case c1
 
-    /// Le périmètre des notifications du système (réglages, programmation) : N8 n'en fait pas partie, c'est une ligne du centre seulement.
+    /// Le périmètre des notifications du système (réglages, programmation) : N8 et C1 n'en font pas partie, ce sont des lignes du centre seulement.
     static var allCases: [NotificationType] {
         [.n1, .n2, .n3, .n4, .n6, .n7]
     }
@@ -57,6 +63,8 @@ enum NotificationType: String, CaseIterable, Codable, Equatable {
         case .n8:
             // Mots de remplacement, quand le prénom ou la Miff ne sont pas connus à l'affichage.
             return "notif_n8_title"
+        case .c1:
+            return "notif_c1_title"
         }
     }
 
@@ -76,6 +84,9 @@ enum NotificationType: String, CaseIterable, Codable, Equatable {
             return "notif_n7_body"
         case .n8:
             return "notif_n8_body"
+        case .c1:
+            // Les lignes de C1 sont des phrases entières faites à l'affichage (`LastVisitTexts`) : ce corps n'est jamais montré.
+            return "notif_c1_title"
         }
     }
 
@@ -95,8 +106,10 @@ enum NotificationType: String, CaseIterable, Codable, Equatable {
         case .n7:
             return "notif_settings_n7"
         case .n8:
-            // Aucun interrupteur : N8 est hors périmètre (jamais affichée dans Réglages).
+            // Aucun interrupteur : N8 et C1 sont hors périmètre (jamais affichées dans Réglages).
             return "notif_n8_title"
+        case .c1:
+            return "notif_c1_title"
         }
     }
 
@@ -110,6 +123,8 @@ enum NotificationType: String, CaseIterable, Codable, Equatable {
             return .feed
         case .n8:
             return .profile
+        case .c1:
+            return .feed
         }
     }
 
@@ -118,8 +133,8 @@ enum NotificationType: String, CaseIterable, Codable, Equatable {
         switch self {
         case .n1, .n3, .n6:
             return true
-        case .n2, .n4, .n7, .n8:
-            // N8 n'est jamais une notification du système. N7 part à 8 h : jamais la nuit, donc rien à adoucir.
+        case .n2, .n4, .n7, .n8, .c1:
+            // N8 et C1 ne sont jamais des notifications du système. N7 part à 8 h : jamais la nuit, donc rien à adoucir.
             return false
         }
     }
