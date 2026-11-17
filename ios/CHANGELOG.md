@@ -14,6 +14,10 @@ Ajouté :
 - `NotificationType.c1` (ligne du centre seulement, hors périmètre des notifications du système), clés `notif_c1_*` du catalogue (mêmes textes qu'Android), VoiceOver « {phrase}, non lu », anglais.
 - Tests : vecteurs C1-T1 à C1-T20 (`LastVisitTests`, `LastVisitSampleTests`), phrases FR / EN du vrai catalogue, suivi (ouverture, 30 minutes, fermeture forcée, Miff perdue, déconnexion), fichier, écran du centre, Feed (image fraîche seulement).
 
+### CI iOS : limites de durée relevées (job 40 -> 60 min, étape des captures 15 -> 30 min)
+
+Aucun effet dans l'app. Le job « Build et tests » était annulé alors que tout était vert (run 43444821713 : 41 min pour 40 permises ; captures à 11 à 14 min pour 15 permises). Mesures, choix et signal de bascule : `docs/dev/ios-spike.md` §7 bis. Aucun contrôle retiré ; deux lignes de `ci/screenshots.sh` qui répétaient une capture identique sont supprimées.
+
 ### Version des conditions enregistrée : « 1.0 » (miroir d'Android)
 
 Modifié :

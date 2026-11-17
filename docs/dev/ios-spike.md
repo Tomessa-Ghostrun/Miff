@@ -199,6 +199,28 @@ Chaque job est facturé à la minute entamée ; une exécution de N minutes cons
 - **Alternatives si le quota devient un frein** (décision PM, question Q4 du ticket) : (B) moyen de paiement avec plafond de dépense, (C) Xcode Cloud (25 heures par mois incluses dans le programme développeur ; sa configuration initiale semble exiger un Mac, à vérifier), (D) GitHub Pro (3 000 minutes, environnements protégés). **Ne pas rendre le dépôt public pour contourner le quota** : cela exposerait les documents produit et les identifiants.
 - Mesures d'économie déjà en place : filtres de chemins stricts, annulation des exécutions obsolètes, aucun build iOS sur un changement qui ne touche pas `ios/`, archive et envoi TestFlight uniquement sur demande, outils téléchargés en versions épinglées (pas de mise à jour d'outils par `brew`, qui est plus lent).
 
+### 7 bis. Limites de durée du workflow `ios` (relevées le 2026-11-13)
+
+**Constat** : sur presque toutes les PR iOS, le job était annulé alors que compilation, SwiftLint et tests avaient réussi, parce que le job dépassait sa limite de 40 min (ou l'étape des captures sa limite de 15 min). Les runners macOS du dépôt public sont nettement plus lents que ceux du dépôt privé (6 à 8 min en tout au début).
+
+**Mesures** (runs `ios` du 2026-11-13, contrôles lourds actifs, durées par étape lues avec `gh run view <id> --json jobs`) :
+
+| Run | Job | Debug | Tests | Release | Internal | Captures |
+|---|---|---|---|---|---|---|
+| 43438589522 | 38 min, vert | 2 min 24 | 9 min 38 | 5 min 16 | 5 min 30 | 13 min 22 |
+| 43450573091 | 35 min, vert | 3 min 24 | 7 min 43 | 4 min 30 | 4 min 04 | 13 min 09 |
+| 43451972155 | 34 min, vert | 3 min 20 | 6 min 32 | 4 min 52 | 4 min 32 | 12 min 50 |
+| 43453022000 | 35 min, vert | 4 min 39 | 8 min 26 | 4 min 20 | 4 min 17 | 11 min 24 |
+| 43444821713 | 41 min, **annulé** (« exceeded the maximum execution time of 40m0s ») | 3 min 56 | 10 min 11 | 5 min 22 | 5 min 04 | 13 min 56 (coupée) |
+
+Un job complet dure donc 34 à 41 min ; les captures (plus de 90 images) pèsent 11 à 14 min, soit tout près de l'ancienne limite d'étape de 15 min.
+
+**Correction** : limite du job 40 puis 60 min, limite de l'étape des captures 15 puis 30 min. Limites de GitHub : 360 min au plus par job sur un runner hébergé ; les minutes des runners standard sont gratuites sur un dépôt public (à revérifier si le dépôt repasse en privé : voir §7, une limite plus haute y coûterait du quota). La limite sert à couper un job réellement bloqué ; un run au-delà de 60 min est à investiguer, pas à tolérer. Aucun contrôle n'est retiré ; seules deux lignes de `ios/ci/screenshots.sh` qui répétaient une capture déjà prise (mêmes nom et arguments) ont été supprimées.
+
+**Piste écartée** : ne lancer qu'un sous-ensemble des captures sur les PR et la série complète sur `main`. Une PR ne verrait plus un écran qui casse (la série complète ne tournerait qu'après fusion), pour un gain d'environ 10 min par run alors que les minutes sont gratuites. À reconsidérer si le dépôt repasse en privé.
+
+**Signal pour aller plus loin** : un job complet qui dépasse 50 min de façon répétée (étape des captures au-delà de 20 min), ou le retour au dépôt privé. Leviers alors : découper les captures en deux jobs parallèles, réduire les attentes (`sleep`) de `ios/ci/screenshots.sh`, ou ne garder qu'un sous-ensemble sur les PR.
+
 ---
 
 ## 8. Sécurité (ce que vous devez savoir)
