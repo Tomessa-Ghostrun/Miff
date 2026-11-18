@@ -152,6 +152,8 @@ final class DangerAlertPrivacyTests: XCTestCase {
         XCTAssertFalse(project.contains("UIBackgroundModes"))
         XCTAssertFalse(entitlements.contains("critical"), "Critical Alerts : non en v1 (D18)")
         XCTAssertFalse(entitlements.contains("contacts"))
+        // Time Sensitive (niveau prioritaire, jamais Critical) : la clé est déclarée, signature automatique (le profil géré par Apple intègre la capacité).
+        XCTAssertTrue(entitlements.contains("<key>com.apple.developer.usernotifications.time-sensitive</key>"))
     }
 
     func testTheCatalogOfEmergencyNumbersHoldsNoExoticOrPaidNumber() {

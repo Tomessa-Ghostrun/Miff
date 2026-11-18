@@ -221,7 +221,7 @@ targets:
         # Interrupteur de compilation du blocage de la localisation (LOC-4a) : voir la cle MiffLocationBlocking de l'Info.plist.
         MIFF_LOCATION_BLOCKING: "YES"
       configs:
-        # Capacite App Attest (App Check) : seulement pour les builds qui seront signes et installes sur iPhone.
+        # Capacites App Attest (App Check), Sign in with Apple, push et Time Sensitive (alerte de danger) : seulement pour les builds qui seront signes et installes sur iPhone (signature automatique).
         # En Debug (simulateur, fournisseur de debogage), aucune entitlement.
         Internal:
           CODE_SIGN_ENTITLEMENTS: Config/Miff.entitlements

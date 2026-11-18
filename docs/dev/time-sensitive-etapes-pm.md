@@ -10,23 +10,16 @@ Une notification « Time Sensitive » traverse les **Concentrations** et le **r�
 
 - Le **serveur** (fonction `notifierAlerte`, PR #274, **non déployée**) écrit `interruption-level: time-sensitive` dans la notification envoyée à un iPhone ; **jamais** `critical`.
 - L'**app** n'a rien à écrire pour l'afficher : le système compose la notification à partir des clés `notif_alert_start_*` / `notif_alert_end_*` (langue du téléphone).
-- **Sans la capacité** (aujourd'hui), l'alerte **arrive quand même**, au niveau **normal** (« actif ») : elle ne traverse simplement pas une Concentration. **Aucune erreur, aucun plantage, aucun échec de build** : c'est pourquoi le droit n'est **pas** encore écrit dans `ios/Config/Miff.entitlements` (une archive signée à la main échouerait si le profil ne contient pas le droit).
+- **Le droit est écrit dans le code** (mis à jour le 2026-11-19, la capacité est cochée) : la clé `com.apple.developer.usernotifications.time-sensitive` est dans `ios/Config/Miff.entitlements`. Ce fichier ne s'applique qu'aux builds **Internal** (TestFlight) et **Release** (voir `ios/project.yml`) : **Debug et le simulateur n'ont aucun droit** et ne sont pas touchés. En Release, la fonction d'alerte est absente et le droit seul ne change rien (inoffensif) ; il y est pour que la version de publication, le jour où la fonction y sera allumée, n'ait pas à repasser par ce chemin.
+- **Signature automatique** : la CI signe avec la clé d'API App Store Connect (`CODE_SIGN_STYLE: Automatic`, `-allowProvisioningUpdates`, workflow `ios-testflight`). Il n'y a **pas** de profil manuel ni de secret de profil : le profil géré par Apple **intègre la capacité tout seul** dès qu'elle est cochée sur l'identifiant. **Rien à régénérer, rien à remplacer.**
+- **Contrôle bloquant dans la CI** : l'étape « Contenu de l'archive (Info.plist, entitlements, diagnostic) » du workflow `ios-testflight` **échoue** (« envoi annulé ») si le droit Time Sensitive est absent de l'archive signée, comme pour App Attest.
+- **Si Apple refuse le profil** (capacité décochée, compte, profil géré non régénéré) : l'archive **échoue avec un message clair de `xcodebuild`** (du type « Provisioning profile … doesn't include the com.apple.developer.usernotifications.time-sensitive entitlement ») au lieu de produire une app qui se comporte autrement ; rien n'est envoyé à TestFlight. Dans ce cas : vérifie la capacité (étapes 1 et 2 ci-dessous), relance le workflow ; dis-le-moi si l'erreur persiste.
 
-## Ce que tu fais (une fois, environ 5 minutes, aucun Mac requis)
+## Ce que tu fais (une fois, environ 2 minutes, aucun Mac requis)
 
 1. **developer.apple.com** > *Certificates, Identifiers & Profiles* > **Identifiers** > ouvre **`com.tomessa.miff`**.
-2. Dans *Capabilities*, coche **Time Sensitive Notifications**, puis **Save** (confirme si Apple demande de régénérer les profils).
-3. **Régénère le profil `Miff CI App Store`** (*Profiles* > ce profil > **Edit** > **Save** > **Download**), exactement comme à l'étape 6 de `docs/dev/apple-certificats-ci.md`, puis **remplace le secret** :
-   ```
-   gh secret set APPSTORE_PROFILE_B64 --repo Tomessa-Ghostrun/Miff --body ([Convert]::ToBase64String([IO.File]::ReadAllBytes("Miff_CI_App_Store.mobileprovision")))
-   ```
-   (même rappel que pour toute nouvelle capacité : « cocher la capacité, **régénérer le profil**, remplacer `APPSTORE_PROFILE_B64` »). Supprime ensuite le `.mobileprovision` de ton poste.
-4. **Dis-moi « capacité activée »** : je prépare alors une **petite PR** (`ios/Config/Miff.entitlements`) qui ajoute **une seule clé** :
-   ```xml
-   <key>com.apple.developer.usernotifications.time-sensitive</key>
-   <true/>
-   ```
-   et le contrôle « Identité de l'archive » du workflow `ios-testflight` vérifiera que le droit est bien dans l'archive. **Ne rien ajouter avant l'étape 3** : le build échouerait (« le profil ne contient pas ce droit »).
+2. Dans *Capabilities*, coche **Time Sensitive Notifications**, puis **Save**. **Fait par le PM le 2026-11-19.**
+3. **C'est tout.** Il n'y a plus de régénération de profil ni de secret à remplacer (signature automatique) : le prochain lancement du workflow `ios-testflight` signe avec le droit, et la CI le vérifie.
 
 ## Ce que tu ne fais PAS
 

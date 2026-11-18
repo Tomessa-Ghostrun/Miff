@@ -22,7 +22,7 @@ Le serveur (PR #274) a **trois morceaux, tous écrits mais NON DÉPLOYÉS** : le
 
 - **Le drapeau de build** (`ALERT_DANGER`) est **allumé dans le build TestFlight « interne »** (celui de cette recette) et **éteint dans toute version de publication** : tant que vous ne décidez pas de l'allumer, personne d'autre que vous ne voit la fonction (la CI vérifie l'absence de la fonction dans le binaire Release).
 - **Un défaut** : capture d'écran + numéro de l'étape, puis étape suivante. Partage de position actif pour A et B dans la Miff de test.
-- **Notification « Time Sensitive »** : elle ne se distingue d'une notification normale que **après** la démarche sur le portail Apple (`docs/dev/time-sensitive-etapes-pm.md`). **Avant**, l'alerte arrive normalement mais **ne traverse pas une Concentration** : c'est attendu.
+- **Notification « Time Sensitive »** : la capacité est cochée sur le portail Apple et le droit est dans l'app (`docs/dev/time-sensitive-etapes-pm.md`) : l'alerte **traverse une Concentration** qui ne laisse pas passer Miff (pas le mode silencieux). Si ce n'est pas le cas sur le build TestFlight, notez-le : le droit est vérifié dans l'archive par la CI.
 - **Avant tout test d'alerte** : vérifiez qu'un iPhone **reçoit** bien « {Prénom} a donné des nouvelles » (réception push iPhone : seul le sens iPhone vers OPPO a été validé jusqu'ici).
 
 ## Partie 1 : bulle bleue, gestes, annulation (A) (8 min)
@@ -116,4 +116,4 @@ Pour chaque cas, **Miff de test seulement**. Le résultat attendu est le même :
 
 - Durée du maintien ressentie (400 ms + 5 s) : trop long / trop court ? Retours haptiques : agréables / trop forts ?
 - Livraison de la notification sur l'iPhone (app balayée, mode économie d'énergie, Concentration) : reçue en combien de temps ?
-- Après la démarche du portail Apple (`docs/dev/time-sensitive-etapes-pm.md`) : l'alerte traverse-t-elle une Concentration qui ne laisse pas passer Miff ?
+- Avec le droit Time Sensitive (`docs/dev/time-sensitive-etapes-pm.md`) : l'alerte traverse-t-elle une Concentration qui ne laisse pas passer Miff ?
