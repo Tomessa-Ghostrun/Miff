@@ -3,7 +3,7 @@
 import XCTest
 @testable import Miff
 
-// Les cartes du Feed (ticket FEED, critères C1 à C7) : ordre (moi en dernier, D43), couleur aux limites 1 h 59, 2 h 00, 2 h 01, 3 h 59, 4 h 00 et
+// Les cartes du Feed (ticket FEED, critères C1 à C7) : ordre d'arrivée de la bulle (moi en dernier, D43 ; les cartes, elles, sont triées par `FeedOrderTests`), couleur aux limites 1 h 59, 2 h 00, 2 h 01, 3 h 59, 4 h 00 et
 // 4 h 01 (les constantes sont lues dans `StatusThresholds`, décision du PM du 2026-11-08), étiquettes, lignes de temps, batterie sans heure (D44). Mêmes cas
 // que `FeedBuilderTest` d'Android : les tests sont le contrat.
 final class FeedCardsTests: XCTestCase {
