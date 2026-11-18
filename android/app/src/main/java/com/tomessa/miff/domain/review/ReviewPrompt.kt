@@ -132,8 +132,8 @@ object ReviewPromptRules {
 }
 
 /**
- * "Peux faire mieux..." leads to an EXTERNAL FORM (decision of the PM, 2026-11-08) whose address the PM gives later: it is the build setting
- * `BuildConfig.FEEDBACK_FORM_URL` (one place: `miff.feedbackFormUrl` in app/build.gradle.kts, empty for now). While it is empty, or if it is not a plain
+ * "Peux faire mieux..." leads to an EXTERNAL FORM (decision of the PM, 2026-11-08) whose address the PM gave on 2026-11-13: it is the build setting
+ * `BuildConfig.FEEDBACK_FORM_URL` (one place: `miff.feedbackFormUrl` in app/build.gradle.kts, the default value). When it is empty (-Pmiff.feedbackFormUrl=), or if it is not a plain
  * HTTPS address, the window shows the calm "Merci de nous le dire !" screen with "Nous écrire" instead. The address is opened AS IT IS: nothing about the
  * person (name, e-mail, Miff, position, identifier) is ever added to it.
  */
