@@ -99,26 +99,27 @@ class MiffRepositoryAlertTest {
         }
 
     @Test
-    fun removingAMemberDeletesHisAlertInALotOfItsOwnFirst_thenTheRemovalLotOfSeven() =
+    fun removingAMemberDeletesHisAlertInTheRemovalLotItself_oneLotOfEight() =
         runTest {
             repo(alerts = true).removeMember(MIFF_ID, "uid-2")
-            assertEquals(2, store.commitsAsLots.size)
-            assertEquals(listOf("miffs/$MIFF_ID/alerts/uid-2"), paths(store.commitsAsLots[0]))
-            assertEquals(7, store.commitsAsLots[1].size)
+            assertEquals(1, store.commitsAsLots.size)
+            assertEquals(8, store.commitsAsLots.single().size)
+            assertTrue(paths(store.commitsAsLots.single()).contains("miffs/$MIFF_ID/alerts/uid-2"))
         }
 
     @Test
-    fun removingAMemberWithTheFunctionOffIsOneLotAsBefore() =
+    fun removingAMemberWithTheFunctionOffIsOneLotOfSevenAsBefore() =
         runTest {
             repo(alerts = false).removeMember(MIFF_ID, "uid-2")
-            assertEquals(1, store.commitsAsLots.size)
+            assertEquals(7, store.commitsAsLots.single().size)
         }
 
     @Test
-    fun aRefusedAlertLotBeforeTheRemoval_doesNotStopTheRemoval() =
+    fun rulesNotDeployedYet_theRemovalIsRefused_thenTriedAgainWithoutTheAlert() =
         runTest {
             store.commitFailures += firestoreError(Code.PERMISSION_DENIED)
             val result = repo(alerts = true).removeMember(MIFF_ID, "uid-2")
             assertTrue(result is CodeChangeResult.Changed)
+            assertEquals(7, store.commitsAsLots.single().size)
         }
 }

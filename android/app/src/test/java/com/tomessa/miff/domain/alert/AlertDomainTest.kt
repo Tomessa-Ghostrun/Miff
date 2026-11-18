@@ -124,13 +124,45 @@ class AlertDomainTest {
         assertEquals(listOf("a", "b"), docs.liveAt(now).map { it.uid })
     }
 
-    // ---- the daily limit (decision of the PM: 3 per 24 h) ------------------------------------------------------------------------------
+    // ---- the daily limit (decision of the PM: 3 per 24 h, a counter written in the same lot as the alert)
 
     @Test
-    fun quota_isReachedAtThreeStartsInTheLast24Hours() {
-        assertFalse(AlertRules.quotaReached(listOf(now - hour, now - 2 * hour), now))
-        assertTrue(AlertRules.quotaReached(listOf(now - hour, now - 2 * hour, now - 23 * hour), now))
-        assertFalse(AlertRules.quotaReached(listOf(now - hour, now - 2 * hour, now - 25 * hour), now))
+    fun quota_aFreeSlotIsUsedFirst() {
+        assertEquals(0, AlertQuota.NONE.slotToReplace(now))
+        assertEquals(1, AlertQuota(listOf(now - hour, null, null)).slotToReplace(now))
+        assertEquals(2, AlertQuota(listOf(now - hour, now - 2 * hour, null)).slotToReplace(now))
+    }
+
+    @Test
+    fun quota_threeStartsInTheLast24Hours_noSlot_theStartIsNotTried() {
+        assertNull(AlertQuota(listOf(now - hour, now - 2 * hour, now - 23 * hour)).slotToReplace(now))
+    }
+
+    @Test
+    fun quota_aStartOlderThan24Hours_isReplaced_withTheSafetyMarginOfThePhoneClock() {
+        assertEquals(2, AlertQuota(listOf(now - hour, now - 2 * hour, now - 25 * hour)).slotToReplace(now))
+        // 24 h and 1 minute: the server would accept, the phone waits 2 more minutes (its clock is not the server's)
+        assertNull(AlertQuota(listOf(now - hour, now - 2 * hour, now - 24 * hour - 60_000)).slotToReplace(now))
+    }
+
+    @Test
+    fun quota_theFirstStartCreatesTheCounter_sixKeys_firstSlotServerTime_othersNull() {
+        val data = AlertWrites.quotaCreate("m1", now)
+        assertEquals(AlertWrites.QUOTA_CREATE_KEYS, data.keys)
+        assertNull(data["s1"])
+        assertNull(data["s2"])
+        assertEquals("m1", data["lastMiffId"])
+        val expire = (data["expireAt"] as Timestamp).toDate().time
+        // the rules accept 1 to 3 days after the server time: phone time + 2 days
+        assertEquals(now + 2 * day, expire)
+        assertEquals("users/u/quota/alerts", AlertWrites.quotaPath("u"))
+    }
+
+    @Test
+    fun quota_aLaterStartChangesOneSlotOnly_andTheRulesSeeNothingElse() {
+        val data = AlertWrites.quotaUpdate(1, "m2", now)
+        assertEquals(setOf("s1", "lastMiffId", "updatedAt", "expireAt"), data.keys)
+        runCatching { AlertWrites.quotaUpdate(3, "m2", now) }.let { assertTrue(it.isFailure) }
     }
 
     // ---- the hold ----------------------------------------------------------------------------------------------------------------------

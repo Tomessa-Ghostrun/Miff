@@ -1344,7 +1344,7 @@
     <string name="alert_sending_title_no_name">Sending the alert…</string>
     <string name="alert_waiting_title">No connection right now. Your alert will go as soon as possible.</string>
     <string name="alert_refused_title">Your alert didn\'t go. Check your phone\'s date and time, then try again. If you\'re in danger, you can call the emergency services directly.</string>
-    <string name="alert_quota_title">You\'ve already sent several alerts today, so the daily limit is reached. If you\'re in danger, call the emergency services directly.</string>
+    <string name="alert_quota_title">You\'ve reached the limit of 3 alerts a day; it frees up in a few hours. If you\'re in danger, call the emergency services directly.</string>
     <string name="alert_refused_retry">Try again</string>
     <string name="alert_cancel_pending">Cancel the alert</string>
     <string name="alert_stopped_title">You\'ve stopped sharing with the Miff “%1$s”: resume sharing to alert your people.</string>

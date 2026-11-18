@@ -58,19 +58,18 @@ object AlertRules {
     const val ENDED_NOTICE_MILLIS = 4_000L
 
     /**
-     * Decision of the PM (2026-11-19): AT MOST 3 alerts per person and per 24 hours (sliding window, every Miff together), imposed by the RULES: the 4th start is refused with
-     * `permission-denied`, like a wrong clock or a re-arming under 60 s. The server gives no distinct code, so the phone keeps the moments of its OWN last starts to tell this case apart
-     * ([quotaReached]); it is a guess made for the SENTENCE only, never a decision: the app always tries the start and believes the server.
+     * Decision of the PM (2026-11-18): AT MOST 3 alert starts per person and per 24 hours (sliding window, every Miff together), imposed by the RULES through the counter
+     * `users/{uid}/quota/alerts` (backend/data-model.md 2.20): the start writes the counter AND the alert in ONE lot, replacing a free or stale slot by the server time.
      */
     const val MAX_STARTS_PER_DAY = 3
 
     const val QUOTA_WINDOW_MILLIS = 24 * HOUR
 
-    /** True when [recentStartsMillis] (the starts this phone made) already holds [MAX_STARTS_PER_DAY] in the 24 hours before [nowMillis]. */
-    fun quotaReached(
-        recentStartsMillis: List<Long>,
-        nowMillis: Long,
-    ): Boolean = recentStartsMillis.count { nowMillis - it in 0 until QUOTA_WINDOW_MILLIS } >= MAX_STARTS_PER_DAY
+    /** The counter lives about 2 days after the last start (the TTL rule of the PM removes it): `expireAt` = phone time + 2 days, the rules accept 1 to 3 days. */
+    const val QUOTA_EXPIRE_AFTER_MILLIS = 2 * DAY
+
+    /** The phone only trusts a slot as stale when it is older than 24 hours AND this much more (its clock is not the server's); a slot judged stale by the server is always honoured. */
+    const val QUOTA_SAFETY_MILLIS = 2 * 60_000L
 
     fun expiresAtMillis(deviceNowMillis: Long): Long = deviceNowMillis + DURATION_MILLIS - CLOCK_MARGIN_MILLIS
 
@@ -173,8 +172,66 @@ object AlertWrites {
         uid: String,
     ): String = "miffs/$miffId/alerts/$uid"
 
+    fun quotaPath(uid: String): String = "users/$uid/quota/alerts"
+
+    /** The first start of the person: the counter is CREATED with the server time in the first slot (the creation is the credit). Six keys exactly. */
+    fun quotaCreate(
+        miffId: String,
+        deviceNowMillis: Long,
+    ): Map<String, Any?> =
+        mapOf(
+            "s0" to FieldValue.serverTimestamp(),
+            "s1" to null,
+            "s2" to null,
+            "lastMiffId" to miffId,
+            "updatedAt" to FieldValue.serverTimestamp(),
+            "expireAt" to Timestamp(Date(deviceNowMillis + AlertRules.QUOTA_EXPIRE_AFTER_MILLIS)),
+        )
+
+    /** A later start: ONE slot (0, 1 or 2) takes the server time; the Miff of the alert, the update time and the expiry go with it. The rules refuse any other change. */
+    fun quotaUpdate(
+        slot: Int,
+        miffId: String,
+        deviceNowMillis: Long,
+    ): Map<String, Any?> {
+        require(slot in 0..2) { "slot" }
+        return mapOf(
+            "s$slot" to FieldValue.serverTimestamp(),
+            "lastMiffId" to miffId,
+            "updatedAt" to FieldValue.serverTimestamp(),
+            "expireAt" to Timestamp(Date(deviceNowMillis + AlertRules.QUOTA_EXPIRE_AFTER_MILLIS)),
+        )
+    }
+
+    val QUOTA_CREATE_KEYS = setOf("s0", "s1", "s2", "lastMiffId", "updatedAt", "expireAt")
+
     val START_KEYS = setOf("status", "startedAt", "expiresAt", "endedAt", "seq", "deviceId", "purgeAt")
     val END_KEYS = setOf("status", "endedAt", "purgeAt", "deviceId")
+}
+
+/**
+ * The counter of the daily limit as read from the server (`users/{uid}/quota/alerts`): the moments (server time) of the last starts, null for a free slot. Moments only.
+ */
+class AlertQuota(
+    val slots: List<Long?>,
+) {
+    init {
+        require(slots.size == 3) { "three slots" }
+    }
+
+    /** The slot a new start can replace (free, or older than 24 h plus a safety margin of the phone's clock), or null when the three starts of the last 24 hours are all there. */
+    fun slotToReplace(nowMillis: Long): Int? =
+        slots.indices.firstOrNull { index ->
+            val at = slots[index]
+            at == null || nowMillis - at >= AlertRules.QUOTA_WINDOW_MILLIS + AlertRules.QUOTA_SAFETY_MILLIS
+        }
+
+    override fun toString(): String = "AlertQuota(redacted)"
+
+    companion object {
+        /** No counter yet: the creation of the counter is the credit of the first start. */
+        val NONE = AlertQuota(listOf(null, null, null))
+    }
 }
 
 /** Why an alert did not leave or did not end, reduced to what the screen can say calmly. */
@@ -184,6 +241,9 @@ sealed interface AlertFailure {
 
     /** Another phone holds the session of the account: this phone is being signed out, nothing is written. */
     data object Replaced : AlertFailure
+
+    /** The three starts of the last 24 hours are used: the rules would refuse a 4th (decision of the PM). Read BEFORE writing, so nothing is tried. Calm sentence, emergency numbers first. */
+    data object QuotaReached : AlertFailure
 
     /** I do not share with that Miff (any more): the rules want an active sharing. */
     data object SharingStopped : AlertFailure

@@ -8,6 +8,7 @@ import com.google.firebase.firestore.ListenerRegistration
 import com.google.firebase.firestore.Source
 import com.tomessa.miff.domain.alert.AlertDoc
 import com.tomessa.miff.domain.alert.AlertFailure
+import com.tomessa.miff.domain.alert.AlertQuota
 import com.tomessa.miff.domain.alert.AlertRules
 import com.tomessa.miff.domain.alert.AlertWrites
 import kotlinx.coroutines.CancellationException
@@ -22,8 +23,8 @@ import kotlinx.coroutines.tasks.await
  * - The start and the end of an alert are TRANSACTIONS, never batches: a batch made without network is queued by Firestore and leaves LATER, by itself, which would be a
  *   "ghost alert" sent hours after the fact. A transaction only exists online: "no confirmation" always means "nothing was written". The waiting of an alert that could not
  *   leave is held by the APP ([AlertController]), where the person can see it and cancel it.
- * - ONE read of MY card (is my sharing on in that Miff?) and ONE read of my alert document inside the start (create or re-arm); the rules then read the session and the card
- *   (3 reads of rules). Nothing is written in any other Miff: an alert lives in ONE Miff (decision of the PM, D9).
+ * - ONE read of MY card (is my sharing on in that Miff?), ONE of my alert document and ONE of my daily counter inside the start (create or re-arm); the start writes the
+ *   counter AND the alert in the same transaction (the rules refuse an alert without its credit, backend/data-model.md 2.20). 4 reads of rules. Nothing is written in any other Miff: an alert lives in ONE Miff (decision of the PM, D9).
  * - The document holds NO position, NO text, NO photo. No identifier, no name and no date of an alert is ever logged; no exception message leaves this file (it can quote a path).
  */
 
@@ -127,11 +128,20 @@ class FirestoreAlertStore(
             val miffRef = db.collection("miffs").document(miffId)
             val card = miffRef.collection("members").document(uid)
             val alert = miffRef.collection("alerts").document(uid)
+            val quota =
+                db
+                    .collection("users")
+                    .document(uid)
+                    .collection("quota")
+                    .document("alerts")
             db
                 .runTransaction { tx ->
                     // All the reads come before the first write (the rule of Firestore transactions).
                     val mine = tx.get(card)
                     val existing = tx.get(alert)
+                    val counter = tx.get(quota)
+                    val slots = if (counter.exists()) quotaOf(counter) else AlertQuota.NONE
+                    val slot = slots.slotToReplace(nowMillis)
                     when {
                         !mine.exists() -> {
                             StartResult.Failed(AlertFailure.NotMember)
@@ -141,7 +151,13 @@ class FirestoreAlertStore(
                             StartResult.Failed(AlertFailure.SharingStopped)
                         }
 
+                        // The three starts of the last 24 hours are used: nothing is tried, the rules would refuse (decision of the PM, daily limit of 3).
+                        slot == null -> {
+                            StartResult.Failed(AlertFailure.QuotaReached)
+                        }
+
                         !existing.exists() -> {
+                            writeCredit(tx, quota, counter.exists(), slot, miffId, nowMillis)
                             tx.set(alert, AlertWrites.start(deviceId, nowMillis, seq = 1L))
                             StartResult.Started(nowMillis, AlertRules.expiresAtMillis(nowMillis))
                         }
@@ -162,6 +178,7 @@ class FirestoreAlertStore(
                                 }
 
                                 else -> {
+                                    writeCredit(tx, quota, counter.exists(), slot, miffId, nowMillis)
                                     tx.set(alert, AlertWrites.start(deviceId, nowMillis, seq = (doc?.seq ?: 0L) + 1L))
                                     StartResult.Started(nowMillis, AlertRules.expiresAtMillis(nowMillis))
                                 }
@@ -247,6 +264,22 @@ class FirestoreAlertStore(
             awaitClose { registration?.remove() }
         }
 
+    /** The credit of the daily limit, written in the SAME transaction as the alert (the rules refuse an alert without it): the counter is created, or one slot is replaced. */
+    private fun writeCredit(
+        tx: com.google.firebase.firestore.Transaction,
+        quota: com.google.firebase.firestore.DocumentReference,
+        exists: Boolean,
+        slot: Int?,
+        miffId: String,
+        nowMillis: Long,
+    ) {
+        if (!exists) {
+            tx.set(quota, AlertWrites.quotaCreate(miffId, nowMillis))
+        } else {
+            tx.update(quota, AlertWrites.quotaUpdate(requireNotNull(slot), miffId, nowMillis))
+        }
+    }
+
     private fun failureOf(error: Exception): AlertFailure {
         val code = (error as? FirebaseFirestoreException)?.code
         return when (code) {
@@ -256,6 +289,10 @@ class FirestoreAlertStore(
     }
 
     companion object {
+        /** The counter of the daily limit, read like everything from the network: a slot that is not a date counts as free. */
+        internal fun quotaOf(snapshot: DocumentSnapshot): AlertQuota =
+            AlertQuota(listOf("s0", "s1", "s2").map { millis(snapshot, it) })
+
         /** The document, read like everything from the network: every field checked, a document that is not one of ours is ignored. */
         internal fun parse(snapshot: DocumentSnapshot): AlertDoc? =
             AlertDoc.parse(

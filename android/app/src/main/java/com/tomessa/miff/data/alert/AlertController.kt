@@ -347,7 +347,6 @@ class AlertController(
                     ?: StartResult.Failed(AlertFailure.Offline)
             when (result) {
                 is StartResult.Started -> {
-                    local.recordStart(now)
                     activate(miffId, result.startedAtMillis, result.expiresAtMillis, armedAt)
                     return
                 }
@@ -375,13 +374,16 @@ class AlertController(
                             return
                         }
 
+                        AlertFailure.QuotaReached -> {
+                            // Read before writing: the three starts of the last 24 hours are used. Told calmly, without reproach; the person is never left without a way out (numbers first).
+                            setStep(miffId, armedAt, SendStep.QUOTA)
+                            return
+                        }
+
                         AlertFailure.Refused -> {
                             // A refusal alone does not prove a replacement of the phone (clock, rules): the session is read, and only then is the person told, calmly.
                             if (device.afterRefusal()) {
                                 drop()
-                            } else if (AlertRules.quotaReached(local.recentStarts(), now)) {
-                                // Three starts in the last 24 hours: the rules refuse the 4th. Told calmly, without reproach; the person is never left without a way out (numbers first).
-                                setStep(miffId, armedAt, SendStep.QUOTA)
                             } else {
                                 setStep(miffId, armedAt, SendStep.REFUSED)
                             }

@@ -21491,13 +21491,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You've already sent several alerts today, so the daily limit is reached. If you're in danger, call the emergency services directly."
+            "value": "You've reached the limit of 3 alerts a day; it frees up in a few hours. If you're in danger, call the emergency services directly."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu as déjà lancé plusieurs alertes aujourd'hui, la limite du jour est atteinte. Si tu es en danger, appelle directement les secours."
+            "value": "Tu as atteint la limite de 3 alertes par jour ; elle se libère dans quelques heures. Si tu es en danger, appelle directement les secours."
           }
         }
       }

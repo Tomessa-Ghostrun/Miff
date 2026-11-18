@@ -242,15 +242,15 @@ class AlertControllerTest {
         }
 
     @Test
-    fun theFourthAlertOfTheDay_isTheDailyLimit_noRetryIsOffered() =
+    fun theFourthAlertOfTheDay_isReadBeforeWriting_theDailyLimit_noRetryIsOffered() =
         runTest {
             val w = world()
-            // three alerts of this phone in the last 24 hours
-            repeat(3) { w.local.recordStart(w.base - (it + 1) * 3_600_000L) }
-            w.store.starts += StartResult.Failed(AlertFailure.Refused)
+            w.store.starts += StartResult.Failed(AlertFailure.QuotaReached)
             w.controller.trigger("miffA")
             runCurrent()
             assertEquals(SendStep.QUOTA, (w.controller.state.value as MyAlert.Sending).step)
+            // no refusal check of the session is needed: the counter said it
+            assertEquals(0, w.device.refusalChecks)
             // retrying would be refused again: nothing is sent
             w.controller.retry()
             runCurrent()
@@ -258,26 +258,17 @@ class AlertControllerTest {
             // the person is never stuck: she can close it
             w.controller.cancelPending()
             assertTrue(w.controller.state.value is MyAlert.None)
+            assertNull(w.local.pointer())
         }
 
     @Test
-    fun startsOlderThan24Hours_doNotCount() =
+    fun aRefusalWhenTheCounterHadRoom_isNotTheLimit_itIsTheGenericOne() =
         runTest {
             val w = world()
-            repeat(3) { w.local.recordStart(w.base - 25 * 3_600_000L - it) }
             w.store.starts += StartResult.Failed(AlertFailure.Refused)
             w.controller.trigger("miffA")
             runCurrent()
             assertEquals(SendStep.REFUSED, (w.controller.state.value as MyAlert.Sending).step)
-        }
-
-    @Test
-    fun aSuccessfulStartIsRecordedInTheLedgerOfThePhone() =
-        runTest {
-            val w = world()
-            w.controller.trigger("miffA")
-            runCurrent()
-            assertEquals(listOf(w.base), w.local.recentStarts())
         }
 
     @Test

@@ -1,7 +1,6 @@
 package com.tomessa.miff.data.alert
 
 import android.content.Context
-import com.tomessa.miff.domain.alert.AlertRules
 
 /*
  * PRIVACY, for this file: what the phone remembers about MY alert, and nothing else. A pointer (the identifier of the Miff of origin, the phase, three moments): no name, no
@@ -46,12 +45,7 @@ interface AlertLocalStore {
 
     fun markAdoptedFor(uid: String)
 
-    /** The moments (phone clock) of the last alerts THIS phone started, 3 at most, for the sentence of the daily limit ([com.tomessa.miff.domain.alert.AlertRules.quotaReached]). Moments only. */
-    fun recentStarts(): List<Long>
-
-    fun recordStart(millis: Long)
-
-    /** Sign-out: the pointer, the ledger and the note of the adoption go; the hint (installation) stays. */
+    /** Sign-out: the pointer and the note of the adoption go; the hint (installation) stays. */
     fun clearAccount()
 }
 
@@ -124,22 +118,11 @@ class SharedPreferencesAlertLocalStore(
         prefs.edit().putString(KEY_ADOPTED, uid).apply()
     }
 
-    override fun recentStarts(): List<Long> =
-        prefs.getString(KEY_STARTS, "").orEmpty().split(',').mapNotNull {
-            it.toLongOrNull()
-        }
-
-    override fun recordStart(millis: Long) {
-        val kept = (recentStarts() + millis).sorted().takeLast(AlertRules.MAX_STARTS_PER_DAY)
-        prefs.edit().putString(KEY_STARTS, kept.joinToString(",")).apply()
-    }
-
     override fun clearAccount() {
         clearPointer()
         prefs
             .edit()
             .remove(KEY_ADOPTED)
-            .remove(KEY_STARTS)
             .apply()
     }
 
@@ -153,7 +136,6 @@ class SharedPreferencesAlertLocalStore(
         const val KEY_CONFIRMED = "confirmed"
         const val KEY_HINT = "hint_done"
         const val KEY_ADOPTED = "adopted_for"
-        const val KEY_STARTS = "recent_starts"
     }
 }
 
@@ -162,7 +144,6 @@ class MemoryAlertLocalStore : AlertLocalStore {
     private var saved: AlertPointer? = null
     private var hint = false
     private var adopted: String? = null
-    private var starts: List<Long> = emptyList()
 
     override fun pointer(): AlertPointer? = saved
 
@@ -186,15 +167,8 @@ class MemoryAlertLocalStore : AlertLocalStore {
         adopted = uid
     }
 
-    override fun recentStarts(): List<Long> = starts
-
-    override fun recordStart(millis: Long) {
-        starts = (starts + millis).sorted().takeLast(AlertRules.MAX_STARTS_PER_DAY)
-    }
-
     override fun clearAccount() {
         saved = null
         adopted = null
-        starts = emptyList()
     }
 }

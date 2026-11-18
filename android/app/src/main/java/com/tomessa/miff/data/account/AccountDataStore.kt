@@ -38,6 +38,8 @@ interface AccountDataStore {
 
 class FirestoreAccountDataStore(
     private val firestore: () -> FirebaseFirestore = { FirebaseFirestore.getInstance() },
+    /** ALERTE (BuildConfig.ALERT_DANGER): the daily counter `users/{uid}/quota/alerts` goes with the profile, in the same transaction (backend/data-model.md 2.20). False: nothing added. */
+    private val alertsEnabled: Boolean = false,
 ) : AccountDataStore {
     // The instance is resolved at each use: it is replaced after a cache purge.
     private fun user(uid: String) = firestore().collection("users").document(uid)
@@ -74,6 +76,20 @@ class FirestoreAccountDataStore(
     override suspend fun deleteProfile(uid: String) {
         val db = firestore()
         val ref = db.collection("users").document(uid)
+        if (alertsEnabled) {
+            val quota = ref.collection("quota").document("alerts")
+            try {
+                db
+                    .runTransaction { transaction ->
+                        transaction.delete(quota)
+                        transaction.delete(ref)
+                    }.await()
+                return
+            } catch (e: com.google.firebase.firestore.FirebaseFirestoreException) {
+                // The rules in production may not know the counter yet (not deployed): the profile is deleted alone, as before. Any other failure is the caller's.
+                if (e.code != com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED) throw e
+            }
+        }
         db.runTransaction { transaction -> transaction.delete(ref) }.await()
     }
 }

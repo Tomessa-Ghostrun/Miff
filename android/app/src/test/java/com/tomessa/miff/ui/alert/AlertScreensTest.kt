@@ -147,7 +147,7 @@ class AlertScreensTest {
             )
         show(SentPhase.QUOTA, call = emergencyOnly)
         val text = titleDescription()!!
-        assertTrue(text.contains("daily limit"))
+        assertTrue(text.contains("limit of 3 alerts"))
         assertTrue(text.contains("call the emergency services directly"))
         assertFalse(text.contains("too many", ignoreCase = true))
         assertFalse(text.contains("abuse", ignoreCase = true))

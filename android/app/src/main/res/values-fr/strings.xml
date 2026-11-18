@@ -1327,7 +1327,7 @@
     <string name="alert_sending_title_no_name">Envoi de l\'alerte…</string>
     <string name="alert_waiting_title">Pas de réseau pour le moment. Ton alerte partira dès que possible.</string>
     <string name="alert_refused_title">Ton alerte n\'est pas partie. Vérifie la date et l\'heure de ton téléphone, puis réessaie. Si tu es en danger, tu peux appeler directement les secours.</string>
-    <string name="alert_quota_title">Tu as déjà lancé plusieurs alertes aujourd\'hui, la limite du jour est atteinte. Si tu es en danger, appelle directement les secours.</string>
+    <string name="alert_quota_title">Tu as atteint la limite de 3 alertes par jour ; elle se libère dans quelques heures. Si tu es en danger, appelle directement les secours.</string>
     <string name="alert_refused_retry">Réessayer</string>
     <string name="alert_cancel_pending">Annuler l\'alerte</string>
     <string name="alert_stopped_title">Tu as arrêté de partager avec la Miff %1$s : reprends le partage pour alerter tes proches.</string>

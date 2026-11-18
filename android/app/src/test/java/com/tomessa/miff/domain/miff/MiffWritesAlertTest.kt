@@ -48,12 +48,14 @@ class MiffWritesAlertTest {
     }
 
     @Test
-    fun theAlertOfAMemberIsDeletedInALotOfItsOwn_beforeTheRemoval_whichStaysAtTheSameSize() {
-        val own = MiffWrites.deleteMemberAlert("m", "t")
-        assertEquals(listOf("miffs/m/alerts/t"), paths(own))
-        // the removal lot itself does not carry it (19 reads of rules out of 20 instead of 18)
-        val removal = MiffWrites.removeMember("m", "t", "Nom", "AAAAAAAAAAAA", "BBBBBBBBBBBB")
-        assertFalse(paths(removal).any { it.contains("alerts") })
-        assertEquals(7, removal.size)
+    fun theRemovalLotItselfDeletesTheAlertOfTheMember_theCreatorCannotDeleteItAlone() {
+        val without = MiffWrites.removeMember("m", "t", "Nom", "AAAAAAAAAAAA", "BBBBBBBBBBBB")
+        assertFalse(paths(without).any { it.contains("alerts") })
+        assertEquals(7, without.size)
+        val with = MiffWrites.removeMember("m", "t", "Nom", "AAAAAAAAAAAA", "BBBBBBBBBBBB", withAlert = true)
+        assertEquals(8, with.size)
+        assertEquals(WriteKind.DELETE, with.single { it.path == "miffs/m/alerts/t" }.kind)
+        // before the three writes of the new code, with the card, the status, the photo and the position
+        assertTrue(paths(with).indexOf("miffs/m/alerts/t") < paths(with).indexOf("miffs/m"))
     }
 }

@@ -225,15 +225,6 @@ object MiffWrites {
     ): List<DocWrite> = if (withAlert) listOf(DocWrite("miffs/$miffId/alerts/$uid", WriteKind.DELETE)) else emptyList()
 
     /**
-     * The creator removes the alert of a member in a lot of its OWN, BEFORE the lot that removes the member (the removal lot already costs 18 reads of rules of the 20 allowed: with the
-     * alert it would cost 19, the backend asks to keep them apart). Nothing else goes in this lot.
-     */
-    fun deleteMemberAlert(
-        miffId: String,
-        targetUid: String,
-    ): List<DocWrite> = listOf(DocWrite("miffs/$miffId/alerts/$targetUid", WriteKind.DELETE))
-
-    /**
      * Resume sharing (ticket K6): a new consent (date and the same [MiffSharingConsent.VERSION] as at the entry, so version 3 from
      * LOC-2a on; the screen shows the same card, with its own opening sentence) and the first status again.
      */
@@ -368,13 +359,14 @@ object MiffWrites {
         oldCode: String,
         newCode: String,
         oldCodeExists: Boolean = true,
+        withAlert: Boolean = false,
     ): List<DocWrite> =
         listOf(
             DocWrite("miffs/$miffId/members/$targetUid", WriteKind.DELETE),
             DocWrite("miffs/$miffId/status/$targetUid", WriteKind.DELETE),
             DocWrite("miffs/$miffId/photos/$targetUid", WriteKind.DELETE),
             DocWrite("miffs/$miffId/positions/$targetUid", WriteKind.DELETE),
-        ) + codeChange(miffId, name, oldCode, newCode, oldCodeExists)
+        ) + alertDeletion(miffId, targetUid, withAlert) + codeChange(miffId, name, oldCode, newCode, oldCodeExists)
 
     /**
      * SESS-1 contract (backend/data-model.md, "Un compte, un seul appareil", cost table): the rules may read 20 documents per lot. With the identifier of the

@@ -551,15 +551,19 @@ class FirestoreMiffRepository(
         miffId: String,
         targetUid: String,
     ): CodeChangeResult {
-        // The alert of the member goes FIRST, in a lot of its own (the removal lot already costs 18 reads of rules of the 20 allowed). A refusal (the rules do not know the alert yet) or a
-        // network failure changes nothing here: the removal lot that follows either goes through or says why it did not.
-        if (alertsEnabled) write { store.commit(MiffWrites.deleteMemberAlert(miffId, targetUid)) }
-        return removeMemberLot(miffId, targetUid)
+        // With the function on, the lot of removal ALSO deletes the alert of the member (the rules refuse the removal while it exists; the creator may delete it ONLY in this lot, backend
+        // data-model.md 2.18). The rules in production may not know the alert yet: a refusal is tried once more without it, so that removing a member never breaks because of the function.
+        val first = removeMemberLot(miffId, targetUid, withAlert = alertsEnabled)
+        if (alertsEnabled && first is CodeChangeResult.Failed && first.failure == MiffFailure.REFUSED) {
+            return removeMemberLot(miffId, targetUid, withAlert = false)
+        }
+        return first
     }
 
     private suspend fun removeMemberLot(
         miffId: String,
         targetUid: String,
+        withAlert: Boolean,
     ): CodeChangeResult =
         changeCode(miffId) { view, newCode ->
             MiffWrites.removeMember(
@@ -569,6 +573,7 @@ class FirestoreMiffRepository(
                 oldCode = view.details.joinCode,
                 newCode = newCode,
                 oldCodeExists = view.codeDocumentExists,
+                withAlert = withAlert,
             )
         }
 

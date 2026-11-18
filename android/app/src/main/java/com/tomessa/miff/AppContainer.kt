@@ -1040,7 +1040,9 @@ class AppContainer(
     /** The marker "the deletion of the account is under way" (AUTH-5): the id of the account, nothing else; it prevails over the routing. */
     val accountDeletionMarker: AccountDeletionMarker by lazy { SharedPreferencesAccountDeletionMarker(context) }
 
-    private val accountDataStore: AccountDataStore by lazy { FirestoreAccountDataStore() }
+    private val accountDataStore: AccountDataStore by lazy {
+        FirestoreAccountDataStore(alertsEnabled = BuildConfig.ALERT_DANGER)
+    }
 
     /**
      * The Miffs of the account for its deletion (AUTH-5b): the inventory read on the server, the lots "Quitter" for the Miffs joined, and the existing

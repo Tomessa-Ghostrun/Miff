@@ -9,7 +9,7 @@
 - **N'utilisez JAMAIS de vrais proches.** Créez une Miff de test dont les seuls membres sont vos comptes de test et vos propres téléphones : l'alerte envoie une vraie notification à **tous les membres de la Miff d'origine**. Si vous testez avec votre Miff « famille », votre famille sera prévenue.
 - **Ne composez jamais le 17, 15, 18 ou 112.** Le bouton « Appeler » **n'appelle rien** : il ouvre le **composeur du téléphone** avec le numéro déjà tapé. **Regardez le numéro, puis revenez en arrière avec le geste « retour » : n'appuyez JAMAIS sur le bouton vert d'appel.** (Miff n'a de toute façon aucune permission d'appel : l'application ne peut pas appeler toute seule.) Pour tester un « vrai » appel, utilisez le numéro d'un de vos téléphones de test.
 - **Projet Firebase : `miff-3d283` uniquement.** Jamais celui de Ghostrun.
-- **Limite de 3 alertes par jour et par compte** (décision du PM du 2026-11-19) : chaque déclenchement compte, même s'il est terminé tout de suite. **Prévoyez vos essais** : une recette complète utilise 3 alertes par compte et par 24 h (le 4e essai de l'étape 40 est volontaire). Utilisez deux comptes A (A1, A2) si vous devez recommencer.
+- **Limite de 3 alertes par 24 h et par compte** (décision du PM du 2026-11-18, imposée par les règles) : chaque **début** compte, **même terminé tout de suite** (terminer ne rend pas le crédit). **Prévoyez vos essais** : une recette complète utilise 3 débuts par compte et par 24 h (le 4e essai de l'étape 40 est volontaire). Utilisez deux comptes A (A1, A2) si vous devez recommencer. Le crédit se libère 24 h après le premier début.
 
 ## À savoir : l'état du serveur change ce que vous voyez
 
@@ -81,11 +81,11 @@ Le **drapeau de build** (`BuildConfig.ALERT_DANGER`) est **allumé dans l'APK de
 36. [ ] La fin (maintien 5 s sur la bannière) concerne la Miff d'origine, même si le Feed en montre une autre.
 37. [ ] **Partage arrêté** dans la Miff sélectionnée : un maintien de 5 s affiche l'écran calme **« Tu as arrêté de partager avec la Miff {nom} : reprends le partage… »**, avec **« Reprendre le partage »** et **les numéros d'urgence**. Rien n'est envoyé, **l'alerte n'est pas redirigée vers une autre Miff**.
 38. [ ] **Arrêter le partage / quitter la Miff d'origine pendant l'alerte** : l'alerte disparaît (le même lot la supprime), **sans notification**. Dans une **autre** Miff : aucun effet sur l'alerte.
-39. [ ] **Le créateur retire un membre en alerte** : le retrait réussit (l'alerte du membre est supprimée dans un lot séparé avant).
+39. [ ] **Le créateur retire un membre en alerte** : le retrait réussit et l'alerte du membre disparaît (elle est supprimée **dans le même lot** que le retrait). **Signalez-moi si le retrait est refusé** : ce lot est à la limite exacte du nombre de lectures de règles autorisé.
 
 ## Partie 6 : la limite du jour et les refus (5 min)
 
-40. [ ] **Quatrième alerte en 24 h** (même compte, toutes Miffs confondues) : l'écran dit calmement **« Tu as déjà lancé plusieurs alertes aujourd'hui, la limite du jour est atteinte. Si tu es en danger, appelle directement les secours. »**, **le numéro d'urgence est déjà choisi** (112) et « Appeler » est un seul toucher ; **pas de bouton « Réessayer »**, un « Annuler l'alerte » pour fermer. Aucun reproche, aucun mot « abus ».
+40. [ ] **Quatrième alerte en 24 h** (même compte, toutes Miffs confondues) : l'app **ne tente rien**, l'écran dit calmement **« Tu as atteint la limite de 3 alertes par jour ; elle se libère dans quelques heures. Si tu es en danger, appelle directement les secours. »**, **le numéro d'urgence est déjà choisi** (112) et « Appeler » est un seul toucher ; **pas de bouton « Réessayer »**, un « Annuler l'alerte » pour fermer. Aucun reproche, aucun mot « abus ». La 4e n'apparaît pas chez B.
 41. [ ] **Horloge fausse** (réglez l'heure du téléphone **3 heures en avance**, désactivez l'heure automatique) : l'alerte est refusée ; l'écran dit **« Ton alerte n'est pas partie. Vérifie la date et l'heure de ton téléphone, puis réessaie. Si tu es en danger, tu peux appeler directement les secours. »** avec **Réessayer** ; les numéros restent là. Remettez l'heure automatique, « Réessayer » : l'alerte part.
 42. [ ] Sur **toutes ces erreurs**, les numéros d'urgence sont accessibles **sans autre geste**.
 
