@@ -113,6 +113,11 @@ class AlertController(
     private val onSending: () -> Unit = {},
     private val sendTimeoutMillis: Long = AlertRules.SEND_TIMEOUT_MILLIS,
     private val retryPausesMillis: List<Long> = DEFAULT_RETRY_PAUSES_MILLIS,
+    /**
+     * The server REFUSED something about the Miff of my alert (the reading when the app comes back, or the end): maybe I was removed from it, or it was deleted, while the app was open.
+     * Asks for a new check of the list of my Miffs: a loss PROVEN by the server cleans the alert up through the repository. Called at most once a minute; never removes anything by itself.
+     */
+    private val onAccessDoubt: () -> Unit = {},
 ) {
     private val mutableState = MutableStateFlow<MyAlert>(MyAlert.None)
     val state: StateFlow<MyAlert> = mutableState.asStateFlow()
@@ -314,7 +319,9 @@ class AlertController(
         val read = store.readMine(uid, current.miffId)
         val again = mutableState.value as? MyAlert.Active ?: return
         if (again.miffId != current.miffId || again.end != EndStep.NONE) return
-        // Unavailable or Denied: nothing changes (never a banner removed on a doubt, a passing refusal included).
+        // Unavailable or Denied: nothing changes here (never a banner removed on a doubt, a passing refusal included). A refusal asks the directory to check my Miffs: a loss PROVEN there
+        // removes the alert (review of #275, iOS review b).
+        if (read is MineRead.Denied) doubt()
         if (read is MineRead.Value) {
             val doc = read.doc
             if (doc == null || !doc.isLive(nowMillis())) {
@@ -516,11 +523,27 @@ class AlertController(
                         } else {
                             setEnd(miffId, EndStep.NONE)
                             mutableEvents.tryEmit(AlertEvent.EndNotSent)
+                            // The end was refused and this phone is still the one of the account: maybe the Miff is no longer mine. Let the directory check.
+                            doubt()
                         }
                         return
                     }
                 }
             }
+        }
+    }
+
+    private var lastDoubtAtMillis: Long? = null
+
+    private fun doubt() {
+        val now = nowMillis()
+        val last = lastDoubtAtMillis
+        if (last != null && now - last < DOUBT_MIN_GAP_MILLIS) return
+        lastDoubtAtMillis = now
+        try {
+            onAccessDoubt()
+        } catch (e: Exception) {
+            // A check that fails changes nothing.
         }
     }
 
@@ -574,5 +597,8 @@ class AlertController(
 
         /** The check that follows an abandoned alert tries this many times (the pointer stays, and the next opening of the app checks again). */
         const val MAX_VERIFY_ATTEMPTS = 8
+
+        /** A refusal asks for a new check of my Miffs at most this often. */
+        const val DOUBT_MIN_GAP_MILLIS = 60_000L
     }
 }

@@ -191,4 +191,15 @@ class MiffRepositoryAlertTest {
             assertTrue(repo(alerts = true).cleanUpLost(uid, doubtful))
             assertEquals(listOf(MIFF_ID), gone)
         }
+
+    @Test
+    fun stopSharing_theAnswerWasLostButTheCardAlreadySaysStopped_theAlertGoesAllTheSame() =
+        runTest {
+            // the lot arrived, its answer was lost: the repository finds the card in the wanted state (sharing off)
+            store.commitFailures = ArrayDeque(listOf(firestoreError(Code.UNAVAILABLE)))
+            store.sharing = false
+            val result = repo(alerts = true).setSharing(MIFF_ID, uid, enabled = false)
+            assertEquals(MiffWriteResult.Done, result)
+            assertEquals(listOf(MIFF_ID), gone)
+        }
 }

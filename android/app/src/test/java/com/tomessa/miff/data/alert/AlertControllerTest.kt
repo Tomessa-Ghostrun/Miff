@@ -81,6 +81,7 @@ class AlertControllerTest {
     private class World(
         scope: TestScope,
         online: Boolean = true,
+        onDoubt: () -> Unit = {},
     ) {
         val store = FakeStore()
         val device = FakeActiveDevice()
@@ -101,11 +102,15 @@ class AlertControllerTest {
                 onSending = { positions++ },
                 sendTimeoutMillis = 10_000L,
                 retryPausesMillis = listOf(5_000L, 15_000L),
+                onAccessDoubt = onDoubt,
             )
         val events = mutableListOf<AlertEvent>()
     }
 
-    private fun TestScope.world(online: Boolean = true) = World(this, online)
+    private fun TestScope.world(
+        online: Boolean = true,
+        onDoubt: () -> Unit = {},
+    ) = World(this, online, onDoubt)
 
     @Test
     fun theAlertLeavesInTheOriginMiffAndBecomesActive() =
@@ -619,6 +624,39 @@ class AlertControllerTest {
             assertEquals(TriggerResult.Started, w.controller.trigger("miffY"))
             runCurrent()
             assertEquals("miffY", (w.controller.state.value as MyAlert.Active).miffId)
+        }
+
+    @Test
+    fun aRefusalWhenBackInFront_asksTheDirectoryToCheckMyMiffs_atMostOnceAMinute_andRemovesNothing() =
+        runTest {
+            var doubts = 0
+            val w = world(onDoubt = { doubts++ })
+            w.controller.trigger("miffA")
+            runCurrent()
+            w.store.mine = MineRead.Denied
+            w.controller.verifyActive()
+            w.controller.verifyActive()
+            assertEquals(1, doubts)
+            assertTrue(w.controller.state.value is MyAlert.Active)
+            advanceTimeBy(61_000)
+            w.controller.verifyActive()
+            assertEquals(2, doubts)
+        }
+
+    @Test
+    fun anEndThatTheServerRefuses_asksForTheCheckToo_soAProvenLossCleansTheAlertUp() =
+        runTest {
+            var doubts = 0
+            val w = world(onDoubt = { doubts++ })
+            w.controller.trigger("miffA")
+            runCurrent()
+            w.store.ends += EndResult.Failed(AlertFailure.Refused)
+            w.controller.end()
+            runCurrent()
+            assertEquals(1, doubts)
+            // the check proves the loss (the repository tells the relay): the alert is gone, no more "EndNotSent" loop
+            w.controller.onAlertRemoved("miffA")
+            assertTrue(w.controller.state.value is MyAlert.None)
         }
 
     @Test

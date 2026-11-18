@@ -2,6 +2,7 @@ package com.tomessa.miff.ui.alert
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,6 +23,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -29,6 +31,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -293,6 +297,9 @@ private fun TitleBlob(
                     ?: stringResource(R.string.alert_stopped_title_no_name)
             }
         }
+    // The screen takes the focus of the screen reader at once, on its title: nothing of the Feed behind is read before the sentence and "Appeler" (review of #275, iOS review d).
+    val focus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
     Box(
         modifier =
             Modifier
@@ -300,6 +307,8 @@ private fun TitleBlob(
                 .heightIn(min = 176.dp)
                 .clip(BubbleShape)
                 .background(colorStatusDangerTint)
+                .focusRequester(focus)
+                .focusable()
                 .testTag(ALERT_SENT_TITLE_TAG)
                 // The screen reader reads the WHOLE sentence, whatever is cut or shrunk on the screen (ticket 7.3, AD10b).
                 .semantics(mergeDescendants = true) {

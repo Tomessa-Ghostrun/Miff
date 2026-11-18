@@ -526,6 +526,9 @@ class FirestoreMiffRepository(
         ) {
             val sharing = (guarded { store.readSharing(miffId, uid) } as? Guarded.Value)?.value
             if (sharing == enabled) {
+                // The lot did arrive although its answer was lost (or the card already says it): when sharing is STOPPED, the same lot deleted the alert of that Miff, so the
+                // controller must hear it too, or the banner would stay and its end would claim "les proches ont été prévenus" for an alert that is gone.
+                if (!enabled && alertsEnabled) onAlertGone(miffId)
                 sharingChanged(miffId, resumed = enabled)
                 return MiffWriteResult.Done
             }

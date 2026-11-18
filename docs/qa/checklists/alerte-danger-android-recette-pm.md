@@ -118,6 +118,10 @@ Le **drapeau de build** (`BuildConfig.ALERT_DANGER`) est **allumé dans l'APK de
 64. [ ] **Retrait pendant l'alerte** (priorité) : A (téléphone OPPO) a une alerte active dans la Miff X. Le créateur B **retire A** de X (ou **supprime X**). À la réouverture de l'app chez A, la **bannière a disparu** et A peut **relancer une alerte dans une autre Miff** (aucun « Une alerte est déjà en cours »). Même chose pour une Miff supprimée par un autre membre.
 65. [ ] **Suppression sur le même téléphone** : A crée la Miff X, déclenche une alerte, puis **supprime X** (confirmation avec l'avertissement) : la bannière disparaît tout de suite, B ne reçoit pas de notification de fin.
 66. [ ] **Fin depuis un autre appareil** : alerte active chez A ; A se connecte sur un 2e appareil (l'ancien est déconnecté) et termine l'alerte ; retour au 1er appareil au premier plan : plus de bannière.
+67. [ ] **Arrêt du partage dont la réponse se perd** : alerte active, arrêtez le partage de la Miff avec un réseau qui coupe pendant l'envoi ; après retour, la bannière a disparu et aucune phrase « les proches ont été prévenus » n'apparaît.
+68. [ ] **Retrait d'une autre Miff pendant que l'app est ouverte** : A est dans X (alerte) et Y affichée ; le créateur de X retire A ; chez A, ouvrez/fermez l'app ou tentez de terminer l'alerte : la bannière disparaît (au pire après un contrôle) et A peut relancer ailleurs.
+69. [ ] **Changer de Miff pendant le maintien** (deux Miffs, même nom si possible) : tenez 5 s, changez de Miff dans le Feed avant la fin n'est pas possible en tenant le doigt ; faites-le juste avant, puis maintenez : la ligne « Alerte pour la Miff … » et la Miff réellement alertée sont celles affichées.
+70. [ ] **TalkBack** : à l'ouverture de l'écran « avertis », TalkBack lit d'abord la phrase du titre puis « Appeler » (rien du Feed avant).
 
 ## Retours à noter
 - Durée du maintien ressentie (400 ms + 5 s) : trop long / trop court ?

@@ -935,6 +935,8 @@ class AppContainer(
             currentUid = { authGateway.currentUid },
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
             onSending = { notificationScope.launch { presenceRefresh.refreshMyPresence() } },
+            // A refusal about the Miff of my alert (reading, end): the list of my Miffs is checked again; a loss proven by the server cleans the alert up (repository, relay).
+            onAccessDoubt = { CoroutineScope(Dispatchers.Default).launch { miffDirectory.refresh() } },
         )
     }
 
