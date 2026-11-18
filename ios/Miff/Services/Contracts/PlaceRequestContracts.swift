@@ -66,8 +66,6 @@ enum RequesterRead: Equatable, CustomStringConvertible {
 struct RequestContext: Equatable, CustomStringConvertible {
     /// Le nom de la Miff pour laquelle on demande (montré dans le formulaire, la Miff est fixe).
     let miffName: String
-    /// Miff+ (un abonnement actif qui n'a pas expiré) : décide seulement si la zone de danger est proposée. Les règles décident pour de vrai.
-    let premium: Bool
     /// Les demandes en attente de la personne dans cette Miff (non expirées).
     let mine: [PlaceRequest]
 
@@ -93,12 +91,11 @@ enum RequestSubmitResult: Equatable, CustomStringConvertible {
     case done(PlaceRequest)
     /// Pas de réseau : le téléphone garde la demande et l'envoie dès qu'il peut (critère M11). Les règles la jugent alors.
     case queued
-    /// Rien n'a été envoyé : la zone de danger est Miff+ (un membre qui ne l'est pas ne peut pas en demander une).
-    case needsPremium(PaywallReason)
     /// Rien n'a été envoyé : la personne a déjà 3 demandes en attente dans cette Miff (critère M5).
     case memberLimit
-    /// Le serveur a refusé : la Miff a déjà toutes les demandes qu'elle prend (10), ou une règle a dit non.
-    case miffLimit
+    /// Le serveur a refusé le lot pour une raison que le téléphone ne peut pas connaître (une règle a dit non ; le plafond de 10 par Miff n'est
+    /// lisible que par le créateur, il n'est JAMAIS deviné ici) : une phrase générique calme, jamais celle d'une limite non prouvée.
+    case refused
     /// La Miff n'existe plus, ou la personne n'en est plus.
     case miffUnavailable
     /// Le serveur ne prend pas encore les demandes (ses règles refusent même leur lecture) : rien n'a été envoyé, une phrase calme le dit.
@@ -127,7 +124,8 @@ enum MineRead: Equatable, CustomStringConvertible {
 
 /// Ce que font les écrans avec les demandes d'ajout d'un lieu : le membre (B).
 protocol PlaceRequestRepository {
-    /// Lit qui est la personne pour le formulaire : Miff+ ou non, la Miff, les demandes qu'elle a déjà.
+    /// Lit ce dont le formulaire a besoin : la Miff et les demandes que la personne a déjà. Son abonnement n'y est PAS lu : demander un lieu,
+    /// zone de danger comprise, est permis à tout membre (décision du PM du 2026-11-17) ; seul le créateur a besoin de Miff+ pour accepter.
     func prepare(uid: String, miffId: String) async -> RequestContextLoad
 
     func submit(

@@ -202,6 +202,12 @@ enum PlaceQuota {
         !premium && to == .risk && from != .risk ? .danger : nil
     }
 
+    /// DEMANDER un lieu n'ouvre jamais l'offre, zone de danger comprise (décision du PM du 2026-11-17, qui remplace la décision D5 du ticket
+    /// LIEU-REQ) : le contrôle de Miff+ se fait là où le lieu est ÉCRIT, à l'acceptation par le créateur (`forCreate`).
+    static func forRequestTypeChange(to _: PlaceType) -> PaywallReason? {
+        nil
+    }
+
     /// « Ajouter un lieu » d'un créateur ouvre-t-il l'écran de la limite plutôt que le formulaire (gratuit, 3 lieux déjà) ?
     static func isAtFreeLimit(premium: Bool, distinctPlaces: Int) -> Bool {
         !premium && distinctPlaces >= PlaceLimits.freePlaces
