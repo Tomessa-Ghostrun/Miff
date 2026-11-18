@@ -251,11 +251,13 @@ Les textes d'exemple suivent les mêmes règles que les vrais textes (en italien
 
 ---
 
-## 8. Décisions demandées au PM (les seules)
+## 8. Décisions du PM
 
-| # | Décision | Pourquoi | Défaut si pas de réponse |
+| # | Décision | Date | Effet |
 |---|---|---|---|
-| **1** | **Ajouter la mention « (en anglais) » à côté des liens « Conditions d'utilisation » et « Politique de confidentialité »** dans les textes de consentement et de paywall pour es, it, pt-PT, de (« Condiciones de uso (en inglés) », « Condizioni d'uso (in inglese) », « Condições de utilização (em inglês) », « Nutzungsbedingungen (auf Englisch) ») | Le lien ouvre la **version anglaise** (D5, R3 assumé). Dire à la personne dans quelle langue elle va lire ce qu'elle accepte est un point de **consentement explicite** (CLAUDE.md) ; sans cela, elle croit lire sa langue | **Oui**, mention ajoutée dans les 4 langues |
+| **1** | **Pas de mention « (en anglais) » à côté des liens « Conditions d'utilisation » et « Politique de confidentialité »** en es, it, pt-PT et de. Les liens **gardent leur libellé traduit** (« Condiciones de uso », « Condizioni d'uso », « Condições de utilização », « Nutzungsbedingungen » ; « Política de privacidad », « Informativa sulla privacy », « Política de privacidade », « Datenschutzerklärung ») et **ouvrent la version anglaise** (D5 du ticket) | **2026-11-18** | Aucune mention de langue dans les textes de consentement et de paywall |
+
+**Risque assumé par le PM, lié à R3 (textes légaux en français et anglais seulement)** : une personne qui lit l'app en es, it, pt-PT ou de peut ouvrir un texte légal **en anglais sans que cela lui ait été annoncé**. Ce risque est écrit comme tel, jamais présenté comme « à valider ».
 
 Ce que je **ne** soumets **pas** au PM (décidé ici, à reconfirmer par la relecture croisée, glossaire §8) : noms de la fonction Alerte, registre de « cari / entes queridos / Liebsten », « Configuración » contre « Ajustes », « bien » contre « seguro », badges verbaux du créateur. Ce sont des choix de langue, pas de produit.
 
@@ -286,5 +288,5 @@ Pour le script de parité à N langues (critères 2 à 4 du ticket) :
 | Formules du lot 3 (compléments de lieu) non encore implémentées | Le lot 3 les code ; avant cela, les clés actuelles du français ne les portent pas |
 | Noms de menus iOS / Android non vérifiés sur appareil | À vérifier à la recette du lot 8 |
 | Brésilien : texte du Portugal sur un appareil `pt-BR` | Assumé (ticket §5) |
-| « Politique de confidentialité » et « Conditions » en anglais | Assumé (R3) ; mention « (en anglais) » proposée (décision n° 1) |
+| « Politique de confidentialité » et « Conditions » ouvrent la version anglaise, sans mention dans l'app | **Assumé par le PM, décision du 2026-11-18** (lié à R3) |
 | Allongement allemand estimé, non mesuré | Mesuré aux captures du lot 4 |
