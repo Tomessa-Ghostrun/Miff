@@ -9,11 +9,18 @@ enum SettingsRoute: Hashable, CaseIterable {
     case deleteAccount
     case privacy
     case detectionHelp
+    /// Réglages > Langue : français, English ou la langue du téléphone, appliqué tout de suite (miroir d'Android). Absent des Réglages
+    /// restreints d'un compte sans Miff, comme la ligne.
+    case language
     /// NOTIF-P0 : Réglages > Notifications, le centre de notifications (aussi atteint par la cloche du Feed) et l'aide « notifications
     /// coupées ».
     case notifications
     case notificationCenter
     case notificationsHelp
+    /// ABOUT-1I : Réglages > « À propos et aide » (version, aide, contact, avis, textes) et, dessous, « Licences et attributions ».
+    /// Permis aussi aux Réglages restreints : c'est là qu'on a le plus besoin d'aide.
+    case about
+    case licenses
 
     /// Les écrans des notifications n'existent pas pour un compte sans Miff : rien à notifier (l'état de l'autorisation reste visible
     /// dans Confidentialité).
@@ -24,8 +31,8 @@ enum SettingsRoute: Hashable, CaseIterable {
 
 /// Les lignes de la liste des Réglages, et ce qu'un compte SANS Miff en voit. Décision du PM du 2026-11-07 (qui révise la décision Q13 « ni
 /// barre ni Réglages sans Miff ») : un compte sans Miff doit pouvoir se supprimer dans l'app (Apple 5.1.1(v)), donc il atteint des Réglages
-/// RESTREINTS : « Mon compte » (e-mail, mot de passe, déconnexion, supprimer mon compte) et « Confidentialité » (textes légaux,
-/// autorisations, contact). Ni Mes informations, ni Langue : le reste vient avec les Miffs. La barre d'onglets reste masquée sans Miff.
+/// RESTREINTS : « Mon compte » (e-mail, mot de passe, déconnexion, supprimer mon compte), « Confidentialité » (textes légaux,
+/// autorisations) et « À propos et aide » (contact, version, licences ; décision du PM du 2026-11-13). Ni Mes informations, ni Langue : le reste vient avec les Miffs. La barre d'onglets reste masquée sans Miff.
 enum SettingsListRow: Equatable, CaseIterable {
     case myInfo
     case account
@@ -33,12 +40,14 @@ enum SettingsListRow: Equatable, CaseIterable {
     case notifications
     case language
     case privacy
+    /// « À propos et aide » : TOUJOURS en dernier, y compris dans les Réglages restreints (décision Q1 du PM, 2026-11-13).
+    case about
 }
 
 enum SettingsAccess {
-    /// Les lignes montrées : toutes, ou seulement Mon compte et Confidentialité pour un compte sans Miff.
+    /// Les lignes montrées : toutes, ou seulement Mon compte, Confidentialité et « À propos et aide » pour un compte sans Miff.
     static func rows(restricted: Bool) -> [SettingsListRow] {
-        restricted ? [.account, .privacy] : SettingsListRow.allCases
+        restricted ? [.account, .privacy, .about] : SettingsListRow.allCases
     }
 
     /// Un écran des Réglages est-il permis à un compte sans Miff ? (Mes informations ne l'est pas.)
@@ -46,7 +55,7 @@ enum SettingsAccess {
         guard restricted else {
             return true
         }
-        return route != .myInfo && !route.isNotificationScreen
+        return route != .myInfo && route != .language && !route.isNotificationScreen
     }
 
     /// Les écrans qu'ouvre un écran des Réglages (la liste ouvre les trois premiers, Mon compte ouvre la suppression, Confidentialité
@@ -54,16 +63,20 @@ enum SettingsAccess {
     static func children(of route: SettingsRoute) -> [SettingsRoute] {
         switch route {
         case .settings:
-            return [.myInfo, .account, .notifications, .privacy]
+            return [.myInfo, .account, .notifications, .language, .privacy, .about]
         case .account:
             return [.deleteAccount]
         case .privacy:
             return [.detectionHelp]
+        case .about:
+            return [.detectionHelp, .notificationsHelp, .licenses]
+        case .licenses:
+            return []
         case .notifications:
             return [.notificationCenter, .notificationsHelp]
         case .notificationCenter:
             return [.notificationsHelp]
-        case .myInfo, .deleteAccount, .detectionHelp, .notificationsHelp:
+        case .myInfo, .deleteAccount, .detectionHelp, .notificationsHelp, .language:
             return []
         }
     }
@@ -83,8 +96,9 @@ enum SettingsAccess {
     }
 }
 
-/// La langue en cours de l'app, pour la ligne « Langue » des Réglages. Sur iPhone la langue se choisit dans les réglages du téléphone
-/// (décision Q4 du ticket Feed / Profil / Réglages) : l'app n'a pas de sélecteur à elle, elle dit seulement laquelle elle utilise.
+/// Les noms des langues et la langue du téléphone que l'app parle. Le CHOIX de la langue (français, English, langue du téléphone) est dans
+/// `AppLanguage.swift` ; l'écran est `LanguageView` (décision du PM du 2026-11-13 : le même écran qu'Android, dans l'app, à la place de
+/// l'ouverture des réglages de l'iPhone décidée d'abord, Q4 du ticket Feed / Profil / Réglages).
 enum AppLanguageName {
     /// `preferred` : les langues de la personne dans l'ordre (`Locale.preferredLanguages`) ; `available` : les langues de l'app
     /// (`Bundle.main.localizations`). La première langue de la personne que l'app parle gagne, sinon la langue de repli (l'anglais).
@@ -106,8 +120,9 @@ enum AppLanguageName {
         return (locale.localizedString(forLanguageCode: code) ?? code).capitalized(with: locale)
     }
 
+    /// Le nom, dans sa langue, de la langue EN COURS dans l'app (le choix de la personne, ou celle du téléphone).
     static var current: String {
-        nativeName(code: code(preferred: Locale.preferredLanguages, available: Bundle.main.localizations))
+        nativeName(code: AppLanguage.code)
     }
 }
 

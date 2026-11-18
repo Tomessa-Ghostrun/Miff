@@ -3,7 +3,10 @@ package com.tomessa.miff.data.session
 import com.tomessa.miff.data.miff.PendingDeletionStore
 import com.tomessa.miff.data.permission.NotificationAskStore
 import com.tomessa.miff.data.review.ReviewStateStore
+import com.tomessa.miff.data.timeshare.TimeShareWindowStore
 import com.tomessa.miff.data.update.PublishLedger
+import com.tomessa.miff.domain.timeshare.NoPresenceLog
+import com.tomessa.miff.domain.timeshare.PresenceLog
 
 /**
  * What is kept on the phone FOR ONE ACCOUNT and goes with it when the account is deleted (AUTH-5, ticket 5.10): the flag "notification screen
@@ -16,6 +19,9 @@ fun accountLocalDataErasers(
     pendingMiffDeletions: PendingDeletionStore,
     publishLedger: PublishLedger,
     reviewState: ReviewStateStore,
+    /** TIME-1 / TIME-2: the journal of the presence of "Répartition de ton temps" and the window chosen on the card: nothing of them stays for the next account. */
+    presenceLog: PresenceLog = NoPresenceLog,
+    timeShareWindow: TimeShareWindowStore? = null,
 ): List<LocalDataEraser> =
     listOf(
         LocalDataEraser { uid -> notificationAsks.forget(uid) },
@@ -24,4 +30,7 @@ fun accountLocalDataErasers(
         LocalDataEraser { uid -> if (publishLedger.photoSentMillis(uid) != null) publishLedger.clearPhotoSent() },
         // The state of the review window (dates and outcome): nothing of it stays for the next account (docs/tickets/pop-ins-avis.md).
         LocalDataEraser { _ -> reviewState.clear() },
+        // The local journal of the presence (changes of place, no coordinate, no name) and the window of the chart: erased with the account.
+        LocalDataEraser { _ -> presenceLog.clear() },
+        LocalDataEraser { _ -> timeShareWindow?.clear() },
     )

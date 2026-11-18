@@ -187,13 +187,13 @@ enum ReviewPromptRules {
 }
 
 /// « Peux faire mieux... » mène à un FORMULAIRE EXTERNE (décision du PM, 2026-11-08 ; adresse donnée le 2026-11-13, Google Forms). L'adresse est
-/// écrite à UN seul endroit : `ReviewFeedbackForm.configuredAddress`. Vide, ou pas une adresse HTTPS simple : la fenêtre montre l'écran
+/// écrite à UN seul endroit : `FeedbackForm.address` (Models/About/AboutModels.swift, aussi utilisée par « Un retour sur l'app ? » des Réglages ; `ReviewFeedbackForm.configuredAddress` la reprend). Vide, ou pas une adresse HTTPS simple : la fenêtre montre l'écran
 /// calme « Merci de nous le dire ! » avec « Nous écrire ». L'adresse est ouverte TELLE QUELLE : rien de la personne (nom, e-mail, Miff,
 /// position, identifiant, jeton) n'y est jamais ajouté ; ne pas en mettre non plus dans l'adresse elle-même.
 ///
 /// Adresse PUBLIQUE, pas un secret. Pour l'essayer vide : la vider ici (ou la remplacer par une autre adresse https).
 enum ReviewFeedbackForm {
-    static let configuredAddress = "https://forms.gle/5EEH4sEfsnCCLzEx7"
+    static let configuredAddress = FeedbackForm.address
 
     /// L'adresse à ouvrir dans le navigateur, ou nil quand il n'y en a pas (ni HTTPS : jamais d'adresse en clair, jamais un autre schéma).
     static func openableAddress(_ configured: String?) -> String? {

@@ -94,6 +94,7 @@ struct UpdateTabView: View {
                 miffCount: miffCount,
                 onRetake: model.onRetake,
                 onPublish: model.onPublish,
+                onDescriptionChange: model.onDescriptionChanged,
                 actions: actions
             )
         }

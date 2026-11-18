@@ -17,6 +17,13 @@ let colorUpdateVeil = ColorToken(hex: 0x000000, alpha: 0.30)
 /// Le voile sombre derrière la légende de la photo en plein écran du Feed (texte blanc, contraste d'au moins 4,5:1 sur le pire cas : `PhotoFullScreenLayout`).
 /// « Réduire la transparence » le rend opaque.
 let colorPhotoCaptionScrim = ColorToken(hex: 0x000000, alpha: PhotoFullScreenLayout.scrimAlpha)
+/// Le champ de DESCRIPTION sous l'aperçu (ticket description-update ; mêmes valeurs que `DescriptionField.kt` d'Android) : du blanc translucide sur le
+/// fond sombre de l'aperçu. Le texte indicatif (78 %) et le texte saisi (blanc) y ont plus de 4,5 : 1 ; le texte d'un champ non modifiable (envoi en cours) 60 %.
+let colorUpdateFieldVeil = ColorToken(hex: 0xFFFFFF, alpha: 0.14)
+let colorUpdateFieldPlaceholder = ColorToken(hex: 0xFFFFFF, alpha: 0.78)
+let colorUpdateFieldDisabledText = ColorToken(hex: 0xFFFFFF, alpha: 0.6)
+/// Le contour du champ au repos (55 %) et au focus (blanc plein, plus épais : l'état n'est pas porté par la couleur seule).
+let colorUpdateFieldBorder = ColorToken(hex: 0xFFFFFF, alpha: 0.55)
 /// La pastille sombre du message calme après une publication.
 let colorUpdateToast = ColorToken(hex: 0x222222, alpha: 0.92)
 /// Blanc des textes et des pictogrammes posés sur le viseur et sur l'aperçu.
@@ -43,8 +50,7 @@ enum UpdateLayout {
     static let roundButtonSize: CGFloat = 48
     static let roundButtonDisc: CGFloat = 40
     static let roundButtonIcon: CGFloat = 22
-    /// Le dégradé sombre en haut du viseur (lisibilité de l'heure sur une façade claire).
-    static let topGradientHeight: CGFloat = 110
+    // Le dégradé sombre en haut du viseur n'a plus de hauteur fixe (110 pt avant) : il suit la zone sûre du haut, voir `ViewfinderLayout`.
     /// La bulle : 16 pt des bords, arrondi 20, queue 22 x 11 dont la pointe s'arrête 4 pt au-dessus de la barre.
     static let bubbleSideMargin: CGFloat = 16
     static let bubbleCorner: CGFloat = 20

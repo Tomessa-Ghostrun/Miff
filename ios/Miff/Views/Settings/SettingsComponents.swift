@@ -5,6 +5,16 @@ import UIKit
 /// personne sur un bouton qui dit ce qui va s'ouvrir.
 @MainActor
 enum ExternalOpener {
+    /// Comme `open`, mais dit si quelque chose a pu s'ouvrir : la ligne n'est jamais laissée sans réaction (« Nous contacter » sans
+    /// application e-mail, formulaire d'avis sans navigateur).
+    static func open(_ url: URL?, completion: @escaping (Bool) -> Void) {
+        guard let url else {
+            completion(false)
+            return
+        }
+        UIApplication.shared.open(url, options: [:], completionHandler: completion)
+    }
+
     static func open(_ url: URL?) {
         guard let url else {
             return
@@ -12,7 +22,7 @@ enum ExternalOpener {
         UIApplication.shared.open(url)
     }
 
-    /// Les réglages de l'iPhone pour Miff (c'est là que se changent la langue de l'app, la localisation et les notifications).
+    /// Les réglages de l'iPhone pour Miff (c'est là que se changent la localisation et les notifications ; la langue se change dans l'app).
     static func openSystemSettings() {
         open(URL(string: UIApplication.openSettingsURLString))
     }
