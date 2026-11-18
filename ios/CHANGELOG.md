@@ -35,6 +35,25 @@ Inchangé : obturateur, texte d'aide, barre d'onglets, caméra frontale par déf
 
 Tests : `ViewfinderLayoutTests` (six gabarits d'iPhone dont SE, 11 Pro à encoche, 14 Pro / 16 à île dynamique, 16 Pro, Pro Max ; zones sûres nulles ; fenêtre inconnue ; plancher ; câblage `.resizeAspectFill`, schéma décidé à la racine seulement, options de démonstration Debug seulement), `AppAppearanceTests`. Captures CI 160 (viseur) et 161 (zones sûres nulles), build Debug seulement (l'aperçu de la photo, `-MiffPreview update-preview`, se lance à la main : l'étape des captures est saturée, 15 min). Le doublon des captures 93 et 152 (grand texte) est retiré du script.
 
+### Feed : cartes rangées de la dernière update la plus récente à la plus ancienne (FEED-ORDRE)
+
+Ticket `docs/tickets/feed-ordre-derniere-update.md` (décisions par défaut du §3, déléguées par le PM le 2026-11-17). Recette : `docs/qa/checklists/feed-ordre-ios-recette-pm.md`. **Rien n'est compilé en local** (la CI fait foi). Aucun changement de règles Firestore, aucune lecture de plus, rien à déployer.
+
+Modifié :
+- **L'ordre des cartes** vient de `status.lastUpdateAt` (déjà lu par l'écoute des statuts) : `FeedBuilder.sortedByLastUpdate` et la fonction pure `FeedOrder.sorted` (`Models/Feed/FeedOrder.swift`). Du plus récent au plus ancien ; **ma carte est triée comme les autres** (elle n'est plus forcée en dernier : décision D43 remplacée pour les cartes) ; à dates égales, l'ordre d'arrivée dans la Miff puis l'identifiant ; **sans date exploitable après tous les autres**, dans l'ordre d'arrivée : aucun statut montré (partage arrêté, caché, pas encore publié), mon accord attendu, ou carte « Pas encore de nouvelles » / « Voyage terminé » sans update postérieure à son état (voir plus bas). Jamais un tri par urgence ; la photo qui expire ne change rien (la date reste) ; l'horloge de celui qui regarde n'intervient pas.
+- **La bulle, les alertes et le « n sur m » restent calculés dans l'ancien ordre d'arrivée** (`FeedBuilder.orderMembers`, inchangé) : leur égalité « par l'ordre des cartes » ne bouge pas (critère A10).
+- **Pendant un geste, rien ne bouge** : `FeedDisplayOrder` (pur) tient l'ordre affiché et l'ordre en attente ; `FeedOrderModel` y ajoute l'animation douce (jamais avec « Réduire les animations ») et l'annonce. Le **contenu** d'une carte est toujours à jour ; seul l'**ordre** attend la fin du geste (doigt posé sur la liste ou sur un bouton, défilement y compris l'élan après avoir lâché : `FeedGestureWatcher`, un observateur de toucher qui ne reconnaît ni n'annule rien). Plusieurs changements pendant un geste : **un seul** réordonnancement, vers le dernier ordre. Les cartes gardent l'identité du membre (`ForEach` par identifiant) : un appui en cours atteint toujours le bon proche.
+- **Ordre à jour appliqué directement, sans animation ni annonce** : premier affichage, retour sur l'onglet Feed ou depuis l'arrière-plan, « tirer pour actualiser » (à la fin du rafraîchissement), autre Miff, retour après un squelette.
+- **VoiceOver** : le focus n'est jamais déplacé ; annonce **non interruptive** (`accessibilitySpeechQueueAnnouncement`), une seule par application d'ordre et seulement si l'ordre change : « {Prénom} a donné des nouvelles » (une seule carte qui monte et arrive en tête), « Le Feed a été mis à jour » (plusieurs) ; **aucune** pour ma carte, une arrivée ou un départ de membre. Clés partagées avec Android : `feed_order_updated_one_a11y` (« %@ a donné des nouvelles ») et `feed_order_updated_many_a11y` (ajoutées au catalogue par la PR Android #258, reprises à l'identique ; le contrôle de parité reste rouge tant que #258 n'est pas fusionnée).
+- Tests : `FeedOrderTests` (fonction d'ordre : plus récent d'abord, sans date après, égalité, 100 mélanges, un seul membre, ma carte au milieu, `presence = unknown` avec date, partage arrêté, accord attendu, statuts non lus, photo expirée, horloge du lecteur, alertes inchangées ; report pendant un geste ; annonces) et `FeedOrderModelTests` (rien ne bouge pendant un geste, une seule application et une seule annonce, retour sur le Feed, autre Miff, squelette). `FeedPhotoCardsTests` et `FeedViewModelTests` : ordre attendu mis à jour.
+- **L'update manuelle avant tout départ d'un lieu fait remonter la carte** (point de parité avec Android, revue indépendante) : une carte « Pas encore de nouvelles » (`presence = unknown`) ou « Voyage terminé » a pour date `lastUpdateAt` **si et seulement si** `lastUpdateAt` est strictement plus récent que `presenceAt` (`FeedBuilder.orderDate`). Pas de date quand les deux sont égaux (premier statut, à l'activation du partage), quand `lastUpdateAt` est plus ancien (fin d'un voyage : conservé, `presenceAt` récent) ou qu'une des deux manque. **L'étiquette « Pas encore de nouvelles » ne change pas** (question laissée au PM).
+- **Fenêtre de 4 s sur l'horloge monotone** (`ProcessInfo.systemUptime`, jamais l'heure du mur) : après un retour sur le Feed ou au début et à la fin d'un rafraîchissement, un nouvel ordre est appliqué directement, sans animation ni annonce (les données arrivent un instant après le retour) ; un geste en cours retient toujours l'ordre.
+- **Geste « coincé »** : le doigt et le défilement sont oubliés au départ et à la reprise de la scène (`FeedGestureWatcher`), et au retour sur l'onglet (`FeedOrderModel.flush`).
+- **L'annonce ne nomme la personne que si sa carte arrive en TÊTE de liste** ; sinon (plusieurs cartes, ou une carte qui monte sans arriver en tête) : « Le Feed a été mis à jour ». Aucune annonce quand c'est ma carte qui arrive en tête, ni pour une arrivée ou un départ.
+- Le drapeau d'animation d'Android n'existe pas côté iOS : l'animation est donnée au moment de l'application de l'ordre (`withAnimation`), elle ne peut donc pas « rester » après un réordonnancement.
+
+Écart : une carte hors écran de la liste paresseuse n'est pas instanciée, donc sans animation visible ; pas de test d'interface automatisé du geste (recette sur iPhone). Une update manuelle ou une arrivée dans un lieu font toutes deux remonter la carte (même champ `lastUpdateAt`, question 1 du ticket).
+
 ### Intégration du build TestFlight 36 : retouches de fusion (client push, couleurs, fenêtre d'avis)
 
 Modifié :
@@ -120,6 +139,25 @@ Corrigé après la revue indépendante :
 
 Reste à faire (hors de cette PR) :
 - Un créateur Miff+ de plusieurs Miffs n'est prévenu que pour la Miff suivie (limite documentée dans `docs/dev/surveillance-quotas.md`).
+
+
+### Réglages > « À propos et aide » : version, aide, contact, avis, licences (ABOUT-1I ; miroir d'Android ABOUT-1A, décisions du PM du 2026-11-13)
+
+Branche `ios/reglages-a-propos`, PR en brouillon. Ticket : `docs/tickets/reglages-a-propos.md`. Recette : `docs/qa/checklists/reglages-a-propos-ios-recette-pm.md`. Détail et écarts : `ios/README.md` (« Réglages > À propos et aide »). **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.**
+
+Ajouté :
+- Une ligne **« À propos et aide »**, **en dernier** dans Réglages et **aussi dans les Réglages restreints** (compte sans Miff). Elle ouvre un écran avec la **version** (un toucher copie « Miff 0.1.0 (N) », rien d'autre), l'**aide** (les deux aides existantes), **« Nous contacter »**, **« Un retour sur l'app ? »** (formulaire Google Forms fourni par le PM, ouvert dans Safari à l'adresse exacte, affiché y compris en build de diffusion, aucune donnée ajoutée), les **textes légaux** et les **licences**.
+- **Écran « Licences et attributions »**, **hors connexion** : les 17 paquets de `Package.resolved` (nom, version, licence), le texte complet de chaque licence embarqué dans l'app, « Plans d'Apple (MapKit) » pour les cartes (ni MapLibre, ni OpenFreeMap, ni Photon : Android seulement), les deux polices (SIL OFL 1.1). Aucune relecture juridique (risque assumé) : jamais « conforme » ni « relu ».
+- **Garde de CI (AP15)** : `LicenseCatalogTests` échoue si un paquet de `Package.resolved` n'a pas sa licence (ou sa version à jour) dans `LicenseCatalog`.
+- Contact sans application e-mail : un message calme affiche l'adresse, avec « Copier l'adresse » (`ExternalOpener.open(_:completion:)`).
+- Textes FR + EN : 20 clés `about_*` en parité avec Android (lignes ajoutées aussi à ses `strings.xml`, **à fusionner avec ABOUT-1A**), 2 clés `ios_about_*`. Préfixe `about` au contrat `docs/contracts/i18n-keys.md` et au script de parité. Tests : `AboutTests`, `LicenseCatalogTests`. Captures de la CI : `about-*`.
+
+Changé :
+- **Écran réorganisé (retour du PM du 2026-11-13, aussi sur Android)** : **en haut et mis en avant**, deux grandes cartes avec icône, « Nous contacter » (bleu plein) et « Un retour sur l'app ? » (blanc à trait bleu, avec sa phrase) ; **plus bas**, sous un titre **« Informations »** (nouvelle clé `about_info_title`, aussi ajoutée aux `strings.xml` d'Android), des lignes de liste discrètes : version (copie au toucher), aides, Conditions, Politique, Licences. Comportements inchangés. Captures de la CI réduites à 5.
+- **« Nous contacter » quitte Confidentialité** (décision Q2 du PM) : mêmes clés, autre écran. Les liens Conditions et Politique y restent. Checklists iOS mises à jour (onb-7, suppression de compte, notifications).
+- **La version quitte le pied de la liste des Réglages** (décision Q4) : `SettingsListView` n'a plus de paramètre `build`, la clé `ios_settings_version` est remplacée par `about_version_label`.
+
+Limites : l'adresse du formulaire est une constante du code (`FeedbackForm.address`), pas une propriété de build comme sur Android ; la garde de licences couvre les paquets Swift (les polices sont listées à la main).
 
 
 ### Ajouté : écran d'offre Miff+ fidèle aux maquettes, états, croix de fermeture différée de 3 secondes (PAY-UI-I, 2026-11-12)

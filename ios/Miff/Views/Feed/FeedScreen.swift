@@ -2,7 +2,7 @@ import SwiftUI
 import UIKit
 
 // L'onglet Feed (tickets FEED-5 à FEED-7) : l'en-tête qui se masque au défilement, puis la bulle de la Miff, les cartes des membres
-// (moi en dernier) et « Ajouter un proche ». Rien ici ne dit « tout va bien » sans le savoir : le squelette, l'état vide, la mention
+// (triées par la dernière update, FEED-ORDRE) et « Ajouter un proche ». Rien ici ne dit « tout va bien » sans le savoir : le squelette, l'état vide, la mention
 // hors connexion et les bulles neutres sont calmes et ne sont jamais une phrase de sécurité.
 
 /// Ce que font les gestes du Feed (il n'écrit jamais rien).

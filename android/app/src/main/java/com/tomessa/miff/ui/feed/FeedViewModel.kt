@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.tomessa.miff.data.auth.NetworkMonitor
 import com.tomessa.miff.data.feed.FeedRefresher
 import com.tomessa.miff.data.feed.PositionReader
+import com.tomessa.miff.data.feed.PresenceRefresh
 import com.tomessa.miff.data.feed.ServerRead
 import com.tomessa.miff.data.feed.StatusFeed
 import com.tomessa.miff.data.feed.StatusObserver
@@ -13,6 +14,7 @@ import com.tomessa.miff.data.miff.MiffDirectory
 import com.tomessa.miff.data.miff.MiffRepository
 import com.tomessa.miff.data.notification.FeedNotificationLink
 import com.tomessa.miff.data.notification.FeedVisitLink
+import com.tomessa.miff.data.tracking.PullOutcome
 import com.tomessa.miff.domain.feed.FeedBuilder
 import com.tomessa.miff.domain.feed.FeedContent
 import com.tomessa.miff.domain.feed.FeedInput
@@ -34,9 +36,12 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -59,7 +64,8 @@ import java.time.ZoneId
  *   stays on the phone until the purge of the cache at sign-out or at the loss of access to a Miff (CachePurger). The Feed shows, keeps and logs
  *   nothing of it;
  * - the Feed never writes (0 write, 0 deletion): it listens to the Miff (members, places, as the Miff screen does) and to the statuses, and
- *   reads one position per tap on "Localiser";
+ *   reads one position per tap on "Localiser". The Feed itself still writes nothing: "Actualiser" (FEED-REFRESH-POSITION) only ASKS the detection engine to check MY presence (it reads
+ *   my own position and writes a status or a position under ITS OWN gates and limits, see TrackingEngine.refreshFromFeed); no position ever reaches this class;
  * - the listeners exist ONLY while the Feed is on screen (the screen calls [observe] inside repeatOnLifecycle(STARTED), and only while the tab
  *   is the one in use): nothing listens to a Miff nobody is looking at, and only for the Miff shown;
  * - the colour is computed at the time of the reading, again each minute, from the clock: no reading of the server for it.
@@ -97,6 +103,12 @@ sealed interface LocateUiState {
     ) : LocateUiState {
         override fun toString(): String = "Shown(redacted)"
     }
+}
+
+/** A calm note the gesture "Actualiser" may bring (FEED-REFRESH-POSITION): a short toast, never a screen of error. */
+enum class FeedNote {
+    /** The position could not be refreshed because the access to the location is not enough (permission, precise location, location of the phone off). */
+    PositionNotRefreshed,
 }
 
 /** What the listener of the Miff last said, for the Miff it was attached to. */
@@ -162,6 +174,13 @@ class FeedViewModel(
     private val notifications: FeedNotificationLink = FeedNotificationLink.None,
     /** NOTIF-P1A, "Depuis ta dernière visite": told the picture of the Miff shown, ONLY when it is fresh (confirmed by the server). Local; nothing is read or written because of it. */
     private val visits: FeedVisitLink = FeedVisitLink.None,
+    /**
+     * FEED-REFRESH-POSITION: "Actualiser" also asks the detection to check MY presence once (one position, a status only if something changed; the gates and the limit of one reading
+     * every 30 s are the engine's). Independent of the indicator: the Feed never waits for it, and its answer only ever brings one calm note ([FeedNote]).
+     */
+    private val presence: PresenceRefresh = PresenceRefresh.None,
+    /** How long the answer of [presence] is waited for to say its calm note: a late one is dropped, never told after the fact. */
+    private val presenceNoteWaitMillis: Long = PRESENCE_NOTE_WAIT_MILLIS,
 ) : ViewModel() {
     val directoryState: StateFlow<DirectoryState> = directory.state
 
@@ -240,6 +259,11 @@ class FeedViewModel(
                 values[6] as Boolean,
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, FeedUiState.Loading)
+
+    private val mutableNotes = MutableSharedFlow<FeedNote>(extraBufferCapacity = 1)
+
+    /** One-shot calm notes of the gesture "Actualiser" (a toast): nothing is kept, a note that finds no collector is dropped. */
+    val notes: SharedFlow<FeedNote> = mutableNotes.asSharedFlow()
 
     private val mutableLocate = MutableStateFlow<LocateUiState>(LocateUiState.Idle)
     val locate: StateFlow<LocateUiState> = mutableLocate.asStateFlow()
@@ -670,6 +694,7 @@ class FeedViewModel(
         lastRefreshAtMillis = now
         mutableRefreshing.value = true
         val readStatuses = statusView.value !is StatusesView.Off
+        refreshMyPresence()
         viewModelScope.launch {
             try {
                 val answer =
@@ -685,6 +710,25 @@ class FeedViewModel(
             } finally {
                 mutableRefreshing.value = false
             }
+        }
+    }
+
+    /**
+     * FEED-REFRESH-POSITION: in a job of its own, so that the indicator and the reading of the loved ones never wait for the position (which may take its few seconds, or never come). The only
+     * thing that comes back to the screen is the calm note when the access to the location is not enough: every other outcome is silent (the Feed already shows a trip, a sharing that is
+     * stopped, an agreement awaited or the lack of network).
+     */
+    private fun refreshMyPresence() {
+        viewModelScope.launch {
+            val outcome =
+                try {
+                    withTimeoutOrNull(presenceNoteWaitMillis) { presence.refreshMyPresence() }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    null
+                }
+            if (outcome == PullOutcome.NO_ACCESS) mutableNotes.tryEmit(FeedNote.PositionNotRefreshed)
         }
     }
 
@@ -764,5 +808,6 @@ class FeedViewModel(
         const val CACHE_GRACE_MILLIS = 5_000L
         const val MIN_REFRESH_INTERVAL_MILLIS = 15_000L
         const val REFRESH_TIMEOUT_MILLIS = 8_000L
+        const val PRESENCE_NOTE_WAIT_MILLIS = 10_000L
     }
 }

@@ -5,7 +5,6 @@ import com.tomessa.miff.data.miff.EntitlementRead
 import com.tomessa.miff.domain.miff.MiffDetails
 import com.tomessa.miff.domain.miff.MiffFailure
 import com.tomessa.miff.domain.miff.WriteKind
-import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.domain.place.PlaceRequestLimits
 import com.tomessa.miff.domain.place.PlaceType
 import com.tomessa.miff.testsupport.FakePlaceRepository
@@ -54,11 +53,9 @@ class PlaceRequestRepositoryTest {
     // --- Before the form ----------------------------------------------------------------------------------------------------------
 
     @Test
-    fun prepare_readsThePlanTheMiffAndMyRequests_fromTheServer() =
+    fun prepare_readsTheMiffAndMyRequests_fromTheServer() =
         runTest {
-            premium()
             val loaded = context(listOf(testRequest(uid = uid, slot = 1, createdAtMillis = now)))
-            assertTrue(loaded.premium)
             assertEquals("Famille", loaded.miffName)
             assertEquals(1, loaded.mine.size)
             assertEquals(listOf(true), requests.reads)
@@ -81,11 +78,11 @@ class PlaceRequestRepositoryTest {
         }
 
     @Test
-    fun prepare_anUnknownPlan_isNotFree_theFormIsToldToTryAgain() =
+    fun prepare_neverReadsThePlan_anUnreadablePlanDoesNotBlockTheForm() =
         runTest {
+            // Any member may ask, free or Miff+ (decision of the PM, 2026-11-17): the plan of the person is not read, so it cannot make the form fail.
             places.entitlementFailure = firestoreError(FirebaseFirestoreException.Code.UNAVAILABLE)
-            val load = repo.prepare(uid, MIFF_ID)
-            assertEquals(MiffFailure.OFFLINE, (load as RequestContextLoad.Failed).failure)
+            assertTrue(repo.prepare(uid, MIFF_ID) is RequestContextLoad.Loaded)
         }
 
     @Test
@@ -114,13 +111,11 @@ class PlaceRequestRepositoryTest {
     @Test
     fun prepare_whenTheRulesRefuseTheReadOfMyRequests_theFormOpensAllTheSame_withNoRequestKnown() =
         runTest {
-            premium()
             requests.readFailure = firestoreError(FirebaseFirestoreException.Code.PERMISSION_DENIED)
             val load = repo.prepare(uid, MIFF_ID)
             val loaded = (load as RequestContextLoad.Loaded).context
             assertTrue(loaded.mine.isEmpty())
             assertEquals("Famille", loaded.miffName)
-            assertTrue(loaded.premium)
         }
 
     @Test
@@ -172,22 +167,52 @@ class PlaceRequestRepositoryTest {
         }
 
     @Test
-    fun submit_aDangerZone_withoutMiffPlus_opensTheOffer_andNothingIsSent() =
+    fun submit_aDangerZone_withoutMiffPlus_isSentLikeAnyRequest_noOfferNoPlanRead() =
         runTest {
+            // Decision of the PM, 2026-11-17: a free member may ask for a danger zone. Even an unreadable plan changes nothing: it is never read.
+            places.entitlementFailure = firestoreError(FirebaseFirestoreException.Code.UNAVAILABLE)
             val loaded = context()
             val result = repo.submit(uid, MIFF_ID, testRequestDraft(type = PlaceType.RISK), loaded, online = true)
-            assertEquals(PaywallReason.DANGER, (result as RequestSubmitResult.NeedsPremium).reason)
-            assertTrue(requests.commits.isEmpty())
+            assertEquals(PlaceType.RISK, (result as RequestSubmitResult.Done).request.type)
+            val lot = requests.commits.single()
+            assertEquals(2, lot.size)
+            assertEquals("risk", lot[0].data["type"])
+            assertEquals("miffs/$MIFF_ID/meta/placeRequests", lot[1].path)
         }
 
     @Test
-    fun submit_aDangerZone_withMiffPlus_isSent() =
+    fun submit_aDangerZone_withMiffPlus_isSentTheSameWay() =
         runTest {
             premium()
             val loaded = context()
             val result = repo.submit(uid, MIFF_ID, testRequestDraft(type = PlaceType.RISK), loaded, online = true)
             assertEquals(PlaceType.RISK, (result as RequestSubmitResult.Done).request.type)
             assertEquals("risk", requests.commits.single()[0].data["type"])
+        }
+
+    @Test
+    fun submit_threeDangerZones_fillTheThreeSlots_theFourthIsTheUsualLimit() =
+        runTest {
+            val loaded =
+                context(
+                    listOf(
+                        1,
+                        2,
+                        3,
+                    ).map { testRequest(uid = uid, slot = it, createdAtMillis = now, type = PlaceType.RISK) },
+                )
+            val result = repo.submit(uid, MIFF_ID, testRequestDraft(type = PlaceType.RISK), loaded, online = true)
+            assertTrue(result is RequestSubmitResult.MemberLimit)
+            assertTrue(requests.commits.isEmpty())
+        }
+
+    @Test
+    fun submit_aDangerZone_offline_isKeptByThePhone_likeAnyRequest() =
+        runTest {
+            val loaded = context()
+            val result = repo.submit(uid, MIFF_ID, testRequestDraft(type = PlaceType.RISK), loaded, online = false)
+            assertTrue(result is RequestSubmitResult.Queued)
+            assertEquals("risk", requests.enqueued.single()[0].data["type"])
         }
 
     @Test
@@ -211,12 +236,12 @@ class PlaceRequestRepositoryTest {
         }
 
     @Test
-    fun submit_refusedByTheServer_onAMiffThatIsStillThere_isTheLimitOfTheMiff() =
+    fun submit_refusedByTheServer_onAMiffThatIsStillThere_isNeverPresentedAsTheLimitOfTheMiff() =
         runTest {
             val loaded = context()
             requests.commitFailures.add(firestoreError(FirebaseFirestoreException.Code.PERMISSION_DENIED))
             val result = repo.submit(uid, MIFF_ID, testRequestDraft(), loaded, online = true)
-            assertTrue(result is RequestSubmitResult.MiffLimit)
+            assertTrue(result is RequestSubmitResult.Refused)
         }
 
     @Test
@@ -371,14 +396,26 @@ class PlaceRequestRepositoryTest {
     // --- The causes of a refusal (contract of the backend, section 4) -----------------------------------------------------------------------
 
     @Test
-    fun submit_aDangerZoneRefused_becauseThePlanEndedSinceTheFormOpened_isTheOffer_notTheLimit() =
+    fun submit_refusedAgainAfterTheRaceRetry_isStillTheGenericRefusal_neverALimitOfTheMiff() =
         runTest {
-            premium()
             val loaded = context()
-            places.entitlement = null
+            // The lot is refused, a slot looks taken meanwhile, the second lot is refused too (old rules, or any rule): nothing proves a full Miff.
+            requests.commitFailures.add(firestoreError(FirebaseFirestoreException.Code.PERMISSION_DENIED))
+            requests.commitFailures.add(firestoreError(FirebaseFirestoreException.Code.PERMISSION_DENIED))
+            requests.mine = listOf(testRequest(uid = uid, slot = 1, createdAtMillis = now))
+            val result = repo.submit(uid, MIFF_ID, testRequestDraft(type = PlaceType.RISK), loaded, online = true)
+            assertTrue(result is RequestSubmitResult.Refused)
+            assertTrue(requests.commits.isEmpty())
+        }
+
+    @Test
+    fun submit_aDangerZoneRefused_isNeverTheOffer_itFollowsTheOtherCauses() =
+        runTest {
+            // The type is no longer a cause of refusal (the rules do not read the plan of the person who asks): a refusal is a race, or a rule: nothing else is claimed.
+            val loaded = context()
             requests.commitFailures.add(firestoreError(FirebaseFirestoreException.Code.PERMISSION_DENIED))
             val result = repo.submit(uid, MIFF_ID, testRequestDraft(type = PlaceType.RISK), loaded, online = true)
-            assertEquals(PaywallReason.DANGER, (result as RequestSubmitResult.NeedsPremium).reason)
+            assertTrue(result is RequestSubmitResult.Refused)
         }
 
     @Test
