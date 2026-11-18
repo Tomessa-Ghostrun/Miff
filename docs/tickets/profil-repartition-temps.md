@@ -105,18 +105,18 @@ Onglet Profil, **sous le carrousel « Mes Miffs » (et ses pastilles)**, **au-de
 
 ### 5.2 Contenu (état nominal)
 1. **En-tête** : pastille d'icône **verte** (disque vert clair, barres vert foncé) à gauche, titre **« Répartition du temps »** (EN « Time breakdown »), sous-titre **« Sur les 7 derniers jours »** (14 / 30), **sélecteur** « 7 jours ⌄ » à droite (pastille bordée, menu à 3 choix, le choix actuel coché). Le sous-titre et le sélecteur **n'existent qu'avec le graphique**.
-2. **Anneau**, **petit, à droite** de la légende : une tranche par catégorie (**toutes**, même au-delà de 4), séparées par un mince espace. **Au centre** : « **72 %** » en gros et dessous « **en zone de confiance** » (EN « in trusted places ») = somme des **lieux de confiance seulement** (ni zone de danger ni « Ailleurs »).
+2. **Anneau**, **petit, à droite** de la légende : une tranche par catégorie (**toutes**, même au-delà de 4), séparées par un mince espace. **Au centre** : « **72 %** » en gros et dessous « **en zone de confiance** » (EN « in trusted zones ») = somme des **lieux de confiance seulement** (ni zone de danger ni « Ailleurs »).
 3. **Légende, à gauche** (ordre de l'anneau, sens horaire depuis midi), **4 lignes au plus : les 4 plus grandes parts** (le reste n'est que dans l'anneau et dans la description du lecteur d'écran, qui liste tout) : pastille de couleur, **emoji de la catégorie du lieu** (table `place-categories.md`, repli épingle ; **nom du lieu actuel**), pourcentage **aligné à droite**. Parts possibles : lieux, « {n} autres lieux », **« Zone de danger »** (§10), **« Ailleurs »**. Si la zone de danger n'est pas parmi les 4 plus grandes parts, son détail n'est pas atteignable depuis la légende (limite connue).
 4. **Encart de synthèse** (§5.4) : fond vert très léger, coche, phrase, emoji fête.
 5. **Confidentialité**, toujours visible : cadenas + « **Ces données restent sur ton téléphone. Personne d'autre ne peut les voir.** »
 
 ### 5.3 Pourcentages
-Entiers, somme **exactement 100 %** (méthode du plus grand reste ; égalité : le plus grand temps réel, puis l'ordre de la légende). Part réelle > 0 et < 1 % : « **< 1 %** » (compte 0 dans la répartition). Format du système (« 72 % » FR avec espace insécable, « 72% » EN). **Pas d'animation** en v1.
+Entiers, somme **exactement 100 %** (méthode du plus grand reste ; égalité : le plus grand temps réel, puis l'ordre de la légende). Part réelle > 0 et < 1 % : « **< 1 %** » (compte 0 dans la répartition). **Règle d'arrondi commune iOS / Android (précisée le 2026-11-17)** : une part réelle < 1 % **compte 0** et **les autres parts se partagent les 100 points d'après leur propre temps** (le total de référence est la somme des temps des parts ≥ 1 %, pas le temps mesuré entier), au plus grand reste ; la part < 1 % ne reçoit jamais de point de reste. Exemple : maison 100 h, dehors 219 h, un lieu 3 h → maison 31 %, dehors 69 %, lieu « < 1 % » (et non 32 / 68). Le détail de la zone de danger est arrondi à l'intérieur de sa ligne (inchangé). Format du système (« 72 % » FR avec espace insécable, « 72% » EN). **Pas d'animation** en v1.
 
 ### 5.4 Encart de synthèse (révisé le 2026-11-17, remplace les trois phrases descriptives)
 | | FR | EN |
 |---|---|---|
-| Texte | « Tu as passé **x %** de ton temps dans tes zones de confiance » | “You spent **x%** of your time in your trusted places” |
+| Texte | « Tu as passé **x %** de ton temps dans tes zones de confiance » | “You spent **x%** of your time in your trusted zones” |
 | Pictogrammes | coche de validation à gauche (vert Miff foncé), emoji **🎉** à droite (décoratif : non lu par le lecteur d'écran) | idem |
 x = le pourcentage du centre (lieux de confiance seulement), au format du système. **Affiché dans tous les cas où le graphique est affiché** (pas de variante selon la valeur). **Règle de ton conservée** : l'encart **ne nomme jamais** la zone de danger, ne compare à aucune période ni objectif. **Risque assumé par le PM** (D13) : x très bas. L'ancien jeu de trois phrases (« c'est à {lieu} que tu as passé le plus de temps », « tu as surtout été ailleurs », phrase générique) est **supprimé**.
 
@@ -227,17 +227,17 @@ Reprise fidèle : carte blanche arrondie, pastille d'icône à gauche du titre, 
 | # | Maquette | Écart | Raison |
 |---|---|---|---|
 | E1 | « Répartition du temps » | **« Répartition du temps »** (libellé de la maquette repris ; EN « Time breakdown ») | Révision 2 : le PM veut les libellés de la maquette |
-| E2 | « 72 % en zone sécurisée » | « 72 % **en zone de confiance** » (EN « in trusted places ») | Révision 2 : libellé court du PM ; aucune promesse de sécurité |
+| E2 | « 72 % en zone sécurisée » | « 72 % **en zone de confiance** » (EN « in trusted zones ») | Révision 2 : libellé court du PM ; aucune promesse de sécurité |
 | E3 | « Zone à risque » (rouge vif, ⚠️) | **« Zone de danger »** (libellé de l'app), une ligne agrégée, **exactement** `status/danger` (le rouge de la bulle), tranche **hachurée** et icône d'avertissement, détail au toucher | Libellé de l'app ; jamais la couleur seule |
 | E4 | « Hors-zone » + « ? » | « Ailleurs » + icône neutre | Le « ? » évoque l'inconnu |
-| E5 | Vert / jaune / rouge / gris génériques | Lieux de confiance en **nuances de vert et de bleu Miff** (assombries pour tenir 3:1), danger = rouge `status/danger`, « Ailleurs » = gris de la maquette (`#d9d9d9`, sous 3:1 voulu par la maquette ; nom et % dans la légende) | Révision 2 : décision du PM |
+| E5 | Vert / jaune / rouge / gris génériques | Lieux de confiance en **nuances de vert et de bleu Miff** (assombries pour tenir 3:1), danger = rouge `status/danger`, « Ailleurs » = gris de la maquette (`#d4d7df`, sous 3:1 voulu par la maquette ; nom et % dans la légende) | Révision 2 : décision du PM |
 | E6 | Bandeau vert, coche, « ! », emoji de fête | **Repris** : bandeau vert très léger, coche, « Tu as passé x % de ton temps dans tes zones de confiance » et 🎉 (sans « ! ») | Révision 2 : décision du PM (risque de ton si x est bas, assumé) |
 | E7 | Légende à droite | Mise en page du PM : **légende à gauche, petit anneau à droite** ; avec une police agrandie (≥ 130 %) ou un écran étroit, l'anneau passe **au-dessus** de la légende | Révision 2 ; accessibilité (200 % sans rien couper) |
 | E8 | — | Ajout de la ligne de confidentialité, des états (§7) | Non designés |
 | E9 | Emoji de la légende ⚽🏋️ | Emoji de la **table de catégories** de l'app (⚽ pour le sport) | Même glyphe que la liste des lieux |
 
 ### 9.2 Accessibilité
-- **Couleur jamais seule** : chaque tranche reliée à une légende (emoji + nom + %) dans le même ordre ; espace entre tranches ; **contraste ≥ 3:1** avec le fond de la carte pour les lieux de confiance (verts assombris et bleus, jetons `chart/*`), `status/danger` `#ff5650` (3,1:1) pour la zone de danger, qui a en plus un **motif** et son icône ; **exception voulue par la maquette** : « Ailleurs » en gris clair `#d9d9d9` (1,4:1), distingué par son nom, son pourcentage et l'espace entre tranches.
+- **Couleur jamais seule** : chaque tranche reliée à une légende (emoji + nom + %) dans le même ordre ; espace entre tranches ; **contraste ≥ 3:1** avec le fond de la carte pour les lieux de confiance (verts assombris et bleus, jetons `chart/*`), `status/danger` `#ff5650` (3,1:1) pour la zone de danger, qui a en plus un **motif** et son icône ; **exception voulue par la maquette** : « Ailleurs » en gris clair `#d4d7df` (1,4:1), distingué par son nom, son pourcentage et l'espace entre tranches.
 - **Lecteur d'écran** : carte = groupe titré ; **anneau caché** (décoratif) ; **une description textuelle unique** (« Répartition de ton temps sur les 7 derniers jours : Maison 48 %, Sport 24 %, Zone de danger 8 %, Ailleurs 20 %. ») ; lignes de légende en éléments de liste, sans doublon ; sélecteur « Période, 7 jours, bouton » ; **le nom de la catégorie est lu, jamais l'emoji** (règle `place-categories.md`).
 - Cibles ≥ 48 dp / 44 pt ; texte jusqu'à **200 %** sans troncature ; droite-à-gauche miroité ; pas d'animation ; thème clair seulement.
 
@@ -381,7 +381,7 @@ Le suivi existe déjà : **plus de dépendance bloquante**. La carte n'est plus 
 ## 15. Maquettes nécessaires (exports PNG avant développement, règle du 2026-10-28)
 
 Fournie : `19.webp` (carte nominale Android, 7 jours). **À dessiner dans « Miff - Claude »** :
-1. **Palette « graphique »** (révisée) : 5 couleurs de lieux en **nuances de vert Miff (assombri) et de bleu Miff** alternées, « autres lieux », **1 couleur de réserve**, toutes ≥ 3:1 contre la carte ; la **zone de danger** = `status/danger` exact ; « Ailleurs » = gris de la maquette `#d9d9d9`. Tokens `chart/1`…, `chart/danger`, `chart/other`, `chart/elsewhere`.
+1. **Palette « graphique »** (révisée) : 5 couleurs de lieux en **nuances de vert Miff (assombri) et de bleu Miff** alternées, « autres lieux », **1 couleur de réserve**, toutes ≥ 3:1 contre la carte ; la **zone de danger** = `status/danger` exact ; « Ailleurs » = gris de la maquette `#d4d7df`. Tokens `chart/1`…, `chart/danger`, `chart/other`, `chart/elsewhere`.
 2. **Carte nominale** : 2 parts (gratuit), 4 parts, 5 lieux + « autres lieux » + « Ailleurs », **avec** la ligne « Zone de danger ».
 3. **Tous les états** de §7.
 4. **Menu du sélecteur** (7 / 14 / 30), iOS et Android.
