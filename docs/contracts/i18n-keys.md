@@ -1,7 +1,8 @@
 # Contrat — clés de traduction (Android et iOS)
 
 **Statut** : contrat partagé entre `android-dev` et `ios-dev`. Toute modification passe par une PR qui touche ce fichier.
-**Vérifié en CI** : `scripts/check-i18n-parity.mjs` (job `hygiene`, sur toute PR).
+**Vérifié en CI** : `scripts/check-i18n-parity.mjs` (job « Parité des clés de traduction » du workflow `hygiene`, sur toute PR).
+**Langues** : le registre `docs/contracts/i18n-languages.json` liste les langues et leur statut (`planned` ou `required`) ; ses règles, les contrôles par langue et la marche à suivre pour passer une langue en `required` sont dans `docs/contracts/i18n-languages.md`.
 
 ## Principe
 
@@ -9,8 +10,10 @@ Les deux apps utilisent **exactement les mêmes clés** pour les mêmes textes. 
 
 | Plateforme | Fichier source (français) | Autres langues |
 |---|---|---|
-| Android | `android/app/src/main/res/values-fr/strings.xml` | `values/strings.xml` = **anglais de repli** (ressources par défaut d'Android), `values-<langue>/` pour les autres |
-| iOS | `ios/**/Localizable.xcstrings` (String Catalog, langue source `fr`) | dans le même catalogue |
+| Android | `android/app/src/main/res/values-fr/strings.xml` | `values/strings.xml` = **anglais de repli** (ressources par défaut d'Android), `values-<langue>/strings.xml` pour les autres (`values-es`, `values-it`, `values-pt`, `values-de`) |
+| iOS | `ios/**/Localizable.xcstrings` (String Catalog, langue source `fr`) | dans le même catalogue (une localisation par langue : `en`, `es`, `it`, `pt`, `de`) ; `InfoPlist.xcstrings` pour les textes système |
+
+Le français reste la référence : le script compare **chaque langue du registre** au français (mêmes clés, mêmes valeurs insérées, pluriels complets, échappements, espaces insécables, marques de genre, vouvoiement, longueurs), sur Android et iOS. Une langue `required` bloque la CI, une langue `planned` avertit seulement.
 
 ## Format d'une clé
 
@@ -55,7 +58,9 @@ Les clés `ios_` et `android_` sont ignorées par le contrôle de parité. Un pr
 
 - Ton bienveillant, non anxiogène (voir `CLAUDE.md`) : valable pour les messages d'erreur et les notifications.
 - Pluriels : mécanisme de la plateforme (`<plurals>` Android, variations de pluriel du String Catalog iOS) **avec la même clé**. Jamais de `(s)` ni de `if count == 1` dans le code.
-- Variables dans une phrase : paramètres positionnels (`%1$s` côté Android, `%1$@` côté iOS) pour permettre de changer l'ordre selon la langue. Le script de parité compare les **clés**, pas les paramètres : la revue de code vérifie que les deux plateformes passent les mêmes valeurs dans le même ordre.
+- Variables dans une phrase : paramètres positionnels (`%1$s` côté Android, `%1$@` côté iOS) pour permettre de changer l'ordre selon la langue. Le script de parité compare, pour chaque langue, les **valeurs insérées** au français de la même plateforme (position et type : `%1$s` = `%1$@`, `%2$d` = `%2$lld`, `%2$02d` = `%2$02lld`, l'ordre dans la phrase est libre) ; la revue de code vérifie que les deux plateformes passent les mêmes valeurs dans le même ordre.
+- Pluriels : `one` et `other` obligatoires dans toutes les langues ; `many` autorisée en fr, es, it et pt (écrite identique à `other` quand le français l'écrit), jamais exigée ; en allemand et en anglais, seulement `one` et `other`. La forme `one` peut ne pas contenir le nombre (« Un membre »), pas les autres.
+- Pas de marque de genre (`(e)`, `o/a`, `@`) en es, it, pt, de ; tutoiement partout ; espaces insécables du français conservées dans les durées (`countdown_duration_*`) ; pas d'espace avant `? ! : ;` hors français. Le reste est fixé par le glossaire `docs/i18n/glossaire.md` et le guide de style `docs/i18n/guide-de-style.md`.
 - Dates, heures relatives (« il y a 12 min »), nombres : formateurs du système, jamais de texte construit à la main.
 - Une ressource qui ne se traduit pas (nom de marque) : `translatable="false"` côté Android, `"shouldTranslate": false` côté iOS (ignorée par le contrôle).
 - Mise en page : début/fin, jamais gauche/droite (préparation de l'écriture droite-à-gauche).
@@ -63,5 +68,7 @@ Les clés `ios_` et `android_` sont ignorées par le contrôle de parité. Un pr
 ## Ajouter ou modifier un texte
 
 1. Ajouter la clé **dans les deux fichiers sources français** dans la même PR (ou la même série de PR, si Android précède iOS : le contrôle de parité n'est alors actif que lorsque les deux fichiers existent ; dès qu'ils existent tous les deux, une clé ajoutée d'un seul côté fait échouer la CI).
-2. Ajouter la traduction anglaise (ou laisser la clé marquée « à traduire » dans l'outil de la plateforme, puis la compléter avant la recette).
-3. Ne jamais renommer une clé sans la renommer partout.
+2. Ajouter la traduction anglaise (langue `required` : une clé sans anglais fait échouer la CI).
+3. **Règle permanente : toute nouvelle clé arrive dans toutes les langues `required` du registre, dans la PR qui l'introduit.** Aujourd'hui `fr` et `en` ; **dès que `es`, `it`, `pt` et `de` sont toutes `required`, dans les six langues**, y compris dans les PR de fonctionnalité, en suivant le glossaire. Tant qu'une langue est `planned`, la CI affiche seulement le décompte de ses clés manquantes. Détail et marche à suivre : `docs/contracts/i18n-languages.md`.
+4. **Clé commune aux deux plateformes** (dès les langues `required`) : la traduire **une seule fois** et copier la même valeur dans Android et iOS (mêmes valeurs insérées, mêmes pluriels). Le fichier d'échange qui porte ces traductions pour la traduction en masse (lot 4 du ticket `docs/tickets/traduction-es-it-pt-de.md`) **n'existe pas encore** : la section est à compléter par la PR qui le crée.
+5. Ne jamais renommer une clé sans la renommer partout (toutes langues, Android et iOS).
