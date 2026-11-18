@@ -1371,10 +1371,10 @@
     <string name="alert_banner_body">Hold for 5 seconds to end the alert if you\'re no longer in danger.</string>
     <string name="alert_banner_sending">Sending your alert to the Miff “%1$s”…</string>
     <string name="alert_banner_waiting">Waiting to be sent</string>
-    <string name="alert_banner_needs_confirmation">Your alert is waiting for your confirmation.</string>
-    <string name="alert_banner_refused">Your alert didn\'t go. Tap “Call” to send it again.</string>
-    <string name="alert_banner_quota">The daily alert limit is reached. If you\'re in danger, tap “Call” to reach the emergency services.</string>
-    <string name="alert_banner_end_pending">End waiting to be sent</string>
+    <string name="alert_banner_needs_confirmation">Your alert hasn\'t gone for a while: it\'s waiting for your decision.</string>
+    <string name="alert_banner_refused">Your alert didn\'t go. Tap “Try again” to send it again.</string>
+    <string name="alert_banner_quota">The limit of 3 alerts a day is reached. If you\'re in danger, open the emergency numbers.</string>
+    <string name="alert_banner_end_pending">Ending the alert: waiting for a connection</string>
     <string name="alert_banner_call">Call</string>
     <string name="alert_banner_see_miff">See the Miff “%1$s”</string>
     <string name="alert_banner_end_action">End the alert</string>
@@ -1390,4 +1390,15 @@
     <string name="notif_alert_end_body">%1$s said they\'re okay.</string>
     <string name="android_notif_channel_alerts">Alerts from a loved one</string>
     <string name="android_notif_channel_alerts_desc">When a loved one declares an alert in one of your Miffs.</string>
+    <string name="alert_banner_title_no_name">You alerted the people of your Miff.</string>
+    <string name="alert_banner_sending_no_name">Sending your alert…</string>
+    <string name="alert_banner_emergency">Emergency numbers</string>
+    <string name="alert_banner_retry">Try again</string>
+    <string name="alert_banner_decide">Decide</string>
+    <string name="alert_banner_close_a11y">Close and give up sending the alert</string>
+    <string name="alert_ended_notice_no_name">Alert ended. Your people have been told.</string>
+    <string name="alert_already_active_no_name">An alert is already in progress.</string>
+    <string name="alert_confirm_end_body_no_name">Your people will be told you\'re ending it.</string>
+    <string name="alert_unavailable_title">The alert to your people isn\'t available right now. If you\'re in danger, call the emergency services directly.</string>
+    <string name="miff_alert_removed_warning">You have an alert in progress in this Miff: it will be removed, and your people won\'t be told it ended.</string>
 </resources>

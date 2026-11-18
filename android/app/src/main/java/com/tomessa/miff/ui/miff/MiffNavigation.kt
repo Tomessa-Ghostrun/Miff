@@ -1,8 +1,10 @@
 package com.tomessa.miff.ui.miff
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -18,6 +20,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.tomessa.miff.AppContainer
+import com.tomessa.miff.BuildConfig
+import com.tomessa.miff.data.alert.MyAlert
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.domain.analytics.AnalyticsEvent
 import com.tomessa.miff.ui.main.openSettings
@@ -27,6 +31,7 @@ import com.tomessa.miff.ui.place.ConsumeNoticeOnLeave
 import com.tomessa.miff.ui.place.PlaceDetailRoute
 import com.tomessa.miff.ui.place.PlaceFormRoute
 import com.tomessa.miff.ui.place.PlacesExtras
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 
@@ -197,20 +202,40 @@ fun NavGraphBuilder.miffScreenRoute(
         ConsumeNoticeOnLeave(container.placeNotices::consume)
         // LOC-2b (design 23B): this Miff waits for the agreement of the person.
         val waiting by container.awaitingAgreement.waiting.collectAsStateWithLifecycle()
-        MiffScreenHost(
-            viewModel = viewModel,
-            onBack = { navController.popBackStackIfSafe() },
-            agreementWaiting = route.miffId in waiting,
-            onReviewAgreement = container.awaitingAgreement::requestReview,
-            placesExtras =
-                PlacesExtras(
-                    premium = (directory as? DirectoryState.Ready)?.premiumOrNull,
-                    savedName = notice?.name,
-                    onOpenPlace = { place -> navController.openMiffRoute(PlaceDetailRoute(route.miffId, place.id)) },
-                    // Always the form: it relies on the SERVER for the plan and shows the offer itself at the real limit.
-                    onAddPlace = { navController.openMiffRoute(PlaceFormRoute(miffId = route.miffId)) },
-                ),
-        )
+        // ALERTE: an alert of mine in THIS Miff makes the dialogs of stopping the sharing, leaving and deleting warn that it will be removed (review of #275, M4).
+        val myAlert by (
+            if (BuildConfig.ALERT_DANGER) {
+                container.alertController.state
+            } else {
+                remember {
+                    MutableStateFlow<MyAlert>(
+                        MyAlert.None,
+                    )
+                }
+            }
+        ).collectAsStateWithLifecycle()
+        CompositionLocalProvider(
+            LocalAlertInThisMiff provides (BuildConfig.ALERT_DANGER && myAlert.miffId == route.miffId),
+        ) {
+            MiffScreenHost(
+                viewModel = viewModel,
+                onBack = { navController.popBackStackIfSafe() },
+                agreementWaiting = route.miffId in waiting,
+                onReviewAgreement = container.awaitingAgreement::requestReview,
+                placesExtras =
+                    PlacesExtras(
+                        premium = (directory as? DirectoryState.Ready)?.premiumOrNull,
+                        savedName = notice?.name,
+                        onOpenPlace = { place ->
+                            navController.openMiffRoute(PlaceDetailRoute(route.miffId, place.id))
+                        },
+                        // Always the form: it relies on the SERVER for the plan and shows the offer itself at the real limit.
+                        onAddPlace = {
+                            navController.openMiffRoute(PlaceFormRoute(miffId = route.miffId))
+                        },
+                    ),
+            )
+        }
     }
 }
 

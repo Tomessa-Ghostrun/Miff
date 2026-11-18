@@ -1,18 +1,17 @@
 package com.tomessa.miff.ui.alert
 
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerInputChange
@@ -42,10 +41,14 @@ class AlertHoldState {
     var armed by mutableStateOf(false)
         internal set
 
-    internal val bar = Animatable(0f)
+    private var elapsedFraction by mutableFloatStateOf(0f)
 
-    /** 0.0 to 1.0, the red bar that fills up (a straight line, no bounce); 0 while not armed. */
-    val progress: Float get() = if (armed) bar.value else 0f
+    internal fun setFraction(value: Float) {
+        elapsedFraction = value
+    }
+
+    /** 0.0 to 1.0, the red bar that fills up, worked out from the TIME held (not from an animation); 0 while not armed. */
+    val progress: Float get() = if (armed) elapsedFraction else 0f
 }
 
 /**
@@ -74,13 +77,18 @@ fun Modifier.alertHoldGesture(
     // The app goes to the background, or the window loses the focus (an incoming call, a window of the system): an armed gesture is cancelled without a word.
     LifecycleEventEffect(Lifecycle.Event.ON_PAUSE) { state.reset() }
     LaunchedEffect(windowFocused) { if (!windowFocused) state.reset() }
-    // The red bar: linear, no bounce, the same end state with or without animations (reduced motion changes nothing here: it only ever fills in a straight line).
+    // The red bar is the TIME held, read at each frame: it fills in a straight line, and "supprimer les animations" (animator scale 0) cannot make it jump to 100 % while the person has
+    // only held for a second: the fraction never comes from an animation (review of #275, m6).
     LaunchedEffect(state.armed) {
+        state.setFraction(0f)
         if (state.armed) {
-            state.bar.snapTo(0f)
-            state.bar.animateTo(1f, tween(durationMillis = holdMillis.toInt(), easing = LinearEasing))
-        } else {
-            state.bar.snapTo(0f)
+            var start = -1L
+            while (true) {
+                withFrameMillis { now ->
+                    if (start < 0) start = now
+                    state.setFraction(((now - start).toFloat() / holdMillis.toFloat()).coerceIn(0f, 1f))
+                }
+            }
         }
     }
     // The crescendo of short haptics (they get closer), while armed.
@@ -99,6 +107,9 @@ fun Modifier.alertHoldGesture(
         if (!enabled) return@pointerInput
         awaitEachGesture {
             val down = awaitFirstDown(requireUnconsumed = ignoreConsumed)
+            // The touch is OURS from here: consumed like a plain click would (review of #275, m2): the double tap that switches the camera, a parent of the shutter, must never see
+            // two quick photos as its own double tap.
+            down.consume()
             val origin = down.position
 
             fun PointerInputChange.tooFar(): Boolean =
@@ -114,6 +125,7 @@ fun Modifier.alertHoldGesture(
                     var result = Ended.CANCELLED
                     while (true) {
                         val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
+                        change.consume()
                         if (!change.pressed) {
                             result = Ended.RELEASED
                             break

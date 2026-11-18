@@ -234,6 +234,7 @@ fun UpdateTab(
                             permissionLauncher.launch(Manifest.permission.CAMERA)
                         },
                     tertiary = stringResource(R.string.update_permission_not_now) to actions.onClose,
+                    emergency = alert?.let { hooks -> { hooks.onOpenEmergency(false) } },
                 )
             }
 
@@ -246,6 +247,7 @@ fun UpdateTab(
                         stringResource(R.string.update_action_retry) to
                             { permissionLauncher.launch(Manifest.permission.CAMERA) },
                     tertiary = stringResource(R.string.update_permission_not_now) to actions.onClose,
+                    emergency = alert?.let { hooks -> { hooks.onOpenEmergency(false) } },
                 )
             }
 
@@ -257,6 +259,7 @@ fun UpdateTab(
                     primary = stringResource(R.string.update_action_open_settings) to openSettings,
                     // No "camera application of the phone" here: Android refuses to start it from an app that declares CAMERA and was not granted it.
                     tertiary = stringResource(R.string.update_action_close) to actions.onClose,
+                    emergency = alert?.let { hooks -> { hooks.onOpenEmergency(false) } },
                 )
             }
 
@@ -278,6 +281,7 @@ fun UpdateTab(
                             null
                         },
                     tertiary = stringResource(R.string.update_action_close) to actions.onClose,
+                    emergency = alert?.let { hooks -> { hooks.onOpenEmergency(false) } },
                 )
             }
 
@@ -288,6 +292,7 @@ fun UpdateTab(
                     body = stringResource(R.string.update_stopped_body),
                     primary = stringResource(R.string.update_action_resume_sharing) to actions.onResumeSharing,
                     tertiary = stringResource(R.string.update_action_close) to actions.onClose,
+                    emergency = alert?.let { hooks -> { hooks.onOpenEmergency(true) } },
                 )
             }
 
@@ -330,6 +335,8 @@ private fun PopInStage(
     primary: Pair<String, () -> Unit>,
     tertiary: Pair<String, () -> Unit>,
     secondary: Pair<String, () -> Unit>? = null,
+    /** ALERTE: a way to the emergency numbers from a screen where the viewfinder (so the gesture) is not there (review of #275, M3b). Null while the function is off. */
+    emergency: (() -> Unit)? = null,
 ) {
     Box(
         modifier =
@@ -391,6 +398,15 @@ private fun PopInStage(
                 }
                 TextButton(onClick = tertiary.second, modifier = Modifier.heightIn(min = Spacing.minTouchTarget)) {
                     Text(text = tertiary.first, style = textBodyBold14, color = colorActionPrimary)
+                }
+                emergency?.let {
+                    TextButton(onClick = it, modifier = Modifier.heightIn(min = Spacing.minTouchTarget)) {
+                        Text(
+                            text = stringResource(R.string.alert_call_emergency_link),
+                            style = textBodyBold14,
+                            color = colorActionPrimary,
+                        )
+                    }
                 }
             }
         }

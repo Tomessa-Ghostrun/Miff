@@ -121,6 +121,7 @@ class AlertController(
     val events: SharedFlow<AlertEvent> = mutableEvents.asSharedFlow()
 
     private var job: Job? = null
+    private var verifyJob: Job? = null
 
     /** Picks up what the pointer says (a relaunch of the app): an alert on its way goes on, an active one comes back. Idempotent. */
     fun restore() {
@@ -131,6 +132,11 @@ class AlertController(
             PointerPhase.SENDING -> {
                 mutableState.value = MyAlert.Sending(pointer.miffId, pointer.armedAtMillis, SendStep.WAITING_NETWORK)
                 launchSend(pointer.miffId, pointer.armedAtMillis, pointer.staleConfirmed)
+            }
+
+            PointerPhase.ABANDONED -> {
+                // Closed by the person, but the server has not yet confirmed that nothing is alive there.
+                launchVerifyAbandoned(pointer.miffId)
             }
 
             PointerPhase.ACTIVE -> {
@@ -149,7 +155,12 @@ class AlertController(
     fun trigger(miffId: String): TriggerResult {
         if (currentUid() == null) return TriggerResult.NotSignedIn
         val current = mutableState.value
-        current.miffId?.let { return TriggerResult.AlreadyActive(it) }
+        // An alert that is only waiting for a decision (refused, the daily limit, older than 15 minutes) does not forbid a new one: it is abandoned, and the new start adopts the old
+        // one if it did land. One that is on its way or in progress does (D14).
+        val stuck =
+            (current as? MyAlert.Sending)?.step in setOf(SendStep.REFUSED, SendStep.QUOTA, SendStep.NEEDS_CONFIRMATION)
+        if (!stuck) current.miffId?.let { return TriggerResult.AlreadyActive(it) }
+        verifyJob?.cancel()
         val now = nowMillis()
         local.save(AlertPointer(miffId, PointerPhase.SENDING, now))
         mutableState.value = MyAlert.Sending(miffId, now, SendStep.SENDING)
@@ -188,11 +199,59 @@ class AlertController(
         launchSend(current.miffId, current.armedAtMillis, confirmed = true)
     }
 
-    /** "Annuler": an alert that is waiting (no network, refused, older than 15 min) is dropped. Not while a write is under way (it could still land). */
+    /**
+     * "Annuler" / the cross of the banner: an alert that is waiting (no network, refused, the daily limit, older than 15 min) is ABANDONED. Not while a write is under way (it could
+     * still land). The person is free at once (nothing is shown, a new alert may start, no credit is spent or given back), but the local pointer is only erased once the SERVER has
+     * said that no alert of mine is in progress in that Miff (review of #275, m1): a start that timed out may have landed; if it did, the alert becomes ACTIVE here (the banner and the
+     * end take over). Offline, the check waits for the network.
+     */
     fun cancelPending() {
         val current = mutableState.value as? MyAlert.Sending ?: return
         if (current.step == SendStep.SENDING) return
-        drop()
+        job?.cancel()
+        job = null
+        local.save(AlertPointer(current.miffId, PointerPhase.ABANDONED, current.armedAtMillis))
+        mutableState.value = MyAlert.None
+        launchVerifyAbandoned(current.miffId)
+    }
+
+    private fun launchVerifyAbandoned(miffId: String) {
+        verifyJob?.cancel()
+        verifyJob =
+            scope.launch {
+                var attempt = 0
+                while (attempt < MAX_VERIFY_ATTEMPTS) {
+                    val uid = currentUid() ?: return@launch
+                    if (!network.isOnline()) {
+                        network.onlineChanges().first { it }
+                        continue
+                    }
+                    when (val read = store.readMine(uid, miffId)) {
+                        is MineRead.Value -> {
+                            // A new alert may have started meanwhile: it owns the pointer now.
+                            if (mutableState.value !is MyAlert.None) return@launch
+                            val doc = read.doc
+                            val now = nowMillis()
+                            if (doc != null && doc.isLive(now)) {
+                                activate(
+                                    miffId,
+                                    doc.startedAtMillis ?: now,
+                                    doc.expiresAtMillis,
+                                    armedAt =
+                                        doc.startedAtMillis ?: now,
+                                )
+                            } else {
+                                local.clearPointer()
+                            }
+                            return@launch
+                        }
+
+                        MineRead.Unavailable -> {
+                            delay(pauseFor(attempt++))
+                        }
+                    }
+                }
+            }
     }
 
     /** The end of the alert (5 s held on the banner, or the confirmation of the accessibility action). */
@@ -219,7 +278,12 @@ class AlertController(
      * The Miffs of the person are known: an alert whose Miff is no longer one of them (left, removed, deleted) is gone with it. The server deleted the document in the same lot as
      * the departure, the removal or the deletion (nothing to write here).
      */
-    fun onMiffsKnown(miffIds: Collection<String>) {
+    fun onMiffsKnown(
+        miffIds: Collection<String>,
+        authoritative: Boolean = true,
+    ) {
+        // A list read from the cache of the phone, or a transient one, never ends an alert (review of #275, m8): only a list the server confirmed does.
+        if (!authoritative) return
         val miffId = mutableState.value.miffId ?: return
         if (miffIds.isNotEmpty() && miffId !in miffIds) drop()
     }
@@ -489,11 +553,16 @@ class AlertController(
     fun onSessionEnded() {
         job?.cancel()
         job = null
+        verifyJob?.cancel()
+        verifyJob = null
         mutableState.value = MyAlert.None
     }
 
     companion object {
         /** The pauses between two attempts when the network is there but the server does not answer: bounded, never a tight loop (the 15 minutes end it anyway). */
         val DEFAULT_RETRY_PAUSES_MILLIS = listOf(5_000L, 15_000L, 30_000L, 60_000L, 120_000L)
+
+        /** The check that follows an abandoned alert tries this many times (the pointer stays, and the next opening of the app checks again). */
+        const val MAX_VERIFY_ATTEMPTS = 8
     }
 }

@@ -12,7 +12,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -24,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -65,6 +69,8 @@ const val ALERT_ARMED_TAG = "alert_armed"
 const val ALERT_BANNER_TAG = "alert_banner"
 const val ALERT_BANNER_CALL_TAG = "alert_banner_call"
 const val ALERT_BANNER_SEE_TAG = "alert_banner_see_miff"
+const val ALERT_BANNER_RETRY_TAG = "alert_banner_retry"
+const val ALERT_BANNER_CLOSE_TAG = "alert_banner_close"
 
 /** How long the blue bubble stays on its own (ticket 7.1: it must not cover the viewfinder at every opening). */
 const val ALERT_HINT_MILLIS = 6_000L
@@ -237,13 +243,15 @@ fun AlertStartConfirmDialog(
 
 @Composable
 fun AlertEndConfirmDialog(
-    miffName: String,
+    miffName: String?,
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
 ) {
     MiffConfirmDialog(
         title = stringResource(R.string.alert_confirm_end_title),
-        body = stringResource(R.string.alert_confirm_end_body, miffName),
+        body =
+            miffName?.let { stringResource(R.string.alert_confirm_end_body, it) }
+                ?: stringResource(R.string.alert_confirm_end_body_no_name),
         confirmLabel = stringResource(R.string.alert_confirm_end_action),
         cancelLabel = stringResource(R.string.alert_confirm_end_keep),
         onConfirm = onConfirm,
@@ -254,54 +262,61 @@ fun AlertEndConfirmDialog(
 // --- The banner (maquette 05) ----------------------------------------------------------------------------------------------------------------
 
 /**
- * The banner of an alert in progress, above the tab bar, on every tab (ticket 7.4). It always names the Miff the alert went to. Holding the body for 5 seconds ends the alert (a
- * veil fills from the start, the same haptics); "Appeler" reopens the screen of the call; "Voir la Miff {nom}" shows the Miff of origin when the Feed shows another one.
- * It has no cross: it goes when the alert ends or expires. While the alert is still on its way or the end waits for the network, it says so, in a calm line.
+ * The banner of an alert, above the tab bar, on every tab (ticket 7.4). It names the Miff the alert went to (or says "ta Miff" when the name is not known yet, after a relaunch).
+ * ACTIVE: holding the body for 5 seconds ends the alert (a veil fills from the start, the same haptics); "Appeler" reopens the screen of the call; "Voir la Miff {nom}" shows the
+ * Miff of origin when the Feed shows another one. It has no cross: it goes when the alert ends or expires.
+ * NOT ACTIVE on the server (waiting for the network, refused, the daily limit, waiting for a confirmation): it says so calmly, offers "Réessayer" when retrying makes sense and
+ * "Numéros d'urgence", and has a CROSS ("Fermer", 48 dp, named for a screen reader) that gives the sending up: nothing is shown any more, nothing is spent or given back, the person
+ * may start again (the pointer is only erased once the server confirmed that no alert of mine is alive, see AlertController.cancelPending).
  *
  * Screen reader: a polite region announced once, and the action "Terminer l'alerte" (confirmation in two steps) replaces the hold.
  */
 @Composable
 fun AlertBanner(
     alert: MyAlert,
-    miffName: String,
+    miffName: String?,
     showSeeMiff: Boolean,
     onCall: () -> Unit,
     onSeeMiff: () -> Unit,
     onEndRequested: () -> Unit,
     onEndAccessible: () -> Unit,
     modifier: Modifier = Modifier,
+    onRetry: () -> Unit = {},
+    onClose: () -> Unit = {},
 ) {
     if (alert is MyAlert.None) return
     val state = remember { AlertHoldState() }
+    val sending = alert as? MyAlert.Sending
     val endable = alert is MyAlert.Active && alert.end != EndStep.ENDING
+    // The cross: only where the alert is not active on the server and nothing is in flight (a write under way could still land).
+    val closable = sending != null && sending.step != SendStep.SENDING
+    val name = miffName?.takeIf { it.isNotBlank() }
     val title =
-        when (alert) {
-            is MyAlert.Sending -> stringResource(R.string.alert_banner_sending, miffName)
-            else -> stringResource(R.string.alert_banner_title, miffName)
+        when {
+            sending != null && name != null -> stringResource(R.string.alert_banner_sending, name)
+            sending != null -> stringResource(R.string.alert_banner_sending_no_name)
+            name != null -> stringResource(R.string.alert_banner_title, name)
+            else -> stringResource(R.string.alert_banner_title_no_name)
         }
     val note =
         when {
-            alert is MyAlert.Sending && alert.step == SendStep.WAITING_NETWORK -> {
-                stringResource(
-                    R.string.alert_banner_waiting,
-                )
+            sending?.step == SendStep.WAITING_NETWORK -> {
+                stringResource(R.string.alert_banner_waiting)
             }
 
-            alert is MyAlert.Sending && alert.step == SendStep.NEEDS_CONFIRMATION -> {
-                stringResource(
-                    R.string.alert_banner_needs_confirmation,
-                )
+            sending?.step == SendStep.NEEDS_CONFIRMATION -> {
+                stringResource(R.string.alert_banner_needs_confirmation)
             }
 
-            alert is MyAlert.Sending && alert.step == SendStep.REFUSED -> {
+            sending?.step == SendStep.REFUSED -> {
                 stringResource(R.string.alert_banner_refused)
             }
 
-            alert is MyAlert.Sending && alert.step == SendStep.QUOTA -> {
+            sending?.step == SendStep.QUOTA -> {
                 stringResource(R.string.alert_banner_quota)
             }
 
-            alert is MyAlert.Sending -> {
+            sending != null -> {
                 null
             }
 
@@ -348,7 +363,12 @@ fun AlertBanner(
             )
         }
         Column(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s + Spacing.xs),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(start = Spacing.m, top = Spacing.s + Spacing.xs, bottom = Spacing.s + Spacing.xs)
+                    // Room for the cross (48 dp) when there is one.
+                    .padding(end = if (closable) Spacing.minTouchTarget else Spacing.m),
             verticalArrangement = Arrangement.spacedBy(Spacing.xs),
         ) {
             Text(
@@ -362,18 +382,51 @@ fun AlertBanner(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.m),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                if (sending?.step == SendStep.REFUSED) {
+                    BannerAction(
+                        stringResource(R.string.alert_banner_retry),
+                        onRetry,
+                        Modifier.testTag(ALERT_BANNER_RETRY_TAG),
+                    )
+                }
+                // "Appeler" is for the people of the Miff once the alert is active; before, what the screen offers is the numbers of emergency (and, for a waiting confirmation, the question).
                 BannerAction(
-                    stringResource(R.string.alert_banner_call),
+                    stringResource(
+                        when (sending?.step) {
+                            null -> R.string.alert_banner_call
+                            SendStep.NEEDS_CONFIRMATION -> R.string.alert_banner_decide
+                            else -> R.string.alert_banner_emergency
+                        },
+                    ),
                     onCall,
                     Modifier.testTag(ALERT_BANNER_CALL_TAG),
                 )
-                if (showSeeMiff) {
+                if (showSeeMiff && name != null) {
                     BannerAction(
-                        stringResource(R.string.alert_banner_see_miff, miffName),
+                        stringResource(R.string.alert_banner_see_miff, name),
                         onSeeMiff,
                         Modifier.testTag(ALERT_BANNER_SEE_TAG),
                     )
                 }
+            }
+        }
+        if (closable) {
+            val close = stringResource(R.string.alert_banner_close_a11y)
+            IconButton(
+                onClick = onClose,
+                modifier =
+                    Modifier
+                        .align(
+                            Alignment.TopEnd,
+                        ).size(Spacing.minTouchTarget)
+                        .testTag(ALERT_BANNER_CLOSE_TAG),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_loc_close),
+                    contentDescription = close,
+                    tint = colorOnAlert,
+                    modifier = Modifier.size(20.dp),
+                )
             }
         }
     }

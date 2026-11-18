@@ -10,7 +10,16 @@ import android.content.Context
  */
 
 /** The phase of the pointer: the alert is on its way, or it is in progress. */
-enum class PointerPhase { SENDING, ACTIVE }
+enum class PointerPhase {
+    SENDING,
+    ACTIVE,
+
+    /**
+     * The person closed an alert that was waiting or refused: nothing is shown any more, but the pointer stays until the SERVER has said that no alert of mine is in progress there (a write
+     * that timed out may still have landed): see [AlertController.cancelPending].
+     */
+    ABANDONED,
+}
 
 /** What is kept. [startedAtMillis] and [expiresAtMillis] only exist once the alert is active. */
 class AlertPointer(

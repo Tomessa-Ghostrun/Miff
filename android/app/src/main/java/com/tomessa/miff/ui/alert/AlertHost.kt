@@ -1,6 +1,7 @@
 package com.tomessa.miff.ui.alert
 
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,15 +38,17 @@ class AlertUpdateHooks(
     val bannerInset: Dp,
     /** The 5 seconds were held (or the accessible confirmation was given). */
     val onTrigger: () -> Unit,
-    /** "Une alerte est déjà en cours pour la Miff {nom}". */
+    /** "Une alerte est déjà en cours pour la Miff {nom}" ([miffName] is empty when the name is not known). */
     val onAlreadyActive: (miffName: String) -> Unit,
+    /** The emergency numbers from a screen without a viewfinder; [stopped]: my sharing in the Miff is stopped (the screen then offers to resume). */
+    val onOpenEmergency: (stopped: Boolean) -> Unit = {},
 )
 
 /** What the tabs need to host the banner and to open the screen of the call. */
 class AlertHost(
     val viewModel: AlertViewModel,
-    /** Opens the screen of the call; [stopped]: I do not share with that Miff, the alert did not leave (ticket 12.2). */
-    val onOpenSent: (miffId: String, stopped: Boolean) -> Unit,
+    /** Opens the screen of the call; [stopped]: I do not share with that Miff, the alert did not leave (ticket 12.2); [unavailable]: no alert can be sent now, only the numbers. */
+    val onOpenSent: (miffId: String, stopped: Boolean, unavailable: Boolean) -> Unit,
 )
 
 /** The screen "avertis" (maquettes 03 and 06): the Miff of origin, and whether it is the calm variant of a stopped sharing. */
@@ -53,6 +56,8 @@ class AlertHost(
 data class AlertSentRoute(
     val miffId: String,
     val stopped: Boolean = false,
+    /** No alert can be sent now (the Miffs are not known yet, the camera is not available): only the emergency numbers, with a calm sentence (review of #275, M3). */
+    val unavailable: Boolean = false,
 )
 
 /**
@@ -83,11 +88,12 @@ fun AlertSentHost(
     }
     // The alert is gone (cancelled while waiting, or its phone was replaced) and nothing explains it: back to where the person was, without a word.
     LaunchedEffect(alert is MyAlert.None, notSent) {
-        if (alert is MyAlert.None && !notSent) onBack()
+        if (alert is MyAlert.None && !notSent && !route.unavailable) onBack()
     }
     val sending = alert as? MyAlert.Sending
     val phase =
         when {
+            route.unavailable -> SentPhase.UNAVAILABLE
             notSent -> SentPhase.SHARING_STOPPED
             alert is MyAlert.Active -> SentPhase.SENT
             sending?.step == SendStep.WAITING_NETWORK -> SentPhase.WAITING
@@ -98,6 +104,12 @@ fun AlertSentHost(
         }
     // The daily limit is reached: the emergency services are the choice already made (never left without a way out).
     LaunchedEffect(phase, call) { if (phase == SentPhase.QUOTA && call is CallState.Ready) viewModel.selectEmergency() }
+    // After the daily limit nothing is left to retry: leaving the screen leaves nothing behind either (no "déjà en cours" that is not true), review of #275, m3.
+    val leave = {
+        if (phase == SentPhase.QUOTA) viewModel.onCancelPending()
+        onBack()
+    }
+    BackHandler(enabled = phase == SentPhase.QUOTA) { leave() }
     AlertSentScreen(
         phase = phase,
         miffName = miffName,
@@ -106,7 +118,7 @@ fun AlertSentHost(
         modifier = modifier,
         actions =
             AlertSentActions(
-                onBack = onBack,
+                onBack = leave,
                 onSelect = viewModel::select,
                 onCall = { target ->
                     if (!dial(
@@ -148,9 +160,11 @@ private fun dial(
 fun AlertLifecycle(
     viewModel: AlertViewModel,
     miffIds: List<String>,
+    /** The list comes from the server (not the cache of the phone): only then may it end an alert whose Miff is not in it. */
+    authoritative: Boolean = true,
 ) {
     LaunchedEffect(viewModel) { viewModel.restore() }
-    LaunchedEffect(miffIds) { if (miffIds.isNotEmpty()) viewModel.onMiffsKnown(miffIds) }
+    LaunchedEffect(miffIds, authoritative) { if (miffIds.isNotEmpty()) viewModel.onMiffsKnown(miffIds, authoritative) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     // Each return to the front (and the first opening): an alert past its date goes, an active one is checked against the server once.
     androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {

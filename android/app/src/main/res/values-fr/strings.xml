@@ -1354,10 +1354,10 @@
     <string name="alert_banner_body">Maintiens 5 secondes pour terminer l\'alerte si tu n\'es plus en danger.</string>
     <string name="alert_banner_sending">Envoi de ton alerte à la Miff %1$s…</string>
     <string name="alert_banner_waiting">En attente d\'envoi</string>
-    <string name="alert_banner_needs_confirmation">Ton alerte attend ta confirmation.</string>
-    <string name="alert_banner_refused">Ton alerte n\'est pas partie. Touche « Appeler » pour la renvoyer.</string>
-    <string name="alert_banner_quota">La limite d\'alertes du jour est atteinte. Si tu es en danger, touche « Appeler » pour joindre les secours.</string>
-    <string name="alert_banner_end_pending">Fin en attente d\'envoi</string>
+    <string name="alert_banner_needs_confirmation">Ton alerte n\'est pas partie depuis un moment : elle attend ta décision.</string>
+    <string name="alert_banner_refused">Ton alerte n\'est pas partie. Touche « Réessayer » pour la renvoyer.</string>
+    <string name="alert_banner_quota">La limite de 3 alertes par jour est atteinte. Si tu es en danger, ouvre les numéros d\'urgence.</string>
+    <string name="alert_banner_end_pending">Fin de l\'alerte en attente de connexion</string>
     <string name="alert_banner_call">Appeler</string>
     <string name="alert_banner_see_miff">Voir la Miff %1$s</string>
     <string name="alert_banner_end_action">Terminer l\'alerte</string>
@@ -1373,4 +1373,15 @@
     <string name="notif_alert_end_body">%1$s a indiqué que tout va bien.</string>
     <string name="android_notif_channel_alerts">Alertes d\'un proche</string>
     <string name="android_notif_channel_alerts_desc">Quand un proche déclare une alerte dans l\'une de tes Miffs.</string>
+    <string name="alert_banner_title_no_name">Tu as alerté les proches de ta Miff.</string>
+    <string name="alert_banner_sending_no_name">Envoi de ton alerte…</string>
+    <string name="alert_banner_emergency">Numéros d\'urgence</string>
+    <string name="alert_banner_retry">Réessayer</string>
+    <string name="alert_banner_decide">Décider</string>
+    <string name="alert_banner_close_a11y">Fermer et abandonner l\'envoi de l\'alerte</string>
+    <string name="alert_ended_notice_no_name">Alerte terminée. Tes proches ont été prévenus.</string>
+    <string name="alert_already_active_no_name">Une alerte est déjà en cours.</string>
+    <string name="alert_confirm_end_body_no_name">Tes proches seront informés que tu y mets fin.</string>
+    <string name="alert_unavailable_title">L\'alerte à tes proches n\'est pas disponible pour le moment. Si tu es en danger, appelle directement les secours.</string>
+    <string name="miff_alert_removed_warning">Tu as une alerte en cours dans cette Miff : elle sera retirée, et tes proches ne seront pas prévenus de sa fin.</string>
 </resources>

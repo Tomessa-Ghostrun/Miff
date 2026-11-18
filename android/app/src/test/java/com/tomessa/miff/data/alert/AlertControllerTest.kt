@@ -255,9 +255,10 @@ class AlertControllerTest {
             w.controller.retry()
             runCurrent()
             assertEquals(1, w.store.startCalls.size)
-            // the person is never stuck: she can close it
+            // the person is never stuck: she can close it (the server confirms that nothing is alive, then the pointer goes)
             w.controller.cancelPending()
             assertTrue(w.controller.state.value is MyAlert.None)
+            runCurrent()
             assertNull(w.local.pointer())
         }
 
@@ -436,6 +437,123 @@ class AlertControllerTest {
             w.controller.restore()
             assertTrue(w.controller.state.value is MyAlert.None)
             assertNull(w.local.pointer())
+        }
+
+    // ---- giving up a sending (the cross of the banner), review of #275 m1 and the retour of the PM ----------------------------------
+
+    @Test
+    fun givingUpARefusedSending_freesThePersonAtOnce_andTheServerIsAskedBeforeThePointerGoes() =
+        runTest {
+            val w = world()
+            w.store.starts += StartResult.Failed(AlertFailure.Refused)
+            w.controller.trigger("miffA")
+            runCurrent()
+            w.controller.cancelPending()
+            // nothing is shown, but the pointer waits for the server's word
+            assertTrue(w.controller.state.value is MyAlert.None)
+            runCurrent()
+            assertEquals(listOf("miffA"), w.store.reads)
+            assertNull(w.local.pointer())
+            // no credit spent, none given back: nothing was written
+            assertEquals(1, w.store.startCalls.size)
+        }
+
+    @Test
+    fun givingUpASendingThatHadLanded_theAlertIsActiveAndTheBannerTakesOver() =
+        runTest {
+            val w = world()
+            w.store.starts += StartResult.Failed(AlertFailure.Offline)
+            w.controller.trigger("miffA")
+            runCurrent()
+            // the answer was lost but the write landed: the server holds a live alert
+            w.store.mine = MineRead.Value(AlertDoc("me", true, w.base + 1_000, w.base + 500_000, 1))
+            w.controller.cancelPending()
+            runCurrent()
+            val state = w.controller.state.value as MyAlert.Active
+            assertEquals("miffA", state.miffId)
+            assertEquals(PointerPhase.ACTIVE, w.local.pointer()?.phase)
+        }
+
+    @Test
+    fun givingUpOffline_thePointerStays_andTheServerIsAskedWhenTheNetworkReturns() =
+        runTest {
+            val w = world(online = false)
+            w.controller.trigger("miffA")
+            runCurrent()
+            w.controller.cancelPending()
+            runCurrent()
+            assertEquals(PointerPhase.ABANDONED, w.local.pointer()?.phase)
+            assertTrue(w.store.reads.isEmpty())
+            w.network.online.value = true
+            runCurrent()
+            assertEquals(listOf("miffA"), w.store.reads)
+            assertNull(w.local.pointer())
+        }
+
+    @Test
+    fun givingUp_theServerCannotBeReached_triesAgain_andARelaunchPicksTheCheckUp() =
+        runTest {
+            val w = world()
+            w.store.starts += StartResult.Failed(AlertFailure.Refused)
+            w.controller.trigger("miffA")
+            runCurrent()
+            w.store.mine = MineRead.Unavailable
+            w.controller.cancelPending()
+            runCurrent()
+            assertEquals(PointerPhase.ABANDONED, w.local.pointer()?.phase)
+            w.store.mine = MineRead.Value(null)
+            advanceTimeBy(6_000)
+            runCurrent()
+            assertNull(w.local.pointer())
+        }
+
+    @Test
+    fun anAbandonedPointerIsCheckedAtRelaunch() =
+        runTest {
+            val w = world()
+            w.local.save(AlertPointer("miffA", PointerPhase.ABANDONED, w.base))
+            w.controller.restore()
+            runCurrent()
+            assertEquals(listOf("miffA"), w.store.reads)
+            assertNull(w.local.pointer())
+        }
+
+    @Test
+    fun anAlertThatSentIsNotCloseable_whileAWriteIsInFlight() =
+        runTest {
+            val w = world()
+            w.controller.trigger("miffA")
+            // still SENDING (nothing ran yet): the cross does nothing
+            w.controller.cancelPending()
+            assertTrue(w.controller.state.value is MyAlert.Sending)
+        }
+
+    @Test
+    fun aRefusedAlertDoesNotForbidANewOne_butAWaitingOrActiveOneDoes() =
+        runTest {
+            val w = world()
+            w.store.starts += StartResult.Failed(AlertFailure.Refused)
+            w.controller.trigger("miffA")
+            runCurrent()
+            assertEquals(SendStep.REFUSED, (w.controller.state.value as MyAlert.Sending).step)
+            // a new hold is allowed (the daily limit and the rules decide, not the app)
+            assertEquals(TriggerResult.Started, w.controller.trigger("miffB"))
+            runCurrent()
+            assertEquals("miffB", (w.controller.state.value as MyAlert.Active).miffId)
+            // while one is active, a second never starts
+            assertTrue(w.controller.trigger("miffC") is TriggerResult.AlreadyActive)
+        }
+
+    @Test
+    fun aListNotConfirmedByTheServer_neverEndsAnAlert_review_m8() =
+        runTest {
+            val w = world()
+            w.controller.trigger("miffA")
+            runCurrent()
+            w.controller.onMiffsKnown(listOf("miffB"), authoritative = false)
+            assertTrue(w.controller.state.value is MyAlert.Active)
+            w.controller.onMiffsKnown(listOf("miffB"), authoritative = true)
+            assertTrue(w.controller.state.value is MyAlert.None)
         }
 
     @Test

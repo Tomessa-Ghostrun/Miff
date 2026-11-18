@@ -4,6 +4,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import androidx.core.app.NotificationManagerCompat
+import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.R
 import com.tomessa.miff.data.permission.DevicePermissions
 import com.tomessa.miff.data.permission.NotificationAskStore
@@ -66,7 +67,10 @@ object NotificationChannels {
      */
     const val ALERTS = "miff_alerts"
 
-    val all = listOf(REMINDERS, REMINDERS_QUIET, CIRCLE, CIRCLE_QUIET, UPDATES, UPDATES_QUIET, ALERTS)
+    /** Every channel THIS build creates: the alert channel only exists while the function is switched on (a distributed build without the function must not show an alert channel in the settings of the phone, and its importance can never be changed afterwards: review of #275, m4). */
+    val all =
+        listOf(REMINDERS, REMINDERS_QUIET, CIRCLE, CIRCLE_QUIET, UPDATES, UPDATES_QUIET) +
+            if (BuildConfig.ALERT_DANGER) listOf(ALERTS) else emptyList()
 
     fun idOf(
         family: NotificationFamily,
@@ -95,7 +99,7 @@ object NotificationChannels {
             enableVibration(vibration)
         }
         manager.createNotificationChannels(
-            listOf(
+            listOfNotNull(
                 channel(
                     REMINDERS,
                     R.string.android_notif_channel_reminders,
@@ -134,14 +138,18 @@ object NotificationChannels {
                     R.string.android_notif_channel_quiet_desc,
                     NotificationManager.IMPORTANCE_LOW,
                 ),
-                // ALERTE (decision of the PM, 2026-11-18, D18): high importance, sound and vibration as the phone is set; never a quiet version.
-                channel(
-                    ALERTS,
-                    R.string.android_notif_channel_alerts,
-                    R.string.android_notif_channel_alerts_desc,
-                    NotificationManager.IMPORTANCE_HIGH,
-                    vibration = true,
-                ),
+                // ALERTE (decision of the PM, 2026-11-18, D18): high importance, sound and vibration as the phone is set; never a quiet version. Only with the function on.
+                if (BuildConfig.ALERT_DANGER) {
+                    channel(
+                        ALERTS,
+                        R.string.android_notif_channel_alerts,
+                        R.string.android_notif_channel_alerts_desc,
+                        NotificationManager.IMPORTANCE_HIGH,
+                        vibration = true,
+                    )
+                } else {
+                    null
+                },
             ),
         )
     }

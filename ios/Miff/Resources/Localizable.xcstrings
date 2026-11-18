@@ -21950,13 +21950,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your alert is waiting for your confirmation."
+            "value": "Your alert hasn't gone for a while: it's waiting for your decision."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ton alerte attend ta confirmation."
+            "value": "Ton alerte n'est pas partie depuis un moment : elle attend ta décision."
           }
         }
       }
@@ -21967,13 +21967,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your alert didn't go. Tap “Call” to send it again."
+            "value": "Your alert didn't go. Tap “Try again” to send it again."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ton alerte n'est pas partie. Touche « Appeler » pour la renvoyer."
+            "value": "Ton alerte n'est pas partie. Touche « Réessayer » pour la renvoyer."
           }
         }
       }
@@ -21984,13 +21984,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The daily alert limit is reached. If you're in danger, tap “Call” to reach the emergency services."
+            "value": "The limit of 3 alerts a day is reached. If you're in danger, open the emergency numbers."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "La limite d'alertes du jour est atteinte. Si tu es en danger, touche « Appeler » pour joindre les secours."
+            "value": "La limite de 3 alertes par jour est atteinte. Si tu es en danger, ouvre les numéros d'urgence."
           }
         }
       }
@@ -22001,13 +22001,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "End waiting to be sent"
+            "value": "Ending the alert: waiting for a connection"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Fin en attente d'envoi"
+            "value": "Fin de l'alerte en attente de connexion"
           }
         }
       }
@@ -22229,6 +22229,193 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ a indiqué que tout va bien."
+          }
+        }
+      }
+    },
+    "alert_banner_title_no_name": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You alerted the people of your Miff."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu as alerté les proches de ta Miff."
+          }
+        }
+      }
+    },
+    "alert_banner_sending_no_name": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sending your alert…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoi de ton alerte…"
+          }
+        }
+      }
+    },
+    "alert_banner_emergency": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Emergency numbers"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Numéros d'urgence"
+          }
+        }
+      }
+    },
+    "alert_banner_retry": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Try again"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réessayer"
+          }
+        }
+      }
+    },
+    "alert_banner_decide": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Decide"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Décider"
+          }
+        }
+      }
+    },
+    "alert_banner_close_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Close and give up sending the alert"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fermer et abandonner l'envoi de l'alerte"
+          }
+        }
+      }
+    },
+    "alert_ended_notice_no_name": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alert ended. Your people have been told."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alerte terminée. Tes proches ont été prévenus."
+          }
+        }
+      }
+    },
+    "alert_already_active_no_name": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "An alert is already in progress."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une alerte est déjà en cours."
+          }
+        }
+      }
+    },
+    "alert_confirm_end_body_no_name": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your people will be told you're ending it."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tes proches seront informés que tu y mets fin."
+          }
+        }
+      }
+    },
+    "alert_unavailable_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The alert to your people isn't available right now. If you're in danger, call the emergency services directly."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L'alerte à tes proches n'est pas disponible pour le moment. Si tu es en danger, appelle directement les secours."
+          }
+        }
+      }
+    },
+    "miff_alert_removed_warning": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You have an alert in progress in this Miff: it will be removed, and your people won't be told it ended."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu as une alerte en cours dans cette Miff : elle sera retirée, et tes proches ne seront pas prévenus de sa fin."
           }
         }
       }

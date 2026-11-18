@@ -13,6 +13,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -133,7 +134,7 @@ fun MiffScreen(
                 stringResource(
                     if (stopping) R.string.miff_sharing_stop_title else R.string.miff_sharing_resume_title,
                 ),
-            body = if (stopping) stringResource(R.string.miff_sharing_stop_body) else null,
+            body = if (stopping) withAlertWarning(stringResource(R.string.miff_sharing_stop_body)) else null,
             content =
                 if (stopping) {
                     null
@@ -455,7 +456,7 @@ private fun MiffActionDialog(
         MiffAction.Leave -> {
             MiffConfirmDialog(
                 title = stringResource(R.string.miff_leave_title, state.name),
-                body = stringResource(R.string.miff_leave_body),
+                body = withAlertWarning(stringResource(R.string.miff_leave_body)),
                 confirmLabel = stringResource(R.string.miff_leave_action),
                 cancelLabel = cancel,
                 tone = DialogTone.SENSITIVE,
@@ -471,11 +472,17 @@ private fun MiffActionDialog(
             MiffConfirmDialog(
                 title = stringResource(R.string.miff_delete_title, state.name),
                 body =
-                    if (others) {
-                        pluralStringResource(R.plurals.miff_delete_body_others, action.othersCount, action.othersCount)
-                    } else {
-                        stringResource(R.string.miff_delete_body_alone)
-                    },
+                    withAlertWarning(
+                        if (others) {
+                            pluralStringResource(
+                                R.plurals.miff_delete_body_others,
+                                action.othersCount,
+                                action.othersCount,
+                            )
+                        } else {
+                            stringResource(R.string.miff_delete_body_alone)
+                        },
+                    ),
                 confirmLabel = stringResource(R.string.miff_delete_action),
                 cancelLabel = cancel,
                 tone = DialogTone.SENSITIVE,
@@ -558,3 +565,14 @@ private fun MiffDeletionDialog(
         }
     }
 }
+
+/**
+ * ALERTE (review of #275, M4; ticket 12.2): true while I have an alert in progress (or on its way) in THIS Miff. Stopping the sharing, leaving or deleting the Miff then removes the alert in
+ * the same lot (the rules require it), WITHOUT telling the people of the Miff that it ended: the dialog says so before the person confirms. False while the function is off.
+ */
+val LocalAlertInThisMiff = compositionLocalOf { false }
+
+/** The sentence of the question, and, when an alert of mine is in this Miff, the calm warning under it. */
+@Composable
+internal fun withAlertWarning(body: String): String =
+    if (LocalAlertInThisMiff.current) body + "\n\n" + stringResource(R.string.miff_alert_removed_warning) else body

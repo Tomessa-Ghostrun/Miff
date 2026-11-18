@@ -1,14 +1,18 @@
 package com.tomessa.miff.ui.alert
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -245,19 +249,24 @@ class AlertScreensTest {
     private var endAsked = 0
     private var endAccessible = 0
 
+    private var closed = 0
+
     private fun banner(
         alert: MyAlert,
         showSee: Boolean = false,
+        name: String? = "Family",
     ) {
         rule.setContent {
             AlertBanner(
                 alert = alert,
-                miffName = "Family",
+                miffName = name,
                 showSeeMiff = showSee,
                 onCall = { calledBanner++ },
                 onSeeMiff = { seen++ },
                 onEndRequested = { endAsked++ },
                 onEndAccessible = { endAccessible++ },
+                onRetry = { retried++ },
+                onClose = { closed++ },
             )
         }
     }
@@ -336,9 +345,9 @@ class AlertScreensTest {
     }
 
     @Test
-    fun anEndThatWaitsForTheNetwork_isSaid() {
+    fun anEndThatWaitsForTheNetwork_isSaid_inClearWords() {
         banner(MyAlert.Active("m", 1, 2, EndStep.WAITING_NETWORK))
-        rule.onNodeWithText("End waiting to be sent").assertIsDisplayed()
+        rule.onNodeWithText("Ending the alert: waiting for a connection").assertIsDisplayed()
     }
 
     @Test
@@ -346,7 +355,7 @@ class AlertScreensTest {
         banner(MyAlert.Sending("m", 1, SendStep.QUOTA))
         rule
             .onNodeWithText(
-                "The daily alert limit is reached. If you're in danger, tap “Call” to reach the emergency services.",
+                "The limit of 3 alerts a day is reached. If you're in danger, open the emergency numbers.",
             ).assertIsDisplayed()
     }
 
@@ -458,5 +467,137 @@ class AlertScreensTest {
         rule.mainClock.advanceTimeBy(6_000)
         assertEquals(0, done)
         assertEquals(1, cancelledHold)
+    }
+
+    // ---- the cross of the banner and the honest buttons (retour du PM) ------------------------------------------------------------------
+
+    @Test
+    fun aRefusedAlert_hasACross_aTryAgain_andTheEmergencyNumbers_andTheWordsDoNotSayCallToResend() {
+        banner(MyAlert.Sending("m", 1, SendStep.REFUSED))
+        rule.onNodeWithText("Your alert didn't go. Tap “Try again” to send it again.").assertIsDisplayed()
+        rule.onNodeWithTag(ALERT_BANNER_RETRY_TAG).performClick()
+        assertEquals(1, retried)
+        rule.onNodeWithText("Emergency numbers").performClick()
+        assertEquals(1, calledBanner)
+        rule.onNodeWithTag(ALERT_BANNER_CLOSE_TAG).performClick()
+        assertEquals(1, closed)
+        // nothing was ended, nothing sent
+        assertEquals(0, endAsked)
+    }
+
+    @Test
+    fun theCross_isNamedForAScreenReader_andIs48dpWide() {
+        banner(MyAlert.Sending("m", 1, SendStep.WAITING_NETWORK))
+        val node = rule.onNodeWithTag(ALERT_BANNER_CLOSE_TAG)
+        node.assertWidthIsAtLeast(48.dp).assertHeightIsAtLeast(48.dp)
+        val cross = rule.onNode(hasContentDescription("Close and give up sending the alert"))
+        cross.assertExists()
+    }
+
+    @Test
+    fun everyStateWhereTheAlertIsNotActiveOnTheServer_hasTheCross_exceptWhileAWriteIsInFlight() {
+        val steps = listOf(SendStep.WAITING_NETWORK, SendStep.REFUSED, SendStep.QUOTA, SendStep.NEEDS_CONFIRMATION)
+        steps.forEach { step ->
+            rule.setContent { AlertBanner(MyAlert.Sending("m", 1, step), "Family", false, {}, {}, {}, {}) }
+            rule.onNodeWithTag(ALERT_BANNER_CLOSE_TAG).assertExists()
+        }
+    }
+
+    @Test
+    fun noCrossWhileTheWriteIsInFlight_noCrossOnAnActiveAlert() {
+        banner(MyAlert.Sending("m", 1, SendStep.SENDING))
+        rule.onNodeWithTag(ALERT_BANNER_CLOSE_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun anActiveAlertHasNoCross() {
+        banner(active)
+        rule.onNodeWithTag(ALERT_BANNER_CLOSE_TAG).assertDoesNotExist()
+        rule.onNodeWithTag(ALERT_BANNER_RETRY_TAG).assertDoesNotExist()
+        rule.onNodeWithText("Call").assertExists()
+    }
+
+    @Test
+    fun theBannerNeverShowsAnEmptyName_afterARelaunch() {
+        banner(active, showSee = true, name = null)
+        rule.onNodeWithText("You alerted the people of your Miff.").assertIsDisplayed()
+        // "Voir la Miff" needs a name: not offered without one
+        rule.onNodeWithTag(ALERT_BANNER_SEE_TAG).assertDoesNotExist()
+        banner(MyAlert.Sending("m", 1, SendStep.WAITING_NETWORK), name = " ")
+        rule.onNodeWithText("Sending your alert…").assertExists()
+    }
+
+    // ---- the screen "avertis" without anything to send, and the emergency services at once ---------------------------------------------
+
+    @Test
+    fun whenNothingCanBeSent_theScreenSaysItCalmly_andTheNumbersAreThere() {
+        val services = AlertCallList.build(emptyList(), "me", "FR")
+        show(
+            SentPhase.UNAVAILABLE,
+            name = null,
+            call = CallState.Ready(services, services.preselected, contactsUnavailable = false),
+        )
+        assertTrue(titleDescription()!!.startsWith("The alert to your people isn't available right now."))
+        assertTrue(titleDescription()!!.contains("call the emergency services directly"))
+        rule.onNodeWithTag(ALERT_SENT_CALL_TAG).performScrollTo().performClick()
+        assertEquals("112", called.single().number)
+    }
+
+    @Test
+    fun theEmergencyServicesAreThereWhileThePeopleStillLoad() {
+        val services = AlertCallList.build(emptyList(), "me", "FR")
+        show(
+            SentPhase.SENT,
+            call = CallState.Ready(services, services.preselected, contactsUnavailable = false, loadingPeople = true),
+        )
+        rule.onNodeWithTag(ALERT_SENT_CALL_TAG).performScrollTo().performClick()
+        assertEquals("112", called.single().number)
+    }
+
+    // ---- the shutter keeps its old behaviour (review of #275, m2) -------------------------------------------------------------------
+
+    @Test
+    fun twoQuickTapsOnTheShutter_areTwoPhotos_neverTheDoubleTapThatSwitchesTheCamera() {
+        var doubleTaps = 0
+        rule.setContent {
+            holdState = androidx.compose.runtime.remember { AlertHoldState() }
+            Box(
+                Modifier
+                    .size(300.dp)
+                    .pointerInput(Unit) { detectTapGestures(onDoubleTap = { doubleTaps++ }) },
+            ) {
+                Box(
+                    Modifier
+                        .size(80.dp)
+                        .testTag("shutter")
+                        .alertHoldGesture(holdState, onTap = { taps++ }, onDone = { done++ }),
+                )
+            }
+        }
+        rule.onNodeWithTag("shutter").performTouchInput {
+            click()
+            advanceEventTime(80)
+            click()
+        }
+        assertEquals(2, taps)
+        assertEquals(0, doubleTaps)
+    }
+
+    @Test
+    fun theBarFollowsTheTimeHeld_evenWithAnimationsRemoved_neverJumpingTo100() {
+        android.animation.ValueAnimator.setDurationScale(0f)
+        try {
+            hold()
+            rule.onNodeWithTag("shutter").performTouchInput { down(center) }
+            rule.mainClock.advanceTimeBy(400 + 1_000)
+            assertTrue(holdState.armed)
+            val early = holdState.progress
+            assertTrue("progress after 1 s of 5 is $early", early > 0.1f && early < 0.35f)
+            rule.mainClock.advanceTimeBy(1_500)
+            val middle = holdState.progress
+            assertTrue("progress after 2.5 s of 5 is $middle", middle > 0.4f && middle < 0.6f)
+        } finally {
+            android.animation.ValueAnimator.setDurationScale(1f)
+        }
     }
 }

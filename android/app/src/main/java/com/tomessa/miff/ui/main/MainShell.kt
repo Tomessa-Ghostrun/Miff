@@ -567,8 +567,9 @@ private fun MainNavigation(
                         AlertHost(vm, onOpenSent = {
                             miffId,
                             stopped,
+                            unavailable,
                             ->
-                            navController.open(AlertSentRoute(miffId, stopped))
+                            navController.open(AlertSentRoute(miffId, stopped, unavailable))
                         })
                     },
                 update =
@@ -977,8 +978,21 @@ fun MainTabs(
     val alertActive = alertState !is MyAlert.None
     val prompt = if (alertActive) PromptLevel.NONE else (feedContent?.myPrompt ?: PromptLevel.NONE)
 
-    fun miffNameOf(id: String?): String? = ready?.miffs?.firstOrNull { it.id == id }?.name
+    // The name of a Miff, or null while it is not known (the directory is not read yet after a relaunch): the screens then say "ta Miff", never an empty space (review of #275, m9).
+    fun miffNameOf(id: String?): String? =
+        ready
+            ?.miffs
+            ?.firstOrNull { it.id == id }
+            ?.name
+            ?.takeIf { it.isNotBlank() }
     val alertResources = LocalResources.current
+
+    fun alreadyActiveText(name: String?): String =
+        if (name != null) {
+            alertResources.getString(R.string.alert_already_active, name)
+        } else {
+            alertResources.getString(R.string.alert_already_active_no_name)
+        }
     var endConfirmOpen by remember { mutableStateOf(false) }
     // Sharing stopped: the Update shows no viewfinder (and asks no permission). Known for sure with ONE Miff; with several (Premium) the publication says it.
     val sharingStopped = feedContent?.myLabel == StateLabel.SharingStopped && (ready?.miffs?.size ?: 0) == 1
@@ -1039,13 +1053,23 @@ fun MainTabs(
     val overlayPadding = (if (bubbleShown) with(density) { bubbleHeightPx.toDp() } + Spacing.s else 0.dp) + bannerInset
     if (alertVm != null) {
         // The pointer of the phone, the clock of 7 days, the check at each return to the front, the Miffs that are still mine.
-        AlertLifecycle(alertVm, ready?.miffs?.map { it.id }.orEmpty())
+        // Only a list the server confirmed may end an alert whose Miff is missing from it (a list from the cache, or a transient one, never does: review of #275, m8).
+        AlertLifecycle(
+            alertVm,
+            ready?.miffs?.map { it.id }.orEmpty(),
+            authoritative = ready != null && !ready.fromCache,
+        )
         LaunchedEffect(alertVm) {
             alertVm.events.collect { event ->
                 when (event) {
                     is AlertEvent.Ended -> {
+                        val name = miffNameOf(event.miffId)
                         confirmation =
-                            alertResources.getString(R.string.alert_ended_notice, miffNameOf(event.miffId).orEmpty())
+                            if (name != null) {
+                                alertResources.getString(R.string.alert_ended_notice, name)
+                            } else {
+                                alertResources.getString(R.string.alert_ended_notice_no_name)
+                            }
                     }
 
                     AlertEvent.EndNotSent -> {
@@ -1059,7 +1083,7 @@ fun MainTabs(
         val originId = alertState.miffId
         if (endConfirmOpen && alertState is MyAlert.Active && originId != null) {
             AlertEndConfirmDialog(
-                miffName = miffNameOf(originId).orEmpty(),
+                miffName = miffNameOf(originId),
                 onConfirm = {
                     endConfirmOpen = false
                     alertVm.onEndRequested()
@@ -1100,13 +1124,16 @@ fun MainTabs(
                     if (bannerShown && alertVm != null) {
                         {
                             val originId = alertState.miffId.orEmpty()
-                            val originName = miffNameOf(originId).orEmpty()
+                            val originName = miffNameOf(originId)
                             AlertBanner(
                                 alert = alertState,
                                 miffName = originName,
+                                onRetry = alertVm::onRetry,
+                                // The cross: the sending that is waiting or refused is given up (the server is asked before the pointer is erased).
+                                onClose = alertVm::onCancelPending,
                                 // The Feed shows ANOTHER Miff than the one of the alert: "Voir la Miff {nom}" brings the Feed back to it (ticket 7.4).
                                 showSeeMiff = ready?.activeId?.let { it != originId } == true,
-                                onCall = { alert?.let { it.onOpenSent(originId, false) } },
+                                onCall = { alert?.let { it.onOpenSent(originId, false, false) } },
                                 onSeeMiff = {
                                     onSelectMiff(originId)
                                     select(MainTab.FEED)
@@ -1236,44 +1263,46 @@ fun MainTabs(
                                                     onHintDone = alertVm::onHintDone,
                                                     targetMiffName = ready?.activeId?.let(::miffNameOf),
                                                     several = (ready?.miffs?.size ?: 1) > 1,
+                                                    // A name that is not known yet is "" (the sentence then says "Une alerte est déjà en cours.").
                                                     activeAlertMiffName =
-                                                        alertState.miffId?.let {
-                                                            miffNameOf(
-                                                                it,
-                                                            ).orEmpty()
-                                                        },
+                                                        alertState.miffId?.let { miffNameOf(it).orEmpty() },
                                                     bannerInset = bannerInset,
                                                     onTrigger = {
                                                         val origin = ready?.activeId
-                                                        if (origin != null) {
-                                                            if (feedContent?.myLabel == StateLabel.SharingStopped) {
-                                                                // I do not share with that Miff: nothing leaves, the calm screen offers to resume and the emergency numbers (ticket 12.2).
-                                                                alert.onOpenSent(origin, true)
-                                                            } else {
-                                                                when (val result = alertVm.onTriggered(origin)) {
-                                                                    TriggerResult.Started -> {
-                                                                        alert.onOpenSent(origin, false)
-                                                                    }
-
-                                                                    is TriggerResult.AlreadyActive -> {
-                                                                        confirmation =
-                                                                            alertResources.getString(
-                                                                                R.string.alert_already_active,
-                                                                                miffNameOf(result.miffId).orEmpty(),
-                                                                            )
-                                                                    }
-
-                                                                    TriggerResult.NotSignedIn -> {}
+                                                        if (origin == null) {
+                                                            // The Miffs are not known (yet): nothing can be sent, but the 5 seconds were held in the stress: the emergency numbers
+                                                            // and a calm sentence, never nothing (review of #275, M3a).
+                                                            alert.onOpenSent("", false, true)
+                                                        } else if (feedContent?.myLabel == StateLabel.SharingStopped) {
+                                                            // I do not share with that Miff: nothing leaves, the calm screen offers to resume and the emergency numbers (ticket 12.2).
+                                                            alert.onOpenSent(origin, true, false)
+                                                        } else {
+                                                            when (val result = alertVm.onTriggered(origin)) {
+                                                                TriggerResult.Started -> {
+                                                                    alert.onOpenSent(origin, false, false)
                                                                 }
+
+                                                                is TriggerResult.AlreadyActive -> {
+                                                                    confirmation =
+                                                                        alreadyActiveText(miffNameOf(result.miffId))
+                                                                }
+
+                                                                TriggerResult.NotSignedIn -> {}
                                                             }
                                                         }
                                                     },
                                                     onAlreadyActive = { name ->
                                                         confirmation =
-                                                            alertResources.getString(
-                                                                R.string.alert_already_active,
-                                                                name,
-                                                            )
+                                                            alreadyActiveText(name.takeIf { it.isNotBlank() })
+                                                    },
+                                                    // From the screens where the viewfinder (so the gesture) is not there: the emergency numbers (review of #275, M3b).
+                                                    onOpenEmergency = { stopped ->
+                                                        val origin = ready?.activeId
+                                                        if (stopped && origin != null) {
+                                                            alert.onOpenSent(origin, true, false)
+                                                        } else {
+                                                            alert.onOpenSent("", false, true)
+                                                        }
                                                     },
                                                 )
                                             } else {

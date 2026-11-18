@@ -94,6 +94,23 @@ Le **drapeau de build** (`BuildConfig.ALERT_DANGER`) est **allumé dans l'APK de
 43. [ ] **Autorisations** (Réglages Android > Applications > Miff > Autorisations) : **ni Téléphone, ni Contacts** (l'app n'appelle jamais et ne lit aucun carnet).
 44. [ ] La notification ne montre **ni position, ni nom de Miff, ni nom de famille** (écran verrouillé compris).
 
+## Partie 8 : corrections de la revue (v2), à tester en priorité (10 min)
+
+45. [ ] **Hors ligne immédiat** : mode avion **avant** de maintenir 5 s. L'écran « avertis » montre **tout de suite** les numéros d'urgence (112 choisi, 17/15/18 en région France) **même pendant que les proches chargent**, et « Pas de réseau pour le moment. Ton alerte partira dès que possible. ». Jamais une boîte vide.
+46. [ ] **Fermer la bannière rouge** (retour du PM) : alerte refusée (étape 41, horloge fausse) ou sans réseau : la bannière affiche « Ton alerte n'est pas partie. Touche « Réessayer » pour la renvoyer. » avec **« Réessayer »**, **« Numéros d'urgence »** et une **croix**. La croix ferme la bannière (rien n'est envoyé, le bouton rond sert de nouveau). « Numéros d'urgence » ouvre l'écran des numéros ; le mot « Appeler » n'est plus utilisé là. TalkBack lit « Fermer et abandonner l'envoi de l'alerte ».
+47. [ ] **3e début avec coupure réseau** : prenez un compte à 2 débuts dans les 24 h, déclenchez la 3e alerte, **coupez le réseau dès l'écran « Envoi… »**, fermez l'app, rouvrez-la réseau rétabli : la bannière **« alerte en cours »** s'affiche (pas « limite atteinte »), la fin est possible. Chez B, la carte rouge est là une seule fois.
+48. [ ] **Croix pendant une attente, alerte déjà partie** : même scénario mais fermez la bannière « en attente » avec la croix avant le retour du réseau : au retour du réseau, la bannière « alerte en cours » **réapparaît** si l'alerte a abouti (le serveur est relu avant d'oublier).
+49. [ ] **Quota puis flèche retour** : à la 4e alerte, l'écran dit la limite ; la **flèche** ramène à l'Update **sans bannière ni « alerte déjà en cours »**.
+50. [ ] **Arrêter le partage / quitter en alerte** : avec une alerte active dans la Miff, « Arrêter de partager » (puis « Quitter la Miff » avec un compte non créateur, « Supprimer la Miff » avec le créateur) affiche l'avertissement « Tu as une alerte en cours dans cette Miff : elle sera retirée… » **avant** la confirmation ; après confirmation l'alerte disparaît, B ne reçoit pas de notification. Dans une **autre** Miff : pas d'avertissement.
+51. [ ] **Retrait d'un membre en alerte** (créateur) : le retrait réussit ; sinon **notez-le** (le backend est à la limite des lectures de règles).
+52. [ ] **Une seule Miff, partage arrêté** : sur l'Update (pas de viseur), le lien **« Appeler les secours »** ouvre l'écran des numéros avec « Reprendre le partage ». Même lien sur l'écran de la caméra refusée / indisponible.
+53. [ ] **Annuaire pas prêt** (lancez l'app en mode avion, première ouverture après installation) : un maintien de 5 s ouvre l'écran des numéros avec « L'alerte à tes proches n'est pas disponible pour le moment… », sans rien envoyer.
+54. [ ] **Double appui rapide sur le bouton rond** : deux photos, **la caméra ne bascule pas**.
+55. [ ] **Réglage « Supprimer les animations »** (Options pour les développeurs ou Accessibilité) : pendant le maintien, la barre rouge **monte à la vitesse du temps** (elle n'est pas pleine au bout d'une seconde).
+56. [ ] **ColorOS, économie d'énergie** : appli balayée / mise en veille profonde sur l'OPPO, B déclenche : la notification arrive-t-elle ? en combien de temps ? (à noter, voir l'aide « notifications coupées »).
+57. [ ] **Relance sans nom de Miff** (alerte active, mode avion, tuer l'app, la rouvrir) : la bannière dit « Tu as alerté les proches de ta Miff. » (pas de blanc), puis le nom revient avec le réseau.
+58. [ ] **Écran « avertis » dans les applications récentes** : l'aperçu est masqué.
+
 ## Retours à noter
 - Durée du maintien ressentie (400 ms + 5 s) : trop long / trop court ?
 - Livraison de la notification sur OPPO (appli balayée, économie d'énergie) : reçue en combien de temps ?

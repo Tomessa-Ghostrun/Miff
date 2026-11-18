@@ -51,6 +51,7 @@ import com.tomessa.miff.R
 import com.tomessa.miff.domain.alert.AlertDialTarget
 import com.tomessa.miff.domain.alert.EmergencyLabel
 import com.tomessa.miff.domain.alert.EmergencyNumber
+import com.tomessa.miff.ui.components.RecentsPrivacy
 import com.tomessa.miff.ui.components.miffTopInsets
 import com.tomessa.miff.ui.feed.BubbleShape
 import com.tomessa.miff.ui.miff.MiffConfirmDialog
@@ -100,6 +101,9 @@ enum class SentPhase {
     /** The server said no and the session is fine: a calm sentence and "Réessayer". */
     REFUSED,
 
+    /** No alert can be sent now (no Miff known yet, no camera): a calm sentence and the emergency numbers, nothing else. */
+    UNAVAILABLE,
+
     /** The daily limit of 3 alerts is reached: a calm sentence, the emergency services selected, no retry. */
     QUOTA,
 
@@ -131,6 +135,8 @@ fun AlertSentScreen(
     actions: AlertSentActions,
     modifier: Modifier = Modifier,
 ) {
+    // Like the Feed, the Miff and the Profile: the screen is hidden in the recent apps (it names a Miff and says that the person declared herself in danger).
+    RecentsPrivacy()
     val pane = stringResource(R.string.alert_sent_pane_a11y)
     var menuOpen by remember { mutableStateOf(false) }
     Box(
@@ -166,10 +172,6 @@ fun AlertSentScreen(
                 }
             }
             when (call) {
-                CallState.Loading -> {
-                    Box(Modifier.fillMaxWidth().heightIn(min = 120.dp))
-                }
-
                 is CallState.Ready -> {
                     CallPicker(
                         call,
@@ -275,6 +277,10 @@ private fun TitleBlob(
 
             SentPhase.QUOTA -> {
                 stringResource(R.string.alert_quota_title)
+            }
+
+            SentPhase.UNAVAILABLE -> {
+                stringResource(R.string.alert_unavailable_title)
             }
 
             SentPhase.SENT -> {

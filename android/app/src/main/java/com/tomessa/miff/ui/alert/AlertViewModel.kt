@@ -28,13 +28,17 @@ import kotlinx.coroutines.launch
 
 /** What the list of the screen of the call is. */
 sealed interface CallState {
-    data object Loading : CallState
-
+    /**
+     * The list, ALWAYS usable: the emergency services come from the LOCAL catalogue and are there at once, 112 chosen; the people of the Miff join them when they are read (review of
+     * #275, M2: never an empty box while the members load, up to 15 s offline).
+     */
     class Ready(
         val list: AlertCallList,
         val selected: AlertDialTarget,
         /** The members could not be read (offline without a copy): only the emergency services are offered, with a calm sentence. */
         val contactsUnavailable: Boolean,
+        /** The people of the Miff are still being read: the emergency services are already there. */
+        val loadingPeople: Boolean = false,
     ) : CallState {
         override fun toString(): String = "Ready(redacted)"
     }
@@ -58,7 +62,17 @@ class AlertViewModel(
     /** The blue bubble of the onboarding is shown while this is false (ticket 7.1, AD7). Local to the phone. */
     val hintDone: StateFlow<Boolean> = mutableHintDone.asStateFlow()
 
-    private val mutableCall = MutableStateFlow<CallState>(CallState.Loading)
+    private val emergencyOnly: AlertCallList get() = AlertCallList.build(emptyList(), myUid().orEmpty(), region())
+
+    private val mutableCall =
+        MutableStateFlow<CallState>(
+            emergencyOnly.let {
+                CallState.Ready(it, it.preselected, contactsUnavailable = false, loadingPeople = true)
+            },
+        )
+
+    /** The person chose a line herself: what arrives later never replaces her choice. */
+    private var chosen = false
     val call: StateFlow<CallState> = mutableCall.asStateFlow()
 
     private var callJob: Job? = null
@@ -83,8 +97,11 @@ class AlertViewModel(
     fun restore() = controller.restore()
 
     /** The Miffs of the person are known: an alert whose Miff is gone goes with it; a NEW phone reads my alert of each Miff ONCE (1 read per Miff) and adopts one in progress. */
-    suspend fun onMiffsKnown(miffIds: List<String>) {
-        controller.onMiffsKnown(miffIds)
+    suspend fun onMiffsKnown(
+        miffIds: List<String>,
+        authoritative: Boolean = true,
+    ) {
+        controller.onMiffsKnown(miffIds, authoritative)
         controller.adoptFromServer(miffIds)
     }
 
@@ -102,20 +119,35 @@ class AlertViewModel(
 
     fun onCancelPending() = controller.cancelPending()
 
-    /** The screen of the call opened for [miffId]: its members are read once (and again when another Miff is the one of origin). */
+    /**
+     * The screen of the call opened for [miffId] (empty: no Miff is known, only the emergency services): the emergency services are shown AT ONCE, then the members are read once and
+     * join the list (the creator or first member with a number becomes the choice, unless the person already chose).
+     */
     fun loadCallList(miffId: String) {
-        if (callMiffId == miffId && mutableCall.value is CallState.Ready) return
+        val state = mutableCall.value as? CallState.Ready
+        if (callMiffId == miffId && state != null && !state.loadingPeople) return
         callMiffId = miffId
         callJob?.cancel()
-        mutableCall.value = CallState.Loading
+        chosen = false
+        val services = emergencyOnly
+        mutableCall.value =
+            CallState.Ready(
+                services,
+                services.preselected,
+                contactsUnavailable = false,
+                loadingPeople = miffId.isNotEmpty(),
+            )
+        if (miffId.isEmpty()) return
         callJob =
             viewModelScope.launch {
                 val me = myUid().orEmpty()
                 val read = faces.read(miffId)
                 val members = (read as? FacesRead.Loaded)?.members.orEmpty()
                 val list = AlertCallList.build(members, me, region())
+                val current = (mutableCall.value as? CallState.Ready)?.selected
+                val keep = current?.takeIf { chosen && list.targets.any { t -> t.id == it.id } }
                 mutableCall.value =
-                    CallState.Ready(list, list.preselected, contactsUnavailable = read !is FacesRead.Loaded)
+                    CallState.Ready(list, keep ?: list.preselected, contactsUnavailable = read !is FacesRead.Loaded)
             }
     }
 
@@ -123,7 +155,8 @@ class AlertViewModel(
     fun select(target: AlertDialTarget) {
         val state = mutableCall.value as? CallState.Ready ?: return
         if (state.list.targets.none { it.id == target.id }) return
-        mutableCall.value = CallState.Ready(state.list, target, state.contactsUnavailable)
+        chosen = true
+        mutableCall.value = CallState.Ready(state.list, target, state.contactsUnavailable, state.loadingPeople)
     }
 
     /** "Appeler les secours": the emergency number (112 where it exists) is chosen. */

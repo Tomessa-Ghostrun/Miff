@@ -165,6 +165,59 @@ class AlertDomainTest {
         runCatching { AlertWrites.quotaUpdate(3, "m2", now) }.let { assertTrue(it.isFailure) }
     }
 
+    // ---- the order of the checks of a start (review of #275, M1)
+
+    private fun plan(
+        alert: AlertDoc?,
+        quota: AlertQuota,
+        counterExists: Boolean = true,
+        sharing: Boolean = true,
+        card: Boolean = true,
+    ) = AlertStartPlan.decide(card, sharing, alert != null, alert, counterExists, quota, now)
+
+    private val full = AlertQuota(listOf(now - hour, now - 2 * hour, now - 3 * hour))
+
+    @Test
+    fun start_aLiveAlertIsAdopted_evenWhenTheCounterIsFull_theLostAnswerOfTheThirdStart() {
+        val live = AlertDoc("u", true, now - 20_000, now + 6 * day, 3)
+        assertTrue(plan(live, full) is StartDecision.Adopt)
+    }
+
+    @Test
+    fun start_withoutALiveAlert_aFullCounterIsTheLimit_nothingIsTried() {
+        assertTrue(plan(null, full) is StartDecision.QuotaFull)
+        val ended = AlertDoc("u", false, now - 10 * hour, now + 5 * day, 2)
+        assertTrue(plan(ended, full) is StartDecision.QuotaFull)
+    }
+
+    @Test
+    fun start_aReArmingUnder60Seconds_waits_beforeTheLimitIsJudged_andConsumesNothing() {
+        val justEnded = AlertDoc("u", false, now - 20_000, now + 5 * day, 1)
+        val decision = plan(justEnded, full)
+        assertTrue(decision is StartDecision.Wait)
+        assertEquals(40_000 + AlertRules.REARM_SAFETY_MILLIS, (decision as StartDecision.Wait).waitMillis)
+    }
+
+    @Test
+    fun start_theFirstAlert_createsTheCounter_theNextOnesReplaceASlot_andTheSeqGoesUp() {
+        val first = plan(null, AlertQuota.NONE, counterExists = false) as StartDecision.Write
+        assertNull(first.slot)
+        assertEquals(1L, first.seq)
+        val later =
+            plan(
+                AlertDoc("u", false, now - 2 * hour, now + 5 * day, 4),
+                AlertQuota(listOf(now - hour, null, null)),
+            ) as StartDecision.Write
+        assertEquals(1, later.slot)
+        assertEquals(5L, later.seq)
+    }
+
+    @Test
+    fun start_noCard_orSharingStopped_comeFirst() {
+        assertTrue(plan(null, full, card = false) is StartDecision.NotMember)
+        assertTrue(plan(null, full, sharing = false) is StartDecision.SharingStopped)
+    }
+
     // ---- the hold ----------------------------------------------------------------------------------------------------------------------
 
     @Test

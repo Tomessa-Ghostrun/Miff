@@ -10,7 +10,9 @@ import com.tomessa.miff.domain.alert.AlertDoc
 import com.tomessa.miff.domain.alert.AlertFailure
 import com.tomessa.miff.domain.alert.AlertQuota
 import com.tomessa.miff.domain.alert.AlertRules
+import com.tomessa.miff.domain.alert.AlertStartPlan
 import com.tomessa.miff.domain.alert.AlertWrites
+import com.tomessa.miff.domain.alert.StartDecision
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -141,48 +143,44 @@ class FirestoreAlertStore(
                     val existing = tx.get(alert)
                     val counter = tx.get(quota)
                     val slots = if (counter.exists()) quotaOf(counter) else AlertQuota.NONE
-                    val slot = slots.slotToReplace(nowMillis)
-                    when {
-                        !mine.exists() -> {
+                    val doc = if (existing.exists()) parse(existing) else null
+                    // The order of the checks is the pure [AlertStartPlan]: a live alert of mine is ADOPTED before the daily limit is judged (review of #275, M1).
+                    when (
+                        val plan =
+                            AlertStartPlan.decide(
+                                cardExists = mine.exists(),
+                                sharing = mine.getBoolean("sharing.enabled") == true,
+                                alertExists = existing.exists(),
+                                alert = doc,
+                                counterExists = counter.exists(),
+                                quota = slots,
+                                nowMillis = nowMillis,
+                            )
+                    ) {
+                        StartDecision.NotMember -> {
                             StartResult.Failed(AlertFailure.NotMember)
                         }
 
-                        mine.getBoolean("sharing.enabled") != true -> {
+                        StartDecision.SharingStopped -> {
                             StartResult.Failed(AlertFailure.SharingStopped)
                         }
 
-                        // The three starts of the last 24 hours are used: nothing is tried, the rules would refuse (decision of the PM, daily limit of 3).
-                        slot == null -> {
+                        is StartDecision.Adopt -> {
+                            StartResult.Adopted(plan.doc)
+                        }
+
+                        is StartDecision.Wait -> {
+                            StartResult.TooSoon(plan.waitMillis)
+                        }
+
+                        StartDecision.QuotaFull -> {
                             StartResult.Failed(AlertFailure.QuotaReached)
                         }
 
-                        !existing.exists() -> {
-                            writeCredit(tx, quota, counter.exists(), slot, miffId, nowMillis)
-                            tx.set(alert, AlertWrites.start(deviceId, nowMillis, seq = 1L))
+                        is StartDecision.Write -> {
+                            writeCredit(tx, quota, counter.exists(), plan.slot, miffId, nowMillis)
+                            tx.set(alert, AlertWrites.start(deviceId, nowMillis, seq = plan.seq))
                             StartResult.Started(nowMillis, AlertRules.expiresAtMillis(nowMillis))
-                        }
-
-                        else -> {
-                            val doc = parse(existing)
-                            val startedAt = doc?.startedAtMillis
-                            when {
-                                doc != null && doc.isLive(nowMillis) -> {
-                                    StartResult.Adopted(doc)
-                                }
-
-                                startedAt != null && nowMillis - startedAt < AlertRules.REARM_MIN_GAP_MILLIS -> {
-                                    StartResult.TooSoon(
-                                        AlertRules.REARM_MIN_GAP_MILLIS - (nowMillis - startedAt) +
-                                            AlertRules.REARM_SAFETY_MILLIS,
-                                    )
-                                }
-
-                                else -> {
-                                    writeCredit(tx, quota, counter.exists(), slot, miffId, nowMillis)
-                                    tx.set(alert, AlertWrites.start(deviceId, nowMillis, seq = (doc?.seq ?: 0L) + 1L))
-                                    StartResult.Started(nowMillis, AlertRules.expiresAtMillis(nowMillis))
-                                }
-                            }
                         }
                     }
                 }.await()
