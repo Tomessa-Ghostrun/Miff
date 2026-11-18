@@ -12449,7 +12449,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "in trusted places"
+            "value": "in trusted zones"
           }
         },
         "fr": {
@@ -12460,7 +12460,7 @@
         }
       }
     },
-    "profile_timeshare_danger_zone": {
+    "profile_timeshare_danger_zones": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -12477,7 +12477,7 @@
         }
       }
     },
-    "profile_timeshare_danger_zones": {
+    "profile_timeshare_danger_zones_several": {
       "extractionState": "manual",
       "localizations": {
         "en": {
@@ -12540,7 +12540,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "La répartition n\\'est pas disponible pour le moment."
+            "value": "La répartition n'est pas disponible pour le moment."
           }
         }
       }
@@ -12713,7 +12713,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You spent %1$@ of your time in your trusted places"
+            "value": "You spent %1$@ of your time in your trusted zones"
           }
         },
         "fr": {
@@ -12736,7 +12736,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ces données restent sur ton téléphone. Personne d\\'autre ne peut les voir."
+            "value": "Ces données restent sur ton téléphone. Personne d'autre ne peut les voir."
           }
         }
       }
@@ -12753,7 +12753,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu as arrêté de partager ton statut avec cette Miff : ta répartition n\\'est plus mise à jour pour elle."
+            "value": "Tu as arrêté de partager ton statut avec cette Miff : ta répartition n'est plus mise à jour pour elle."
           }
         }
       }
@@ -12855,7 +12855,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu es en mode voyage : ta répartition est en pause jusqu\\'à ton retour."
+            "value": "Tu es en mode voyage : ta répartition est en pause jusqu'à ton retour."
           }
         }
       }
@@ -15157,7 +15157,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pour calculer la répartition de ton temps, ton téléphone garde pendant 35 jours les moments où tu arrives dans un de tes lieux et où tu en pars, sans position ni adresse. Rien n\\'est envoyé : personne d\\'autre ne peut les voir."
+            "value": "Pour calculer la répartition de ton temps, ton téléphone garde pendant 35 jours les moments où tu arrives dans un de tes lieux et où tu en pars, sans position ni adresse. Rien n'est envoyé : personne d'autre ne peut les voir."
           }
         }
       }
@@ -15208,7 +15208,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Effacer l\\'historique ?"
+            "value": "Effacer l'historique ?"
           }
         }
       }
@@ -15225,7 +15225,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "C\\'est fait : ta répartition repart de zéro."
+            "value": "C'est fait : ta répartition repart de zéro."
           }
         }
       }

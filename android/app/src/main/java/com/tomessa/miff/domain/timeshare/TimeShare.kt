@@ -288,7 +288,7 @@ object TimeShare {
 
     /**
      * Whole percentages of [times] over [total] that add up to exactly [target] (the method of the largest remainder, on integers: no rounding error). When [target] is 100,
-     * a share above 0 and under 1 % counts 0 ("< 1 %") and never receives a leftover point. An equal remainder goes to the longer time, then to the earlier line (T1).
+     * a share above 0 and under 1 % counts 0 ("< 1 %"), never receives a leftover point, and the others are shared out from THEIR OWN total. An equal remainder goes to the longer time, then to the earlier line (T1).
      */
     private fun apportion(
         times: List<Long>,
@@ -296,13 +296,17 @@ object TimeShare {
         target: Int,
     ): List<Int> {
         if (times.isEmpty() || total <= 0L || target <= 0) return times.map { 0 }
-        val floors = times.map { (it * target / total).toInt() }
-        val remainders = times.map { (it * target) % total }
+        // A share above 0 and under 1 % of the whole counts 0 ("< 1 %"); the OTHERS then share the 100 points according to their own time (largest remainder), the same rule as iOS.
+        val tiny = times.indices.filter { target == 100 && times[it] > 0 && times[it] * 100L < total }.toSet()
+        val base = total - tiny.sumOf { times[it] }
+        if (base <= 0L) return times.map { 0 }
+        val floors = times.indices.map { if (it in tiny) 0 else (times[it] * target / base).toInt() }
+        val remainders = times.indices.map { if (it in tiny) 0L else (times[it] * target) % base }
         var leftover = target - floors.sum()
         val result = floors.toMutableList()
         val candidates =
             times.indices
-                .filter { times[it] > 0 && !(target == 100 && floors[it] == 0) }
+                .filter { times[it] > 0 && it !in tiny }
                 .sortedWith(compareByDescending<Int> { remainders[it] }.thenByDescending { times[it] }.thenBy { it })
         if (candidates.isEmpty()) return result
         var turn = 0

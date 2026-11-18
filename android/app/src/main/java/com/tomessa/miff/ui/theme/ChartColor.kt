@@ -9,7 +9,7 @@ import androidx.compose.ui.graphics.Color
  * - The places alternate blue and green so that neighbours are told apart (chart1 and chart3 blue, chart2 and chart4 green, chart5 navy). The green of the brand (#d1d828) is too light
  *   for a ring against the white card (1.5:1), so the greens are DARKER SHADES OF IT; every place colour reaches 3:1 against the card (checked by TimeShareRulesTest).
  * - The danger zone is colorStatusDanger itself (3.1:1), always with hatching, the warning icon and its words: never by colour alone.
- * - "Ailleurs" is the light grey of the mockup (the placeholder grey of the design system): a quiet colour for "somewhere else", under 3:1 on purpose (the mockup asks for it); its
+ * - "Ailleurs" is the light grey of the mockup (#d4d7df, read on the capture of the PM): a quiet colour for "somewhere else", under 3:1 on purpose (the mockup asks for it); its
  *   line has its name and its percentage, and the gaps between slices set it apart.
  * The order is the order of the slices: the places in sequence (chart1 to chart5), then "autres lieux", the danger zone, "Ailleurs". [colorChartReserve] is free for a future category.
  */
@@ -20,7 +20,7 @@ val colorChart4 = colorStatusSafeText
 val colorChart5 = Color(0xFF14297F)
 val colorChartReserve = Color(0xFF6E7600)
 val colorChartOther = Color(0xFF6C7A9C)
-val colorChartElsewhere = colorBgPlaceholder
+val colorChartElsewhere = Color(0xFFD4D7DF)
 val colorChartDanger = colorStatusDanger
 
 /** The five colours of the named places, in order. */

@@ -1231,7 +1231,7 @@
     <string name="profile_timeshare_window_30">30 days</string>
     <string name="profile_timeshare_window_a11y">Period, %1$s</string>
     <string name="profile_timeshare_window_selected_a11y">selected</string>
-    <string name="profile_timeshare_center_caption">in trusted places</string>
+    <string name="profile_timeshare_center_caption">in trusted zones</string>
     <string name="profile_timeshare_a11y_card">Time breakdown. %1$s: %2$s.</string>
     <string name="profile_timeshare_a11y_row">%1$s, %2$s</string>
     <string name="profile_timeshare_a11y_danger_row">%1$s, %2$s, show details</string>
@@ -1239,12 +1239,12 @@
         <item quantity="one">%1$d other place</item>
         <item quantity="other">%1$d other places</item>
     </plurals>
-    <string name="profile_timeshare_danger_zone">Danger zone</string>
-    <string name="profile_timeshare_danger_zones">Danger zones</string>
+    <string name="profile_timeshare_danger_zones">Danger zone</string>
+    <string name="profile_timeshare_danger_zones_several">Danger zones</string>
     <string name="profile_timeshare_elsewhere">Elsewhere</string>
     <string name="profile_timeshare_percent_tiny">&lt; 1%</string>
     <string name="profile_timeshare_detail_close">Close</string>
-    <string name="profile_timeshare_summary">You spent %1$s of your time in your trusted places</string>
+    <string name="profile_timeshare_summary">You spent %1$s of your time in your trusted zones</string>
     <string name="profile_timeshare_privacy">This data stays on your phone. Nobody else can see it.</string>
     <plurals name="profile_timeshare_not_enough">
         <item quantity="one">Your chart arrives in %1$d day, we\'re analysing your habits</item>

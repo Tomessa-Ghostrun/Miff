@@ -50,7 +50,7 @@
 
 20. [ ] **TalkBack** : le titre est un **titre** ; le sélecteur est annoncé **« Période, 7 jours, bouton »** ; l'anneau **n'est pas lu** ; **une phrase unique** décrit le graphique (« Répartition de ton temps. Sur les 7 derniers jours : Maison 48 %, Sport 24 %, Zone de danger 12 %, Ailleurs 16 %. ») ; la ligne « Zone de danger » est un **bouton** (« …, afficher le détail ») ; **les emoji ne sont pas lus** ; les cibles font 48 dp.
 21. [ ] **Taille de police maximale** : **l'anneau passe au-dessus de la légende**, le pourcentage reste au centre et « en zone de confiance » passe **sous** l'anneau ; **rien n'est coupé ni superposé**, y compris dans les états de la partie D.
-22. [ ] **Anglais** (langue du téléphone) : « Time breakdown », « Over the last 7 days », « Elsewhere », « Danger zone », « in trusted places », « You spent 72% of your time in your trusted places », « Your chart arrives in 7 days, we're analysing your habits » (« in 1 day » au singulier), « This data stays on your phone. Nobody else can see it. », « Erase my time history ». Pourcentages à l'anglaise (« 72% »).
+22. [ ] **Anglais** (langue du téléphone) : « Time breakdown », « Over the last 7 days », « Elsewhere », « Danger zone », « in trusted zones », « You spent 72% of your time in your trusted zones », « Your chart arrives in 7 days, we're analysing your habits » (« in 1 day » au singulier), « This data stays on your phone. Nobody else can see it. », « Erase my time history ». Pourcentages à l'anglaise (« 72% »).
 23. [ ] **Aperçu des applications récentes** (Android 13) : sur l'onglet Profil, avec la carte affichée, l'aperçu reste **masqué** (comme avant).
 
 ## Partie G : le vrai suivi (au moins 24 h)

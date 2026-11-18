@@ -272,7 +272,7 @@ class TimeShareRulesTest {
         }
         // The danger zone is EXACTLY the red of the danger status of the bubble, "Ailleurs" the grey of the mockup.
         assertEquals(colorStatusDanger.toArgb(), colorChartDanger.toArgb())
-        assertEquals(0xFFD9D9D9.toInt(), colorChartElsewhere.toArgb())
+        assertEquals(0xFFD4D7DF.toInt(), colorChartElsewhere.toArgb())
     }
 
     // --- The texts (TS-15, TS-17, TS-22) --------------------------------------------------------------------------------------------------------------------------

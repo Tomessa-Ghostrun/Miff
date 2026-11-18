@@ -344,6 +344,25 @@ class TimeShareTest {
     }
 
     @Test
+    fun aShareUnderOnePercent_counts0_andTheOthersShareThe100PointsFromTheirOwnTime_likeIos() {
+        // 14 days: home 100 h, out 219 h, a corner 3 h (0.93 % of 322 h). Over the whole (322 h) home is 31.06 and out 68.01: the leftover point would go to home (32 / 68). Over THEIR
+        // OWN total (319 h) home is 31.35 and out 68.65: the leftover point goes to out (31 / 69). iOS does the second.
+        val corner = PlaceRef("corner", PlaceType.TRUSTED)
+        val back = 168.0
+        val facts =
+            stay(0.0 - back, 100.0 - back) { inPlace(it, "home") } +
+                stay(100.0 - back, 319.0 - back) { out(it) } +
+                listOf(inPlace(319.0 - back, "corner"), unknown(322.0 - back))
+        val result = ready(compute(facts, listOf(home, corner), days = 14))
+        assertEquals(31, result.percent(SliceKind.PLACE, "home"))
+        assertEquals(69, result.percent(SliceKind.ELSEWHERE))
+        val tiny = result.slices.first { it.placeId == "corner" }
+        assertTrue(tiny.tiny)
+        assertEquals(0, tiny.percent)
+        assertSumIs100(result)
+    }
+
+    @Test
     fun t13_aShareUnderOnePercent_isTiny_andTheOthersStillMakeOneHundred() {
         // home 40 + 40, out 40 + 47.5, the tiny place 0.5 h: 0.3 %.
         val tiny = PlaceRef("tiny", PlaceType.TRUSTED)

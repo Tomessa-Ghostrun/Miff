@@ -494,7 +494,15 @@ private fun describe(
 /** "Zone de danger" for one place, "Zones de danger" for several (two texts, not a plural: the number is not in the sentence). */
 @Composable
 private fun dangerLabel(count: Int): String =
-    stringResource(if (count == 1) R.string.profile_timeshare_danger_zone else R.string.profile_timeshare_danger_zones)
+    stringResource(
+        if (count ==
+            1
+        ) {
+            R.string.profile_timeshare_danger_zones
+        } else {
+            R.string.profile_timeshare_danger_zones_several
+        },
+    )
 
 @Composable
 private fun labelOf(item: LegendItem): String =
