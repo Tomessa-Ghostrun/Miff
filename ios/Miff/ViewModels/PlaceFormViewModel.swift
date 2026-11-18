@@ -251,13 +251,17 @@ final class PlaceFormViewModel: ObservableObject {
         update { $0.radiusM = PlaceRadius.snap(raw) }
     }
 
-    /// Un compte gratuit qui touche « Zone de danger » : l'offre s'ouvre et le choix reste « Zone de confiance » (critère LIM3).
+    /// Un compte gratuit qui touche « Zone de danger » en créant ou modifiant un lieu : l'offre s'ouvre et le choix reste « Zone de confiance »
+    /// (critère LIM3). Dans le formulaire d'une DEMANDE, aucune offre : demander est permis à tout membre (décision du PM du 2026-11-17).
     func onTypeSelected(_ type: PlaceType) {
         let current = state
         guard !current.busy, !current.loading, current.loadFailed == nil, type != current.type else {
             return
         }
-        if let reason = PlaceQuota.forTypeChange(premium: current.premium, from: current.type, to: type) {
+        let reason = current.mode == .request
+            ? PlaceQuota.forRequestTypeChange(to: type)
+            : PlaceQuota.forTypeChange(premium: current.premium, from: current.type, to: type)
+        if let reason {
             update { $0.paywall = reason }
             return
         }
