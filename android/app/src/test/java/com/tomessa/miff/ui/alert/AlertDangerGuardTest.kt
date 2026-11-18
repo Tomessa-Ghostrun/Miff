@@ -187,4 +187,17 @@ class AlertDangerGuardTest {
         assertFalse(nobody.handle(data))
         assertEquals(1, received.size)
     }
+
+    @Test
+    fun deletingOrLeavingAMiffTellsTheAlertController_theCreatorsOwnDeletionIncluded() {
+        val container = normalised(File(main, "AppContainer.kt"))
+        val leftBlock =
+            container
+                .substringAfter(
+                    "suspend fun onMiffLeft(miffId: String) {",
+                ).substringBefore("miffDirectory.expectDeparture")
+        assertTrue(leftBlock.contains("if (BuildConfig.ALERT_DANGER) alertController.onAlertRemoved(miffId)"))
+        // the deletion of a Miff by its creator ends in onMiffLeft
+        assertTrue(container.contains("onDeleted = { miffId -> onMiffLeft(miffId) }"))
+    }
 }

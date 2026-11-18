@@ -224,6 +224,7 @@ class AlertController(
         verifyJob =
             scope.launch {
                 var attempt = 0
+                var deniedOnce = false
                 while (attempt < MAX_VERIFY_ATTEMPTS) {
                     val uid = currentUid() ?: return@launch
                     if (!network.isOnline()) {
@@ -252,8 +253,13 @@ class AlertController(
 
                         // The Miff is closed to me (removed, deleted, rules): no alert of mine can be alive there, the pointer is not kept for ever (review of #275 v2, 8).
                         MineRead.Denied -> {
-                            if (mutableState.value is MyAlert.None) local.clearPointer()
-                            return@launch
+                            // A refusal can be passing (App Check): it must be confirmed by a SECOND refusal, a few seconds later, before the pointer is forgotten (review of #275 v3, c).
+                            if (deniedOnce) {
+                                if (mutableState.value is MyAlert.None) local.clearPointer()
+                                return@launch
+                            }
+                            deniedOnce = true
+                            delay(pauseFor(0))
                         }
 
                         MineRead.Unavailable -> {

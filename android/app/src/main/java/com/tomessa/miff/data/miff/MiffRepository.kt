@@ -639,6 +639,8 @@ class FirestoreMiffRepository(
             // The answer was lost: if the server now refuses the Miff to this person, the lot did leave.
             val check = guarded { store.readMiff(miffId, fromServer = true) }
             if (check is Guarded.Failed && check.lostAccess && store.reachable(uid)) {
+                // The lot did leave although its answer was lost: the alert of that Miff went with it.
+                if (alertsEnabled) onAlertGone(miffId)
                 onSharingChanged()
                 return MiffWriteResult.Done
             }
@@ -667,6 +669,10 @@ class FirestoreMiffRepository(
         uid: String,
         lost: LostMiff,
     ): Boolean {
+        // The caller (the directory) only asks for this once the SERVER confirmed the loss: removed by the creator, or the Miff deleted by another member. An alert of mine in that Miff is
+        // gone with it (the lot below, or the card that is already gone, whichever way the clean-up ends): the controller is told FIRST, so that the banner goes and a new alert is possible
+        // elsewhere, even when the clean-up itself fails or only drops the index (review of #275 v3).
+        if (alertsEnabled) onAlertGone(lost.ref.miffId)
         // Clean-up needs the server: without it nothing is touched (the next start will do it).
         var leave =
             write { store.commit(MiffWrites.leave(lost.ref.miffId, uid, lost.ref.key, withAlert = alertsEnabled)) }
@@ -674,7 +680,6 @@ class FirestoreMiffRepository(
             leave = write { store.commit(MiffWrites.leave(lost.ref.miffId, uid, lost.ref.key)) }
         }
         if (leave == MiffWriteResult.Done) {
-            if (alertsEnabled) onAlertGone(lost.ref.miffId)
             onSharingChanged()
             return true
         }

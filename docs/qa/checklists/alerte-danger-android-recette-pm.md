@@ -115,6 +115,9 @@ Le **drapeau de build** (`BuildConfig.ALERT_DANGER`) est **allumé dans l'APK de
 61. [ ] **Réseau qui saute** : alerte active, mode avion quelques secondes, retour du réseau, ouvrez l'app / changez de Miff : la bannière **reste**.
 62. [ ] **Alerte refusée puis nouveau maintien** : après un refus (étape 41), maintenez de nouveau 5 s sans fermer la bannière : une nouvelle tentative part (pas de « Une alerte est déjà en cours »).
 63. [ ] **Renouvellement du consentement** (compte non créateur d'une Miff qui doit renouveler, avec une alerte active dans cette Miff) : « Quitter la Miff » avertit que l'alerte sera retirée.
+64. [ ] **Retrait pendant l'alerte** (priorité) : A (téléphone OPPO) a une alerte active dans la Miff X. Le créateur B **retire A** de X (ou **supprime X**). À la réouverture de l'app chez A, la **bannière a disparu** et A peut **relancer une alerte dans une autre Miff** (aucun « Une alerte est déjà en cours »). Même chose pour une Miff supprimée par un autre membre.
+65. [ ] **Suppression sur le même téléphone** : A crée la Miff X, déclenche une alerte, puis **supprime X** (confirmation avec l'avertissement) : la bannière disparaît tout de suite, B ne reçoit pas de notification de fin.
+66. [ ] **Fin depuis un autre appareil** : alerte active chez A ; A se connecte sur un 2e appareil (l'ancien est déconnecté) et termine l'alerte ; retour au 1er appareil au premier plan : plus de bannière.
 
 ## Retours à noter
 - Durée du maintien ressentie (400 ms + 5 s) : trop long / trop court ?

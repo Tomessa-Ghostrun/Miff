@@ -573,14 +573,52 @@ class AlertControllerTest {
             w.store.mine = MineRead.Denied
             w.controller.cancelPending()
             runCurrent()
+            // a first refusal is not enough (it can be passing): the pointer waits for a second one
+            assertEquals(PointerPhase.ABANDONED, w.local.pointer()?.phase)
+            advanceTimeBy(6_000)
+            runCurrent()
             assertNull(w.local.pointer())
-            assertEquals(1, w.store.reads.size)
+            assertEquals(2, w.store.reads.size)
             // an abandoned pointer older than the life of an alert is dropped without a reading
             w.local.save(AlertPointer("miffA", PointerPhase.ABANDONED, w.base - AlertRules.DURATION_MILLIS - 1))
             w.controller.restore()
             runCurrent()
             assertNull(w.local.pointer())
-            assertEquals(1, w.store.reads.size)
+            assertEquals(2, w.store.reads.size)
+        }
+
+    @Test
+    fun aPassingRefusalOnAnAbandonedSending_thatHadLanded_isNotForgotten() =
+        runTest {
+            val w = world()
+            w.store.starts += StartResult.Failed(AlertFailure.Refused)
+            w.controller.trigger("miffA")
+            runCurrent()
+            w.store.mine = MineRead.Denied
+            w.controller.cancelPending()
+            runCurrent()
+            // the refusal passes: the second reading shows the alert, alive
+            w.store.mine = MineRead.Value(AlertDoc("me", true, w.base, w.base + 500_000, 1))
+            advanceTimeBy(6_000)
+            runCurrent()
+            assertTrue(w.controller.state.value is MyAlert.Active)
+            assertEquals(PointerPhase.ACTIVE, w.local.pointer()?.phase)
+        }
+
+    @Test
+    fun removedByTheCreatorOrTheMiffDeleted_theBannerGoes_andANewAlertIsPossibleElsewhere() =
+        runTest {
+            val w = world()
+            w.controller.trigger("miffX")
+            runCurrent()
+            assertTrue(w.controller.trigger("miffY") is TriggerResult.AlreadyActive)
+            // the repository tells the controller when the loss, the leaving or the deletion of miffX is proven
+            w.controller.onAlertRemoved("miffX")
+            assertTrue(w.controller.state.value is MyAlert.None)
+            assertNull(w.local.pointer())
+            assertEquals(TriggerResult.Started, w.controller.trigger("miffY"))
+            runCurrent()
+            assertEquals("miffY", (w.controller.state.value as MyAlert.Active).miffId)
         }
 
     @Test

@@ -1,6 +1,7 @@
 package com.tomessa.miff.data.miff
 
 import com.google.firebase.firestore.FirebaseFirestoreException.Code
+import com.tomessa.miff.domain.miff.MembershipRef
 import com.tomessa.miff.testsupport.FakeActiveDevice
 import com.tomessa.miff.testsupport.FakeCachePurger
 import com.tomessa.miff.testsupport.FakeLocationProbe
@@ -121,5 +122,54 @@ class MiffRepositoryAlertTest {
             val result = repo(alerts = true).removeMember(MIFF_ID, "uid-2")
             assertTrue(result is CodeChangeResult.Changed)
             assertEquals(7, store.commitsAsLots.single().size)
+        }
+
+    // ---- the loss of a Miff with an alert in it (review of #275 v3) ----------------------------------------------------------------------
+
+    private val lost = LostMiff(MembershipRef("free", MIFF_ID), "Chez nous")
+
+    @Test
+    fun cleanUpLost_removedByTheCreator_theAlertGoes_whenTheLeaveLotWorks() =
+        runTest {
+            assertTrue(repo(alerts = true).cleanUpLost(uid, lost))
+            assertEquals(listOf(MIFF_ID), gone)
+        }
+
+    @Test
+    fun cleanUpLost_theCardIsAlreadyGone_onlyTheIndexIsDropped_theAlertGoesAllTheSame() =
+        runTest {
+            // the leave lot is refused (twice: with and without the alert), the index alone goes through
+            store.commitFailures =
+                ArrayDeque(listOf(firestoreError(Code.PERMISSION_DENIED), firestoreError(Code.PERMISSION_DENIED), null))
+            assertTrue(repo(alerts = true).cleanUpLost(uid, lost))
+            assertEquals(listOf(MIFF_ID), gone)
+        }
+
+    @Test
+    fun cleanUpLost_evenWhenTheCleanUpFails_theLossIsProven_theAlertGoes() =
+        runTest {
+            store.commitFailures =
+                ArrayDeque(listOf(firestoreError(Code.UNAVAILABLE), firestoreError(Code.UNAVAILABLE)))
+            repo(alerts = true).cleanUpLost(uid, lost)
+            assertEquals(listOf(MIFF_ID), gone)
+        }
+
+    @Test
+    fun cleanUpLost_withTheFunctionOff_tellsNobody() =
+        runTest {
+            repo(alerts = false).cleanUpLost(uid, lost)
+            assertTrue(gone.isEmpty())
+        }
+
+    @Test
+    fun leave_theAnswerWasLostButTheLotLeft_theAlertGoesAllTheSame() =
+        runTest {
+            store.memberships = listOf(MembershipRef("free", MIFF_ID))
+            store.loseAnswerAt = 0
+            // after the lot, the server refuses the Miff to this person: it did leave
+            store.miffs[MIFF_ID] = firestoreError(Code.PERMISSION_DENIED)
+            val result = repo(alerts = true).leave(uid, MIFF_ID)
+            assertEquals(MiffWriteResult.Done, result)
+            assertEquals(listOf(MIFF_ID), gone)
         }
 }

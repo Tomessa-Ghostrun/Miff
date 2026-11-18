@@ -932,6 +932,8 @@ class AppContainer(
 
     /** After a voluntary "Quitter" the server confirmed: no message of lost access for it, purge of the cache, fresh list of Miffs. */
     suspend fun onMiffLeft(miffId: String) {
+        // ALERTE: leaving or DELETING a Miff (the creator's own deletion included) removes my alert of that Miff in the same lot: the banner goes, a new alert is possible elsewhere.
+        if (BuildConfig.ALERT_DANGER) alertController.onAlertRemoved(miffId)
         miffDirectory.expectDeparture(miffId)
         knownMiffsKeeper.onLeft(miffId)
         notificationScope.launch { notificationScheduler.onMiffGone(miffId) }
