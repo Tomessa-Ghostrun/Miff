@@ -54,6 +54,8 @@ struct FeedListView: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @StateObject private var order = FeedOrderModel()
 
+    /// L'espace entre deux éléments de la liste (cartes, bulle) ; aussi celui du dessus de l'encart du compte à rebours.
+    private static let itemSpacing: CGFloat = 14
     private static let topId = "feed-top"
     /// Combien de temps le Feed attend que la Miff d'une ligne touchée soit celle qu'il montre, avant d'oublier la demande (jamais une erreur).
     private static let focusWaitNanos: UInt64 = 10_000_000_000
@@ -113,7 +115,7 @@ struct FeedListView: View {
             ScrollView {
                 VStack(spacing: 0) {
                     topAnchor
-                    LazyVStack(spacing: 14) {
+                    LazyVStack(spacing: Self.itemSpacing) {
                         items
                     }
                     .padding(.horizontal, Spacing.md)
@@ -258,14 +260,19 @@ struct FeedListView: View {
         ForEach(Array(content.banners.enumerated()), id: \.offset) { _, banner in
             FeedBannerView(banner: banner, texts: texts)
         }
-        BubbleView(
-            bubble: content.bubble,
-            announceKey: content.announceKey,
-            texts: texts,
-            isActive: isActive,
-            actions: actions.bubble,
-            travelNote: content.travelNote
-        )
+        // COMPTE À REBOURS (COUNTDOWN-I) : juste sous la bulle de la Miff, au-dessus des cartes. La bulle et l'encart sont rangés dans UNE pile
+        // d'espacement 0 : l'espace au-dessus de l'encart est porté par l'encart, donc masqué il ne change RIEN à la mise en page d'avant.
+        VStack(spacing: 0) {
+            BubbleView(
+                bubble: content.bubble,
+                announceKey: content.announceKey,
+                texts: texts,
+                isActive: isActive,
+                actions: actions.bubble,
+                travelNote: content.travelNote
+            )
+            CountdownSlot(isActive: isActive, topSpacing: Self.itemSpacing)
+        }
         // Le CONTENU des cartes est toujours celui du moment ; seul leur ORDRE attend la fin d'un geste (`FeedOrderModel`).
         ForEach(order.order.resolve(content.cards), id: \.member.uid) { card in
             MemberCardView(

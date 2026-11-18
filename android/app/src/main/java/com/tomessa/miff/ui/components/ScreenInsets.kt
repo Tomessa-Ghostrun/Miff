@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.areNavigationBarsVisible
 import androidx.compose.foundation.layout.areStatusBarsVisible
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.isImeVisible
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -30,6 +32,11 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
+import androidx.core.view.WindowCompat
+import android.graphics.Color as AndroidColor
 
 /*
  * THE ONLY PLACE where the app deals with the "safe areas" of the phone: status bar (clock, battery), navigation bar (3 buttons
@@ -74,6 +81,12 @@ fun Modifier.miffTopInsets(): Modifier = composed { windowInsetsPadding(miffSafe
 
 /** Bottom and left/right sides: navigation bar (3 buttons or gestures), cut-out and keyboard. For a body, a bar or a sheet. */
 fun Modifier.miffBottomInsets(): Modifier = composed { windowInsetsPadding(miffSafeInsets().only(HorizontalAndBottom)) }
+
+/**
+ * The keyboard ALONE (nothing while it is closed), for a tab whose bottom is already kept by the floating tab bar (LocalTabBarInset): the bar hides while the keyboard
+ * is open, so this takes over and lifts the content above the keyboard, with no margin counted twice. Used by the preview of the Update (the description field).
+ */
+fun Modifier.miffKeyboardInsets(): Modifier = composed { windowInsetsPadding(WindowInsets.ime) }
 
 /** Height of the status bar and cut-out, for the rare element that must not be padded as a whole but only pushed down. */
 @Composable
@@ -277,4 +290,63 @@ internal object SystemBarSizes : BarSizeSource {
     }
 
     private const val NAVIGATION_GESTURES = 2
+}
+
+/**
+ * A dialog that is FULL BLEED: its window covers the whole screen and is drawn BEHIND the status bar, the navigation bar and the camera cut-out (both bars transparent,
+ * their icons light, no contrast scrim added by the system), for a content that must reach every edge, like the photo in full screen. It takes NOTHING from the safe
+ * areas by itself: the [content] keeps its buttons and texts inside them with [miffTopInsets] / [miffBottomInsets] (the picture, on the other hand, ignores them).
+ * Like the other window helpers of this file, this is the only place that touches the window flags and the decor of a window.
+ */
+@Composable
+fun MiffFullBleedDialog(
+    onDismissRequest: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    Dialog(
+        onDismissRequest = onDismissRequest,
+        properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
+    ) {
+        FullBleedWindow()
+        content()
+    }
+}
+
+@Composable
+private fun FullBleedWindow() {
+    val window = (LocalView.current.parent as? DialogWindowProvider)?.window
+    SideEffect {
+        if (window == null) return@SideEffect
+        window.setLayout(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.MATCH_PARENT)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        // Before Android 11 a dialog window stops at the bars unless it is allowed to go past the limits of the screen.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.R) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS)
+        }
+        @Suppress("DEPRECATION")
+        window.statusBarColor = AndroidColor.TRANSPARENT
+        @Suppress("DEPRECATION")
+        window.navigationBarColor = AndroidColor.TRANSPARENT
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            window.isNavigationBarContrastEnforced = false
+            window.isStatusBarContrastEnforced = false
+        }
+        // Under the camera cut-out too, in portrait and in landscape (Android 11: all edges; Android 9 and 10: the short edges, which is the top in portrait).
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            window.attributes =
+                window.attributes.also {
+                    it.layoutInDisplayCutoutMode =
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+                        } else {
+                            WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+                        }
+                }
+        }
+        // Light icons (clock, battery, navigation) on the photo and its dark veils.
+        WindowCompat.getInsetsController(window, window.decorView).apply {
+            isAppearanceLightStatusBars = false
+            isAppearanceLightNavigationBars = false
+        }
+    }
 }
