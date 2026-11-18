@@ -305,7 +305,9 @@ struct TimeShareCard: View {
                 .accessibilityHidden(true)
         }
     }
+}
 
+extension TimeShareCard {
     /// L'encart de synthèse de la maquette : fond vert très léger, coche, « Tu as passé x % de ton temps dans tes zones de confiance » et 🎉 à
     /// droite. Affiché dans tous les cas où le graphique l'est (décision du PM : le ton est assumé, y compris pour un très petit pourcentage) ;
     /// ne nomme jamais la zone de danger.
