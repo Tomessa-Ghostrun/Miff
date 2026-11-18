@@ -34,14 +34,14 @@ test('BUDGET - coût figé de chaque fonction de règles (direct, avec fonctions
     targetSharingOn: [1, 1],
     codeRenewed: [2, 2],
     phoneMatchesProfile: [1, 1],
-    validSharingChange: [3, 3],
+    validSharingChange: [4, 4], // AD-B1 : +1 (existsAfter de l'alerte à l'arrêt du partage)
     indexAfterOk: [4, 4],
     ownerCreateOk: [2, 6],
     memberJoinOk: [2, 6],
     termsAcceptedAfter: [1, 1],
     validMemberCreate: [0, 14],
-    validMemberUpdate: [0, 4],
-    memberDeleteOk: [4, 8],
+    validMemberUpdate: [0, 5],
+    memberDeleteOk: [5, 8], // AD-B1 : +1 (alerte) et -1 (isOwnerOneRead au lieu d'isOwner dans la branche retrait) : total inchangé
     validMiffCreate: [3, 3],
     validMiffUpdate: [2, 2],
     validJoinCodeCreate: [3, 3],
@@ -62,6 +62,13 @@ test('BUDGET - coût figé de chaque fonction de règles (direct, avec fonctions
     requestCounterMoved: [1, 1],
     memberCounterOk: [2, 2],
     validRequestCounter: [0, 3],
+    // AD-B1 (alerte « Je suis en danger », NON DÉPLOYÉ) : partage actif après le lot 1 ; session 1 ; début = session 1 ; ré-armement = session + Miff + partage 3 ; fin = session 1.
+    // Aucune de ces fonctions n'est appelée par une règle existante (budgets-alerte.test.js).
+    alertSharingAfter: [1, 1],
+    alertDeviceOk: [1, 1],
+    alertStart: [0, 1],
+    alertRearm: [0, 3],
+    alertEnd: [0, 1],
     validPhoto: [1, 1], // inchangé : la localisation (obligatoire) réutilise le getAfter du consentement déjà lu (aucune lecture de plus à l'écriture)
   });
 });
@@ -70,7 +77,7 @@ test('BUDGET - coût figé de chaque règle « allow » (borne haute sans court-
   const cost = (header, methods) => Object.fromEntries(methods.map((m) => [m, allow(header, m)]));
   assert.deepEqual(cost('match /places/{placeId} {', ['get', 'create', 'update', 'delete']), { get: 2, create: 3, update: 3, delete: 2 });
   assert.deepEqual(cost('match /status/{uid} {', ['get', 'create', 'update', 'delete']), { get: 3, create: 2, update: 2, delete: 1 }); // SESS-1 : +1 (session), seulement quand la clé deviceId est présente
-  assert.deepEqual(cost('match /members/{uid} {', ['get', 'create', 'update', 'delete']), { get: 2, create: 14, update: 4, delete: 8 });
+  assert.deepEqual(cost('match /members/{uid} {', ['get', 'create', 'update', 'delete']), { get: 2, create: 14, update: 5, delete: 8 });
   // R-PHOTO-LOC : lecture 2 -> 3 en borne haute (Miff + mon partage + MA position) ; 2 seulement pour un ANCIEN document non localisé (court-circuit), ce que plus aucune écriture ne produit.
   assert.deepEqual(cost('match /photos/{uid} {', ['get', 'create', 'delete']), { get: 3, create: 1, delete: 2 });
   // Dernière position (R-LIEU-POS) : écriture = Miff existante + fiche du membre ; lecture = Miff, mon partage, mon statut, ma position, partage de la cible.
@@ -130,15 +137,17 @@ const upper = {
   supprimerMiff: sum(A('match /miffs/{miffId} {', 'delete'), A('match /members/{uid} {', 'delete'), A('match /memberships/{key} {', 'delete')),
 };
 const DOCUMENTED = {
-  retraitUnMembre: 18, // fiche 7 (3 existsAfter + propriétaire 2 + code renouvelé 2) + statut 1 + photo 1 + position 1 + Miff 4 + code créé 3 + code supprimé 1
+  // fiche 7 (4 existsAfter : statut, photo, position, ALERTE (AD-B1) + créateur 1 (isOwnerOneRead, avant AD-B1 : isOwner 2 avec 3 existsAfter) + code renouvelé 2) + statut 1 + photo 1 + position 1 + Miff 4 + code créé 3 + code supprimé 1
+  // = 18, inchangé par AD-B1. Si le lot supprime AUSSI l'alerte du membre retiré (suppression par le créateur : 1), 19, marge 1 (lot du contrat client : voir budgets-alerte.test.js).
+  retraitUnMembre: 18,
   // SESS-1 : 19 -> 18. Fiche 8 (téléphone 1 + CGU 1 + !exists de la Miff 1 + getAfter de la Miff 1 + indexAfterOk 4) + Miff 3 + code 3 + index premium 2
   // (isPremiumOneRead au lieu d'isPremium : 4 -> 2) + statut 2 (consentement 1 + session 1) = 18, marge 2. Avec une application qui n'écrit pas encore le
   // deviceId (temps 1) : 17. La position n'y entre jamais.
   creerEtPartagerPremium: 18,
-  arretDuPartageUneMiff: 3, // 3 existsAfter (statut, photo, position)
-  quitterUneMiff: 4, // fiche 3 existsAfter + index 1
+  arretDuPartageUneMiff: 4, // 4 existsAfter (statut, photo, position, alerte : AD-B1, avant 3)
+  quitterUneMiff: 5, // fiche 4 existsAfter (statut, photo, position, alerte : AD-B1) + index 1 (avant 4)
   activerPartageStatutPosition: 5, // getAfter du statut 1 + session 1 (statut) + Miff 1 + getAfter de la fiche 1 + session 1 (position) ; 3 sans deviceId
-  supprimerLaMiff: 13, // Miff 4 + pierre tombale 3 + code 1 + fiche 4 + index 1
+  supprimerLaMiff: 14, // Miff 4 + pierre tombale 3 + code 1 + fiche 5 (4 existsAfter + la Miff) + index 1 (avant AD-B1 : fiche 4, total 13)
 };
 
 test('BUDGET - lots documentés : sous la limite de 20 et sous la borne haute calculée sur le texte des règles', () => {
@@ -164,13 +173,15 @@ test('BUDGET - position : écriture isolée = 3 (Miff + fiche + session) ; au pl
   assert.equal(A('match /positions/{uid} {', 'get'), 5); // 5 sur 10 : marge 5
 });
 
-test('BUDGET - contrat client : arrêt du partage 6 Miffs au plus par lot (3 × 6 = 18), départ 4 au plus (4 × 4 = 16 ; 5 = 20 sans marge)', () => {
-  assert.equal(DOCUMENTED.arretDuPartageUneMiff * 6, 18);
-  assert.ok(LIMIT - DOCUMENTED.arretDuPartageUneMiff * 6 >= 2);
-  assert.ok(DOCUMENTED.arretDuPartageUneMiff * 7 > LIMIT);
-  assert.equal(DOCUMENTED.quitterUneMiff * 4, 16);
-  assert.ok(LIMIT - DOCUMENTED.quitterUneMiff * 4 >= 2);
-  assert.equal(DOCUMENTED.quitterUneMiff * 5, 20);
+test('BUDGET - contrat client (AD-B1, l alerte coûte 1 lecture de plus) : arrêt du partage 4 Miffs au plus par lot (4 × 4 = 16 ; 5 = 20 sans marge), départ 3 au plus (3 × 5 = 15 ; 4 = 20 sans marge)', () => {
+  assert.equal(DOCUMENTED.arretDuPartageUneMiff * 4, 16);
+  assert.ok(LIMIT - DOCUMENTED.arretDuPartageUneMiff * 4 >= 2);
+  assert.equal(DOCUMENTED.arretDuPartageUneMiff * 5, 20);
+  assert.ok(DOCUMENTED.arretDuPartageUneMiff * 6 > LIMIT); // avant AD-B1 : 6 Miffs (3 × 6 = 18) ; les applications actuelles écrivent UNE Miff par lot
+  assert.equal(DOCUMENTED.quitterUneMiff * 3, 15);
+  assert.ok(LIMIT - DOCUMENTED.quitterUneMiff * 3 >= 2);
+  assert.equal(DOCUMENTED.quitterUneMiff * 4, 20);
+  assert.ok(DOCUMENTED.quitterUneMiff * 5 > LIMIT); // avant AD-B1 : 4 Miffs (4 × 4 = 16)
   // Avant la position (PR #55) : arrêt 2 par Miff (10 Miffs), départ 3 par Miff (6 Miffs) : le contrat recule.
 });
 
@@ -222,9 +233,9 @@ test('BUDGET - SESS-1 : pire cas de CHAQUE lot des applications avec la session 
     lotStatuts8Miffs: [16, 8],
     lieuxPremium5Miffs: [15, 15], // inchangé
     retraitUnMembre: [DOCUMENTED.retraitUnMembre, 18], // inchangé (aucune écriture de statut ni de position)
-    arretDuPartage: [DOCUMENTED.arretDuPartageUneMiff, 3],
-    quitter: [DOCUMENTED.quitterUneMiff, 4],
-    supprimerLaMiff: [DOCUMENTED.supprimerLaMiff, 13],
+    arretDuPartage: [DOCUMENTED.arretDuPartageUneMiff, 3], // AD-B1 : 3 -> 4
+    quitter: [DOCUMENTED.quitterUneMiff, 4], // AD-B1 : 4 -> 5
+    supprimerLaMiff: [DOCUMENTED.supprimerLaMiff, 13], // AD-B1 : 13 -> 14
     renouvelerConsentement5Miffs: [0, 0],
   };
   for (const [name, [now, before]] of Object.entries(worst)) {
@@ -233,7 +244,8 @@ test('BUDGET - SESS-1 : pire cas de CHAQUE lot des applications avec la session 
     assert.ok(now >= before, name);
   }
   // Rien n'a augmenté pour les lots qui ne portent ni statut ni position.
-  for (const name of ['lieuxPremium5Miffs', 'retraitUnMembre', 'arretDuPartage', 'quitter', 'supprimerLaMiff', 'renouvelerConsentement5Miffs']) {
+  // AD-B1 : l'arrêt du partage, le départ et la suppression de la Miff gagnent UNE lecture (l'alerte) ; le retrait n'a pas bougé (isOwnerOneRead).
+  for (const name of ['lieuxPremium5Miffs', 'retraitUnMembre', 'renouvelerConsentement5Miffs']) {
     assert.equal(worst[name][0], worst[name][1], name);
   }
 });

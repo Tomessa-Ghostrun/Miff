@@ -6,3 +6,6 @@ import "./options.js";
 
 /** `notifierUpdate` (SRV-4B) : notification "un proche a donne des nouvelles" aux autres membres quand une photo d'update est publiee. */
 export { notifierUpdate } from "./notifierUpdate.js";
+
+/** `notifierAlerte` (AD-B2) : notification prioritaire « un proche a declare une alerte » (debut) ou « a mis fin a son alerte » (fin manuelle seulement, jamais a l'expiration). */
+export { notifierAlerte } from "./notifierAlerte.js";

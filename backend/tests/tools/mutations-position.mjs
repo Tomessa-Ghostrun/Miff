@@ -114,22 +114,24 @@ export const POSITION_MUTATIONS = [
   // --- Effacement dans le même lot -------------------------------------------------------------------------
   mut('DP11-arret-sans-purge-position', "l'arrêt du partage ne force plus la suppression de la position",
     [edit(`
-            && !existsAfter(${DB}/miffs/$(miffId)/positions/$(uid)))`, ')')],
+            && !existsAfter(${DB}/miffs/$(miffId)/positions/$(uid))
+            // Alerte (AD-B1)`, `
+            // Alerte (AD-B1)`)],
     ['DP11', 'DP14b']),
   mut('DP12-depart-sans-purge-position', 'quitter la Miff ne force plus la suppression de la position',
     [edit(`\n        ${EXISTS_AFTER_POSITION}\n`, '\n')],
     ['DP12', 'DP12b', 'DP12c']),
   mut('DP13-suppression-par-membre', "n'importe quel membre supprime la position d'un autre",
-    [edit('allow delete: if isSelf(uid) || isOwnerOneRead(miffId);', 'allow delete: if isSelf(uid) || isMember(miffId);', 2, 2)],
+    [edit('allow delete: if isSelf(uid) || isOwnerOneRead(miffId);', 'allow delete: if isSelf(uid) || isMember(miffId);', 2, 3)],
     ['DP13']),
   mut('DP13-suppression-par-tout-connecte', "n'importe quel compte connecté supprime une position",
-    [edit('allow delete: if isSelf(uid) || isOwnerOneRead(miffId);', 'allow delete: if isSignedIn();', 2, 2)],
+    [edit('allow delete: if isSelf(uid) || isOwnerOneRead(miffId);', 'allow delete: if isSignedIn();', 2, 3)],
     ['DP13']),
   mut('DP13-suppression-par-la-creatrice', 'la créatrice ne peut plus supprimer la position d\'un membre retiré',
-    [edit('allow delete: if isSelf(uid) || isOwnerOneRead(miffId);', 'allow delete: if isSelf(uid);', 2, 2)],
+    [edit('allow delete: if isSelf(uid) || isOwnerOneRead(miffId);', 'allow delete: if isSelf(uid);', 2, 3)],
     ['DP12b', 'DP13']),
   mut('DP13-suppression-par-soi', 'un membre ne peut plus supprimer sa propre position',
-    [edit('allow delete: if isSelf(uid) || isOwnerOneRead(miffId);', 'allow delete: if isOwnerOneRead(miffId);', 2, 2)],
+    [edit('allow delete: if isSelf(uid) || isOwnerOneRead(miffId);', 'allow delete: if isOwnerOneRead(miffId);', 2, 3)],
     ['DP12', 'DP13']),
 
   // --- isOwnerOneRead (utilisé par les purges du statut, de la photo et de la position) -----------------------
