@@ -126,6 +126,8 @@ final class FeedRefreshIndicatorTests: XCTestCase {
     private let other = feedMember("a", first: "Thomas")
     private let mine = feedMember("me", first: "Camille")
     private var model: FeedViewModel?
+    /// Les attentes de l'indicateur que ces tests provoquent (le minimum entier, ou son reste).
+    nonisolated fileprivate static let holds: Set<Int> = [800, 500]
 
     private func makeModel() async -> FeedViewModel {
         repo.myMiffsResult = .loaded(
@@ -152,8 +154,15 @@ final class FeedRefreshIndicatorTests: XCTestCase {
             currentUid: { "me" },
             clock: { now.value },
             sleep: { millis in
-                sleeps.value.append(millis)
-                flags.value.append(holder.value?.refreshing ?? false)
+                // Seules les attentes de l'indicateur sont notées et rendues aussitôt ; les autres minuteries du Feed (la minute, les essais)
+                // dorment pour de vrai (accélérées), sinon leurs boucles ne céderaient jamais la main.
+                if FeedRefreshIndicatorTests.holds.contains(millis) {
+                    sleeps.value.append(millis)
+                    flags.value.append(holder.value?.refreshing ?? false)
+                    return
+                }
+                let nanos = millis == FeedMillis.minute ? 20_000_000 : UInt64(max(millis, 0)) * 1_000_000
+                try? await Task.sleep(nanoseconds: nanos)
             },
             timings: FeedTimings(statusRetryDelaysMillis: [5], firstStatusAnswerMillis: 600_000, cacheGraceMillis: 30)
         )
