@@ -410,6 +410,9 @@
     <string name="feed_refresh_a11y">Actualiser</string>
     <string name="feed_refresh_started_a11y">Actualisation en cours</string>
     <string name="feed_refresh_done_a11y">Informations actualisées</string>
+    <!-- FEED-ORDRE : annonce polie (lecteur d'écran) quand l'ordre des cartes change. %1$s = le prénom du proche. Clés partagées avec iOS. -->
+    <string name="feed_order_updated_one_a11y">%1$s a donné des nouvelles</string>
+    <string name="feed_order_updated_many_a11y">Le Feed a été mis à jour</string>
     <string name="feed_loading_a11y">Chargement de ton fil</string>
     <string name="feed_card_you_sees">Ce que tes proches voient de toi</string>
     <string name="feed_card_message_a11y">Écrire à %1$s</string>
@@ -1197,4 +1200,26 @@
     <string name="feed_colors_not_verdict">Orange ou rouge ne veut pas dire qu\'il y a un problème, seulement qu\'on n\'a pas eu de nouvelles depuis un moment.</string>
     <string name="feed_colors_not_delay">Ton téléphone calcule les couleurs à partir des dernières informations reçues. Sans connexion, elles peuvent avoir un peu de retard : le fil indique alors l\'heure des dernières informations.</string>
     <string name="feed_colors_bubble_action_a11y">Comprendre les couleurs</string>
+
+    <!-- COUNTDOWN-A : compte à rebours avant l'orange (Feed et Profil). Mêmes clés qu'iOS. Les durées sont des textes du catalogue (pas le formateur du système) pour que Android et iOS écrivent exactement la même chose ; espace insécable entre le nombre et l'unité. -->
+    <string name="countdown_title">Tu es en dehors de tes lieux de confiance</string>
+    <string name="countdown_body">Tu passeras orange dans %1$s</string>
+    <string name="countdown_duration_hours_minutes">%1$d&#160;h %2$02d&#160;min</string>
+    <string name="countdown_duration_hours">%1$d&#160;h</string>
+    <string name="countdown_duration_minutes">%1$d&#160;min</string>
+    <string name="countdown_duration_less_than_minute">moins d\'1&#160;min</string>
+    <string name="countdown_a11y_label">Tu es en dehors de tes lieux de confiance. Tu passeras orange dans %1$s.</string>
+    <plurals name="countdown_a11y_hours">
+        <item quantity="one">%1$d heure</item>
+        <item quantity="many">%1$d heures</item>
+        <item quantity="other">%1$d heures</item>
+    </plurals>
+    <plurals name="countdown_a11y_minutes">
+        <item quantity="one">%1$d minute</item>
+        <item quantity="many">%1$d minutes</item>
+        <item quantity="other">%1$d minutes</item>
+    </plurals>
+    <string name="countdown_a11y_hours_and_minutes">%1$s et %2$s</string>
+    <string name="countdown_a11y_less_than_minute">moins d\'une minute</string>
+    <string name="countdown_a11y_action">Donner de tes nouvelles</string>
 </resources>

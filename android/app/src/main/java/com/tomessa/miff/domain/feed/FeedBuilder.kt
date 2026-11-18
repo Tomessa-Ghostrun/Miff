@@ -4,7 +4,9 @@ import com.tomessa.miff.domain.miff.MiffMember
 import com.tomessa.miff.domain.miff.MiffSharingConsent
 import com.tomessa.miff.domain.place.Place
 import com.tomessa.miff.domain.place.PlaceCategory
+import com.tomessa.miff.domain.tracking.CountdownAnchor
 import com.tomessa.miff.domain.tracking.MemberStatusFacts
+import com.tomessa.miff.domain.tracking.OrangeCountdown
 import com.tomessa.miff.domain.tracking.PresenceValue
 import com.tomessa.miff.domain.tracking.StatusColor
 import com.tomessa.miff.domain.tracking.StatusLevel
@@ -82,15 +84,21 @@ object FeedBuilder {
         // Nothing of the others is read (and nothing is shown) while I do not share or my agreement is waited for.
         val hidden = !mySharing || input.waitingAgreement
         val statuses = (input.statuses as? StatusesView.Loaded)?.byUid.orEmpty()
-        val ordered = orderMembers(input.members, input.myUid)
         val places = input.places.associateBy { it.id }
 
-        val cards =
-            ordered.map { member ->
+        // The cards are first made in the order of arrival, then put in the order of the news (FEED-ORDRE): a card does not depend on its place.
+        val byArrival =
+            input.members.map { member ->
                 val isMe = member.uid == input.myUid
                 val status = if (hidden && !isMe) null else statuses[member.uid]
-                card(member, isMe, status, places, input, hidden, mySharing, nowMillis, zone)
+                Triple(member, status, card(member, isMe, status, places, input, hidden, mySharing, nowMillis, zone))
             }
+        val newsAt =
+            byArrival
+                .mapNotNull { (member, status, card) -> newsDate(card.label, status)?.let { member.uid to it } }
+                .toMap()
+        val cardsByUid = byArrival.associate { (member, _, card) -> member.uid to card }
+        val cards = orderMembers(input.members, newsAt).mapNotNull { cardsByUid[it.uid] }
         val mine = cards.firstOrNull { it.isMe }
         val miffLevel = miffLevel(cards.map { it.level })
         val latestUpdate = statuses.values.mapNotNull { it.updatedAtMillis }.maxOrNull()
@@ -136,6 +144,30 @@ object FeedBuilder {
                         mySharing && !input.waitingAgreement
                     }?.let { MyPhotoFacts(it.hasPhoto, it.lastUpdateAtMillis) },
             travelNote = travelNote,
+            myCountdown = myCountdown(input, mySharing, statuses[input.myUid]),
+        )
+    }
+
+    /**
+     * COUNTDOWN-A: the anchor of the countdown before orange, from MY status only (the same facts as my card, so the encart and the card come from the same
+     * calculation). Nothing while I do not share, while my agreement is waited for, or while my status is not known (loading, "Partage de ton statut en cours…").
+     */
+    private fun myCountdown(
+        input: FeedInput,
+        mySharing: Boolean,
+        status: MemberStatus?,
+    ): CountdownAnchor? {
+        if (status == null || !mySharing || input.waitingAgreement) return null
+        // Somebody who is not in the Miff has no card and no countdown.
+        if (input.members.none { it.uid == input.myUid }) return null
+        return OrangeCountdown.anchorOf(
+            MemberStatusFacts(
+                mySharing,
+                status.presence,
+                status.presenceAtMillis,
+                status.lastUpdateAtMillis,
+                status.travelUntilMillis,
+            ),
         )
     }
 
@@ -155,13 +187,60 @@ object FeedBuilder {
     }
 
     /**
-     * The order of the cards (decision of the PM, 2026-11-07): the OTHER members first, in the order of the list they come in (the creator, then the
-     * order of arrival: never reordered by urgency), and ME LAST. The sort is stable, so the others keep exactly the order they were given.
+     * The date a card is sorted by (FEED-ORDRE, ticket section 3, decisions 1 and 3): `lastUpdateAt` of the status, the last "tout va bien" signal (a manual
+     * update or an arrival in a trusted place; it survives the expiry of the photo and costs no extra read). Null ("without a usable date", last) for a card
+     * that says "Partage désactivé", "Informations masquées" or the wait for my agreement, and when the status holds no date.
+     *
+     * The card "Pas encore de nouvelles" (`presence = unknown`) is also without a date, EXCEPT when the member published an update AFTER the first status
+     * (`lastUpdateAt` strictly after `presenceAt`): the first status writes both with the same server time, so a later `lastUpdateAt` can only be a manual
+     * update made before any departure from a place. That card rises with its date; the wording of the card stays "Pas encore de nouvelles" (question left to
+     * the PM, ticket section 10). Equal times (sharing just activated) stay last.
+     */
+    internal fun newsDate(
+        label: StateLabel,
+        status: MemberStatus?,
+    ): Long? =
+        when (label) {
+            StateLabel.SharingStopped, StateLabel.NewsHidden, StateLabel.WaitingAgreement -> {
+                null
+            }
+
+            StateLabel.NoNews -> {
+                val entry = status?.presenceAtMillis
+                val update = status?.lastUpdateAtMillis
+                if (status?.presence == PresenceValue.UNKNOWN && entry != null && update != null &&
+                    update > entry
+                ) {
+                    update
+                } else {
+                    null
+                }
+            }
+
+            else -> {
+                status?.lastUpdateAtMillis
+            }
+        }
+
+    /**
+     * The order of the cards (FEED-ORDRE, which replaces the decision of 2026-11-07 "the others in the order of arrival, me last"): from the most recent
+     * news to the oldest, and ME LIKE ANYBODY ELSE. [newsAtMillis] holds the date of the members who have a usable one; the others come AFTER them all, in
+     * the order of arrival. Equal dates keep the order of arrival too ([members] is the creator first, then the order of arrival, with the identifier as
+     * the last tie-break: see `membersFromSnapshot`), so the order is the same at every launch. Only STORED dates are compared: the clock of the person
+     * who looks never takes part.
      */
     fun orderMembers(
         members: List<MiffMember>,
-        myUid: String,
-    ): List<MiffMember> = members.sortedBy { it.uid == myUid }
+        newsAtMillis: Map<String, Long>,
+    ): List<MiffMember> =
+        members
+            .withIndex()
+            .sortedWith(
+                compareBy<IndexedValue<MiffMember>> { newsAtMillis[it.value.uid] == null }
+                    .thenByDescending { newsAtMillis[it.value.uid] ?: 0L }
+                    .thenBy { it.index }
+                    .thenBy { it.value.uid },
+            ).map { it.value }
 
     /**
      * The colour of the Miff (decision of the PM): red if at least one member is red; green if every member whose status is known is green;
