@@ -221,10 +221,6 @@ struct ProfileTabView: View {
                         onOpenLocationSettings: { ExternalOpener.openSystemSettings() }
                     )
                 )
-                #if DEBUG || INTERNAL
-                // Recette : des données de test pour voir la carte sans attendre 7 jours (builds de test seulement, TS-23).
-                TimeShareDemoRow(model: timeShare)
-                #endif
             }
             .padding(.horizontal, Spacing.lg)
         }

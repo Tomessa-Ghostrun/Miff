@@ -3,7 +3,7 @@ import SwiftUI
 
 /// La carte « Répartition de ton temps » montrée SEULE avec un état fixe, pour les captures d'écran de la CI
 /// (`xcrun simctl launch ... -MiffPreview timeshare-nominal`). Aucun réseau, aucune session, aucun fichier : les faits sont écrits ici
-/// (lieux et durées de démonstration) et passent par le VRAI calcul. Compilé en configuration Debug SEULEMENT, comme `ScreenPreview`.
+/// (lieux et durées d'aperçu) et passent par le VRAI calcul. Compilé en configuration Debug SEULEMENT, comme `ScreenPreview`.
 /// États : `timeshare-nominal` (anneau, légende, zone de danger, synthèse), `timeshare-many` (plus de 5 lieux : « {n} autres lieux »),
 /// `timeshare-empty` (pas assez de données), `timeshare-location` (localisation insuffisante), `timeshare-travel`, `timeshare-sharing`,
 /// `timeshare-error`, `timeshare-danger` (le détail de la zone de danger).
@@ -28,7 +28,7 @@ struct TimeShareScreenPreview: View {
         .background(gradientProfileHeader.ignoresSafeArea())
     }
 
-    // MARK: - Les lieux et les faits de démonstration
+    // MARK: - Les lieux et les faits de l'aperçu
 
     private static let now = Int(Date().timeIntervalSince1970 * 1000)
     private static let hour = TimeShareLimits.hourMillis
@@ -42,7 +42,7 @@ struct TimeShareScreenPreview: View {
     ]
 
     private static func fact(_ state: PresenceState, _ placeId: String?, hoursAgo: Int) -> PresenceFact {
-        PresenceFact(miffId: "demo", state: state, placeId: placeId, atMillis: now - hoursAgo * hour)
+        PresenceFact(miffId: "preview", state: state, placeId: placeId, atMillis: now - hoursAgo * hour)
     }
 
     /// 7 jours : Maison 84 h, Sport 21 h, Chantier 9 h, Entrepôt 6 h, dehors 48 h.
@@ -113,7 +113,7 @@ struct TimeShareScreenPreview: View {
 
 /// Le contexte des aperçus : le suivi est actif, rien n'est lu.
 @MainActor
-final class DemoTimeShareContext: TimeShareContextSource {
+final class FixedTimeShareContext: TimeShareContextSource {
     func conditions(miffId: String) async -> TimeShareConditions {
         TimeShareConditions()
     }

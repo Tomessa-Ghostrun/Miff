@@ -1039,7 +1039,6 @@ La carte « Répartition de ton temps » de l'onglet Profil montre, en anneau, c
 | `ViewModels/TimeShareViewModel.swift` | La carte pour la Miff du carrousel : lit le journal, calcule, mémorise la fenêtre |
 | `Views/Profile/TimeShareCard.swift`, `TimeShareDonut.swift`, `TimeShareLegend.swift`, `TimeShareDangerSheet.swift` | La carte, l'anneau (dessin SwiftUI, aucune bibliothèque), la légende, le détail de la zone de danger |
 | `DesignSystem/ChartTokens.swift` | La palette « graphique » (proposition, contraste 3:1 testé) |
-| `Diagnostic/TimeShareDemo.swift` | **Données de test de la recette, Debug et Internal seulement** (jamais en publication : test et contrôle de la CI) |
 
 ### Le journal
 

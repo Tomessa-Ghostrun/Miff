@@ -4,7 +4,7 @@ import XCTest
 /// Ce que la répartition du temps ne doit JAMAIS faire, vérifié sur les SOURCES pour qu'un changement ultérieur ne le casse pas sans que
 /// personne le voie : aucune lecture ni écriture Firestore de plus (TS-1), aucun événement Analytics, journal de debug ou rapport de plantage
 /// (TS-4), aucune position lue (TIME-3), aucun code partagé avec `DetectionJournal` (TS-25), aucune bibliothèque de graphique (TS-24), et
-/// l'outil de données de test absent du build de publication (TS-23). Miroir des tests de sources d'Android.
+/// aucun outil de données de test (retiré après la recette du PM). Miroir des tests de sources d'Android.
 final class TimeShareSourcesTests: XCTestCase {
     private var iosRoot: URL {
         URL(fileURLWithPath: #filePath)
@@ -140,119 +140,26 @@ final class TimeShareSourcesTests: XCTestCase {
         XCTAssertFalse(history.contains("PresenceMachine"))
     }
 
-    // MARK: - TS-23 : les données de test n'existent pas en publication
+    // MARK: - Aucun outil de données de test
 
-    /// Les lignes d'un fichier qui sont HORS d'un bloc `#if DEBUG || INTERNAL` (ou `#if DEBUG`).
-    private func linesOutsideTestBlocks(_ relative: String) throws -> [String] {
-        var depth = 0
-        var outside: [String] = []
-        for line in try read(relative).components(separatedBy: "\n") {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-            if trimmed.hasPrefix("#if DEBUG") {
-                depth += 1
-                continue
+    /// Le PM a validé le graphique : les données de test de la recette ont été retirées. Plus aucune trace dans le code, les ressources, le
+    /// catalogue ni le script de contrôle du binaire (les mots sont coupés pour que ce test ne se trouve pas lui-même).
+    func testNoToolOfTestDataIsLeftInTheSourcesOrTheCi() throws {
+        let forbidden = ["TIMESHARE" + "DEMO", "TimeShare" + "Demo", "ios_diag_" + "timeshare", "cycle" + "Demo"]
+        var found: [String] = []
+        for folder in ["Miff", "ci"] {
+            let root = iosRoot.appendingPathComponent(folder)
+            guard let files = FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil) else {
+                throw XCTSkip("Sources introuvables.")
             }
-            if trimmed.hasPrefix("#endif") && depth > 0 {
-                depth -= 1
-                continue
-            }
-            if depth == 0 && !trimmed.hasPrefix("//") {
-                outside.append(trimmed)
-            }
-        }
-        return outside
-    }
-
-    func testTheDemoToolIsCompiledInTestBuildsOnly() throws {
-        let demo = try read("Miff/Diagnostic/TimeShareDemo.swift")
-
-        XCTAssertEqual(demo.components(separatedBy: "\n").first, "#if DEBUG || INTERNAL")
-        XCTAssertTrue(demo.hasSuffix("#endif\n"))
-        XCTAssertTrue(demo.contains("TIMESHAREDEMO"))
-    }
-
-    func testNothingOutsideTheTestBlocksReferencesTheDemoTool() throws {
-        let app = iosRoot.appendingPathComponent("Miff")
-        guard let files = FileManager.default.enumerator(at: app, includingPropertiesForKeys: nil) else {
-            throw XCTSkip("Sources introuvables.")
-        }
-        var offenders: [String] = []
-        for case let file as URL in files where file.pathExtension == "swift" {
-            let tail = String(file.path.dropFirst(app.path.count + 1)).replacingOccurrences(of: "\\", with: "/")
-            let relative = "Miff/" + tail
-            if relative.hasPrefix("Miff/Diagnostic/") {
-                continue
-            }
-            for line in try linesOutsideTestBlocks(relative) {
-                let names = ["TimeShareDemoData", "TimeShareDemoRow", "TimeShareDemoMode", "cycleDemo", "demoMode"]
-                for name in names where line.contains(name) {
-                    offenders.append("\(relative) : \(line)")
+            for case let file as URL in files where ["swift", "xcstrings", "sh"].contains(file.pathExtension) {
+                let text = try String(contentsOf: file, encoding: .utf8)
+                for word in forbidden where text.contains(word) {
+                    found.append("\(file.lastPathComponent) : \(word)")
                 }
             }
         }
 
-        XCTAssertEqual(offenders, [])
-    }
-
-    func testTheCiLooksForTheDemoMarkerInThePublicationBuild() throws {
-        let script = try read("ci/check-binaries.sh")
-
-        XCTAssertTrue(script.contains("TIMESHAREDEMO"))
-        XCTAssertTrue(script.contains("TimeShareDemoData"))
-    }
-
-    // MARK: - Les données de test elles-mêmes (builds de test)
-
-    func testTheDemoDataGivesAChartForEveryWindowWithoutAnythingInTheFuture() throws {
-        let places = [
-            TimeSharePlace(id: "p1", name: "Maison", type: .trusted, category: .home),
-            TimeSharePlace(id: "p2", name: "Bureau", type: .trusted, category: .work),
-            TimeSharePlace(id: "p3", name: "Salle", type: .trusted, category: .sport),
-            TimeSharePlace(id: "r1", name: "Chantier", type: .risk, category: nil)
-        ]
-        let now = TimeShareFixtures.now
-
-        let facts = TimeShareDemoData.facts(miffId: "m1", places: places, nowMillis: now)
-
-        XCTAssertFalse(facts.isEmpty)
-        XCTAssertTrue(facts.allSatisfy { $0.atMillis <= now })
-        XCTAssertEqual(facts.map { $0.atMillis }, facts.map { $0.atMillis }.sorted())
-        for window in TimeShareLimits.windowsDays {
-            let outcome = TimeShareCalculator.compute(facts: facts, places: places, windowDays: window, nowMillis: now)
-            guard case .ready(let result) = outcome else {
-                return XCTFail("\(window) jours : des données de test devraient suffire")
-            }
-            XCTAssertEqual(result.rows.map { $0.percent }.reduce(0, +), 100)
-        }
-    }
-
-    func testTheDemoDataWithoutAnyPlaceIsOnlyElsewhereOrNothing() {
-        let facts = TimeShareDemoData.facts(miffId: "m1", places: [], nowMillis: TimeShareFixtures.now)
-
-        XCTAssertTrue(facts.allSatisfy { $0.state == .out && $0.placeId == nil })
-    }
-
-    func testTheDemoDataCanShowTheNotEnoughDataStateAtTwoAndSixDays() {
-        let places = [TimeSharePlace(id: "p1", name: "Maison", type: .trusted, category: .home)]
-        let now = TimeShareFixtures.now
-        let expected: [(days: Int, left: Int)] = [(2, 5), (6, 1)]
-
-        for item in expected {
-            let facts = TimeShareDemoData.facts(miffId: "m1", places: places, nowMillis: now, historyDays: item.days)
-            let outcome = TimeShareCalculator.compute(facts: facts, places: places, windowDays: 7, nowMillis: now)
-
-            XCTAssertEqual(outcome, .notEnough(daysLeft: item.left), "\(item.days) jours d'historique")
-        }
-    }
-
-    func testTheDemoCyclesThroughEveryStateAndComesBack() {
-        var mode = TimeShareDemoMode.off
-        var seen: [Int?] = []
-        for _ in 0..<4 {
-            mode = mode.next
-            seen.append(mode.historyDays)
-        }
-
-        XCTAssertEqual(seen, [TimeShareDemoData.chartDays, 2, 6, nil])
+        XCTAssertEqual(found, [])
     }
 }

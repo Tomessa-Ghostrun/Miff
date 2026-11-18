@@ -17,7 +17,7 @@ struct ProfileScreenPreview: View {
     @StateObject private var places: ProfilePlacesViewModel
     /// La carte « Répartition de ton temps » (journal vide : « pas assez de données ») ; les autres états sont dans `TimeShareScreenPreview`.
     @StateObject private var timeShare = TimeShareViewModel(
-        history: NoPresenceHistory(), context: DemoTimeShareContext()
+        history: NoPresenceHistory(), context: FixedTimeShareContext()
     )
     @StateObject private var placeNotices = PlaceNotices()
     /// Les demandes d'ajout d'un lieu (démonstration) : la Miff B (membre) montre une demande en attente de la personne.
