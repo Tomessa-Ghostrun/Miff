@@ -5,7 +5,7 @@
 
 ## À savoir avant de commencer
 
-- **Les règles Firestore de la PR `backend/demande-lieu-danger` doivent être déployées avant cette recette** (c'est vous qui les déployez). Sans elles, la partie A échoue : le serveur refuse la demande « danger » d'un membre gratuit et l'app affiche la phrase calme « Cette Miff a déjà plusieurs demandes en attente. Réessaie un peu plus tard. » (jamais une offre Miff+). Ce n'est pas un défaut de l'app : déployez d'abord.
+- **Les règles Firestore de la PR `backend/demande-lieu-danger` doivent être déployées avant cette recette** (c'est vous qui les déployez). Sans elles, la partie A échoue : le serveur refuse la demande « danger » d'un membre gratuit et l'app affiche la phrase générique calme « Ça n'a pas fonctionné. Réessaie dans un instant. » (jamais une offre Miff+, et jamais « Cette Miff a déjà plusieurs demandes en attente » : un membre ne peut pas savoir si la Miff est « pleine », seul le créateur lit ce compteur). Ce n'est pas un défaut de l'app : déployez d'abord.
 - Le **demandeur** ne voit jamais rien sur l'abonnement du créateur : c'est voulu (ton non anxiogène, donnée privée).
 - Un défaut : capture d'écran + numéro de l'étape, puis étape suivante.
 

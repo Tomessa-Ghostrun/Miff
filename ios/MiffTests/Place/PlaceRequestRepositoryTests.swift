@@ -319,15 +319,59 @@ final class PlaceRequestRepositoryTests: XCTestCase {
         XCTAssertEqual(result, .miffUnavailable)
     }
 
-    func testARefusalWhenTheMiffStillHoldsTenRequestsIsTheMiffLimit() async {
+    func testAnUnexplainedRefusalIsRefusedNeverAMiffLimit() async {
+        // Tous les emplacements sont libres : le téléphone ne peut PAS savoir si la Miff porte 10 demandes (compteur lisible du créateur
+        // seul). Rien n'est affirmé : `.refused`, dit par la phrase générique.
         setUpMiff()
         premium()
         requests.commitFailures = [refused()]
 
         let result = await submit()
 
-        XCTAssertEqual(result, .miffLimit, "tous les emplacements étaient libres : la Miff porte ses 10 demandes")
+        XCTAssertEqual(result, .refused)
         XCTAssertEqual(requests.commits.count, 0)
+    }
+
+    func testARaceThenASecondRefusalIsRefusedNeverAMiffLimit() async {
+        setUpMiff()
+        requests.commitFailures = [refused(), refused()]
+        // Un autre téléphone a pris l'emplacement 1 pendant que le formulaire était ouvert : le lot repart sur l'emplacement 2, refusé aussi.
+        requests.requests = [testRequest(slot: 1)]
+
+        let result = await submit()
+
+        XCTAssertEqual(result, .refused)
+        XCTAssertTrue(requests.commits.isEmpty, "aucun lot accepté")
+    }
+
+    func testARaceThenALostNetworkOnTheSecondLotKeepsTheOfflinePhrase() async {
+        setUpMiff()
+        requests.commitFailures = [refused(), offline()]
+        requests.requests = [testRequest(slot: 1)]
+
+        let result = await submit()
+
+        XCTAssertEqual(result, .failed(.offline))
+    }
+
+    func testARefusalFollowedByAReReadThatFailsForAnotherReasonIsNeverAMiffLimit() async {
+        setUpMiff()
+        requests.commitFailures = [refused()]
+        requests.readFailure = NSError(domain: "test", code: -1)
+
+        let result = await submit()
+
+        XCTAssertEqual(result, .failed(.unknown), "pas de plafond affirmé sur une relecture qui échoue autrement")
+    }
+
+    func testARefusalFollowedByAReReadThatLostTheNetworkKeepsTheOfflinePhrase() async {
+        setUpMiff()
+        requests.commitFailures = [refused()]
+        requests.readFailure = offline()
+
+        let result = await submit()
+
+        XCTAssertEqual(result, .failed(.offline))
     }
 
     func testARefusedDangerZoneIsNeverAnOfferAndNeverReadsTheSubscription() async {
@@ -338,7 +382,7 @@ final class PlaceRequestRepositoryTests: XCTestCase {
 
         let result = await submit(testRequestDraft(type: .risk))
 
-        XCTAssertEqual(result, .miffLimit)
+        XCTAssertEqual(result, .refused)
         XCTAssertFalse(places.calls.contains("entitlement"))
     }
 

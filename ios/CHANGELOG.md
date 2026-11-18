@@ -13,7 +13,8 @@ Modifié :
 - Tests : `DangerRequestRightsTests` (matrice des droits et tests de source), tests du dépôt et du formulaire de demande mis à jour.
 
 À savoir :
-- **Ordre de mise en ligne** : règles Firestore d'abord. Avec l'ancienne règle, le serveur refuse la demande « danger » d'un membre gratuit ; l'app affiche alors la phrase calme « Cette Miff a déjà plusieurs demandes en attente » (jamais une offre).
+- **Ordre de mise en ligne** : règles Firestore d'abord. Avec l'ancienne règle, le serveur refuse la demande « danger » d'un membre gratuit ; l'app affiche alors la phrase générique calme « Ça n'a pas fonctionné. Réessaie dans un instant. » (jamais une offre).
+- **Retour de la revue (miroir d'Android #267, v2)** : un refus du serveur sans cause identifiée n'est plus JAMAIS présenté comme « Cette Miff a déjà plusieurs demandes en attente » : le plafond de 10 par Miff n'est lisible que par le créateur (compteur réservé), le téléphone d'un membre ne peut pas le prouver. `RequestSubmitResult.miffLimit` devient `.refused` (phrase générique `miff_message_generic`, aucune nouvelle clé) ; `PlaceMessage.requestLimitMiff` disparaît ; la clé `place_request_limit_miff` reste dans le catalogue (partagée avec Android, parité), non utilisée. Le plafond de 3 par membre, la course sur l'emplacement, la Miff disparue et « demandes pas encore disponibles » gardent leurs phrases ; le réseau coupé garde « pas de connexion », y compris sur la relecture et sur le second lot après une course.
 - Écart signalé : la phrase `place_request_paywall_danger` du ticket n'est pas affichée dans l'offre du créateur (écran d'offre unique, décision du PM du 2026-11-12) ; comportement inchangé par cette PR.
 - Aucune permission, aucune dépendance, aucun service payant.
 

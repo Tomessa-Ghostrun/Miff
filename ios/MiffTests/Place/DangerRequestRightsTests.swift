@@ -13,6 +13,10 @@ import XCTest
 /// La sécurité ne bouge pas : l'écriture d'un lieu `risk` reste réservée au créateur Miff+ par les règles Firestore ; le client ne fait que
 /// le dire avant d'écrire. Les tests de source plus bas empêchent qu'un changement ultérieur remette une barrière sur la DEMANDE ou retire
 /// celle de l'ACCEPTATION sans que personne le voie.
+private struct SourceNotFound: Error {
+    let relative: String
+}
+
 @MainActor
 final class DangerRequestRightsTests: XCTestCase {
     private let creator = testCreatorUid
@@ -146,8 +150,10 @@ final class DangerRequestRightsTests: XCTestCase {
 
     private func source(_ relative: String) throws -> String {
         let url = iosRoot.appendingPathComponent(relative)
+        // Un fichier introuvable fait ÉCHOUER le test, jamais un « ignoré » silencieux : une source déplacée ne doit pas désarmer la garde.
         guard FileManager.default.fileExists(atPath: url.path) else {
-            throw XCTSkip("Source introuvable (\(relative)).")
+            XCTFail("Source introuvable (\(relative)).")
+            throw SourceNotFound(relative: relative)
         }
         return try String(contentsOf: url, encoding: .utf8)
     }
@@ -189,12 +195,31 @@ final class DangerRequestRightsTests: XCTestCase {
         XCTAssertTrue(rules.contains("return .needsPremium(.danger)"), "déclarer une zone de danger reste Miff+")
     }
 
-    func testTheTextsOfTheAcceptOfferAndThePendingStateExistInBothLanguages() {
+    func testTheTextsOfTheAcceptOfferAndThePendingStateExistInFrenchAndEnglish() throws {
+        // Lu dans le VRAI catalogue, langue par langue (le texte de la langue du simulateur n'en vérifierait qu'une).
+        let url = iosRoot.appendingPathComponent("Miff/Resources/Localizable.xcstrings")
+        let data = try Data(contentsOf: url)
+        let root = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let strings = try XCTUnwrap(root["strings"] as? [String: [String: Any]])
         for key in [
             "place_request_paywall_danger", "place_request_badge_pending", "place_request_detail_banner_member",
-            "place_request_detail_banner_creator", "place_request_form_hint", "place_request_decline"
+            "place_request_detail_banner_creator", "place_request_form_hint", "place_request_decline",
+            "miff_message_generic"
         ] {
-            XCTAssertNotEqual(L10n.string(key), key, "texte manquant : \(key)")
+            let localizations = strings[key]?["localizations"] as? [String: Any]
+            for language in ["fr", "en"] {
+                let unit = (localizations?[language] as? [String: Any])?["stringUnit"] as? [String: Any]
+                let value = unit?["value"] as? String ?? ""
+                XCTAssertFalse(value.isEmpty, "texte manquant : \(key) (\(language))")
+            }
         }
+    }
+
+    func testAnUnexplainedRefusalIsNeverTheSentenceOfAMiffLimit() throws {
+        // Le plafond de 10 par Miff n'est lisible que par le créateur : le demandeur ne le voit jamais affirmé sans preuve.
+        let repository = try code("Miff/Services/Place/PlaceRequestRepository.swift")
+        XCTAssertFalse(repository.contains("miffLimit"))
+        let state = try code("Miff/ViewModels/PlaceFormState.swift")
+        XCTAssertFalse(state.contains("requestLimitMiff"))
     }
 }

@@ -184,17 +184,24 @@ final class PlaceRequestFormViewModelTests: XCTestCase {
         XCTAssertFalse(model.state.saving)
     }
 
-    func testTheMiffLimitAndTheUnavailableRequestsAreCalmSentences() async {
-        requests.submitResult = .miffLimit
+    func testAnUnexplainedRefusalIsTheGenericSentenceAndNeverAMiffLimit() async {
+        requests.submitResult = .refused
         let model = await viewModel()
         await fill(model)
 
         model.onSave()
         await waitUntil { model.state.message != nil }
-        XCTAssertEqual(model.state.message, .requestLimitMiff)
-        XCTAssertTrue(model.state.messageIsCalm)
 
+        XCTAssertEqual(model.state.message, .generic, "« Ça n'a pas fonctionné » : aucun plafond affirmé")
+        XCTAssertNil(model.state.end)
+        XCTAssertFalse(model.state.saving)
+    }
+
+    func testTheUnavailableRequestsAreACalmSentence() async {
         requests.submitResult = .requestsUnavailable
+        let model = await viewModel()
+        await fill(model)
+
         model.onSave()
         await waitUntil { model.state.message == .requestsUnavailable }
         XCTAssertTrue(model.state.messageIsCalm)

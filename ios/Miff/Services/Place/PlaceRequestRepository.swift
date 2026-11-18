@@ -223,8 +223,9 @@ final class FirestorePlaceRequestRepository: PlaceRequestRepository {
         return await afterRefusedSubmit(uid: uid, sent: sent, draft: draft)
     }
 
-    /// Un refus sur une Miff qui est toujours là (contrat du backend, section 4) : deux causes se distinguent, la dernière est la limite
-    /// de la Miff.
+    /// Un refus sur une Miff qui est toujours là (contrat du backend, section 4) : une seule cause se distingue (la course sur l'emplacement).
+    /// Pour tout autre refus RIEN n'est affirmé : le plafond de 10 par Miff n'est lisible que par le créateur (compteur réservé), le téléphone
+    /// d'un membre ne peut donc pas le prouver (v2, retour du PM sur Android) ; le résultat est `.refused`, dit par la phrase générique.
     private func afterRefusedSubmit(
         uid: String,
         sent: PlaceRequest,
@@ -239,9 +240,10 @@ final class FirestorePlaceRequestRepository: PlaceRequestRepository {
         case .value(let found):
             fresh = found
         case .failed(let failure, _):
-            // Même la lecture des demandes de la personne est refusée : ce n'est pas la limite de la Miff, les demandes ne sont
-            // simplement pas encore disponibles.
-            return failure == .refused ? .requestsUnavailable : .miffLimit
+            // Même la lecture des demandes de la personne est refusée : les demandes ne sont simplement pas encore disponibles. Une
+            // lecture qui échoue autrement (réseau coupé, inconnu) garde SA phrase (« pas de connexion » ou la générique) : rien n'est
+            // affirmé sur la Miff.
+            return failure == .refused ? .requestsUnavailable : .failed(failure)
         }
         if fresh.contains(where: { $0.id == sent.id }) {
             guard let slot = PlaceRequestSlots.firstFree(uid: uid, existing: fresh) else {
@@ -249,13 +251,17 @@ final class FirestorePlaceRequestRepository: PlaceRequestRepository {
             }
             let again = sentRequest(uid: uid, miffId: miffId, slot: slot, draft: draft)
             let lot = PlaceRequestWrites.create(uid: uid, miffId: miffId, slot: slot, draft: draft)
-            if case .value = await guarded({ try await store.commit(lot) }) {
+            switch await guarded({ try await store.commit(lot) }) {
+            case .value:
                 return .done(again)
+            case .failed(let failure, _):
+                // Le second lot échoue aussi : réseau coupé = sa phrase ; sinon le refus reste sans cause connue.
+                return failure == .offline ? .failed(.offline) : .refused
             }
-            return .miffLimit
         }
-        // (b) tous les emplacements étaient libres : la Miff porte toutes les demandes qu'elle prend (10), ou le compteur a dérivé trop haut.
-        return .miffLimit
+        // (b) tous les emplacements étaient libres : la cause ne peut pas être connue d'un membre (une règle, ou le compteur de la Miff que
+        // seul le créateur lit) : rien n'est affirmé.
+        return .refused
     }
 
     // MARK: - Reprendre

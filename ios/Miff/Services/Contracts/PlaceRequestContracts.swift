@@ -93,8 +93,9 @@ enum RequestSubmitResult: Equatable, CustomStringConvertible {
     case queued
     /// Rien n'a été envoyé : la personne a déjà 3 demandes en attente dans cette Miff (critère M5).
     case memberLimit
-    /// Le serveur a refusé : la Miff a déjà toutes les demandes qu'elle prend (10), ou une règle a dit non.
-    case miffLimit
+    /// Le serveur a refusé le lot pour une raison que le téléphone ne peut pas connaître (une règle a dit non ; le plafond de 10 par Miff n'est
+    /// lisible que par le créateur, il n'est JAMAIS deviné ici) : une phrase générique calme, jamais celle d'une limite non prouvée.
+    case refused
     /// La Miff n'existe plus, ou la personne n'en est plus.
     case miffUnavailable
     /// Le serveur ne prend pas encore les demandes (ses règles refusent même leur lecture) : rien n'a été envoyé, une phrase calme le dit.

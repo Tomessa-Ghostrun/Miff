@@ -101,10 +101,10 @@ extension PlaceFormViewModel {
                 $0.requestBlocked = true
                 $0.message = .requestLimitMember
             }
-        case .miffLimit:
+        case .refused:
             update {
                 $0.saving = false
-                $0.message = .requestLimitMiff
+                $0.message = .generic
             }
         case .requestsUnavailable:
             update {
