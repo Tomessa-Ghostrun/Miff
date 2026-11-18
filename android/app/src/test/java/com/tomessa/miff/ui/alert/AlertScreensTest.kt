@@ -495,14 +495,22 @@ class AlertScreensTest {
         cross.assertExists()
     }
 
-    @Test
-    fun everyStateWhereTheAlertIsNotActiveOnTheServer_hasTheCross_exceptWhileAWriteIsInFlight() {
-        val steps = listOf(SendStep.WAITING_NETWORK, SendStep.REFUSED, SendStep.QUOTA, SendStep.NEEDS_CONFIRMATION)
-        steps.forEach { step ->
-            rule.setContent { AlertBanner(MyAlert.Sending("m", 1, step), "Family", false, {}, {}, {}, {}) }
-            rule.onNodeWithTag(ALERT_BANNER_CLOSE_TAG).assertExists()
-        }
+    private fun crossIsThere(step: SendStep) {
+        rule.setContent { AlertBanner(MyAlert.Sending("m", 1, step), "Family", false, {}, {}, {}, {}) }
+        rule.onNodeWithTag(ALERT_BANNER_CLOSE_TAG).assertExists()
     }
+
+    @Test
+    fun waiting_hasTheCross() = crossIsThere(SendStep.WAITING_NETWORK)
+
+    @Test
+    fun refused_hasTheCross() = crossIsThere(SendStep.REFUSED)
+
+    @Test
+    fun theDailyLimit_hasTheCross() = crossIsThere(SendStep.QUOTA)
+
+    @Test
+    fun waitingForADecision_hasTheCross() = crossIsThere(SendStep.NEEDS_CONFIRMATION)
 
     @Test
     fun noCrossWhileTheWriteIsInFlight_noCrossOnAnActiveAlert() {
@@ -524,6 +532,10 @@ class AlertScreensTest {
         rule.onNodeWithText("You alerted the people of your Miff.").assertIsDisplayed()
         // "Voir la Miff" needs a name: not offered without one
         rule.onNodeWithTag(ALERT_BANNER_SEE_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun aBlankNameIsNoName_whileSending() {
         banner(MyAlert.Sending("m", 1, SendStep.WAITING_NETWORK), name = " ")
         rule.onNodeWithText("Sending your alert…").assertExists()
     }

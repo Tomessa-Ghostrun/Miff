@@ -230,9 +230,7 @@ fun NavGraphBuilder.miffScreenRoute(
                             navController.openMiffRoute(PlaceDetailRoute(route.miffId, place.id))
                         },
                         // Always the form: it relies on the SERVER for the plan and shows the offer itself at the real limit.
-                        onAddPlace = {
-                            navController.openMiffRoute(PlaceFormRoute(miffId = route.miffId))
-                        },
+                        onAddPlace = { navController.openMiffRoute(PlaceFormRoute(miffId = route.miffId)) },
                     ),
             )
         }
