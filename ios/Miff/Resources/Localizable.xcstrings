@@ -5315,6 +5315,91 @@
         }
       }
     },
+    "ios_diag_timeshare_demo_caption": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test data: on this phone only, never saved. Your real history is not touched. Tap to switch between states."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Données de test : sur ce téléphone seulement, jamais enregistrées. Ton vrai historique n'est pas touché. Touche pour passer d'un état à l'autre."
+          }
+        }
+      }
+    },
+    "ios_diag_timeshare_demo_chart": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test data: the chart"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Données de test : le graphique"
+          }
+        }
+      }
+    },
+    "ios_diag_timeshare_demo_off": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Back to my real history"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revenir à mon vrai historique"
+          }
+        }
+      }
+    },
+    "ios_diag_timeshare_demo_six_days": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test data: 6 days of history"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Données de test : 6 jours d’historique"
+          }
+        }
+      }
+    },
+    "ios_diag_timeshare_demo_two_days": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test data: 2 days of history"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Données de test : 2 jours d’historique"
+          }
+        }
+      }
+    },
     "ios_notif_debug_counters": {
       "extractionState": "manual",
       "localizations": {
@@ -13081,23 +13166,6 @@
         }
       }
     },
-    "profile_timeshare_summary": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You spent %1$@ of your time in your trusted zones"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu as passé %1$@ de ton temps dans tes zones de confiance"
-          }
-        }
-      }
-    },
     "profile_timeshare_sharing_stopped": {
       "extractionState": "manual",
       "localizations": {
@@ -13128,6 +13196,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Voir cette Miff"
+          }
+        }
+      }
+    },
+    "profile_timeshare_summary": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You spent %1$@ of your time in your trusted zones"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu as passé %1$@ de ton temps dans tes zones de confiance"
           }
         }
       }

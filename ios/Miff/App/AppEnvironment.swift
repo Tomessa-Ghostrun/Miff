@@ -198,6 +198,10 @@ final class AppEnvironment {
     let tracking: TrackingRuntime
     /// Le journal local de la détection (builds Debug et Internal seulement ; en publication il ne garde rien).
     let detectionJournal: DetectionJournal
+    /// TIME-3 : le journal local des changements de présence (répartition du temps du Profil, Réglages > Confidentialité).
+    let presenceHistory: PresenceHistory
+    /// Efface le journal de présence d'une Miff dont la personne n'est plus membre (liste des Miffs confirmée par le serveur).
+    private let presenceHistoryPruner: PresenceHistoryPruner
     /// L'Update (UPDATE-3) : la photo du moment, le bouton central coloré, la bulle d'incitation.
     let update: UpdateServices
     /// Les notifications push entre proches (SRV-2I, SRV-4I) : le registre des appareils, l'interrupteur, la réception.
@@ -291,7 +295,8 @@ final class AppEnvironment {
                 drafts: drafts, generationCounter: trackingServices.generation,
                 deletionMarker: AccountDeletionFileMarker(),
                 localData: AccountDeletionServices.localData(
-                    updateLedger: updateServices.ledger, extra: pushServices.erasers
+                    updateLedger: updateServices.ledger, presenceHistory: trackingServices.history,
+                    extra: pushServices.erasers
                 )
             )
         )
@@ -318,6 +323,8 @@ final class AppEnvironment {
         awaitingAgreement = miff.awaiting
         tracking = trackingServices.runtime
         detectionJournal = trackingServices.journal
+        presenceHistory = trackingServices.history
+        presenceHistoryPruner = PresenceHistoryPruner(history: trackingServices.history, directory: miff.directory)
         update = updateServices
         push = pushServices
         profileDrafts = drafts

@@ -165,7 +165,8 @@ done
 
 # --- Diagnostic et fournisseur App Check de débogage (marqueurs écrits dans NOTRE code seulement) ---
 # LOC-4b : le journal local de la détection (VIE2) est de l'outil de test : son marqueur et le fichier qui l'écrit sont dans le même lot.
-diagnostic_markers='DIAGNOSTICPROBE|DiagnosticViewModel|DiagnosticRepository|TokenGalleryView|DiagnosticLaunchOptions|analytics_diagnostic_test|DETECTIONJOURNAL|FileDetectionJournal|DetectionJournalCard'
+# TIME-3 / TIME-4 : les données de test de la répartition du temps (TS-23) sont de l'outil de recette : même lot (marqueur TIMESHAREDEMO).
+diagnostic_markers='DIAGNOSTICPROBE|DiagnosticViewModel|DiagnosticRepository|TokenGalleryView|DiagnosticLaunchOptions|analytics_diagnostic_test|DETECTIONJOURNAL|FileDetectionJournal|DetectionJournalCard|TIMESHAREDEMO|TimeShareDemoData|TimeShareDemoRow'
 debug_provider_marker='MiffDebugAppCheck'
 diagnostic_hits="$(count_strings "$diagnostic_markers")"
 debug_provider_hits="$(count_strings "$debug_provider_marker")"

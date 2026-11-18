@@ -104,11 +104,13 @@ extension TrackingEngine {
                 // Trop vieux pour que les règles l'acceptent : jamais écrit tel quel (pas de boucle) ; les proches ne gardent pas
                 // un état périmé : `unknown` à l'heure du moment, comme pour une sortie manquée.
                 journal.record(.statusGivenUp, placeId: change.derived.placeId)
+                noteUnknown(miffId, at: now)
                 next.update(miffId) {
                     $0.derived = DerivedPresence(presence: .unknown, placeId: nil)
                     $0.pending = stale
                 }
             } else {
+                noteHistory(miffId, change.fact)
                 next.update(miffId) {
                     $0.derived = change.derived
                     $0.pending = PendingStatus(fact: change.fact)
@@ -166,6 +168,7 @@ extension TrackingEngine {
             guard let change else {
                 continue
             }
+            noteHistory(miffId, change.fact)
             next.update(miffId) {
                 $0.derived = change.derived
                 $0.pending = PendingStatus(fact: change.fact)
