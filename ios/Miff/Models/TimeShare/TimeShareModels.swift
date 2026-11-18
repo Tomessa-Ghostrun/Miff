@@ -75,15 +75,37 @@ struct TimeShareResult: Equatable, CustomStringConvertible {
     /// Au centre de l'anneau : la somme des lieux de confiance SEULEMENT (ni zone de danger ni « Ailleurs »).
     let trustedPercent: Int
 
-    /// Les parts montrées dans la légende (retour du PM) : les 4 où le temps passé est le plus long, dans l'ordre de l'anneau. L'anneau, lui,
-    /// garde TOUTES les tranches, et la description du lecteur d'écran les liste toutes.
+    /// Les parts montrées dans la légende : 4 au plus, les plus longues, dans l'ordre de l'anneau (égalité de durée : l'ordre de l'anneau).
+    /// La ligne « Zone de danger » est TOUJOURS montrée quand sa part arrondie est d'au moins 1 % : si elle n'est pas déjà parmi les plus
+    /// longues, elle prend la place de la 4e (décision du PM : le détail de la zone doit pouvoir s'ouvrir). En dessous de 1 % (« < 1 % », part
+    /// qui compte 0), elle n'a PAS de ligne dans la légende, et sa place revient à la part suivante. L'anneau garde TOUTES les tranches ;
+    /// « Hors-zone » suit la règle commune (aucun détail à ouvrir) ; la description du lecteur d'écran dit les parts que la légende ne montre pas.
     static let legendLimit = 4
 
     var legendIndices: [Int] {
-        let ranked = rows.indices.sorted { left, right in
+        let candidates = rows.indices.filter { !isTinyDanger(rows[$0]) }
+        let ranked = candidates.sorted { left, right in
             rows[left].millis != rows[right].millis ? rows[left].millis > rows[right].millis : left < right
         }
-        return Array(ranked.prefix(Self.legendLimit)).sorted()
+        var shown = Array(ranked.prefix(Self.legendLimit))
+        let forced = candidates.first { index in
+            if case .danger = rows[index].kind {
+                return rows[index].percent >= 1
+            }
+            return false
+        }
+        if let forced, !shown.contains(forced), !shown.isEmpty {
+            shown[shown.count - 1] = forced
+        }
+        return shown.sorted()
+    }
+
+    /// Une zone de danger dont la part arrondie est 0 (« < 1 % », ou rien) : jamais de ligne dans la légende.
+    private func isTinyDanger(_ row: TimeShareRow) -> Bool {
+        if case .danger = row.kind {
+            return row.percent < 1
+        }
+        return false
     }
 
     var description: String {
