@@ -9,6 +9,8 @@ import com.tomessa.miff.domain.miff.DocWrite
 import com.tomessa.miff.domain.miff.LocationAccess
 import com.tomessa.miff.domain.miff.MiffFailure
 import com.tomessa.miff.domain.miff.MiffSharingConsent
+import com.tomessa.miff.domain.timeshare.NoPresenceLog
+import com.tomessa.miff.domain.timeshare.PresenceLog
 import com.tomessa.miff.domain.tracking.BatteryRefresh
 import com.tomessa.miff.domain.tracking.DerivedPresence
 import com.tomessa.miff.domain.tracking.DetectionJournal
@@ -88,6 +90,11 @@ class TrackingEngine(
     private val presenceListener: PresenceListener = PresenceListener.None,
     /** MODE VOYAGE: the alarm that ends a trip while the app is closed (none by default: tests). */
     private val travelAlarm: TravelAlarm = NoTravelAlarm,
+    /**
+     * TIME-1 (docs/tickets/profil-repartition-temps.md): the LOCAL journal of the presence that feeds "Répartition de ton temps". Every change of the presence worked out here for a
+     * Miff is told to it with the SAME instant as the status ([logPresence]); it never leaves the phone and is erased by [stop]. None by default (tests).
+     */
+    private val presenceLog: PresenceLog = NoPresenceLog,
 ) : SessionTeardown {
     /**
      * Why the engine is asked to look again (ticket 6.5: opening, going to the background, a move of more than 250 m, an entry in a zone).
@@ -307,7 +314,47 @@ class TrackingEngine(
         local.clear()
         publishTravel(null)
         journal.clear()
+        // TIME-1: the journal of the presence goes with the session (sign-out, deletion of the account, session lost).
+        try {
+            presenceLog.clear()
+        } catch (e: Exception) {
+            // Whatever the journal does, the rest of the end of the session has been done above.
+        }
     }
+
+    /**
+     * TIME-1: the presence worked out for [miffId] became ([presence], [placeId]) at [atMillis], the instant the status carries (the Feed and the chart can never disagree).
+     * Whatever the journal does (a full disk, a refused write), it never reaches the detection, and nothing is logged.
+     */
+    private fun logPresence(
+        miffId: String,
+        presence: PresenceValue,
+        placeId: String?,
+        atMillis: Long,
+    ) {
+        try {
+            presenceLog.record(miffId, presence, placeId, atMillis)
+        } catch (e: Exception) {
+            // The chart is a convenience: it must never stop the detection of the arrivals and departures.
+        }
+    }
+
+    private fun forgetPlaceInLog(
+        miffId: String,
+        placeId: String,
+    ) {
+        try {
+            presenceLog.forgetPlace(miffId, placeId)
+        } catch (e: Exception) {
+            // Same as [logPresence].
+        }
+    }
+
+    /** TIME-1: the presence of these Miffs can no longer be confirmed from [atMillis] (tracking stopped, trip, Miff no longer shared): "unknown", not measured. */
+    private fun logUnknown(
+        miffIds: Collection<String>,
+        atMillis: Long,
+    ) = miffIds.forEach { logPresence(it, PresenceValue.UNKNOWN, null, atMillis) }
 
     /**
      * Nothing is watched any more (the access or the consent is gone): zones and reports removed, and everything that depends on the position or on the
@@ -317,6 +364,7 @@ class TrackingEngine(
         runCatchingCancellable { geofences.removeAll() }
         runCatchingCancellable { movement.stop() }
         journal.record(JournalKind.DISARMED)
+        logUnknown(state.miffs.keys, env.nowMillis())
         return state.copyWith(
             miffs =
                 state.miffs.mapValues { (_, miff) ->
@@ -587,7 +635,11 @@ class TrackingEngine(
             }
         }
         val dropped = state.miffs.keys - miffs.keys
-        if (dropped.isNotEmpty()) journal.record(JournalKind.NOT_ELIGIBLE)
+        if (dropped.isNotEmpty()) {
+            journal.record(JournalKind.NOT_ELIGIBLE)
+            // TIME-1: the sharing with that Miff stopped (or the access was lost): from now on its presence is not measured. Its journal is kept (D16) until the Miff is left.
+            logUnknown(dropped, now)
+        }
         val next = state.copyWith(miffs = miffs, checkedAtMillis = if (complete) now else state.checkedAtMillis)
         return Synced(next, verified = complete)
     }
@@ -620,8 +672,12 @@ class TrackingEngine(
                         }.map { it.id }
                 val named = base.derived()?.placeId
                 val updated = base.copyWith(places = fresh, readAtMillis = now)
+                // TIME-1: a place that is not in the server's list any more is forgotten by the journal (its facts become "not measured", never "Ailleurs", criterion T11).
+                // Only a COMPLETE reading says so; a failed one (below) concludes nothing.
+                (old.keys - fresh.map { it.id }.toSet()).forEach { gone -> forgetPlaceInLog(miffId, gone) }
                 if (named != null && named in moved) {
                     journal.record(JournalKind.PRESENCE_UNKNOWN, named)
+                    logPresence(miffId, PresenceValue.UNKNOWN, null, now)
                     updated.copyWith(
                         derived = DerivedPresence(PresenceValue.UNKNOWN, null),
                         pending = PendingStatus.of(PresenceMachine.unknown(now)),
@@ -724,6 +780,7 @@ class TrackingEngine(
                 }
             if (fact != null) {
                 tellPresence(miffId, fact.presence, fact.presenceAtMillis, fact.setLastUpdate)
+                logPresence(miffId, fact.presence, fact.placeId, fact.presenceAtMillis)
                 // "Already inside at the arming" (DET3): an arrival is what "already there" means; a presence that was already in_risk gives no fact, so no second N6.
                 tellDanger(state.uid, miffId, last, DerivedPresence(fact.presence, fact.placeId), fact.presenceAtMillis)
                 journal.record(
@@ -844,6 +901,7 @@ class TrackingEngine(
                     }
                 }
             tellPresence(miffId, fact.presence, fact.presenceAtMillis, fact.setLastUpdate)
+            logPresence(miffId, fact.presence, fact.placeId, fact.presenceAtMillis)
             journal.record(JournalKind.STATUS_AFTER_RESUME, derived.placeId)
             state =
                 state.copyWith(inside = inside).withMiff(miffId) {
@@ -1016,6 +1074,8 @@ class TrackingEngine(
                     ?: continue
             val (derived, fact) = result
             tellPresence(miffId, derived.presence, at ?: now, fact.setLastUpdate)
+            // TIME-1: the same change and the same instant as the status (an event too old for the rules to accept is the present moment here: it is not counted from a date the Feed would not show).
+            logPresence(miffId, derived.presence, derived.placeId, at ?: now)
             // I ENTERED a danger zone (the previous presence of this Miff was not already in_risk): N6, once, before the status is even written. Entering a danger zone
             // while in a trusted one gives no result here (the trusted zone wins); leaving the trusted one while staying in the danger one does.
             // An event too old for the rules (no time to write) is not told: it is no longer the present.
@@ -1638,6 +1698,8 @@ class TrackingEngine(
      */
     private suspend fun pauseStatuses(state: LocalState): LocalState {
         runCatchingCancellable { geofences.removeAll() }
+        // TIME-1: the length of the trip is not measured (T23): "unknown" from now until the trip ends.
+        logUnknown(state.miffs.keys, env.nowMillis())
         return state.copyWith(
             miffs = state.miffs.mapValues { (_, miff) -> miff.copyWith(derived = null, pending = null) },
             inside = emptyMap(),
@@ -1739,6 +1801,8 @@ class TrackingEngine(
         // Told BEFORE the writes: N7 waits for 08:00 after a natural end (even if the network is down), and is cancelled after an early one.
         tellTravelEnded(uid, early = !ended.period().isOver(now))
         val fact = PresenceMachine.unknown(now)
+        // TIME-1: what the trip left unmeasured stays so until the next presence is worked out (the end of a trip never invents an "out").
+        logUnknown(start.miffs.keys, now)
         var state =
             start.copyWith(
                 miffs =
