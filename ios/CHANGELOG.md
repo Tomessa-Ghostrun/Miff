@@ -22,6 +22,8 @@ Modifié :
 Limites : textes système (fenêtres d'autorisation, clavier) dans la langue du téléphone ; une notification locale a un texte figé (reprogrammée au choix et au retour au premier plan) ; les écrans refaits perdent leur état interne non gardé par l'hôte ; la langue n'est pas envoyée au serveur (un futur push serveur devra en décider).
 ### Compte à rebours avant le passage à l'orange, Feed et Profil (COUNTDOWN-I ; miroir d'Android COUNTDOWN-A)
 
+Corrigé (CI rouge de la PR) : (1) un commentaire de `LanguageView.swift` citait `Text("cle")` et déclenchait la règle SwiftLint maison `no_hardcoded_text` (commentaire reformulé) ; (2) `AccountLocalStorageGuardTests` échouait car `Models/Main/AppLanguage.swift` (nouveau stockage `UserDefaults`) n'était pas dans sa liste : ajouté avec sa raison (préférence d'affichage de l'appareil, non personnelle, volontairement gardée à la suppression du compte).
+
 Ticket `docs/tickets/compte-a-rebours-orange.md` (décidé sur délégation du PM, 2026-11-13), recette `docs/qa/checklists/compte-a-rebours-ios-recette-pm.md`. **Rien n'est compilé en local** (la CI fait foi). Coût : **0 €**, aucune écriture Firestore, aucune notification, aucun événement d'analyse, aucune dépendance. **Une seule lecture, ajoutée après la revue** : MON seul statut (UN document) est écouté sur le Profil et l'Update, jamais sur le Feed (qui l'écoute déjà) ; voir « Corrigé après la revue » ci-dessous.
 
 Ajouté :
