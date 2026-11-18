@@ -19,6 +19,18 @@ struct MyStatusFacts: Equatable, CustomStringConvertible {
     }
 }
 
+extension MyStatusFacts {
+    /// MON statut tel que le Feed (ou l'écoute de mon seul statut) le lit : seuls les faits utiles à la couleur et à la photo sont gardés.
+    init(_ status: MemberStatus) {
+        self.init(
+            presence: status.presence,
+            presenceAtMillis: status.presenceAtMillis,
+            lastUpdateAtMillis: status.lastUpdateAtMillis,
+            hasPhoto: status.hasPhoto
+        )
+    }
+}
+
 // Quand la bulle d'incitation au-dessus de la barre d'onglets s'affiche, et de quelle couleur est le bouton central (ticket Update, D18,
 // D19, D21, critères A1, A2, B1) : une fonction pure de MON statut dans la Miff affichée et de l'horloge. Elle réutilise
 // `StatusColor.level` (UN seul calcul de la couleur pour toute l'app) et n'ajoute rien : la bulle est visible quand la couleur est orange ou

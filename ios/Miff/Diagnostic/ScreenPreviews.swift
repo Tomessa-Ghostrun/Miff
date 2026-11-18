@@ -53,6 +53,10 @@ struct ScreenPreview: View {
             // La photo d'un proche en plein écran (Feed, FEED-8) : voir `PhotoScreenPreview`.
             PhotoScreenPreview(name: name)
 
+        case _ where name.hasPrefix("update-"):
+            // Le viseur et l'aperçu de la photo de l'Update, dans la disposition de la coquille : voir `UpdateScreenPreview`.
+            UpdateScreenPreview(name: name)
+
         case _ where name.hasPrefix("paywall-"):
             // L'offre Miff+ dans ses états (variante sans achat, essai, deux formules, chargement, erreurs) : voir `PaywallScreenPreview`.
             PaywallScreenPreview(name: name)
@@ -60,7 +64,10 @@ struct ScreenPreview: View {
         case _ where name.hasPrefix("place-"):
             // Les lieux de confiance (formulaire, liste, détail, offre) : voir `PlaceScreenPreview`.
             PlaceScreenPreview(name: name)
-        case _ where name.hasPrefix("profile-carousel"):
+        case _ where name.hasPrefix("lang-"):
+            // Réglages et Réglages > Langue : voir `LanguageScreenPreview`.
+            LanguageScreenPreview(name: name)
+        case _ where name.hasPrefix("profile-carousel") || name.hasPrefix("profile-countdown"):
             // L'onglet Profil et son carrousel de Miffs : voir `ProfileScreenPreview`.
             ProfileScreenPreview(name: name)
         case "colors-info":
@@ -72,6 +79,9 @@ struct ScreenPreview: View {
         case _ where name.hasPrefix("miff-"):
             // Le flux Miff (créer, rejoindre, écran d'une Miff, accueil, perte d'accès) : voir `MiffScreenPreview`.
             MiffScreenPreview(name: name)
+        case _ where name.hasPrefix("about-"):
+            // Réglages > À propos et aide et ses licences (ABOUT-1I) : voir `AboutScreenPreview`.
+            AboutScreenPreview(name: name)
         case _ where name.hasPrefix("review-"):
             // La fenêtre d'avis (question, « Merci ! », « Merci de nous le dire ! ») : voir `ReviewScreenPreview`.
             ReviewScreenPreview(name: name)

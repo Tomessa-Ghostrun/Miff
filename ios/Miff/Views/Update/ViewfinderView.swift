@@ -11,8 +11,18 @@ import UIKit
 
 /// Le calque d'aperçu de la caméra, dans une vue UIKit (rien d'autre n'est dessiné par UIKit). Sans élément d'accessibilité : l'aperçu
 /// vidéo n'a rien à lire (les boutons et l'aide le font).
+///
+/// Le calque est posé sur le rectangle de la FENÊTRE (l'écran entier, zones sûres comprises), converti dans le repère de cette vue : quelles que
+/// soient les mesures que SwiftUI a de sa zone sûre (nulles ou fausses dans une pile de navigation sur un vrai appareil), l'image va jusqu'aux
+/// quatre bords, derrière la barre d'état et l'île dynamique. `.resizeAspectFill` : l'image remplit, elle est recadrée, jamais de bande.
 private final class PreviewHostView: UIView {
     let previewLayer = AVCaptureVideoPreviewLayer()
+    /// Le ratio borné (9:21 à 9:16) de la zone du viseur : l'écran entier sur un iPhone.
+    var aspect: Double = UpdatePhotoFormat.maxAspect {
+        didSet {
+            setNeedsLayout()
+        }
+    }
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -20,6 +30,11 @@ private final class PreviewHostView: UIView {
         layer.addSublayer(previewLayer)
         isAccessibilityElement = false
         backgroundColor = .black
+        // Le calque peut dépasser cette vue (jamais coupé) : il est posé sur la fenêtre, pas sur la vue.
+        clipsToBounds = false
+        #if DEBUG
+        Self.paintDemoBackdrop(previewLayer)
+        #endif
     }
 
     required init?(coder: NSCoder) {
@@ -28,21 +43,66 @@ private final class PreviewHostView: UIView {
 
     override func layoutSubviews() {
         super.layoutSubviews()
-        previewLayer.frame = bounds
+        placePreview()
     }
+
+    override func didMoveToWindow() {
+        super.didMoveToWindow()
+        setNeedsLayout()
+    }
+
+    override func safeAreaInsetsDidChange() {
+        super.safeAreaInsetsDidChange()
+        setNeedsLayout()
+    }
+
+    private func placePreview() {
+        let rect: CGRect
+        if let window, window.bounds.width > 0, window.bounds.height > 0 {
+            rect = convert(ViewfinderLayout.previewRect(in: window.bounds, aspect: aspect), from: window)
+        } else {
+            rect = ViewfinderLayout.previewRect(in: bounds, aspect: aspect)
+        }
+        // Pas d'animation implicite : le calque suit l'écran tout de suite (rotation, clavier, changement de zone sûre).
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        previewLayer.frame = rect
+        CATransaction.commit()
+    }
+
+    #if DEBUG
+    /// Captures de la CI (`-MiffPreview update-...`) : le simulateur n'a pas de caméra, l'aperçu est un aplat vif cerclé de magenta, pour voir à
+    /// l'oeil où il commence et où il finit. Absent de tout build distribué.
+    private static func paintDemoBackdrop(_ layer: AVCaptureVideoPreviewLayer) {
+        guard DiagnosticLaunchOptions.preview?.hasPrefix("update-") == true else {
+            return
+        }
+        layer.backgroundColor = UIColor.systemTeal.cgColor
+        layer.borderColor = UIColor.magenta.cgColor
+        layer.borderWidth = 6
+    }
+    #endif
 }
 
 private struct CameraPreview: UIViewRepresentable {
     let controller: CameraController
+    let aspect: Double
 
     func makeUIView(context: Context) -> UIView {
         let view = PreviewHostView()
+        view.aspect = aspect
         view.previewLayer.session = controller.session
         controller.attach(view.previewLayer)
         return view
     }
 
-    func updateUIView(_ uiView: UIView, context: Context) {}
+    func updateUIView(_ uiView: UIView, context: Context) {
+        // Chaque nouvelle mesure de l'écran replace le calque (même quand la vue a seulement bougé, sans changer de taille).
+        if let host = uiView as? PreviewHostView {
+            host.aspect = aspect
+            host.setNeedsLayout()
+        }
+    }
 }
 
 struct ViewfinderView: View {
@@ -60,23 +120,34 @@ struct ViewfinderView: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let insets = proxy.safeAreaInsets
-            let full = CGSize(
-                width: proxy.size.width + insets.leading + insets.trailing,
-                height: proxy.size.height + insets.top + insets.bottom
+            // La taille de l'écran ENTIER vient de la fenêtre (vraie même si le lecteur annonce des zones sûres nulles) ; la zone sûre du haut
+            // est la plus grande de celle du lecteur et de celle de la fenêtre (`ViewfinderLayout`).
+            let reading = ViewfinderWindow.read(proxy: proxy.safeAreaInsets)
+            let full = ViewfinderLayout.screenSize(
+                visible: proxy.size, insets: reading.layoutInsets, window: reading.size
             )
             let aspect = UpdatePhotoFormat.boundedAspect(widthPx: Int(full.width), heightPx: Int(full.height))
+            let portrait = ViewfinderLayout.isPortrait(full)
+            let topInset = ViewfinderLayout.topInset(readTop: reading.insets.top, isPortrait: portrait)
             ZStack {
-                background(full: full, aspect: aspect)
-                // Les boutons restent entièrement au-dessus de la barre d'onglets (sa hauteur est mesurée, jamais écrite en dur) ; le
-                // viseur, lui, reste plein écran SOUS la barre.
+                background(aspect: aspect, topInset: topInset)
+                // Les boutons restent entièrement au-dessus de la barre d'onglets (sa hauteur est mesurée, jamais écrite en dur) et SOUS la
+                // zone sûre du haut (jamais sous l'île dynamique) ; le viseur, lui, reste plein écran, derrière la barre d'état et la barre.
                 controls(aspect: aspect)
+                    .topSafeAreaFloor()
                     .aboveTabBar()
             }
         }
+        // Fond sombre : la barre d'état (heure, réseau, batterie) passe en clair tant que le viseur est à l'écran.
+        .lightStatusBar()
         .onAppear {
             camera.onUnavailable = onUnavailable
             camera.start()
+            #if DEBUG
+            if DiagnosticLaunchOptions.preview?.hasPrefix("update-") == true {
+                camera.showDemoControls()
+            }
+            #endif
         }
         .onDisappear {
             camera.stop()
@@ -91,21 +162,26 @@ struct ViewfinderView: View {
     }
 
     /// L'image de la caméra dans la zone « bornée » (ratio entre 9:21 et 9:16, centrée : « ce que tu vois est ce qui part »), et le
-    /// dégradé sombre du haut. Plein écran, derrière la barre d'état et derrière la barre d'onglets.
-    private func background(full: CGSize, aspect: Double) -> some View {
-        let box = Self.boundedBox(full: full, aspect: aspect)
-        return ZStack {
+    /// dégradé sombre du haut. Plein écran, derrière la barre d'état, l'île dynamique et la barre d'onglets : l'aperçu se place lui-même sur la
+    /// fenêtre (`PreviewHostView`), il ne dépend d'aucune mesure de zone sûre.
+    private func background(aspect: Double, topInset: CGFloat) -> some View {
+        ZStack {
             Color.black
-            CameraPreview(controller: camera)
-                .frame(width: box.width, height: box.height)
+            CameraPreview(controller: camera, aspect: aspect)
                 .accessibilityHidden(true)
             VStack(spacing: 0) {
+                // Une très légère ombre : la barre d'état est en clair, elle reste lisible même sur une façade claire. Sa hauteur suit la zone
+                // sûre (île dynamique, encoche ou simple barre d'état), jamais une valeur écrite en dur ; elle fond sans bord net.
                 LinearGradient(
-                    colors: [colorUpdateScrim.color, Color.clear],
+                    stops: [
+                        .init(color: scrim(ViewfinderLayout.gradientTopAlpha), location: 0),
+                        .init(color: scrim(ViewfinderLayout.gradientTopAlpha / 2), location: 0.6),
+                        .init(color: Color.clear, location: 1)
+                    ],
                     startPoint: .top,
                     endPoint: .bottom
                 )
-                .frame(height: UpdateLayout.topGradientHeight)
+                .frame(height: ViewfinderLayout.gradientHeight(topInset: topInset))
                 Spacer(minLength: 0)
             }
             .allowsHitTesting(false)
@@ -195,16 +271,9 @@ struct ViewfinderView: View {
             .allowsHitTesting(false)
     }
 
-    /// Le plus grand rectangle de ratio `aspect` (largeur / hauteur) dans `full` : quand l'écran est hors des bornes 9:21 à 9:16 (tablette,
-    /// écran partagé), le viseur se limite à la zone bornée, centrée, avec des bandes sombres.
-    static func boundedBox(full: CGSize, aspect: Double) -> CGSize {
-        guard full.width > 0, full.height > 0, aspect > 0 else {
-            return full
-        }
-        if Double(full.width / full.height) > aspect {
-            return CGSize(width: full.height * CGFloat(aspect), height: full.height)
-        }
-        return CGSize(width: full.width, height: full.width / CGFloat(aspect))
+    /// Le noir du voile du haut, à l'opacité demandée (« Réduire la transparence » n'y change rien : c'est une ombre, pas une surface).
+    private func scrim(_ alpha: Double) -> Color {
+        colorUpdateScrim.withAlpha(alpha).color
     }
 
     // MARK: - Prendre la photo

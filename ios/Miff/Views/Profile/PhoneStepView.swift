@@ -33,7 +33,7 @@ struct PhoneStepContent: View {
     }
 
     private var country: PhoneCountry {
-        tools.country(region: state.regionCode, locale: .current)
+        tools.country(region: state.regionCode, locale: AppLanguage.locale)
     }
 
     var body: some View {
@@ -244,7 +244,7 @@ struct CountryPickerSheet: View {
         .background(colorBgSurface.color.ignoresSafeArea())
         .task {
             let phoneTools = tools
-            countries = await Task.detached { phoneTools.countries(locale: .current) }.value
+            countries = await Task.detached { phoneTools.countries(locale: AppLanguage.locale) }.value
         }
     }
 
