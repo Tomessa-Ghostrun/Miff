@@ -27,6 +27,16 @@ final class TimeSharePercentagesTests: XCTestCase {
         XCTAssertEqual(shares.map { $0.percent }, [99, 1, 0])
     }
 
+    func testTheExampleSharedWithAndroidGivesThirtyOneSixtyNineAndUnderOne() {
+        // Maison 100 h, un lieu 3 h (0,93 %), dehors 219 h : 31 % / « < 1 % » / 69 % (ordre de la légende).
+        let hour = TimeShareLimits.hourMillis
+        let shares = TimeSharePercentages.allocate([100 * hour, 3 * hour, 219 * hour])
+
+        XCTAssertEqual(shares.map { $0.percent }, [31, 0, 69])
+        XCTAssertEqual(shares.map { $0.isUnderOne }, [false, true, false])
+        XCTAssertEqual(shares.map { $0.percent }.reduce(0, +), 100)
+    }
+
     func testSeveralTinyPartsNeverBreakTheSum() {
         // Trois parts à 0,8 % : elles comptent 0, les trois autres se partagent les 100 points.
         let millis = [32_500, 32_500, 32_500, 800, 800, 800]

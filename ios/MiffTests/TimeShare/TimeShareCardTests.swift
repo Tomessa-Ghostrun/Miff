@@ -88,13 +88,14 @@ final class TimeShareCardTests: XCTestCase {
         var keys = [
             "profile_timeshare_title", "profile_timeshare_window_a11y", "profile_timeshare_window_selected_a11y",
             "profile_timeshare_center_caption", "profile_timeshare_a11y_card", "profile_timeshare_a11y_row",
-            "profile_timeshare_a11y_danger_row", "profile_timeshare_a11y_list", "profile_timeshare_elsewhere",
+            "profile_timeshare_a11y_danger_row", "profile_timeshare_elsewhere",
             "profile_timeshare_percent_tiny", "profile_timeshare_detail_close", "profile_timeshare_privacy",
             "profile_timeshare_not_enough", "profile_timeshare_summary", "profile_timeshare_paused",
             "profile_timeshare_travel",
             "profile_timeshare_sharing_stopped", "profile_timeshare_sharing_stopped_action",
             "profile_timeshare_location_needed", "profile_timeshare_over_limit", "profile_timeshare_error",
-            "profile_timeshare_other_places", "profile_timeshare_danger_zones", "settings_privacy_time_title",
+            "profile_timeshare_other_places", "profile_timeshare_danger_zones",
+            "profile_timeshare_danger_zones_several", "settings_privacy_time_title",
             "settings_privacy_time_body", "settings_privacy_time_erase", "settings_privacy_time_confirm_title",
             "settings_privacy_time_confirm_body", "settings_privacy_time_confirm_action", "settings_privacy_time_done"
         ]
@@ -147,7 +148,7 @@ final class TimeShareCardTests: XCTestCase {
         let french = try bundle("fr")
         let english = try bundle("en")
         let danger = { (bundle: Bundle, count: Int) in
-            let key = count > 1 ? "ios_timeshare_danger_zones_many" : "profile_timeshare_danger_zones"
+            let key = count > 1 ? "profile_timeshare_danger_zones_several" : "profile_timeshare_danger_zones"
             return L10n.string(key, bundle: bundle)
         }
 

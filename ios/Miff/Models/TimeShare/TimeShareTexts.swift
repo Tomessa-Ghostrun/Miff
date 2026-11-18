@@ -51,10 +51,10 @@ enum TimeShareTexts {
         }
     }
 
-    /// « Zone de danger » (un lieu) ou « Zones de danger » (plusieurs). Deux clés : Xcode refuse un pluriel qui ne cite pas le nombre ; la
-    /// clé du singulier est celle d'Android (parité), celle du pluriel est propre à iOS.
+    /// « Zone de danger » (un lieu) ou « Zones de danger » (plusieurs). Deux clés communes avec Android (Xcode refuse un pluriel qui ne
+    /// cite pas le nombre).
     static func dangerZones(_ count: Int) -> String {
-        L10n.string(count > 1 ? "ios_timeshare_danger_zones_many" : "profile_timeshare_danger_zones")
+        L10n.string(count > 1 ? "profile_timeshare_danger_zones_several" : "profile_timeshare_danger_zones")
     }
 
     /// « Ton graphique arrive dans 3 jours, nous analysons tes habitudes » : wording FIGÉ par le PM, pluriel du catalogue (« dans 1 jour »).

@@ -284,7 +284,6 @@ struct TimeShareCard: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(Text("profile_timeshare_a11y_list"))
     }
 
     @ViewBuilder

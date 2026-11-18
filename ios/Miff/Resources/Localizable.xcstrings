@@ -5714,23 +5714,6 @@
         }
       }
     },
-    "ios_timeshare_danger_zones_many": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Danger zones"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Zones de danger"
-          }
-        }
-      }
-    },
     "miff_choice_create_body": {
       "extractionState": "manual",
       "localizations": {
@@ -12202,13 +12185,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "How your time is spread. %1$@: %2$@."
+            "value": "Time breakdown. %1$@: %2$@."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Répartition de ton temps. %1$@ : %2$@."
+            "value": "Répartition du temps. %1$@ : %2$@."
           }
         }
       }
@@ -12226,23 +12209,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@, %2$@, afficher le détail"
-          }
-        }
-      }
-    },
-    "profile_timeshare_a11y_list": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Chart legend"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Légende de la répartition"
           }
         }
       }
@@ -12294,6 +12260,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Zone de danger"
+          }
+        }
+      }
+    },
+    "profile_timeshare_danger_zones_several": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danger zones"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zones de danger"
           }
         }
       }
