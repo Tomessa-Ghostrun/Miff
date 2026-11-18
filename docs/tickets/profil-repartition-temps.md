@@ -295,7 +295,7 @@ Ordre : `lieu` (du plus grand au plus petit), `autres lieux`, `danger`, `ailleur
 10. **Lieu sans catégorie** : épingle neutre (règle de `place-categories.md`).
 11. **Compte gratuit sans zone de danger** : jamais de place réservée à cette ligne.
 12. **Quota de stockage plein** : l'écriture peut échouer ; **aucun message** (le suivi prime), fait manquant traité comme les autres.
-13. **Données de démonstration** : un outil de remplissage du journal pour la recette, **uniquement** dans les builds debug / TestFlight (comme l'écran de diagnostic), **jamais** en release, libellé « données de test », test automatisé qui le prouve (TS-23).
+13. **Données de démonstration** : **abandonnées (2026-11-18)** : le PM a validé la fonction sur l'APK de recette ; l'outil de remplissage du journal (debug) a été supprimé d'Android et n'existe plus. Les cas de calcul restent couverts par les tests unitaires.
 
 ---
 
@@ -336,7 +336,7 @@ Android et iOS, sauf mention. **Les mêmes cas de calcul (§6.3) passent à l'id
 - [ ] **TS-20** Lecteur d'écran : description unique, anneau caché, légende sans doublon, sélecteur annoncé ; cibles ≥ 48 dp / 44 pt ; **nom de la catégorie lu, pas l'emoji**.
 - [ ] **TS-21** Police à 200 % : aucune troncature ni chevauchement.
 - [ ] **TS-22** FR + EN, parité de clés CI, tokens uniquement.
-- [ ] **TS-23** L'outil de remplissage de données de test **n'existe pas** en release (test automatisé, dans l'esprit du test existant sur `DetectionJournal`).
+- [x] ~~**TS-23** L'outil de remplissage de données de test n'existe pas en release~~ : **sans objet** (l'outil est supprimé, 2026-11-18) ; un test vérifie qu'aucune trace n'en reste.
 
 **Sécurité et coût**
 - [ ] **TS-24** Aucune bibliothèque de graphique tierce (dessin natif) ; aucune dépendance payante. (iOS : certains composants de graphique système exigent iOS 17 alors que le minimum est iOS 16 : `ios-dev` confirme.)
@@ -368,7 +368,7 @@ Le suivi existe déjà : **plus de dépendance bloquante**. La carte n'est plus 
 | # | Sous-ticket | Contenu | Taille | Dépend de |
 |---|---|---|---|---|
 | **TIME-0** | **Décisions et maquettes** (PM, `design-system`) | Palette « graphique » (tokens), états, panneau de détail, grande police, ligne Réglages, variantes iOS ; exports PNG dans `design/exports/profil/` avec README | S à M | Validation de ce ticket ; **ne bloque pas TIME-1** |
-| **TIME-1** | **Android : journal de présence local, calcul, branchement, effacement** | §13 ; calcul §6 ; **tests T1 à T23 et TS-8b** ; bouton « Effacer mon historique de temps » ; outil de données de test (debug) ; aucune carte | M | Suivi existant ; **ne pas publier sur le Play Store avant la mise à jour de la politique** |
+| **TIME-1** | **Android : journal de présence local, calcul, branchement, effacement** | §13 ; calcul §6 ; **tests T1 à T23 et TS-8b** ; bouton « Effacer mon historique de temps » ; aucune carte | M | Suivi existant ; **ne pas publier sur le Play Store avant la mise à jour de la politique** |
 | **TIME-2** | **Android : carte du Profil et états** | §5, §7, §9, §10 ; sélecteur et mémorisation ; textes FR + EN ; accessibilité ; mesure de lectures (zéro de plus) | M | TIME-1, TIME-0 |
 | **TIME-3** | **iOS : journal de présence local, calcul, branchement, effacement** | Mêmes livrables que TIME-1 ; écriture verrouillé ; exclusion iCloud | M | TIME-1 (référence), moteur iOS |
 | **TIME-4** | **iOS : carte du Profil et états** | Mêmes livrables que TIME-2 ; dessin natif (iOS 16) | M | TIME-3, TIME-2 |
