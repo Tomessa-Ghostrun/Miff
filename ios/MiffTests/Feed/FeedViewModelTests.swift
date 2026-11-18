@@ -96,7 +96,7 @@ final class FeedViewModelTests: XCTestCase {
         XCTAssertEqual(repo.observer.subscriptions, 0)
     }
 
-    func testTheSkeletonStaysUntilTheStatusesAnswerThenTheCardsAppearMeLast() async {
+    func testTheSkeletonStaysUntilTheStatusesAnswerThenTheCardsAppearInArrivalOrderWithoutUpdates() async {
         let model = await makeModel()
         let task = observe(model)
         miffData([mine, other])
@@ -106,7 +106,8 @@ final class FeedViewModelTests: XCTestCase {
         statuses.emit(["a": feedStatus(.inTrusted, departedAgo: feedMinutes(12))])
         await waitUntil { self.content(model) != nil }
 
-        XCTAssertEqual(content(model)?.cards.map { $0.member.uid }, ["a", "me"])
+        let order = content(model)?.cards.map { $0.member.uid }
+        XCTAssertEqual(order, ["me", "a"], "sans date : ordre d'arrivée")
         XCTAssertEqual(model.me.initials, "CN")
         await stop(task)
     }
