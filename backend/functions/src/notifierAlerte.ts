@@ -26,8 +26,8 @@ const donnees = (instantane: Instantane): DonneesAlerte | null =>
 export const notifierAlerte = onDocumentWritten(
   {
     document: "miffs/{miffId}/alerts/{uid}",
-    // Compte DEDIE aux roles minimaux, jamais le compte par defaut ; litteral exige par le test garde-couts. A creer par le PM : docs/dev/deploiement-alerte-danger.md.
-    serviceAccount: "notify-alert@miff-3d283.iam.gserviceaccount.com",
+    // Compte DEDIE aux roles minimaux, jamais le compte par defaut ; litteral exige par le test garde-couts. Decision du PM : MEME compte que notifierUpdate (ses 4 roles couvrent aussi cette fonction) ; seul le droit run.invoker sur le service notifieralerte est a poser apres le deploiement : docs/dev/deploiement-alerte-danger.md.
+    serviceAccount: "notify-update@miff-3d283.iam.gserviceaccount.com",
     maxInstances: LIMITES_NOTIFICATION.maxInstances,
     memory: LIMITES_NOTIFICATION.memory,
     retry: false,

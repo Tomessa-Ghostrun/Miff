@@ -188,17 +188,17 @@ test('notifierUpdate (SRV-4B) : déclenchée par Firestore sur photos/{uid} uniq
   assert.ok(!e.callableTrigger && !e.httpsTrigger, 'aucun point d\'entrée appelable depuis Internet');
 });
 
-test('comptes de service : chaque fonction écrit le sien en littéral dans SON fichier et nulle part ailleurs (deux comptes DISTINCTS : notify-update, notify-alert)', () => {
+test('comptes de service : le compte de service est écrit en littéral dans le fichier de chaque déclencheur et nulle part ailleurs (décision du PM : notifierAlerte réutilise notify-update)', () => {
   const attendu = {
     'notifierUpdate.ts': 'serviceAccount: "notify-update@miff-3d283.iam.gserviceaccount.com"',
-    'notifierAlerte.ts': 'serviceAccount: "notify-alert@miff-3d283.iam.gserviceaccount.com"',
+    'notifierAlerte.ts': 'serviceAccount: "notify-update@miff-3d283.iam.gserviceaccount.com"',
   };
   for (const { f, texte } of sources) {
     const m = code(texte).match(/\bserviceAccount\s*:\s*"([^"]+)"/g) ?? [];
     if (attendu[nomDe(f)]) assert.deepEqual(m, [attendu[nomDe(f)]], f);
     else assert.deepEqual(m, [], `${f} : serviceAccount interdit hors des déclencheurs`);
   }
-  assert.notEqual(attendu['notifierUpdate.ts'], attendu['notifierAlerte.ts']);
+  assert.equal(attendu['notifierUpdate.ts'], attendu['notifierAlerte.ts'], 'même compte dédié, mêmes 4 rôles, aucun rôle de plus');
 });
 
 test("notifierAlerte (AD-B2) : déclenchée par Firestore sur alerts/{uid} uniquement, europe-west9, 5 instances au plus, 256 Mio, 30 s, sans reprise, compte dédié, aucun point d'entrée HTTP", () => {
@@ -211,11 +211,11 @@ test("notifierAlerte (AD-B2) : déclenchée par Firestore sur alerts/{uid} uniqu
   assert.equal(e.availableMemoryMb, 256);
   assert.equal(e.timeoutSeconds, 30);
   assert.ok(!e.minInstances);
-  assert.equal(e.serviceAccountEmail, 'notify-alert@miff-3d283.iam.gserviceaccount.com');
-  assert.notEqual(e.serviceAccountEmail, exportees.notifierUpdate.__endpoint.serviceAccountEmail, 'un compte de service par fonction');
+  assert.equal(e.serviceAccountEmail, 'notify-update@miff-3d283.iam.gserviceaccount.com');
+  assert.equal(e.serviceAccountEmail, exportees.notifierUpdate.__endpoint.serviceAccountEmail, 'décision du PM : même compte dédié que notifierUpdate');
   assert.ok(!e.callableTrigger && !e.httpsTrigger, "aucun point d'entrée appelable depuis Internet");
   assert.notDeepEqual(problemesDeGardeFous('notifierAlerte', { ...e, serviceAccountEmail: undefined }), [], 'identité par défaut refusée');
-  assert.notDeepEqual(problemesDeGardeFous('notifierAlerte', { ...e, serviceAccountEmail: 'notify-alert@ghostrun-app.iam.gserviceaccount.com' }), [], 'compte de Ghostrun refusé');
+  assert.notDeepEqual(problemesDeGardeFous('notifierAlerte', { ...e, serviceAccountEmail: 'notify-update@ghostrun-app.iam.gserviceaccount.com' }), [], 'compte de Ghostrun refusé');
   assert.notDeepEqual(problemesDeGardeFous('notifierAlerte', { ...e, maxInstances: 6 }), [], 'maxInstances au-delà du plafond refusé');
 });
 

@@ -12,7 +12,7 @@
 
 | # | Quoi | Quand | Pourquoi dans cet ordre |
 |---|---|---|---|
-| **0** | Préparer le compte de service `notify-alert` et la règle TTL `alerts.purgeAt` (section 1) | Dès maintenant, sans risque (rien n'est en ligne) | La commande de la fonction **échoue** si le compte n'existe pas : c'est le bon comportement |
+| **0** | Poser la règle TTL `alerts.purgeAt` (section 1.2) ; **aucun compte à créer** | Dès maintenant, sans risque (rien n'est en ligne) | Sans cette règle, rien ne casse : les alertes terminées restent simplement stockées |
 | **1** | **Déployer les règles Firestore** (section 2) | **Avant** toute application (APK, TestFlight) qui écrit une alerte | Sans les règles, l'écriture d'une alerte est refusée (`permission-denied`). Les règles sont **sans effet** tant qu'aucune application n'écrit d'alerte |
 | **2** | Livrer l'APK Android puis le build TestFlight iOS (hors de ce document : `android-dev`, `ios-dev`) | Après l'étape 1 | |
 | **3** | **Déployer la fonction `notifierAlerte`** (section 3) | **EN DERNIER**, quand l'APK et TestFlight sont prêts, les textes légaux publiés (AD-L) et ta recette prête | **C'est l'interrupteur de mise en service des notifications** : tant qu'elle n'est pas en ligne, une alerte apparaît dans le Feed des proches **mais aucun push ne part** (comportement prévu, testé) |
@@ -25,29 +25,22 @@ Chaque déploiement exige **ton « oui » explicite dans la conversation avec Cl
 
 ## 1. À faire UNE SEULE FOIS avant (sans risque : rien n'est publié)
 
-### 1.1 Créer le compte de service dédié `notify-alert` (comme `notify-update`, mêmes 4 rôles de projet)
+### 1.1 Compte de service : AUCUN nouveau compte (décision du PM du 2026-11-18)
 
-**Pourquoi un compte à part** : une fonction s'exécute sous une identité Google. Chaque fonction a la sienne, aux droits **minimaux** (jamais Éditeur ni Propriétaire), **sans aucune clé**. Si la fonction d'alerte était détournée, les dégâts seraient limités à ce que ce compte peut faire, et on peut la couper sans toucher à `notifierUpdate`. L'adresse complète `notify-alert@miff-3d283.iam.gserviceaccount.com` est écrite dans le code (`backend/functions/src/notifierAlerte.ts`) : une autre adresse serait refusée par les tests.
+La fonction `notifierAlerte` **réutilise le compte déjà en service de `notifierUpdate`** : `notify-update@miff-3d283.iam.gserviceaccount.com` (adresse écrite dans le code). **Rien à créer, aucun rôle à ajouter, aucune clé.**
 
-> Variante plus courte si tu préfères **réutiliser** `notify-update` : dis-le à Claude (une ligne de code et un test à changer, une PR) ; tu n'aurais alors ni compte à créer ni rôles à poser, seulement le droit `run.invoker` sur le nouveau service. Défaut retenu ici : **un compte par fonction**.
+Les **4 rôles de projet** qu'il porte déjà couvrent exactement ce dont la nouvelle fonction a besoin (vérifié par l'agent le 2026-11-18, d'après ce que fait le code) :
 
-**Façon 1 : Cloud Shell** (le terminal intégré à la console Google Cloud, bouton « Activate Cloud Shell » en haut à droite ; **vérifie que le projet affiché est `miff-3d283`, jamais Ghostrun**). Les commandes visent toutes explicitement le projet :
+| Besoin de `notifierAlerte` | Rôle déjà porté |
+|---|---|
+| Lire les fiches de membres, les sessions, les jetons et la Miff ; écrire son état `notifState/{miffId}_alertes` ; supprimer un jeton que Google dit inconnu | **Utilisateur Cloud Datastore** (`roles/datastore.user`) |
+| Envoyer les notifications | **Administrateur de l'API Firebase Cloud Messaging** (`roles/firebasecloudmessaging.admin`) |
+| Être déclenchée par l'écriture d'une alerte | **Récepteur d'événements Eventarc** (`roles/eventarc.eventReceiver`) |
+| Écrire ses journaux | **Rédacteur de journaux** (`roles/logging.logWriter`) |
 
-```bash
-gcloud iam service-accounts create notify-alert --display-name="Fonction notifierAlerte : lit Firestore et envoie les notifications d'alerte" --project=miff-3d283
+**Aucun rôle ne manque.** Le seul droit à poser est **par service**, après le premier déploiement : `Cloud Run Invoker` du compte sur le service `notifieralerte` (section 3, étape D). Si une erreur « permission denied » apparaissait malgré tout au déploiement ou à l'envoi, **ne rien élargir** et copier le message à Claude.
 
-for ROLE in roles/datastore.user roles/firebasecloudmessaging.admin roles/eventarc.eventReceiver roles/logging.logWriter; do
-  gcloud projects add-iam-policy-binding miff-3d283 --member="serviceAccount:notify-alert@miff-3d283.iam.gserviceaccount.com" --role="$ROLE" --condition=None
-done
-
-gcloud iam service-accounts add-iam-policy-binding notify-alert@miff-3d283.iam.gserviceaccount.com --member="user:tomessa.mfouka@gmail.com" --role="roles/iam.serviceAccountUser" --project=miff-3d283
-```
-
-La dernière commande donne **à ton compte** le droit d'utiliser ce compte de service pour déployer (« Utilisateur du compte de service »). **N'ajoute jamais** Éditeur, Propriétaire, Administrateur Firebase, ni un rôle « Admin » de Firestore. **Ne crée aucune clé** (si on te propose de télécharger un `.json`, refuse). **N'ajoute pas** `Cloud Run Invoker` au niveau du projet (il se pose sur le seul service, section 3, étape D).
-
-**Façon 2 : console** (mêmes gestes que `deploiement-functions.md` §1.4, étapes A à C, en remplaçant `notify-update` par `notify-alert` et la description par `Fonction notifierAlerte`). Les 4 rôles : **Utilisateur Cloud Datastore** (`roles/datastore.user`), **Administrateur de l'API Firebase Cloud Messaging** (`roles/firebasecloudmessaging.admin`), **Récepteur d'événements Eventarc** (`roles/eventarc.eventReceiver`), **Rédacteur de journaux** (`roles/logging.logWriter`).
-
-**Contrôle (lecture seule)** : Google Cloud > IAM : la ligne `notify-alert@miff-3d283.iam.gserviceaccount.com` montre **exactement ces 4 rôles** ; sur la page du compte, l'onglet « Clés » est **vide**.
+**Contrôle (lecture seule, 30 secondes)** : Google Cloud > IAM : la ligne `notify-update@miff-3d283.iam.gserviceaccount.com` montre toujours **exactement 4 rôles** (pas 5) ; l'onglet « Clés » de son compte est **vide**.
 
 ### 1.2 Règle TTL sur `alerts.purgeAt` (suppression automatique des alertes terminées ou échues)
 
@@ -122,7 +115,7 @@ npx firebase deploy --only firestore:rules --project miff-3d283 --message "AD-B1
 | # | Vérification | OK si |
 |---|---|---|
 | 1 | Les règles de l'étape 1 sont en ligne ; l'APK et le build TestFlight qui écrivent des alertes sont **prêts** à tester | Oui |
-| 2 | Le compte `notify-alert@…` existe avec ses **4 rôles** et **aucune clé** (section 1.1) | Oui |
+| 2 | Le compte `notify-update@…` (celui de `notifierUpdate`) porte ses **4 rôles** et **aucune clé** (section 1.1) : rien à créer | Oui |
 | 3 | La règle TTL `alerts.purgeAt` est posée (section 1.2) | Visible dans la console Firestore |
 | 4 | Les textes légaux (AD-L) sont publiés et aucune fiche de store ne contredit la fonction | « Oui » du PM écrit |
 | 5 | L'alerte de budget existe (Google Cloud > Facturation > Budgets) | `Miff 5 EUR par mois` |
@@ -152,18 +145,18 @@ npx firebase deploy --only functions:notifierAlerte --project miff-3d283
 **D. Après le premier déploiement : poser `Cloud Run Invoker` sur le seul service `notifieralerte`** (sans ce droit, Cloud Run **refuse chaque appel** d'Eventarc : « lacks {run.routes.invoke} permission » ; rien ne part). **Jamais** au niveau du projet, **jamais** « Allow public access ». En Cloud Shell :
 
 ```bash
-gcloud run services add-iam-policy-binding notifieralerte --region=europe-west9 --member="serviceAccount:notify-alert@miff-3d283.iam.gserviceaccount.com" --role="roles/run.invoker" --project=miff-3d283
+gcloud run services add-iam-policy-binding notifieralerte --region=europe-west9 --member="serviceAccount:notify-update@miff-3d283.iam.gserviceaccount.com" --role="roles/run.invoker" --project=miff-3d283
 ```
 
-(ou console : https://console.cloud.google.com/run, projet `miff-3d283`, cocher `notifieralerte` > Permissions > Add principal > `notify-alert@miff-3d283.iam.gserviceaccount.com` > rôle **Cloud Run Invoker**.) Ne donne ce droit à aucun autre compte, sur aucun autre service.
+(ou console : https://console.cloud.google.com/run, projet `miff-3d283`, cocher `notifieralerte` > Permissions > Add principal > `notify-update@miff-3d283.iam.gserviceaccount.com` > rôle **Cloud Run Invoker**.) Ne donne ce droit à aucun autre compte, sur aucun autre service.
 
 **E. Contrôles en lecture seule après le déploiement**
 
 | # | Vérification | Commande ou endroit | OK si |
 |---|---|---|---|
 | 1 | La fonction est en ligne | `npx firebase functions:list --project miff-3d283` | `notifierAlerte` **et** `notifierUpdate` listées, région **europe-west9**, 2e génération, Node.js 24 |
-| 2 | Les limites sont appliquées | Console Firebase > Functions > `notifierAlerte` > détails (ou Cloud Run > `notifieralerte`) | Instances maximales **5**, mémoire **256 Mio**, délai **30 s**, instances minimales **0**, compte de service **`notify-alert@miff-3d283…`** (jamais « Compute Engine default ») |
-| 3 | Le droit d'appel est posé, **pas trop large** | Cloud Run > cocher `notifieralerte` > Permissions | `notify-alert@…` porte **Cloud Run Invoker** ; **aucun** `allUsers` ni `allAuthenticatedUsers` ; la page IAM du projet montre toujours **4 rôles** pour ce compte (pas 5) |
+| 2 | Les limites sont appliquées | Console Firebase > Functions > `notifierAlerte` > détails (ou Cloud Run > `notifieralerte`) | Instances maximales **5**, mémoire **256 Mio**, délai **30 s**, instances minimales **0**, compte de service **`notify-update@miff-3d283…`** (jamais « Compute Engine default ») |
+| 3 | Le droit d'appel est posé, **pas trop large** | Cloud Run > cocher `notifieralerte` > Permissions | `notify-update@…` porte **Cloud Run Invoker** ; **aucun** `allUsers` ni `allAuthenticatedUsers` ; la page IAM du projet montre toujours **4 rôles** pour ce compte (pas 5) |
 | 4 | Aucune erreur | `npx firebase functions:log --project miff-3d283 --only notifierAlerte -n 30` | Aucune ligne `ERROR` ; **aucun** « The request was not authenticated… » ni « lacks {run.routes.invoke} permission » |
 | 5 | **Essai de bout en bout, deux comptes de test dans la même Miff** (OPPO + iPhone) | Compte A : maintenir 5 s le bouton de l'écran Update ; compte B : attendre | B reçoit **« A a déclaré une alerte »** (FR ou EN selon son téléphone), **en moins de 2 minutes**, **sans position, ni nom de Miff, ni nom de famille** ; A ne reçoit rien ; les journaux montrent `notif.alerte.debut.bilan` (`resultat: ok`, `envoyes` = 1) |
 | 6 | Fin manuelle | A : maintenir 5 s la bannière | B reçoit **« A a mis fin à son alerte »** ; journaux : `notif.alerte.fin.bilan` puis `notif.alerte.fin.duree` (durée en minutes) |
