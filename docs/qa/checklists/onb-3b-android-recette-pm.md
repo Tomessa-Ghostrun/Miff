@@ -42,13 +42,13 @@ Utilisez un compte créé avec e-mail et mot de passe.
 - [ ] **Variante : autre compte** : mode avion, éteignez l'interrupteur, déconnectez-vous (Mon compte), réseau rétabli, connectez-vous avec **un autre** compte : son interrupteur n'est **pas** éteint et rien n'est écrit pour lui ; reconnectez-vous avec le premier : le retrait est enregistré.
 - [ ] Mode avion, interrupteur **éteint → allumé** : le message de réseau s'affiche et l'interrupteur **ne change pas** (accepter exige que le compte l'enregistre).
 - [ ] « **Conditions d'utilisation** » et « **Politique de confidentialité** » ouvrent le **navigateur** sur le site Miff, en **français** (puis en anglais si l'app est en anglais : `/en/terms`, `/en/privacy`). La page peut afficher une erreur tant que le site n'est pas déployé.
-- [ ] « **Nous contacter** » ouvre votre application e-mail avec l'adresse de contact, sans texte pré-rempli.
+- [ ] **« Nous contacter » n'est plus dans Confidentialité** (décision du PM du 2026-11-13 : il est dans Réglages > « À propos et aide », voir `docs/qa/checklists/reglages-a-propos-android-recette-pm.md`).
 - [ ] Il n'y a **pas** de lien « Mentions légales » (aucune page de ce nom n'existe encore).
 
 ## Partie E — Accessibilité (3 min, facultatif)
 
 - [ ] **TalkBack** : l'interrupteur est annoncé en **une seule phrase** (« Statistiques d'usage…, interrupteur, activé »). Chaque lien est annoncé « …, bouton » avec ce qu'il ouvre (« ouvrir la page dans ton navigateur »).
-- [ ] **Taille de police maximale** : tout reste lisible, le dernier lien (« Nous contacter ») est atteignable en faisant défiler.
+- [ ] **Taille de police maximale** : tout reste lisible, le dernier lien (« Politique de confidentialité ») est atteignable en faisant défiler.
 
 ## À signaler à Claude
 

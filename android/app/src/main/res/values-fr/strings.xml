@@ -1293,4 +1293,16 @@
     <string name="countdown_a11y_hours_and_minutes">%1$s et %2$s</string>
     <string name="countdown_a11y_less_than_minute">moins d\'une minute</string>
     <string name="countdown_a11y_action">Donner de tes nouvelles</string>
+    <!-- ABOUT-1A : textes propres a Android de Reglages > A propos et aide (lignes de cartes et d'adresses, detail d'une licence, indice de la version) -->
+    <string name="android_about_copy_hint">Touche pour copier</string>
+    <string name="android_about_contact_subtitle">Une question, un souci, une idée : écris-nous.</string>
+    <string name="android_about_licenses_footnote">Les licences sont reprises des descriptions publiques de chaque bibliothèque.</string>
+    <string name="android_about_licenses_includes">Ce que cela comprend</string>
+    <string name="android_about_licenses_text_unavailable">Ce texte n\'a pas pu être affiché pour le moment.</string>
+    <string name="android_about_licenses_unavailable">La liste n\'a pas pu être affichée pour le moment.</string>
+    <string name="android_about_licenses_map_engine">Moteur de carte : MapLibre Native</string>
+    <string name="android_about_licenses_map_tiles">Carte : OpenFreeMap, © OpenMapTiles, données © contributeurs OpenStreetMap</string>
+    <string name="android_about_licenses_address_search">Adresses : service Photon de komoot, données © contributeurs OpenStreetMap</string>
+    <string name="android_about_licenses_map_tiles_notice">Les cartes s\'affichent avec les tuiles d\'OpenFreeMap (https://openfreemap.org), qui utilisent le schéma © OpenMapTiles. Les données sont © contributeurs OpenStreetMap, disponibles sous la licence ODbL 1.0 (https://opendatacommons.org/licenses/odbl/1-0/). La mention reste visible sous chaque carte.</string>
+    <string name="android_about_licenses_address_search_notice">Les adresses proposées pendant la frappe viennent de Photon, le service public de komoot (https://photon.komoot.io), dont le logiciel est publié sous licence Apache 2.0. Ses données sont © contributeurs OpenStreetMap, disponibles sous la licence ODbL 1.0 (https://opendatacommons.org/licenses/odbl/1-0/).</string>
 </resources>

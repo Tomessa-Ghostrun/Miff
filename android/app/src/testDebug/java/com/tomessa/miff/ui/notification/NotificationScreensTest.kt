@@ -78,7 +78,7 @@ class NotificationScreensTest {
     @Test
     fun settingsList_hasTheNotificationsRow_whenTheAccountHasAMiff_andNotInTheRestrictedList() {
         var opened = 0
-        show { SettingsScreen({}, {}, {}, {}, {}, onOpenNotifications = { opened++ }) }
+        show { SettingsScreen({}, {}, {}, {}, {}, {}, onOpenNotifications = { opened++ }) }
         composeRule
             .onNodeWithText(text(R.string.notif_settings_title))
             .assertHasClickAction()
@@ -96,6 +96,7 @@ class NotificationScreensTest {
                 onOpenAccount = {},
                 onOpenLanguage = null,
                 onOpenPrivacy = {},
+                onOpenAbout = {},
             )
         }
         composeRule.onAllNodesWithText(text(R.string.notif_settings_title)).assertCountEquals(0)
