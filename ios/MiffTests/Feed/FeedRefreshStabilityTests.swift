@@ -86,7 +86,8 @@ final class FeedRefreshSourcesTests: XCTestCase {
     func testTheCardsKeepTheirIdentityAndTheListIsNeverAnimatedOrRebuiltByTheRefresh() throws {
         let list = try code("Views/Feed/FeedListView.swift")
 
-        XCTAssertTrue(list.contains("ForEach(content.cards, id: \\.member.uid)"), "une carte = un identifiant de membre, jamais un numéro ni un UUID")
+        XCTAssertTrue(list.contains("id: \\.member.uid) { card in"), "une carte = un identifiant de membre, jamais un numéro ni un UUID")
+        XCTAssertTrue(list.contains("order.order.resolve(content.cards)"), "seul l'ordre affiché (FEED-ORDRE) décide de la place des cartes")
         XCTAssertEqual(list.components(separatedBy: ".refreshable").count - 1, 1)
         for forbidden in [".animation(", ".transaction", "UUID()", ".id(UUID", ".id(model.", "Date()"] {
             XCTAssertFalse(list.contains(forbidden), forbidden)

@@ -39,7 +39,10 @@ final class FeedPullOwnPresenceTests: XCTestCase {
             clock: { now.value },
             sleep: { millis in try? await Task.sleep(nanoseconds: UInt64(max(millis, 0)) * 1_000_000) },
             timings: FeedTimings(
-                statusRetryDelaysMillis: [5], firstStatusAnswerMillis: 600_000, cacheGraceMillis: 30, minRefreshDisplayMillis: 0
+                statusRetryDelaysMillis: [5],
+                firstStatusAnswerMillis: 600_000,
+                cacheGraceMillis: 30,
+                minRefreshDisplayMillis: 0
             )
         )
         dependencies.onPullOwnPresence = { counter.value += 1 }
