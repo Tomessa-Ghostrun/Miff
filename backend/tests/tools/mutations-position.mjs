@@ -114,7 +114,9 @@ export const POSITION_MUTATIONS = [
   // --- Effacement dans le même lot -------------------------------------------------------------------------
   mut('DP11-arret-sans-purge-position', "l'arrêt du partage ne force plus la suppression de la position",
     [edit(`
-            && !existsAfter(${DB}/miffs/$(miffId)/positions/$(uid)))`, ')')],
+            && !existsAfter(${DB}/miffs/$(miffId)/positions/$(uid))
+            // Alerte (AD-B1)`, `
+            // Alerte (AD-B1)`)],
     ['DP11', 'DP14b']),
   mut('DP12-depart-sans-purge-position', 'quitter la Miff ne force plus la suppression de la position',
     [edit(`\n        ${EXISTS_AFTER_POSITION}\n`, '\n')],

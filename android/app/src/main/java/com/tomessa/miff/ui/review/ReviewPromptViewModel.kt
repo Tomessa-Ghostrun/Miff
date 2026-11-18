@@ -61,7 +61,7 @@ class ReviewPromptViewModel(
     private val store: ReviewStateStore,
     private val nowMillis: () -> Long,
     private val debugForceAllowed: Boolean,
-    /** `BuildConfig.FEEDBACK_FORM_URL`: empty until the PM gives the address ([FeedbackForm]). */
+    /** `BuildConfig.FEEDBACK_FORM_URL`: the PM's address, empty only on a build made with -Pmiff.feedbackFormUrl= ([FeedbackForm]); the default here is "" for tests. */
     feedbackFormUrl: String = "",
     private val thanksMillis: Long = ReviewPromptDefaults.THANKS_MILLIS,
 ) : ViewModel() {

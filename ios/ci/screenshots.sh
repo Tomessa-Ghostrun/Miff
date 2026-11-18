@@ -125,6 +125,12 @@ shot 93-fr-lieu-detail-danger 6 "${fr_args[@]}" -MiffPreview place-detail-danger
 shot 95b-fr-miff-offre-deuxieme-miff 3 "${fr_args[@]}" -MiffPreview place-paywall-miff
 shot 96-en-lieu-rempli 6 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview place-form-filled
 
+# Réglages > Langue (écran dans l'app, comme Android) : téléphone en français puis en anglais, anglais CHOISI sur un téléphone en français
+# (-MiffAppLanguage, Debug seulement, rien n'est écrit), droite-à-gauche. La ligne Langue des Réglages dit la langue en cours.
+shot 160-fr-langue 2 "${fr_args[@]}" -MiffPreview lang-screen
+shot 161-fr-langue-anglais-choisi 2 "${fr_args[@]}" -MiffAppLanguage en -MiffPreview lang-screen
+shot 162-fr-reglages-anglais-choisi 2 "${fr_args[@]}" -MiffAppLanguage en -MiffPreview lang-settings
+shot 163-en-reglages 2 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview lang-settings
 # Profil : le carrousel de Miffs (retour du PM, 2026-11-10). Les VRAIS écrans, nourris par des états fixes (Diagnostic/ProfileScreenPreviews.swift).
 shot 99-fr-profil-carrousel 3 "${fr_args[@]}" -MiffPreview profile-carousel
 shot 99b-fr-profil-carrousel-2 3 "${fr_args[@]}" -MiffPreview profile-carousel-2
@@ -135,6 +141,19 @@ shot 150-fr-photo-plein-ecran-3-4 4 "${fr_args[@]}" -MiffPreview photo-3-4
 shot 151-fr-photo-plein-ecran-haute 4 "${fr_args[@]}" -MiffPreview photo-tall
 # Zones sures annoncees NULLES (cas du fullScreenCover sur un vrai appareil) : les planchers (47 pt + 12 pt en haut, 34 pt + 16 pt en bas) doivent tenir.
 shot 153-fr-photo-plein-ecran-zones-sures-nulles 4 "${fr_args[@]}" -MiffPreview photo-tall -MiffForceZeroSafeArea YES
+
+# Update : le viseur PLEIN ECRAN (retour du PM, iPhone 16 : bande noire en haut). Le simulateur n'a pas de camera : l'apercu est un aplat
+# turquoise cerclé de magenta qui doit toucher les QUATRE bords (derriere la barre d'etat et l'ile dynamique) ; la bascule et le flash
+# restent SOUS la zone sure ; la barre d onglets est la vraie. 161 : zones sures annoncees NULLES (planchers). Seulement 2 captures et
+# 2 s d attente (etape saturee : 15 min). L apercu apres la photo se verifie sur l iPhone (recette PM).
+shot 160-fr-update-viseur-plein-ecran 2 "${fr_args[@]}" -MiffPreview update-viewfinder
+shot 161-fr-update-viseur-zones-sures-nulles 2 "${fr_args[@]}" -MiffPreview update-viewfinder -MiffForceZeroSafeArea YES
+
+# DESC-I : la description facultative d'une update. 162 : l'apercu de la photo avec une description de plus de 120 caracteres (champ sous la photo,
+# compteur discret « 128/140 ») ; 163 : la photo en plein ecran avec une description AU-DESSUS de « Photo de ... ». Seulement 2 captures (etape
+# saturee, 30 min). Le clavier ouvert, la saisie et les grandes polices se verifient sur l'iPhone (recette PM).
+shot 162-fr-update-apercu-description 2 "${fr_args[@]}" -MiffPreview update-preview-description
+shot 163-fr-photo-plein-ecran-description 4 "${fr_args[@]}" -MiffPreview photo-description
 
 # PAY-UI-I : l'écran d'offre Miff+ (ticket paywall-v2.md), plein écran. La capture 95b ci-dessus montre la variante « sans
 # achat » (la seule de la production) AVANT les 3 secondes : croix absente, emplacement réservé. Les variantes « -cross » ont un délai
@@ -171,6 +190,10 @@ splash_args=(-MiffSkipSplash YES)
 shot 90-fr-feed-bulle-verte 3 "${fr_args[@]}" -MiffPreview feed-green
 shot 91-fr-feed-bulle-orange 3 "${fr_args[@]}" -MiffPreview feed-orange
 shot 92-fr-feed-bulle-rouge 3 "${fr_args[@]}" -MiffPreview feed-red
+# COUNTDOWN-I : le compte à rebours (Feed plein, Feed dans la dernière demi-heure, Profil à 1 h). Peu de captures : l'étape est saturée.
+shot 94-fr-feed-compte-a-rebours-plein 3 "${fr_args[@]}" -MiffPreview feed-countdown-full
+shot 94c-fr-profil-compte-a-rebours 3 "${fr_args[@]}" -MiffPreview profile-countdown-half
+
 # COULEURS-2 : le bouton « i » hors de la bulle (carrousel ; les bulles verte, orange et rouge ci-dessus le montrent aussi) et l'écran des couleurs. Peu de captures : l'étape est limitée à 15 min.
 shot 96-fr-feed-bulle-carrousel 3 "${fr_args[@]}" -MiffPreview feed-carousel
 shot 98-fr-couleurs-ecran 3 "${fr_args[@]}" -MiffPreview colors-info
@@ -194,6 +217,9 @@ shot 67-fr-miff-ecran-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview miff-scree
 shot 79-fr-miff-supprimer-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview miff-screen-delete
 shot 152-fr-photo-plein-ecran-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview photo-3-4
 shot 93-fr-feed-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-orange
+shot 166-fr-langue-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview lang-screen
+shot 167-fr-reglages-texte-tres-grand 2 "${fr_args[@]}" -MiffAppLanguage en -MiffPreview lang-settings
+shot 93b-fr-feed-compte-a-rebours-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-countdown-last
 
 shot 99-fr-offre-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview paywall-trial-cross
 shot 99b-fr-offre-sans-achat-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview paywall-soon-cross

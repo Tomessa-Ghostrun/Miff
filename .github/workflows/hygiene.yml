@@ -93,9 +93,14 @@ jobs:
         with:
           node-version: 24
       - name: Tests du script de parité
-        run: node --test "scripts/tests/check-i18n-parity.test.mjs"
-      - name: Parité des clés françaises Android / iOS
-        run: node scripts/check-i18n-parity.mjs
+        run: node --test "scripts/tests/check-i18n-parity.test.mjs" "scripts/tests/check-i18n-languages.test.mjs"
+      # Registre des langues : docs/contracts/i18n-languages.json. fr et en (required) bloquent ; es, it, pt, de (planned) avertissent seulement.
+      - name: Parité des clés Android / iOS et contrôles par langue
+        run: node scripts/check-i18n-parity.mjs --summary "$RUNNER_TEMP/i18n-summary.md"
+      - name: Tableau des langues dans le résumé du job
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/i18n-summary.md" ]; then cat "$RUNNER_TEMP/i18n-summary.md" >> "$GITHUB_STEP_SUMMARY"; fi
       - name: Durée du job
         if: always()
         run: echo "Durée du job i18n-parity = $(( $(date +%s) - JOB_START )) s" >> "$GITHUB_STEP_SUMMARY"

@@ -27,8 +27,8 @@
 
 ## Partie C : la zone de danger (si vous avez un lieu de ce type)
 
-9. [ ] Avec du temps passé dans une zone de danger : **une seule ligne « Zone de danger »** (« Zones de danger » s'il y en a plusieurs), avec une **icône d'avertissement** et son pourcentage, et la **tranche est hachurée** (jamais la couleur seule). La couleur d'alerte n'apparaît **que** sur cette tranche et cette ligne.
-10. [ ] **Touchez cette ligne** : une **feuille du bas** liste chaque lieu (emoji, nom, pourcentage) ; **la somme égale la ligne**. Fermez avec **« Fermer »** puis rouvrez et fermez avec le **geste « retour »** du téléphone : les deux marchent. **Limite connue** : la légende n'a que 4 lignes ; si la zone de danger n'est pas parmi les 4 plus grandes parts, sa ligne (donc son détail) n'y est pas, elle reste dans l'anneau et dans la description du lecteur d'écran.
+9. [ ] Avec du temps passé dans une zone de danger : **une seule ligne « Zone de danger »** (« Zones de danger » s'il y en a plusieurs), avec une **icône d'avertissement** et son pourcentage, et la **tranche est hachurée** (jamais la couleur seule). La couleur d'alerte n'apparaît **que** sur cette tranche et cette ligne. **Avec plus de 4 parts**, la légende garde 4 lignes : les plus grosses, mais la zone de danger y est quand même si elle fait 1 % ou plus (le 4e lieu lui cède sa place).
+10. [ ] **Touchez cette ligne** : une **feuille du bas** liste chaque lieu (emoji, nom, pourcentage) ; **la somme égale la ligne**. Fermez avec **« Fermer »** puis rouvrez et fermez avec le **geste « retour »** du téléphone : les deux marchent. **La ligne « Zone de danger » est toujours dans la légende dès que sa part arrondie est de 1 % ou plus** (elle prend la place du 4e lieu si besoin) ; en dessous de 1 %, pas de ligne.
 11. [ ] **Sans temps passé** dans une zone de danger (ou sans zone de danger) : **aucune ligne**, jamais « 0 % ».
 
 ## Partie D : les états
