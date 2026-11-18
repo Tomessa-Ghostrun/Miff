@@ -154,7 +154,8 @@ private struct MiffActionSheet: View {
         )
         return MiffConfirmContent(
             title: L10n.format("miff_delete_title", state.name),
-            message: body,
+            // ALERTE : supprimer la Miff retire aussi l'alerte de la personne (dans le même lot) sans prévenir le cercle : la même ligne calme que pour quitter.
+            message: dangerAlertWarning(body, miffId: state.miffId, signal: dangerSignal),
             confirmLabel: L10n.string("miff_delete_action"),
             isBusy: state.actionBusy,
             failure: state.message,

@@ -67,6 +67,7 @@ extension MainShellView {
         return DangerUpdateHooks(
             hintVisible: !model.hintDone,
             onHintDone: { model.onHintDone() },
+            activeMiffId: activeMiffId,
             targetMiffName: activeName,
             several: names.count > 1,
             activeAlertMiffName: state.miffId.flatMap { dangerNamed(names[$0]) },

@@ -231,6 +231,10 @@ final class AppEnvironment {
         pushServices.sessionProbe.isEnding = { [weak manager] in manager?.ending ?? false }
         #if ALERT_DANGER
         let directory = miff.directory
+        // Un refus du serveur sur mon alerte : l'annuaire est relu (une perte confirmée retire l'alerte, voir `DangerAlertController.onAccessDoubt`).
+        dangerServices.controller.onAccessDoubt = {
+            Task { await directory.refresh() }
+        }
         dangerShell = DangerAlertShell(
             signal: dangerServices.signal,
             model: dangerServices.model,

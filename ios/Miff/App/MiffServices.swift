@@ -70,7 +70,7 @@ struct MiffServices {
         let hooks = DeletionHooks(
             onStarted: { miffId in directory.expectDeparture(miffId: miffId) },
             onDeleted: { miffId in
-                // Le créateur supprime sa propre Miff : son alerte y est partie dans le même lot (le dialogue le dit), elle l'est aussi sur le téléphone.
+                // Le créateur supprime sa propre Miff : son alerte y est partie dans le même lot (le dialogue de suppression le dit, `MiffScreenSheets`), elle l'est aussi sur le téléphone.
                 onAlertGone(miffId)
                 await directory.afterOwnDeparture(miffId: miffId)
                 onSharingChanged()

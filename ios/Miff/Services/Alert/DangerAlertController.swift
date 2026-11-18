@@ -88,6 +88,9 @@ final class DangerAlertController: ObservableObject {
 
     /// Ce que le contrôleur dit une fois (fin acceptée, fin refusée, alerte non partie). Posé par l'hôte des écrans.
     var onEvent: ((DangerAlertEvent) -> Void)?
+    /// Un refus du serveur sur MON alerte (la fin, ou la vérification d'une alerte active) peut vouloir dire « la Miff ne m'est plus ouverte » : l'app relit l'annuaire, et
+    /// une perte CONFIRMÉE par le serveur retire l'alerte (`onAlertRemoved`). Jamais une bannière retirée sur un simple doute.
+    var onAccessDoubt: (() -> Void)?
 
     let store: DangerAlertStore
     let device: ActiveDevice
@@ -245,6 +248,11 @@ final class DangerAlertController: ObservableObject {
                 for await online in network.onlineChanges() where online {
                     break
                 }
+                // Le flux du réseau peut se terminer sans qu'il soit revenu : une pause bornée, jamais une boucle serrée.
+                if !network.isOnline() {
+                    await sleep(pause(for: attempt))
+                    attempt += 1
+                }
                 continue
             }
             switch await store.readMine(uid: uid, miffId: miffId) {
@@ -331,6 +339,11 @@ final class DangerAlertController: ObservableObject {
             return
         }
         let read = await store.readMine(uid: uid, miffId: miffId)
+        if read == .denied {
+            // Refusé : la Miff ne m'est peut-être plus ouverte (retiré pendant que l'app est ouverte). Rien ne change ici, mais l'annuaire est relu.
+            onAccessDoubt?()
+            return
+        }
         guard case .active(let againMiff, let startedAt, let expires, let againStep) = state,
               againMiff == miffId, againStep == .idle, case .value(let found) = read else {
             return

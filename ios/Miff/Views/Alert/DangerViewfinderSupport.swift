@@ -9,6 +9,8 @@ struct DangerUpdateHooks {
     /// La bulle bleue de l'onboarding se montre (l'indicateur `alertHintDone` est faux).
     var hintVisible: Bool
     var onHintDone: () -> Void
+    /// L'IDENTIFIANT de la Miff sélectionnée dans le Feed (jamais le nom : deux Miffs peuvent porter le même) : le geste se rebranche quand il change.
+    var activeMiffId: String?
     /// La Miff sélectionnée dans le Feed : celle où l'alerte irait.
     var targetMiffName: String?
     /// La personne a plusieurs Miffs : l'écran de maintien nomme la Miff avant que l'alerte parte.
@@ -43,6 +45,36 @@ final class DangerViewfinderState: ObservableObject {
     @Published var hintShown = true
     @Published var infoOpen = false
     @Published var confirmOpen = false
+    /// Ce que l'Update sait faire MAINTENANT : le geste lit ceci AU MOMENT où il agit, jamais une copie prise à l'apparition du viseur (la Miff sélectionnée
+    /// peut changer pendant que l'Update est affiché : le tracé rouge dit alors une Miff et le maintien en servirait une autre).
+    private var current: DangerUpdateHooks?
+    private var photo: () -> Void = {}
+
+    /// Branche le geste ; rappelé quand la Miff sélectionnée (son identifiant) ou l'état de l'alerte change.
+    func bind(hooks: DangerUpdateHooks, onPhoto: @escaping () -> Void) {
+        current = hooks
+        photo = onPhoto
+        hold.onTap = { [weak self] in
+            self?.hintShown = false
+            self?.photo()
+        }
+        hold.onArmed = { [weak self] in
+            // Le geste est découvert : la bulle a fini pour de bon. Si une alerte est déjà en cours, la personne le sait calmement (pas de mode rouge).
+            guard let self, let hooks = self.current else {
+                return
+            }
+            hooks.onHintDone()
+            self.hintShown = false
+            if hooks.alertInProgress {
+                hooks.onAlreadyActive(hooks.activeAlertMiffName)
+            }
+        }
+        hold.onDone = { [weak self] in
+            if let hooks = self?.current, !hooks.alertInProgress {
+                hooks.onTrigger()
+            }
+        }
+    }
 }
 
 /// L'obturateur de l'Update AVEC le maintien : un toucher plus court que 400 ms est la photo ; plus long arme l'alerte (l'anneau et le disque passent au rouge) ;
@@ -94,32 +126,15 @@ struct DangerShutter: View {
         .accessibilityAction(named: Text("alert_shutter_a11y_action")) { declareAccessibly() }
         .modifier(ShutterSwitchAction(action: onSwitchCamera))
         .onAppear { bind() }
+        .onChange(of: hooks.activeMiffId) { _ in bind() }
+        .onChange(of: hooks.targetMiffName) { _ in bind() }
         .onChange(of: hooks.activeAlertMiffName) { _ in bind() }
         .onChange(of: hooks.alertInProgress) { _ in bind() }
     }
 
     /// Branche le geste sur ce que l'Update sait faire à cet instant.
     private func bind() {
-        let hooks = self.hooks
-        let state = self.state
-        let onPhoto = self.onPhoto
-        state.hold.onTap = {
-            state.hintShown = false
-            onPhoto()
-        }
-        state.hold.onArmed = {
-            // Le geste est découvert : la bulle a fini pour de bon. Si une alerte est déjà en cours, la personne le sait calmement (pas de mode rouge).
-            hooks.onHintDone()
-            state.hintShown = false
-            if hooks.alertInProgress {
-                hooks.onAlreadyActive(hooks.activeAlertMiffName)
-            }
-        }
-        state.hold.onDone = {
-            if !hooks.alertInProgress {
-                hooks.onTrigger()
-            }
-        }
+        state.bind(hooks: hooks, onPhoto: onPhoto)
     }
 
     private func declareAccessibly() {

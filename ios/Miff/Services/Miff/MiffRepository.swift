@@ -293,6 +293,10 @@ final class FirestoreMiffRepository: MiffRepository {
         if case .failed(let failure) = result, failure.mayHaveLanded || failure == .refused {
             let read = await guarded { try await store.readSharing(miffId: miffId, uid: uid) }
             if case .value(let current) = read, current == enabled {
+                // Le lot est bien parti (réponse perdue) : l'alerte de cette Miff est partie avec lui, sinon la bannière resterait et la fin dirait à tort « Alerte terminée ».
+                if !enabled, rules.alertsEnabled {
+                    rules.onAlertGone(miffId)
+                }
                 noteSharingChange(miffId: miffId, resumed: enabled)
                 return .done
             }

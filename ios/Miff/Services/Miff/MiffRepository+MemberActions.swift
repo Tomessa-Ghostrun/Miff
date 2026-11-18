@@ -9,7 +9,8 @@ import Foundation
 extension FirestoreMiffRepository {
     func cleanUpLost(uid: String, lost: LostMiff) async -> Bool {
         let store = self.store
-        // L'appelant (l'annuaire) ne demande ce nettoyage qu'une fois la perte CONFIRMÉE par le serveur : retiré par le créateur, ou Miff supprimée par un autre
+        // `LostMiff` n'est construit que par `MiffStateReader`, quand le serveur lui-même refuse la Miff (hors cache, serveur joignable) : le nettoyage n'a donc pas besoin de
+        // son propre drapeau « perte confirmée ». L'appelant (l'annuaire) ne le demande qu'une fois la perte CONFIRMÉE par le serveur : retiré par le créateur, ou Miff supprimée par un autre
         // membre. Mon alerte de cette Miff est partie avec elle (le lot ci-dessous, ou la fiche déjà disparue, quelle que soit l'issue du nettoyage) : le contrôleur
         // est prévenu EN PREMIER, pour que la bannière parte et qu'une nouvelle alerte soit possible ailleurs, même si le nettoyage échoue ou ne retire que l'index.
         if rules.alertsEnabled {

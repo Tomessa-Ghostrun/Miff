@@ -146,6 +146,8 @@ extension DangerAlertController {
             attempt += 1
             return false
         case .sharingStopped, .notMember:
+            // `.notMember` n'est pas produit par la vraie lecture d'aujourd'hui (une Miff perdue est refusée par les règles : `.refused`, ou retirée par la perte confirmée
+            // de la Miff) ; s'il arrive, il se dit comme « partage arrêté » : un message calme, jamais une alerte restée en route.
             drop()
             onEvent?(.notSent(miffId: miffId, failure: failure))
             return true
@@ -243,6 +245,9 @@ extension DangerAlertController {
         } else {
             setEnd(miffId: miffId, step: .idle)
             onEvent?(.endNotSent)
+            // Un refus de la fin peut venir d'un accès perdu à la Miff (retirée d'une Miff autre que celle affichée, app ouverte) : l'annuaire est relu, et une perte
+            // CONFIRMÉE retire l'alerte (`onAlertRemoved`), au lieu de laisser « la fin n'est pas partie » boucler.
+            onAccessDoubt?()
         }
     }
 }

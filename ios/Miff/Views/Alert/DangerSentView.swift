@@ -69,8 +69,12 @@ struct DangerSentView: View {
             }
         }
         .accessibilityElement(children: .contain)
+        // Posé par-dessus la coquille : VoiceOver ne doit lire QUE cet écran (jamais le Feed et la barre d'onglets cachés avant « Appeler »), comme les autres
+        // surcouches de l'app ; l'écran qui change est annoncé.
+        .accessibilityAddTraits(.isModal)
         .onAppear {
             staleOpen = phase == .needsConfirmation
+            UIAccessibility.post(notification: .screenChanged, argument: nil)
         }
         .onChange(of: phase) { next in
             staleOpen = next == .needsConfirmation

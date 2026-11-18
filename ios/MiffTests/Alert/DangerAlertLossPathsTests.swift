@@ -4,6 +4,19 @@
 import XCTest
 @testable import Miff
 
+/// Un réseau hors ligne dont le flux se termine tout de suite (sans jamais dire « revenu »).
+private final class EndedNetwork: NetworkMonitor {
+    func isOnline() -> Bool {
+        false
+    }
+
+    func onlineChanges() -> AsyncStream<Bool> {
+        AsyncStream { continuation in
+            continuation.finish()
+        }
+    }
+}
+
 /// Tous les chemins par lesquels la personne PERD la Miff de son alerte (revue de l'Android, v3 et v4) : retirée par le créateur, Miff supprimée par un autre membre (y compris quand
 /// seul l'index local est nettoyé), départ dont la réponse s'est perdue, suppression par le créateur, et jamais une simple liste de Miffs. Dans chaque cas la bannière part et
 /// une nouvelle alerte devient possible dans une autre Miff : sinon l'état restait coincé jusqu'à 7 jours (« Une alerte est déjà en cours », geste de fin refusé).
@@ -159,14 +172,66 @@ final class DangerAlertLossPathsTests: DangerAlertControllerTestCase {
         XCTAssertEqual(local.saved?.phase, .active)
     }
 
-    func testARefusalOnAnActiveAlertNeverRemovesTheBanner() async {
+    func testARefusalOnAnActiveAlertNeverRemovesTheBannerButTheDirectoryIsReadAgain() async {
         let controller = makeController()
+        var doubts = 0
+        controller.onAccessDoubt = { doubts += 1 }
         await activate(controller)
         store.mineReads = [.denied]
 
         await controller.verifyActive()
 
+        XCTAssertTrue(isActive(controller), "jamais une bannière retirée sur un doute")
+        XCTAssertEqual(doubts, 1, "le refus déclenche un recontrôle de l'annuaire (une perte confirmée retire l'alerte)")
+    }
+
+    func testARefusedEndAsksForTheDirectoryToBeReadAgainInsteadOfLoopingOnNotSent() async {
+        let controller = makeController()
+        var doubts = 0
+        controller.onAccessDoubt = { doubts += 1 }
+        await activate(controller)
+        store.endResults = [.failed(.refused)]
+
+        controller.end()
+
+        await eventually { doubts == 1 }
+        XCTAssertEqual(events, [.endNotSent])
         XCTAssertTrue(isActive(controller))
+        // L'annuaire a confirmé la perte : l'alerte part, la bannière aussi.
+        controller.onAlertRemoved(miffId: miffA)
+        XCTAssertEqual(controller.state, .idle)
+    }
+
+    func testAStopOfSharingWhoseAnswerWasLostButLandedRemovesTheAlert() async {
+        let controller = makeController()
+        await activate(controller)
+        repoStore.commitFailures = [firestoreError(FirestoreErrorNumber.unavailable)]
+        // La fiche relue dit « partage arrêté » : l'état voulu est atteint, le lot est bien parti.
+        repoStore.sharing = false
+
+        let result = await repository(telling: controller).setSharing(miffId: miffA, uid: uid, enabled: false)
+
+        XCTAssertEqual(result, .done)
+        await assertGoneAndFree(controller)
+    }
+
+    func testAClosedNetworkStreamNeverMakesTheVerificationOfAnAbandonedAlertSpin() async {
+        let controller = DangerAlertController(
+            store: store, device: device, network: EndedNetwork(), local: local,
+            currentUid: { [unowned self] in self.signedIn }, nowMillis: { [unowned self] in self.clock },
+            retryPausesMillis: [10], sleep: { [unowned self] millis in
+                self.sleeps.append(millis)
+                try? await Task.sleep(nanoseconds: 1_000_000)
+            }
+        )
+        local.save(DangerAlertPointer(miffId: miffA, phase: .abandoned, armedAtMillis: clock))
+
+        controller.restore()
+        await eventually { self.sleeps.count >= DangerAlertController.maxVerifyAttempts }
+
+        XCTAssertEqual(store.mineCalls, 0, "rien n'est lu sans réseau")
+        XCTAssertEqual(sleeps.count, DangerAlertController.maxVerifyAttempts, "une pause bornée par essai, jamais une boucle serrée")
+        XCTAssertEqual(local.saved?.phase, .abandoned)
     }
 }
 #endif
