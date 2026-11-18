@@ -289,14 +289,6 @@ internal fun PhotoFullScreen(
                     PhotoFraming.clampPan(offset + pan, scale, boxSize.width, boxSize.height)
                 }
         }
-    // A rotation (or any resize) with a zoom on: the offset kept from the old size may now leave an edge of the picture inside the screen; it is bounded again at once,
-    // not only at the next gesture.
-    LaunchedEffect(boxSize) {
-        if (boxSize != IntSize.Zero) {
-            offset =
-                if (scale == 1f) Offset.Zero else PhotoFraming.clampPan(offset, scale, boxSize.width, boxSize.height)
-        }
-    }
     val unavailable = stringResource(R.string.feed_action_unavailable)
     val closeName = stringResource(R.string.update_photo_close_a11y)
     // "Enregistrer la photo": nothing is written before the touch. The picker (Android 9 and older only) is the system's own, no permission.
@@ -314,7 +306,21 @@ internal fun PhotoFullScreen(
                 .fillMaxSize()
                 .holdForDiagnostic()
                 .background(Color.Black)
-                .onSizeChanged { boxSize = it }
+                .onSizeChanged { size ->
+                    boxSize = size
+                    // A rotation (or any resize) with a zoom on: the offset kept from the old size may now leave an edge of the picture inside the screen; it is
+                    // bounded again at once, not only at the next gesture (done here, not in an effect of the screen: see PhotoDownloadRuleTest).
+                    if (size != IntSize.Zero) {
+                        offset =
+                            if (scale ==
+                                1f
+                            ) {
+                                Offset.Zero
+                            } else {
+                                PhotoFraming.clampPan(offset, scale, size.width, size.height)
+                            }
+                    }
+                }
                 // The pinch and the drag are taken by the WHOLE screen (not only by the picture): a gesture that starts on the footer, which is drawn over the
                 // photo, still moves and zooms it. The buttons keep their own touch; the footer only takes the vertical drags when it really scrolls (see below).
                 .transformable(transform),
