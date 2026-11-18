@@ -300,10 +300,17 @@ class TimeShareRulesTest {
             fr["settings_privacy_time_confirm_body"],
         )
         assertEquals("Effacer mon historique de temps", fr["settings_privacy_time_erase"])
-        assertEquals(
-            "Ces données restent sur ton téléphone. Personne d\\'autre ne peut les voir.",
-            fr["profile_timeshare_privacy"],
-        )
+        // The keys the PM removed (the subtitle under the title, the line about the data staying on the phone) are gone from both languages.
+        listOf(
+            "profile_timeshare_subtitle_7",
+            "profile_timeshare_subtitle_14",
+            "profile_timeshare_subtitle_30",
+            "profile_timeshare_privacy",
+        ).forEach {
+            assertFalse("$it must be gone", fr.containsKey(it) || en.containsKey(it))
+        }
+        assertEquals("Hors-zone", fr["profile_timeshare_elsewhere"])
+        assertEquals("Outside zones", en["profile_timeshare_elsewhere"])
         // The libellé of the app, not the one of the mockup.
         assertFalse(read("src/main/res/values-fr/strings.xml").contains("Zone à risque"))
     }

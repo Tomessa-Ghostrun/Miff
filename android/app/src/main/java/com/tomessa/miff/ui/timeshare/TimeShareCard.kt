@@ -116,8 +116,8 @@ import java.text.NumberFormat
 
 /*
  * "Répartition du temps", the card of the Profile (docs/tickets/profil-repartition-temps.md, TIME-2; mockup 19.webp of the PM, gaps listed in the PR). Layout of the PM (2026-11-17):
- * header (green badge, title, "Sur les N derniers jours", selector), the LEGEND on the left (the four biggest shares) and the small RING on the right, then the green band with the
- * tick, the sentence and the party emoji. No chart before 7 days of history: the words only, without selector.
+ * header (green badge, title, selector), the small RING on the left and the LEGEND on the right (the four biggest shares), then the green band with the
+ * tick, the sentence and the party emoji. No chart before 7 days of history: the words only, without selector. No subtitle and no line about the data staying on the phone (PM).
  * Everything is drawn by Compose itself (a ring on a Canvas): no chart library. No colour is written here, only tokens (ui/theme/ChartColor.kt). Nothing is logged.
  *
  * Accessibility (section 9.2): the ring is decorative (hidden), the legend carries the same words as the ring (emoji + name + percentage, in the order of the slices), ONE
@@ -258,7 +258,6 @@ private fun ShownCard(
             is TimeShareBody.NotEnough -> NotEnough(state, body, actions)
             is TimeShareBody.Chart -> ChartBody(body, state)
         }
-        PrivacyLine()
     }
 }
 
@@ -272,10 +271,10 @@ private fun Header(
 ) {
     // A large font: the selector goes UNDER the title (a word is never cut in two to make room for it).
     if (!withChart) {
-        HeaderTitle(windowDays, withSubtitle = false, modifier = Modifier.fillMaxWidth())
+        HeaderTitle(Modifier.fillMaxWidth())
     } else if (LocalDensity.current.fontScale >= LARGE_FONT_SCALE) {
         Column(modifier = Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-            HeaderTitle(windowDays, withSubtitle = true, modifier = Modifier.fillMaxWidth())
+            HeaderTitle(Modifier.fillMaxWidth())
             WindowSelector(windowDays, onWindowChosen)
         }
     } else {
@@ -284,7 +283,7 @@ private fun Header(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {
-            HeaderTitle(windowDays, withSubtitle = true, modifier = Modifier.weight(1f))
+            HeaderTitle(Modifier.weight(1f))
             WindowSelector(windowDays, onWindowChosen)
         }
     }
@@ -292,11 +291,7 @@ private fun Header(
 
 /** The badge (a green disc with the three bars, as on the mockup), the title and, with the chart, "Sur les N derniers jours". */
 @Composable
-private fun HeaderTitle(
-    windowDays: Int,
-    withSubtitle: Boolean,
-    modifier: Modifier,
-) {
+private fun HeaderTitle(modifier: Modifier) {
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -321,20 +316,9 @@ private fun HeaderTitle(
                 color = colorTextPrimary,
                 modifier = Modifier.semantics { heading() },
             )
-            if (withSubtitle) Text(text = subtitle(windowDays), style = textBodyRegular14, color = colorTextDescription)
         }
     }
 }
-
-@Composable
-private fun subtitle(days: Int): String =
-    stringResource(
-        when (days) {
-            14 -> R.string.profile_timeshare_subtitle_14
-            30 -> R.string.profile_timeshare_subtitle_30
-            else -> R.string.profile_timeshare_subtitle_7
-        },
-    )
 
 @Composable
 private fun windowLabel(days: Int): String =
@@ -405,7 +389,7 @@ private fun ChartBody(
     body: TimeShareBody.Chart,
     state: TimeShareUiState.Shown,
 ) {
-    val description = describe(body, state.windowDays)
+    val description = describe(body)
     var detailOpen by remember { mutableStateOf(false) }
     val danger = body.items.firstOrNull { it.kind == SliceKind.DANGER }
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
@@ -434,14 +418,14 @@ private fun ChartBody(
                 }
                 Legend(body, onOpenDanger = { detailOpen = true }, modifier = Modifier.fillMaxWidth())
             } else {
-                // As the mockup of the PM: the legend on the left, the (small) ring on the right.
+                // The (small) ring on the LEFT, the legend on the RIGHT (the PM, after the recette of the APK; in a right-to-left language the row mirrors by itself).
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(Spacing.m),
                 ) {
-                    Legend(body, onOpenDanger = { detailOpen = true }, modifier = Modifier.weight(1f))
                     Donut(body, RING_SIZE, centerCaption = true)
+                    Legend(body, onOpenDanger = { detailOpen = true }, modifier = Modifier.weight(1f))
                 }
             }
         }
@@ -483,12 +467,9 @@ private fun legendItems(items: List<LegendItem>): List<LegendItem> {
 }
 
 @Composable
-private fun describe(
-    body: TimeShareBody.Chart,
-    windowDays: Int,
-): String {
+private fun describe(body: TimeShareBody.Chart): String {
     val parts = body.items.map { "${labelOf(it)} ${percentText(it.percent, it.tiny)}" }
-    return stringResource(R.string.profile_timeshare_a11y_card, subtitle(windowDays), parts.joinToString(", "))
+    return stringResource(R.string.profile_timeshare_a11y_card, parts.joinToString(", "))
 }
 
 /** "Zone de danger" for one place, "Zones de danger" for several (two texts, not a plural: the number is not in the sentence). */
@@ -754,27 +735,6 @@ private fun SummaryBand(body: TimeShareBody.Chart) {
         Box(modifier = Modifier.clearAndSetSemantics {}) {
             Text(text = PARTY_EMOJI, fontSize = with(LocalDensity.current) { PARTY_SIZE.toSp() })
         }
-    }
-}
-
-@Composable
-private fun PrivacyLine() {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(Spacing.s),
-        verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.semantics(mergeDescendants = true) {},
-    ) {
-        Icon(
-            painter = painterResource(R.drawable.ic_lock),
-            contentDescription = null,
-            tint = colorTextDescription,
-            modifier = Modifier.size(Spacing.m),
-        )
-        Text(
-            text = stringResource(R.string.profile_timeshare_privacy),
-            style = textBodyCaption,
-            color = colorTextDescription,
-        )
     }
 }
 

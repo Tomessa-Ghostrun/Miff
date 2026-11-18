@@ -1223,16 +1223,13 @@
     <string name="feed_colors_bubble_action_a11y">Understand the colors</string>
     <!-- "How your time is spread" (docs/tickets/profil-repartition-temps.md, TIME-2): the Profile card and the Privacy setting. Friendly, descriptive tone, no blame and no congratulation. -->
     <string name="profile_timeshare_title">Time breakdown</string>
-    <string name="profile_timeshare_subtitle_7">Over the last 7 days</string>
-    <string name="profile_timeshare_subtitle_14">Over the last 14 days</string>
-    <string name="profile_timeshare_subtitle_30">Over the last 30 days</string>
     <string name="profile_timeshare_window_7">7 days</string>
     <string name="profile_timeshare_window_14">14 days</string>
     <string name="profile_timeshare_window_30">30 days</string>
     <string name="profile_timeshare_window_a11y">Period, %1$s</string>
     <string name="profile_timeshare_window_selected_a11y">selected</string>
     <string name="profile_timeshare_center_caption">in trusted zones</string>
-    <string name="profile_timeshare_a11y_card">Time breakdown. %1$s: %2$s.</string>
+    <string name="profile_timeshare_a11y_card">Time breakdown: %1$s.</string>
     <string name="profile_timeshare_a11y_row">%1$s, %2$s</string>
     <string name="profile_timeshare_a11y_danger_row">%1$s, %2$s, show details</string>
     <plurals name="profile_timeshare_other_places">
@@ -1241,11 +1238,10 @@
     </plurals>
     <string name="profile_timeshare_danger_zones">Danger zone</string>
     <string name="profile_timeshare_danger_zones_several">Danger zones</string>
-    <string name="profile_timeshare_elsewhere">Elsewhere</string>
+    <string name="profile_timeshare_elsewhere">Outside zones</string>
     <string name="profile_timeshare_percent_tiny">&lt; 1%</string>
     <string name="profile_timeshare_detail_close">Close</string>
     <string name="profile_timeshare_summary">You spent %1$s of your time in your trusted zones</string>
-    <string name="profile_timeshare_privacy">This data stays on your phone. Nobody else can see it.</string>
     <plurals name="profile_timeshare_not_enough">
         <item quantity="one">Your chart arrives in %1$d day, we\'re analysing your habits</item>
         <item quantity="other">Your chart arrives in %1$d days, we\'re analysing your habits</item>

@@ -12398,13 +12398,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Time breakdown. %1$@: %2$@."
+            "value": "Time breakdown: %1$@."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Répartition du temps. %1$@ : %2$@."
+            "value": "Répartition du temps : %1$@."
           }
         }
       }
@@ -12517,13 +12517,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Elsewhere"
+            "value": "Outside zones"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ailleurs"
+            "value": "Hors-zone"
           }
         }
       }
@@ -12724,23 +12724,6 @@
         }
       }
     },
-    "profile_timeshare_privacy": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This data stays on your phone. Nobody else can see it."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ces données restent sur ton téléphone. Personne d'autre ne peut les voir."
-          }
-        }
-      }
-    },
     "profile_timeshare_sharing_stopped": {
       "extractionState": "manual",
       "localizations": {
@@ -12771,57 +12754,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Voir cette Miff"
-          }
-        }
-      }
-    },
-    "profile_timeshare_subtitle_14": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Over the last 14 days"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sur les 14 derniers jours"
-          }
-        }
-      }
-    },
-    "profile_timeshare_subtitle_30": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Over the last 30 days"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sur les 30 derniers jours"
-          }
-        }
-      }
-    },
-    "profile_timeshare_subtitle_7": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Over the last 7 days"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sur les 7 derniers jours"
           }
         }
       }

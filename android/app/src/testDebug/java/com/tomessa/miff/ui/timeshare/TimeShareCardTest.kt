@@ -53,7 +53,7 @@ import java.util.Locale
 /**
  * The card "Répartition du temps" on the JVM (Robolectric, no phone; docs/tickets/profil-repartition-temps.md sections 5, 7 and 9, layout of the PM of 2026-11-17): the header, the legend
  * on the left with its four lines, the exact texts in French, the green band with the party emoji, the states without a chart (with the number of days left), the selector, the detail of
- * the danger zone, the way it is read by a screen reader and the largest font. The figures are those of the mockup (Maison 48, Sport 24, Zone de danger 12, Ailleurs 16).
+ * the danger zone, the way it is read by a screen reader and the largest font. The figures are those of the mockup (Maison 48, Sport 24, Zone de danger 12, Hors-zone 16).
  * Pictures: `build/screenshots/timeshare-*.png`.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -152,16 +152,16 @@ class TimeShareCardTest {
     fun theNominalCard_hasTheHeader_theLegend_theCentre_theBand_andThePrivacyLine() {
         show(shown())
         node("Répartition du temps").assertIsDisplayed()
-        node("Sur les 7 derniers jours").assertIsDisplayed()
+        nodes("Sur les 7 derniers jours").assertCountEquals(0)
         node("7 jours").assertIsDisplayed()
         node("Maison").assertIsDisplayed()
         node("Sport").assertIsDisplayed()
         node("Zones de danger").assertIsDisplayed()
-        node("Ailleurs").assertIsDisplayed()
+        node("Hors-zone").assertIsDisplayed()
         // The centre: the share in the trusted places, in big, and "en zone de confiance" under it (the same figure is in the band).
         nodes(pct(72)).assertCountEquals(1)
         node("en zone de confiance").assertIsDisplayed()
-        node("Ces données restent sur ton téléphone. Personne d'autre ne peut les voir.").assertIsDisplayed()
+        nodes("Ces données restent sur ton téléphone. Personne d'autre ne peut les voir.").assertCountEquals(0)
         shoot("nominal")
     }
 
@@ -198,13 +198,13 @@ class TimeShareCardTest {
             )
         show(shown(six))
         listOf("Maison", "Sport", "Bureau", "Chez Léa").forEach { node(it).assertExists() }
-        // "Ailleurs" (10 %) and "Club" (8 %) are the smallest shares: not in the four lines, but in the full description for the screen reader.
+        // "Hors-zone" (10 %) and "Club" (8 %) are the smallest shares: not in the four lines, but in the full description for the screen reader.
         nodes("Club").assertCountEquals(0)
-        nodes("Ailleurs").assertCountEquals(0)
+        nodes("Hors-zone").assertCountEquals(0)
         val described =
             composeRule
                 .onAllNodes(
-                    hasContentDescription("Club ${pct(8)}, Ailleurs ${pct(10)}", substring = true),
+                    hasContentDescription("Club ${pct(8)}, Hors-zone ${pct(10)}", substring = true),
                 ).fetchSemanticsNodes()
                 .size
         assertEquals(1, described)
@@ -243,9 +243,9 @@ class TimeShareCardTest {
     }
 
     @Test
-    fun theSubtitleFollowsTheWindow() {
+    fun noSubtitleUnderTheTitle_theWindowIsTheSelectorAlone() {
         show(shown(days = 30))
-        node("Sur les 30 derniers jours").assertIsDisplayed()
+        nodes("Sur les 30 derniers jours").assertCountEquals(0)
         node("30 jours").assertIsDisplayed()
     }
 
@@ -285,9 +285,9 @@ class TimeShareCardTest {
     @Test
     fun theChartIsDescribedByOneSentence_theRingAndTheEmojiAreNotRead() {
         show(shown())
-        val expected = "Répartition du temps. Sur les 7 derniers jours : Maison ${pct(
+        val expected = "Répartition du temps : Maison ${pct(
             48,
-        )}, Sport ${pct(24)}, Zones de danger ${pct(12)}, Ailleurs ${pct(16)}."
+        )}, Sport ${pct(24)}, Zones de danger ${pct(12)}, Hors-zone ${pct(16)}."
         val described = composeRule.onAllNodes(hasContentDescription(expected)).fetchSemanticsNodes().size
         assertEquals("one description of the chart", 1, described)
         val root = composeRule.onRoot(useUnmergedTree = false).fetchSemanticsNode()
@@ -312,11 +312,11 @@ class TimeShareCardTest {
         show(shown(TimeShareBody.NotEnough(daysLeft = 4)))
         node("Répartition du temps").assertIsDisplayed()
         node("Ton graphique arrive dans 4 jours, nous analysons tes habitudes").assertIsDisplayed()
-        node("Ces données restent sur ton téléphone. Personne d'autre ne peut les voir.").assertIsDisplayed()
+        nodes("Ces données restent sur ton téléphone. Personne d'autre ne peut les voir.").assertCountEquals(0)
         // No selector, no subtitle, no legend, no band.
         nodes("7 jours").assertCountEquals(0)
         nodes("Sur les 7 derniers jours").assertCountEquals(0)
-        nodes("Ailleurs").assertCountEquals(0)
+        nodes("Hors-zone").assertCountEquals(0)
         nodes("en zone de confiance").assertCountEquals(0)
         shoot("pas-assez-de-donnees")
     }
@@ -430,7 +430,6 @@ class TimeShareCardTest {
         node("Maison").assertExists()
         node(pct(72)).assertExists()
         node("en zone de confiance").assertExists()
-        node("Ces données restent sur ton téléphone. Personne d'autre ne peut les voir.").assertExists()
         shoot("police-200")
     }
 
