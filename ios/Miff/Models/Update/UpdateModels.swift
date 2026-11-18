@@ -131,6 +131,12 @@ struct PreviewState: Equatable, CustomStringConvertible {
     var notice: PreviewNotice?
     /// Après un succès partiel : les Miffs que la photo n'a pas atteintes (nil = toutes).
     var remaining: [String]?
+    /// Ce que la personne a écrit sous l'aperçu (la DESCRIPTION facultative), déjà nettoyée et plafonnée à 140 unités : vide = pas de
+    /// description. Elle suit la photo (même durée de vie, en mémoire seulement) : Recommencer, la croix, quitter l'Update ou une photo de plus
+    /// de 5 minutes créent un nouvel état, donc la remettent à vide. Elle RESTE après un échec : « Réessayer » renvoie les deux.
+    var descriptionText = ""
+    /// La limite de 140 unités vient d'être atteinte ou dépassée (phrase calme sous le champ).
+    var descriptionLimitHit = false
 
     init(photo: UpdatePhoto, publishing: Bool = false, notice: PreviewNotice? = nil, remaining: [String]? = nil) {
         self.photo = photo

@@ -4,15 +4,15 @@ import CoreGraphics
 // la retrouver). Du Swift pur : rien n'est lu, rien n'est écrit.
 
 enum PhotoPan {
-    /// Le plus grand déplacement (en x et en y, de part et d'autre du centre) d'une photo de `imageSize` montrée entière dans `area` puis zoomée de
-    /// `zoom` : la moitié de ce que la photo zoomée dépasse de la zone. Nul quand elle ne dépasse pas (à 1x, aucun déplacement).
+    /// Le plus grand déplacement (en x et en y, de part et d'autre du centre) d'une photo de `imageSize` qui REMPLIT `area` (recadrage centré) puis zoomée de
+    /// `zoom` : la moitié de ce que la photo zoomée dépasse de la zone, donc JAMAIS de bord vide visible. À 1x il reste la part recadrée à découvrir (nulle si la photo a le rapport de l'écran).
     static func limit(imageSize: CGSize, area: CGSize, zoom: CGFloat) -> CGSize {
         guard imageSize.width > 0, imageSize.height > 0, area.width > 0, area.height > 0, zoom.isFinite, zoom > 0 else {
             return .zero
         }
-        let shown = PhotoFullScreenLayout.fittedSize(imageSize: imageSize, in: area)
-        let shownWidth = shown.width * zoom
-        let shownHeight = shown.height * zoom
+        let filled = PhotoFullScreenLayout.filledSize(imageSize: imageSize, in: area)
+        let shownWidth = filled.width * zoom
+        let shownHeight = filled.height * zoom
         return CGSize(
             width: max(0, (shownWidth - area.width) / 2),
             height: max(0, (shownHeight - area.height) / 2)
