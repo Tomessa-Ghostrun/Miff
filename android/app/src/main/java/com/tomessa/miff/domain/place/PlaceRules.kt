@@ -98,6 +98,38 @@ object PlaceAddressText {
 enum class PaywallReason { LIMIT, DANGER, MIFF }
 
 /**
+ * Who may do what with a danger zone (type `risk`), in ONE place (decision of the PM, 2026-11-17, ticket docs/tickets/lieu-danger-demande-gratuite.md):
+ *
+ * | | ASK for one (member) | ACCEPT one (creator) | DECLARE one directly (creator) |
+ * |---|---|---|---|
+ * | free | yes | no (the offer opens, the request stays pending) | no (the offer opens) |
+ * | Miff+ | yes | yes | yes |
+ *
+ * Only the plan of the CREATOR matters: only the creator writes a place, and the rules read HIS plan. Nothing here ever looks at the plan of the person who
+ * asks, and a member cannot know the plan of the creator (it is private): the client never blocks a request on a guess.
+ */
+object DangerZoneRights {
+    /** Any member who is not the creator, free or Miff+: no offer, no lock. */
+    fun canAsk(): Boolean = true
+
+    /** The creator accepts a danger zone only with Miff+ (the free creator may still decline it). */
+    fun canAccept(creatorPremium: Boolean): Boolean = creatorPremium
+
+    /** The creator declares a danger zone directly (new place, or an existing place changed to a danger zone) only with Miff+. */
+    fun canDeclare(creatorPremium: Boolean): Boolean = creatorPremium
+
+    /**
+     * Whether "Zone de danger" is shown as Miff+ (the pill, the offer at the tap) in a form: never in the form of a REQUEST ([asRequest]); in the other
+     * forms a free account sees it as Miff+ unless the place already is a danger zone (a free creator who lost Miff+ keeps and edits the ones he has).
+     */
+    fun isLockedInForm(
+        asRequest: Boolean,
+        premium: Boolean,
+        current: PlaceType,
+    ): Boolean = !asRequest && !canDeclare(premium) && current != PlaceType.RISK
+}
+
+/**
  * What the person filled in, ready to be written. Built by the form only when [problem] is null. The Miffs are the ids of Miffs
  * that THE PERSON CREATED (the repository checks it again against the server).
  */
@@ -160,7 +192,11 @@ object PlaceQuota {
         newId: () -> String,
     ): PlaceSlot {
         if (premium) return PlaceSlot.Use(newId())
-        if (type == PlaceType.RISK) return PlaceSlot.NeedsPremium(PaywallReason.DANGER)
+        if (type == PlaceType.RISK &&
+            !DangerZoneRights.canAccept(premium)
+        ) {
+            return PlaceSlot.NeedsPremium(PaywallReason.DANGER)
+        }
         if (distinctPlaces >= PlaceLimits.FREE_PLACES) return PlaceSlot.NeedsPremium(PaywallReason.LIMIT)
         // The slot must be unused in EVERY Miff the person created, not only in the chosen ones: two different places that
         // shared an identifier would be read as ONE place in two Miffs (the count of the limit and the edit would be wrong).
@@ -170,12 +206,19 @@ object PlaceQuota {
         return PlaceSlot.Use(free)
     }
 
-    /** The free plan cannot make a place a danger zone (R-LIEU-6); going back to "trusted" is always allowed. */
+    /**
+     * The free plan cannot make a place a danger zone (R-LIEU-6); going back to "trusted" is always allowed. [asRequest]: the form of a REQUEST (a member
+     * asks, the creator decides): the choice is free for everybody, the plan that counts is the one of the creator, at the acceptance.
+     */
     fun forTypeChange(
         premium: Boolean,
         from: PlaceType,
         to: PlaceType,
-    ): PaywallReason? = if (!premium && to == PlaceType.RISK && from != PlaceType.RISK) PaywallReason.DANGER else null
+        asRequest: Boolean = false,
+    ): PaywallReason? {
+        val allowed = if (asRequest) DangerZoneRights.canAsk() else DangerZoneRights.canDeclare(premium)
+        return if (to == PlaceType.RISK && from != PlaceType.RISK && !allowed) PaywallReason.DANGER else null
+    }
 
     /** Whether the "Ajouter un lieu" of a creator opens the limit screen instead of the form (free plan, 3 places already). */
     fun isAtFreeLimit(

@@ -717,7 +717,7 @@ La carte du Profil qui montre, en anneau, comment la personne a réparti son tem
 | Carte, anneau (`Canvas`), légende, états, feuille de la zone de danger | `ui/timeshare/TimeShareCard.kt`, `TimeShareViewModel.kt` ; jetons de couleur `ui/theme/ChartColor.kt` |
 | Effacement | déconnexion / suppression de compte / session perdue (`TrackingEngine.stop`, démontage de la session, `accountLocalDataErasers`), sortie d'une Miff (`AppContainer.onMiffLeft`, liste du serveur), 35 jours, bouton de Réglages > Confidentialité |
 
-Limites : historique propre à l'appareil, qui démarre à la livraison ; événements datés à leur arrivée dans l'app (surcouches constructeur) ; **la politique de confidentialité doit être mise à jour avant la publication sur Google Play** (le téléphone garde 35 jours de changements de lieu). Voir `CHANGELOG.md` 0.45.0.
+Limites : historique propre à l'appareil, qui démarre à la livraison ; événements datés à leur arrivée dans l'app (surcouches constructeur) ; **la politique de confidentialité doit être mise à jour avant la publication sur Google Play** (le téléphone garde 35 jours de changements de lieu). Voir `CHANGELOG.md` 0.46.0.
 
 ## Mode voyage (tickets VOY-1A, VOY-2A, VOY-3A)
 
