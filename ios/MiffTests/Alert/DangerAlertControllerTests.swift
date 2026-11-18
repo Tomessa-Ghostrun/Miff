@@ -141,7 +141,7 @@ final class DangerAlertControllerTests: DangerAlertControllerTestCase {
 
     func testARefusalBecauseThePhoneWasReplacedDropsTheAlertWithoutAMessage() async {
         store.startResults = [.failed(.refused)]
-        device.afterRefusal = .replaced
+        device.afterRefusalResult = .replaced
         let controller = makeController()
         _ = controller.trigger(miffId: miffA)
 

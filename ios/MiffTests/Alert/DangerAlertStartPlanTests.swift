@@ -70,3 +70,4 @@ final class DangerAlertStartPlanTests: XCTestCase {
         XCTAssertEqual(decide(alert: ended, counter: DangerAlertQuota.empty), .write(slot: 0, seq: 5))
     }
 }
+// swiftlint:enable line_length

@@ -179,3 +179,4 @@ final class DangerAlertViewModelTests: XCTestCase {
     }
 }
 #endif
+// swiftlint:enable line_length

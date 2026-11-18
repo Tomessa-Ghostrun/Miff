@@ -240,3 +240,4 @@ final class DangerAlertPrivacyTests: XCTestCase {
         XCTAssertEqual(iosKeys, androidKeys, "mêmes clés des deux côtés (docs/contracts/i18n-keys.md)")
     }
 }
+// swiftlint:enable line_length

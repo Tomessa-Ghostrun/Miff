@@ -82,7 +82,7 @@ enum DangerTriggerResult: Equatable {
 final class DangerAlertController: ObservableObject {
     /// Les pauses entre deux essais quand le réseau est là mais que le serveur ne répond pas : bornées, jamais une boucle serrée (les 15
     /// minutes y mettent fin de toute façon).
-    static let defaultRetryPausesMillis = [5_000, 15_000, 30_000, 60_000, 120_000]
+    nonisolated static let defaultRetryPausesMillis = [5_000, 15_000, 30_000, 60_000, 120_000]
 
     @Published private(set) var state: MyDangerAlert = .idle
 
@@ -104,7 +104,7 @@ final class DangerAlertController: ObservableObject {
     /// La vérification, auprès du serveur, d'une alerte ABANDONNÉE (voir `cancelPending`).
     var verifyJob: Task<Void, Never>?
     /// Combien d'essais cette vérification fait (le pointeur reste, et la prochaine ouverture de l'app recommence).
-    static let maxVerifyAttempts = 8
+    nonisolated static let maxVerifyAttempts = 8
 
     init(
         store: DangerAlertStore,

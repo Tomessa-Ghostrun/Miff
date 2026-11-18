@@ -90,3 +90,4 @@ final class DangerAlertLotsTests: XCTestCase {
         XCTAssertFalse(rules.alertsEnabled)
     }
 }
+// swiftlint:enable line_length

@@ -47,22 +47,6 @@ final class FakeDangerStore: DangerAlertStore {
     }
 }
 
-final class FakeActiveDevice: ActiveDevice {
-    var isRevoked = false
-    var clearanceResult: DeviceClearance = .cleared(deviceId: "abcdefghijklmnopqrstuvwxyz012345")
-    var afterRefusal: SessionCheck = .confirmed
-    private(set) var refusalChecks = 0
-
-    func clearance(uid: String) async -> DeviceClearance {
-        clearanceResult
-    }
-
-    func checkAfterRefusal(uid: String) async -> SessionCheck {
-        refusalChecks += 1
-        return afterRefusal
-    }
-}
-
 final class FakeDangerNetwork: NetworkMonitor {
     private var online: Bool
     private var continuations: [AsyncStream<Bool>.Continuation] = []

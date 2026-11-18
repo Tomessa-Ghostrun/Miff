@@ -228,3 +228,4 @@ enum AlertCatalog {
         return { key in value(key, language: language, in: strings) ?? "MISSING:\(key)" }
     }
 }
+// swiftlint:enable line_length
