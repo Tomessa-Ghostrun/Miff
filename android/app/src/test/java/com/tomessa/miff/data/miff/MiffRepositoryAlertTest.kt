@@ -172,4 +172,23 @@ class MiffRepositoryAlertTest {
             assertEquals(MiffWriteResult.Done, result)
             assertEquals(listOf(MIFF_ID), gone)
         }
+
+    @Test
+    fun cleanUpLost_aMiffMissingOnlyInTheCacheOffline_isADoubt_nothingIsSaidBeforeAWriteGoesThrough() =
+        runTest {
+            val doubtful = LostMiff(MembershipRef("free", MIFF_ID), "Chez nous", confirmed = false)
+            // offline: neither the leave lot nor the index alone goes through
+            store.commitFailures =
+                ArrayDeque(listOf(firestoreError(Code.UNAVAILABLE), firestoreError(Code.UNAVAILABLE)))
+            repo(alerts = true).cleanUpLost(uid, doubtful)
+            assertTrue(gone.isEmpty())
+        }
+
+    @Test
+    fun cleanUpLost_aDoubtfulMiff_whoseLeaveLotThenGoesThrough_isProven_theAlertGoes() =
+        runTest {
+            val doubtful = LostMiff(MembershipRef("free", MIFF_ID), "Chez nous", confirmed = false)
+            assertTrue(repo(alerts = true).cleanUpLost(uid, doubtful))
+            assertEquals(listOf(MIFF_ID), gone)
+        }
 }

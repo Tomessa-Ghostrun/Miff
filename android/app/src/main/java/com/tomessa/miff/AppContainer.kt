@@ -15,6 +15,7 @@ import com.tomessa.miff.data.account.FirestoreAccountDataStore
 import com.tomessa.miff.data.account.SharedPreferencesAccountDeletionMarker
 import com.tomessa.miff.data.account.StoreAccountMiffs
 import com.tomessa.miff.data.alert.AlertController
+import com.tomessa.miff.data.alert.AlertGoneRelay
 import com.tomessa.miff.data.alert.AlertLocalStore
 import com.tomessa.miff.data.alert.AlertStore
 import com.tomessa.miff.data.alert.FirestoreAlertStore
@@ -356,7 +357,7 @@ class AppContainer(
             beforeLeave = { uid, miffId -> placeRequestRepository.withdrawAllMine(uid, miffId) },
             // ALERTE « Je suis en danger »: the lots that stop the sharing, leave and remove also delete the alert of that Miff (only while the function is switched on).
             alertsEnabled = BuildConfig.ALERT_DANGER,
-            onAlertGone = { miffId -> alertController.onAlertRemoved(miffId) },
+            onAlertGone = { miffId -> alertGoneRelay.miffGone(miffId) },
             // An automatic id of Firestore (20 characters), drawn on the phone: no network needed to draw it.
             newMiffId = {
                 FirebaseFirestore
@@ -917,6 +918,13 @@ class AppContainer(
     /** The pointer to MY alert (Miff of origin, phase, three moments) and the indicator of the blue bubble: local, erased with the account (the indicator stays with the installation). */
     val alertLocal: AlertLocalStore by lazy { SharedPreferencesAlertLocalStore(context) }
 
+    /** Every "this Miff is gone for me" reaches the alert controller on the MAIN thread, whichever thread the news comes from (the deletion of a Miff runs on a background one). */
+    val alertGoneRelay: AlertGoneRelay by lazy {
+        AlertGoneRelay(
+            CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+        ) { miffId -> alertController.onAlertRemoved(miffId) }
+    }
+
     /** MY alert, from the author's side. ONE measure of the position is asked when it starts, through the detection (its own gates and limit), never awaited. */
     val alertController: AlertController by lazy {
         AlertController(
@@ -933,7 +941,7 @@ class AppContainer(
     /** After a voluntary "Quitter" the server confirmed: no message of lost access for it, purge of the cache, fresh list of Miffs. */
     suspend fun onMiffLeft(miffId: String) {
         // ALERTE: leaving or DELETING a Miff (the creator's own deletion included) removes my alert of that Miff in the same lot: the banner goes, a new alert is possible elsewhere.
-        if (BuildConfig.ALERT_DANGER) alertController.onAlertRemoved(miffId)
+        if (BuildConfig.ALERT_DANGER) alertGoneRelay.miffGone(miffId)
         miffDirectory.expectDeparture(miffId)
         knownMiffsKeeper.onLeft(miffId)
         notificationScope.launch { notificationScheduler.onMiffGone(miffId) }

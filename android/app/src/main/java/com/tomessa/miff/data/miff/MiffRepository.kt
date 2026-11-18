@@ -153,6 +153,8 @@ class LostMiff(
     val ref: MembershipRef,
     /** The name, if the phone still knew it (it keeps the message human: "Tu n'as plus accès à la Miff « X »"). */
     val name: String?,
+    /** The SERVER said so. False when the Miff was found missing in the cache of the phone (offline): a doubt, the alert of that Miff is not touched until a write proves it. */
+    val confirmed: Boolean = true,
 ) {
     override fun toString(): String = "LostMiff(redacted)"
 }
@@ -669,10 +671,10 @@ class FirestoreMiffRepository(
         uid: String,
         lost: LostMiff,
     ): Boolean {
-        // The caller (the directory) only asks for this once the SERVER confirmed the loss: removed by the creator, or the Miff deleted by another member. An alert of mine in that Miff is
-        // gone with it (the lot below, or the card that is already gone, whichever way the clean-up ends): the controller is told FIRST, so that the banner goes and a new alert is possible
-        // elsewhere, even when the clean-up itself fails or only drops the index (review of #275 v3).
-        if (alertsEnabled) onAlertGone(lost.ref.miffId)
+        // The loss is PROVEN by the server (removed by the creator, or the Miff deleted by another member): an alert of mine in that Miff is gone with it, whichever way the clean-up ends
+        // (the lot below, or the card that is already gone), so the controller is told FIRST: the banner goes and a new alert is possible elsewhere, even when the clean-up itself fails or only
+        // drops the index (review of #275 v3). A Miff found missing only in the CACHE of the phone (offline) is a doubt: nothing is said until a write goes through (below).
+        if (alertsEnabled && lost.confirmed) onAlertGone(lost.ref.miffId)
         // Clean-up needs the server: without it nothing is touched (the next start will do it).
         var leave =
             write { store.commit(MiffWrites.leave(lost.ref.miffId, uid, lost.ref.key, withAlert = alertsEnabled)) }
@@ -680,12 +682,17 @@ class FirestoreMiffRepository(
             leave = write { store.commit(MiffWrites.leave(lost.ref.miffId, uid, lost.ref.key)) }
         }
         if (leave == MiffWriteResult.Done) {
+            if (alertsEnabled) onAlertGone(lost.ref.miffId)
             onSharingChanged()
             return true
         }
         // Removed: the card is already gone, the lot is refused. Only the index is left, and the rules allow deleting it now.
         val indexOnly = write { store.commit(MiffWrites.dropIndex(lost.ref.miffId, uid, lost.ref.key)) }
-        if (indexOnly == MiffWriteResult.Done) onSharingChanged()
+        if (indexOnly == MiffWriteResult.Done) {
+            // The write went through, so the server answered: the card is really gone.
+            if (alertsEnabled) onAlertGone(lost.ref.miffId)
+            onSharingChanged()
+        }
         return indexOnly == MiffWriteResult.Done
     }
 
@@ -756,7 +763,7 @@ class FirestoreMiffRepository(
                         }
 
                         MiffRead.Missing -> {
-                            lost += LostMiff(ref, cachedName(ref.miffId))
+                            lost += LostMiff(ref, cachedName(ref.miffId), confirmed = !fromCache)
                         }
                     }
                 }

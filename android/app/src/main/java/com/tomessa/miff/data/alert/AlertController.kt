@@ -292,7 +292,14 @@ class AlertController(
 
     /** MY sharing in [miffId] was stopped, or I left it: the document went in the same lot (the rules require it), so the alert is gone. */
     fun onAlertRemoved(miffId: String) {
-        if (mutableState.value.miffId == miffId) drop()
+        if (mutableState.value.miffId == miffId) {
+            drop()
+        } else if (local.pointer()?.miffId == miffId) {
+            // Nothing in memory yet (the pointer was not picked up: a race with the first drawing of the tabs) or an abandoned sending: the pointer of that Miff goes too.
+            verifyJob?.cancel()
+            verifyJob = null
+            local.clearPointer()
+        }
     }
 
     /**

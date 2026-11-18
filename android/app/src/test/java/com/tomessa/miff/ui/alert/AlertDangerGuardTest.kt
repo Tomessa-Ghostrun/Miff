@@ -196,7 +196,9 @@ class AlertDangerGuardTest {
                 .substringAfter(
                     "suspend fun onMiffLeft(miffId: String) {",
                 ).substringBefore("miffDirectory.expectDeparture")
-        assertTrue(leftBlock.contains("if (BuildConfig.ALERT_DANGER) alertController.onAlertRemoved(miffId)"))
+        assertTrue(leftBlock.contains("if (BuildConfig.ALERT_DANGER) alertGoneRelay.miffGone(miffId)"))
+        // the repository tells the relay too, never the controller directly (it lives on the main thread)
+        assertTrue(container.contains("onAlertGone = { miffId -> alertGoneRelay.miffGone(miffId) }"))
         // the deletion of a Miff by its creator ends in onMiffLeft
         assertTrue(container.contains("onDeleted = { miffId -> onMiffLeft(miffId) }"))
     }
