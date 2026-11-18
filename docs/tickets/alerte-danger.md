@@ -1,0 +1,573 @@
+# Ticket : ALERTE « Je suis en danger » (maintien 5 s sur le bouton Update, alerte push au cercle, bannière, fin manuelle ou à 7 jours)
+
+**Statut** : spec complète et challenge rédigés par l'agent `product-specs` sur délégation du PM, avec défauts recommandés ; **en attente des réponses du PM à la section 19 (8 questions)**. Aucun développement lancé, aucun statut Notion modifié, rien écrit dans Notion, aucun code ni règle modifié.
+**Rédigé le** : 2026-11-18. Branche prévue : `docs/alerte-danger`.
+**Ticket Notion** : « Danger » (https://app.notion.com/p/41cfe034208580a9bc84f32d16bdf813, statut « Spec en attente de review IA »).
+**Convention** : **[Notion]** = repris du ticket Notion (tel que résumé par le PM) ; **[PM]** = décision ou précision du PM ; **[Proposé]** = mon défaut recommandé, applicable sauf objection ; **[À vérifier]** = fait de plateforme non confirmé. Aucun texte de ce ticket n'a été relu par un juriste (décision du PM du 2026-10-23, risque assumé).
+
+**Limites de cette rédaction (à connaître)**
+- Je n'ai **pas d'outil shell ni d'outil Notion** dans cette session : la page Notion renvoie seulement son titre à l'outil web ; **j'ai travaillé à partir du résumé du ticket Notion fourni par l'agent appelant et des 5 PNG** (lus). Je n'ai pu créer ni le worktree, ni la branche, ni la PR, ni copier les PNG ; le fichier est écrit hors dépôt (voir le rapport).
+- Vérité utilisée : `origin/main` via la copie lecture seule `C:\dev\miff-main-ro` (tickets update, feed, notifications, notification-update-membres, mode-voyage, compte-à-rebours, session unique ; `backend/data-model.md`, `firestore.rules`, `functions/src/notif*.ts` ; code Android/iOS de statut et de notifications).
+- **Faits Apple non confirmés** : les pages de documentation Apple n'ont pas été lisibles par l'outil ; ce qui concerne Time Sensitive et Critical Alerts vient de ma connaissance générale (**[À vérifier]** par `ios-dev` avant de s'engager).
+
+---
+
+## 1. Résumé pour le PM
+
+En une phrase : **maintenir 5 secondes le bouton de l'écran Update déclare une alerte** ; tes proches reçoivent une notification, ta carte passe en rouge en tête de leur Feed, et une bannière te suit partout dans l'app jusqu'à ce que tu la termines (maintien 5 s) ou qu'elle expire au bout de 7 jours.
+
+**Ce que je recommande de construire** (détail aux sections 6 à 14) :
+1. **Un document dédié `miffs/{miffId}/alerts/{uid}`** (une copie par Miff alertée, comme la photo), **sans position**, avec des règles qui fixent la durée de 7 jours **côté serveur**. Pas de champ de plus sur le statut : une écriture de géofence ne peut ainsi jamais effacer une alerte par accident.
+2. **Une seconde fonction Cloud `notifierAlerte`**, sur le modèle de `notifierUpdate` (déjà en production) : push au démarrage et à la fin manuelle, **jamais** à l'expiration. Gratuit côté FCM ; quelques dizaines de lectures par événement.
+3. **Notification prioritaire mais calme** : Android canal « Alertes » en haute importance ; iOS niveau **Time Sensitive** (capacité gratuite, sans demande à Apple, à activer par le PM) ; **Critical Alerts non demandées** (demande à Apple, accord non garanti).
+4. **Écran « Tes proches viennent d'être avertis »** avec liste de contacts : créateur de la Miff présélectionné (précision du PM), repli sur le membre suivant, **puis numéros d'urgence adaptés à la région de l'appareil** (France : 17, 15, 18, 112). Appel par le **composeur du système** (aucun appel direct, aucune permission).
+5. **Honnêteté sur les limites** : l'app n'est pas un service d'urgence, et une notification peut arriver en retard ou pas du tout. Phrase sobre, non culpabilisante, dans l'écran d'envoi, l'onboarding, les CGU.
+
+**Trois points de la source à corriger ou à décider** (challenge, section 16) : (a) l'**ordre du Feed** « alerte en tête » contredit la règle D43/V1 « jamais réordonné selon l'urgence » (exception à écrire) ; (b) la condition de la bulle bleue (« jamais publié depuis l'installation ») **cacherait la nouveauté aux utilisateurs actuels** ; (c) la **fin automatique silencieuse** laisse les proches sans information (mitigation sans push proposée).
+
+**Coût : 0 € supplémentaire.** Aucune dépendance payante. Ce ticket **s'appuie sur Blaze** (déjà adopté, notifications push en production).
+
+**Taille globale** : L à XL (8 PR, section 18).
+
+---
+
+## 2. Vocabulaire (à ne pas confondre)
+
+| Terme | Sens | Où |
+|---|---|---|
+| **Alerte** | Déclaration **volontaire** de la personne (« Je suis en danger »), notifiée à son cercle, durée max 7 jours. **C'est l'objet de ce ticket.** | Écran Update, bannière, carte rouge |
+| **Zone de danger** | **Type de lieu** (premium) : entrer dans la zone passe la personne en rouge automatiquement. Aucune notification aux proches (N5 abandonnée). | `places`, `presence = in_risk` |
+| **Statut rouge** | Niveau calculé (pas de nouvelles depuis plus de 4 h, ou zone de danger). Automatique. | Couleur, Feed |
+| **Alerte en cours** | Alerte dont le statut est `active` et qui n'a pas expiré. | |
+
+Règle de rédaction : dans l'UI, on dit toujours « **alerte** » pour ce ticket, jamais « zone de danger » ni « statut rouge ». Pendant une alerte, **la couleur de la personne est rouge quelle que soit sa présence** (l'alerte l'emporte, y compris sur le mode voyage).
+
+---
+
+## 3. Périmètre
+
+### Dans le périmètre (MVP)
+- Geste de déclenchement par maintien 5 s sur le bouton de l'écran Update (progression visuelle, haptique, annulation au relâchement).
+- Bulle d'onboarding bleue (nouveauté pour tous, voir 7.1).
+- Écriture de l'alerte (documents `alerts`), état local, reprise après relance, file d'attente et réessai sans réseau.
+- Écran « Tes proches viennent d'être avertis » avec liste de contacts à appeler et numéros d'urgence.
+- Bannière persistante d'alerte en cours sur tous les onglets principaux, avec fin par maintien 5 s.
+- Côté proches : carte rouge en première position, bulle de la Miff rouge, actions Localiser / Appeler / Écrire, notification push de début et de fin manuelle.
+- Fonction Cloud `notifierAlerte` ; règles Firestore ; canal Android ; niveau iOS Time Sensitive.
+- Fin manuelle ; expiration à 7 jours sans notification ; rappels locaux à l'auteur (défaut proposé).
+- Alternative d'accessibilité au maintien.
+- Mises à jour légales, stores, mention « pas un service d'urgence ».
+
+### Hors-scope MVP (v1.1 / v2, par ordre de valeur)
+- **v1.1** : bouton « Prévenir par SMS » quand il n'y a pas de réseau ; compteur « n proches notifiés » renvoyé à l'auteur (honnêteté de livraison) ; « C'est une erreur ? » (annulation douce dans les 2 premières minutes).
+- **v2** : accusé « je l'appelle » des proches ; contact d'urgence personnel hors Miff (sélecteur de contact du système) ; **Critical Alerts iOS** (demande Apple) ; réglage d'accessibilité « confirmer par bouton au lieu de maintenir » ; interrupteur « Alertes d'un proche » dans Réglages > Notifications.
+- **Jamais** : appel ou message automatique aux secours, détection automatique de chute ou de danger, audio/vidéo enregistré, partage en direct continu (l'app n'est pas un service d'urgence : voir section 14).
+
+---
+
+## 4. Décisions de la source et défauts retenus
+
+| # | Décision / défaut | Source |
+|---|---|---|
+| D1 | Maintien **5 s** sur le bouton de prise d'update = alerte ; relâcher avant = retour à l'écran Update sans effet. | [Notion] |
+| D2 | À 5 s : alerte envoyée à tous les membres (notification) ; la personne arrive sur l'écran « contact à appeler ». | [Notion] |
+| D3 | Pendant le maintien : bouton redessiné, message « Je suis en danger », fond rouge qui se remplit comme une barre de progression. | [Notion] |
+| D4 | Alerte en cours : carte rouge en 1re position dans le Feed ; statut de la Miff rouge ; message persistant sur tous les écrans principaux pour la terminer (maintien 5 s). | [Notion] |
+| D5 | Fin automatique à **7 jours**, **sans notification**. Fin manuelle : notification rassurante aux membres. | [Notion] |
+| D6 | Bulle bleue d'onboarding sur l'écran Update **tant que la personne n'a jamais publié d'update depuis son installation**. | [Notion] (corrigée en 7.1) |
+| D7 | Contact présélectionné = **créateur de la Miff** ; si c'est moi, **le premier membre autre que moi par ordre d'arrivée** (`joinedAt`). Numéros police et urgences **dans la même liste**, par pays/région de l'appareil (locale, jamais la position). | [PM], 2026-11-18 |
+| D8 | **Alerte gratuite pour tous** (jamais derrière le paywall) : une fonction de sécurité payante serait un risque d'image et de rejet. | [Proposé] |
+| D9 | Alerte envoyée à **toutes mes Miffs où mon partage est actif**. | [Proposé], Q1 |
+| D10 | **Seul l'auteur peut terminer** son alerte. | [Proposé] |
+| D11 | Une update (photo) publiée pendant l'alerte **ne termine pas** l'alerte et ne change pas sa couleur. | [Proposé] |
+| D12 | La notification d'alerte **ignore** heures calmes, plafond quotidien et plafond horaire des updates (mais respecte les réglages du téléphone). | [Proposé], Q5 |
+| D13 | Aucune donnée d'alerte dans Analytics, Crashlytics ou journaux (ni uid, ni prénom, ni position). | Règle projet (D12 du ticket Update) |
+
+---
+
+## 5. User stories
+
+- En tant que **membre en difficulté**, je veux déclarer une alerte en un geste simple et volontaire, sans écrire, afin que mon cercle sache tout de suite que je ne vais pas bien.
+- En tant que **membre en difficulté**, je veux qu'on m'aide ensuite à appeler quelqu'un (un proche, puis les secours), afin de ne pas chercher un numéro dans le stress.
+- En tant que **membre en difficulté**, je veux voir en permanence que mon alerte est active et pouvoir la terminer simplement, afin que mon cercle ne s'inquiète pas plus longtemps que nécessaire.
+- En tant que **proche**, je veux être prévenu clairement mais calmement, voir la carte de la personne en tête de mon Feed et pouvoir l'appeler ou lui écrire, afin d'agir sans chercher.
+- En tant que **proche**, je veux savoir quand la personne dit que tout va bien, afin d'arrêter de m'inquiéter.
+- En tant que **personne qui ne peut pas maintenir 5 secondes** (lecteur d'écran, motricité), je veux un autre moyen sûr de déclarer ou terminer une alerte.
+- En tant que **PM**, je veux que l'app dise honnêtement qu'elle n'est pas un service d'urgence et qu'une notification n'est pas garantie, sans culpabiliser personne.
+
+---
+
+## 6. Machine d'états de l'alerte (vue de l'auteur)
+
+```
+INACTIVE ──(toucher prolongé)──> ARMEMENT (0–5 s)
+ARMEMENT ──(relâché avant 5 s / appli en arrière-plan / appel entrant)──> ANNULEE ──> INACTIVE
+ARMEMENT ──(5 s atteintes)──> ENVOI
+ENVOI ──(réseau OK, écriture acceptée)──> ACTIVE
+ENVOI ──(pas de réseau)──> EN_ATTENTE (réessai ; > 15 min : confirmation demandée)
+EN_ATTENTE ──(réseau revenu < 15 min)──> ACTIVE
+EN_ATTENTE ──(l'utilisateur annule)──> INACTIVE
+ACTIVE ──(maintien 5 s sur la bannière)──> TERMINEE_MANUELLEMENT ──> INACTIVE   [push « fin » aux proches]
+ACTIVE ──(7 jours écoulés)──> EXPIREE ──> INACTIVE                              [aucun push]
+ACTIVE ──(départ / arrêt du partage / suppression de compte)──> RETIREE         [aucun push, confirmation préalable]
+```
+
+Règles :
+- **Un seul état par personne** (pas par Miff) côté interface ; les documents par Miff sont des copies. Une écriture partielle (premium) est **terminée en arrière-plan** jusqu'à complétion (réessai), l'interface affichant l'état « active » dès **la première Miff acceptée**.
+- **Source de vérité** : le document `alerts/{moi}` du serveur (pas un drapeau local). Au démarrage, au retour au premier plan et sur un **nouvel appareil** (session unique), l'app lit **mon propre document** et reconstruit la bannière (même principe que le mode voyage, « appareil remplacé »).
+- **Ré-armement** : après TERMINEE ou EXPIREE, une nouvelle alerte est possible tout de suite (même document, compteur `seq` + 1).
+- **Pas de double alerte** : si une alerte est déjà active, un nouveau maintien sur le bouton Update **ne fait rien de spécial** (appui court = photo ; la fin se fait via la bannière).
+
+---
+
+## 7. Parcours et écrans
+
+### 7.1 Onboarding : bulle bleue (maquette 01)
+- Contenu **[Notion, maquette]** : « Touche pour publier une update » / « Maintiens pour déclarer une alerte » (tutoiement : voir écart E1).
+- **Condition corrigée [Proposé]** : la bulle s'affiche tant qu'**un indicateur local `alertHintDone` n'est pas vrai**. Il passe à vrai (a) à la **première publication d'update réussie après la livraison de la fonctionnalité**, ou (b) au **premier déclenchement d'une alerte** (5 s atteintes), ou (c) au **premier maintien commencé** (la personne a découvert le geste). **Il ne reprend pas l'historique de publication d'avant la livraison** : sinon les utilisateurs actuels, qui ont déjà publié, **ne verraient jamais** l'annonce du geste.
+- **Où** : **stockage local à l'appareil seulement** (préférences : DataStore / UserDefaults), **aucune donnée serveur** : « depuis la dernière installation » est respecté (réinstaller = réafficher). Plusieurs appareils : un seul appareil par compte (session unique) ; si un autre compte se connecte sur le même appareil, l'indicateur est **conservé** (par installation, comme demandé).
+- **Comportement** : non bloquante, sans bouton, **masquée au premier toucher**, et **masquée seule après ~6 s** (elle ne doit pas couvrir le viseur à chaque ouverture) ; annoncée au lecteur d'écran comme région polie, une fois.
+- **Mention d'honnêteté** : un lien discret « En savoir plus » ouvre une feuille courte : ce que fait l'alerte, ce qu'elle ne fait pas (pas un service d'urgence), la position (section 9). Texte en 14.2.
+
+### 7.2 Maintien 5 s (maquette 02)
+- **Zone du geste** : le bouton rond central de l'écran Update (l'obturateur). **Appui court = photo (inchangé)**. **Appui maintenu** : à partir de **~0,4 s** l'interface passe en mode alerte (sinon le moindre appui long déclencherait un effet visuel) ; **le compteur de 5 s démarre à ce moment**, de sorte que le maintien total ressenti est de **~5 s** (valeur exacte : `ALERT_HOLD_MS = 5 000` après le seuil d'armement de 400 ms ; à régler en recette).
+- **Visuel** [maquette, Notion] : bouton rouge ; message « **Je suis en danger** » ; sous-texte « Maintiens 5 secondes pour envoyer l'alerte » ; **fond rouge qui se remplit** comme une barre de progression (de bas en haut ou de gauche à droite, au choix du design). **Pas de décompte chiffré** par défaut (moins anxiogène) ; une **barre** suffit.
+- **Haptique** : un retour **léger au début** de l'armement, un **crescendo discret** (retours courts de plus en plus rapprochés), un retour **net à 5 s** (alerte partie). **Aucun son** imposé.
+- **Annulation** : relâcher avant 5 s = retour **immédiat** à l'écran Update, **sans message** (un faux départ n'a pas à être commenté), retour haptique très léger. Idem si l'app passe en arrière-plan, si un appel entrant ou une fenêtre système prend le focus, ou si le doigt sort largement de la zone (tolérance de 48 dp / 44 pt).
+- **Pas de caméra pendant le maintien** : l'obturateur est désactivé tant que l'armement n'est pas annulé ou terminé ; aucune photo n'est prise.
+- **Pendant l'écran de maintien** : aucune écriture réseau. L'écriture part **à l'instant des 5 s**.
+
+### 7.3 Envoi et écran « Tes proches viennent d'être avertis » (maquette 03)
+- **À 5 s** : écriture dans les Miffs concernées (section 10) ; **bascule immédiate** sur l'écran 03 (on n'attend pas l'accusé du serveur pour proposer d'appeler, **le texte reste honnête** : voir ci-dessous).
+- **Titre** [maquette, tutoiement] : « **Tes proches viennent d'être avertis** » **uniquement après l'accusé du serveur**. Avant (envoi en cours) : « Envoi de l'alerte… ». Sans réseau : « Pas de réseau pour le moment. Ton alerte partira dès que possible. » (état EN_ATTENTE, section 12.3).
+- **Sous-texte** [Proposé] : « Ils verront ton alerte dans Miff et seront notifiés s'ils ont activé les notifications. » (pas de promesse de lecture ni de délai). **Mention** : « Miff n'est pas un service d'urgence. En cas de danger immédiat, appelle le 112. » (clé `alert_not_emergency_note`, 14.2).
+- **Appeler** : sélecteur de contact (liste, section 8) + gros bouton rouge « Appeler ». Appel via le **composeur du système** (Android : intention `ACTION_DIAL`, aucune permission ; iOS : `tel:` + confirmation iOS), **aucun appel direct**, comme le bouton « Appeler » des cartes.
+- **Sortie** : flèche retour (maquette) = retour à l'écran Update **sans terminer l'alerte** (la bannière prend le relais). L'écran 03 peut être rouvert depuis la **bannière** (« Appeler »).
+- **Rien d'autre** : pas de partage d'écran, pas de chat, pas de carte.
+
+### 7.4 Bannière d'alerte en cours (maquette 05)
+- **Quand** : alerte **active et non expirée**, sur **tous les onglets principaux** (Feed, Update — viseur compris —, Profil). **Jamais** sur l'écran 03 ni sur l'aperçu d'une photo en cours de publication.
+- **Où** : posée au-dessus de la barre d'onglets (comme la bulle d'incitation D21 de l'Update), fixe, avec **marge basse** pour que le contenu défilant ne soit jamais caché (**la maquette 05 la superpose à une carte**, écart à corriger : E4).
+- **Texte** (tutoiement) : « **Tu as alerté tes proches.** Maintiens 5 secondes pour terminer l'alerte si tu n'es plus en danger. » Second bouton **« Appeler »** (rouvre l'écran 03) [Proposé].
+- **Fin** : maintien 5 s **sur la bannière** avec la même barre de progression (blanc translucide), même haptique, annulation au relâchement. **Aucune confirmation après** : le maintien **est** la confirmation.
+- **Pas de bouton de fermeture** (comme la bulle D21) ; la bannière disparaît à la fin ou à l'expiration.
+- **Remplace** la bulle d'incitation orange/rouge de l'Update et le compte à rebours orange tant que l'alerte est active (**jamais deux messages contradictoires** : « publie une update pour dire que tout va bien » n'a pas de sens pendant une alerte) ; les **rappels locaux N1, N2, N6** de l'auteur sont **suspendus** pendant l'alerte.
+- **Lecteur d'écran** : région polie annoncée **une fois** à l'apparition ; action d'accessibilité « Terminer l'alerte » (section 13).
+
+### 7.5 Fin manuelle
+1. Maintien 5 s sur la bannière → écriture `status = ended` dans chaque Miff concernée.
+2. Retour visuel calme : « Alerte terminée. Tes proches ont été prévenus. » (une fois, sans son).
+3. Push « fin » aux membres (section 11). Carte, bulle de la Miff et statut reviennent **au calcul normal**.
+4. Si l'écriture échoue (réseau) : la bannière reste, avec « Fin en attente d'envoi » ; réessai automatique. **L'alerte n'est jamais considérée terminée localement tant que le serveur ne l'a pas acceptée** (sinon les proches resteraient alertés alors que la personne croit avoir terminé).
+
+### 7.6 Ce que voient les proches
+| Où | Contenu |
+|---|---|
+| **Feed : carte** | **Première position** de la liste, **fond/liseré rouge**, étiquette « **Alerte en cours** » + « depuis 15 h 02 » (heure absolue, comme le reste de l'app). Boutons **Localiser**, **Écrire**, **Appeler** (conditions habituelles : numéro présent ; Localiser selon Q2). Plusieurs alertes : par ordre de déclenchement (la plus ancienne d'abord, stable). |
+| **Feed : bulle de la Miff** | **Rouge** ; la **page d'alerte** est **toujours la première** du carrousel (avant les rouges automatiques) : « {Prénom} a déclaré une alerte à 15 h 02 » + « Appeler » + « Écrire ». La bulle **ne dit jamais « Tout le monde est en sécurité »** pendant une alerte (la maquette 04 le fait : écart E3). |
+| **Cloche / centre de notifications** | Une ligne « {Prénom} a déclaré une alerte » (type B6), sans lieu ni photo. |
+| **Après fin manuelle** | Carte et bulle redeviennent normales ; ligne de centre « {Prénom} a mis fin à son alerte ». |
+| **Après expiration (7 j)** | Pas de push. La carte porte pendant **24 h** une ligne neutre (pas rouge) « Alerte de {Prénom} arrivée à échéance le 18 nov. à 15 h » (mitigation de la fin silencieuse, section 16). |
+| **Ordre du Feed** | **Exception à D43/V1** (« moi en dernier, jamais réordonné selon l'urgence ») : les cartes en **alerte en cours** passent **avant** les autres, **y compris la mienne** si c'est moi (cohérence). Rien d'autre ne réordonne le Feed. |
+
+---
+
+## 8. Écran « contact à appeler » : liste et règles de présélection (précisions du PM du 2026-11-18)
+
+### 8.1 D'où vient le numéro des membres
+- Le **numéro existe déjà** : `users/{uid}.phone` (obligatoire depuis ONB-B), **copié dans `miffs/{miffId}/members/{uid}.phone`**, au format E.164, **visible de tous les membres de la Miff** (partage ou non, décision N1 du PM). Il alimente déjà les boutons « Appeler » et « Écrire » du Feed.
+- **Aucune permission « Contacts »** n'est demandée ; aucun carnet d'adresses lu.
+- **Exception** : un compte antérieur à ONB-B peut ne pas avoir de numéro ; le membre est alors **absent de la liste** (pas de ligne morte).
+
+### 8.2 Composition et ordre de la liste
+1. **Section « Tes proches »** : les membres **avec numéro**, **hors moi**, dans cet ordre : (a) le **créateur** de la Miff (`role = owner`) s'il n'est pas moi ; (b) puis les autres par **ordre d'arrivée** (`joinedAt` croissant).
+2. **Section « Services d'urgence »**, **séparée visuellement** (titre de section + séparateur), **toujours présente** : numéros du pays/de la région (8.4).
+- **Plusieurs Miffs alertées (premium)** : on part de la **Miff affichée dans le Feed** (D19), puis les autres Miffs alertées ; **dédoublonnage** par personne (`uid`) puis par numéro. Le nom de la Miff n'est pas affiché dans la liste (l'écran verrouillé n'est pas concerné, mais pas de bruit inutile) ; en cas d'homonymes, ajouter le nom de famille.
+
+### 8.3 Contact présélectionné (règle du PM, avec repli)
+| Situation | Contact présélectionné |
+|---|---|
+| Je ne suis **pas** le créateur, il a un numéro | **Le créateur** |
+| Je suis le **créateur** | **Le premier membre autre que moi par ordre d'arrivée** (le « deuxième membre arrivé ») ayant un numéro |
+| Le contact prévu **n'a pas de numéro** | **Le membre suivant** (même ordre : créateur puis `joinedAt`) ayant un numéro |
+| **Aucun membre** avec numéro (ou **Miff avec moi seul**) | **Pas de section « Tes proches »** ; la liste ne contient que les **services d'urgence** ; présélection = **112** (ou l'équivalent régional) |
+- **Mémoire** : la dernière sélection **n'est pas mémorisée** entre deux alertes (le contexte change ; la règle ci-dessus s'applique chaque fois). Pendant la même alerte, un contact choisi reste choisi à la réouverture de l'écran [Proposé].
+- Un **numéro inchangé** n'est pas une promesse que la personne décroche : aucun texte ne dit « il va répondre ».
+
+### 8.4 Numéros d'urgence adaptés à la région de l'appareil
+- **Source du pays** : la **région de la locale de l'appareil** (Android : région de la locale ; iOS : région de la locale), **jamais la position**, aucune permission. Si la région est inconnue : repli ci-dessous.
+- **Catalogue** (une table de données **partagée** et testée à l'identique Android/iOS ; jamais un pays codé en dur dans l'écran) :
+
+| Région | Numéros proposés (libellé -> numéro) |
+|---|---|
+| **France** (FR) | Police 17 ; SAMU 15 ; Pompiers 18 ; **Urgence européenne 112** |
+| **Reste de l'UE / EEE** | **Urgence 112** (numéro unique européen) |
+| **Autres régions / région inconnue** | **112** libellé « Numéro d'urgence international (112) » — **[À vérifier]** : 112 est redirigé vers le numéro local sur de nombreux réseaux mobiles, pas partout |
+| *Extensions possibles ensuite* | ex. États-Unis et Canada 911, Royaume-Uni 999 (112 y fonctionne aussi) : ajout par simple ligne de table, **sans changement de code d'écran** |
+- Pas de numéro exotique ni payant, **aucun numéro surtaxé**. Les libellés viennent du catalogue de textes (FR/EN).
+- **Appel** : toujours via le composeur ; **jamais d'appel direct** (pas de permission `CALL_PHONE`).
+- **Vérification obligatoire par le dev avant livraison** : chaque numéro du catalogue (sources officielles) ; mention dans la PR.
+
+### 8.5 Optimisation proposée (écart à la maquette)
+Dans l'écran 03, ajouter un **lien secondaire sous le bouton « Appeler »** : « Appeler les secours » qui ouvre la **même liste sur la section « Services d'urgence »**, afin d'éviter deux touchers dans le stress quand le contact présélectionné n'est pas la bonne cible. **[Proposé]**, retirable sans impact.
+
+---
+
+## 9. Partage de position pendant l'alerte
+
+Principe : l'alerte est **volontaire** ; la personne a déjà consenti au partage de sa dernière position avec cette Miff (consentement v3). L'alerte **n'ajoute aucun consentement** sauf si on élargit l'exposition (réciprocité, fréquence).
+
+| Niveau | Contenu | Recommandation |
+|---|---|---|
+| **A. Minimal (MVP strict)** | À l'envoi, **une mesure fraîche** de position écrite dans `positions/{moi}` (document existant, règles existantes, consentement existant). « Localiser » comme aujourd'hui, **avec la réciprocité inchangée** (le proche doit avoir publié la sienne). Aucune règle de position modifiée. | Plancher garanti. |
+| **B. Alerte renforcée [Proposé, Q2]** | (1) **Rafraîchissement plus fréquent** pendant l'alerte (une mesure toutes les ~5 min si l'appareil bouge), **au plus 2 h** puis retour au rythme normal ; (2) la **position de l'auteur est lisible par tous les membres des Miffs alertées**, **même ceux qui n'ont pas publié la leur** (levée ciblée de la réciprocité, **uniquement tant que l'alerte est active**) ; (3) l'écran 03 et la fiche « En savoir plus » **le disent explicitement** ; (4) le texte de consentement/politique est **amendé** (section 14). | **Recommandé**, car une alerte dont le proche « ne voit pas » où est la personne perd l'essentiel de sa valeur ; mais **décision du PM** (confiance, stores). |
+- **Dans tous les cas** : la position n'est **jamais** dans la notification, ni dans le document d'alerte, ni dans Analytics ; pas d'historique de trajet (une seule dernière position, écrasée). Si la mesure échoue (intérieur, GPS lent), **l'alerte part quand même** (la position est un bonus, pas une condition).
+- **Permissions** : si la permission « Toujours » est absente, l'alerte part ; la position est celle du premier plan (l'alerte se déclenche **app ouverte**, la mesure est donc possible). Aucune demande de permission pendant l'alerte (pas de fenêtre système dans le stress).
+- **Impact stores** : justification de la localisation en arrière-plan **inchangée** pour A ; pour B, mentionner l'usage « partage plus fréquent et pendant une alerte déclarée par la personne » dans la déclaration (`release-manager`).
+
+---
+
+## 10. Modèle de données, règles, anti-abus, coût
+
+### 10.1 Document `miffs/{miffId}/alerts/{uid}` (nouveau, SENSIBLE) — proposition pour `backend-data`
+| Champ | Type | Règle |
+|---|---|---|
+| `status` | `"active"` \| `"ended"` | |
+| `startedAt` | timestamp | **= heure serveur** à chaque démarrage |
+| `expiresAt` | timestamp | **= `startedAt` + 7 jours exactement** (imposé par la règle, pas par le client) |
+| `endedAt` | timestamp \| null | `null` si active ; **= heure serveur** à la fin manuelle |
+| `seq` | int ≥ 1 | Numéro de démarrage ; +1 à chaque ré-armement ; sert à l'**idempotence** de la fonction |
+| `deviceId` | string 16–64 | Identifiant de session (comme `status`, SESS) |
+| `purgeAt` | timestamp | `expiresAt` + 2 j au démarrage ; ramené à `endedAt` + 2 j à la fin ; **règle TTL Firestore** (même mécanisme que `notifState`, négligeable sur Blaze, à poser par le PM) |
+- **Aucune coordonnée, aucun texte libre, aucune photo.** Clés fermées (`hasOnly`) ; toute autre clé refusée.
+- **Pourquoi un document dédié et pas un champ de `status`** : les écritures de géofence et de batterie touchent `status/{moi}` en continu ; une écriture complète pourrait **effacer** l'alerte sans le vouloir. Le document dédié a un cycle de vie propre, un déclencheur de fonction propre, et n'alourdit pas `validStatus` (déjà dense).
+- **Pourquoi pas un seul document global** : le modèle est organisé **par Miff** (lecture, suppression à l'arrêt du partage, au départ, au retrait, à la suppression de Miff et de compte : tous les lots existants supprimeraient une ligne de plus, **même schéma que `photos`**).
+
+### 10.2 Règles proposées (qui peut écrire quoi)
+| Opération | Qui | Conditions |
+|---|---|---|
+| **create** | l'auteur (`isSelf`) | `status = active`, `startedAt = request.time`, `expiresAt = request.time + 7 j`, `endedAt = null`, `seq = 1`, **partage actif après le lot** (`getAfter` sur ma fiche), `deviceId` = session |
+| **update — ré-armement** | l'auteur | depuis `ended` **ou** `active` expirée ; `seq = ancien + 1` ; mêmes conditions que la création ; **refusé** si l'alerte est active et non expirée (idempotence) |
+| **update — fin** | l'auteur | depuis `active` : seuls `status → ended`, `endedAt = request.time`, `purgeAt = request.time + 2 j` changent |
+| **get / list** | **tout membre de la Miff** tant qu'elle existe | **sans réciprocité de partage** [Proposé, Q3] : le document ne contient ni position ni photo |
+| **delete** | l'auteur **ou** le créateur (même schéma que `status`/`positions`, lots d'arrêt/départ/retrait/suppression) | l'auteur supprime aussi son document terminé de plus de 24 h (nettoyage opportuniste) |
+- **Ce qu'un client modifié peut faire** : déclencher de fausses alertes dans les Miffs où il partage (borné : voir 10.3) ; **ne peut pas** allonger la durée, en créer pour autrui, terminer l'alerte d'un autre, cacher l'alerte (il peut seulement la terminer ou la supprimer, ce qui est son droit).
+- **Lectures de règles** : ≈ 2 à 3 par Miff et par écriture (fiche + session) : comme la photo ; **lots de 5 Miffs au plus**.
+- **Tests à écrire** : un autre membre ne peut ni créer, ni terminer, ni modifier ; 7 jours exacts ; clés inconnues refusées ; ré-armement ; fin hors session ; lecture par un non-membre refusée ; mutations.
+
+### 10.3 Anti-abus et limitation de débit
+- **App Check strict** sur Firestore (déjà en place) ; aucune écriture hors client attesté.
+- **Fonction** (pas les règles, qui ne comptent pas) : au plus **10 notifications de début par auteur, par Miff et par 24 h** ; au plus **1 notification de début par minute** (idempotence par `seq`) ; au-delà : l'alerte reste **visible dans le Feed**, **sans push**, **sans erreur côté client** ; compteur écrit dans `notifState/{miffId}` (champ `alerts`, expire avec le document : 2 j). La limite est **volontairement large** : après une fausse alerte terminée, une vraie alerte 3 minutes plus tard doit partir.
+- **Côté client** : au plus **3 déclenchements par heure** avant de demander une confirmation supplémentaire (« Tu viens de déclencher plusieurs alertes : veux-tu continuer ? ») [Proposé], pour limiter les déclenchements involontaires répétés (poche).
+- **Signal de bascule** (à ajouter à `docs/dev/surveillance-quotas.md`) : plus de 5 % des alertes terminées en moins de 2 min (taux de fausses alertes, **mesuré sans donnée personnelle** : compteur serveur agrégé dans les journaux fixes) → revoir la durée du maintien.
+
+### 10.4 Coût (Blaze, hypothèses, pas des mesures)
+- **Écritures** : 1 par Miff au début, 1 par Miff à la fin, +1 de nettoyage : ≈ 3 par Miff et par alerte.
+- **Fonction `notifierAlerte`** : 1 invocation par écriture utile (début, fin) ; lectures comme `notifierUpdate` : **≈ 13 lectures pour une Miff de 4**, ≈ 46 pour 15, ≤ 73 pour 40 (fiche membres + session + appareil par destinataire), **1 écriture** (`notifState`). Même ordre de grandeur que l'update, **à fréquence très inférieure**. FCM gratuit.
+- **Estimation** : 1 000 utilisateurs actifs, 1 alerte pour 1 000 par jour → quelques centimes par mois. **Aucune évolution du coût de lecture du Feed** : un écouteur de collection de plus sur la Miff affichée ; **0 lecture** hors alerte (collection vide), **1 lecture par document modifié** pendant une alerte.
+- **Déploiement** : nouvelle fonction = nouveau service Cloud Run → **droit `roles/run.invoker` à poser** sur ce service (`docs/dev/deploiement-functions.md` §1.4 D bis) ; **le PM tape les commandes**, sur « oui » explicite, `--project miff-3d283`. `maxInstances` selon le plafond existant (5), test garde-coûts à mettre à jour avec la raison.
+
+---
+
+## 11. Notifications
+
+### 11.1 Qui reçoit
+Tout **membre actuel** de la Miff alertée, **≠ l'auteur**, avec **un appareil enregistré** (le jeton prouve qu'il a accepté les notifications) et une **session active** (mêmes gardes que `notifierUpdate` : appareil de la session seulement, `miffId` du message vérifié côté client). **Le partage de position du destinataire n'est pas exigé** [Proposé, Q3] (l'alerte ne révèle pas de position). **Interrupteur « Quand un proche donne des nouvelles » (`notify.updates`) : n'agit pas** sur les alertes (un réglage de confort ne doit pas couper une alerte) ; l'interrupteur **général** (jeton supprimé) et le système (autorisation retirée, désinstallation) l'emportent.
+
+### 11.2 Contenu (jamais position, lieu, nom de Miff, nom de famille ; prénom tronqué à 20 caractères comme B5)
+| Clé | FR (tutoiement, sans accord de genre) | EN |
+|---|---|---|
+| `notif_alert_start_title` | {prénom} a déclaré une alerte | {prénom} declared an alert |
+| `notif_alert_start_body` | Prends de ses nouvelles : appelle {prénom} ou ouvre Miff. | Check in with them: call {prénom} or open Miff. |
+| `notif_alert_end_title` | {prénom} a mis fin à son alerte | {prénom} ended their alert |
+| `notif_alert_end_body` | {prénom} a indiqué que tout va bien. | {prénom} said they're okay. |
+- **Pourquoi pas « à nouveau en sécurité »** (texte de la source) : la règle de l'app est que **ni la bulle ni les notifications n'affirment la sécurité de quelqu'un** (`feed.md` §5.2 : « ne dit jamais en sécurité ») ; la formule proposée **attribue** l'information à la personne et reste rassurante. **Décision du PM (Q4)** ; la formule de la source est l'alternative.
+- Début : **ton clair et direct, sans point d'exclamation, sans majuscules ni émoji alarmiste**. Aucun « urgent », « danger » dans le titre d'une notification d'écran verrouillé visible par un tiers ; « alerte » suffit (sobriété pour l'écran verrouillé, comme N3/N4).
+
+### 11.3 Android
+- **Message « données », haute priorité** (comme `circle_update`), type `circle_alert` ; l'app compose la notification (langue du téléphone).
+- **Canal dédié « Alertes d'un proche »** (`miff_alerts`, **importance haute** = affichage en bannière + son et vibration selon le téléphone). **Pas de variante « calme »** : **les heures calmes ne s'appliquent pas** [Proposé, Q5]. Le canal est créé avec son importance **dès la première version** (elle ne peut plus être relevée ensuite par l'app).
+- **Contourner « Ne pas déranger »** : **non** par défaut (l'app ne peut pas le faire sans que la personne l'autorise elle-même dans les réglages du canal) ; l'aide « Si les alertes n'arrivent pas » explique **comment l'autoriser** (lien direct vers les réglages du canal). **Pas de notification plein écran** (`USE_FULL_SCREEN_INTENT` : restreint par Google Play aux alarmes/appels) **[À vérifier]**.
+- **Au toucher** : ouvre le Feed sur la Miff et la carte de l'auteur. **Plafond de 6/jour et heures calmes : non appliqués** aux alertes.
+- **OPPO Find X5 Lite (ColorOS)** : livraison app balayée / économie d'énergie **à mesurer en recette** ; message d'aide sobre, jamais culpabilisant.
+
+### 11.4 iOS
+- Notification « alerte » dont le texte est résolu par le système (clés + prénom), **niveau d'interruption `timeSensitive`** : **traverse les Concentrations et le résumé programmé** (sauf si la personne retire ce droit à l'app dans ses réglages). **Capacité « Time Sensitive Notifications » : gratuite, incluse dans le compte développeur, sans demande à Apple** **[À vérifier, pages Apple illisibles]** ; à activer par le PM sur l'identifiant `com.tomessa.miff` + **régénération des profils de CI** (`docs/dev/apple-certificats-ci.md`) ; entitlement `com.apple.developer.usernotifications.time-sensitive`.
+- **Pas de Critical Alerts** (passent aussi le mode silencieux) : nécessitent un **entitlement accordé par Apple sur demande** (formulaire, accord non garanti, destiné surtout à la santé/sécurité publique) **[À vérifier]**. **Gratuit mais incertain** ; **non demandé en v1**. À faire en v2 si le PM veut tenter (la demande peut être déposée en parallèle sans bloquer le développement).
+- `apns-priority 10`, expiration **2 h**, remplacement par auteur (`collapse-id` distinct de B5 pour ne pas remplacer une notification d'update), `thread-id` par Miff.
+- **Dépendance** : la réception push iOS en production n'a été validée que dans le sens iPhone → OPPO (mémoire projet, 2026-11-13) ; **valider la réception sur iPhone avant tout test d'alerte** [À vérifier, SRV-2I].
+- **Limite à écrire** : Time Sensitive **ne passe pas** le mode silencieux ni « Ne pas déranger » **si la personne a retiré le droit** ; les notifications n'arrivent pas **appli désinstallée, notifications coupées, réseau absent**.
+
+### 11.5 Idempotence et distribution (fonction `notifierAlerte`)
+- Déclencheur : `onDocumentWritten` sur `miffs/{miffId}/alerts/{uid}`. **Début** : avant `status ≠ active` (ou absent) et après `active` avec `seq` nouveau. **Fin manuelle** : avant `active`, après `ended`, **et `endedAt ≤ expiresAt`**. **Rien** pour : suppression, TTL, mise à jour sans changement d'état, fin postérieure à l'expiration.
+- Réservation « au plus une fois » (transaction sur `notifState`), 2 reprises FCM au plus, **durée de vie du message 2 h** (une alerte de la veille ne se rejoue pas), **événement de plus de 5 min ignoré**, journaux **sans donnée personnelle** (comme `notifierUpdate`).
+- **Limite honnête à écrire dans la doc et l'aide** : la notification **n'est pas garantie** (notifications coupées, mode avion, app désinstallée, économie d'énergie, panne FCM/APNs). Un envoi perdu **n'empêche pas** l'alerte d'apparaître dans le Feed à l'ouverture.
+
+---
+
+## 12. Interactions et cas limites
+
+### 12.1 Mode voyage
+Le mode voyage rend la couleur **neutre** (grise). **L'alerte l'emporte** : pendant une alerte active, la couleur est **rouge** (carte, bulle, anneau, bannière), même si `presence = travel`. À la fin, **retour à la couleur calculée** (neutre si voyage toujours actif). Le voyage **n'est pas terminé** par l'alerte et **n'empêche pas** de la déclencher. Les rappels N1–N4/N6 restent suspendus pendant le voyage (comportement existant). Un proche en voyage reçoit la notification comme les autres.
+
+### 12.2 Partage arrêté, départ, retrait
+- **Alerte impossible dans une Miff où mon partage est arrêté** (la règle l'exige) ; elle est envoyée aux **autres** Miffs où je partage. **Aucune Miff avec partage actif** : écran calme « Tu as arrêté de partager : reprends le partage pour alerter tes proches » **+ numéros d'urgence visibles** (l'écran 03 sans la section « Tes proches » ne sert à rien : on propose directement les secours).
+- **Arrêter le partage, quitter ou retirer une Miff pendant une alerte** : confirmation préalable « Tu as une alerte en cours : elle sera retirée de cette Miff » (le document est supprimé dans le lot habituel, **sans push**).
+- **Suppression de compte** : documents supprimés dans les lots existants.
+
+### 12.3 Hors ligne / réseau instable
+- **Au déclenchement sans réseau** : l'alerte entre en **EN_ATTENTE** : l'écran 03 s'affiche (**les appels fonctionnent sans passer par Miff**) avec « Pas de réseau pour le moment. Ton alerte partira dès que possible. » ; **réessai automatique** à chaque retour du réseau ; indicateur discret « En attente d'envoi » sur la bannière.
+- **Alerte périmée** : si l'envoi n'a pas réussi **15 minutes** après l'armement, au retour du réseau l'app demande « Veux-tu toujours envoyer ton alerte ? » (**Envoyer** / **Annuler**) : une alerte envoyée plusieurs heures plus tard alarmerait le cercle à tort. Pour une valeur de 15 min : **[Proposé]**, ajustable.
+- **Pas de file d'attente native de Firestore** pour cette écriture (comme l'Update : on ne laisse pas partir à l'insu de la personne) ; **l'état « en attente » est tenu par l'app** (conservé après relance).
+- **Numéros hors ligne** : ceux des membres viennent du cache local des fiches ; **s'ils ne sont pas disponibles**, la liste ne montre que les services d'urgence et un message calme.
+- **Fin hors ligne** : voir 7.5 (reste active tant que le serveur n'a pas accepté).
+- **Suggestion v1.1** : bouton « Prévenir par SMS » (composeur du système, numéros des membres pré-remplis, message court sans position) quand le réseau de données manque mais que le réseau mobile existe.
+
+### 12.4 Session appareil unique
+Les écritures portent le `deviceId` de la session. Si la personne se connecte sur un autre appareil pendant l'alerte, **l'ancien appareil est déconnecté** ; le **nouvel appareil lit mon propre document d'alerte** au démarrage et **adopte** l'alerte (bannière, fin possible). Un `deviceId` périmé = écriture refusée → message standard « tu es connecté sur un autre appareil ».
+
+### 12.5 Plusieurs Miffs, gratuit ou premium
+Gratuit (1 Miff) : une écriture. Premium : **toutes les Miffs où je partage**, par lots de 5 (**même lot que la photo : lectures de règles comptées**) ; l'état « active » s'affiche dès la **première** Miff acceptée ; les autres sont complétées en arrière-plan avec réessais. La fin suit le même schéma. **Aucun paywall** (D8).
+
+### 12.6 Autres
+- **Update publiée pendant l'alerte** : possible, ne termine pas l'alerte (D11).
+- **Appel entrant / app en arrière-plan** pendant le maintien : annulation (7.2).
+- **Appareil verrouillé** : le déclenchement exige l'app ouverte sur l'écran Update ; **pas de raccourci écran verrouillé en v1** (risque de déclenchement involontaire en poche, et surface de sécurité).
+- **Mineurs** : aucun changement ; risque assumé (âge minimum et mineurs, RGPD art. 8) ; la fonction peut être utilisée par un mineur, mais elle ne publie rien d'autre que ce qui existe déjà.
+- **Alerte reçue pendant la nuit** : sonne (D12).
+- **Deux alertes de deux membres** : deux cartes rouges en tête, plus deux pages en tête du carrousel ; une seule notification par alerte (remplacement par auteur).
+
+---
+
+## 13. Accessibilité
+
+- **Lecteur d'écran (VoiceOver / TalkBack)** : le maintien 5 s n'est pas praticable. **Quand un lecteur d'écran, Switch Access, Voice Control ou AssistiveTouch est actif**, le bouton expose une **action d'accessibilité « Déclarer une alerte »** qui ouvre une **fenêtre de confirmation en deux étapes** (« Déclarer une alerte à tes proches ? » -> **Envoyer l'alerte** / **Annuler**). Même mécanisme pour **Terminer l'alerte** sur la bannière. L'appui prolongé reste fonctionnel pour les autres.
+- **Motricité réduite** : ces mêmes alternatives (confirmation par bouton) sont disponibles via les services d'accessibilité ; **réglage dédié « Confirmer par bouton au lieu de maintenir »** en v2.
+- **Annonces** : début de l'armement (« Maintiens pour envoyer l'alerte »), annulation, envoi, fin ; **sans son** imposé.
+- **Contraste** : rouge d'alerte conforme au design system ; **l'état n'est jamais porté par la couleur seule** (texte « Alerte en cours », icône).
+- **Mouvement réduit** : la barre de progression se remplit **sans animation de rebond** ; l'état final reste identique.
+- **Taille de police** : la bannière peut passer sur plus de lignes sans masquer la barre d'onglets.
+
+---
+
+## 14. Légal, stores, RGPD, honnêteté
+
+### 14.1 Principes
+- **L'app n'est pas un service d'urgence** (déjà en tête des CGU). Cette fonction **renforce** ce besoin de clarté : un bouton « Je suis en danger » peut être pris pour un appel aux secours. **Rappel court dans l'écran d'envoi, dans la fiche « En savoir plus » de la bulle, dans les CGU et la politique**, jamais dans la notification.
+- **Risques assumés, jamais « à valider »** (décision du PM du 2026-10-23, pas de relecture juridique) : (1) **responsabilité** perçue en cas d'incident (alerte non reçue, reçue en retard, non lue) ; (2) **fausses alertes** et fatigue du cercle ; (3) **mineurs** ; (4) **transferts hors UE** (FCM, APNs) ; (5) **durée de conservation** ; (6) **réciprocité levée** pendant l'alerte (option B, si retenue) ; (7) **rejet ou avertissement des stores** si l'alerte est perçue comme un service d'urgence.
+
+### 14.2 Textes proposés (sans prétention de relecture juridique)
+| Clé | FR | EN |
+|---|---|---|
+| `alert_not_emergency_note` | Miff n'est pas un service d'urgence. En cas de danger immédiat, appelle le 112. | Miff is not an emergency service. If you're in immediate danger, call 112. |
+| `alert_delivery_note` | Tes proches verront ton alerte dans Miff et seront notifiés s'ils ont activé les notifications. | Your circle will see your alert in Miff and get a notification if they've turned notifications on. |
+| `alert_info_title` | Déclarer une alerte | Declare an alert |
+| `alert_info_body` | Maintiens le bouton 5 secondes pour prévenir tes proches. Ils reçoivent une notification et voient ta carte en haut de leur Miff. [Si Q2 = B : Pendant l'alerte, ils peuvent voir ta dernière position, mise à jour plus souvent, pendant 2 heures au plus.] L'alerte dure 7 jours au plus ; tu peux la terminer à tout moment. Une notification peut arriver en retard ou ne pas arriver. | Hold the button for 5 seconds to let your circle know. They get a notification and see your card at the top of their Miff. [If Q2 = B: During the alert, they can see your latest location, refreshed more often, for up to 2 hours.] The alert lasts at most 7 days; you can end it any time. A notification may arrive late or not at all. |
+- **CGU** (`cgu.*.md`) : ajouter dans l'avertissement « pas un service d'urgence » une puce « **L'alerte envoyée à tes proches n'est pas un appel aux secours** » ; art. 6 : notification non garantie ; art. 8 : usage de bonne foi, **les fausses alertes répétées peuvent entraîner la suspension du compte** (formulation sobre, non culpabilisante).
+- **Politique de confidentialité** : nouvelle donnée **« alerte »** (état, heures de début et de fin, durée) ; finalité (prévenir le cercle) ; base (consentement/contrat) ; **qui la voit** (membres des Miffs alertées) ; **conservation** (≤ 7 j + 2 j, effacée à la fin plus 2 j) ; **notification** (prénom, identifiants techniques, jamais position) ; si Q2 = B : **position plus fréquente et lisible sans réciprocité pendant l'alerte** ; sous-traitants inchangés (FCM, APNs, Firestore, Cloud Functions) ; **passage de version des textes**. **FR et EN dans la même PR.**
+- **Texte de consentement de partage de position** : si Q2 = B, **nouvelle version** (re-consentement nécessaire, mécanisme déjà préparé) ; si Q2 = A, **aucune version à changer** (mentionner l'alerte à la prochaine révision).
+
+### 14.3 RGPD (qualification, sans conclusion juridique)
+- L'alerte est une donnée **sensible par nature** (elle dit qu'une personne se déclare en danger), **sans être une donnée de santé au sens strict** ; elle est traitée avec les **mêmes précautions que la position** : accès restreint aux membres, durée courte, effacement avec le compte, aucun usage secondaire, aucune analytique.
+- **Minimisation** : aucun contenu libre, aucune position dans le document.
+- **Droit d'accès/effacement** : couverts par la suppression de compte et par la suppression automatique (TTL) ; l'auteur peut mettre fin à tout moment.
+
+### 14.4 Stores
+- **Apple** : capacité Time Sensitive à déclarer ; **note de revue** : « l'alerte est un message volontaire entre proches, pas un service d'urgence ; aucun appel automatique » ; **notifications push** déjà déclarées. **Critical Alerts non utilisées**. Guideline à surveiller : fonctions de sécurité personnelle (1.4.1 « physical harm ») — la note de revue doit expliquer que l'app **ne se présente pas comme un moyen d'appeler les secours** **[À vérifier]**.
+- **Google Play** : pas de permission nouvelle (**`USE_FULL_SCREEN_INTENT` non utilisée**) ; déclaration « Safety » (Data safety) : état d'alerte ajouté à la liste des données partagées avec les membres ; mention dans la justification de la localisation en arrière-plan (si Q2 = B).
+- **Fiches des stores** (`release-manager`, `aso-marketing`) : **ne jamais écrire** « sécurité garantie », « sauve des vies », « alerte les secours » ; formule autorisée : « Prévenir ses proches en un geste ».
+
+---
+
+## 15. Critères d'acceptation (testables ; Android puis iOS sauf mention)
+
+**Déclenchement et annulation**
+- [ ] **AD1** Sur l'écran Update, un appui court sur le bouton prend une photo (comportement inchangé) ; un appui maintenu passe en mode alerte au-delà de 400 ms.
+- [ ] **AD2** Pendant le maintien : le bouton est rouge, le message « Je suis en danger » et « Maintiens 5 secondes pour envoyer l'alerte » sont affichés, le fond se remplit progressivement ; **aucune écriture réseau** n'a lieu avant 5 s ; aucune photo n'est prise.
+- [ ] **AD3** Relâcher avant 5 s : retour immédiat à l'écran Update, **aucune alerte**, aucun message ; idem si l'app passe en arrière-plan ou si un appel entrant prend le focus.
+- [ ] **AD4** À 5 s : retour haptique net, alerte écrite, bascule sur l'écran 03 ; aucune action supplémentaire n'est requise.
+- [ ] **AD5** Un lecteur d'écran/accès par commutateur actif : une action « Déclarer une alerte » ouvre une confirmation en deux étapes ; **la confirmation est la seule voie** dans ce cas ; le maintien reste possible sans lecteur d'écran.
+- [ ] **AD6** Plus de 3 déclenchements en une heure : une confirmation supplémentaire est demandée.
+
+**Onboarding**
+- [ ] **AD7** La bulle bleue s'affiche sur l'écran Update tant que `alertHintDone` est faux ; elle **n'utilise pas** l'historique de publications d'avant la livraison (un compte qui a déjà publié la voit une fois après la mise à jour).
+- [ ] **AD8** `alertHintDone` devient vrai à la première publication réussie après la livraison, à la première alerte déclenchée ou au premier maintien commencé ; il est **stocké sur l'appareil seulement** ; une réinstallation le remet à faux ; aucune donnée serveur.
+- [ ] **AD9** La bulle disparaît au premier toucher et après ~6 s ; elle ne gêne pas la prise de photo.
+
+**Écran contact (8)**
+- [ ] **AD10** Après l'envoi, l'écran « Tes proches viennent d'être avertis » s'affiche ; le titre « avertis » n'apparaît **qu'après l'accusé du serveur** ; sans réseau : « Ton alerte partira dès que possible ».
+- [ ] **AD11** Contact présélectionné : le **créateur** de la Miff s'il n'est pas moi ; sinon **le premier membre autre que moi par `joinedAt`**.
+- [ ] **AD12** Si le contact prévu n'a pas de numéro : **le membre suivant avec numéro** (créateur puis `joinedAt`) ; aucun membre sans numéro n'est listé.
+- [ ] **AD13** Miff où je suis seul(e), ou aucun membre avec numéro : la liste ne contient que les services d'urgence ; **112** (ou équivalent régional) est présélectionné.
+- [ ] **AD14** La liste montre d'abord « Tes proches » (créateur, puis ordre d'arrivée), **puis une section séparée « Services d'urgence »** ; chaque entrée a un nom lisible et son numéro.
+- [ ] **AD15** Les numéros d'urgence viennent d'un **catalogue par région** : France -> 17, 15, 18, 112 ; autre pays UE/EEE -> 112 ; région inconnue -> 112 ; le pays vient de la **locale** de l'appareil, **jamais de la position** (test : localisation refusée, région FR -> numéros FR).
+- [ ] **AD16** « Appeler » ouvre le **composeur du système** (aucun appel direct, aucune permission `CALL_PHONE` ni « Contacts » dans le manifeste/`Info.plist`).
+- [ ] **AD17** Plusieurs Miffs alertées : liste dédoublonnée par personne puis par numéro, Miff affichée d'abord.
+- [ ] **AD18** La mention « Miff n'est pas un service d'urgence. En cas de danger immédiat, appelle le 112 » est visible sur l'écran ; le texte n'est ni culpabilisant ni alarmiste.
+
+**Bannière et fin**
+- [ ] **AD19** Alerte active : la bannière apparaît sur Feed, Update et Profil, fixe au-dessus de la barre d'onglets, **sans masquer** de contenu (marge basse), **jamais** sur l'écran 03 ni l'aperçu de publication.
+- [ ] **AD20** La bulle d'incitation orange/rouge et le compte à rebours orange ne s'affichent **pas** pendant l'alerte ; les rappels locaux N1/N2/N6 sont suspendus.
+- [ ] **AD21** Maintien 5 s sur la bannière : barre de progression, haptique, annulation au relâchement ; à 5 s, `status = ended` écrit, bannière retirée **seulement après l'accusé du serveur**.
+- [ ] **AD22** Fin sans réseau : la bannière reste avec « Fin en attente d'envoi » et réessaie ; l'alerte n'est pas considérée terminée localement.
+- [ ] **AD23** Lecteur d'écran actif : une action « Terminer l'alerte » avec confirmation remplace le maintien.
+- [ ] **AD24** Au bout de **7 jours** (`expiresAt`), la bannière disparaît, **aucune notification** n'est envoyée ; la carte des proches passe en ligne neutre « Alerte arrivée à échéance » pendant 24 h, puis disparaît.
+- [ ] **AD25** Seul l'auteur peut terminer son alerte ; un autre membre, le créateur de la Miff, un non-membre : refus des règles (tests).
+- [ ] **AD26** Une update publiée pendant l'alerte ne la termine pas ; la couleur reste rouge.
+
+**Côté proches**
+- [ ] **AD27** La carte de la personne en alerte est **première** du Feed, rouge, avec « Alerte en cours » et l'heure de début ; plusieurs alertes : ordre de déclenchement stable ; aucun autre réordonnancement du Feed.
+- [ ] **AD28** La bulle de la Miff est **rouge**, sa première page est l'alerte, et elle **ne dit jamais « Tout le monde est en sécurité »** pendant une alerte.
+- [ ] **AD29** Boutons de la carte : Appeler, Écrire (si numéro), Localiser (selon Q2).
+- [ ] **AD30** Une alerte pendant le **mode voyage** de la personne : carte rouge ; à la fin, retour au gris.
+- [ ] **AD31** Un membre sans partage actif voit l'alerte (existence, heure, boutons Appeler/Écrire) mais **aucune position** sans réciprocité hors option B.
+
+**Notifications**
+- [ ] **AD32** Début : les membres **avec jeton** reçoivent « {prénom} a déclaré une alerte » (FR) / « {prénom} declared an alert » (EN) en moins de **2 minutes** dans les conditions normales ; l'auteur ne reçoit rien.
+- [ ] **AD33** La notification ne contient **ni position, ni lieu, ni nom de Miff, ni nom de famille, ni photo** (inspection du message et de l'écran verrouillé).
+- [ ] **AD34** Android : canal « Alertes d'un proche » en importance haute ; **non soumise** aux heures calmes ni au plafond de 6/jour ; aucune demande de permission en plus.
+- [ ] **AD35** iOS : niveau `timeSensitive` ; capacité activée ; **aucune** utilisation de `criticalAlert`.
+- [ ] **AD36** Fin manuelle : notification « {prénom} a mis fin à son alerte » ; **fin à l'expiration : aucune notification**.
+- [ ] **AD37** Un événement rejoué ou un ré-armement avec le même `seq` n'envoie qu'**une** notification ; plus de 10 débuts par auteur/Miff/24 h : l'alerte reste visible, **sans push**, sans erreur côté client.
+- [ ] **AD38** Un membre retiré ou parti avant l'alerte ne reçoit rien ; un destinataire sans jeton ou sans session : aucun envoi ; `miffId` inconnu côté client : ignoré.
+- [ ] **AD39** Journaux de la fonction : **aucun identifiant, jeton, prénom, coordonnée** (test sur le texte).
+
+**Données et sécurité**
+- [ ] **AD40** Règles : `expiresAt` = début + 7 j exactement ; clés fermées ; création, ré-armement, fin conformes à 10.2 ; deviceId de session obligatoire ; partage actif exigé ; tests et mutations verts.
+- [ ] **AD41** Les lots d'arrêt du partage, de départ, de retrait, de suppression de Miff et de compte **suppriment** le document d'alerte ; **sans push**.
+- [ ] **AD42** Nouvel appareil (session unique) : l'alerte en cours est lue et adoptée (bannière, fin possible).
+- [ ] **AD43** Aucun événement Analytics, aucune position dans un journal ou un rapport de plantage, aucune clé secrète côté client.
+
+**Fiabilité et honnêteté**
+- [ ] **AD44** Sans réseau au déclenchement : écran 03 avec numéros accessibles, état « en attente », réessai automatique ; > 15 min : confirmation avant envoi.
+- [ ] **AD45** Aucun texte de l'app, de la notification ou des fiches ne promet une intervention, une lecture ou un délai ; la mention « pas un service d'urgence » est présente (écran 03, fiche « En savoir plus », CGU).
+- [ ] **AD46** Tous les textes FR/EN sont en clés de catalogue ; anglais en repli.
+
+---
+
+## 16. Challenge de la source (problèmes, risques, recommandations)
+
+| # | Problème / risque | Gravité | Recommandation |
+|---|---|---|---|
+| C1 | **Fausse sécurité** : « Vos proches viennent d'être avertis » peut être faux (notifications coupées, OPPO, pas de jeton, réseau). | **Haute** | Titre « avertis » **après l'accusé serveur** uniquement ; sous-texte honnête ; mention « pas un service d'urgence » ; v1.1 : compteur « n proches notifiés ». |
+| C2 | **Déclenchement accidentel / fausses alertes** (poche, enfant, curiosité) puis **fatigue d'alerte** du cercle. | **Haute** | 5 s + seuil de 400 ms + haptique + annulation silencieuse ; confirmation après 3 déclenchements/h ; fin avec notification neutre « a indiqué que tout va bien » valable aussi pour une erreur ; v1.1 « C'est une erreur ? ». |
+| C3 | **Alerte sans réseau** : l'écriture n'arrive pas ; ou arrive des heures après et alarme à tort. | **Haute** | État EN_ATTENTE, réessai, **confirmation après 15 min**, numéros d'urgence toujours disponibles ; v1.1 SMS. |
+| C4 | **Position** : la source ne dit rien ; une alerte sans position est peu utile, une position sans consentement est un risque store/confiance. | **Haute** | Niveaux A/B (section 9), décision Q2 ; jamais de position dans la notification ; aucune permission demandée dans le stress. |
+| C5 | **Fin automatique silencieuse** (7 j) : les proches ne sauront jamais que l'alerte a expiré ; l'auteur a pu être dans l'incapacité de la terminer. | Moyenne | Conserver « pas de push » (décision PM) **mais** ligne neutre 24 h sur la carte ; **rappels locaux à l'auteur** (+2 h puis tous les 24 h) ; Q6. |
+| C6 | **Ordre du Feed** : « alerte en 1re position » contredit D43/V1 (« moi en dernier, jamais réordonné selon l'urgence »). | Moyenne | **Exception explicite** limitée aux alertes en cours (section 7.6) ; à noter dans `feed.md`. |
+| C7 | **Maquette 04 incohérente** : carte rouge mais bulle « Tout le monde est en sécurité ». **Maquette 05** : bannière **superposée** à une carte. | Moyenne | Bulle rouge avec page d'alerte (E3) ; marge basse (E4). |
+| C8 | **Condition de la bulle bleue** (« jamais publié depuis l'installation ») **cache la nouveauté aux comptes existants**. | Moyenne | Nouvel indicateur local `alertHintDone`, sans historique (7.1). |
+| C9 | **Deux messages contradictoires** : bulle d'incitation « publie une update pour dire que tout va bien » + alerte active ; rappels N1/N2/N6 ; compte à rebours. | Moyenne | La bannière **remplace** ces éléments tant que l'alerte est active. |
+| C10 | **Mode voyage** : la couleur neutre masquerait l'alerte. | Moyenne | L'alerte l'emporte (12.1). |
+| C11 | **Alerte + partage arrêté** : l'auteur ne peut plus alerter. | Moyenne | Écran calme + numéros d'urgence (12.2) ; la règle serveur exige un partage actif. |
+| C12 | **Ton du message de fin** « à nouveau en sécurité » affirme une sécurité. | Moyenne | Formule attribuée (11.2) ; Q4. |
+| C13 | **Pas de moyen de terminer l'alerte si on a perdu le téléphone** ou si on est incapable : alerte jusqu'à 7 j. | Moyenne | L'auteur seul peut terminer (**anti-abus**) ; l'expiration à 7 j est le filet ; proposer une durée plus courte plus tard (Q7 si besoin). Le créateur **ne** peut **pas** terminer (risque de contrôle). |
+| C14 | **Notifications iOS** : Concentration, silencieux ; **Android** : Ne pas déranger, OPPO. | Moyenne | Time Sensitive (iOS) ; canal haute importance + aide ; mesure OPPO ; **limites écrites**. |
+| C15 | **Confusion « Zone de danger » / « Alerte »**. | Faible | Vocabulaire (section 2). |
+| C16 | **Tutoiement/vouvoiement** : les maquettes vouvoient (« Vos proches », « Maintenez ») ; le reste de l'app tutoie. | Faible | Tutoiement (E1). |
+| C17 | **Mineurs, surveillance détournée** (parent qui déclenche pour l'enfant ?) | Faible | Seul l'auteur déclenche (appareil unique, session) ; risque mineurs assumé. |
+| C18 | **Abus de la fonction** (spam d'alertes dans un cercle) | Moyenne | Plafonds de la fonction, suspension de compte (CGU), App Check. |
+
+---
+
+## 17. Optimisations UX/UI par rapport aux maquettes (écarts listés et justifiés)
+
+Fidélité : les 5 maquettes sont **suivies au plus près** ; chaque écart ci-dessous est à lister dans les PR.
+
+| # | Écart | Justification |
+|---|---|---|
+| E1 | **Tutoiement** dans tous les textes (« Tes proches viennent d'être avertis », « Maintiens 5 secondes… », « Tu as alerté tes proches ») | Cohérence avec le reste de l'app (CLAUDE.md : ton ; bulle Update) |
+| E2 | Bouton « Appeler » rouge conservé ; **ajout** d'un lien « Appeler les secours » (8.5) et de la mention « pas un service d'urgence » sur l'écran 03 | Sécurité ; honnêteté |
+| E3 | **Bulle de la Miff rouge** avec page d'alerte (la maquette 04 garde « Tout le monde est en sécurité ») | Règle `feed.md` §5.2 (la bulle ne dit jamais « en sécurité ») |
+| E4 | **Bannière non superposée** au contenu (marge basse) ; ajout d'un bouton « Appeler » | Accessibilité du contenu (maquette 05) ; accès rapide |
+| E5 | **Sélecteur de contact en liste à deux sections** (Tes proches / Services d'urgence) | Précision du PM (8) |
+| E6 | **Écran 03 rouvrable depuis la bannière** | L'écran 03 n'est affiché qu'une fois sinon ; besoin de rappeler plus tard |
+| E7 | **Progression** sans décompte chiffré, **haptique** crescendo | Faible charge cognitive, non anxiogène |
+| E8 | Bulle bleue : **auto-masquage après ~6 s** et au toucher | Ne pas gêner la prise de photo |
+| E9 | **Ligne « Alerte arrivée à échéance »** (24 h) et **rappels locaux** à l'auteur | Atténue la fin silencieuse |
+| E10 | **Ordre du Feed** : exception limitée aux alertes (7.6) | Demande du PM ; incohérence avec D43 à acter |
+| E11 | **Pas de bouton fermer** sur la bannière | Même logique que D21 |
+
+### Écrans à créer ou à dessiner (non fournis par les 5 maquettes) — pour `design-system`
+1. Écran Update en alerte avec **fond qui se remplit** (états : armement, 50 %, 100 %).
+2. Écran 03 : variantes **envoi en cours**, **sans réseau / en attente**, **aucun proche avec numéro (urgence seulement)**, **partage arrêté**.
+3. **Liste de contacts à deux sections** (feuille ou menu), états vide/chargement.
+4. **Bannière** : repos, progression de fin (maintien), **fin en attente d'envoi**, 2 lignes de texte étendues.
+5. **Fiche « En savoir plus »** de la bulle d'onboarding.
+6. **Carte rouge en alerte** (étiquette « Alerte en cours », heure) et **bulle de la Miff rouge** avec page d'alerte (carrousel).
+7. **Ligne neutre « alerte arrivée à échéance »** sur la carte.
+8. **Confirmation en deux étapes** (accessibilité) pour déclencher et terminer.
+9. **Aide « Si les alertes n'arrivent pas »** (Android : canal ; iOS : Concentration/Time Sensitive).
+10. **Confirmation « Veux-tu toujours envoyer ton alerte ? »** après 15 min.
+11. **Notification** (aperçu écran verrouillé, début et fin) et canal Android.
+
+Pour la PR de développement : **le PM fournira les exports PNG des maquettes** dans `design/exports/alerte-danger/` (déjà : 5 fichiers) ; les écrans ci-dessus sont à **designer par l'agent design** avant développement, ou le dev peut les ajouter avec une liste d'écarts.
+
+---
+
+## 18. Découpage en tickets de dev, dépendances et ordre
+
+Process par ticket (CLAUDE.md) : une branche et une PR par plateforme, Android avant iOS, revue en contexte neuf + revue sécurité, QA, recette PM, merge sur « oui » explicite. **Aucun déploiement sans « oui » du PM (règles et fonction : le PM tape les commandes).**
+
+| # | Ticket | Contenu | Taille | Dépend de |
+|---|---|---|---|---|
+| **AD-D** | Design (agent `design-system`) | Écrans de la liste 17 ; maquettes à fournir par le PM si besoin | M | Réponses Q1 à Q8 |
+| **AD-L** | Légal et stores (`release-manager`) | Textes 14.2, CGU, politique, Data safety, App Privacy, note de revue (FR + EN), **version consentement si Q2 = B** | S | Q2 |
+| **AD-B1** | Règles + modèle (`backend-data`) | `data-model.md` (§2.18 alerts), `firestore.rules` (`alerts`), lots de suppression, tests et mutations, plan de déploiement en 2 temps | M | Q1, Q2, Q3 |
+| **AD-B2** | Fonction `notifierAlerte` (`backend-data`) | Déclencheur, idempotence, plafonds, message Android/iOS, tests d'émulateur, garde-coûts, doc de déploiement, `surveillance-quotas.md` | M | AD-B1 |
+| **AD-A1** | Android : déclenchement et envoi | Maintien 5 s, haptique, onboarding, écriture des alertes, EN_ATTENTE, écran 03 + contacts + catalogue d'urgence, bannière + fin, accessibilité, session unique | L | AD-B1, AD-D |
+| **AD-A2** | Android : proches et notifications | Écouteur d'alertes, carte rouge en tête, bulle rouge, couleur (voyage), canal, réception, centre de notifications, rappels locaux auteur, aide OPPO | M | AD-A1, AD-B2 |
+| **AD-I1** | iOS : déclenchement et envoi | Même contenu qu'AD-A1 ; **capacité Time Sensitive** (PM) | L | AD-A1 (références), profils CI |
+| **AD-I2** | iOS : proches et notifications | Même contenu qu'AD-A2 ; validation réception push iOS | M | AD-I1, AD-B2 |
+
+Ordre : **AD-D + AD-L en parallèle -> AD-B1 (règles) -> AD-A1 -> AD-B2 (fonction, déployée en dernier) -> AD-A2 -> AD-I1 -> AD-I2 -> recette PM (OPPO + iPhone, 2 comptes)**. Tant que `notifierAlerte` n'est pas déployée, l'alerte existe dans le Feed mais **aucun push ne part** (à tester et documenter). **Estimation globale : 8 tickets, L à XL ; ≈ 2 gros (A1, I1), 4 moyens, 2 petits.**
+
+**Actions du PM** (rien n'est fait par un agent) : (1) répondre aux questions (19) ; (2) fournir ou valider les maquettes des écrans manquants ; (3) activer la capacité Time Sensitive sur `com.tomessa.miff` et régénérer les profils de CI ; (4) **déployer** règles puis fonction sur « oui », avec `--project miff-3d283` ; (5) droit `run.invoker` sur le service de la nouvelle fonction ; (6) règle TTL sur `alerts.purgeAt` ; (7) **vérifier avant livraison** qu'aucune fiche de store ne contredit la fonction.
+
+---
+
+## 19. Questions pour le PM (8 au plus, défaut recommandé)
+
+**Q1. Portée : toutes mes Miffs ou une seule ?** Une alerte part-elle vers **toutes les Miffs où je partage** ou seulement la Miff affichée ?
+- Options : toutes / affichée / choix à l'envoi (rejeté : trop de friction dans le stress).
+- *Défaut recommandé* : **toutes** (en danger, on ne trie pas ; gratuit = 1 Miff, donc sans effet).
+
+**Q2. Position pendant l'alerte.** (A) minimal : une mesure à l'envoi, réciprocité inchangée ; (B) renforcé : mesure plus fréquente (~5 min, **2 h max**) et position **lisible par tous les membres des Miffs alertées** même sans réciprocité, tant que l'alerte est active, avec **nouveau texte de consentement**.
+- *Défaut recommandé* : **B**, car l'alerte sans position perd l'essentiel de sa valeur ; **A si tu préfères ne pas toucher aux règles de position ni au consentement avant le lancement** (A est un plancher livrable immédiatement ; B peut suivre dans un second temps).
+
+**Q3. Qui est notifié ?** Tous les membres avec jeton **même s'ils ne partagent pas leur position**, ou seulement ceux qui partagent (réciprocité) ?
+- *Défaut recommandé* : **tous les membres avec jeton** (aucune position n'est dans le message ; une alerte non reçue pour une raison de réglage de partage serait inacceptable).
+
+**Q4. Texte de fin.** « {Prénom} a mis fin à son alerte / a indiqué que tout va bien » (attribué) ou la formule de la source « à nouveau en sécurité » ?
+- *Défaut recommandé* : **formule attribuée** (l'app ne dit jamais « en sécurité » ; la formule marche aussi pour une fausse alerte).
+
+**Q5. Notification prioritaire.** (a) Ignorer **heures calmes, plafond quotidien et plafond horaire** pour les alertes ; (b) **iOS Time Sensitive** (capacité gratuite, à activer par toi, sans demande à Apple) ; (c) **Critical Alerts** : **ne pas demander à Apple pour l'instant** (accord incertain, gratuit mais long).
+- *Défaut recommandé* : **oui à (a), oui à (b), non à (c) en v1** (à retenter en v2 si tu veux).
+
+**Q6. Fin à 7 jours et rappels.** Conserver « **aucun push à l'expiration** » (ta décision) **avec** : une ligne neutre « alerte arrivée à échéance » sur la carte pendant 24 h, et des **rappels locaux à l'auteur** (+2 h puis tous les 24 h) « Ton alerte est toujours active. Tu peux la terminer. » ?
+- *Défaut recommandé* : **oui aux deux** (aucun coût, aucune notification aux proches).
+
+**Q7. Gratuité.** L'alerte reste **gratuite pour tous** (jamais derrière le paywall) ?
+- *Défaut recommandé* : **oui, gratuite** (fonction de sécurité ; risque d'image et de rejet sinon).
+
+**Q8. Fausses alertes et dissuasion.** Ajouter dans les CGU que **des fausses alertes répétées peuvent entraîner la suspension du compte**, et limiter à **3 déclenchements par heure** avant confirmation supplémentaire ?
+- *Défaut recommandé* : **oui** aux deux (formulation sobre).
+
+**Déjà tranché par défaut dans ce ticket (à contester si besoin)** : seul l'auteur termine ; update ≠ fin d'alerte ; alerte l'emporte sur le mode voyage ; pas de raccourci écran verrouillé ; pas d'accusés « je l'appelle » (v2) ; pas de contact d'urgence personnel hors Miff (v2) ; pas de SMS hors ligne (v1.1) ; bulle d'onboarding à indicateur local neuf ; contact présélectionné et numéros d'urgence par région (précisions du PM du 2026-11-18, intégrées en section 8).
+
+---
+
+## 20. Risques assumés et limites connues (à écrire, jamais « à valider »)
+
+1. **Livraison non garantie** (notifications coupées, Concentration, Ne pas déranger, économies d'énergie constructeur, panne FCM/APNs) : dite honnêtement dans l'app et les CGU.
+2. **Pas un service d'urgence** : la confusion est possible malgré la mention ; risque assumé.
+3. **Fausses alertes** et fatigue d'alerte du cercle.
+4. **Mineurs** (âge minimum, RGPD art. 8) : inchangé, assumé.
+5. **Transferts hors UE** par FCM/APNs : assumés.
+6. **Réciprocité levée** pendant l'alerte (si Q2 = B) : assumée, documentée.
+7. **Fin à 7 jours silencieuse** pour les proches : atténuée, non supprimée (décision du PM).
+8. **Critical Alerts non utilisées** : une notification peut ne pas sonner si le téléphone est en silencieux.
+9. **Un seul contact présélectionné** : pas de garantie qu'il réponde.
+10. **Catalogue d'urgence par région limité** à ce qui est vérifié (France, UE/EEE, repli 112).
+
+*Aucun texte de ce ticket, y compris les textes légaux proposés, n'a été relu par un juriste ; ils sont publiés sous la responsabilité du PM.*
