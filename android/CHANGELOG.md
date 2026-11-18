@@ -2,6 +2,18 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.50.0] - 2026-11-18 : la ligne « Zone de danger » est toujours dans la légende du graphique (décision du PM)
+
+Décision du PM après la recette de « Répartition du temps » : la ligne **« Zone de danger »** de la légende s'affiche **toujours quand sa part arrondie est de 1 % ou plus**, quitte à remplacer le 4e lieu. Branche `android/legende-danger`, PR de suivi. Numéro : #224 (À propos) a pris 0.49.0, celle-ci prend 0.50.0 (à renuméroter au merge si l'ordre change).49.0) puis celle-ci (0.50.0) puis #275 (0.51.0) ; à renuméroter au merge si l'ordre change. Android seulement. **Aucune nouvelle clé de texte, aucune lecture ni écriture serveur, aucune permission, aucune dépendance.**
+
+### Changé
+- **Règle de la légende** (`ui/timeshare/LegendLines.kt`, fonction pure) : la légende garde **4 lignes au plus** : les 4 plus grandes parts (égalité : la plus tôt dans l'anneau), **sauf** que la zone de danger y est **toujours** si sa part arrondie est ≥ 1 % ; si elle n'est pas déjà dans les 4 plus grandes, **elle prend la place de la 4e** (la plus petite des quatre, lieu ou « Hors-zone »). Sous 1 % (« < 1 % », part nulle) : **jamais de ligne, même avec 2 ou 3 parts** (la zone de danger sous 1 % est écartée des candidats AVANT le choix des 4 plus grandes ; correction après revue). Les lignes restent dans l'ordre de l'anneau ; l'anneau garde toutes les tranches ; « Hors-zone » suit la règle ordinaire.
+- **Effet** : le détail de la zone de danger (feuille du bas) est maintenant atteignable dès que sa part est ≥ 1 % (la limite connue de la première version disparaît).
+- **TalkBack** : la zone de danger est **citée une seule fois** : sa ligne est un bouton qui se lit « Zone de danger, 4 %, afficher le détail » et la phrase globale ne la répète pas ; sous 1 % (pas de ligne, pas de bouton) la phrase la garde.
+- **Parité iOS** : la même règle est appliquée sur la PR iOS #259 (pas de nouvelle clé de texte).
+- Tests : `LegendLinesTest` (sous / au-dessus de 1 %, exactement 1 %, zone de danger sous 1 % avec 2, 3 ou 4 parts, déjà dans le top 4, part nulle, un seul lieu, égalités, « Hors-zone » qui cède sa place, « autres lieux »), `TimeShareCardTest` (la ligne remplace le 4e et se lit une fois ; sous 1 % pas de ligne mais citée dans la phrase). Ticket : PR docs #256 (révision 4) ; recette mise à jour.
+
+
 ## [0.49.0] - 2026-11-13 : Réglages, nouvel écran « À propos et aide » (version, aide, contact, retour sur l'app, licences) (ABOUT-1A)
 
 Ticket `docs/tickets/reglages-a-propos.md` (fait foi ; décisions du PM du 2026-11-13, section « Décisions du PM »), recette `docs/qa/checklists/reglages-a-propos-android-recette-pm.md` ; branche `android/reglages-a-propos`, PR brouillon. Numéro de version : le dernier de `main` est 0.48.0 ; **la PR `android/feedback-form-url` (0.39.0) est fusionnée dans cette branche** par un merge simple (elle fournit l'adresse du formulaire) ; celui-ci prend 0.49.0 (à renuméroter au merge si une autre PR l'a pris). **iOS (ABOUT-1I)** : branche `ios/reglages-a-propos` menée en parallèle par un autre agent, voir « Textes » pour l'alignement des clés.
