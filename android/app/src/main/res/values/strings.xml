@@ -1344,14 +1344,14 @@
     <string name="alert_sending_title_no_name">Sending the alert…</string>
     <string name="alert_waiting_title">No connection right now. Your alert will go as soon as possible.</string>
     <string name="alert_refused_title">Your alert didn\'t go. Check your phone\'s date and time, then try again. If you\'re in danger, you can call the emergency services directly.</string>
-    <string name="alert_quota_title">You\'ve reached the limit of 3 alerts a day; it frees up in a few hours. If you\'re in danger, call the emergency services directly.</string>
+    <string name="alert_quota_title">You\'ve reached the limit of 3 alerts a day. If you\'re in danger, call the emergency services directly.</string>
     <string name="alert_refused_retry">Try again</string>
     <string name="alert_cancel_pending">Cancel the alert</string>
     <string name="alert_stopped_title">You\'ve stopped sharing with the Miff “%1$s”: resume sharing to alert your people.</string>
     <string name="alert_stopped_title_no_name">You\'ve stopped sharing: resume sharing to alert your people.</string>
     <string name="alert_stopped_resume">Resume sharing</string>
     <string name="alert_stale_title">Do you still want to send your alert?</string>
-    <string name="alert_stale_body">It couldn\'t go for a while.</string>
+    <string name="alert_stale_body">It\'s been a while since it was meant to go: things may have changed.</string>
     <string name="alert_stale_send">Send</string>
     <string name="alert_stale_cancel">Cancel</string>
     <string name="alert_call_action">Call</string>
@@ -1394,7 +1394,7 @@
     <string name="alert_banner_sending_no_name">Sending your alert…</string>
     <string name="alert_banner_emergency">Emergency numbers</string>
     <string name="alert_banner_retry">Try again</string>
-    <string name="alert_banner_decide">Decide</string>
+    <string name="alert_banner_decide">Choose</string>
     <string name="alert_banner_close_a11y">Close and give up sending the alert</string>
     <string name="alert_ended_notice_no_name">Alert ended. Your people have been told.</string>
     <string name="alert_already_active_no_name">An alert is already in progress.</string>

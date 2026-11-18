@@ -47,26 +47,15 @@ final class DangerAlertControllerLifecycleTests: DangerAlertControllerTestCase {
         await eventually { self.isActive(controller) }
     }
 
-    func testAnAlertWhoseMiffIsGoneLeavesWithIt() async {
+    func testOnlyAConfirmedLossOfTheMiffEndsTheAlertNeverAList() async {
         let controller = makeController()
         await activate(controller)
 
-        controller.onMiffsKnown([miffB])
-
-        XCTAssertEqual(controller.state, .idle)
-        XCTAssertNil(local.saved)
-    }
-
-    func testTheMiffsNotYetKnownNeverEndAnAlert() async {
-        let controller = makeController()
-        await activate(controller)
-
-        controller.onMiffsKnown([])
-        XCTAssertTrue(isActive(controller))
         controller.onAlertRemoved(miffId: miffB)
         XCTAssertTrue(isActive(controller), "une autre Miff n'a aucun effet sur l'alerte")
         controller.onAlertRemoved(miffId: miffA)
         XCTAssertEqual(controller.state, .idle)
+        XCTAssertNil(local.saved)
     }
 
     func testEndingTheSessionForgetsTheAlertInMemory() async {
@@ -172,16 +161,6 @@ final class DangerAlertControllerLifecycleTests: DangerAlertControllerTestCase {
         XCTAssertTrue(controller.blocksNewAlert)
         XCTAssertEqual(controller.trigger(miffId: miffB), .alreadyActive(miffId: miffA))
         controller.onSessionEnded()
-    }
-
-    func testAListFromTheCacheNeverEndsAnAlert() async {
-        let controller = makeController()
-        await activate(controller)
-
-        controller.onMiffsKnown([miffB], authoritative: false)
-        XCTAssertTrue(isActive(controller), "m8 : une liste du cache ou passagère n'efface pas l'alerte")
-        controller.onMiffsKnown([miffB], authoritative: true)
-        XCTAssertEqual(controller.state, .idle)
     }
 
     // MARK: - Un nouveau téléphone et le retour au premier plan

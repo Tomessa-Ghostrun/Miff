@@ -63,13 +63,15 @@ extension MainShellView {
         let model = danger.model
         let names = dangerMiffNames(miffs)
         let state = model.controller.state
-        let activeName = activeMiffId.flatMap { names[$0] }
+        let activeName = activeMiffId.flatMap { dangerNamed(names[$0]) }
         return DangerUpdateHooks(
             hintVisible: !model.hintDone,
             onHintDone: { model.onHintDone() },
             targetMiffName: activeName,
             several: names.count > 1,
-            activeAlertMiffName: state.miffId.flatMap { names[$0] },
+            activeAlertMiffName: state.miffId.flatMap { dangerNamed(names[$0]) },
+            // Seule une alerte VRAIMENT en route ou envoyée interdit un second maintien (et dit « Une alerte est déjà en cours ») : une alerte refusée, la limite du jour
+            // ou la question des 15 minutes ne l'interdisent pas, la personne peut recommencer.
             alertInProgress: model.controller.blocksNewAlert,
             onTrigger: { dangerTriggered(model: model, activeMiffId: activeMiffId, names: names) },
             onAlreadyActive: { name in
@@ -99,7 +101,7 @@ extension MainShellView {
         case .started:
             model.openSent(miffId: miffId)
         case .alreadyActive(let current):
-            model.notice = alreadyActiveNotice(names[current])
+            model.notice = alreadyActiveNotice(dangerNamed(names[current]))
         case .notSignedIn:
             model.openSent(miffId: nil, unavailable: true)
         }

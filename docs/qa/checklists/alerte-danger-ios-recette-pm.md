@@ -65,7 +65,7 @@ Le serveur (PR #274) a **trois morceaux, tous écrits mais NON DÉPLOYÉS** : le
 ## Partie 4 : sans réseau, accessibilité, expiration (15 min)
 
 27. [ ] **Déclenchement sans réseau** (mode avion) : l'écran « avertis » dit **« Pas de réseau pour le moment. Ton alerte partira dès que possible. »**, les **numéros restent disponibles** ; la bannière dit « En attente d'envoi » **avec une croix**. Désactivez le mode avion : l'alerte part toute seule.
-28. [ ] Mode avion pendant **plus de 15 minutes** (changez l'heure de +16 min si besoin), puis réseau : la question **« Veux-tu toujours envoyer ton alerte ? »** (Envoyer / Annuler) ; la bannière propose **« Décider »**. Rien ne part avant votre réponse.
+28. [ ] Mode avion pendant **plus de 15 minutes** (changez l'heure de +16 min si besoin), puis réseau : la question **« Veux-tu toujours envoyer ton alerte ? »** (Envoyer / Annuler) ; la bannière propose **« Choisir »**. Rien ne part avant votre réponse.
 29. [ ] **La croix de la bannière** (alerte en attente, refusée ou limite du jour) : **ferme tout de suite** la bannière, rien n'est jamais envoyé ; vous pouvez redéclencher. Hors ligne, la vérification attend le réseau (si l'envoi avait en fait abouti, la bannière « alerte en cours » revient). La croix **n'existe pas** pendant l'écriture elle-même (quelques secondes) ni pour une alerte active.
 30. [ ] **VoiceOver activé** : sur le bouton rond, l'action **« Déclarer une alerte »** (rotor Actions) ouvre une fenêtre « Déclarer une alerte à tes proches ? » (Envoyer l'alerte / Annuler) ; sur la bannière, l'action **« Terminer l'alerte »** ouvre une confirmation ; la croix est lue **« Fermer et abandonner l'envoi de l'alerte »**. Le titre de l'écran « avertis » est lu **en entier**, même avec un nom de Miff très long.
 31. [ ] **Nom de Miff très long** (40 caractères, avec des emojis et sans espace, renommez la Miff) : le titre reste dans la bulle rose sans déborder. **Réglages > Accessibilité > Taille du texte** au **maximum** : l'écran défile, rien n'est coupé. **Réduire les animations** : la barre se remplit toujours **au rythme du temps tenu** (jamais d'un coup).
@@ -83,7 +83,7 @@ Le serveur (PR #274) a **trois morceaux, tous écrits mais NON DÉPLOYÉS** : le
 
 ## Partie 6 : la limite du jour et les refus (5 min)
 
-40. [ ] **Quatrième alerte en 24 h** (même compte, toutes Miffs confondues) : l'app **ne tente rien**, l'écran dit calmement **« Tu as atteint la limite de 3 alertes par jour ; elle se libère dans quelques heures. Si tu es en danger, appelle directement les secours. »**, **le numéro d'urgence est déjà choisi** (112), **pas de bouton « Réessayer »**, un « Annuler l'alerte » pour fermer. Aucun reproche, aucun mot « abus ». **La flèche retour** laisse un état propre (pas de bannière « alerte en cours » fausse). La 4e n'apparaît pas chez B.
+40. [ ] **Quatrième alerte en 24 h** (même compte, toutes Miffs confondues) : l'app **ne tente rien**, l'écran dit calmement **« Tu as atteint la limite de 3 alertes par jour. Si tu es en danger, appelle directement les secours. »**, **le numéro d'urgence est déjà choisi** (112), **pas de bouton « Réessayer »**, un « Annuler l'alerte » pour fermer. Aucun reproche, aucun mot « abus ». **La flèche retour** laisse un état propre (pas de bannière « alerte en cours » fausse). La 4e n'apparaît pas chez B.
 41. [ ] **Horloge fausse** (réglez l'heure de l'iPhone **3 heures en avance**, désactivez « Réglage automatique ») : l'alerte est refusée ; l'écran dit **« Ton alerte n'est pas partie. Vérifie la date et l'heure de ton téléphone, puis réessaie. Si tu es en danger, tu peux appeler directement les secours. »** avec **Réessayer** ; les numéros restent là ; la bannière propose **« Réessayer »** et **« Numéros d'urgence »** (et la croix). Remettez l'heure automatique, « Réessayer » : l'alerte part.
 42. [ ] Sur **toutes ces erreurs**, les numéros d'urgence sont accessibles **sans autre geste**.
 43. [ ] **Miffs pas encore chargées** (lancez l'app en mode avion sur une installation neuve, puis maintenez 5 s) : l'écran dit **« L'alerte à tes proches n'est pas disponible pour le moment… »** avec les numéros d'urgence : jamais un geste sans effet.
@@ -92,6 +92,21 @@ Le serveur (PR #274) a **trois morceaux, tous écrits mais NON DÉPLOYÉS** : le
 
 44. [ ] **Réglages iOS > Miff** : **ni Contacts, ni Téléphone** (l'app n'appelle jamais et ne lit aucun carnet). Aucune autorisation de plus n'a été demandée pendant la recette.
 45. [ ] La notification ne montre **ni position, ni nom de Miff, ni nom de famille** (écran verrouillé compris).
+
+## Partie 8 : la Miff de l'alerte disparaît (revue indépendante de l'Android, versions 3 et 4) (10 min)
+
+Pour chaque cas, **Miff de test seulement**. Le résultat attendu est le même : la **bannière rouge disparaît** et **un nouveau maintien de 5 s dans une autre Miff** (ou dans une Miff recréée) **déclenche une nouvelle alerte**, sans « Une alerte est déjà en cours ». Ces essais coûtent des débuts d'alerte (3 par 24 h) : prévoyez-les sur un compte de rechange.
+
+46. [ ] **Le créateur retire A pendant que son alerte est active** : sur le téléphone de A, la bannière disparaît (sans autre action), et une nouvelle alerte est possible ailleurs. Aucun écran d'erreur, aucun message culpabilisant.
+47. [ ] **Une Miff supprimée par un autre membre** pendant l'alerte de A : même résultat sur le téléphone de A.
+48. [ ] **Le créateur supprime sa propre Miff alors qu'il a une alerte dedans** : la fenêtre de confirmation dit que l'alerte sera retirée ; une fois la Miff supprimée, **la bannière a disparu** et une nouvelle alerte est possible.
+49. [ ] **Un téléphone de A qui change de réseau** (Wi-Fi vers données, ou mode avion quelques secondes pendant que l'app est ouverte) : la bannière **reste** (jamais retirée parce que la liste des Miffs est incomplète un instant).
+50. [ ] **Écran de renouvellement du consentement** : si une alerte est en cours dans la Miff à quitter, la fenêtre « Quitter la Miff » **prévient aussi** que l'alerte sera retirée (même phrase que sur l'écran de la Miff). *(Visible seulement si l'alerte a déjà été reprise au lancement de l'app.)*
+51. [ ] **Écran de la limite de 3** : il reste **calme et immobile** (pas de scintillement ni de lenteur), le **numéro d'urgence reste choisi** même si les proches finissent de charger.
+52. [ ] **Les proches de la Miff n'ont pas pu être lus** (mode avion à l'ouverture de l'écran « avertis ») : seuls les services d'urgence sont proposés ; **revenez en arrière puis rouvrez l'écran avec le réseau** : les proches **apparaissent**.
+53. [ ] **Nom de Miff blanc** (renommez la Miff avec des espaces seulement si l'app l'accepte, ou avec un nom vide côté test) : le titre de l'écran « avertis », la bannière et la lecture VoiceOver disent **« ta Miff »**, jamais une ligne vide.
+54. [ ] **VoiceOver, présélection** : à l'ouverture de l'écran « avertis » dans une Miff avec un créateur, quand les proches finissent de charger et que le choix passe de **112** au **créateur**, VoiceOver **l'annonce poliment** (sans interrompre) ; **si vous aviez déjà choisi une ligne, elle n'est pas remplacée**.
+55. [ ] **Message « Une alerte est déjà en cours »** : visible **seulement** quand une alerte est vraiment en route ou envoyée ; **jamais** après un refus, la limite de 3 ou la question des 15 minutes (le maintien démarre alors une nouvelle alerte).
 
 ## Retours à noter
 

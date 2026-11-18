@@ -14,24 +14,26 @@ func dangerMiffNames(_ directory: DirectoryState) -> [String: String] {
     return Dictionary(ready.miffs.map { ($0.id, $0.name) }, uniquingKeysWith: { first, _ in first })
 }
 
+/// Un nom de Miff vide ou blanc n'est pas un nom : le repli est « ta Miff » (les textes `_no_name`), jamais une ligne vide ni un nom lu comme un blanc par VoiceOver.
+func dangerNamed(_ name: String?) -> String? {
+    guard let trimmed = name?.trimmingCharacters(in: .whitespacesAndNewlines), !trimmed.isEmpty else {
+        return nil
+    }
+    return trimmed
+}
+
 struct DangerAlertHost: ViewModifier {
     @ObservedObject var model: DangerAlertViewModel
     let directory: DirectoryState
     let onOpenMiff: (String) -> Void
     @Environment(\.scenePhase) private var scenePhase
 
-    /// Les Miffs connues et si la liste vient du SERVEUR : seule une liste confirmée par le serveur peut terminer une alerte dont la Miff n'y figure pas (une liste du
-    /// cache du téléphone, ou passagère, n'efface jamais le pointeur : revue de l'Android, m8).
-    private struct KnownMiffs: Equatable {
-        let ids: [String]
-        let authoritative: Bool
-    }
-
-    private var known: KnownMiffs {
+    /// Les Miffs connues. Une liste ne termine JAMAIS une alerte (une Miff dont la lecture échoue manque dans la liste) : elle ne sert qu'à l'adoption sur un nouveau téléphone.
+    private var known: [String] {
         guard case .ready(let ready) = directory else {
-            return KnownMiffs(ids: [], authoritative: false)
+            return []
         }
-        return KnownMiffs(ids: ready.miffs.map { $0.id }, authoritative: !ready.fromCache)
+        return ready.miffs.map { $0.id }
     }
 
     func body(content: Content) -> some View {
@@ -56,10 +58,10 @@ struct DangerAlertHost: ViewModifier {
             .onChange(of: directory) { next in
                 model.miffNames = dangerMiffNames(next)
             }
-            // Les Miffs sont connues : une alerte dont la Miff a disparu part avec elle ; un nouveau téléphone adopte une alerte en cours.
+            // Les Miffs sont connues : un nouveau téléphone adopte une alerte en cours.
             .task(id: known) {
-                if !known.ids.isEmpty {
-                    await model.onMiffsKnown(known.ids, authoritative: known.authoritative)
+                if !known.isEmpty {
+                    await model.onMiffsKnown(known)
                 }
             }
             .onChange(of: scenePhase) { phase in
@@ -130,7 +132,7 @@ struct DangerSentHost: View {
     var body: some View {
         DangerSentView(
             phase: phase,
-            miffName: route.miffId.flatMap { model.miffNames[$0] },
+            miffName: route.miffId.flatMap { dangerNamed(model.miffNames[$0]) },
             several: model.miffNames.count > 1,
             call: model.call,
             actions: actions
@@ -222,8 +224,8 @@ struct DangerBannerSlot: View {
         if let origin = controller.state.miffId, !hidden, model.sentRoute == nil {
             DangerBannerView(
                 alert: controller.state,
-                miffName: model.miffNames[origin],
-                showSeeMiff: origin != activeMiffId && model.miffNames[origin] != nil,
+                miffName: dangerNamed(model.miffNames[origin]),
+                showSeeMiff: origin != activeMiffId && dangerNamed(model.miffNames[origin]) != nil,
                 actions: DangerBannerActions(
                     onCall: { model.openSent(miffId: origin) },
                     onSeeMiff: { onSeeMiff(origin) },
@@ -235,7 +237,7 @@ struct DangerBannerSlot: View {
             )
             .padding(.horizontal, Spacing.md)
             .padding(.bottom, Spacing.sm)
-            .dangerEndConfirm(isPresented: $endConfirmOpen, miffName: model.miffNames[origin]) {
+            .dangerEndConfirm(isPresented: $endConfirmOpen, miffName: dangerNamed(model.miffNames[origin])) {
                 controller.end()
             }
         }

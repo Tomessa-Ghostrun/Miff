@@ -29,6 +29,9 @@ enum DangerMineRead: Equatable {
     /// `nil` : il n'y a pas de document d'alerte pour moi dans cette Miff.
     case value(DangerAlertDoc?)
     case unavailable
+    /// Les règles REFUSENT la lecture (la Miff n'est plus la mienne, ou les règles ne connaissent pas encore les alertes) : rien de vivant n'y est lisible. Ce n'est PAS « pas
+    /// d'alerte » : un refus peut aussi être passager (App Check). Seule la vérification d'un envoi abandonné s'en sert, et le confirme deux fois.
+    case denied
 }
 
 /// Les alertes d'UNE Miff telles que l'écouteur du Feed les entend.

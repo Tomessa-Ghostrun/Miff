@@ -142,8 +142,13 @@ final class DangerAlertController: ObservableObject {
             state = .sending(miffId: pointer.miffId, armedAtMillis: pointer.armedAtMillis, step: .waitingNetwork)
             launchSend(miffId: pointer.miffId, armedAt: pointer.armedAtMillis, confirmed: pointer.staleConfirmed)
         case .abandoned:
-            // Fermée par la personne, mais le serveur n'a pas encore confirmé qu'aucune alerte vivante n'y est : la vérification reprend.
-            launchVerifyAbandoned(miffId: pointer.miffId)
+            // Fermée par la personne, mais le serveur n'a pas encore confirmé qu'aucune alerte vivante n'y est : la vérification reprend. Une alerte vit 7 jours au plus :
+            // passé ce délai rien ne peut plus être vivant, le pointeur ne reste pas pour toujours (Miff devenue inaccessible).
+            if nowMillis() - pointer.armedAtMillis > DangerAlertRules.durationMillis {
+                local.clearPointer()
+            } else {
+                launchVerifyAbandoned(miffId: pointer.miffId)
+            }
         case .active:
             guard let expires = pointer.expiresAtMillis,
                   let started = pointer.startedAtMillis,
@@ -231,6 +236,7 @@ final class DangerAlertController: ObservableObject {
 
     private func verifyAbandoned(miffId: String) async {
         var attempt = 0
+        var deniedOnce = false
         while attempt < Self.maxVerifyAttempts, !Task.isCancelled {
             guard let uid = currentUid() else {
                 return
@@ -255,6 +261,17 @@ final class DangerAlertController: ObservableObject {
                     local.clearPointer()
                 }
                 return
+            case .denied:
+                // La Miff m'est fermée (retiré, supprimée, règles) : aucune alerte de moi n'y est vivante. Mais un refus peut être passager (App Check) : il doit être
+                // CONFIRMÉ par un SECOND refus, quelques secondes plus tard, avant que le pointeur soit oublié.
+                if deniedOnce {
+                    if state == .idle, !Task.isCancelled {
+                        local.clearPointer()
+                    }
+                    return
+                }
+                deniedOnce = true
+                await sleep(pause(for: 0))
             case .unavailable:
                 await sleep(pause(for: attempt))
                 attempt += 1
@@ -284,15 +301,8 @@ final class DangerAlertController: ObservableObject {
         }
     }
 
-    /// Les Miffs de la personne sont connues : une alerte dont la Miff n'est plus l'une d'elles (quittée, retirée, supprimée) part avec elle. Le
-    /// serveur a supprimé le document dans le même lot (rien à écrire ici).
-    func onMiffsKnown(_ miffIds: [String], authoritative: Bool = true) {
-        // Une liste lue dans le cache du téléphone, ou passagère, ne termine JAMAIS une alerte (revue de l'Android, m8) : seule une liste confirmée par le serveur le fait.
-        guard authoritative, let miffId = state.miffId, !miffIds.isEmpty, !miffIds.contains(miffId) else {
-            return
-        }
-        drop()
-    }
+    // Une LISTE de Miffs ne termine JAMAIS une alerte (une Miff dont la lecture échoue manque dans la liste) : l'alerte part quand le départ, le retrait ou la
+    // suppression est CONFIRMÉ (le dépôt le dit à `onAlertRemoved`), ou quand le serveur le dit (`verifyActive`, la fin).
 
     /// MON partage de cette Miff s'est arrêté, ou je l'ai quittée : le document est parti dans le même lot (les règles l'exigent), l'alerte aussi.
     func onAlertRemoved(miffId: String) {
@@ -359,7 +369,7 @@ final class DangerAlertController: ObservableObject {
                     local.markAdoptedFor(uid)
                     return
                 }
-            case .unavailable:
+            case .unavailable, .denied:
                 complete = false
             }
         }

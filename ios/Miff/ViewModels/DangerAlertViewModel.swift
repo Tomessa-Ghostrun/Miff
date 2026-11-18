@@ -90,7 +90,7 @@ final class DangerAlertViewModel: ObservableObject {
         switch event {
         case .ended(let miffId):
             // Un nom de Miff pas encore connu (après un relancement) : « tes proches », jamais un blanc.
-            if let name = miffNames[miffId] {
+            if let name = dangerNamed(miffNames[miffId]) {
                 notice = L10n.format("alert_ended_notice", name)
             } else {
                 notice = L10n.string("alert_ended_notice_no_name")
@@ -136,10 +136,9 @@ final class DangerAlertViewModel: ObservableObject {
         controller.restore()
     }
 
-    /// Les Miffs de la personne sont connues : une alerte dont la Miff a disparu part avec elle ; un NOUVEAU téléphone lit mon alerte de chaque Miff
-    /// UNE fois (1 lecture par Miff) et adopte une alerte en cours.
-    func onMiffsKnown(_ miffIds: [String], authoritative: Bool = true) async {
-        controller.onMiffsKnown(miffIds, authoritative: authoritative)
+    /// Les Miffs de la personne sont connues : un NOUVEAU téléphone lit mon alerte de chaque Miff UNE fois (1 lecture par Miff) et adopte une alerte en
+    /// cours. Une liste ne termine JAMAIS une alerte : une Miff dont la lecture échoue manque dans la liste sans être perdue.
+    func onMiffsKnown(_ miffIds: [String]) async {
         await controller.adoptFromServer(miffIds: miffIds)
     }
 
@@ -162,7 +161,8 @@ final class DangerAlertViewModel: ObservableObject {
             call = Self.emergencyOnly(region: region(), loading: false, unavailable: false)
             return
         }
-        if callMiffId == miffId, !call.loading {
+        // Une lecture des proches qui a échoué est refaite à la réouverture de l'écran pour la même Miff.
+        if callMiffId == miffId, !call.loading, !call.contactsUnavailable {
             return
         }
         callMiffId = miffId
@@ -182,9 +182,11 @@ final class DangerAlertViewModel: ObservableObject {
         let list = AlertCallList.build(members: read ?? [], myUid: myUid() ?? "", region: region())
         // Un choix déjà fait par la personne n'est jamais remplacé par ce qui arrive ensuite.
         let kept = list.targets.first { chosen && $0.id == call.selected.id }
-        call = DangerCallState(
+        let next = DangerCallState(
             list: list, selected: kept ?? list.preselected, contactsUnavailable: read == nil, loading: false
         )
+        // L'arrivée des proches remplace 112 (présélectionné faute de mieux) par le créateur : l'écran l'annonce poliment (VoiceOver), jamais en silence.
+        call = next
     }
 
     /// Une ligne de la liste a été choisie (gardée tant que la même alerte continue).
@@ -193,11 +195,20 @@ final class DangerAlertViewModel: ObservableObject {
             return
         }
         chosen = true
+        // La même ligne ne change RIEN et n'ÉMET rien : un nouvel état pour le même choix relançait l'effet de l'écran de la limite sans fin.
+        if call.selected.id == target.id {
+            return
+        }
         call.selected = target
     }
 
     /// « Appeler les secours » : le numéro d'urgence (112 là où il existe) est choisi.
     func selectEmergency() {
+        // Déjà sur un service d'urgence (112 dès le départ, ou celui que la personne a choisi) : rien à émettre, et ce choix n'est plus jamais remplacé.
+        if case .emergency = call.selected {
+            chosen = true
+            return
+        }
         let entry = call.list.emergency.first { $0.number == "112" } ?? call.list.emergency[0]
         select(.emergency(entry))
     }

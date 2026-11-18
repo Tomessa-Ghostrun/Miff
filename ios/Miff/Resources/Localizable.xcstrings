@@ -21525,13 +21525,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You've reached the limit of 3 alerts a day; it frees up in a few hours. If you're in danger, call the emergency services directly."
+            "value": "You've reached the limit of 3 alerts a day. If you're in danger, call the emergency services directly."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu as atteint la limite de 3 alertes par jour ; elle se libère dans quelques heures. Si tu es en danger, appelle directement les secours."
+            "value": "Tu as atteint la limite de 3 alertes par jour. Si tu es en danger, appelle directement les secours."
           }
         }
       }
@@ -21644,13 +21644,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "It couldn't go for a while."
+            "value": "It's been a while since it was meant to go: things may have changed."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Elle n'a pas pu partir depuis un moment."
+            "value": "Cela fait un moment qu'elle n'est pas partie : la situation a peut-être changé."
           }
         }
       }
@@ -22341,13 +22341,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Decide"
+            "value": "Choose"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Décider"
+            "value": "Choisir"
           }
         }
       }

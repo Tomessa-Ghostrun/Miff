@@ -1,6 +1,7 @@
 // Quelques lignes appellent des fabriques à nombreux paramètres : elles dépassent la limite.
 // swiftlint:disable line_length
 #if ALERT_DANGER
+import Combine
 import XCTest
 @testable import Miff
 
@@ -115,6 +116,79 @@ final class DangerAlertViewModelTests: XCTestCase {
         XCTAssertEqual(model.dialURL(for: model.call.selected)?.absoluteString, "tel:+33611111111")
         let bad = AlertContact(uid: "x", name: "Bad", phone: "0612345678;rm")
         XCTAssertNil(model.dialURL(for: .person(bad)))
+    }
+
+    // MARK: - Aucune boucle de rendu, une lecture refaite, un nom blanc (revue de l'Android, v2 et v3)
+
+    func testSelectingTheSameLineEmitsNothingAndAnEmergencyAlreadyChosenIsNeverReplaced() async {
+        let model = makeModel([member("c", "Claire", role: .owner), member("me", "Moi")])
+        model.loadCallList(miffId: miffA)
+        await eventually { !model.call.loading }
+        model.selectEmergency()
+        XCTAssertEqual(model.call.selected.number, "112")
+        var emissions = 0
+        let subscription = model.$call.dropFirst().sink { _ in emissions += 1 }
+
+        model.selectEmergency()
+        model.selectEmergency()
+        model.select(model.call.selected)
+
+        XCTAssertEqual(emissions, 0, "l'écran de la limite relançait son effet sans fin quand un nouvel état était émis pour le même choix")
+        model.select(.emergency(EmergencyNumber(label: .police, number: "17")))
+        XCTAssertEqual(emissions, 1)
+        model.selectEmergency()
+        XCTAssertEqual(model.call.selected.number, "17", "un numéro d'urgence déjà choisi n'est jamais remplacé")
+        XCTAssertEqual(emissions, 1)
+        subscription.cancel()
+    }
+
+    func testTheLimitScreenStaysOnTheEmergencyServicesEvenWhenThePeopleArriveAfterwards() async {
+        let model = makeModel([member("c", "Claire", role: .owner), member("me", "Moi")])
+        model.loadCallList(miffId: miffA)
+        XCTAssertTrue(model.call.loading)
+
+        model.selectEmergency()
+        await eventually { !model.call.loading }
+
+        XCTAssertEqual(model.call.selected.number, "112", "les secours étaient déjà le choix : l'arrivée du créateur ne le remplace pas")
+    }
+
+    func testAFailedReadOfThePeopleIsReadAgainWhenTheScreenOpensAgainForTheSameMiff() async {
+        let reader = FakeMembersReader(nil)
+        let controller = DangerAlertController(
+            store: store, device: FakeActiveDevice(), network: FakeDangerNetwork(), local: local,
+            currentUid: { "me" }, sleep: { _ in await Task.yield() }
+        )
+        let model = DangerAlertViewModel(
+            controller: controller, local: local, members: reader,
+            myUid: { "me" }, region: { "FR" }, signal: signal
+        )
+        model.loadCallList(miffId: miffA)
+        await eventually { !model.call.loading }
+        XCTAssertTrue(model.call.contactsUnavailable)
+
+        reader.members = [member("c", "Claire", role: .owner), member("me", "Moi")]
+        model.loadCallList(miffId: miffA)
+        await eventually { !model.call.loading }
+
+        XCTAssertEqual(reader.reads, 2)
+        XCTAssertFalse(model.call.contactsUnavailable)
+        XCTAssertEqual(model.call.list.people.map { $0.name }, ["Claire"])
+        model.loadCallList(miffId: miffA)
+        XCTAssertEqual(reader.reads, 2, "une lecture réussie n'est pas refaite")
+    }
+
+    func testABlankMiffNameIsNoNameAndTheSentencesFallBackToYourMiff() {
+        XCTAssertNil(dangerNamed(nil))
+        XCTAssertNil(dangerNamed(""))
+        XCTAssertNil(dangerNamed("   \n"))
+        XCTAssertEqual(dangerNamed("  Famille "), "Famille")
+        let model = makeModel([])
+        model.miffNames = [miffA: "   "]
+
+        model.controller.onEvent?(.ended(miffId: miffA))
+
+        XCTAssertEqual(model.notice, L10n.string("alert_ended_notice_no_name"))
     }
 
     // MARK: - La bulle bleue

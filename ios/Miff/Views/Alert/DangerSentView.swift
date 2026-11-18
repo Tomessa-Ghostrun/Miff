@@ -1,5 +1,6 @@
 #if ALERT_DANGER
 import SwiftUI
+import UIKit
 
 // L'écran « Tes proches de la Miff {nom} viennent d'être avertis » (maquettes 03 et 06, docs/tickets/alerte-danger.md 7.3 et 8 ; miroir d'`AlertSentScreen.kt`
 // d'Android) : là où la personne arrive à 5 secondes. Une tache rose avec la phrase, la liste de qui appeler (les proches de CETTE Miff, puis les services
@@ -189,6 +190,10 @@ struct DangerSentView: View {
             .contentShape(Rectangle())
         }
         .accessibilityLabel(Text(verbatim: L10n.string("alert_picker_a11y") + ", " + targetText(call.selected)))
+        // Un changement du choix (le créateur remplace 112 quand les proches arrivent) est annoncé poliment, jamais en silence.
+        .onChange(of: call.selected) { next in
+            UIAccessibility.post(notification: .announcement, argument: targetText(next))
+        }
     }
 
     private var callButton: some View {

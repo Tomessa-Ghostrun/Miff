@@ -9,6 +9,12 @@ import Foundation
 extension FirestoreMiffRepository {
     func cleanUpLost(uid: String, lost: LostMiff) async -> Bool {
         let store = self.store
+        // L'appelant (l'annuaire) ne demande ce nettoyage qu'une fois la perte CONFIRMÉE par le serveur : retiré par le créateur, ou Miff supprimée par un autre
+        // membre. Mon alerte de cette Miff est partie avec elle (le lot ci-dessous, ou la fiche déjà disparue, quelle que soit l'issue du nettoyage) : le contrôleur
+        // est prévenu EN PREMIER, pour que la bannière parte et qu'une nouvelle alerte soit possible ailleurs, même si le nettoyage échoue ou ne retire que l'index.
+        if rules.alertsEnabled {
+            rules.onAlertGone(lost.ref.miffId)
+        }
         // Le nettoyage demande le serveur : sans lui rien n'est touché (le prochain démarrage le fera).
         let leaveWrites = MiffWrites.leave(
             miffId: lost.ref.miffId, uid: uid, membershipKey: lost.ref.key, withAlert: rules.alertsEnabled
@@ -20,9 +26,6 @@ extension FirestoreMiffRepository {
             leave = await write { try await store.commit(plain) }
         }
         if leave == .done {
-            if rules.alertsEnabled {
-                rules.onAlertGone(lost.ref.miffId)
-            }
             rules.onSharingChanged()
             return true
         }
@@ -150,6 +153,10 @@ extension FirestoreMiffRepository {
         }
         if case .failed(let failure) = result, failure.mayHaveLanded {
             if await leftAfterLostAnswer(uid: uid, miffId: miffId) {
+                // Le lot est bien parti alors que sa réponse s'est perdue : l'alerte de cette Miff est partie avec lui.
+                if rules.alertsEnabled {
+                    rules.onAlertGone(miffId)
+                }
                 rules.onSharingChanged()
                 return .done
             }

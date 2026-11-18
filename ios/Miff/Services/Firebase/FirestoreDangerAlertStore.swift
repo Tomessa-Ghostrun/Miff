@@ -175,7 +175,10 @@ final class FirestoreDangerAlertStore: DangerAlertStore {
             let snapshot = try await firestore().collection("miffs").document(miffId)
                 .collection("alerts").document(uid).getDocument(source: .server)
             return .value(snapshot.exists ? Self.parse(snapshot) : nil)
-        } catch {
+        } catch let error as NSError {
+            if error.domain == FirestoreErrorNumber.domain, error.code == FirestoreErrorNumber.permissionDenied {
+                return .denied
+            }
             return .unavailable
         }
     }
