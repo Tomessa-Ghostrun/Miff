@@ -78,6 +78,14 @@ class FakePosition(
     var ageMillis = 0L
     var reads = 0
 
+    /** How many of the [reads] asked for a position of "now" (a pull to refresh, FEED-REFRESH-POSITION). */
+    var freshReads = 0
+
+    override suspend fun currentFresh(): Fix? {
+        freshReads++
+        return current()
+    }
+
     override suspend fun current(): Fix? {
         reads++
         if (hangs) kotlinx.coroutines.awaitCancellation()

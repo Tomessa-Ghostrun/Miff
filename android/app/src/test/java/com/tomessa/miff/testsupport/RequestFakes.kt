@@ -169,7 +169,7 @@ class FakePlaceRequestStore : PlaceRequestStore {
 /** The repository of the requests for the view models: what each call answers, and every call it received. */
 class FakePlaceRequestRepository : PlaceRequestRepository {
     var context: RequestContextLoad =
-        RequestContextLoad.Loaded(RequestContext("Famille", premium = false, mine = emptyList()))
+        RequestContextLoad.Loaded(RequestContext("Famille", mine = emptyList()))
     var submitResult: RequestSubmitResult = RequestSubmitResult.Done(testRequest())
     var withdrawResult: RequestWithdrawResult = RequestWithdrawResult.Done
     var mineResult: MineRead = MineRead.Loaded(emptyList())

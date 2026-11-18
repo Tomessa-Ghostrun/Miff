@@ -2,6 +2,8 @@
 
 **Source** : ticket `docs/tickets/demande-ajout-lieu.md` (décisions du PM D1 à D9 du 2026-11-11), règles `backend/firestore.rules` (point 13 de l'en-tête), modèle `backend/data-model.md` (section « Ce qui change : demande d'ajout d'un lieu », §2.14, §2.15, §8, §9, §11 point 31), tests `backend/rules-test-plan.md` §25.
 
+> **Mis à jour le 2026-11-17 (LIEU-DANGER-REQ, `docs/tickets/lieu-danger-demande-gratuite.md`)** : la zone de danger se DEMANDE sans Miff+ ; la décision D5 et les lignes concernées ci-dessous sont remplacées par ce ticket. Accepter et déclarer directement restent réservés au créateur Miff+.
+
 **État : règles NON DÉPLOYÉES.** Tant que le PM ne les a pas déployées (procédure `docs/dev/deploiement-regles.md`, « oui » explicite), la production **refuse** ces écritures (`permission-denied`) : les clients se développent et se testent contre l'émulateur, la recette sur appareil ne commence qu'après le déploiement. **Cette PR ne touche ni `android/`, ni `ios/`, ni `web/`, ni `docs/legal/`.**
 
 ## 1. Chemins
@@ -18,7 +20,7 @@
 | `requestedBy` | string = mon uid | |
 | `name` | string 1 à 60 | |
 | `category` | `"home"`, `"work"`, `"school"`, `"sport"`, `"relative"`, `"leisure"`, `"other"` | **Obligatoire**, la même liste fermée qu'un lieu (R-LIEU-2) : le formulaire de demande est celui de la création, qui la demande déjà. Copiée dans le lieu à l'acceptation. |
-| `type` | `"trusted"` ou `"risk"` | `risk` seulement si **le demandeur** est Miff+ (le client ne propose l'option que dans ce cas ; sinon paywall, comme la création d'un lieu). |
+| `type` | `"trusted"` ou `"risk"` | `risk` **demandable par tout membre, Miff+ ou non** (LIEU-DANGER-REQ) : aucun cadenas ni paywall dans le formulaire de demande. L'acceptation exige le Miff+ du **créateur** (§2.3). |
 | `address` | string ≤ 200 ou `null` | Sensible. Le client la rend obligatoire comme pour un lieu. |
 | `lat`, `lng` | nombres (5 décimales) | Sensible. |
 | `radiusM` | **entier** 50 à 2000 | Mêmes valeurs que la création d'un lieu (50 à 800 par pas de 50, défaut 100). |
@@ -110,7 +112,7 @@ Cache local : les demandes (adresse, coordonnées) sont stockées dans le cache 
 |---|---|---|
 | Création d'une demande refusée alors que le client a vérifié la limite de 3 | Course entre deux appareils : l'emplacement vient d'être pris | Relire les demandes, afficher `place_request_limit_member` ou recommencer avec l'emplacement libre. |
 | Création refusée, tous emplacements libres | **Plafond de 10 de la Miff atteint** (ou compteur dérivé trop haut) | `place_request_limit_miff`. Ne pas réessayer en boucle. |
-| Création refusée, type `risk` | Demandeur non Miff+ (abonnement expiré entre-temps) | Retomber sur le paywall / proposer « zone de confiance ». |
+| Création refusée, type `risk` | **Cas disparu** (LIEU-DANGER-REQ) : le type `risk` n'est plus lié à l'abonnement du demandeur | Traiter comme les autres causes (plafonds, accès perdu, générique). |
 | Création / retrait refusé hors connexion (écriture différée) | Règle évaluée à la reconnexion | La carte « En attente » disparaît sans message (ticket R10) ; relire. |
 | Création refusée : membre retiré, Miff supprimée | Plus d'accès | Message neutre habituel de perte d'accès (data-model §8 « Perte d'accès »). |
 | Accepter refusé | Règle de lieu (limite gratuite, zone de danger sans Miff+) | Paywall ; la demande reste. |

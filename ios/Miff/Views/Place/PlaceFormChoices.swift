@@ -20,6 +20,7 @@ struct PlaceRadiusSection: View {
                 radiusM: state.radiusM,
                 isDanger: state.type == .risk,
                 emoji: state.category?.emoji,
+                isZoomable: true,
                 height: 176
             )
             HStack(spacing: Spacing.md) {

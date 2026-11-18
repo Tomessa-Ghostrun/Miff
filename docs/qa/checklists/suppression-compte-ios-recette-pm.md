@@ -27,7 +27,7 @@
 
 ## Un seul chemin (décision du PM du 2026-11-07), y compris sans Miff
 
-**« Supprimer mon compte » n'existe que dans Réglages > Mon compte.** Un compte **sans Miff** y accède par des **Réglages restreints** (même décision, option 1 : elle révise la décision « ni barre ni Réglages sans Miff ») : une **roue crantée « Réglages » en haut à droite** (même disque blanc que dans le Profil) sur « Choisis comment tu veux commencer » et sur « Pas encore de Miff » ouvre une liste réduite à **Mon compte** et **Confidentialité** (ni Mes informations ni Langue, toujours pas de barre d'onglets). Le cas « compte sans Miff » (ligne de position absente, texte « Ton profil, ta photo… » seul) se teste donc avec le compte **E0** de la partie A bis.
+**« Supprimer mon compte » n'existe que dans Réglages > Mon compte.** Un compte **sans Miff** y accède par des **Réglages restreints** (même décision, option 1 : elle révise la décision « ni barre ni Réglages sans Miff ») : une **roue crantée « Réglages » en haut à droite** (même disque blanc que dans le Profil) sur « Choisis comment tu veux commencer » et sur « Pas encore de Miff » ouvre une liste réduite à **Mon compte**, **Confidentialité** et **À propos et aide** (ni Mes informations ni Langue, toujours pas de barre d'onglets). Le cas « compte sans Miff » (ligne de position absente, texte « Ton profil, ta photo… » seul) se teste donc avec le compte **E0** de la partie A bis.
 
 ## Partie A : l'entrée et l'écran d'information (8 min), compte E1 (une Miff créée, seul dedans)
 
@@ -42,8 +42,8 @@
 ## Partie A bis : Réglages restreints d'un compte sans Miff (8 min), compte E0 (jamais de Miff)
 
 - [ ] **RS1** Créez E0 (inscription e-mail, profil, numéro) et **ne créez ni ne rejoignez de Miff**. Sur « Choisis comment tu veux commencer », une **roue crantée en haut à droite** (même disque blanc que dans le Profil). **Pas** de « Supprimer mon compte » à cet endroit.
-- [ ] **RS2** Touchez-le : la liste des Réglages ne montre que **Mon compte** et **Confidentialité** (pas de Mes informations, pas de Langue). **Pas de barre d'onglets.** La flèche de retour (ou le geste depuis le bord) ramène à « Choisis comment tu veux commencer ».
-- [ ] **RS3** Mon compte : l'e-mail, le mot de passe, « Se déconnecter » et, dessous, le lien rouge **« Supprimer mon compte »**. Confidentialité : les textes légaux, les autorisations, le contact.
+- [ ] **RS2** Touchez-le : la liste des Réglages ne montre que **Mon compte**, **Confidentialité** et **À propos et aide** (pas de Mes informations, pas de Langue). **Pas de barre d'onglets.** La flèche de retour (ou le geste depuis le bord) ramène à « Choisis comment tu veux commencer ».
+- [ ] **RS3** Mon compte : l'e-mail, le mot de passe, « Se déconnecter » et, dessous, le lien rouge **« Supprimer mon compte »**. Confidentialité : les textes légaux, les autorisations (« Nous contacter » est dans « À propos et aide »).
 - [ ] **RS4** Mon compte > Supprimer mon compte : l'écran d'information **sans** ligne de position ni liste de Miffs (« Ton profil, ta photo et ton numéro de téléphone seront supprimés. »). **Annuler** : retour à Mon compte, rien n'a changé.
 - [ ] **RS5** Avec VoiceOver : la roue est lue « Réglages, bouton » ; sa zone de toucher fait au moins 44 pt ; avec la plus grande taille de texte, rien n'est coupé.
 - [ ] **RS6** Créez ensuite une Miff avec E0 : la roue n'est plus proposée (la barre d'onglets et le Profil prennent le relais) et la liste des Réglages montre les quatre lignes. Quittez la Miff (ou supprimez-la) : « Pas encore de Miff » revient avec la roue.

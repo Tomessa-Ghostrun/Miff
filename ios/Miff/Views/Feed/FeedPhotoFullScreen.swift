@@ -1,7 +1,9 @@
 import SwiftUI
 import UIKit
 
-// La photo en plein écran (maquette 09, ticket §5.7, décision D24 du PM) : fond noir, la photo COMPLÈTE (jamais recadrée), « Photo de {Prénom} ·
+// La photo en plein écran (maquette 09, ticket §5.7, décision D24 du PM, puis exigence ferme du PM : AUCUNE MARGE VISIBLE, quel que soit la photo et l'appareil) : fond noir
+// derrière une photo qui REMPLIT tout l'écran (`scaledToFill`, recadrage centré quand son rapport diffère de celui de l'écran, dessinée sous la barre d'état et sous
+// l'indicateur d'accueil), « Photo de {Prénom} ·
 // {heure} », le bouton de fermeture, le zoom au pincement (1x à 4x) et au double toucher, et « Voir où c'était » (le lieu de la photo, donné à Plans,
 // COORDONNÉES SEULES, sans nom) avec l'heure PROPRE à la mesure du lieu. Fermeture : le bouton, le geste d'échappement de VoiceOver, ou un glissement
 // vers le bas (iOS ne le donne pas à un plein écran : il est refait ici).
@@ -9,6 +11,10 @@ import UIKit
 // CONFIDENTIALITÉ : la photo et son lieu ne sont que dans la mémoire de l'écran, jamais un fichier de l'app, un journal ou un événement ; la SEULE
 // écriture dans Photos est celle du toucher de l'icône (ajout seul, sans lieu, `PhotosLibrarySaver`) ; l'écran est masqué dans la vignette du
 // sélecteur d'applications (`hidesInAppSwitcher`) comme le reste du Feed. Rien n'est conservé à la fermeture.
+// La DESCRIPTION facultative de l'auteur (ticket description-update) est dans le pied, AU-DESSUS de « Photo de … » : du texte BRUT (`Text(verbatim:)` :
+// aucun Markdown, aucun lien, aucune détection de numéro ou d'adresse, aucune sélection ni copie), dans le style du GRAND TITRE (gras 20, Dynamic Type ;
+// « Photo de … » passe alors au corps 16 normal, retour du PM), jamais tronquée ; le pied reste borné à 45 % de la hauteur et défile au-delà (la hauteur de la description est ESTIMÉE par `PhotoFullScreenLayout.descriptionHeight` : aucune
+// mesure de vue ici, comme pour le reste du pied). Elle ne va jamais ailleurs qu'à l'écran : « Enregistrer cette photo » n'enregistre que l'image.
 
 struct PhotoFullScreen: View {
     let opened: OpenedPhoto
@@ -29,6 +35,12 @@ struct PhotoFullScreen: View {
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     /// La hauteur du contenu de la légende (sans la zone sûre), qui grandit avec la taille du texte : elle décide si la légende défile.
     @ScaledMetric(relativeTo: .body) private var footerEstimate: CGFloat = PhotoFullScreenLayout.footerEstimate
+    /// La même hauteur quand il y a une description (« Photo de … » est alors au corps 16, plus petit).
+    @ScaledMetric(relativeTo: .body)
+    private var describedFooterEstimate: CGFloat = PhotoFullScreenLayout.footerEstimateWithDescription
+    /// Le corps et l'interligne de la description (20 et 26 pt, jeton `textTitleBold20`, style `title3`), qui grandissent avec la taille du texte.
+    @ScaledMetric(relativeTo: .title3) private var authorTextSize: CGFloat = 20
+    @ScaledMetric(relativeTo: .title3) private var authorLineHeight: CGFloat = 26
 
     private static let maxZoom: CGFloat = 4
     private static let doubleTapZoom: CGFloat = 2
@@ -44,7 +56,7 @@ struct PhotoFullScreen: View {
         // marges (encoche, barre d'accueil). Posé sous `.ignoresSafeArea()`, il les rendait toutes à ZÉRO (cause trouvée sur les captures de la CI :
         // la croix passait sous l'heure, le bouton sous la barre d'accueil). C'est le CONTENU, dans le lecteur, qui est étendu à l'écran ENTIER :
         // `size` est l'écran entier (zone visible + zones sûres). Pas de GeometryReader imbriqué, pas de Spacer vertical, pas de hauteur imposée :
-        // la photo est CENTRÉE dans l'écran, la croix et l'icône sont une surimpression collée en haut, la légende une surimpression collée en bas.
+        // la photo REMPLIT l'écran (centrée, recadrée au besoin), la croix et l'icône sont une surimpression collée en haut, la légende une surimpression collée en bas.
         // MARGES (retour du PM, TestFlight 32 : sur un vrai appareil le `fullScreenCover` peut annoncer des zones sûres NULLES) : on lit aussi celles
         // de la fenêtre (`PhotoSafeArea`), puis des PLANCHERS les rattrapent (haut : au moins 47 pt + 12 pt ; bas : au moins 34 pt + 16 pt), en portrait.
         GeometryReader { proxy in
@@ -67,6 +79,9 @@ struct PhotoFullScreen: View {
             }
             .frame(width: size.width, height: size.height)
             .overlay(alignment: .top) {
+                topScrim(height: insets.top)
+            }
+            .overlay(alignment: .top) {
                 topBar(insets: insets)
             }
             .overlay(alignment: .bottom) {
@@ -77,6 +92,18 @@ struct PhotoFullScreen: View {
         .preferredColorScheme(.dark)
         .accessibilityAction(.escape, onDismiss)
         .hidesInAppSwitcher()
+    }
+
+    /// Un voile léger sous la barre d'état et les boutons : la photo passe maintenant SOUS la barre d'état (aucune bande noire), l'heure et la batterie
+    /// (en clair) restent lisibles même sur une photo très claire. Le voile est le jeton du design system, s'efface vers le bas, ne reçoit aucun
+    /// toucher et n'existe pas pour VoiceOver.
+    private func topScrim(height: CGFloat) -> some View {
+        let scrim = colorPhotoCaptionScrim.color
+        let colors = [scrim.opacity(PhotoFullScreenLayout.topScrimOpacity), scrim.opacity(0)]
+        return LinearGradient(colors: colors, startPoint: .top, endPoint: .bottom)
+        .frame(height: height)
+        .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 
     /// La croix (gauche) et l'icône « Enregistrer cette photo » (droite), face à face, SOUS la zone sûre du haut ; lues en premier par VoiceOver.
@@ -93,14 +120,15 @@ struct PhotoFullScreen: View {
         .accessibilitySortPriority(1)
     }
 
-    // MARK: - La photo complète, zoomable
+    // MARK: - La photo qui remplit tout l'écran, zoomable
 
-    /// La photo `scaledToFit` (entière, jamais recadrée, agrandie proprement par l'interpolation par défaut) dans un cadre de la taille de l'ÉCRAN
-    /// ENTIER : elle est CENTRÉE (verticalement aussi) et ne dépasse jamais l'écran.
+    /// La photo `scaledToFill` (aucune marge : elle touche les quatre bords, recadrée au centre quand son rapport diffère de celui de l'écran) dans un
+    /// cadre de la taille de l'ÉCRAN ENTIER, zones sûres comprises ; ce qui dépasse est coupé (`clipped`). Le zoom (1x = le remplissage, jamais moins)
+    /// et le déplacement (borné par `PhotoPan`, calculé sur la taille remplie) n'en font jamais apparaître un bord.
     private func photo(size: CGSize) -> some View {
         Image(uiImage: opened.image)
             .resizable()
-            .scaledToFit()
+            .scaledToFill()
             .scaleEffect(zoom)
             .offset(offset)
             .frame(width: size.width, height: size.height)
@@ -211,8 +239,16 @@ struct PhotoFullScreen: View {
     private func footerOverlay(size: CGSize, insets: EdgeInsets) -> some View {
         let scrim = (reduceTransparency ? colorPhotoCaptionScrim.withAlpha(1) : colorPhotoCaptionScrim).color
         let cap = PhotoFullScreenLayout.footerMaxHeight(screenHeight: size.height)
+        // Sans description, `descriptionExtra` vaut 0 : l'estimation d'avant, inchangée.
+        let hasDescription = opened.photo.descriptionText != nil
+        let descriptionExtra = PhotoFullScreenLayout.descriptionHeight(
+            unitCount: opened.photo.descriptionText?.utf16.count ?? 0, fontSize: authorTextSize,
+            lineHeight: authorLineHeight, width: size.width - 2 * Spacing.md - insets.leading - insets.trailing
+        )
         let scrolls = PhotoFullScreenLayout.footerScrolls(
-            estimate: footerEstimate + insets.bottom + PhotoFullScreenLayout.fadeHeight, screenHeight: size.height
+            estimate: (hasDescription ? describedFooterEstimate : footerEstimate) + insets.bottom + descriptionExtra
+                + PhotoFullScreenLayout.fadeHeight,
+            screenHeight: size.height
         )
         return VStack(spacing: 0) {
             LinearGradient(colors: [scrim.opacity(0), scrim], startPoint: .top, endPoint: .bottom)
@@ -232,15 +268,26 @@ struct PhotoFullScreen: View {
         }
     }
 
+    /// Le pied, de haut en bas : la DESCRIPTION (s'il y en a une), « Photo de … », puis le lieu. L'ordre est celui de `PhotoFullScreenLayout.footerRows`.
     private func footer(insets: EdgeInsets) -> some View {
-        VStack(alignment: .leading, spacing: PhotoFullScreenLayout.captionSpacing) {
-            Text(verbatim: title)
-                .miffTextStyle(textTitleBold20)
-                .foregroundColor(colorUpdateOnPhoto.color)
-                .fixedSize(horizontal: false, vertical: true)
-                .accessibilityAddTraits(.isHeader)
-            if let place = opened.photo.place {
-                placeSection(place)
+        let hasDescription = opened.photo.descriptionText != nil
+        let rows = PhotoFullScreenLayout.footerRows(hasDescription: hasDescription, hasPlace: opened.photo.place != nil)
+        return VStack(alignment: .leading, spacing: PhotoFullScreenLayout.captionSpacing) {
+            ForEach(rows, id: \.self) { row in
+                switch row {
+                case .description:
+                    writtenDescriptionRow
+                case .title:
+                    Text(verbatim: title)
+                        .miffTextStyle(style(for: PhotoFullScreenLayout.titleLevel(hasDescription: hasDescription)))
+                        .foregroundColor(colorUpdateOnPhoto.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .accessibilityAddTraits(.isHeader)
+                case .place:
+                    if let place = opened.photo.place {
+                        placeSection(place)
+                    }
+                }
             }
         }
         .padding(.horizontal, Spacing.md)
@@ -249,6 +296,27 @@ struct PhotoFullScreen: View {
         .padding(.top, PhotoFullScreenLayout.captionTopPadding)
         .padding(.bottom, insets.bottom)
         .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// Le jeton de police d'un niveau du pied : grand titre (gras 20) ou texte courant (16).
+    private func style(for level: PhotoFooterTextLevel) -> TextStyleToken {
+        level == .heading ? textTitleBold20 : textBodyRegular
+    }
+
+    /// La description de l'auteur : texte BRUT, grand titre (gras 20), entière (jamais de « … »), lue par VoiceOver AVANT le titre et précédée de
+    /// « Description : ».
+    @ViewBuilder
+    private var writtenDescriptionRow: some View {
+        if let description = opened.photo.descriptionText {
+            Text(verbatim: description)
+                .miffTextStyle(style(for: PhotoFullScreenLayout.descriptionLevel))
+                .foregroundColor(colorUpdateOnPhoto.color)
+                .multilineTextAlignment(.leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.bottom, PhotoFullScreenLayout.captionSpacing)
+                .accessibilityLabel(Text(verbatim: L10n.format("update_description_shown_a11y", description)))
+        }
     }
 
     @ViewBuilder

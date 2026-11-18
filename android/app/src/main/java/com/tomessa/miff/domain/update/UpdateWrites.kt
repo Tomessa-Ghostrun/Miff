@@ -15,6 +15,9 @@ import java.util.Date
  *   It is written with `set` (never a partial update): the new photo REPLACES the old one, so no coordinate of a previous photo survives.
  * - `createdAt` is the SERVER time (the rules demand it), `expiresAt` is the clock of the phone + 23 h (the rules tolerate 25 h: two hours of margin for a
  *   phone whose clock is ahead).
+ * - The optional DESCRIPTION (ticket description-update): the key `description` is written ONLY when the cleaned text is not empty (1 to 140 UTF-16 units, see
+ *   [PhotoDescription]), and is ABSENT otherwise: never `null`, never an empty text (the rules refuse both). The same text goes in every Miff of the lot. A new photo
+ *   without description REPLACES the old document, so it never inherits the old text. It is not in the status, not in any other document.
  * - The STATUS is the one of [TrackingWrites.photoStatus] (the only place that writes it, with `deviceId`): it carries NO coordinate.
  * - No coordinate, no photo and no name is ever in a log, an event or a crash report: [DocWrite.toString] shows only the kind.
  */
@@ -29,20 +32,21 @@ object UpdateWrites {
         photo: UpdatePhoto,
         place: PhotoPlace,
         nowMillis: Long,
+        /** What the person wrote under the preview (any text: it is cleaned here, and left out when nothing is left). */
+        description: String? = null,
     ): DocWrite {
         require(photo.jpeg.isNotEmpty() && photo.jpeg.size <= UpdatePhotoFormat.MAX_BYTES) { "photo size" }
-        return DocWrite(
-            "miffs/$miffId/photos/$uid",
-            WriteKind.SET,
-            mapOf(
+        val fields =
+            mutableMapOf<String, Any?>(
                 "jpeg" to Blob.fromBytes(photo.jpeg),
                 "createdAt" to FieldValue.serverTimestamp(),
                 "expiresAt" to Timestamp(Date(nowMillis + PHOTO_LIFETIME_MILLIS)),
                 "lat" to place.lat,
                 "lng" to place.lng,
                 "measuredAt" to Timestamp(Date(place.measuredAtMillis)),
-            ),
-        )
+            )
+        description?.let(PhotoDescription::normalize)?.let { fields["description"] = it }
+        return DocWrite("miffs/$miffId/photos/$uid", WriteKind.SET, fields)
     }
 
     /** What publishing writes in ONE Miff: the photo AND the status, in the same lot (a status that says `hasPhoto` without a photo never exists). */
@@ -54,9 +58,10 @@ object UpdateWrites {
         nowMillis: Long,
         batteryPct: Int?,
         deviceId: String,
+        description: String? = null,
     ): List<DocWrite> =
         listOf(
-            photo(miffId, uid, photo, place, nowMillis),
+            photo(miffId, uid, photo, place, nowMillis, description),
             TrackingWrites.photoStatus(
                 miffId,
                 uid,
