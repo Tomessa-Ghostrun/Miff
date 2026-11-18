@@ -17,7 +17,7 @@ Un seul fichier décrit les langues de Miff. Aujourd'hui : `fr` (langue source),
 | `languages[].platforms.android` | `status` (`planned` ou `required`) et `resDir` (dossier de ressources : `values-fr`, `values` pour l'anglais de repli, `values-es`...) |
 | `languages[].platforms.ios` | `status` et `code` (code de langue du String Catalog et du dossier `.lproj`) |
 | `languages[].plurals` | `required` (formes obligatoires : `one`, `other`), `allowed` (formes que la langue connaît), `recommended` (signalées en avertissement si absentes) |
-| `languages[].style` | `spaceBeforeHighPunctuation` (`nbsp` en français, `none` ailleurs), `forbidGenderMarks`, `formalForms` (vouvoiement), `forbiddenTerms` (termes proscrits, fournis par le glossaire du lot 2) |
+| `languages[].style` | `spaceBeforeHighPunctuation` (`nbsp` en français, `none` ailleurs), `forbidGenderMarks`, `formalForms` (vouvoiement), `forbiddenTerms` (termes proscrits, listes du glossaire `docs/i18n/glossaire.md` §4) |
 | `brandTerms`, `nbspRequiredKeyPatterns`, `shortLabelKeyPatterns`, `lengthRatio`, `lengthBudgets` | Réglages des contrôles (voir §3) |
 | `exceptions` | Faux positifs documentés (voir §6) |
 | `consistency.sources` | Les endroits du dépôt qui déclarent les langues (voir §4) |
@@ -59,7 +59,7 @@ Sur Android (`values-xx/strings.xml`, pluriels `<plurals>`) **et** iOS (`Localiz
 | `high-punctuation` | avertissement | Espace insécable avant `? ! : ;` dans une langue qui n'en met pas (toutes sauf `fr`) |
 | `gender-mark` | erreur | `(e)`, `(a)`, `o/a`, `@` inclusif, `*in`, `:in`, `/in`, `...Innen`. Actif si `style.forbidGenderMarks` (es, it, pt, de) ; les adresses e-mail ne comptent pas |
 | `formal-address` | erreur | Vouvoiement (`style.formalForms`) : es « usted(es) », « vosotros » ; it « Lei » ; pt « você(s) » ; de « Sie / Ihr / Ihre / Ihnen... » (heuristique, voir §6) |
-| `forbidden-term` | erreur | Terme de `style.forbiddenTerms` (ton alarmiste ou culpabilisant) ; **vide jusqu'au glossaire du lot 2** |
+| `forbidden-term` | erreur | Terme de `style.forbiddenTerms` (ton alarmiste ou culpabilisant) ; **vide dans le registre pour l'instant : à alimenter depuis `docs/i18n/glossaire.md` §4 au lot 4** |
 | `identical-to-source` | avertissement | Texte identique au français (marque `brandTerms`, valeurs insérées et chiffres exemptés) |
 | `length` | avertissement | Plus de 1,5 fois la longueur du français (`lengthRatio.maxVsSource`), le français étant compté pour au moins 10 caractères |
 | `short-label-budget` | avertissement | Clé d'« étiquette courte » (`shortLabelKeyPatterns`) au-dessus de son budget : `lengthBudgets[clé]` ou, par défaut, longueur du français + 40 % |
@@ -76,6 +76,7 @@ Le script vérifie que le registre et les endroits qui déclarent les langues di
 |---|---|---|
 | `android-enum` : `AppLanguage.kt` | déclaration | Exactement les langues `required` d'Android |
 | `android-locale-filters` : `localeFilters.addAll(...)` de `app/build.gradle.kts` | déclaration | Exactement les langues `required` d'Android |
+| `ios-enum` : `enum AppLanguageChoice` de `ios/Miff/Models/Main/AppLanguage.swift` (les `case x = "code"` ; `system` n'a pas de valeur brute) | déclaration | Exactement les langues `required` d'iOS |
 | `ios-bundle-localizations` : `CFBundleLocalizations` de `ios/project.yml` | déclaration | Exactement les langues `required` d'iOS |
 | `android-res-dirs` : dossiers `values-xx` contenant un `strings.xml` | ressources | Au moins les `required`, rien d'inconnu du registre |
 | `ios-catalog-languages` : langues du catalogue iOS | ressources | Au moins les `required`, rien d'inconnu du registre |
@@ -86,7 +87,9 @@ Le script vérifie que le registre et les endroits qui déclarent les langues di
 - Langue `planned` dont les **ressources** existent : normal (la traduction est en cours), aucun constat.
 - Fichier de source déclaré dans le registre mais introuvable : **erreur** (le fichier a été déplacé : mettre à jour le registre dans la même PR).
 
-L'énumération iOS des langues (`AppLanguageChoice`, PR #218) n'existe pas encore sur `main` : elle s'ajoute à `consistency.sources` au lot 3, quand les listes de Réglages > Langue sont construites depuis le registre (nouveau type de source à ajouter dans `extractSourceLanguages` du script si le format le demande).
+**Régions** : un tag avec région n'est jamais réduit à sa langue. `pt-BR`, `pt-rBR` et `pt_BR` donnent le code `pt-BR`, distinct de `pt` (portugais du Portugal, défaut du PM : un seul code `pt`). Un `pt-BR` trouvé dans une source est donc « inconnu du registre » (erreur) tant que le registre ne le liste pas ; un dossier `values-pt-rBR` aussi.
+
+**Non couvert** : les libellés des langues dans Réglages > Langue (`ios_settings_language_<nom>` côté iOS, noms non traduisibles côté Android) n'ont pas de nom de clé déductible du code de langue ; leur présence pour chaque langue `required` reste vérifiée par les tests de chaque plateforme (`LanguageScreen` / `LanguageView`, lot 3).
 
 ## 5. Utiliser le script
 
@@ -113,7 +116,16 @@ Les listes de vouvoiement, de marques de genre et de termes proscrits sont des *
 ]
 ```
 
-`check` prend un identifiant du §3 ; `platform` (`android` ou `ios`) est facultatif ; `key` est exacte, `keyPattern` est une expression régulière.
+`match` (facultatif) limite l'exception au texte exact trouvé par le contrôle (par exemple `"Sie"`) : le reste de la clé reste contrôlé. `check` prend un identifiant du §3 ; `platform` (`android` ou `ios`) est facultatif ; `key` est exacte, `keyPattern` est une expression régulière.
+
+**Faux positifs connus à traiter au lot 4** (relecture des constats de `planned` avant le passage en `required`) :
+
+| Langue | Cas | Traitement |
+|---|---|---|
+| de | « Sie » au début d'une phrase = « elle / elles » ; « Ihr » = « vous (pluriel) » ou « leur » | Exception par clé avec `match` ; si la phrase est vraiment une adresse de politesse, c'est une erreur de traduction |
+| it | « Lei » = « elle » (pronom de la 3e personne, hors adresse de politesse) | Exception par clé avec `match` |
+| es, it | « y/o », « e/o » = « et/ou » | Déjà exemptés (une lettre seule avant la barre ne vaut pas marque de genre) |
+| es, pt | Mot qui finit par « @ » ou adresse e-mail | Les adresses e-mail sont exemptées ; sinon exception par clé |
 
 ## 7. Passer une langue de `planned` à `required`
 
@@ -122,7 +134,7 @@ Les listes de vouvoiement, de marques de genre et de termes proscrits sont des *
 1. Vérifier en local : `node scripts/check-i18n-parity.mjs --lang <code> --verbose` ne signale **aucune** clé manquante ni aucune erreur pour la plateforme, et que les avertissements restants (longueur, identique au français, `many` recommandée) sont traités ou acceptés par écrit dans la PR.
 2. Dans `docs/contracts/i18n-languages.json`, changer `platforms.<plateforme>.status` de `planned` à `required`.
 3. Dans la même PR, déclarer la langue là où la cohérence l'exige (§4) : énumération des langues et `localeFilters` (Android), `CFBundleLocalizations` (iOS). Sinon le script échoue : c'est voulu.
-4. Alimenter `forbiddenTerms` de la langue avec la liste du glossaire (lot 2) **avant** le passage en `required`.
+4. Alimenter `forbiddenTerms` de la langue avec la liste du glossaire (`docs/i18n/glossaire.md` §4) **avant** le passage en `required`.
 5. Lancer les tests (`node --test "scripts/tests/check-i18n-*.test.mjs"`) : ils lisent le vrai dépôt.
 
 Revenir de `required` à `planned` (une langue qui échoue à la recette) est possible par la même voie, en retirant ses déclarations (§4) dans la même PR : la sortie publique peut se faire langue par langue.
@@ -132,7 +144,7 @@ Revenir de `required` à `planned` (une langue qui échoue à la recette) est po
 **Toute nouvelle clé de texte arrive dans toutes les langues `required`, dans la PR qui l'introduit.** Concrètement :
 
 - Aujourd'hui (`fr` et `en` seules `required`) : français et anglais, comme avant ; la CI n'impose rien pour les langues `planned`, mais affiche le décompte des clés manquantes.
-- **Dès que les quatre nouvelles langues sont `required`** : toute PR qui ajoute ou renomme une clé l'ajoute dans **les six langues** sur la ou les plateformes concernées (Android `values-xx/strings.xml`, iOS `Localizable.xcstrings`), en suivant le glossaire (`docs/i18n/glossaire.md`, lot 2 du ticket, à venir). Le job « Parité des clés de traduction » échoue sinon. Aucune clé n'est « traduite plus tard ».
+- **Dès que les quatre nouvelles langues sont `required`** : toute PR qui ajoute ou renomme une clé l'ajoute dans **les six langues** sur la ou les plateformes concernées (Android `values-xx/strings.xml`, iOS `Localizable.xcstrings`), en suivant le glossaire (`docs/i18n/glossaire.md` et `docs/i18n/guide-de-style.md`). Le job « Parité des clés de traduction » échoue sinon. Aucune clé n'est « traduite plus tard ».
 - Les textes communs aux deux plateformes sont traduits **une seule fois** puis copiés des deux côtés (même valeur, mêmes valeurs insérées) ; les clés `android_*` et `ios_*` sont traduites directement.
 
 Le contrat des clés (`docs/contracts/i18n-keys.md`) renvoie ici pour la marche à suivre.

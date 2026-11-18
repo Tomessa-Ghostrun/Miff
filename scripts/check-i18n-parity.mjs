@@ -179,7 +179,11 @@ const STATUSES = ['planned', 'required'];
 /** Registre des langues du dépôt, ou null s'il n'existe pas (mode historique : français seul, Android / iOS). */
 export function loadRegistry(root, registryPath) {
   const file = registryPath ? resolve(registryPath) : join(root, REGISTRY_PATH);
-  if (!existsSync(file)) return null;
+  if (!existsSync(file)) {
+    // Un registre demandé explicitement et introuvable est une erreur (jamais un « tout va bien » silencieux).
+    if (registryPath) throw new Error(`registre demandé introuvable : ${registryPath}`);
+    return null;
+  }
   let registry;
   try {
     registry = JSON.parse(readFileSync(file, 'utf8'));
@@ -263,6 +267,15 @@ export function languagesByStatus(registry, platform, status) {
 const ANDROID_LANGUAGE_DIR = /^values(?:-([a-z]{2,3}(?:-r[A-Z]{2})?))?$/;
 const ANDROID_NON_LANGUAGE_QUALIFIERS = new Set(['car', 'tv']);
 
+/**
+ * Code de langue d'un tag Android ou iOS, région comprise : `pt-BR`, `pt-rBR` et `pt_BR` donnent `pt-BR`, jamais `pt`. Le portugais du Portugal est
+ * le code `pt` du registre (défaut du PM) ; un `pt-BR` trouvé dans une source est donc « inconnu du registre » tant que le registre ne le liste pas.
+ */
+export function normalizeLanguageTag(tag) {
+  const [language, region] = tag.replace(/_/g, '-').replace(/-r(?=[A-Z])/, '-').split('-');
+  return region ? `${language.toLowerCase()}-${region.toUpperCase()}` : language.toLowerCase();
+}
+
 function extractSourceLanguages(source, root, registry) {
   const file = join(root, source.file);
   if (!existsSync(file)) return { missing: true, codes: new Set() };
@@ -271,14 +284,23 @@ function extractSourceLanguages(source, root, registry) {
     case 'kotlin-enum-tags': {
       const text = readFileSync(file, 'utf8');
       const codes = new Set();
-      for (const m of text.matchAll(/^\s*[A-Z][A-Z0-9_]*\(\s*"([A-Za-z-]+)"\s*\)/gm)) codes.add(m[1].split('-')[0].toLowerCase());
+      for (const m of text.matchAll(/^\s*[A-Z][A-Z0-9_]*\(\s*"([A-Za-z-]+)"\s*\)/gm)) codes.add(normalizeLanguageTag(m[1]));
+      return { codes };
+    }
+    case 'swift-enum-raw-values': {
+      // `case french = "fr"` dans l'énumération de Réglages > Langue ; `case system` n'a pas de valeur brute : ignoré.
+      const text = readFileSync(file, 'utf8');
+      const start = text.search(/\benum\s+AppLanguageChoice\b[^{]*\{/);
+      const body = start >= 0 ? text.slice(start).split(/\n\}/)[0] : '';
+      const codes = new Set();
+      for (const m of body.matchAll(/^\s*case\s+\w+\s*=\s*"([A-Za-z_-]+)"/gm)) codes.add(byIos.get(normalizeLanguageTag(m[1])) ?? `? ${m[1]}`);
       return { codes };
     }
     case 'gradle-locale-filters': {
       const text = readFileSync(file, 'utf8');
       const codes = new Set();
       for (const m of text.matchAll(/localeFilters\s*\.\s*addAll\s*\(([^)]*)\)/g)) {
-        for (const tag of m[1].matchAll(/"([A-Za-z-]+)"/g)) codes.add(tag[1].split('-')[0].toLowerCase());
+        for (const tag of m[1].matchAll(/"([A-Za-z-]+)"/g)) codes.add(normalizeLanguageTag(tag[1]));
       }
       return { codes };
     }
@@ -517,7 +539,10 @@ export function run({ root, registryPath, lang, verbose = false }) {
   } catch (error) {
     return { code: 2, lines: [`Erreur de registre : ${error.message}`], report: null };
   }
-  if (lang && registry && !registry.languages.some((l) => l.code === lang)) {
+  if (lang && !registry) {
+    return { code: 2, lines: [`--lang ${lang} demande un registre des langues (${REGISTRY_PATH}), introuvable dans ce dossier.`], report: null };
+  }
+  if (lang && !registry.languages.some((l) => l.code === lang)) {
     return { code: 2, lines: [`Langue inconnue du registre : ${lang}`], report: null };
   }
 
@@ -649,7 +674,14 @@ function main(argv) {
     }
   }
   const { code, lines, report } = run({ root, registryPath: options.registryPath, lang: options.lang, verbose: options.verbose });
-  if (options.summary && report) writeFileSync(resolve(options.summary), markdownSummary(report), 'utf8');
+  if (options.summary && report) {
+    try {
+      writeFileSync(resolve(options.summary), markdownSummary(report), 'utf8');
+    } catch (error) {
+      console.error(`Impossible d'écrire le résumé ${options.summary} : ${error.code === 'ENOENT' ? 'le dossier n\'existe pas' : error.message}`);
+      return 2;
+    }
+  }
   if (options.json) {
     console.log(JSON.stringify({ exitCode: code, messages: lines, report }, null, 2));
     return code;

@@ -11,6 +11,7 @@
   "consistency": {
     "sources": [
       { "id": "android-enum", "platform": "android", "role": "declaration", "kind": "kotlin-enum-tags", "file": "android/app/src/main/java/com/tomessa/miff/domain/settings/AppLanguage.kt" },
+      { "id": "ios-enum", "platform": "ios", "role": "declaration", "kind": "swift-enum-raw-values", "file": "ios/Miff/Models/Main/AppLanguage.swift" },
       { "id": "android-locale-filters", "platform": "android", "role": "declaration", "kind": "gradle-locale-filters", "file": "android/app/build.gradle.kts" },
       { "id": "android-res-dirs", "platform": "android", "role": "resources", "kind": "android-res-dirs", "file": "android/app/src/main/res" },
       { "id": "ios-bundle-localizations", "platform": "ios", "role": "declaration", "kind": "project-yml-localizations", "file": "ios/project.yml" },

@@ -34,7 +34,9 @@ const TODO_MARKER = /\b(TODO|TBD|FIXME|XXX|TRANSLATE_ME|TO_TRANSLATE)\b|\?\?\?/;
 const GENDER_MARKS = [
   /\((?:e|a|o|x|in|innen)\)/iu,
   /\b\p{L}+o\/a\b/iu,
-  /\p{L}\/[ao]s?\b/u,
+  /(?<![\p{L}\d])o\/a\b/iu,
+  // « y/o » (espagnol), « e/o » (italien) = « et/ou » : une lettre seule avant la barre n'est pas une marque de genre.
+  /(?!(?<![\p{L}\d])[yYeE]\/)\p{L}\/[ao]s?\b/u,
   /\p{L}@(?![\p{L}\d.-]+\.\p{L}{2,})/u,
   /\p{L}[*:_]in(?:nen)?\b/u,
   /\p{L}\/in(?:nen)?\b/u,
@@ -55,9 +57,10 @@ export function termRegex(term) {
   return new RegExp(term.pattern, term.flags ?? 'u');
 }
 
-function isException(registry, { lang, platform, key, check }) {
+function isException(registry, { lang, platform, key, check, match }) {
   return (registry.exceptions ?? []).some((e) => e.lang === lang && e.check === check
     && (e.platform === undefined || e.platform === platform)
+    && (e.match === undefined || e.match === match)
     && ((e.key !== undefined && e.key === key) || (e.keyPattern !== undefined && new RegExp(e.keyPattern, 'u').test(key))));
 }
 
@@ -86,9 +89,9 @@ export function checkLanguageTable({ registry, language, platform, table, refere
   const isSource = lang === source;
   const findings = [];
   const present = new Set();
-  const add = (check, level, key, message) => {
-    if (isException(registry, { lang, platform, key, check })) return;
-    findings.push({ lang, platform, table, check, key, level, message });
+  const add = (check, level, key, message, match) => {
+    if (isException(registry, { lang, platform, key, check, match })) return;
+    findings.push({ lang, platform, table, check, key, level, message, ...(match === undefined ? {} : { match }) });
   };
 
   const shortLabelPatterns = compilePatterns(registry.shortLabelKeyPatterns);
@@ -141,15 +144,15 @@ export function checkLanguageTable({ registry, language, platform, table, refere
       const styled = withoutPlaceholders(value);
       if (language.style?.forbidGenderMarks) {
         const mark = GENDER_MARKS.map((r) => r.exec(styled)).find(Boolean);
-        if (mark) add('gender-mark', 'error', key, `marque de genre « ${mark[0]} »${where}`);
+        if (mark) add('gender-mark', 'error', key, `marque de genre « ${mark[0]} »${where}`, mark[0]);
       }
       for (const regex of formal) {
         const hit = regex.exec(styled);
-        if (hit) add('formal-address', 'error', key, `forme de vouvoiement « ${hit[0]} »${where} (tutoiement attendu)`);
+        if (hit) add('formal-address', 'error', key, `forme de vouvoiement « ${hit[0]} »${where} (tutoiement attendu)`, hit[0]);
       }
       for (const regex of forbidden) {
         const hit = regex.exec(styled);
-        if (hit) add('forbidden-term', 'error', key, `terme proscrit « ${hit[0]} »${where}`);
+        if (hit) add('forbidden-term', 'error', key, `terme proscrit « ${hit[0]} »${where}`, hit[0]);
       }
     }
 

@@ -524,8 +524,9 @@ test('registre absent : comportement historique (français seul, aucun contrôle
 
 // ----- Cohérence des sources (critère 6) -----
 
-const enumKt = (...tags) => `enum class AppLanguage(val tag: String?) {\n${tags.map((t) => `    ${t.toUpperCase()}("${t}"),`).join('\n')}\n    SYSTEM(null),\n    ;\n}\n`;
+const enumKt = (...tags) => `enum class AppLanguage(val tag: String?) {\n${tags.map((t) => `    ${t.toUpperCase().replace(/\W/g, '_')}("${t}"),`).join('\n')}\n    SYSTEM(null),\n    ;\n}\n`;
 const gradle = (...tags) => `androidComponents {\n    variant.androidResources.localeFilters.addAll(${tags.map((t) => `"${t}"`).join(', ')})\n}\n`;
+const swiftEnum = (...tags) => `enum AppLanguageChoice: String, CaseIterable {\n${tags.map((t) => `    case l${t.replace(/\W/g, '_')} = "${t}"`).join('\n')}\n    case system\n\n    var forcedCode: String? { nil }\n}\n\nprotocol Other {}\n`;
 const projectYml = (...tags) => `targets:\n  Miff:\n    info:\n      properties:\n        CFBundleDevelopmentRegion: en\n        CFBundleLocalizations:\n${tags.map((t) => `          - ${t}`).join('\n')}\n        CFBundleShortVersionString: "1"\n`;
 
 function consistencyRegistry() {
@@ -534,6 +535,7 @@ function consistencyRegistry() {
       sources: [
         { id: 'android-enum', platform: 'android', role: 'declaration', kind: 'kotlin-enum-tags', file: 'app/AppLanguage.kt' },
         { id: 'android-locale-filters', platform: 'android', role: 'declaration', kind: 'gradle-locale-filters', file: 'app/build.gradle.kts' },
+        { id: 'ios-enum', platform: 'ios', role: 'declaration', kind: 'swift-enum-raw-values', file: 'ios/AppLanguage.swift' },
         { id: 'android-res-dirs', platform: 'android', role: 'resources', kind: 'android-res-dirs', file: 'android/app/src/main/res' },
         { id: 'ios-bundle-localizations', platform: 'ios', role: 'declaration', kind: 'project-yml-localizations', file: 'ios/project.yml' },
         { id: 'ios-catalog-languages', platform: 'ios', role: 'resources', kind: 'ios-catalog-languages', file: 'ios/Miff/Resources/Localizable.xcstrings' },
@@ -542,14 +544,14 @@ function consistencyRegistry() {
   });
 }
 
-function consistencyRepo({ enumTags = ['fr', 'en'], filters = ['en', 'fr'], bundle = ['fr', 'en'], dirs = ['values-fr', 'values'], iosLangs = ['fr', 'en'] } = {}) {
+function consistencyRepo({ enumTags = ['fr', 'en'], swiftTags = ['fr', 'en'], filters = ['en', 'fr'], bundle = ['fr', 'en'], dirs = ['values-fr', 'values'], iosLangs = ['fr', 'en'] } = {}) {
   const android = Object.fromEntries(dirs.map((d) => [d, xml(str('auth_a', 'x'))]));
   const localizations = Object.fromEntries(iosLangs.map((l) => [l, { stringUnit: { state: 'translated', value: 'x' } }]));
   return makeRepo({
     registry: consistencyRegistry(),
     android,
     ios: { auth_a: { localizations } },
-    files: { 'app/AppLanguage.kt': enumKt(...enumTags), 'app/build.gradle.kts': gradle(...filters), 'ios/project.yml': projectYml(...bundle) },
+    files: { 'ios/AppLanguage.swift': swiftEnum(...swiftTags), 'app/AppLanguage.kt': enumKt(...enumTags), 'app/build.gradle.kts': gradle(...filters), 'ios/project.yml': projectYml(...bundle) },
   });
 }
 
@@ -569,12 +571,13 @@ test('cohérence des sources : mêmes langues partout -> aucun constat', () => {
 test('cohérence des sources : une langue required absente d\'une source déclarative -> erreur (une source à la fois)', () => {
   const cases = {
     enumTags: ['android-enum', 'langue « en »'],
+    swiftTags: ['ios-enum', 'langue « en »'],
     filters: ['android-locale-filters', 'langue « fr »'],
     bundle: ['ios-bundle-localizations', 'langue « en »'],
     dirs: ['android-res-dirs', 'langue « fr »'],
     iosLangs: ['ios-catalog-languages', 'langue « en »'],
   };
-  const reduced = { enumTags: ['fr'], filters: ['en'], bundle: ['fr'], dirs: ['values'], iosLangs: ['fr'] };
+  const reduced = { swiftTags: ['fr'], enumTags: ['fr'], filters: ['en'], bundle: ['fr'], dirs: ['values'], iosLangs: ['fr'] };
   for (const [option, [source, text]] of Object.entries(cases)) {
     const findings = consistency({ [option]: reduced[option] });
     assert.equal(findings.length, 1, option);
@@ -587,8 +590,8 @@ test('cohérence des sources : une langue required absente d\'une source déclar
 test('cohérence des sources : langue inconnue du registre -> erreur ; langue planned déclarée trop tôt -> avertissement', () => {
   const unknown = consistency({ enumTags: ['fr', 'en', 'nl'], dirs: ['values-fr', 'values', 'values-nl'] });
   assert.ok(unknown.some((f) => f.level === 'error' && f.source === 'android-res-dirs' && /inconnue du registre « values-nl »/.test(f.message)));
-  const early = consistency({ enumTags: ['fr', 'en', 'es'], filters: ['en', 'fr', 'es'], bundle: ['fr', 'en', 'es'] });
-  assert.equal(early.length, 3);
+  const early = consistency({ enumTags: ['fr', 'en', 'es'], swiftTags: ['fr', 'en', 'es'], filters: ['en', 'fr', 'es'], bundle: ['fr', 'en', 'es'] });
+  assert.equal(early.length, 4);
   assert.ok(early.every((f) => f.level === 'warning' && /planned/.test(f.message)));
   // Ressources d'une langue planned (traduction en cours) : normal, aucun constat
   assert.deepEqual(consistency({ dirs: ['values-fr', 'values', 'values-es'], iosLangs: ['fr', 'en', 'es'] }), []);
@@ -679,5 +682,76 @@ test('CLI : registre explicite (--registry) et registre invalide -> code 2', () 
     assert.match(result.stderr, /registre/i);
   } finally {
     repo.cleanup();
+  }
+});
+
+test('énumération iOS : `case x = "code"` lus, `system` sans valeur brute ignoré, valeur inconnue -> erreur, énumération voisine ignorée', () => {
+  assert.deepEqual(consistency({ swiftTags: ['fr', 'en'] }), []);
+  const unknown = consistency({ swiftTags: ['fr', 'en', 'nl'] });
+  assert.equal(unknown.length, 1);
+  assert.equal(unknown[0].source, 'ios-enum');
+  assert.match(unknown[0].message, /inconnue du registre « nl »/);
+});
+
+test('régions : pt-BR n\'est jamais confondu avec pt (énumération, filtres, dossiers, CFBundleLocalizations)', () => {
+  const reg = consistencyRegistry();
+  reg.languages.push(language('pt', 'planned'));
+  const repo = makeRepo({
+    registry: reg,
+    android: { 'values-fr': xml(str('auth_a', 'x')), values: xml(str('auth_a', 'x')), 'values-pt-rBR': xml(str('auth_a', 'x')) },
+    ios: { auth_a: { localizations: { fr: { stringUnit: { value: 'x' } }, en: { stringUnit: { value: 'x' } } } } },
+    files: { 'app/AppLanguage.kt': enumKt('fr', 'en', 'pt-BR'), 'app/build.gradle.kts': gradle('en', 'fr', 'pt-BR'), 'ios/project.yml': projectYml('fr', 'en', 'pt-BR'), 'ios/AppLanguage.swift': swiftEnum('fr', 'en', 'pt-BR') },
+  });
+  try {
+    const findings = checkSourcesConsistency(loadRegistry(repo.root), repo.root);
+    for (const id of ['android-enum', 'android-locale-filters', 'ios-bundle-localizations', 'ios-enum']) {
+      assert.ok(findings.some((f) => f.source === id && f.level === 'error' && /pt-BR/.test(f.message)), `${id} : ${JSON.stringify(findings)}`);
+      assert.ok(!findings.some((f) => f.source === id && /planned/.test(f.message)), `${id} : pt-BR pris pour pt`);
+    }
+    assert.ok(findings.some((f) => f.source === 'android-res-dirs' && /values-pt-rBR/.test(f.message)));
+  } finally {
+    repo.cleanup();
+  }
+  // Et pt seul (Portugal) est reconnu comme pt
+  const ok = consistencyRegistry();
+  ok.languages.push(language('pt', 'planned'));
+  const repo2 = makeRepo({ registry: ok, android: { 'values-fr': xml(str('auth_a', 'x')), values: xml(str('auth_a', 'x')) }, ios: {}, files: { 'app/AppLanguage.kt': enumKt('fr', 'en', 'pt') } });
+  try {
+    const findings = checkSourcesConsistency(loadRegistry(repo2.root), repo2.root).filter((f) => f.source === 'android-enum');
+    assert.equal(findings.length, 1);
+    assert.match(findings[0].message, /« pt » \(planned/);
+  } finally {
+    repo2.cleanup();
+  }
+});
+
+test('faux positifs : « y/o » et « e/o » ne sont pas des marques de genre ; exception limitée au texte trouvé (match)', () => {
+  assert.equal(failing('Salut', 'Amigos y/o familia', 'gender-mark').code, 0);
+  assert.equal(failing('Salut', 'Amici e/o famiglia', 'gender-mark').code, 0);
+  assert.equal(failing('Salut', 'Querido amigo/a', 'gender-mark').code, 1);
+  assert.equal(failing('Salut', 'Seleccionado: o/a', 'gender-mark').code, 1);
+  const only = baseRegistry({ exceptions: [{ lang: 'es', key: 'auth_title', check: 'formal-address', match: 'usted' }] });
+  assert.equal(failing('Salut', 'Si usted lo desea', 'formal-address', { extra: { registry: only } }).code, 0);
+  const wrong = baseRegistry({ exceptions: [{ lang: 'es', key: 'auth_title', check: 'formal-address', match: 'ustedes' }] });
+  assert.equal(failing('Salut', 'Si usted lo desea', 'formal-address', { extra: { registry: wrong } }).code, 1);
+});
+
+test('CLI : registre explicite introuvable -> code 2 ; --lang sans registre -> code 2 ; --summary dans un dossier inexistant -> code 2 propre', () => {
+  const repo = makeRepo(oneKey({ fr: 'Salut', en: 'Hi', es: 'Hola' }));
+  const bare = makeRepo({ registry: null, android: { 'values-fr': xml(str('auth_a', 'x')) } });
+  try {
+    const missing = spawnSync(process.execPath, [script, '--root', repo.root, '--registry', join(repo.root, 'nexiste-pas.json')], { encoding: 'utf8' });
+    assert.equal(missing.status, 2);
+    assert.match(missing.stderr, /introuvable/);
+    const lang = spawnSync(process.execPath, [script, '--root', bare.root, '--lang', 'es'], { encoding: 'utf8' });
+    assert.equal(lang.status, 2);
+    assert.match(lang.stderr, /demande un registre/);
+    const summary = spawnSync(process.execPath, [script, '--root', repo.root, '--summary', join(repo.root, 'nexiste', 'pas', 'r.md')], { encoding: 'utf8' });
+    assert.equal(summary.status, 2);
+    assert.match(summary.stderr, /Impossible d'écrire le résumé/);
+    assert.ok(!/at .*node:/.test(summary.stderr), 'pas de trace de pile');
+  } finally {
+    repo.cleanup();
+    bare.cleanup();
   }
 });
