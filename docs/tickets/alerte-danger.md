@@ -1,12 +1,12 @@
 # Ticket : ALERTE « Je suis en danger » (maintien 5 s sur le bouton Update, alerte push au cercle, bannière, fin manuelle ou à 7 jours)
 
-**Statut** : spec complète et challenge rédigés par l'agent `product-specs` sur délégation du PM, avec défauts recommandés ; **en attente des réponses du PM à la section 19 (8 questions)**. Aucun développement lancé, aucun statut Notion modifié, rien écrit dans Notion, aucun code ni règle modifié.
-**Rédigé le** : 2026-11-18. Branche prévue : `docs/alerte-danger`.
+**Statut** : spec complète et challenge rédigés par l'agent `product-specs` sur délégation du PM, avec défauts recommandés ; **en attente des réponses du PM à la section 19 (7 questions ouvertes ; la question 1, la portée, est décidée : voir D9)**. Aucun développement lancé, aucun statut Notion modifié, rien écrit dans Notion, aucun code ni règle modifié.
+**Rédigé le** : 2026-11-18, **mis à jour le 2026-11-18** (décision du PM : **l'alerte ne part qu'aux membres de la Miff sélectionnée dans le Feed** ; maquette 06 de l'écran « avertis » avec le nom de la Miff). Branche `docs/alerte-danger` (PR #269).
 **Ticket Notion** : « Danger » (https://app.notion.com/p/41cfe034208580a9bc84f32d16bdf813, statut « Spec en attente de review IA »).
 **Convention** : **[Notion]** = repris du ticket Notion (tel que résumé par le PM) ; **[PM]** = décision ou précision du PM ; **[Proposé]** = mon défaut recommandé, applicable sauf objection ; **[À vérifier]** = fait de plateforme non confirmé. Aucun texte de ce ticket n'a été relu par un juriste (décision du PM du 2026-10-23, risque assumé).
 
 **Limites de cette rédaction (à connaître)**
-- Je n'ai **pas d'outil shell ni d'outil Notion** dans cette session : la page Notion renvoie seulement son titre à l'outil web ; **j'ai travaillé à partir du résumé du ticket Notion fourni par l'agent appelant et des 5 PNG** (lus). Je n'ai pu créer ni le worktree, ni la branche, ni la PR, ni copier les PNG ; le fichier est écrit hors dépôt (voir le rapport).
+- Je n'ai **pas d'outil shell ni d'outil Notion** dans cette session : la page Notion renvoie seulement son titre à l'outil web ; **j'ai travaillé à partir du résumé du ticket Notion fourni par l'agent appelant et des 6 PNG** (lus). Le worktree, la branche et la PR (#269) ont été créés par l'agent appelant.
 - Vérité utilisée : `origin/main` via la copie lecture seule `C:\dev\miff-main-ro` (tickets update, feed, notifications, notification-update-membres, mode-voyage, compte-à-rebours, session unique ; `backend/data-model.md`, `firestore.rules`, `functions/src/notif*.ts` ; code Android/iOS de statut et de notifications).
 - **Faits Apple non confirmés** : les pages de documentation Apple n'ont pas été lisibles par l'outil ; ce qui concerne Time Sensitive et Critical Alerts vient de ma connaissance générale (**[À vérifier]** par `ios-dev` avant de s'engager).
 
@@ -17,17 +17,17 @@
 En une phrase : **maintenir 5 secondes le bouton de l'écran Update déclare une alerte** ; tes proches reçoivent une notification, ta carte passe en rouge en tête de leur Feed, et une bannière te suit partout dans l'app jusqu'à ce que tu la termines (maintien 5 s) ou qu'elle expire au bout de 7 jours.
 
 **Ce que je recommande de construire** (détail aux sections 6 à 14) :
-1. **Un document dédié `miffs/{miffId}/alerts/{uid}`** (une copie par Miff alertée, comme la photo), **sans position**, avec des règles qui fixent la durée de 7 jours **côté serveur**. Pas de champ de plus sur le statut : une écriture de géofence ne peut ainsi jamais effacer une alerte par accident.
+1. **Un document dédié `miffs/{miffId}/alerts/{uid}`** (**un seul document, dans la Miff sélectionnée dans le Feed au moment du déclenchement**, décision du PM), **sans position**, avec des règles qui fixent la durée de 7 jours **côté serveur**. Pas de champ de plus sur le statut : une écriture de géofence ne peut ainsi jamais effacer une alerte par accident. **Conséquence à connaître : une alerte dans une Miff, rien dans les autres** (section 12.5).
 2. **Une seconde fonction Cloud `notifierAlerte`**, sur le modèle de `notifierUpdate` (déjà en production) : push au démarrage et à la fin manuelle, **jamais** à l'expiration. Gratuit côté FCM ; quelques dizaines de lectures par événement.
 3. **Notification prioritaire mais calme** : Android canal « Alertes » en haute importance ; iOS niveau **Time Sensitive** (capacité gratuite, sans demande à Apple, à activer par le PM) ; **Critical Alerts non demandées** (demande à Apple, accord non garanti).
-4. **Écran « Tes proches viennent d'être avertis »** avec liste de contacts : créateur de la Miff présélectionné (précision du PM), repli sur le membre suivant, **puis numéros d'urgence adaptés à la région de l'appareil** (France : 17, 15, 18, 112). Appel par le **composeur du système** (aucun appel direct, aucune permission).
+4. **Écran « Tes proches de la Miff {nom} viennent d'être avertis »** (maquette 06 : le **nom de la Miff concernée** est dans le titre) avec liste de contacts **des membres de cette Miff** : créateur présélectionné (précision du PM), repli sur le membre suivant, **puis numéros d'urgence adaptés à la région de l'appareil** (France : 17, 15, 18, 112). Appel par le **composeur du système** (aucun appel direct, aucune permission).
 5. **Honnêteté sur les limites** : l'app n'est pas un service d'urgence, et une notification peut arriver en retard ou pas du tout. Phrase sobre, non culpabilisante, dans l'écran d'envoi, l'onboarding, les CGU.
 
 **Trois points de la source à corriger ou à décider** (challenge, section 16) : (a) l'**ordre du Feed** « alerte en tête » contredit la règle D43/V1 « jamais réordonné selon l'urgence » (exception à écrire) ; (b) la condition de la bulle bleue (« jamais publié depuis l'installation ») **cacherait la nouveauté aux utilisateurs actuels** ; (c) la **fin automatique silencieuse** laisse les proches sans information (mitigation sans push proposée).
 
 **Coût : 0 € supplémentaire.** Aucune dépendance payante. Ce ticket **s'appuie sur Blaze** (déjà adopté, notifications push en production).
 
-**Taille globale** : L à XL (8 PR, section 18).
+**Taille globale** : L à XL (8 PR, section 18) ; **un peu plus légère** depuis la décision « Miff sélectionnée » (un seul document par alerte, plus de lots multi-Miffs ni de succès partiel).
 
 ---
 
@@ -35,7 +35,8 @@ En une phrase : **maintenir 5 secondes le bouton de l'écran Update déclare une
 
 | Terme | Sens | Où |
 |---|---|---|
-| **Alerte** | Déclaration **volontaire** de la personne (« Je suis en danger »), notifiée à son cercle, durée max 7 jours. **C'est l'objet de ce ticket.** | Écran Update, bannière, carte rouge |
+| **Alerte** | Déclaration **volontaire** de la personne (« Je suis en danger »), notifiée aux membres **d'une seule Miff : celle qui est sélectionnée dans le Feed au moment du déclenchement** (« **Miff d'origine** »), durée max 7 jours. **C'est l'objet de ce ticket.** | Écran Update, bannière, carte rouge |
+| **Miff d'origine** | La Miff sélectionnée dans le Feed quand l'alerte est déclenchée. **L'alerte reste liée à elle** même si la personne change de Miff ensuite. | Titre de l'écran « avertis », bannière, carte rouge |
 | **Zone de danger** | **Type de lieu** (premium) : entrer dans la zone passe la personne en rouge automatiquement. Aucune notification aux proches (N5 abandonnée). | `places`, `presence = in_risk` |
 | **Statut rouge** | Niveau calculé (pas de nouvelles depuis plus de 4 h, ou zone de danger). Automatique. | Couleur, Feed |
 | **Alerte en cours** | Alerte dont le statut est `active` et qui n'a pas expiré. | |
@@ -49,9 +50,9 @@ Règle de rédaction : dans l'UI, on dit toujours « **alerte** » pour ce ticke
 ### Dans le périmètre (MVP)
 - Geste de déclenchement par maintien 5 s sur le bouton de l'écran Update (progression visuelle, haptique, annulation au relâchement).
 - Bulle d'onboarding bleue (nouveauté pour tous, voir 7.1).
-- Écriture de l'alerte (documents `alerts`), état local, reprise après relance, file d'attente et réessai sans réseau.
-- Écran « Tes proches viennent d'être avertis » avec liste de contacts à appeler et numéros d'urgence.
-- Bannière persistante d'alerte en cours sur tous les onglets principaux, avec fin par maintien 5 s.
+- Écriture de **l'alerte dans la Miff sélectionnée** (un seul document `alerts`), état local (pointeur vers la Miff d'origine), reprise après relance, file d'attente et réessai sans réseau.
+- Écran « Tes proches de la Miff {nom} viennent d'être avertis » (maquette 06) avec liste de contacts **de cette Miff** à appeler et numéros d'urgence.
+- Bannière persistante d'alerte en cours sur tous les onglets principaux (**quelle que soit la Miff affichée ensuite**), avec fin par maintien 5 s.
 - Côté proches : carte rouge en première position, bulle de la Miff rouge, actions Localiser / Appeler / Écrire, notification push de début et de fin manuelle.
 - Fonction Cloud `notifierAlerte` ; règles Firestore ; canal Android ; niveau iOS Time Sensitive.
 - Fin manuelle ; expiration à 7 jours sans notification ; rappels locaux à l'auteur (défaut proposé).
@@ -59,7 +60,7 @@ Règle de rédaction : dans l'UI, on dit toujours « **alerte** » pour ce ticke
 - Mises à jour légales, stores, mention « pas un service d'urgence ».
 
 ### Hors-scope MVP (v1.1 / v2, par ordre de valeur)
-- **v1.1** : bouton « Prévenir par SMS » quand il n'y a pas de réseau ; compteur « n proches notifiés » renvoyé à l'auteur (honnêteté de livraison) ; « C'est une erreur ? » (annulation douce dans les 2 premières minutes).
+- **v1.1** : **choisir la Miff directement depuis l'écran Update** (pastille de Miff sur l'écran de maintien) et/ou **« Prévenir aussi mes autres Miffs »** sur l'écran « avertis » (réponse au point de vigilance 12.5) ; bouton « Prévenir par SMS » quand il n'y a pas de réseau ; compteur « n proches notifiés » renvoyé à l'auteur (honnêteté de livraison) ; « C'est une erreur ? » (annulation douce dans les 2 premières minutes).
 - **v2** : accusé « je l'appelle » des proches ; contact d'urgence personnel hors Miff (sélecteur de contact du système) ; **Critical Alerts iOS** (demande Apple) ; réglage d'accessibilité « confirmer par bouton au lieu de maintenir » ; interrupteur « Alertes d'un proche » dans Réglages > Notifications.
 - **Jamais** : appel ou message automatique aux secours, détection automatique de chute ou de danger, audio/vidéo enregistré, partage en direct continu (l'app n'est pas un service d'urgence : voir section 14).
 
@@ -70,14 +71,15 @@ Règle de rédaction : dans l'UI, on dit toujours « **alerte** » pour ce ticke
 | # | Décision / défaut | Source |
 |---|---|---|
 | D1 | Maintien **5 s** sur le bouton de prise d'update = alerte ; relâcher avant = retour à l'écran Update sans effet. | [Notion] |
-| D2 | À 5 s : alerte envoyée à tous les membres (notification) ; la personne arrive sur l'écran « contact à appeler ». | [Notion] |
+| D2 | À 5 s : alerte envoyée à tous les membres **de la Miff sélectionnée** (notification) ; la personne arrive sur l'écran « contact à appeler ». | [Notion], précisé par le PM (D9) |
 | D3 | Pendant le maintien : bouton redessiné, message « Je suis en danger », fond rouge qui se remplit comme une barre de progression. | [Notion] |
 | D4 | Alerte en cours : carte rouge en 1re position dans le Feed ; statut de la Miff rouge ; message persistant sur tous les écrans principaux pour la terminer (maintien 5 s). | [Notion] |
 | D5 | Fin automatique à **7 jours**, **sans notification**. Fin manuelle : notification rassurante aux membres. | [Notion] |
 | D6 | Bulle bleue d'onboarding sur l'écran Update **tant que la personne n'a jamais publié d'update depuis son installation**. | [Notion] (corrigée en 7.1) |
 | D7 | Contact présélectionné = **créateur de la Miff** ; si c'est moi, **le premier membre autre que moi par ordre d'arrivée** (`joinedAt`). Numéros police et urgences **dans la même liste**, par pays/région de l'appareil (locale, jamais la position). | [PM], 2026-11-18 |
 | D8 | **Alerte gratuite pour tous** (jamais derrière le paywall) : une fonction de sécurité payante serait un risque d'image et de rejet. | [Proposé] |
-| D9 | Alerte envoyée à **toutes mes Miffs où mon partage est actif**. | [Proposé], Q1 |
+| D9 | **L'alerte ne part QU'AUX MEMBRES DE LA MIFF SÉLECTIONNÉE dans le Feed** (cas multi-Miffs ; en gratuit : une seule Miff, donc inchangé). **Pas de diffusion à toutes les Miffs.** Les autres Miffs de la personne **ne voient rien**. L'alerte reste **liée à la Miff d'origine** si la personne change de Miff dans le Feed (12.5). | **[PM]**, 2026-11-18 (ex-question 1) |
+| D14 | **Une seule alerte active à la fois par personne** (garde côté application) : pour alerter une autre Miff, terminer d'abord l'alerte en cours. | [Proposé] |
 | D10 | **Seul l'auteur peut terminer** son alerte. | [Proposé] |
 | D11 | Une update (photo) publiée pendant l'alerte **ne termine pas** l'alerte et ne change pas sa couleur. | [Proposé] |
 | D12 | La notification d'alerte **ignore** heures calmes, plafond quotidien et plafond horaire des updates (mais respecte les réglages du téléphone). | [Proposé], Q5 |
@@ -113,8 +115,8 @@ ACTIVE ──(départ / arrêt du partage / suppression de compte)──> RETIRE
 ```
 
 Règles :
-- **Un seul état par personne** (pas par Miff) côté interface ; les documents par Miff sont des copies. Une écriture partielle (premium) est **terminée en arrière-plan** jusqu'à complétion (réessai), l'interface affichant l'état « active » dès **la première Miff acceptée**.
-- **Source de vérité** : le document `alerts/{moi}` du serveur (pas un drapeau local). Au démarrage, au retour au premier plan et sur un **nouvel appareil** (session unique), l'app lit **mon propre document** et reconstruit la bannière (même principe que le mode voyage, « appareil remplacé »).
+- **Un seul état par personne**, lié à **une seule Miff (la Miff d'origine)** : un seul document, une seule écriture, **plus de succès partiel** ni de lots multi-Miffs. Une seule alerte active à la fois (D14).
+- **Source de vérité** : le document `miffs/{origine}/alerts/{moi}` du serveur (pas un drapeau local). L'app garde en local **un pointeur** « ma Miff d'origine » (identifiant de Miff seulement, aucune donnée personnelle) pour écouter ce seul document, **même quand le Feed affiche une autre Miff**. Au démarrage d'une **nouvelle session** (nouvel appareil, session unique) le pointeur est perdu : l'app fait **un `get` de `alerts/{moi}` par Miff de la personne** (1 lecture par Miff, une seule fois à la connexion) et reconstruit la bannière (même principe que le mode voyage, « appareil remplacé »).
 - **Ré-armement** : après TERMINEE ou EXPIREE, une nouvelle alerte est possible tout de suite (même document, compteur `seq` + 1).
 - **Pas de double alerte** : si une alerte est déjà active, un nouveau maintien sur le bouton Update **ne fait rien de spécial** (appui court = photo ; la fin se fait via la bannière).
 
@@ -131,32 +133,36 @@ Règles :
 
 ### 7.2 Maintien 5 s (maquette 02)
 - **Zone du geste** : le bouton rond central de l'écran Update (l'obturateur). **Appui court = photo (inchangé)**. **Appui maintenu** : à partir de **~0,4 s** l'interface passe en mode alerte (sinon le moindre appui long déclencherait un effet visuel) ; **le compteur de 5 s démarre à ce moment**, de sorte que le maintien total ressenti est de **~5 s** (valeur exacte : `ALERT_HOLD_MS = 5 000` après le seuil d'armement de 400 ms ; à régler en recette).
-- **Visuel** [maquette, Notion] : bouton rouge ; message « **Je suis en danger** » ; sous-texte « Maintiens 5 secondes pour envoyer l'alerte » ; **fond rouge qui se remplit** comme une barre de progression (de bas en haut ou de gauche à droite, au choix du design). **Pas de décompte chiffré** par défaut (moins anxiogène) ; une **barre** suffit.
+- **Visuel** [maquette, Notion] : bouton rouge ; message « **Je suis en danger** » ; sous-texte « Maintiens 5 secondes pour envoyer l'alerte » ; **ligne « Alerte pour la Miff {nom} »** (écart E13 : la personne voit **avant** d'envoyer à qui l'alerte ira ; non interactive en v1, on change de Miff dans le Feed ; **absente si la personne n'a qu'une Miff**) ; **fond rouge qui se remplit** comme une barre de progression (de bas en haut ou de gauche à droite, au choix du design). **Pas de décompte chiffré** par défaut (moins anxiogène) ; une **barre** suffit.
 - **Haptique** : un retour **léger au début** de l'armement, un **crescendo discret** (retours courts de plus en plus rapprochés), un retour **net à 5 s** (alerte partie). **Aucun son** imposé.
 - **Annulation** : relâcher avant 5 s = retour **immédiat** à l'écran Update, **sans message** (un faux départ n'a pas à être commenté), retour haptique très léger. Idem si l'app passe en arrière-plan, si un appel entrant ou une fenêtre système prend le focus, ou si le doigt sort largement de la zone (tolérance de 48 dp / 44 pt).
 - **Pas de caméra pendant le maintien** : l'obturateur est désactivé tant que l'armement n'est pas annulé ou terminé ; aucune photo n'est prise.
 - **Pendant l'écran de maintien** : aucune écriture réseau. L'écriture part **à l'instant des 5 s**.
 
-### 7.3 Envoi et écran « Tes proches viennent d'être avertis » (maquette 03)
-- **À 5 s** : écriture dans les Miffs concernées (section 10) ; **bascule immédiate** sur l'écran 03 (on n'attend pas l'accusé du serveur pour proposer d'appeler, **le texte reste honnête** : voir ci-dessous).
-- **Titre** [maquette, tutoiement] : « **Tes proches viennent d'être avertis** » **uniquement après l'accusé du serveur**. Avant (envoi en cours) : « Envoi de l'alerte… ». Sans réseau : « Pas de réseau pour le moment. Ton alerte partira dès que possible. » (état EN_ATTENTE, section 12.3).
+### 7.3 Envoi et écran « Tes proches de la Miff {nom} viennent d'être avertis » (maquettes 03 et 06)
+- **À 5 s** : écriture **dans la Miff sélectionnée** (un seul document, section 10) ; **bascule immédiate** sur l'écran 03/06 (on n'attend pas l'accusé du serveur pour proposer d'appeler, **le texte reste honnête** : voir ci-dessous).
+- **Titre** [**maquette 06 du PM**, tutoiement] : « **Tes proches de la Miff {nom} viennent d'être avertis** » **uniquement après l'accusé du serveur**. Le texte de la maquette 06 est un **brouillon** (« Vos proches de la miff ….. viennent d'être avertis », « miff » en minuscule) : on écrit **« Miff » avec une majuscule**, tutoiement (E1). Avant (envoi en cours) : « Envoi de l'alerte à la Miff {nom}… ». Sans réseau : « Pas de réseau pour le moment. Ton alerte partira dès que possible. » (état EN_ATTENTE, section 12.3).
+- **Nom de la Miff dans le titre** : valeur du nom **au moment du déclenchement** (copiée localement, pas relue). **Longueur** : un nom de Miff fait **au plus 40 unités UTF-16** (data-model §2.5) et peut contenir des emojis ou un mot très long sans espace. Le titre **passe à la ligne** (la bulle rose de la maquette accepte 3 à 4 lignes) ; **recommandation [Proposé]** : le **nom sur sa propre ligne, en gras**, entre « Tes proches de la Miff » et « viennent d'être avertis », coupé par caractère si un mot est trop long ; **taille de police dégressive** puis, au-delà de **4 lignes**, points de suspension **visuels seulement** (le lecteur d'écran lit le titre **complet**). Si la personne n'a **qu'une Miff**, le titre reste identique (le nom est dans la maquette 06) [Proposé] ; variante sans nom « Tes proches viennent d'être avertis » seulement si le nom est **introuvable** (cache vide), jamais d'espace vide.
+- **Textes** : clés `alert_sent_title_prefix` / `alert_sent_title_suffix` ou une clé unique à paramètre `{miff}` (au choix du dev, une seule chaîne par langue de préférence, car l'ordre des mots varie) : FR « Tes proches de la Miff {miff} viennent d'être avertis » ; EN « Your people in the Miff “{miff}” have been alerted ».
 - **Sous-texte** [Proposé] : « Ils verront ton alerte dans Miff et seront notifiés s'ils ont activé les notifications. » (pas de promesse de lecture ni de délai). **Mention** : « Miff n'est pas un service d'urgence. En cas de danger immédiat, appelle le 112. » (clé `alert_not_emergency_note`, 14.2).
-- **Appeler** : sélecteur de contact (liste, section 8) + gros bouton rouge « Appeler ». Appel via le **composeur du système** (Android : intention `ACTION_DIAL`, aucune permission ; iOS : `tel:` + confirmation iOS), **aucun appel direct**, comme le bouton « Appeler » des cartes.
+- **Sous-texte complémentaire [Proposé]** : si la personne a **plusieurs Miffs**, « Seule cette Miff est prévenue. » (honnêteté sur la portée, voir 12.5), sans ton alarmiste.
+- **Appeler** : sélecteur de contact (liste, section 8, **membres de cette Miff**) + gros bouton rouge « Appeler ». Appel via le **composeur du système** (Android : intention `ACTION_DIAL`, aucune permission ; iOS : `tel:` + confirmation iOS), **aucun appel direct**, comme le bouton « Appeler » des cartes.
 - **Sortie** : flèche retour (maquette) = retour à l'écran Update **sans terminer l'alerte** (la bannière prend le relais). L'écran 03 peut être rouvert depuis la **bannière** (« Appeler »).
 - **Rien d'autre** : pas de partage d'écran, pas de chat, pas de carte.
 
 ### 7.4 Bannière d'alerte en cours (maquette 05)
 - **Quand** : alerte **active et non expirée**, sur **tous les onglets principaux** (Feed, Update — viseur compris —, Profil). **Jamais** sur l'écran 03 ni sur l'aperçu d'une photo en cours de publication.
 - **Où** : posée au-dessus de la barre d'onglets (comme la bulle d'incitation D21 de l'Update), fixe, avec **marge basse** pour que le contenu défilant ne soit jamais caché (**la maquette 05 la superpose à une carte**, écart à corriger : E4).
-- **Texte** (tutoiement) : « **Tu as alerté tes proches.** Maintiens 5 secondes pour terminer l'alerte si tu n'es plus en danger. » Second bouton **« Appeler »** (rouvre l'écran 03) [Proposé].
+- **Texte** (tutoiement) : « **Tu as alerté les proches de la Miff {nom}.** Maintiens 5 secondes pour terminer l'alerte si tu n'es plus en danger. » (le **nom de la Miff d'origine** est **toujours** dans le texte : la bannière te suit sur toutes les Miffs, elle doit dire laquelle est concernée). Second bouton **« Appeler »** (rouvre l'écran 03/06) [Proposé]. **Si le Feed affiche une autre Miff** que la Miff d'origine, un lien discret « Voir la Miff {nom} » bascule le Feed dessus [Proposé].
+- **Miff d'origine supprimée ou quittée** : la bannière disparaît avec l'alerte (12.2).
 - **Fin** : maintien 5 s **sur la bannière** avec la même barre de progression (blanc translucide), même haptique, annulation au relâchement. **Aucune confirmation après** : le maintien **est** la confirmation.
 - **Pas de bouton de fermeture** (comme la bulle D21) ; la bannière disparaît à la fin ou à l'expiration.
 - **Remplace** la bulle d'incitation orange/rouge de l'Update et le compte à rebours orange tant que l'alerte est active (**jamais deux messages contradictoires** : « publie une update pour dire que tout va bien » n'a pas de sens pendant une alerte) ; les **rappels locaux N1, N2, N6** de l'auteur sont **suspendus** pendant l'alerte.
 - **Lecteur d'écran** : région polie annoncée **une fois** à l'apparition ; action d'accessibilité « Terminer l'alerte » (section 13).
 
 ### 7.5 Fin manuelle
-1. Maintien 5 s sur la bannière → écriture `status = ended` dans chaque Miff concernée.
-2. Retour visuel calme : « Alerte terminée. Tes proches ont été prévenus. » (une fois, sans son).
+1. Maintien 5 s sur la bannière → écriture `status = ended` dans **la Miff d'origine** (un seul document), **quelle que soit la Miff affichée dans le Feed**.
+2. Retour visuel calme : « Alerte terminée. Les proches de la Miff {nom} ont été prévenus. » (une fois, sans son).
 3. Push « fin » aux membres (section 11). Carte, bulle de la Miff et statut reviennent **au calcul normal**.
 4. Si l'écriture échoue (réseau) : la bannière reste, avec « Fin en attente d'envoi » ; réessai automatique. **L'alerte n'est jamais considérée terminée localement tant que le serveur ne l'a pas acceptée** (sinon les proches resteraient alertés alors que la personne croit avoir terminé).
 
@@ -169,6 +175,7 @@ Règles :
 | **Après fin manuelle** | Carte et bulle redeviennent normales ; ligne de centre « {Prénom} a mis fin à son alerte ». |
 | **Après expiration (7 j)** | Pas de push. La carte porte pendant **24 h** une ligne neutre (pas rouge) « Alerte de {Prénom} arrivée à échéance le 18 nov. à 15 h » (mitigation de la fin silencieuse, section 16). |
 | **Ordre du Feed** | **Exception à D43/V1** (« moi en dernier, jamais réordonné selon l'urgence ») : les cartes en **alerte en cours** passent **avant** les autres, **y compris la mienne** si c'est moi (cohérence). Rien d'autre ne réordonne le Feed. |
+| **Périmètre** | Tout ce tableau ne concerne que **le Feed de la Miff d'origine** : dans une autre Miff de la même personne, **rien** (ni carte rouge, ni bulle, ni notification, ni ligne de centre). |
 
 ---
 
@@ -182,7 +189,7 @@ Règles :
 ### 8.2 Composition et ordre de la liste
 1. **Section « Tes proches »** : les membres **avec numéro**, **hors moi**, dans cet ordre : (a) le **créateur** de la Miff (`role = owner`) s'il n'est pas moi ; (b) puis les autres par **ordre d'arrivée** (`joinedAt` croissant).
 2. **Section « Services d'urgence »**, **séparée visuellement** (titre de section + séparateur), **toujours présente** : numéros du pays/de la région (8.4).
-- **Plusieurs Miffs alertées (premium)** : on part de la **Miff affichée dans le Feed** (D19), puis les autres Miffs alertées ; **dédoublonnage** par personne (`uid`) puis par numéro. Le nom de la Miff n'est pas affiché dans la liste (l'écran verrouillé n'est pas concerné, mais pas de bruit inutile) ; en cas d'homonymes, ajouter le nom de famille.
+- **Uniquement les membres de la Miff d'origine** (décision D9 : ni fusion avec d'autres Miffs, ni dédoublonnage multi-Miffs). Le nom de la Miff est déjà dans le titre de l'écran ; en cas d'homonymes dans la liste, ajouter le nom de famille.
 
 ### 8.3 Contact présélectionné (règle du PM, avec repli)
 | Situation | Contact présélectionné |
@@ -220,7 +227,12 @@ Principe : l'alerte est **volontaire** ; la personne a déjà consenti au partag
 | Niveau | Contenu | Recommandation |
 |---|---|---|
 | **A. Minimal (MVP strict)** | À l'envoi, **une mesure fraîche** de position écrite dans `positions/{moi}` (document existant, règles existantes, consentement existant). « Localiser » comme aujourd'hui, **avec la réciprocité inchangée** (le proche doit avoir publié la sienne). Aucune règle de position modifiée. | Plancher garanti. |
-| **B. Alerte renforcée [Proposé, Q2]** | (1) **Rafraîchissement plus fréquent** pendant l'alerte (une mesure toutes les ~5 min si l'appareil bouge), **au plus 2 h** puis retour au rythme normal ; (2) la **position de l'auteur est lisible par tous les membres des Miffs alertées**, **même ceux qui n'ont pas publié la leur** (levée ciblée de la réciprocité, **uniquement tant que l'alerte est active**) ; (3) l'écran 03 et la fiche « En savoir plus » **le disent explicitement** ; (4) le texte de consentement/politique est **amendé** (section 14). | **Recommandé**, car une alerte dont le proche « ne voit pas » où est la personne perd l'essentiel de sa valeur ; mais **décision du PM** (confiance, stores). |
+| **B. Alerte renforcée [Proposé, Q2]** | (1) **Rafraîchissement plus fréquent** pendant l'alerte (une mesure toutes les ~5 min si l'appareil bouge), **au plus 2 h** puis retour au rythme normal ; (2) la **position de l'auteur est lisible par tous les membres de la Miff d'origine**, **même ceux qui n'ont pas publié la leur** (levée ciblée de la réciprocité, **uniquement dans cette Miff et tant que l'alerte y est active**) ; (3) l'écran 03 et la fiche « En savoir plus » **le disent explicitement** ; (4) le texte de consentement/politique est **amendé** (section 14). | **Recommandé**, car une alerte dont le proche « ne voit pas » où est la personne perd l'essentiel de sa valeur ; mais **décision du PM** (confiance, stores). |
+- **Effet de la décision « Miff sélectionnée » sur la position** (à lire) :
+  - La dernière position est **déjà** écrite par l'app dans **chaque** Miff où la personne partage (document `positions/{moi}` par Miff, rythme normal) : les autres Miffs **continuent de la voir comme d'habitude**, l'alerte n'y change rien.
+  - **Niveau A** : la mesure fraîche à l'envoi est écrite comme d'habitude (toutes les Miffs où je partage, c'est le comportement existant) ; c'est la **seule** écriture hors rythme et elle ne distingue pas les Miffs.
+  - **Niveau B** : le **rafraîchissement renforcé** (~5 min, 2 h max) n'est écrit **que dans la Miff d'origine** ; **les autres Miffs gardent le rythme normal** (on n'augmente pas l'exposition de la personne vis-à-vis de cercles qu'elle n'a pas choisi d'alerter). La **levée de la réciprocité** ne vaut que dans la Miff d'origine (règle de lecture de `positions` conditionnée à l'existence d'une alerte active **dans cette Miff**, +1 lecture de règles à la lecture de la position d'une personne).
+  - **Point de vigilance** : une personne dans deux Miffs voit donc sa position **plus précise et plus fraîche** dans la Miff alertée que dans l'autre, et **l'autre Miff ne sait pas qu'il y a une alerte** (12.5).
 - **Dans tous les cas** : la position n'est **jamais** dans la notification, ni dans le document d'alerte, ni dans Analytics ; pas d'historique de trajet (une seule dernière position, écrasée). Si la mesure échoue (intérieur, GPS lent), **l'alerte part quand même** (la position est un bonus, pas une condition).
 - **Permissions** : si la permission « Toujours » est absente, l'alerte part ; la position est celle du premier plan (l'alerte se déclenche **app ouverte**, la mesure est donc possible). Aucune demande de permission pendant l'alerte (pas de fenêtre système dans le stress).
 - **Impact stores** : justification de la localisation en arrière-plan **inchangée** pour A ; pour B, mentionner l'usage « partage plus fréquent et pendant une alerte déclarée par la personne » dans la déclaration (`release-manager`).
@@ -230,6 +242,7 @@ Principe : l'alerte est **volontaire** ; la personne a déjà consenti au partag
 ## 10. Modèle de données, règles, anti-abus, coût
 
 ### 10.1 Document `miffs/{miffId}/alerts/{uid}` (nouveau, SENSIBLE) — proposition pour `backend-data`
+**Clé de l'alerte = (`miffId`, `uid`)**, c'est-à-dire exactement le **chemin du document** : `miffId` = la **Miff d'origine** (sélectionnée dans le Feed au déclenchement), `uid` = l'auteur. **Cohérence vérifiée avec le modèle de données** (`miffs/{miffId}/photos/{uid}`, `status/{uid}`, `positions/{uid}` suivent le même schéma) : **aucun champ `miffId` ni `uid` dans le document**, aucune clé de plus à prévoir ; un seul document par alerte, **au plus un document par auteur et par Miff** ; **rien n'empêche côté serveur** deux alertes actives dans deux Miffs différentes (les règles ne savent pas compter entre Miffs) : la règle « une alerte à la fois » (D14) est **tenue par l'application**, et bornée côté serveur par les limites de la fonction (10.3).
 | Champ | Type | Règle |
 |---|---|---|
 | `status` | `"active"` \| `"ended"` | |
@@ -241,7 +254,7 @@ Principe : l'alerte est **volontaire** ; la personne a déjà consenti au partag
 | `purgeAt` | timestamp | `expiresAt` + 2 j au démarrage ; ramené à `endedAt` + 2 j à la fin ; **règle TTL Firestore** (même mécanisme que `notifState`, négligeable sur Blaze, à poser par le PM) |
 - **Aucune coordonnée, aucun texte libre, aucune photo.** Clés fermées (`hasOnly`) ; toute autre clé refusée.
 - **Pourquoi un document dédié et pas un champ de `status`** : les écritures de géofence et de batterie touchent `status/{moi}` en continu ; une écriture complète pourrait **effacer** l'alerte sans le vouloir. Le document dédié a un cycle de vie propre, un déclencheur de fonction propre, et n'alourdit pas `validStatus` (déjà dense).
-- **Pourquoi pas un seul document global** : le modèle est organisé **par Miff** (lecture, suppression à l'arrêt du partage, au départ, au retrait, à la suppression de Miff et de compte : tous les lots existants supprimeraient une ligne de plus, **même schéma que `photos`**).
+- **Pourquoi pas un document global à l'utilisateur** : le modèle est organisé **par Miff** (lecture par les membres, suppression à l'arrêt du partage, au départ, au retrait, à la suppression de Miff et de compte : les lots existants supprimeraient une ligne de plus, **même schéma que `photos`**). La décision « Miff sélectionnée » **simplifie** : une écriture, un document, pas de copies ni de lots de 5 Miffs.
 
 ### 10.2 Règles proposées (qui peut écrire quoi)
 | Opération | Qui | Conditions |
@@ -252,7 +265,7 @@ Principe : l'alerte est **volontaire** ; la personne a déjà consenti au partag
 | **get / list** | **tout membre de la Miff** tant qu'elle existe | **sans réciprocité de partage** [Proposé, Q3] : le document ne contient ni position ni photo |
 | **delete** | l'auteur **ou** le créateur (même schéma que `status`/`positions`, lots d'arrêt/départ/retrait/suppression) | l'auteur supprime aussi son document terminé de plus de 24 h (nettoyage opportuniste) |
 - **Ce qu'un client modifié peut faire** : déclencher de fausses alertes dans les Miffs où il partage (borné : voir 10.3) ; **ne peut pas** allonger la durée, en créer pour autrui, terminer l'alerte d'un autre, cacher l'alerte (il peut seulement la terminer ou la supprimer, ce qui est son droit).
-- **Lectures de règles** : ≈ 2 à 3 par Miff et par écriture (fiche + session) : comme la photo ; **lots de 5 Miffs au plus**.
+- **Lectures de règles** : ≈ 2 à 3 pour **l'unique** écriture (fiche + session) : comme une photo dans une seule Miff ; **aucun lot multi-Miffs**.
 - **Tests à écrire** : un autre membre ne peut ni créer, ni terminer, ni modifier ; 7 jours exacts ; clés inconnues refusées ; ré-armement ; fin hors session ; lecture par un non-membre refusée ; mutations.
 
 ### 10.3 Anti-abus et limitation de débit
@@ -262,9 +275,9 @@ Principe : l'alerte est **volontaire** ; la personne a déjà consenti au partag
 - **Signal de bascule** (à ajouter à `docs/dev/surveillance-quotas.md`) : plus de 5 % des alertes terminées en moins de 2 min (taux de fausses alertes, **mesuré sans donnée personnelle** : compteur serveur agrégé dans les journaux fixes) → revoir la durée du maintien.
 
 ### 10.4 Coût (Blaze, hypothèses, pas des mesures)
-- **Écritures** : 1 par Miff au début, 1 par Miff à la fin, +1 de nettoyage : ≈ 3 par Miff et par alerte.
+- **Écritures** : 1 au début, 1 à la fin, +1 de nettoyage : ≈ 3 par alerte (**une seule Miff**, quel que soit le nombre de Miffs de la personne). Lectures au démarrage d'une nouvelle session : 1 `get` par Miff de la personne (12.4), une fois.
 - **Fonction `notifierAlerte`** : 1 invocation par écriture utile (début, fin) ; lectures comme `notifierUpdate` : **≈ 13 lectures pour une Miff de 4**, ≈ 46 pour 15, ≤ 73 pour 40 (fiche membres + session + appareil par destinataire), **1 écriture** (`notifState`). Même ordre de grandeur que l'update, **à fréquence très inférieure**. FCM gratuit.
-- **Estimation** : 1 000 utilisateurs actifs, 1 alerte pour 1 000 par jour → quelques centimes par mois. **Aucune évolution du coût de lecture du Feed** : un écouteur de collection de plus sur la Miff affichée ; **0 lecture** hors alerte (collection vide), **1 lecture par document modifié** pendant une alerte.
+- **Estimation** : 1 000 utilisateurs actifs, 1 alerte pour 1 000 par jour → quelques centimes par mois. **Aucune évolution du coût de lecture du Feed** : un écouteur de collection de plus sur la Miff affichée, **plus un écouteur sur mon propre document d'alerte dans la Miff d'origine quand elle diffère de la Miff affichée (1 document)** ; **0 lecture** hors alerte (collection vide), **1 lecture par document modifié** pendant une alerte.
 - **Déploiement** : nouvelle fonction = nouveau service Cloud Run → **droit `roles/run.invoker` à poser** sur ce service (`docs/dev/deploiement-functions.md` §1.4 D bis) ; **le PM tape les commandes**, sur « oui » explicite, `--project miff-3d283`. `maxInstances` selon le plafond existant (5), test garde-coûts à mettre à jour avec la raison.
 
 ---
@@ -272,7 +285,7 @@ Principe : l'alerte est **volontaire** ; la personne a déjà consenti au partag
 ## 11. Notifications
 
 ### 11.1 Qui reçoit
-Tout **membre actuel** de la Miff alertée, **≠ l'auteur**, avec **un appareil enregistré** (le jeton prouve qu'il a accepté les notifications) et une **session active** (mêmes gardes que `notifierUpdate` : appareil de la session seulement, `miffId` du message vérifié côté client). **Le partage de position du destinataire n'est pas exigé** [Proposé, Q3] (l'alerte ne révèle pas de position). **Interrupteur « Quand un proche donne des nouvelles » (`notify.updates`) : n'agit pas** sur les alertes (un réglage de confort ne doit pas couper une alerte) ; l'interrupteur **général** (jeton supprimé) et le système (autorisation retirée, désinstallation) l'emportent.
+Tout **membre actuel de la Miff d'origine** (et d'elle seule, décision D9), **≠ l'auteur**, avec **un appareil enregistré** (le jeton prouve qu'il a accepté les notifications) et une **session active** (mêmes gardes que `notifierUpdate` : appareil de la session seulement, `miffId` du message vérifié côté client). **Le partage de position du destinataire n'est pas exigé** [Proposé, Q3] (l'alerte ne révèle pas de position). **Interrupteur « Quand un proche donne des nouvelles » (`notify.updates`) : n'agit pas** sur les alertes (un réglage de confort ne doit pas couper une alerte) ; l'interrupteur **général** (jeton supprimé) et le système (autorisation retirée, désinstallation) l'emportent.
 
 ### 11.2 Contenu (jamais position, lieu, nom de Miff, nom de famille ; prénom tronqué à 20 caractères comme B5)
 | Clé | FR (tutoiement, sans accord de genre) | EN |
@@ -282,6 +295,7 @@ Tout **membre actuel** de la Miff alertée, **≠ l'auteur**, avec **un appareil
 | `notif_alert_end_title` | {prénom} a mis fin à son alerte | {prénom} ended their alert |
 | `notif_alert_end_body` | {prénom} a indiqué que tout va bien. | {prénom} said they're okay. |
 - **Pourquoi pas « à nouveau en sécurité »** (texte de la source) : la règle de l'app est que **ni la bulle ni les notifications n'affirment la sécurité de quelqu'un** (`feed.md` §5.2 : « ne dit jamais en sécurité ») ; la formule proposée **attribue** l'information à la personne et reste rassurante. **Décision du PM (Q4)** ; la formule de la source est l'alternative.
+- **Portée (décision D9)** : la notification de début comme celle de fin ne part **qu'aux membres de la Miff d'origine** ; un membre présent dans **deux Miffs** de l'auteur ne reçoit **rien** pour l'autre. Le **nom de la Miff n'est pas dans la notification** (règle existante : il peut révéler une relation à un tiers) ; au toucher, l'app ouvre **la Miff d'origine** (`miffId` du message) sur la carte de l'auteur. La fonction n'a **aucune boucle sur plusieurs Miffs** : 1 écriture = 1 événement = 1 diffusion.
 - Début : **ton clair et direct, sans point d'exclamation, sans majuscules ni émoji alarmiste**. Aucun « urgent », « danger » dans le titre d'une notification d'écran verrouillé visible par un tiers ; « alerte » suffit (sobriété pour l'écran verrouillé, comme N3/N4).
 
 ### 11.3 Android
@@ -311,8 +325,8 @@ Tout **membre actuel** de la Miff alertée, **≠ l'auteur**, avec **un appareil
 Le mode voyage rend la couleur **neutre** (grise). **L'alerte l'emporte** : pendant une alerte active, la couleur est **rouge** (carte, bulle, anneau, bannière), même si `presence = travel`. À la fin, **retour à la couleur calculée** (neutre si voyage toujours actif). Le voyage **n'est pas terminé** par l'alerte et **n'empêche pas** de la déclencher. Les rappels N1–N4/N6 restent suspendus pendant le voyage (comportement existant). Un proche en voyage reçoit la notification comme les autres.
 
 ### 12.2 Partage arrêté, départ, retrait
-- **Alerte impossible dans une Miff où mon partage est arrêté** (la règle l'exige) ; elle est envoyée aux **autres** Miffs où je partage. **Aucune Miff avec partage actif** : écran calme « Tu as arrêté de partager : reprends le partage pour alerter tes proches » **+ numéros d'urgence visibles** (l'écran 03 sans la section « Tes proches » ne sert à rien : on propose directement les secours).
-- **Arrêter le partage, quitter ou retirer une Miff pendant une alerte** : confirmation préalable « Tu as une alerte en cours : elle sera retirée de cette Miff » (le document est supprimé dans le lot habituel, **sans push**).
+- **Alerte impossible dans la Miff sélectionnée si mon partage y est arrêté** (la règle l'exige) : écran calme « Tu as arrêté de partager avec la Miff {nom} : reprends le partage pour alerter tes proches » **+ numéros d'urgence visibles** (l'écran sans la section « Tes proches » ne sert à rien : on propose directement les secours). **L'alerte n'est jamais redirigée automatiquement vers une autre Miff** (D9).
+- **Arrêter le partage, quitter ou retirer la Miff d'origine pendant l'alerte** : confirmation préalable « Tu as une alerte en cours : elle sera retirée de cette Miff » (le document est supprimé dans le lot habituel, **sans push**). **Arrêter le partage, quitter ou être retiré d'une autre Miff** : aucun effet sur l'alerte.
 - **Suppression de compte** : documents supprimés dans les lots existants.
 
 ### 12.3 Hors ligne / réseau instable
@@ -324,10 +338,17 @@ Le mode voyage rend la couleur **neutre** (grise). **L'alerte l'emporte** : pend
 - **Suggestion v1.1** : bouton « Prévenir par SMS » (composeur du système, numéros des membres pré-remplis, message court sans position) quand le réseau de données manque mais que le réseau mobile existe.
 
 ### 12.4 Session appareil unique
-Les écritures portent le `deviceId` de la session. Si la personne se connecte sur un autre appareil pendant l'alerte, **l'ancien appareil est déconnecté** ; le **nouvel appareil lit mon propre document d'alerte** au démarrage et **adopte** l'alerte (bannière, fin possible). Un `deviceId` périmé = écriture refusée → message standard « tu es connecté sur un autre appareil ».
+Les écritures portent le `deviceId` de la session. Si la personne se connecte sur un autre appareil pendant l'alerte, **l'ancien appareil est déconnecté** ; le **nouvel appareil lit mon propre document d'alerte** (un `get` par Miff de la personne, une seule fois à la connexion) et **adopte** l'alerte de la **Miff d'origine** (bannière nommant cette Miff, fin possible). Un `deviceId` périmé = écriture refusée → message standard « tu es connecté sur un autre appareil ».
 
-### 12.5 Plusieurs Miffs, gratuit ou premium
-Gratuit (1 Miff) : une écriture. Premium : **toutes les Miffs où je partage**, par lots de 5 (**même lot que la photo : lectures de règles comptées**) ; l'état « active » s'affiche dès la **première** Miff acceptée ; les autres sont complétées en arrière-plan avec réessais. La fin suit le même schéma. **Aucun paywall** (D8).
+### 12.5 Plusieurs Miffs : l'alerte ne concerne que la Miff sélectionnée (décision du PM, D9)
+- **Gratuit (1 Miff)** : aucun changement. **Premium (plusieurs Miffs)** : l'alerte est écrite dans **la Miff sélectionnée dans le Feed au moment des 5 s**, et **seulement celle-là**. **Aucun paywall** (D8).
+- **Si la personne change de Miff dans le Feed pendant l'alerte** : l'alerte **reste liée à la Miff d'origine**. Dans le Feed de l'**autre** Miff, **rien n'apparaît** (carte, bulle et couleur normales, **aucune notification**). **La bannière reste visible partout** (Feed, Update, Profil) et **nomme toujours la Miff d'origine** ; elle propose « Voir la Miff {nom} » si le Feed en affiche une autre. **L'écran « avertis » (rouvert par la bannière) concerne toujours la Miff d'origine**, avec ses membres.
+- **Fin d'alerte** : la fin (maintien 5 s sur la bannière) s'écrit **dans la Miff d'origine**, même si le Feed affiche une autre Miff ; la notification de fin va aux membres de cette Miff seulement.
+- **Une seule alerte active à la fois** (D14, garde côté application) : un maintien sur le bouton Update alors qu'une alerte est active (dans n'importe quelle Miff) **n'en déclenche pas une seconde** ; le message calme « Une alerte est déjà en cours pour la Miff {nom} » s'affiche. Pour alerter une autre Miff : terminer l'alerte en cours (puis re-déclencher) ou, en v1.1, « Prévenir aussi mes autres Miffs ».
+- **Couleurs de moi** : l'anneau, le point du bouton central et ma carte **reflètent la Miff affichée** (comme aujourd'hui, D19) : ils ne deviennent rouges que **dans la Miff d'origine**. **La bannière est le seul signal global** de l'alerte.
+- **Messages qui disent la portée** : nom de la Miff sur l'écran de maintien (si plusieurs Miffs), dans le titre de l'écran « avertis » (maquette 06), dans la bannière et dans la confirmation de fin ; sous-texte « Seule cette Miff est prévenue » ; fiche « En savoir plus ».
+- **⚠ Point de vigilance (à acter par le PM) : « une alerte dans une Miff, rien dans les autres ».** Une personne dans deux cercles (par exemple famille et collègues) peut croire qu'elle a prévenu **tout le monde** alors que seule la Miff sélectionnée l'est : le risque est une **fausse sécurité par oubli de sélection**, surtout dans le stress. Atténuations déjà prévues (nom de la Miff visible **avant** l'envoi, dans le titre, dans la bannière ; numéros d'urgence toujours proposés) ; atténuations **recommandées pour la suite** : v1.1 « Prévenir aussi mes autres Miffs » sur l'écran « avertis » et/ou pastille de Miff modifiable sur l'écran de maintien.
+- **Effet sur la position partagée** : voir section 9 (le rythme renforcé et la levée de réciprocité ne valent que dans la Miff d'origine ; les autres Miffs gardent leur rythme normal).
 
 ### 12.6 Autres
 - **Update publiée pendant l'alerte** : possible, ne termine pas l'alerte (D11).
@@ -364,7 +385,7 @@ Gratuit (1 Miff) : une écriture. Premium : **toutes les Miffs où je partage**,
 | `alert_info_title` | Déclarer une alerte | Declare an alert |
 | `alert_info_body` | Maintiens le bouton 5 secondes pour prévenir tes proches. Ils reçoivent une notification et voient ta carte en haut de leur Miff. [Si Q2 = B : Pendant l'alerte, ils peuvent voir ta dernière position, mise à jour plus souvent, pendant 2 heures au plus.] L'alerte dure 7 jours au plus ; tu peux la terminer à tout moment. Une notification peut arriver en retard ou ne pas arriver. | Hold the button for 5 seconds to let your circle know. They get a notification and see your card at the top of their Miff. [If Q2 = B: During the alert, they can see your latest location, refreshed more often, for up to 2 hours.] The alert lasts at most 7 days; you can end it any time. A notification may arrive late or not at all. |
 - **CGU** (`cgu.*.md`) : ajouter dans l'avertissement « pas un service d'urgence » une puce « **L'alerte envoyée à tes proches n'est pas un appel aux secours** » ; art. 6 : notification non garantie ; art. 8 : usage de bonne foi, **les fausses alertes répétées peuvent entraîner la suspension du compte** (formulation sobre, non culpabilisante).
-- **Politique de confidentialité** : nouvelle donnée **« alerte »** (état, heures de début et de fin, durée) ; finalité (prévenir le cercle) ; base (consentement/contrat) ; **qui la voit** (membres des Miffs alertées) ; **conservation** (≤ 7 j + 2 j, effacée à la fin plus 2 j) ; **notification** (prénom, identifiants techniques, jamais position) ; si Q2 = B : **position plus fréquente et lisible sans réciprocité pendant l'alerte** ; sous-traitants inchangés (FCM, APNs, Firestore, Cloud Functions) ; **passage de version des textes**. **FR et EN dans la même PR.**
+- **Politique de confidentialité** : nouvelle donnée **« alerte »** (état, heures de début et de fin, durée) ; finalité (prévenir le cercle) ; base (consentement/contrat) ; **qui la voit** (membres de la seule Miff dans laquelle la personne a déclaré l'alerte) ; **conservation** (≤ 7 j + 2 j, effacée à la fin plus 2 j) ; **notification** (prénom, identifiants techniques, jamais position) ; si Q2 = B : **position plus fréquente et lisible sans réciprocité pendant l'alerte** ; sous-traitants inchangés (FCM, APNs, Firestore, Cloud Functions) ; **passage de version des textes**. **FR et EN dans la même PR.**
 - **Texte de consentement de partage de position** : si Q2 = B, **nouvelle version** (re-consentement nécessaire, mécanisme déjà préparé) ; si Q2 = A, **aucune version à changer** (mentionner l'alerte à la prochaine révision).
 
 ### 14.3 RGPD (qualification, sans conclusion juridique)
@@ -385,7 +406,8 @@ Gratuit (1 Miff) : une écriture. Premium : **toutes les Miffs où je partage**,
 - [ ] **AD1** Sur l'écran Update, un appui court sur le bouton prend une photo (comportement inchangé) ; un appui maintenu passe en mode alerte au-delà de 400 ms.
 - [ ] **AD2** Pendant le maintien : le bouton est rouge, le message « Je suis en danger » et « Maintiens 5 secondes pour envoyer l'alerte » sont affichés, le fond se remplit progressivement ; **aucune écriture réseau** n'a lieu avant 5 s ; aucune photo n'est prise.
 - [ ] **AD3** Relâcher avant 5 s : retour immédiat à l'écran Update, **aucune alerte**, aucun message ; idem si l'app passe en arrière-plan ou si un appel entrant prend le focus.
-- [ ] **AD4** À 5 s : retour haptique net, alerte écrite, bascule sur l'écran 03 ; aucune action supplémentaire n'est requise.
+- [ ] **AD4** À 5 s : retour haptique net, alerte écrite **dans la Miff sélectionnée dans le Feed à cet instant (un seul document `miffs/{miffId}/alerts/{moi}`)**, bascule sur l'écran 03/06 ; aucune action supplémentaire n'est requise.
+- [ ] **AD4b** Avec plusieurs Miffs, l'écran de maintien affiche « Alerte pour la Miff {nom} » **avant** l'envoi ; avec une seule Miff, la ligne est absente.
 - [ ] **AD5** Un lecteur d'écran/accès par commutateur actif : une action « Déclarer une alerte » ouvre une confirmation en deux étapes ; **la confirmation est la seule voie** dans ce cas ; le maintien reste possible sans lecteur d'écran.
 - [ ] **AD6** Plus de 3 déclenchements en une heure : une confirmation supplémentaire est demandée.
 
@@ -395,20 +417,22 @@ Gratuit (1 Miff) : une écriture. Premium : **toutes les Miffs où je partage**,
 - [ ] **AD9** La bulle disparaît au premier toucher et après ~6 s ; elle ne gêne pas la prise de photo.
 
 **Écran contact (8)**
-- [ ] **AD10** Après l'envoi, l'écran « Tes proches viennent d'être avertis » s'affiche ; le titre « avertis » n'apparaît **qu'après l'accusé du serveur** ; sans réseau : « Ton alerte partira dès que possible ».
-- [ ] **AD11** Contact présélectionné : le **créateur** de la Miff s'il n'est pas moi ; sinon **le premier membre autre que moi par `joinedAt`**.
+- [ ] **AD10** Après l'envoi, l'écran « Tes proches de la Miff {nom} viennent d'être avertis » (maquette 06) s'affiche avec **le nom de la Miff d'origine** ; le titre « avertis » n'apparaît **qu'après l'accusé du serveur** (avant : « Envoi de l'alerte à la Miff {nom}… ») ; sans réseau : « Ton alerte partira dès que possible ».
+- [ ] **AD10b** Nom de Miff long (40 unités UTF-16, emojis, mot sans espace) : le titre passe à la ligne sans déborder de la bulle ni être tronqué pour le lecteur d'écran ; « Miff » écrit avec une majuscule ; aucun trou si le nom est introuvable (variante sans nom).
+- [ ] **AD11** Contact présélectionné : le **créateur de la Miff d'origine** s'il n'est pas moi ; sinon **le premier membre de cette Miff autre que moi par `joinedAt`**.
 - [ ] **AD12** Si le contact prévu n'a pas de numéro : **le membre suivant avec numéro** (créateur puis `joinedAt`) ; aucun membre sans numéro n'est listé.
 - [ ] **AD13** Miff où je suis seul(e), ou aucun membre avec numéro : la liste ne contient que les services d'urgence ; **112** (ou équivalent régional) est présélectionné.
 - [ ] **AD14** La liste montre d'abord « Tes proches » (créateur, puis ordre d'arrivée), **puis une section séparée « Services d'urgence »** ; chaque entrée a un nom lisible et son numéro.
 - [ ] **AD15** Les numéros d'urgence viennent d'un **catalogue par région** : France -> 17, 15, 18, 112 ; autre pays UE/EEE -> 112 ; région inconnue -> 112 ; le pays vient de la **locale** de l'appareil, **jamais de la position** (test : localisation refusée, région FR -> numéros FR).
 - [ ] **AD16** « Appeler » ouvre le **composeur du système** (aucun appel direct, aucune permission `CALL_PHONE` ni « Contacts » dans le manifeste/`Info.plist`).
-- [ ] **AD17** Plusieurs Miffs alertées : liste dédoublonnée par personne puis par numéro, Miff affichée d'abord.
+- [ ] **AD17** Avec plusieurs Miffs : la liste « Tes proches » ne contient **que les membres de la Miff d'origine** (jamais ceux d'une autre Miff de la personne).
 - [ ] **AD18** La mention « Miff n'est pas un service d'urgence. En cas de danger immédiat, appelle le 112 » est visible sur l'écran ; le texte n'est ni culpabilisant ni alarmiste.
 
 **Bannière et fin**
 - [ ] **AD19** Alerte active : la bannière apparaît sur Feed, Update et Profil, fixe au-dessus de la barre d'onglets, **sans masquer** de contenu (marge basse), **jamais** sur l'écran 03 ni l'aperçu de publication.
 - [ ] **AD20** La bulle d'incitation orange/rouge et le compte à rebours orange ne s'affichent **pas** pendant l'alerte ; les rappels locaux N1/N2/N6 sont suspendus.
-- [ ] **AD21** Maintien 5 s sur la bannière : barre de progression, haptique, annulation au relâchement ; à 5 s, `status = ended` écrit, bannière retirée **seulement après l'accusé du serveur**.
+- [ ] **AD21** Maintien 5 s sur la bannière : barre de progression, haptique, annulation au relâchement ; à 5 s, `status = ended` écrit **dans la Miff d'origine** (même si le Feed affiche une autre Miff), bannière retirée **seulement après l'accusé du serveur**.
+- [ ] **AD21b** La bannière nomme **toujours la Miff d'origine** (« Tu as alerté les proches de la Miff {nom} ») et propose « Voir la Miff {nom} » quand le Feed en affiche une autre.
 - [ ] **AD22** Fin sans réseau : la bannière reste avec « Fin en attente d'envoi » et réessaie ; l'alerte n'est pas considérée terminée localement.
 - [ ] **AD23** Lecteur d'écran actif : une action « Terminer l'alerte » avec confirmation remplace le maintien.
 - [ ] **AD24** Au bout de **7 jours** (`expiresAt`), la bannière disparaît, **aucune notification** n'est envoyée ; la carte des proches passe en ligne neutre « Alerte arrivée à échéance » pendant 24 h, puis disparaît.
@@ -433,13 +457,17 @@ Gratuit (1 Miff) : une écriture. Premium : **toutes les Miffs où je partage**,
 - [ ] **AD39** Journaux de la fonction : **aucun identifiant, jeton, prénom, coordonnée** (test sur le texte).
 
 **Données et sécurité**
-- [ ] **AD40** Règles : `expiresAt` = début + 7 j exactement ; clés fermées ; création, ré-armement, fin conformes à 10.2 ; deviceId de session obligatoire ; partage actif exigé ; tests et mutations verts.
-- [ ] **AD41** Les lots d'arrêt du partage, de départ, de retrait, de suppression de Miff et de compte **suppriment** le document d'alerte ; **sans push**.
-- [ ] **AD42** Nouvel appareil (session unique) : l'alerte en cours est lue et adoptée (bannière, fin possible).
+- [ ] **AD40** Règles : document `miffs/{miffId}/alerts/{uid}` (clé = miffId + uid, aucun champ `miffId`/`uid`) ; `expiresAt` = début + 7 j exactement ; clés fermées ; création, ré-armement, fin conformes à 10.2 ; deviceId de session obligatoire ; partage actif **dans cette Miff** exigé ; tests et mutations verts.
+- [ ] **AD41** Les lots d'arrêt du partage, de départ, de retrait, de suppression de Miff et de compte **suppriment** le document d'alerte **de la Miff concernée** ; **sans push** ; la même opération dans une **autre** Miff de la personne **n'affecte pas** l'alerte en cours.
+- [ ] **AD42** Nouvel appareil (session unique) : l'app lit mon document d'alerte (1 `get` par Miff, une fois) ; l'alerte en cours est adoptée (bannière avec le nom de la Miff d'origine, fin possible).
 - [ ] **AD43** Aucun événement Analytics, aucune position dans un journal ou un rapport de plantage, aucune clé secrète côté client.
 
 **Fiabilité et honnêteté**
 - [ ] **AD44** Sans réseau au déclenchement : écran 03 avec numéros accessibles, état « en attente », réessai automatique ; > 15 min : confirmation avant envoi.
+- [ ] **AD47** **Portée** : une alerte déclarée dans la Miff A **n'écrit rien** dans la Miff B, **n'envoie aucune notification** aux membres de B, **n'apparaît ni dans le Feed ni dans la bulle de B** ; la personne ayant changé de Miff dans le Feed conserve sa bannière (nom de A) ; l'alerte reste liée à A.
+- [ ] **AD48** **Une alerte à la fois** : un maintien sur le bouton Update alors qu'une alerte est active (dans n'importe quelle Miff) ne déclenche pas de seconde alerte et affiche « Une alerte est déjà en cours pour la Miff {nom} ».
+- [ ] **AD49** **Position** : le rafraîchissement renforcé (option B) n'est écrit que dans la Miff d'origine ; les autres Miffs gardent le rythme normal ; la levée de réciprocité ne vaut que dans la Miff d'origine et tant que l'alerte y est active.
+- [ ] **AD50** Avec plusieurs Miffs, l'anneau, le point du bouton central et ma carte ne sont rouges **que dans la Miff d'origine** (reflet de la Miff affichée, D19) ; la bannière est visible dans tous les cas.
 - [ ] **AD45** Aucun texte de l'app, de la notification ou des fiches ne promet une intervention, une lecture ou un délai ; la mention « pas un service d'urgence » est présente (écran 03, fiche « En savoir plus », CGU).
 - [ ] **AD46** Tous les textes FR/EN sont en clés de catalogue ; anglais en repli.
 
@@ -467,6 +495,8 @@ Gratuit (1 Miff) : une écriture. Premium : **toutes les Miffs où je partage**,
 | C16 | **Tutoiement/vouvoiement** : les maquettes vouvoient (« Vos proches », « Maintenez ») ; le reste de l'app tutoie. | Faible | Tutoiement (E1). |
 | C17 | **Mineurs, surveillance détournée** (parent qui déclenche pour l'enfant ?) | Faible | Seul l'auteur déclenche (appareil unique, session) ; risque mineurs assumé. |
 | C18 | **Abus de la fonction** (spam d'alertes dans un cercle) | Moyenne | Plafonds de la fonction, suspension de compte (CGU), App Check. |
+| C19 | **« Une alerte dans une Miff, rien dans les autres »** (décision du PM) : une personne dans deux cercles peut croire avoir prévenu tout le monde ; risque de fausse sécurité par oubli de sélection de la Miff ; les autres Miffs voient la personne normale (verte) pendant l'alerte ; position renforcée seulement dans la Miff alertée. | **Haute** (multi-Miffs, donc premium) | Le nom de la Miff est affiché **avant** l'envoi, dans le titre de l'écran « avertis » (maquette 06), dans la bannière et la confirmation de fin ; sous-texte « Seule cette Miff est prévenue » ; numéros d'urgence toujours proposés. Pour la suite : v1.1 « Prévenir aussi mes autres Miffs » et/ou pastille de Miff modifiable sur l'écran de maintien (12.5). |
+| C20 | **Changement de Miff dans le Feed pendant l'alerte** : bannière, carte et fin pourraient se rapporter à la mauvaise Miff ; couleur de l'anneau/du bouton qui reflète la Miff affichée. | Moyenne | Alerte **liée à la Miff d'origine** (pointeur local + lecture serveur à la connexion) ; bannière globale qui nomme toujours la Miff d'origine ; fin écrite dans la Miff d'origine ; anneau et bouton rouges seulement dans la Miff d'origine (12.5). |
 
 ---
 
@@ -487,10 +517,13 @@ Fidélité : les 5 maquettes sont **suivies au plus près** ; chaque écart ci-d
 | E9 | **Ligne « Alerte arrivée à échéance »** (24 h) et **rappels locaux** à l'auteur | Atténue la fin silencieuse |
 | E10 | **Ordre du Feed** : exception limitée aux alertes (7.6) | Demande du PM ; incohérence avec D43 à acter |
 | E11 | **Pas de bouton fermer** sur la bannière | Même logique que D21 |
+| E12 | **Écran « avertis » : titre avec le nom de la Miff (maquette 06, brouillon du PM)** « Tes proches de la Miff {nom} viennent d'être avertis » : tutoiement ; « Miff » en majuscule (le PNG écrit « miff » avec des points de suspension) ; nom sur sa propre ligne, en gras, retour à la ligne et police dégressive pour les noms longs (40 unités UTF-16 au plus) ; lecture complète au lecteur d'écran | Décision du PM (Miff sélectionnée) ; maquette 06 |
+| E13 | **Écran de maintien (maquette 02) : ligne « Alerte pour la Miff {nom} »** (seulement avec plusieurs Miffs) ; **bannière (maquette 05)** : nom de la Miff d'origine + « Voir la Miff {nom} » | Portée de l'alerte (une seule Miff) doit être visible avant et pendant l'alerte (C19) |
 
-### Écrans à créer ou à dessiner (non fournis par les 5 maquettes) — pour `design-system`
+### Écrans à créer ou à dessiner (non fournis par les 6 maquettes) — pour `design-system`
 1. Écran Update en alerte avec **fond qui se remplit** (états : armement, 50 %, 100 %).
-2. Écran 03 : variantes **envoi en cours**, **sans réseau / en attente**, **aucun proche avec numéro (urgence seulement)**, **partage arrêté**.
+2. Écran 03/06 : variantes **envoi en cours**, **sans réseau / en attente**, **aucun proche avec numéro (urgence seulement)**, **partage arrêté avec la Miff sélectionnée**, **nom de Miff très long** (4 lignes, mot sans espace, emojis), **nom introuvable**.
+2 bis. **Écran de maintien (02)** avec la ligne « Alerte pour la Miff {nom} » ; **message « Une alerte est déjà en cours pour la Miff {nom} »** ; **bannière avec « Voir la Miff {nom} »**.
 3. **Liste de contacts à deux sections** (feuille ou menu), états vide/chargement.
 4. **Bannière** : repos, progression de fin (maintien), **fin en attente d'envoi**, 2 lignes de texte étendues.
 5. **Fiche « En savoir plus »** de la bulle d'onboarding.
@@ -501,7 +534,7 @@ Fidélité : les 5 maquettes sont **suivies au plus près** ; chaque écart ci-d
 10. **Confirmation « Veux-tu toujours envoyer ton alerte ? »** après 15 min.
 11. **Notification** (aperçu écran verrouillé, début et fin) et canal Android.
 
-Pour la PR de développement : **le PM fournira les exports PNG des maquettes** dans `design/exports/alerte-danger/` (déjà : 5 fichiers) ; les écrans ci-dessus sont à **designer par l'agent design** avant développement, ou le dev peut les ajouter avec une liste d'écarts.
+Pour la PR de développement : **le PM fournira les exports PNG des maquettes** dans `design/exports/alerte-danger/` (déjà : 6 fichiers, dont `06-ecran-avertis-texte-avec-nom-de-la-miff.png`) ; les écrans ci-dessus sont à **designer par l'agent design** avant développement, ou le dev peut les ajouter avec une liste d'écarts.
 
 ---
 
@@ -511,11 +544,11 @@ Process par ticket (CLAUDE.md) : une branche et une PR par plateforme, Android a
 
 | # | Ticket | Contenu | Taille | Dépend de |
 |---|---|---|---|---|
-| **AD-D** | Design (agent `design-system`) | Écrans de la liste 17 ; maquettes à fournir par le PM si besoin | M | Réponses Q1 à Q8 |
+| **AD-D** | Design (agent `design-system`) | Écrans de la liste 17 (dont le titre de l'écran « avertis » avec nom de Miff long, maquette 06) ; maquettes à fournir par le PM si besoin | M | Réponses Q2 à Q8 |
 | **AD-L** | Légal et stores (`release-manager`) | Textes 14.2, CGU, politique, Data safety, App Privacy, note de revue (FR + EN), **version consentement si Q2 = B** | S | Q2 |
-| **AD-B1** | Règles + modèle (`backend-data`) | `data-model.md` (§2.18 alerts), `firestore.rules` (`alerts`), lots de suppression, tests et mutations, plan de déploiement en 2 temps | M | Q1, Q2, Q3 |
+| **AD-B1** | Règles + modèle (`backend-data`) | `data-model.md` (§2.18 alerts), `firestore.rules` (`alerts`, **un seul document par alerte, clé miffId + uid**), lots de suppression (par Miff), règle de lecture de `positions` conditionnée à l'alerte **dans la même Miff** (si Q2 = B), tests et mutations, plan de déploiement en 2 temps | M (un peu moins : plus de lots multi-Miffs) | Q2, Q3 |
 | **AD-B2** | Fonction `notifierAlerte` (`backend-data`) | Déclencheur, idempotence, plafonds, message Android/iOS, tests d'émulateur, garde-coûts, doc de déploiement, `surveillance-quotas.md` | M | AD-B1 |
-| **AD-A1** | Android : déclenchement et envoi | Maintien 5 s, haptique, onboarding, écriture des alertes, EN_ATTENTE, écran 03 + contacts + catalogue d'urgence, bannière + fin, accessibilité, session unique | L | AD-B1, AD-D |
+| **AD-A1** | Android : déclenchement et envoi | Maintien 5 s, haptique, onboarding, écriture de l'alerte **dans la Miff sélectionnée** (pointeur local vers la Miff d'origine, garde « une alerte à la fois »), EN_ATTENTE, écran « avertis » (titre avec nom de Miff, maquette 06) + contacts **de la Miff d'origine** + catalogue d'urgence, bannière nommant la Miff + fin, accessibilité, session unique (lecture de mon alerte à la connexion) | L | AD-B1, AD-D |
 | **AD-A2** | Android : proches et notifications | Écouteur d'alertes, carte rouge en tête, bulle rouge, couleur (voyage), canal, réception, centre de notifications, rappels locaux auteur, aide OPPO | M | AD-A1, AD-B2 |
 | **AD-I1** | iOS : déclenchement et envoi | Même contenu qu'AD-A1 ; **capacité Time Sensitive** (PM) | L | AD-A1 (références), profils CI |
 | **AD-I2** | iOS : proches et notifications | Même contenu qu'AD-A2 ; validation réception push iOS | M | AD-I1, AD-B2 |
@@ -526,13 +559,11 @@ Ordre : **AD-D + AD-L en parallèle -> AD-B1 (règles) -> AD-A1 -> AD-B2 (foncti
 
 ---
 
-## 19. Questions pour le PM (8 au plus, défaut recommandé)
+## 19. Questions pour le PM (7 ouvertes, défaut recommandé)
 
-**Q1. Portée : toutes mes Miffs ou une seule ?** Une alerte part-elle vers **toutes les Miffs où je partage** ou seulement la Miff affichée ?
-- Options : toutes / affichée / choix à l'envoi (rejeté : trop de friction dans le stress).
-- *Défaut recommandé* : **toutes** (en danger, on ne trie pas ; gratuit = 1 Miff, donc sans effet).
+*La question 1 (portée) est **décidée par le PM le 2026-11-18 : l'alerte ne part qu'aux membres de la Miff sélectionnée dans le Feed** (D9, section 12.5). Les numéros Q2 à Q8 sont conservés pour que les renvois du document restent valides.*
 
-**Q2. Position pendant l'alerte.** (A) minimal : une mesure à l'envoi, réciprocité inchangée ; (B) renforcé : mesure plus fréquente (~5 min, **2 h max**) et position **lisible par tous les membres des Miffs alertées** même sans réciprocité, tant que l'alerte est active, avec **nouveau texte de consentement**.
+**Q2. Position pendant l'alerte.** (A) minimal : une mesure à l'envoi, réciprocité inchangée ; (B) renforcé : mesure plus fréquente (~5 min, **2 h max**) et position **lisible par tous les membres de la Miff d'origine** même sans réciprocité (renforcement et levée de réciprocité **dans cette Miff seulement**, les autres Miffs gardent leur rythme normal), tant que l'alerte est active, avec **nouveau texte de consentement**.
 - *Défaut recommandé* : **B**, car l'alerte sans position perd l'essentiel de sa valeur ; **A si tu préfères ne pas toucher aux règles de position ni au consentement avant le lancement** (A est un plancher livrable immédiatement ; B peut suivre dans un second temps).
 
 **Q3. Qui est notifié ?** Tous les membres avec jeton **même s'ils ne partagent pas leur position**, ou seulement ceux qui partagent (réciprocité) ?
@@ -553,7 +584,7 @@ Ordre : **AD-D + AD-L en parallèle -> AD-B1 (règles) -> AD-A1 -> AD-B2 (foncti
 **Q8. Fausses alertes et dissuasion.** Ajouter dans les CGU que **des fausses alertes répétées peuvent entraîner la suspension du compte**, et limiter à **3 déclenchements par heure** avant confirmation supplémentaire ?
 - *Défaut recommandé* : **oui** aux deux (formulation sobre).
 
-**Déjà tranché par défaut dans ce ticket (à contester si besoin)** : seul l'auteur termine ; update ≠ fin d'alerte ; alerte l'emporte sur le mode voyage ; pas de raccourci écran verrouillé ; pas d'accusés « je l'appelle » (v2) ; pas de contact d'urgence personnel hors Miff (v2) ; pas de SMS hors ligne (v1.1) ; bulle d'onboarding à indicateur local neuf ; contact présélectionné et numéros d'urgence par région (précisions du PM du 2026-11-18, intégrées en section 8).
+**Déjà tranché par défaut dans ce ticket (à contester si besoin)** : seul l'auteur termine ; update ≠ fin d'alerte ; alerte l'emporte sur le mode voyage ; pas de raccourci écran verrouillé ; pas d'accusés « je l'appelle » (v2) ; pas de contact d'urgence personnel hors Miff (v2) ; pas de SMS hors ligne (v1.1) ; bulle d'onboarding à indicateur local neuf ; contact présélectionné et numéros d'urgence par région (précisions du PM du 2026-11-18, intégrées en section 8) ; **une seule alerte active à la fois** (garde côté application, D14) ; **bannière et écran « avertis » nomment toujours la Miff d'origine** ; **le titre de l'écran « avertis » suit la maquette 06** (nom de la Miff, « Miff » en majuscule, tutoiement).
 
 ---
 
