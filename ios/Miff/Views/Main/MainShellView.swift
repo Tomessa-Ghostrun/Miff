@@ -285,6 +285,8 @@ struct MainShellView<Feed: View>: View {
                 }
             }
         }
+        // Changer la langue (Réglages > Langue) refait le contenu des onglets dans la nouvelle langue ; l'onglet choisi, lui, ne bouge pas.
+        .followsAppLanguage()
         .onPreferenceChange(TabBarTopPreference.self) { barTopY = $0 }
         #if ALERT_DANGER
         .onPreferenceChange(DangerBannerTopPreference.self) { dangerBannerTopY = $0 }

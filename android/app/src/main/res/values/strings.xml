@@ -1401,4 +1401,17 @@
     <string name="alert_confirm_end_body_no_name">Your people will be told you\'re ending it.</string>
     <string name="alert_unavailable_title">The alert to your people isn\'t available right now. If you\'re in danger, call the emergency services directly.</string>
     <string name="miff_alert_removed_warning">You have an alert in progress in this Miff: it will be removed, and your people won\'t be told it ended.</string>
+
+    <!-- ABOUT-1A : textes propres a Android de Reglages > A propos et aide (lignes de cartes et d'adresses, detail d'une licence, indice de la version) -->
+    <string name="android_about_copy_hint">Tap to copy</string>
+    <string name="android_about_contact_subtitle">A question, a problem, an idea: write to us.</string>
+    <string name="android_about_licenses_footnote">The licenses are taken from the public description of each library.</string>
+    <string name="android_about_licenses_includes">What it includes</string>
+    <string name="android_about_licenses_text_unavailable">This text couldn\'t be shown just now.</string>
+    <string name="android_about_licenses_unavailable">The list couldn\'t be shown just now.</string>
+    <string name="android_about_licenses_map_engine">Map engine: MapLibre Native</string>
+    <string name="android_about_licenses_map_tiles">Map: OpenFreeMap, © OpenMapTiles, data © OpenStreetMap contributors</string>
+    <string name="android_about_licenses_address_search">Addresses: Photon service by komoot, data © OpenStreetMap contributors</string>
+    <string name="android_about_licenses_map_tiles_notice">Maps are drawn with the tiles of OpenFreeMap (https://openfreemap.org), which use the © OpenMapTiles schema. The data is © OpenStreetMap contributors, available under the ODbL 1.0 license (https://opendatacommons.org/licenses/odbl/1-0/). The credit stays visible under every map.</string>
+    <string name="android_about_licenses_address_search_notice">The addresses suggested while you type come from Photon, the public service of komoot (https://photon.komoot.io), whose software is published under the Apache 2.0 license. Its data is © OpenStreetMap contributors, available under the ODbL 1.0 license (https://opendatacommons.org/licenses/odbl/1-0/).</string>
 </resources>

@@ -6,8 +6,8 @@ import Foundation
 /// Modèles > Réinitialisation du mot de passe > personnaliser l'URL d'action) une fois cette page déployée. Rien ne la
 /// concerne dans l'app.
 ///
-/// La langue de l'e-mail suit la langue du téléphone (`useAppLanguage`) : le lien de l'e-mail porte alors `lang=fr` ou
-/// `lang=en`, que la page web utilise. L'adresse va du formulaire à Firebase et nulle part ailleurs : jamais stockée,
+/// La langue de l'e-mail suit la langue de l'app, celle choisie dans Réglages > Langue (la langue du téléphone par défaut) : le lien de
+/// l'e-mail porte alors `lang=fr` ou `lang=en`, que la page web utilise. L'adresse va du formulaire à Firebase et nulle part ailleurs : jamais stockée,
 /// jamais journalisée.
 final class FirebasePasswordResetGateway: PasswordResetGateway {
     func sendResetEmail(_ email: String) async -> PasswordResetOutcome {
@@ -15,7 +15,7 @@ final class FirebasePasswordResetGateway: PasswordResetGateway {
             return .failed(.unknown)
         }
         let auth = Auth.auth()
-        auth.useAppLanguage()
+        auth.languageCode = AppLanguage.code
         do {
             try await auth.sendPasswordReset(withEmail: email)
             return .accepted

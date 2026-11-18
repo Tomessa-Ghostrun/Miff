@@ -5,6 +5,8 @@ struct SettingsActions {
     let onBack: () -> Void
     let onOpenMyInfo: () -> Void
     let onOpenAccount: () -> Void
+    /// Réglages > Langue. Valeur par défaut : un aperçu qui ne montre pas cette ligne n'a rien à fournir.
+    var onOpenLanguage: () -> Void = {}
     let onOpenPrivacy: () -> Void
     let onOpenNotifications: () -> Void
     /// ABOUT-1I : la ligne « À propos et aide ». Valeur par défaut : un aperçu qui ne la montre pas n'a rien à fournir.
@@ -13,7 +15,8 @@ struct SettingsActions {
 
 /// Réglages (maquettes « réglages », ticket Profil / Réglages critère A4) : Mes informations, Mon compte, Notifications (NOTIF-2I, absente
 /// des Réglages restreints), Langue, Confidentialité. Rien d'autre : pas d'encart Premium ni d'abonnement (rien ne peut être acheté
-/// encore). La ligne « Langue » ouvre les réglages de l'iPhone pour Miff (décision Q4) et dit la langue en cours.
+/// encore). La ligne « Langue » ouvre l'écran Langue de l'app (décision du PM du 2026-11-13, comme sur
+/// Android) et dit la langue en cours ; elle n'ouvre plus les réglages de l'iPhone.
 struct SettingsListView: View {
     let actions: SettingsActions
     /// Un compte SANS Miff (décision du PM du 2026-11-07) : seulement Mon compte, Confidentialité et « À propos et aide » (ABOUT-1I).
@@ -63,7 +66,7 @@ extension SettingsListView {
                 title: L10n.string("settings_language_title"),
                 subtitle: L10n.format("ios_settings_language_current", AppLanguageName.current),
                 hint: L10n.string("ios_settings_language_hint_a11y"),
-                action: { ExternalOpener.openSystemSettings() }
+                action: actions.onOpenLanguage
             )
         case .privacy:
             SettingsRow(

@@ -28,7 +28,28 @@ Choix économiques et limites :
 - **Limites connues** : la mesure de position passe par le suivi des lieux (relecture des Miffs au passage, garde-fou de 30 s) plutôt que par un nouveau chemin ; la notification n'est **pas garantie** (notifications coupées, app désinstallée, réseau) et **Time Sensitive ne passe pas le mode silencieux** ; le geste exige l'**écran Update avec viseur** (caméra autorisée) : sans caméra, seul le lien « Appeler les secours » existe ; une horloge de téléphone en avance de plus de 2 min peut se faire refuser (phrase générique avec numéros) ; le lot de retrait avec alerte est à la limite des 20 lectures de règles (**à vérifier sur le vrai serveur après déploiement**).
 - **Non fait dans cette PR** : ligne « {Prénom} a déclaré une alerte » dans le centre de notifications de l'app (le système affiche déjà la notification) ; aide « Si les alertes n'arrivent pas » (Concentration, Time Sensitive) ; annonces VoiceOver d'annulation et de fin ; captures d'écran de la CI pour les nouveaux écrans ; ajout du droit Time Sensitive (attend le PM, voir ci-dessus).
 
+
+### Réglages > Langue dans l'app (retour de recette du PM, 2026-11-13)
+
+Branche `ios/reglages-langue` (PR en brouillon). Décision du PM : « Langue » ouvre **le même écran qu'Android** (Français, English, Langue du téléphone), au lieu des réglages de l'iPhone. Le choix d'origine (ouvrir les réglages de l'iPhone) était une recommandation de `product-specs` (Onboarding Q11), pas une obligation d'Apple. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM : `docs/qa/checklists/reglages-langue-ios-recette-pm.md`. Détail : `ios/README.md`, section « Réglages > Langue dans l'app ». **0 € : aucune lecture ni écriture Firestore, aucun événement Analytics.**
+
+Ajouté :
+- Écran **Langue** (`Views/Settings/LanguageView.swift`) : trois lignes « Français », « English », « Langue du téléphone » (les deux noms jamais traduits), **bouton radio** à droite de chaque ligne (cercle vide gris, ou plein bleu de l'app sur le choix actif ; retour du PM sur le build 36, miroir du RadioButton d'Android) et gras sur le choix actif, VoiceOver « Français, sélectionné », lignes de 44 pt au moins, Dynamic Type, pas de bouton « Enregistrer ».
+- Choix gardé **sur l'appareil** (`UserDefaults`, une valeur `fr` / `en` / `system`, jamais envoyée ni liée au compte), « Langue du téléphone » par défaut (`Models/Main/AppLanguage.swift`).
+- **Application à chaud, sans redémarrage** : locale de l'environnement SwiftUI posée à la racine (`AppLanguageHost`), `L10n` lit le paquet `fr.lproj` / `en.lproj` du choix, la coque et les écrans empilés se refont dans la nouvelle langue (`followsAppLanguage()`), sans toucher à la pile, à l'onglet choisi ni aux modèles de l'hôte.
+- Clés `ios_settings_language_french` et `ios_settings_language_english` (préfixe `ios_` : Android les garde hors traduction, le contrôle de parité les ignore).
+- Captures de la CI `160` à `167` (écran Langue ; Réglages en anglais choisi sur un téléphone en français, `-MiffAppLanguage en`, Debug seulement).
+- Tests `AppLanguageTests` (choix, langue effective, conservation, défaut = téléphone, textes hors vue, notifications, e-mail de réinitialisation, aucun appel à `openSettingsURLString` pour la langue).
+
+Modifié :
+- La ligne « Langue » des Réglages n'ouvre plus les réglages de l'iPhone ; elle dit la langue en cours (« Langue actuelle : Français ») ; son aide VoiceOver devient « ouvre le choix de la langue ».
+- Textes et formats calculés hors des vues lisent la langue **choisie** : `L10n` (textes, valeurs, pluriels), phrases et heures du Feed, dates du voyage, heures du centre de notifications, noms de pays, **texte des notifications locales** (reprogrammées dans la nouvelle langue juste après le choix par `NotificationLifecycle`) et langue de l'**e-mail de réinitialisation** (`languageCode` de Firebase Authentication).
+- Nouvelle route `SettingsRoute.language` : absente des Réglages restreints d'un compte sans Miff, et refermée si la dernière Miff disparaît pendant qu'elle est ouverte.
+
+Limites : textes système (fenêtres d'autorisation, clavier) dans la langue du téléphone ; une notification locale a un texte figé (reprogrammée au choix et au retour au premier plan) ; les écrans refaits perdent leur état interne non gardé par l'hôte ; la langue n'est pas envoyée au serveur (un futur push serveur devra en décider).
 ### Compte à rebours avant le passage à l'orange, Feed et Profil (COUNTDOWN-I ; miroir d'Android COUNTDOWN-A)
+
+Corrigé (CI rouge de la PR) : (1) un commentaire de `LanguageView.swift` citait `Text("cle")` et déclenchait la règle SwiftLint maison `no_hardcoded_text` (commentaire reformulé) ; (2) `AccountLocalStorageGuardTests` échouait car `Models/Main/AppLanguage.swift` (nouveau stockage `UserDefaults`) n'était pas dans sa liste : ajouté avec sa raison (préférence d'affichage de l'appareil, non personnelle, volontairement gardée à la suppression du compte).
 
 Ticket `docs/tickets/compte-a-rebours-orange.md` (décidé sur délégation du PM, 2026-11-13), recette `docs/qa/checklists/compte-a-rebours-ios-recette-pm.md`. **Rien n'est compilé en local** (la CI fait foi). Coût : **0 €**, aucune écriture Firestore, aucune notification, aucun événement d'analyse, aucune dépendance. **Une seule lecture, ajoutée après la revue** : MON seul statut (UN document) est écouté sur le Profil et l'Update, jamais sur le Feed (qui l'écoute déjà) ; voir « Corrigé après la revue » ci-dessous.
 
