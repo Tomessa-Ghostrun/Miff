@@ -76,6 +76,71 @@ object PresenceMachine {
             )
     }
 
+    /**
+     * FEED-REFRESH-POSITION: the zones the person is in, worked out from ONE fresh position, starting from what the phone believed ([inside], zone KEY -> time of the entry).
+     * A zone whose radius contains the position is entered (its time is kept when it already was, else [nowMillis]: the instant it is NOTICED, the real one is not known); a zone
+     * the phone believed the person in is left only when the position is farther than its radius plus [TrackingLimits.PULL_EXIT_MARGIN_M] (hysteresis); in between nothing changes.
+     */
+    fun insideAfterReading(
+        zones: List<TrackedZone>,
+        inside: Map<String, Long>,
+        lat: Double,
+        lng: Double,
+        nowMillis: Long,
+    ): Map<String, Long> {
+        val next = inside.toMutableMap()
+        for (zone in zones) {
+            val distance = Geo.distanceMeters(lat, lng, zone.lat, zone.lng)
+            when {
+                distance <= zone.radiusM -> next.putIfAbsent(zone.key, nowMillis)
+                zone.key in next && distance > zone.radiusM + TrackingLimits.PULL_EXIT_MARGIN_M -> next.remove(zone.key)
+            }
+        }
+        return next
+    }
+
+    /**
+     * FEED-REFRESH-POSITION: what a position read at a pull changes for ONE Miff, or null when nothing does (nothing is written then). [last] is the presence the phone kept for the
+     * Miff (null: none yet), [derived] the one the zones give after [insideAfterReading]. An ARRIVAL (in a zone the status does not name) is told at [nowMillis] (the person IS there now).
+     * A DEPARTURE the geofencing did not report (out of every zone of the Miff while the status says "in a place") becomes `unknown` at [nowMillis], never `out`: the real time of the
+     * departure is not known (it may be hours ago), and an `out` dated now would show a green card for two more hours (the same rule as after a restart of the phone, and as iOS). Never an
+     * `out` invented for somebody who has no presence yet or whose presence is `unknown` (no guess), and never a status that only CONFIRMS what is already there (no write, and no
+     * "everything is fine" signal made up: the colour keeps ageing from the real arrival, departure or update).
+     */
+    fun afterReading(
+        last: DerivedPresence?,
+        derived: DerivedPresence,
+        nowMillis: Long,
+    ): Pair<DerivedPresence, StatusFact>? {
+        val changed =
+            when {
+                last == null -> {
+                    derived.presence != PresenceValue.OUT
+                }
+
+                derived.presence == PresenceValue.OUT -> {
+                    last.presence == PresenceValue.IN_TRUSTED ||
+                        last.presence == PresenceValue.IN_RISK
+                }
+
+                else -> {
+                    derived != last
+                }
+            }
+        if (!changed) return null
+        if (derived.presence == PresenceValue.OUT) {
+            return DerivedPresence(PresenceValue.UNKNOWN, null) to unknown(nowMillis)
+        }
+        return derived to
+            StatusFact(
+                presence = derived.presence,
+                placeId = derived.placeId,
+                presenceAtMillis = nowMillis,
+                // An arrival in a trusted zone is also an update (the reference of the colour moves with it), as for any other arrival.
+                setLastUpdate = derived.presence == PresenceValue.IN_TRUSTED,
+            )
+    }
+
     /** The presence cannot be confirmed any more (place deleted or changed, phone restarted somewhere else): "unknown", never a guess. */
     fun unknown(atMillis: Long): StatusFact = StatusFact(PresenceValue.UNKNOWN, null, atMillis, setLastUpdate = false)
 }

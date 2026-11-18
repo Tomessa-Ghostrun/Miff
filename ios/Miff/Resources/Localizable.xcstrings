@@ -5145,6 +5145,23 @@
         }
       }
     },
+    "feed_refresh_position_unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your position couldn't be refreshed. For that, Miff needs location turned on, set to \"Always\" with precise location. You can change this in your iPhone's settings."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ta position n'a pas pu être actualisée. Pour cela, Miff a besoin que la localisation soit activée, sur « Toujours » avec la position exacte. Tu peux régler ça dans les réglages de ton iPhone."
+          }
+        }
+      }
+    },
     "feed_refresh_started_a11y": {
       "extractionState": "manual",
       "localizations": {

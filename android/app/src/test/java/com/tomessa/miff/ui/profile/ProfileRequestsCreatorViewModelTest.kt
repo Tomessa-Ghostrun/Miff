@@ -11,6 +11,7 @@ import com.tomessa.miff.domain.notification.NotificationItem
 import com.tomessa.miff.domain.notification.NotificationType
 import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.domain.place.PlaceRequest
+import com.tomessa.miff.domain.place.PlaceType
 import com.tomessa.miff.domain.place.RequesterCard
 import com.tomessa.miff.domain.place.RequesterState
 import com.tomessa.miff.domain.place.RequestsView
@@ -346,6 +347,28 @@ class ProfileRequestsCreatorViewModelTest {
         assertEquals(listOf<RequestEvent>(RequestEvent.NeedsPremium(PaywallReason.LIMIT)), events)
         assertEquals(listOf("u2_1"), vm.ids())
         assertNull(vm.state.value.busyRequestId)
+        job.cancel()
+    }
+
+    @Test
+    fun accept_aDangerZone_withAFreeCreator_opensTheOffer_theRequestStaysPending_andCanBeDeclined() {
+        val vm = viewModel()
+        vm.asCreatorOf()
+        val job = listener(vm)
+        val asked = testRequest(uid = "u2", slot = 1, type = PlaceType.RISK, createdAtMillis = now)
+        push(asked)
+        val events = mutableListOf<RequestEvent>()
+        vm.collect(events)
+        repo.acceptResult = RequestAcceptResult.NeedsPremium(PaywallReason.DANGER)
+        vm.onAccept(asked)
+        dispatcher.scheduler.runCurrent()
+        assertEquals(listOf<RequestEvent>(RequestEvent.NeedsPremium(PaywallReason.DANGER)), events)
+        // The card is still there, nothing was answered: "Refuser" is still possible.
+        assertEquals(listOf("u2_1"), vm.ids())
+        assertNull(vm.state.value.busyRequestId)
+        vm.onDecline(asked)
+        dispatcher.scheduler.runCurrent()
+        assertEquals(RequestEvent.Declined, events.last())
         job.cancel()
     }
 

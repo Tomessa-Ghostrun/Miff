@@ -2,6 +2,7 @@ package com.tomessa.miff.ui.feed
 
 import com.tomessa.miff.data.feed.FeedRefresher
 import com.tomessa.miff.data.feed.PositionReader
+import com.tomessa.miff.data.feed.PresenceRefresh
 import com.tomessa.miff.data.feed.ServerRead
 import com.tomessa.miff.data.feed.StatusFeed
 import com.tomessa.miff.data.feed.StatusObserver
@@ -10,6 +11,7 @@ import com.tomessa.miff.data.miff.LostMiff
 import com.tomessa.miff.data.miff.MiffDirectory
 import com.tomessa.miff.data.miff.MyMiffsLoad
 import com.tomessa.miff.data.notification.FeedVisitLink
+import com.tomessa.miff.data.tracking.PullOutcome
 import com.tomessa.miff.domain.feed.Bubble
 import com.tomessa.miff.domain.feed.FeedBanner
 import com.tomessa.miff.domain.feed.LocateResult
@@ -117,6 +119,21 @@ private class FakeRefresher : FeedRefresher {
     }
 }
 
+/** FEED-REFRESH-POSITION: the detection behind "Actualiser", as the test drives it. */
+private class FakePresence : PresenceRefresh {
+    var outcome: PullOutcome = PullOutcome.DONE
+    var gate: CompletableDeferred<Unit>? = null
+    var failure: Exception? = null
+    var calls = 0
+
+    override suspend fun refreshMyPresence(): PullOutcome {
+        calls++
+        gate?.await()
+        failure?.let { throw it }
+        return outcome
+    }
+}
+
 /** What the Feed tells "Depuis ta dernière visite": the fresh pictures, in order. */
 private class RecordingVisits : FeedVisitLink {
     class Call(
@@ -162,6 +179,7 @@ class FeedViewModelTest {
     }
 
     private val visits = RecordingVisits()
+    private val presence = FakePresence()
 
     private fun viewModel() =
         FeedViewModel(
@@ -176,6 +194,7 @@ class FeedViewModelTest {
             nowMillis = { base + dispatcher.scheduler.currentTime },
             zone = { ZoneOffset.UTC },
             visits = visits,
+            presence = presence,
         )
 
     private fun member(
@@ -773,6 +792,124 @@ class FeedViewModelTest {
                 vm.onRefresh()
                 runCurrent()
                 assertEquals(2, refresher.calls.size)
+            }
+        }
+
+    // --- FEED-REFRESH-POSITION: the same gesture also checks MY presence --------------------------------------------------
+
+    @Test
+    fun refreshPosition_aPullAsksTheDetectionOnce_andTheIndicatorDoesNotDependOnIt() =
+        runTest(dispatcher) {
+            withMember { vm ->
+                // The position never comes back (a provider that is slow, or a pass held by the engine): the loved ones are read and the indicator ends all the same.
+                presence.gate = CompletableDeferred()
+                vm.onRefresh()
+                runCurrent()
+                assertEquals(1, presence.calls)
+                assertEquals(1, refresher.calls.size)
+                assertFalse("the indicator must not wait for the position", vm.refreshing.value)
+            }
+        }
+
+    @Test
+    fun refreshPosition_aPullThatIsTooCloseToTheLastOneAsksNothing_noMoreThanTheReadingOfTheLovedOnes() =
+        runTest(dispatcher) {
+            withMember { vm ->
+                vm.onRefresh()
+                runCurrent()
+                advanceTimeBy(10_000)
+                vm.onRefresh()
+                runCurrent()
+                assertEquals(1, presence.calls)
+                advanceTimeBy(6_000)
+                vm.onRefresh()
+                runCurrent()
+                // The Feed lets a pull through every 15 s; the engine alone applies its own limit of 30 s to the position (see TrackingEnginePullTest).
+                assertEquals(2, presence.calls)
+            }
+        }
+
+    @Test
+    fun refreshPosition_offline_theDetectionIsNotAsked_andTheGestureEndsCalmly() =
+        runTest(dispatcher) {
+            withMember { vm ->
+                network.online = false
+                runCurrent()
+                vm.onRefresh()
+                runCurrent()
+                assertEquals(0, presence.calls)
+                assertFalse(vm.refreshing.value)
+            }
+        }
+
+    @Test
+    fun refreshPosition_noAccessToTheLocation_bringsOneCalmNote_andTheLovedOnesAreStillRead() =
+        runTest(dispatcher) {
+            withMember { vm ->
+                presence.outcome = PullOutcome.NO_ACCESS
+                val notes = mutableListOf<FeedNote>()
+                val collecting = launch { vm.notes.collect { notes += it } }
+                runCurrent()
+                vm.onRefresh()
+                runCurrent()
+                assertEquals(listOf(FeedNote.PositionNotRefreshed), notes)
+                assertEquals(1, refresher.calls.size)
+                assertFalse(vm.refreshing.value)
+                // Still the Feed, never an error screen.
+                assertTrue(vm.uiState.value is FeedUiState.Ready)
+                collecting.cancel()
+            }
+        }
+
+    @Test
+    fun refreshPosition_everyOtherOutcome_isSilent() =
+        runTest(dispatcher) {
+            withMember { vm ->
+                val notes = mutableListOf<FeedNote>()
+                val collecting = launch { vm.notes.collect { notes += it } }
+                runCurrent()
+                val silent = PullOutcome.entries.filter { it != PullOutcome.NO_ACCESS }
+                for (outcome in silent) {
+                    presence.outcome = outcome
+                    advanceTimeBy(16_000)
+                    vm.onRefresh()
+                    runCurrent()
+                }
+                assertEquals(silent.size, presence.calls)
+                assertTrue("only a missing access to the location speaks: $notes", notes.isEmpty())
+                collecting.cancel()
+            }
+        }
+
+    @Test
+    fun refreshPosition_aFailureOfTheDetectionNeverReachesTheFeed() =
+        runTest(dispatcher) {
+            withMember { vm ->
+                presence.failure = IllegalStateException("boom")
+                vm.onRefresh()
+                runCurrent()
+                assertFalse(vm.refreshing.value)
+                assertTrue(vm.uiState.value is FeedUiState.Ready)
+            }
+        }
+
+    @Test
+    fun refreshPosition_aNoteThatComesTooLateIsDropped() =
+        runTest(dispatcher) {
+            withMember { vm ->
+                presence.gate = CompletableDeferred()
+                presence.outcome = PullOutcome.NO_ACCESS
+                val notes = mutableListOf<FeedNote>()
+                val collecting = launch { vm.notes.collect { notes += it } }
+                runCurrent()
+                vm.onRefresh()
+                runCurrent()
+                advanceTimeBy(11_000)
+                runCurrent()
+                presence.gate?.complete(Unit)
+                runCurrent()
+                assertTrue(notes.isEmpty())
+                collecting.cancel()
             }
         }
 

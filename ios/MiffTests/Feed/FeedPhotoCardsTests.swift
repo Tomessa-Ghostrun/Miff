@@ -2,7 +2,7 @@ import XCTest
 @testable import Miff
 
 // La photo sur les cartes du Feed (FEED-8, critères P1 à P4) : une photo n'est un CANDIDAT à la lecture que si le statut est montré, dit qu'il y a
-// une photo et que la dernière update a moins de 23 h ; un membre qui ne partage plus n'en a aucune ; ma carte (la dernière, D43) a la sienne.
+// une photo et que la dernière update a moins de 23 h ; un membre qui ne partage plus n'en a aucune ; ma carte a la sienne.
 // Miroir des cas de photo de `FeedBuilderTest.kt` d'Android.
 final class FeedPhotoCardsTests: XCTestCase {
     private let me = feedMember("me", first: "Camille")
@@ -68,11 +68,12 @@ final class FeedPhotoCardsTests: XCTestCase {
         XCTAssertEqual(content.card("me")?.photo, PhotoSlot.none)
     }
 
-    func testMyCardHasMyPhotoAndIsTheLastOne() {
+    func testMyCardHasMyPhotoAndIsSortedLikeTheOthers() {
         let content = feed(statuses: ["me": feedPhotoStatus(), "a": feedPhotoStatus()])
 
-        XCTAssertEqual(content.cards.map { $0.member.uid }, ["a", "me"], "ma carte est la dernière (D43)")
-        XCTAssertEqual(content.cards.last?.photo, .candidate(lastUpdateAtMillis: feedNow - feedMinutes(20)))
+        let order = content.cards.map { $0.member.uid }
+        XCTAssertEqual(order, ["me", "a"], "mêmes dates : ordre d'arrivée, moi pas forcé en dernier")
+        XCTAssertEqual(content.card("me")?.photo, .candidate(lastUpdateAtMillis: feedNow - feedMinutes(20)))
     }
 
     func testTheFeedSaysItIsOfflineSoTheCardsCanRetryWhenTheNetworkIsBack() {
