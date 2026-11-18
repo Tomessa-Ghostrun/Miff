@@ -6,7 +6,7 @@
 // dave (Miff+, créateur de M3 dans les cas multi-Miffs).
 import {
   ID, CODE, T0, DAY, HOUR, suite, assertFails, assertSucceeds, commit, update, set, del, serverTs, Timestamp,
-  statusDoc, positionSeed, sharingOnNow, leaveOps, removeMemberOps, removeMemberWithPositionOps,
+  statusDoc, positionSeed, sharingOnNow, leaveOps, removeMemberOps, removeMemberWithPositionOps, userDoc, profile,
   DEVICE_A, DEVICE_B, sessionSeed, SESSION_PATH,
 } from '../helpers/fixtures.js';
 
@@ -631,11 +631,40 @@ s.tc('AL30', "QUOTA : le compteur ne se modifie PAS à la main : remise à zéro
   await assertSucceeds(upd({ s0: serverTs(), lastMiffId: ID.M1 }));
 });
 
-s.tc('AL31', "QUOTA : suppression de compte (RGPD) : le compteur part AVEC le profil (même lot, ou après) ; jamais seul ; un compteur orphelin (profil déjà supprimé) se supprime", async (h) => {
+s.tc('AL31', "QUOTA : suppression de compte (RGPD) : le compteur ne se supprime QUE si le profil disparaît ET si les trois cases sont vides ou vieilles de 24 h ou plus ; jamais seul ; refusé tant qu'un crédit est en cours (le compteur orphelin attend le TTL)", async (h) => {
+  const q = () => h.db('bob').doc(quotaPath('bob'));
+  // Crédits en cours : refusé seul, avec le profil dans le même lot, et après la suppression du profil.
   await seedQuota(h, 'bob', threeRecent());
-  await assertFails(h.db('bob').doc(quotaPath('bob')).delete());
+  await assertFails(q().delete());
+  await assertFails(commit(h.db('bob'), [del(quotaPath('bob')), del('users/bob')]));
+  await seedQuota(h, 'bob', { s0: null, s1: null, s2: ts(-DAY + 30 * MIN) }); // une case de 23 h 30 : encore en cours
+  await assertFails(commit(h.db('bob'), [del(quotaPath('bob')), del('users/bob')]));
+  if (!(await storedQuota(h, 'bob'))) throw new Error('le compteur doit exister encore');
+  // Aucun crédit en cours (cases vides ou de 24 h et plus) : avec le profil dans le même lot, accepté.
+  await seedQuota(h, 'bob', { s0: ts(-DAY - HOUR), s1: null, s2: ts(-2 * DAY) });
+  await assertFails(q().delete()); // seul, profil présent : refusé quand même
   await assertSucceeds(commit(h.db('bob'), [del(quotaPath('bob')), del('users/bob')]));
   if (await storedQuota(h, 'bob')) throw new Error('le compteur doit avoir disparu avec le profil');
+  // Compteur orphelin (profil déjà supprimé) : supprimable seulement sans crédit en cours.
   await seedQuota(h, 'bob', threeRecent());
-  await assertSucceeds(h.db('bob').doc(quotaPath('bob')).delete()); // le profil n'existe plus : compteur orphelin
+  await assertFails(q().delete()); // orphelin avec un crédit en cours : refusé, il attend la règle TTL expireAt
+  await seedQuota(h, 'bob', { s0: ts(-3 * DAY), s1: ts(-DAY - MIN), s2: null });
+  await assertSucceeds(q().delete());
+});
+
+s.tc('AL32', "QUOTA : SONDE P1 (revue du delta) : supprimer le profil, supprimer le compteur, recréer le profil, démarrer une alerte : le compteur ne se remet PAS à zéro et le nouveau début est refusé", async (h) => {
+  await sess(h, 'bob');
+  await seedQuota(h, 'bob', { s0: ts(-3 * HOUR), s1: ts(-2 * HOUR), s2: ts(-HOUR) });
+  await assertSucceeds(h.db('bob').doc('users/bob').delete()); // 1. le profil se supprime seul (règle inchangée)
+  await assertFails(h.db('bob').doc(quotaPath('bob')).delete()); // 2. le compteur : refusé (crédits en cours)
+  await assertFails(commit(h.db('bob'), [del(quotaPath('bob')), del('users/bob')]));
+  await assertSucceeds(h.db('bob').doc('users/bob').set(userDoc({ ...profile('bob') }))); // 3. recréation du profil
+  const apres = await storedQuota(h, 'bob');
+  if (!apres || !apres.s0 || !apres.s1 || !apres.s2) throw new Error('le compteur ne doit pas avoir été remis à zéro');
+  await assertFails(startWithQuota(h, 'bob', ID.M1, startDoc())); // 4. nouveau début : refusé
+  await assertFails(commit(h.db('bob'), [set(quotaPath('bob'), quotaDoc(ID.M1)), set(alertPath('bob'), startDoc())])); // « création » du compteur par-dessus : refusé aussi
+  if (await stored(h, 'bob')) throw new Error("aucune alerte ne doit exister");
+  // Après 24 h, le crédit revient normalement.
+  await seedQuota(h, 'bob', { s0: ts(-DAY - 5 * MIN), s1: ts(-2 * HOUR), s2: ts(-HOUR) });
+  await assertSucceeds(startWithQuota(h, 'bob', ID.M1, startDoc()));
 });

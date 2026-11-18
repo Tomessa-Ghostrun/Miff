@@ -122,7 +122,10 @@ test('QUOTA ALERTE - 3 débuts par 24 h et par utilisateur appliqués par les r�
   assert.equal(squash(r.get), 'request.auth != null && request.auth.uid == uid');
   assert.match(squash(r.create), /^isSelf\(uid\) && quotaShape\(request\.resource\.data\) && quotaFirstStart\(request\.resource\.data\)$/);
   assert.match(squash(r.update), /^isSelf\(uid\) && quotaShape\(request\.resource\.data\) && \(quotaSlotUsed\('s0'\) \|\| quotaSlotUsed\('s1'\) \|\| quotaSlotUsed\('s2'\)\)$/);
-  assert.equal(squash(r.delete), 'isSelf(uid) && !existsAfter(/databases/$(database)/documents/users/$(uid))', 'jamais supprimé seul : seulement avec le profil (RGPD) ; pas de règle de liste');
+  assert.equal(squash(r.delete), 'isSelf(uid) && !existsAfter(/databases/$(database)/documents/users/$(uid)) && quotaAllFree(resource.data)', 'jamais supprimé seul : seulement sans profil ET sans crédit en cours (sonde P1 : le compteur ne se remet pas à zéro) ; pas de règle de liste');
+  assert.equal(model.costOfFn('quotaAllFree'), 0, 'aucune lecture de règles supplémentaire');
+  assert.ok(fn('quotaAllFree').includes("d.s0 == null || d.s0 <= request.time - duration.value(24, 'h')"));
+  assert.ok(fn('quotaAllFree').includes("d.s2 == null || d.s2 <= request.time - duration.value(24, 'h')"));
   assert.equal(r.list, undefined);
   // Trois cases exactement, 24 h à l'heure du SERVEUR, jamais l'horloge de l'appareil.
   assert.ok(fn('quotaShape').includes("d.keys().hasOnly(['s0', 's1', 's2', 'lastMiffId', 'updatedAt', 'expireAt'])"));

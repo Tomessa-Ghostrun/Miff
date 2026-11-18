@@ -958,11 +958,13 @@ service cloud.firestore {
     // (request.time), jamais celle de l'appareil ; le compteur ne s'écrit qu'à l'identique d'un début (une seule case à la fois, valeur = request.time) : on ne peut ni le remettre à zéro, ni
     // reculer une case. Il est lié à UNE Miff par lot (lastMiffId = Miff de l'alerte) : un lot ne peut pas démarrer des alertes dans deux Miffs avec un seul crédit. 0 lecture de règles pour écrire
     // ce document ; +1 lecture (getAfter) pour l'alerte qui le revendique.
-    // LIMITES : (1) il disparaît avec le profil (suppression de compte : lot « users/{uid} + quota ») : supprimer le profil puis le recréer est une suppression de compte de fait ; un
-    // utilisateur qui crée un autre compte Auth repart à zéro (aucune règle ne le voit) ; (2) la règle TTL `expireAt` (à poser par le PM) l'efface au plus tard ~3 jours après le dernier début
-    // (toutes les cases ont alors plus de 24 h : aucun contournement).
+    // SUPPRESSION (revue de #274, M1 du delta) : le compteur ne se supprime que si le profil n'existe plus après l'opération (effacement RGPD) ET si les trois cases sont vides ou vieilles de 24 h ou
+    // plus (quotaAllFree) : sinon « supprimer le profil, supprimer le compteur, recréer le profil » le remettrait à zéro (le profil se supprime seul : sa règle n'est pas modifiée). CONSÉQUENCE : une
+    // suppression de compte dans les 24 h qui suivent un début d'alerte NE PEUT PAS effacer le compteur (refus) ; il reste orphelin jusqu'à la règle TTL `expireAt` (3 jours au plus) ; le client tolère ce refus.
+    // LIMITES : (1) un utilisateur qui crée un AUTRE compte Auth (autre uid) repart à zéro : aucune règle ne relie les comptes d'une même personne ; (2) la règle TTL `expireAt` (à poser par le PM AVANT le
+    // déploiement des règles) l'efface au plus tard ~3 jours après le dernier début (toutes les cases ont alors plus de 24 h : aucun contournement).
     // -------------------------------------------------------------------------
-    // Forme : 5 clés exactes ; cases = horodatage serveur ou null ; Miff = identifiant bien formé ; expireAt = fenêtre de 1 à 3 jours (contrat du client : appareil + 2 jours).
+    // Forme : 6 clés exactes (s0, s1, s2, lastMiffId, updatedAt, expireAt) ; cases = horodatage serveur ou null ; Miff = identifiant bien formé ; expireAt = fenêtre de 1 à 3 jours (contrat du client : appareil + 2 jours).
     function quotaShape(d) {
       return d.keys().hasOnly(['s0', 's1', 's2', 'lastMiffId', 'updatedAt', 'expireAt'])
         && d.keys().hasAll(['s0', 's1', 's2', 'lastMiffId', 'updatedAt', 'expireAt'])
@@ -974,6 +976,13 @@ service cloud.firestore {
         && d.expireAt is timestamp
         && d.expireAt > request.time + duration.value(1, 'd')
         && d.expireAt <= request.time + duration.value(3, 'd');
+    }
+
+    // Les trois cases sont vides ou ont 24 h ou plus (aucun crédit en cours) : seule condition pour supprimer le compteur. Aucune lecture de règles (resource.data).
+    function quotaAllFree(d) {
+      return (d.s0 == null || d.s0 <= request.time - duration.value(24, 'h'))
+        && (d.s1 == null || d.s1 <= request.time - duration.value(24, 'h'))
+        && (d.s2 == null || d.s2 <= request.time - duration.value(24, 'h'));
     }
 
     // Création du compteur (premier début) : la case s0 vaut l'heure du serveur, les deux autres sont vides.
@@ -1153,14 +1162,14 @@ service cloud.firestore {
 
       // ---- Quota d'alertes (3 débuts par 24 h et par utilisateur, décision du PM du 2026-11-18) — NON DÉPLOYÉ ----------------------------------------
       // Lisible de son propriétaire seul (l'app peut annoncer le refus AVANT d'écrire). Création : premier début (case s0 = heure du serveur). Mise à jour : une case libre ou périmée
-      // (24 h ou plus) devient l'heure du serveur, rien d'autre ; voir quotaSlotUsed. Suppression : seulement avec le profil (le profil n'existe plus après le lot : suppression de compte) ;
-      // sinon le compteur ne se remet pas à zéro. 0 lecture de règles pour écrire, 1 pour supprimer. Aucune règle de liste.
+      // (24 h ou plus) devient l'heure du serveur, rien d'autre ; voir quotaSlotUsed. Suppression : seulement si le profil n'existe plus après l'opération (effacement RGPD) ET si les trois cases
+      // sont vides ou vieilles de 24 h ou plus (sinon supprimer le profil puis le compteur puis recréer le profil remettrait le compteur à zéro). 0 lecture de règles pour écrire, 1 pour supprimer. Aucune règle de liste.
       match /quota/alerts {
         allow get: if request.auth != null && request.auth.uid == uid;
         allow create: if isSelf(uid) && quotaShape(request.resource.data) && quotaFirstStart(request.resource.data);
         allow update: if isSelf(uid) && quotaShape(request.resource.data)
           && (quotaSlotUsed('s0') || quotaSlotUsed('s1') || quotaSlotUsed('s2'));
-        allow delete: if isSelf(uid) && !existsAfter(/databases/$(database)/documents/users/$(uid));
+        allow delete: if isSelf(uid) && !existsAfter(/databases/$(database)/documents/users/$(uid)) && quotaAllFree(resource.data);
       }
 
       // ---- Jetons de notification (SRV-2R) — NON DÉPLOYÉ ---------------------------------------------------------------------

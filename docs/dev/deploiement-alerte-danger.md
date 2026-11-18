@@ -12,7 +12,7 @@
 
 | # | Quoi | Quand | Pourquoi dans cet ordre |
 |---|---|---|---|
-| **0** | Poser **les deux règles TTL** : `alerts.purgeAt` et `quota.expireAt` (section 1.2) ; **aucun compte à créer** | Dès maintenant, sans risque (rien n'est en ligne) | Sans cette règle, rien ne casse : les alertes terminées restent simplement stockées |
+| **0** | Poser **les deux règles TTL** : `alerts.purgeAt` et `quota.expireAt` (section 1.2) ; **aucun compte à créer** | **AVANT le déploiement des règles** (étape 1), sans risque (rien n'est en ligne) | **La règle TTL `quota.expireAt` est la seule façon de purger un compteur orphelin** (suppression de compte dans les 24 h qui suivent une alerte : la règle refuse de supprimer le compteur) ; elle doit exister **avant** que le premier compteur puisse être écrit, donc avant les règles |
 | **1** | **Déployer les règles Firestore** (section 2) | **Avant** toute application (APK, TestFlight) qui écrit une alerte | Sans les règles, l'écriture d'une alerte est refusée (`permission-denied`). Les règles sont **sans effet** tant qu'aucune application n'écrit d'alerte |
 | **2** | Livrer l'APK Android puis le build TestFlight iOS (hors de ce document : `android-dev`, `ios-dev`) | Après l'étape 1 | |
 | **3** | **Déployer la fonction `notifierAlerte`** (section 3) | **EN DERNIER**, quand l'APK et TestFlight sont prêts, les textes légaux publiés (AD-L) et ta recette prête | **C'est l'interrupteur de mise en service des notifications** : tant qu'elle n'est pas en ligne, une alerte apparaît dans le Feed des proches **mais aucun push ne part** (comportement prévu, testé) |
@@ -56,7 +56,7 @@ gcloud firestore fields ttls update purgeAt --collection-group=alerts --enable-t
 gcloud firestore fields ttls update expireAt --collection-group=quota --enable-ttl --project=miff-3d283
 ```
 
-Sans cette règle rien ne casse (le compteur reste jusqu'à la suppression du compte, quelques dizaines d'octets).
+**Cette seconde règle est obligatoire AVANT le déploiement des règles** : une suppression de compte dans les 24 h qui suivent une alerte laisse un compteur **orphelin** (les règles refusent de le supprimer tant qu'un crédit est en cours : sinon le quota se remettrait à zéro) ; seule la règle TTL le purge (3 jours au plus). Il ne contient que des horodatages et un identifiant de Miff, pas de nom.
 
 La règle existante `notifState.expireAt` couvre **déjà** le nouveau document d'état `notifState/{miffId}_alertes` (même groupe de collections `notifState`, même champ) : **rien à faire**.
 
@@ -66,6 +66,8 @@ Capacité **Time Sensitive** sur `com.tomessa.miff` et profils CI régénérés 
 ---
 
 ## 2. Étape 1 : déployer les règles (`firestore.rules`)
+
+**Précondition (revue du delta, m3)** : les **deux règles TTL de la section 1.2 sont posées et visibles dans la console AVANT cette étape** (en particulier `quota.expireAt`).
 
 **A. Préparer le dossier de déploiement** (PowerShell ou Git Bash) :
 
