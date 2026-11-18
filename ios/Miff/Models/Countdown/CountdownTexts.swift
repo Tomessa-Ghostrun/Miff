@@ -8,7 +8,7 @@ struct CountdownTexts {
     let bundle: Bundle
     let locale: Locale
 
-    init(bundle: Bundle = .main, locale: Locale = .current) {
+    init(bundle: Bundle = AppLanguage.bundle, locale: Locale = AppLanguage.locale) {
         self.bundle = bundle
         self.locale = locale
     }
@@ -22,7 +22,7 @@ struct CountdownTexts {
     }
 
     private func plural(_ key: String, count: Int) -> String {
-        String.localizedStringWithFormat(text(key), count)
+        String(format: text(key), locale: locale, count)
     }
 
     var title: String {
