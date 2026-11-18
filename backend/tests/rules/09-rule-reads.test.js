@@ -15,7 +15,7 @@ import { measureReads, measureLot, writeReadsReport } from '../helpers/measure.j
 import { probeEmulatorLimits, EXPECTED_LIMITS } from '../helpers/calibration.js';
 import { H } from '../helpers/hosts.js';
 import {
-  requestInput, createRequestOps, withdrawRequestOps, declineRequestOps, acceptRequestOps, seedRequests, addPremiumMember,
+  requestInput, createRequestOps, withdrawRequestOps, declineRequestOps, acceptRequestOps, seedRequests,
 } from '../helpers/requests.js';
 
 const M1 = `miffs/${ID.M1}`;
@@ -721,15 +721,12 @@ const scenarios = [
   },
   {
     id: 'READS-req-create-risk',
-    title: "LIEU-REQ-A : demande de zone de danger par un demandeur Miff+ (batch de 2 : + lecture du droit Miff+)",
+    title: "LIEU-DANGER-REQ : demande de zone de danger par un membre GRATUIT (batch de 2 : même coût qu'une demande trusted, aucune lecture du droit Miff+)",
     name: 'Demande de lieu risk (batch de 2)',
     lot: true,
     hosts: [H.requestsCreate, H.requestCounterUpdate],
-    prepare: async (env) => {
-      await seedReqEnv([['carol', 1]])(env);
-      await addPremiumMember({ admin: (cb) => env.withSecurityRulesDisabled((ctx) => cb(ctx.firestore())) });
-    },
-    run: (env) => commit(db(env, 'dave'), all(createRequestOps({ uid: 'dave', data: requestInput('dave', { type: 'risk' }) }))),
+    prepare: seedReqEnv([['carol', 1]]),
+    run: (env) => commit(db(env, 'bob'), all(createRequestOps({ uid: 'bob', data: requestInput('bob', { type: 'risk' }) }))),
   },
   {
     id: 'READS-req-withdraw',
