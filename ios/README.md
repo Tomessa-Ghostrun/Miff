@@ -781,7 +781,7 @@ La mesure de la position est locale (aucune lecture ni écriture serveur de plus
 
 ### Écarts avec Android (UPDATE-3)
 1. **Pas de repli « appareil photo du système »** ni de « On réessaie ? » : la boîte d'iOS ne s'affiche qu'une fois, puis les Réglages (D31, ci-dessus). Un état **restreint** (contrôle parental) a son propre message, sans bouton Réglages.
-2. **Mon statut vient du Feed** (D19, UN seul écouteur) : `FeedViewModel` donne `FeedContent.myFacts` et « partage arrêté » à `MyStatusStore.update(_:sharingStopped:)` à chaque calcul ; l'Update n'a aucun écouteur ni lecture. Comme sur Android, le Feed n'écoute que pendant qu'il est à l'écran : sur l'Update et le Profil, la couleur est celle du dernier calcul, recalculée chaque minute.
+2. **Mon statut vient du Feed** (D19, UN seul écouteur) : `FeedViewModel` donne `FeedContent.myFacts` et « partage arrêté » à `MyStatusStore.update(_:sharingStopped:)` à chaque calcul ; l'Update n'a aucun écouteur ni lecture. (Depuis COUNTDOWN-I, `OwnStatusWatcher` écoute MON seul statut sur le Profil et l'Update : voir « Compte à rebours ».) Comme sur Android, le Feed n'écoute que pendant qu'il est à l'écran : la couleur est celle du dernier calcul, recalculée chaque minute.
 3. **« Partage arrêté » (état J)** : comme sur Android, il vient du Feed (avec **une** seule Miff, D36) ; sans réponse du Feed, « pas arrêté » (la publication le dira).
 4. **Carte « moi » du Feed avec la photo** et le plein écran : **FEED-8** (livré : le publieur dit la photo publiée à la mémoire de session, `UpdatePublisher.onPhotoPublished`, comme Android).
 5. **« Revoir et accepter »** : le mécanisme du Feed, `AwaitingAgreement.requestReview()`, que la porte des autorisations écoute (aucune notification interne).
@@ -988,6 +988,23 @@ Sans maquette ni spec Notion. Contrat partagé : `docs/contracts/profile-places-
 - **« Ajouter un lieu »** coche d'abord la Miff de la liste si la personne en est la créatrice (`DefaultMiffChoice.of(owned:lastJoinedId:openedFromId:)`) ; Profil et écran de la Miff.
 - **Écarts avec Android** : aucun fonctionnel. Sur iOS la liste n'existait pas sur le Profil (elle n'était que dans l'écran de la Miff), il n'y a donc pas d'écoute à supprimer. Les onglets restent vivants sous la pile de navigation : le retour d'un lieu ou d'un formulaire est détecté par `onAppear` du Profil (relecture si périmée).
 - **À vérifier sur l'iPhone** : le retour d'un formulaire (la liste se met à jour en un court instant), l'absence de saut de mise en page quand la liste apparaît, VoiceOver sur une zone de danger, Dynamic Type au maximum.
+
+## Compte à rebours avant le passage à l'orange (COUNTDOWN-I, miroir d'Android COUNTDOWN-A)
+
+Ticket `docs/tickets/compte-a-rebours-orange.md`, recette `docs/qa/checklists/compte-a-rebours-ios-recette-pm.md`. Un encart (sablier, « Tu es en dehors de tes lieux de confiance », « Tu passeras orange dans … », bordure qui se vide) pour la **seule personne concernée**, quand elle est dehors d'un lieu de confiance et encore en vert.
+
+| Fichier | Rôle |
+|---|---|
+| `Models/Countdown/CountdownRules.swift` | Fonction pure `state(MON statut, partage arrêté, heure)` : masqué ou visible (minutes affichées, fraction de bordure, instant du prochain changement). Réutilise `UpdatePrompt.level` / `StatusColor.level` et `StatusThresholds` |
+| `Models/Countdown/CountdownTexts.swift` | Textes `countdown_*` : durées écrites, durée parlée, nom VoiceOver |
+| `Models/Countdown/CountdownBorder.swift` | Couleur (safe vers warning, jamais rouge), durées d'animation, « Réduire les animations » |
+| `Views/Countdown/` | `CountdownCard` (l'encart ; la bordure GARDE LA FIN du tracé : `trim(from: 1 - f, to: 1)`), `CountdownBorderShape` (contour, haut-centre, sens horaire), `CountdownSlot` (état, veille d'une minute alignée sur l'échéance, contexte d'environnement) |
+
+Câblage : `MainShellView` donne à l'environnement `countdownContext` (MON statut `MyStatusStore`, l'heure, « ouvrir l'Update » = `selected = .update`, comme le bouton central) ; `FeedListView` place le `CountdownSlot` juste après la bulle, `ProfileTabView` en premier bloc. Sans contexte (aperçus), rien n'est dessiné. **Aucune écriture Firestore**, aucun nouveau champ, aucune notification, aucun événement d'analyse. **Espacement** : le slot porte lui-même l'espace au-dessus de l'encart (`topSpacing`) et est rangé dans une pile d'espacement 0 avec l'en-tête du Profil ou la bulle du Feed : masqué, il ne change rien à la mise en page de `main`.
+
+**MON statut sur le Profil et l'Update** : le Feed est l'écouteur de MON statut tant qu'il est l'onglet en usage. Sur les autres onglets, `OwnStatusWatcher` (lancé par `MainShellView`, clé `OwnStatusKey`) écoute MON seul statut (UN document `miffs/{id}/status/{moi}`, `FirestoreOwnStatusObserver`) et le donne au même `MyStatusStore` : jamais en même temps que le Feed, arrêté en arrière-plan, aucune règle changée. Coût (Spark, estimé, non mesuré) : 3 lectures de règles à chaque arrivée sur le Profil ou l'Update, puis 1 lecture par changement de MON statut. Limite : une fin d'écoute (statut non lisible) masque l'encart jusqu'au prochain changement d'onglet. Le Feed ne donne plus MON statut hors de son observation (`observedMiffId`).
+
+Écarts et limites : voir la PR et `CHANGELOG.md`. La bulle d'incitation (orange et rouge seulement) et l'encart (vert seulement) ne sont jamais visibles ensemble.
 
 ## Notifications : « Depuis ta dernière visite » (NOTIF-P1I, miroir d'Android NOTIF-P1A, PR #223)
 

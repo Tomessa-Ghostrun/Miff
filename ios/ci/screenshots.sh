@@ -184,6 +184,10 @@ splash_args=(-MiffSkipSplash YES)
 shot 90-fr-feed-bulle-verte 3 "${fr_args[@]}" -MiffPreview feed-green
 shot 91-fr-feed-bulle-orange 3 "${fr_args[@]}" -MiffPreview feed-orange
 shot 92-fr-feed-bulle-rouge 3 "${fr_args[@]}" -MiffPreview feed-red
+# COUNTDOWN-I : le compte à rebours (Feed plein, Feed dans la dernière demi-heure, Profil à 1 h). Peu de captures : l'étape est saturée.
+shot 94-fr-feed-compte-a-rebours-plein 3 "${fr_args[@]}" -MiffPreview feed-countdown-full
+shot 94c-fr-profil-compte-a-rebours 3 "${fr_args[@]}" -MiffPreview profile-countdown-half
+
 # COULEURS-2 : le bouton « i » hors de la bulle (carrousel ; les bulles verte, orange et rouge ci-dessus le montrent aussi) et l'écran des couleurs. Peu de captures : l'étape est limitée à 15 min.
 shot 96-fr-feed-bulle-carrousel 3 "${fr_args[@]}" -MiffPreview feed-carousel
 shot 98-fr-couleurs-ecran 3 "${fr_args[@]}" -MiffPreview colors-info
@@ -207,6 +211,7 @@ shot 67-fr-miff-ecran-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview miff-scree
 shot 79-fr-miff-supprimer-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview miff-screen-delete
 shot 152-fr-photo-plein-ecran-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview photo-3-4
 shot 93-fr-feed-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-orange
+shot 93b-fr-feed-compte-a-rebours-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-countdown-last
 
 shot 99-fr-offre-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview paywall-trial-cross
 shot 99b-fr-offre-sans-achat-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview paywall-soon-cross
