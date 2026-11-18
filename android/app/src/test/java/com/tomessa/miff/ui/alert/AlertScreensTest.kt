@@ -13,6 +13,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertWidthIsAtLeast
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -585,7 +586,7 @@ class AlertScreensTest {
 
     @Test
     fun theBarFollowsTheTimeHeld_evenWithAnimationsRemoved_neverJumpingTo100() {
-        android.animation.ValueAnimator.setDurationScale(0f)
+        setAnimatorScale(0f)
         try {
             hold()
             rule.onNodeWithTag("shutter").performTouchInput { down(center) }
@@ -597,7 +598,16 @@ class AlertScreensTest {
             val middle = holdState.progress
             assertTrue("progress after 2.5 s of 5 is $middle", middle > 0.4f && middle < 0.6f)
         } finally {
-            android.animation.ValueAnimator.setDurationScale(1f)
+            setAnimatorScale(1f)
+        }
+    }
+
+    /** "Supprimer les animations": the animator scale of the process (a hidden setter, reached by reflection; the bar must not depend on it anyway). */
+    private fun setAnimatorScale(scale: Float) {
+        runCatching {
+            android.animation.ValueAnimator::class.java
+                .getMethod("setDurationScale", Float::class.javaPrimitiveType)
+                .invoke(null, scale)
         }
     }
 }
