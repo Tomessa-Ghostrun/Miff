@@ -53,6 +53,7 @@ import com.tomessa.miff.domain.auth.SignInProvider
 import com.tomessa.miff.domain.feed.StateLabel
 import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
+import com.tomessa.miff.domain.place.MiffPlacesView
 import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.domain.place.PlaceViewerRole
 import com.tomessa.miff.domain.profile.AvatarCodec
@@ -140,6 +141,8 @@ import com.tomessa.miff.ui.settings.SubscriptionScreen
 import com.tomessa.miff.ui.settings.SubscriptionViewModel
 import com.tomessa.miff.ui.settings.rememberLocationPrivacy
 import com.tomessa.miff.ui.theme.Spacing
+import com.tomessa.miff.ui.timeshare.TimeShareSection
+import com.tomessa.miff.ui.timeshare.TimeShareViewModel
 import com.tomessa.miff.ui.update.UpdateActions
 import com.tomessa.miff.ui.update.UpdateBottomLayer
 import com.tomessa.miff.ui.update.UpdateEvent
@@ -401,6 +404,22 @@ private fun MainNavigation(
                         },
                 )
             val profilePlaces by profilePlacesViewModel.state.collectAsStateWithLifecycle()
+            // "Répartition de ton temps" (docs/tickets/profil-repartition-temps.md): worked out ON THE PHONE from the journal of the presence and from the places the Profile already
+            // read for the Miff of the carousel; no reading, no writing, no listener of Firestore.
+            val timeShareViewModel: TimeShareViewModel =
+                viewModel(
+                    key = "time-share-$scopeKey",
+                    factory =
+                        viewModelFactory {
+                            initializer {
+                                TimeShareViewModel(
+                                    log = container.presenceLog,
+                                    windows = container.timeShareWindow,
+                                    tracking = container.timeShareTracking,
+                                )
+                            }
+                        },
+                )
             // The pending requests of a member who is not the creator (ticket LIEU-REQ-B): ONE reading of its own requests when the card of the Miff appears.
             val profileRequestsViewModel: ProfileRequestsViewModel =
                 viewModel(key = profileRequestsKey(scopeKey), factory = profileRequestsFactory(container))
@@ -514,6 +533,14 @@ private fun MainNavigation(
                 profileDot = profileRequests.profileDot,
                 profileConnection = profileViewModel.connectionHost(profileConnection),
                 travelContent = { TravelCard(state = travelState, actions = travelActions) },
+                timeShareContent = {
+                    TimeShareSection(
+                        viewModel = timeShareViewModel,
+                        miffId = profilePlaces.selectedMiffId,
+                        places = (profilePlaces.view as? MiffPlacesView.Ready)?.places,
+                        onOpenMiff = { navController.open(MiffRoute(it)) },
+                    )
+                },
                 placesContent = {
                     (directoryState as? DirectoryState.Ready)?.let { ready ->
                         val myUid = container.authGateway.currentUid
@@ -820,6 +847,8 @@ fun MainTabs(
     agreement: AgreementUi = AgreementUi(),
     feed: FeedHost = FeedHost(),
     placesContent: @Composable () -> Unit = {},
+    /** The card "Répartition de ton temps" of the Profile tab, between the carousel and the places (docs/tickets/profil-repartition-temps.md). */
+    timeShareContent: @Composable () -> Unit = {},
     travelContent: @Composable () -> Unit = {},
     update: UpdateHost? = null,
     /** A tap on a line of the centre of notifications asks for the Feed or the Update from outside (NOTIF-6A). */
@@ -1026,6 +1055,7 @@ fun MainTabs(
                                         onOpenMiff(id)
                                     },
                                     carousel = profileMiffs,
+                                    timeShareContent = timeShareContent,
                                     placesContent = placesContent,
                                     popIn = profileConnection,
                                     popInSuppressed = popInSuppressed,
@@ -1152,6 +1182,7 @@ internal fun NavGraphBuilder.sharedSettingsRoutes(
                                 withdrawals = container.consentWithdrawals,
                                 session = session,
                                 network = container.networkMonitor,
+                                presenceLog = container.presenceLog,
                             )
                         }
                     },
@@ -1167,6 +1198,7 @@ internal fun NavGraphBuilder.sharedSettingsRoutes(
             onReviewAgreement = container.awaitingAgreement::requestReview,
             onOpenDetectionHelp = { navController.open(DetectionHelpRoute) },
             notifications = rememberNotificationPermissionState(container),
+            onEraseTimeHistory = viewModel::onEraseTimeHistory,
         )
     }
     composable<DetectionHelpRoute> {
