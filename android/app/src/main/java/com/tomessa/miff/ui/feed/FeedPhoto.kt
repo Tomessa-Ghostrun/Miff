@@ -289,6 +289,14 @@ internal fun PhotoFullScreen(
                     PhotoFraming.clampPan(offset + pan, scale, boxSize.width, boxSize.height)
                 }
         }
+    // A rotation (or any resize) with a zoom on: the offset kept from the old size may now leave an edge of the picture inside the screen; it is bounded again at once,
+    // not only at the next gesture.
+    LaunchedEffect(boxSize) {
+        if (boxSize != IntSize.Zero) {
+            offset =
+                if (scale == 1f) Offset.Zero else PhotoFraming.clampPan(offset, scale, boxSize.width, boxSize.height)
+        }
+    }
     val unavailable = stringResource(R.string.feed_action_unavailable)
     val closeName = stringResource(R.string.update_photo_close_a11y)
     // "Enregistrer la photo": nothing is written before the touch. The picker (Android 9 and older only) is the system's own, no permission.
@@ -588,7 +596,7 @@ private fun Modifier.capHeightShare(share: Float): Modifier =
         layout(placeable.width, placeable.height) { placeable.place(0, 0) }
     }
 
-/** The veil under the footer when the photo has a description: dark enough for white text at 4.5:1 over a white photo (0.62 of black over white = #606060). */
+/** The veil under the footer (always there, with or without a description): dark enough for white text at 4.5:1 over a white photo (0.62 of black over white = #606060). */
 internal val colorPhotoFooterVeil = Color.Black.copy(alpha = 0.62f)
 
 /** A soft shade behind the status bar over the full-bleed photo (its light clock and icons stay readable on a white photo). */

@@ -104,4 +104,14 @@ class PhotoFramingTest {
         assertTrue(PhotoFraming.covers(2f, atTwo, 1080, 2400))
         assertEquals(Offset(540f, 1200f), atTwo)
     }
+
+    @Test
+    fun afterARotation_theOffsetOfThePortraitIsBoundedAgainInTheLandscapeWindow() {
+        // Zoomed at 2x, dragged to the limit of a 1080 x 2400 window, then the phone turns to 2400 x 1080: the old offset leaves a gap, bounding it again fixes that.
+        val portrait = PhotoFraming.clampPan(Offset(10_000f, 10_000f), 2f, 1080, 2400)
+        val landscape = PhotoFraming.clampPan(portrait, 2f, 2400, 1080)
+        assertTrue(PhotoFraming.covers(2f, landscape, 2400, 1080))
+        // The vertical offset of 1200 would leave a gap in the 1080-high window: it is brought back to 540 (the horizontal one, 540, is still inside).
+        assertEquals(Offset(540f, 540f), landscape)
+    }
 }

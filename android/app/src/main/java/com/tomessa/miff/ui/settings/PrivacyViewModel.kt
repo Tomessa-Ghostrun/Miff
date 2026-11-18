@@ -7,6 +7,8 @@ import com.tomessa.miff.data.auth.ProfileWriteResult
 import com.tomessa.miff.data.privacy.ConsentWithdrawals
 import com.tomessa.miff.data.privacy.PrivacySettings
 import com.tomessa.miff.data.session.SessionManager
+import com.tomessa.miff.domain.timeshare.NoPresenceLog
+import com.tomessa.miff.domain.timeshare.PresenceLog
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -37,6 +39,8 @@ data class PrivacyUiState(
      * "Enregistrer mon choix" tries right now.
      */
     val withdrawalPending: Boolean = false,
+    /** "Effacer mon historique de temps" was just done (TIME-1, criterion TS-6): the screen says so, calmly. */
+    val timeHistoryErased: Boolean = false,
 )
 
 /*
@@ -59,6 +63,8 @@ class PrivacyViewModel(
     private val withdrawals: ConsentWithdrawals,
     private val session: SessionManager,
     private val network: NetworkMonitor,
+    /** TIME-1: the local journal of the presence behind "Répartition de ton temps" (erased by [onEraseTimeHistory]; nothing is written to the server). */
+    private val presenceLog: PresenceLog = NoPresenceLog,
 ) : ViewModel() {
     private val uid: String? = session.currentUid
 
@@ -98,6 +104,15 @@ class PrivacyViewModel(
                 local.update { it.copy(isWriting = false, message = result.toMessage()) }
             }
         }
+    }
+
+    /**
+     * "Effacer mon historique de temps" (after the confirmation of the screen): the local journal of the presence is erased and the chart starts again from zero. Local only:
+     * nothing is written to the server, nothing changes for the loved ones, no analytics event.
+     */
+    fun onEraseTimeHistory() {
+        presenceLog.clear()
+        local.update { it.copy(timeHistoryErased = true) }
     }
 
     fun onMessageDismissed() {

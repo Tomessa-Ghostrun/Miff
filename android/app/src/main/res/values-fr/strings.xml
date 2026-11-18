@@ -410,6 +410,8 @@
     <string name="feed_refresh_a11y">Actualiser</string>
     <string name="feed_refresh_started_a11y">Actualisation en cours</string>
     <string name="feed_refresh_done_a11y">Informations actualisées</string>
+    <!-- FEED-REFRESH-POSITION : phrase calme (toast) quand « Actualiser » ne peut pas relire MA position faute d'accès à la localisation. Clé partagée avec iOS. -->
+    <string name="feed_refresh_position_unavailable">Ta position n\'a pas pu être actualisée. Pour cela, Miff a besoin que la localisation soit activée, sur « Toujours » et en précis. Tu peux régler ça dans les réglages de ton téléphone.</string>
     <!-- FEED-ORDRE : annonce polie (lecteur d'écran) quand l'ordre des cartes change. %1$s = le prénom du proche. Clés partagées avec iOS. -->
     <string name="feed_order_updated_one_a11y">%1$s a donné des nouvelles</string>
     <string name="feed_order_updated_many_a11y">Le Feed a été mis à jour</string>
@@ -1207,6 +1209,47 @@
     <string name="feed_colors_not_verdict">Orange ou rouge ne veut pas dire qu\'il y a un problème, seulement qu\'on n\'a pas eu de nouvelles depuis un moment.</string>
     <string name="feed_colors_not_delay">Ton téléphone calcule les couleurs à partir des dernières informations reçues. Sans connexion, elles peuvent avoir un peu de retard : le fil indique alors l\'heure des dernières informations.</string>
     <string name="feed_colors_bubble_action_a11y">Comprendre les couleurs</string>
+    <!-- Répartition de ton temps (docs/tickets/profil-repartition-temps.md, TIME-2) : carte du Profil et réglage de Confidentialité. Tutoiement, ton descriptif, aucun reproche ; la seule note de fête est l'emoji de l'encart de synthèse (décision du PM). -->
+    <string name="profile_timeshare_title">Répartition du temps</string>
+    <string name="profile_timeshare_window_7">7 jours</string>
+    <string name="profile_timeshare_window_14">14 jours</string>
+    <string name="profile_timeshare_window_30">30 jours</string>
+    <string name="profile_timeshare_window_a11y">Période, %1$s</string>
+    <string name="profile_timeshare_window_selected_a11y">choisi</string>
+    <string name="profile_timeshare_center_caption">en zone de confiance</string>
+    <string name="profile_timeshare_a11y_card">Répartition du temps : %1$s.</string>
+    <string name="profile_timeshare_a11y_row">%1$s, %2$s</string>
+    <string name="profile_timeshare_a11y_danger_row">%1$s, %2$s, afficher le détail</string>
+    <plurals name="profile_timeshare_other_places">
+        <item quantity="one">%1$d autre lieu</item>
+        <item quantity="many">%1$d autres lieux</item>
+        <item quantity="other">%1$d autres lieux</item>
+    </plurals>
+    <string name="profile_timeshare_danger_zones">Zone de danger</string>
+    <string name="profile_timeshare_danger_zones_several">Zones de danger</string>
+    <string name="profile_timeshare_elsewhere">Hors-zone</string>
+    <string name="profile_timeshare_percent_tiny">&lt; 1 %</string>
+    <string name="profile_timeshare_detail_close">Fermer</string>
+    <string name="profile_timeshare_summary">Tu as passé %1$s de ton temps dans tes zones de confiance</string>
+    <plurals name="profile_timeshare_not_enough">
+        <item quantity="one">Ton graphique arrive dans %1$d jour, nous analysons tes habitudes</item>
+        <item quantity="many">Ton graphique arrive dans %1$d jours, nous analysons tes habitudes</item>
+        <item quantity="other">Ton graphique arrive dans %1$d jours, nous analysons tes habitudes</item>
+    </plurals>
+    <string name="profile_timeshare_paused">Le suivi de tes lieux est en pause.</string>
+    <string name="profile_timeshare_travel">Tu es en mode voyage : ta répartition est en pause jusqu\'à ton retour.</string>
+    <string name="profile_timeshare_sharing_stopped">Tu as arrêté de partager ton statut avec cette Miff : ta répartition n\'est plus mise à jour pour elle.</string>
+    <string name="profile_timeshare_sharing_stopped_action">Voir cette Miff</string>
+    <string name="profile_timeshare_location_needed">Pour mesurer ton temps dans tes lieux, Miff a besoin de la localisation « Toujours » avec la position précise. Tu peux aussi continuer sans.</string>
+    <string name="profile_timeshare_over_limit">Tous tes lieux ne sont pas suivis en même temps : la répartition peut être incomplète.</string>
+    <string name="profile_timeshare_error">La répartition n\'est pas disponible pour le moment.</string>
+    <string name="settings_privacy_time_title">Historique de temps</string>
+    <string name="settings_privacy_time_body">Pour calculer la répartition de ton temps, ton téléphone garde pendant 35 jours les moments où tu arrives dans un de tes lieux et où tu en pars, sans position ni adresse. Rien n\'est envoyé : personne d\'autre ne peut les voir.</string>
+    <string name="settings_privacy_time_erase">Effacer mon historique de temps</string>
+    <string name="settings_privacy_time_confirm_title">Effacer l\'historique ?</string>
+    <string name="settings_privacy_time_confirm_body">Ta répartition repartira de zéro. Cela ne change rien pour tes proches.</string>
+    <string name="settings_privacy_time_confirm_action">Effacer</string>
+    <string name="settings_privacy_time_done">C\'est fait : ta répartition repart de zéro.</string>
 
     <!-- COUNTDOWN-A : compte à rebours avant l'orange (Feed et Profil). Mêmes clés qu'iOS. Les durées sont des textes du catalogue (pas le formateur du système) pour que Android et iOS écrivent exactement la même chose ; espace insécable entre le nombre et l'unité. -->
     <string name="countdown_title">Tu es en dehors de tes lieux de confiance</string>

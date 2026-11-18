@@ -104,7 +104,17 @@ internal fun DescriptionField(
                         if (limited.text == incoming.text) {
                             incoming
                         } else {
-                            TextFieldValue(limited.text, TextRange(limited.text.length))
+                            // The cursor stays where the person was typing (a paste in the middle that is shortened or cleaned does not throw it to the end):
+                            // its place is the length of what is kept before it.
+                            fun kept(position: Int) =
+                                PhotoDescription
+                                    .limitInput(incoming.text.take(position.coerceIn(0, incoming.text.length)))
+                                    .text.length
+                                    .coerceAtMost(limited.text.length)
+                            TextFieldValue(
+                                limited.text,
+                                TextRange(kept(incoming.selection.start), kept(incoming.selection.end)),
+                            )
                         }
                     limitHit = limited.wasCut || limited.text.length >= PhotoDescription.MAX_LENGTH
                     onTextChange(limited.text)

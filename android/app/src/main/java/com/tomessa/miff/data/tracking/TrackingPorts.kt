@@ -43,6 +43,12 @@ interface TrackingEnvironment {
 interface PositionSource {
     /** A recent position (a few seconds at most), or null when the system cannot give one. Reads the position: only called once the agreement and "Toujours" are there. */
     suspend fun current(): Fix?
+
+    /**
+     * FEED-REFRESH-POSITION: a position for "now" (the person pulled the Feed): at most [com.tomessa.miff.domain.tracking.TrackingLimits.PULL_FIX_MAX_AGE_MILLIS] old, never the 2-minute copy
+     * of the provider that [current] accepts. The default is [current] (a double in tests).
+     */
+    suspend fun currentFresh(): Fix? = current()
 }
 
 /** The geofencing of the system. */
