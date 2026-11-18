@@ -434,6 +434,11 @@
     <string name="feed_refresh_a11y">Refresh</string>
     <string name="feed_refresh_started_a11y">Refreshing</string>
     <string name="feed_refresh_done_a11y">Up to date</string>
+    <!-- FEED-REFRESH-POSITION: calm sentence (toast) when "Refresh" cannot read MY position again for lack of access to the location. Key shared with iOS. -->
+    <string name="feed_refresh_position_unavailable">Your position couldn\'t be refreshed. For that, Miff needs location turned on, set to \"Always\" and precise. You can change this in your phone\'s settings.</string>
+    <!-- FEED-ORDRE: polite screen-reader announcement when the order of the cards changes. %1$s = the first name of the member. Keys shared with iOS. -->
+    <string name="feed_order_updated_one_a11y">%1$s shared an update</string>
+    <string name="feed_order_updated_many_a11y">The Feed was updated</string>
     <string name="feed_loading_a11y">Loading your feed</string>
     <string name="feed_card_you_sees">What your loved ones see of you</string>
     <string name="feed_card_message_a11y">Message %1$s</string>
@@ -935,11 +940,12 @@
     <string name="settings_subscription_source_other">Current plan</string>
     <string name="settings_subscription_no_store_note">This access doesn\'t go through a store.</string>
     <string name="settings_detection_help_title">If arrivals and departures are slow</string>
-    <string name="settings_detection_help_intro">Some phones (Oppo, Xiaomi, Samsung, Huawei...) stop apps in the background to save battery. Miff may then notice an arrival or a departure late. These settings are optional: they may help, and Miff works without them.</string>
+    <string name="settings_detection_help_intro">Some phones (Oppo, Xiaomi, Samsung, Huawei...) stop apps in the background to save battery. Miff may then notice an arrival or a departure late, or show the news of your loved ones late. These settings are optional: they may help, and Miff works without them.</string>
     <string name="settings_detection_help_step_battery">1. In the Miff settings, open \"Battery\" (or \"Power consumption\") and choose \"No restrictions\" (or \"Don\'t optimize\").</string>
     <string name="settings_detection_help_step_background">2. Allow background activity for Miff if the phone offers it.</string>
     <string name="settings_detection_help_step_autostart">3. On Oppo, OnePlus or Realme (ColorOS): also allow Miff to \"auto-start\", and do not close it by swiping it away in the list of recent apps.</string>
     <string name="settings_detection_help_step_saver">4. If you can, avoid keeping battery saver on all the time, especially while you are on the move.</string>
+    <string name="settings_detection_help_step_forcestop">5. If you use \"Force stop\" on Miff, the news of your loved ones wait until you open Miff again. That is how Android works, and nothing is lost: everything is in your Miff.</string>
     <string name="settings_detection_help_outro">The exact names of the settings change with the phone and the Android version.</string>
 
     <!-- UPDATE-1 / UPDATE-2 / FEED-4 : l'Update (photo du moment, bulle d'incitation, photo dans le Feed). -->
@@ -975,6 +981,13 @@
     <string name="update_close_a11y">Close</string>
     <string name="update_retake_a11y">Retake</string>
     <string name="update_publish_action">Publish</string>
+    <string name="update_description_placeholder">Add a description</string>
+    <string name="update_description_a11y_label">Photo description (optional)</string>
+    <string name="update_description_a11y_hint">Your loved ones will see it with your photo for 24 hours.</string>
+    <string name="update_description_counter">%1$d/%2$d</string>
+    <string name="update_description_counter_a11y">%1$d of %2$d characters</string>
+    <string name="update_description_limit">Limit of %1$d characters reached.</string>
+    <string name="update_description_shown_a11y">Description: %1$s</string>
     <string name="update_preview_visibility">Your loved ones will see this photo for 24 hours.</string>
     <string name="update_preview_visibility_many">Your photo will be visible to the members of your %1$d Miffs for 24 hours.</string>
     <string name="update_preview_place">Published with your position. Members who share theirs too can see where you took it.</string>
@@ -1023,7 +1036,7 @@
     <string name="notif_n7_title">Your travel mode has ended</string>
     <string name="notif_n7_body">Your card gets its usual colours back for your circle. Welcome back!</string>
     <string name="notif_prime_title">A reminder, only when it helps</string>
-    <string name="notif_prime_body">If you forget to check in, Miff gently reminds you, and lets you know when your Miff changes status. You choose what you get in the settings.</string>
+    <string name="notif_prime_body">If you forget to check in, Miff gently reminds you, and lets you know when someone in your circle gives news. To send you these notifications, Miff registers a technical identifier of your phone, provided by Google. You choose what you get in the settings.</string>
     <string name="notif_prime_allow">Allow</string>
     <string name="notif_prime_later">Not now</string>
     <string name="notif_prime_example_when">2 min ago</string>
@@ -1049,6 +1062,17 @@
     <string name="notif_settings_n6">When I enter a danger zone</string>
     <string name="notif_settings_n7">When my travel mode ends</string>
     <string name="notif_settings_n6_hint">You turn off the notification, not what your Miff sees.</string>
+    <!-- N9, "a loved one gave news" (SRV-2, ticket notification-update-membres.md). %1$s = the first name of the author, 20 characters at most. Keys shared with iOS. -->
+    <string name="notif_circle_update_title">%1$s checked in</string>
+    <string name="notif_circle_update_body">See it in your Miff.</string>
+    <string name="notif_center_circle_update_title">Someone in your circle checked in</string>
+    <string name="notif_settings_section_loved_ones">For your loved ones</string>
+    <string name="notif_settings_circle_update">When someone in your circle checks in</string>
+    <string name="notif_settings_circle_update_hint">A notification when someone in your Miff posts an update.</string>
+    <string name="android_notif_push_identifier_note">To send you these notifications, Miff registers a technical identifier of your phone, provided by Google.</string>
+    <string name="android_notif_channel_updates">News from your loved ones</string>
+    <string name="android_notif_channel_updates_desc">When someone in your Miff gives news by posting an update.</string>
+    <string name="android_notif_channel_updates_quiet">News from your loved ones (quiet night)</string>
     <string name="notif_settings_night_title">Quiet night</string>
     <string name="notif_settings_night_body">From 10 pm to 7 am, no sound or vibration, except when someone turns red.</string>
     <string name="notif_settings_see_all">See my notifications</string>
@@ -1086,6 +1110,17 @@
     <string name="notif_center_delete_a11y">Delete this notification</string>
     <string name="notif_center_unread_a11y">unread</string>
     <string name="notif_center_in_miff">Miff “%1$s”</string>
+    <!-- NOTIF-P1A: "Since your last visit" (ticket notifications-p1-derniere-visite.md, PM decisions of 2026-11-13); lines with no gender agreement -->
+    <string name="notif_c1_title">Since your last visit</string>
+    <string name="notif_c1_limit">These lines sum up what changed, not everything that happened.</string>
+    <string name="notif_c1_arrival">%1$s arrived at %2$s %3$s</string>
+    <string name="notif_c1_departure">%1$s left %2$s %3$s</string>
+    <string name="notif_c1_update">%1$s shared an update %2$s</string>
+    <string name="notif_c1_silence">%1$s\'s latest news: %2$s</string>
+    <string name="notif_c1_silence_vowel">%1$s\'s latest news: %2$s</string>
+    <string name="notif_c1_someone">someone</string>
+    <string name="notif_c1_moment_at_weekday">on %1$s at %2$s</string>
+    <string name="notif_c1_moment_since_weekday">%1$s at %2$s</string>
     <string name="android_notif_channel_reminders">Reminders for you</string>
     <string name="android_notif_channel_reminders_desc">A gentle reminder to check in when you turn orange or red.</string>
     <string name="android_notif_channel_reminders_quiet">Reminders for you (quiet night)</string>
@@ -1216,6 +1251,65 @@
     <string name="feed_colors_not_verdict">Orange or red doesn\'t mean something is wrong, only that there\'s been no news for a while.</string>
     <string name="feed_colors_not_delay">Your phone works out the colors from the latest information received. Without a connection they can lag a little: the feed then shows the time of the latest information.</string>
     <string name="feed_colors_bubble_action_a11y">Understand the colors</string>
+    <!-- "How your time is spread" (docs/tickets/profil-repartition-temps.md, TIME-2): the Profile card and the Privacy setting. Friendly, descriptive tone, no blame; the only celebratory note is the party emoji of the summary band (PM decision). -->
+    <string name="profile_timeshare_title">Time breakdown</string>
+    <string name="profile_timeshare_window_7">7 days</string>
+    <string name="profile_timeshare_window_14">14 days</string>
+    <string name="profile_timeshare_window_30">30 days</string>
+    <string name="profile_timeshare_window_a11y">Period, %1$s</string>
+    <string name="profile_timeshare_window_selected_a11y">selected</string>
+    <string name="profile_timeshare_center_caption">in trusted zones</string>
+    <string name="profile_timeshare_a11y_card">Time breakdown: %1$s.</string>
+    <string name="profile_timeshare_a11y_row">%1$s, %2$s</string>
+    <string name="profile_timeshare_a11y_danger_row">%1$s, %2$s, show details</string>
+    <plurals name="profile_timeshare_other_places">
+        <item quantity="one">%1$d other place</item>
+        <item quantity="other">%1$d other places</item>
+    </plurals>
+    <string name="profile_timeshare_danger_zones">Danger zone</string>
+    <string name="profile_timeshare_danger_zones_several">Danger zones</string>
+    <string name="profile_timeshare_elsewhere">Outside zones</string>
+    <string name="profile_timeshare_percent_tiny">&lt; 1%</string>
+    <string name="profile_timeshare_detail_close">Close</string>
+    <string name="profile_timeshare_summary">You spent %1$s of your time in your trusted zones</string>
+    <plurals name="profile_timeshare_not_enough">
+        <item quantity="one">Your chart arrives in %1$d day, we\'re analysing your habits</item>
+        <item quantity="other">Your chart arrives in %1$d days, we\'re analysing your habits</item>
+    </plurals>
+    <string name="profile_timeshare_paused">Tracking of your places is paused.</string>
+    <string name="profile_timeshare_travel">You are in travel mode: your chart is paused until you are back.</string>
+    <string name="profile_timeshare_sharing_stopped">You stopped sharing your status with this Miff: your chart is no longer updated for it.</string>
+    <string name="profile_timeshare_sharing_stopped_action">See this Miff</string>
+    <string name="profile_timeshare_location_needed">To measure your time in your places, Miff needs the \"Always\" location with precise position. You can also carry on without it.</string>
+    <string name="profile_timeshare_over_limit">Not all your places are tracked at the same time: the chart may be incomplete.</string>
+    <string name="profile_timeshare_error">The chart is not available right now.</string>
+    <string name="settings_privacy_time_title">Time history</string>
+    <string name="settings_privacy_time_body">To work out how your time is spread, your phone keeps for 35 days the moments you arrive at and leave your places, with no position or address. Nothing is sent: nobody else can see it.</string>
+    <string name="settings_privacy_time_erase">Erase my time history</string>
+    <string name="settings_privacy_time_confirm_title">Erase the history?</string>
+    <string name="settings_privacy_time_confirm_body">Your chart will start again from zero. This changes nothing for your loved ones.</string>
+    <string name="settings_privacy_time_confirm_action">Erase</string>
+    <string name="settings_privacy_time_done">Done: your chart starts again from zero.</string>
+
+    <!-- COUNTDOWN-A: countdown before orange (Feed and Profile). Same keys as iOS. Durations are catalogue strings (not the system formatter) so that Android and iOS write exactly the same thing; non-breaking space between the number and the unit. -->
+    <string name="countdown_title">You\'re outside your trusted places</string>
+    <string name="countdown_body">You\'ll turn orange in %1$s</string>
+    <string name="countdown_duration_hours_minutes">%1$d&#160;h %2$02d&#160;min</string>
+    <string name="countdown_duration_hours">%1$d&#160;h</string>
+    <string name="countdown_duration_minutes">%1$d&#160;min</string>
+    <string name="countdown_duration_less_than_minute">less than 1&#160;min</string>
+    <string name="countdown_a11y_label">You\'re outside your trusted places. You\'ll turn orange in %1$s.</string>
+    <plurals name="countdown_a11y_hours">
+        <item quantity="one">%1$d hour</item>
+        <item quantity="other">%1$d hours</item>
+    </plurals>
+    <plurals name="countdown_a11y_minutes">
+        <item quantity="one">%1$d minute</item>
+        <item quantity="other">%1$d minutes</item>
+    </plurals>
+    <string name="countdown_a11y_hours_and_minutes">%1$s and %2$s</string>
+    <string name="countdown_a11y_less_than_minute">less than a minute</string>
+    <string name="countdown_a11y_action">Share an update</string>
     <!-- ABOUT-1A : textes propres a Android de Reglages > A propos et aide (lignes de cartes et d'adresses, detail d'une licence, indice de la version) -->
     <string name="android_about_copy_hint">Tap to copy</string>
     <string name="android_about_contact_subtitle">A question, a problem, an idea: write to us.</string>

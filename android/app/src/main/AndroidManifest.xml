@@ -16,8 +16,9 @@
         - ACCESS_FINE_LOCATION: the precise position, needed by the geofencing of the places.
         - ACCESS_COARSE_LOCATION: Android 12+ requires it to be declared (and asked) together with the precise one.
         - ACCESS_BACKGROUND_LOCATION: "all the time", so that arrivals and departures are noticed while the app is closed.
-        - POST_NOTIFICATIONS: Android 13+, for the LOCAL notifications of NOTIF-P0 (reminders to the person and news of the Miff, prepared by the phone itself:
-          plan Spark, no Cloud Function, nothing is sent to anyone). It is only ASKED after the pop-in of the end of the onboarding says what the person gets.
+        - POST_NOTIFICATIONS: Android 13+, for the LOCAL notifications of NOTIF-P0 (reminders to the person and news of the Miff, prepared by the phone itself, nothing sent to
+          anyone) AND, since SRV-2, for the notification "{Prénom} a donné des nouvelles" that the server pushes when a member publishes an update (data-only message, the
+          app composes the notification; see MiffMessagingService). It is only ASKED after the pop-in of the end of the onboarding says what the person gets.
           NO exact alarm is declared (no SCHEDULE_EXACT_ALARM, no USE_EXACT_ALARM, criterion N-M8): the reminders use inexact alarms, a few minutes late at worst.
     -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
@@ -134,6 +135,15 @@
             android:value="false" />
 
         <!--
+            Push (SRV-2): Firebase Messaging does NOT start by itself. Without this line it would create a token of the phone at the first launch, before any account and
+            any consent. The app switches it on (FirebaseMessaging.isAutoInitEnabled) only once an account is signed in with a valid session AND the person agreed to be
+            notified, and switches it off (and invalidates the token) at the sign-out or when the consent goes. See data/push/PushRegistrar.
+        -->
+        <meta-data
+            android:name="firebase_messaging_auto_init_enabled"
+            android:value="false" />
+
+        <!--
             Photo taken with the camera application of the system (profile photo, Onboarding ticket 6.3). No CAMERA permission:
             the system camera writes the picture to ONE file of our private cache, through a content address that only this
             request can use (not exported). The file is deleted as soon as it has been read. See res/xml/avatar_capture_paths.xml.
@@ -184,6 +194,18 @@
                 <action android:name="android.intent.action.TIMEZONE_CHANGED" />
             </intent-filter>
         </receiver>
+
+        <!--
+            SRV-2: the service that receives the DATA messages of the server (FCM) and the new tokens. NOT exported: only the messaging component of Firebase, itself protected
+            by the permission of Google's servers, starts it. The messages are data-only: the app composes the notification (language, switches, caps, quiet hours).
+        -->
+        <service
+            android:name=".data.push.MiffMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
 
         <activity
             android:name=".MainActivity"

@@ -60,6 +60,17 @@ test("création d'une photo -> la fonction s'exécute (elle réserve l'envoi dan
   assert.deepEqual(Object.keys(a).sort(), ['lastNotifiedAt', 'lastSeenCreatedAt']);
 });
 
+test("DESC-R : une photo AVEC description déclenche la fonction exactement comme sans description ; la description n'apparaît dans aucun document d'état", async () => {
+  const description = 'DESCRIPTION-SECRETE-A-NE-JAMAIS-RECOPIER';
+  await membre('A4', true);
+  await membre('B4', true);
+  await db.doc(`miffs/${MIFF}/photos/A4`).set({ ...photo(), description });
+  const a = await attendre(() => etatAuteur('A4'), "notifState/{miff}.authors.A4 n'est jamais apparu : le déclencheur ne s'est pas exécuté pour une photo avec description");
+  assert.deepEqual(Object.keys(a).sort(), ['lastNotifiedAt', 'lastSeenCreatedAt']); // même forme que sans description
+  const etat = await db.doc(`notifState/${MIFF}`).get();
+  assert.ok(!JSON.stringify(etat.data()).includes(description), 'la description ne doit pas être copiée dans notifState');
+});
+
 test('REMPLACEMENT d\'une photo existante -> la fonction s\'exécute aussi (ici l\'auteur ne partageait pas à la première écriture)', async () => {
   await membre('A2', false);
   await db.doc(`miffs/${MIFF}/photos/A2`).set(photo()); // création : auteur sans partage, rien à réserver

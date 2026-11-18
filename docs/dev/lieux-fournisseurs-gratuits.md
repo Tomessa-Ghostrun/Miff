@@ -15,7 +15,7 @@ Le formulaire propose des **adresses pendant la frappe** (service Photon, public
 | Suggestions d'adresse | **Photon**, instance publique de komoot (`photon.komoot.io`) | Oui, sans compte | Aucune | **Aucune** : « no guarantees for availability », changements « without notice » | Le **texte tapé** dans le champ d'adresse (3 caractères au moins) et l'**adresse IP** du téléphone. Jamais la position, jamais le nom du lieu, jamais l'identité de la personne | Données OpenStreetMap (ODbL) : « Adresses : © contributeurs OpenStreetMap » sous la liste |
 | Suggestions (repli, **préparé, éteint**) | **Geoapify**, formule gratuite | Oui (3 000 crédits par jour, d'après la page des tarifs lue le 2026-11-01) | **Oui** : clé donnée à la compilation, jamais commitée | SLA seulement payant | Idem + la clé | Attribution exigée par leurs conditions (à ajouter si le repli est allumé) |
 | Tuiles de la carte | **OpenFreeMap** (`tiles.openfreemap.org`, style `positron`) | Oui, **sans limite de requêtes**, usage commercial permis | Aucune | **Aucune** (« as-is », service financé par des dons, peut s'arrêter) | Les tuiles demandées (donc la **zone affichée** à l'écran) et l'**adresse IP** | « OpenFreeMap © OpenMapTiles Data from OpenStreetMap », **toujours visible** sous la carte |
-| Moteur de carte | **MapLibre Native** (`org.maplibre.gl:android-sdk-opengl` 13.7.1, variante OpenGL ES) | Oui, BSD-2-Clause | Aucune | Projet communautaire | Rien (pas de télémétrie ; carte sans geste, sans couche « ma position », sans permission) | Gérée par l'app (ci-dessus) |
+| Moteur de carte | **MapLibre Native** (`org.maplibre.gl:android-sdk-opengl` 13.7.1, variante OpenGL ES) | Oui, BSD-2-Clause | Aucune | Projet communautaire | Rien (pas de télémétrie ; carte sans couche « ma position », sans permission ; depuis LIEU-ZOOM, zoom par pincement et double toucher dans le formulaire seulement, rien d'autre ne la déplace) | Gérée par l'app (ci-dessus) |
 
 ## Limites connues et signal de bascule
 
@@ -64,7 +64,7 @@ Le formulaire propose des **adresses pendant la frappe** (service Photon, public
 
 **Limite connue** : l'ouverture du formulaire relit tout depuis le serveur (pour décider des limites sur des données fraîches). Pour un compte Miff+ avec beaucoup de Miffs, c'est une dizaine de lectures par ouverture : sans effet à l'échelle de la bêta. **Signal** : voir `surveillance-quotas.md` (ratio de lectures par utilisateur actif).
 
-## Licences et attributions (reprises dans l’écran « Licences et attributions » d’Android depuis ABOUT-1A, version 0.41.0)
+## Licences et attributions (reprises dans l’écran « Licences et attributions » d’Android depuis ABOUT-1A, version 0.49.0)
 
 | Élément | Licence | À afficher |
 |---|---|---|

@@ -115,4 +115,25 @@ class AccountLocalDataTest {
         ledger.clear()
         assertEquals(1_000L, ledger.photoSentMillis("uid-1"))
     }
+
+    @Test
+    fun theLocalJournalOfThePresenceAndTheWindowOfTheChart_goWithTheAccount() =
+        runTest {
+            val log =
+                com.tomessa.miff.testsupport
+                    .RecordingPresenceLog()
+            val window =
+                com.tomessa.miff.testsupport
+                    .MemoryTimeShareWindowStore(days = 30)
+            accountLocalDataErasers(
+                Asks(),
+                MemoryPendingDeletions(emptySet()),
+                MemoryPublishLedger(),
+                MemoryReviewState(),
+                log,
+                window,
+            ).forEach { it.erase("uid-1") }
+            assertEquals(1, log.cleared)
+            assertEquals(null, window.days)
+        }
 }

@@ -6,6 +6,7 @@ import com.tomessa.miff.data.notification.NotificationAuthorization
 import com.tomessa.miff.data.notification.NotificationCenter
 import com.tomessa.miff.data.notification.NotificationSettings
 import com.tomessa.miff.data.place.RequesterDirectory
+import com.tomessa.miff.domain.notification.LastVisit
 import com.tomessa.miff.domain.notification.NotificationItem
 import com.tomessa.miff.domain.notification.NotificationPermissionState
 import com.tomessa.miff.domain.notification.NotificationType
@@ -31,6 +32,10 @@ class CenterRow(
     val miffName: String?,
     val createdAtMillis: Long,
     val unread: Boolean,
+    /** N9 only: the first name of the author (the line says "{Prénom} a donné des nouvelles"). */
+    val who: String? = null,
+    /** N9 and C1: the Miff the line is about, for the tap (the Feed shows it if the person belongs to it). */
+    val miffId: String? = null,
     /** The keys of the lines this row stands for: one, or several unread requests of the same person in the same Miff ("Léa a proposé 3 lieux"). */
     val ids: List<String> = listOf(id),
     /** A line about a request to add a place (N8): the Miff, ALWAYS named in its sentence. Null for every other line. */
@@ -40,6 +45,10 @@ class CenterRow(
     val requesterName: String? = null,
     /** The requests (identifiers) the row stands for: a tap on it tells if none of them is pending any more. */
     val requestIds: List<String> = emptyList(),
+    /** A line "Depuis ta dernière visite" (C1): what it says, read from its key (a kind, a category, a time, the member by identifier). Null for every other line. */
+    val visit: LastVisit.Parsed? = null,
+    /** C1: the first name of the member as the app knows it NOW (never stored in the centre); null when it is not known yet. */
+    val visitName: String? = null,
 ) {
     /** How many requests the row stands for (1 for every other line). */
     val count: Int get() = ids.size
@@ -64,6 +73,8 @@ enum class CenterBanner {
 data class NotificationCenterUiState(
     val rows: List<CenterRow> = emptyList(),
     val banner: CenterBanner = CenterBanner.NONE,
+    /** NOTIF-P1A: the group "Depuis ta dernière visite" (at most 3 lines, newest first), drawn above the days. Visible whatever the state of the notifications (decision Q4). */
+    val visitRows: List<CenterRow> = emptyList(),
 )
 
 /**
@@ -94,8 +105,17 @@ class NotificationCenterViewModel(
             val names = miffNames()
             val everyName = allMiffNames()
             NotificationCenterUiState(
+                visitRows =
+                    items
+                        .filter { it.type == NotificationType.C1 }
+                        .mapNotNull { item -> LastVisit.parse(item)?.let { item.toVisitRow(it, names, firstNames) } }
+                        .sortedByDescending { it.createdAtMillis },
                 rows =
-                    items.filter { it.type != NotificationType.N8 }.map { it.toRow(names) } +
+                    items.filter { it.type != NotificationType.N8 && it.type != NotificationType.C1 }.map {
+                        it.toRow(
+                            names,
+                        )
+                    } +
                         PlaceRequestLines.entriesOf(items).map { it.toRow(everyName, firstNames) },
                 banner =
                     when {
@@ -119,7 +139,25 @@ class NotificationCenterViewModel(
             miffName = miffId?.let(names::get),
             createdAtMillis = createdAtMillis,
             unread = unread,
+            who = who,
+            miffId = if (type == NotificationType.N9) miffId else null,
         )
+
+    /** A line of "Depuis ta dernière visite": the words are made when it is drawn; the name of the Miff only when the account has several. */
+    private fun NotificationItem.toVisitRow(
+        parsed: LastVisit.Parsed,
+        names: Map<String, String>,
+        firstNames: Map<String, String>,
+    ) = CenterRow(
+        id = id,
+        type = type,
+        miffName = miffId?.let(names::get),
+        createdAtMillis = createdAtMillis,
+        unread = unread,
+        visit = parsed,
+        miffId = miffId,
+        visitName = miffId?.let { firstNames[RequesterDirectory.key(it, parsed.uid)] },
+    )
 
     /** A line about requests: the unread ones of a person in a Miff are ONE row; the words are made from what is known now. */
     private fun PlaceRequestLines.Entry.toRow(
@@ -164,6 +202,8 @@ class NotificationCenterViewModel(
     /** "Les réactiver" when only the general switch of the app is off. */
     fun onEnableInApp() {
         settings.setEnabled(true)
+        // The band that offers it carries the sentence about the identifier of the phone: this yes is the consent to register it (SRV-2).
+        authorization.markConsentGiven()
         permission.value = authorization.state()
     }
 

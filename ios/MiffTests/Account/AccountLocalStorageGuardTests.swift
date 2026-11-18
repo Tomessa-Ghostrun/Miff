@@ -10,21 +10,27 @@ final class AccountLocalStorageGuardTests: XCTestCase {
     private let known: [String: String] = [
         "App/AppEnvironment.swift": "branchement des réglages ; rien de plus",
         "App/AppEnvironment+AccountDeletion.swift": "branchement des effaceurs (AccountLocalData)",
+        "Services/Notification/LastVisitFileStore.swift": "dernière image vue des proches : teardown, AccountLocalData",
         "Services/Notification/NotificationCenterFileStore.swift": "centre : teardown, AccountLocalData",
         "Services/Notification/NotificationDefaultsStores.swift": "choix : teardown ; carte : AccountLocalData",
         "Services/Notification/NotificationPlanFileStore.swift": "instantané et registre : teardown, AccountLocalData",
         "Services/Notification/NotificationLocalData.swift": "regroupe et efface les stockages des notifications",
+        "App/PushServices.swift": "branchement des notifications push ; effaceurs : PushServices.erasers",
         "Services/Permission/DevicePermissions.swift": "drapeau par compte : AccountLocalData (notificationAsks)",
         "Services/PrivacySettings.swift": "choix Analytics / plantages : SessionManager (eraseCollectedData)",
+        "Services/Push/PushLocalFileStore.swift": "mémoire de l'enregistrement : PushRegistrar.forget, erasers",
+        "Services/Push/PushPreferenceStores.swift": "accord et interrupteur par compte : PushServices.erasers",
         "Services/Storage/AccountDeletionFileMarker.swift": "le marqueur lui-même : effacé en dernier",
         "Services/Storage/ActiveMiffStore.swift": "Miff active : AccountLocalData (activeMiff)",
         "Services/Storage/DeviceIdFileStore.swift": "session d'appareil : DeviceSession.forget",
         "Services/Storage/LocalStores.swift": "consentement en attente : pending.clear ; drapeaux d'onboarding gardés",
         "Services/Storage/PendingDeletionFileStore.swift": "marqueurs de suppression de Miff : AccountLocalData",
         "Services/Storage/ProfileDraftFileStore.swift": "brouillon du profil : drafts.clear",
+        "Models/Main/AppLanguage.swift": "langue d'affichage : préférence de l'appareil, rien de personnel, gardée",
         "Services/Update/PublishLedger.swift": "carnet de l'Update : AccountLocalData (updateLedger)",
         "Services/Tracking/FileDetectionJournal.swift": "journal : AccountLocalData (detectionJournal)",
-        "Services/Tracking/TrackingLocalFileStore.swift": "copie locale du suivi : AccountLocalData (trackingLocal)"
+        "Services/Tracking/TrackingLocalFileStore.swift": "copie locale du suivi : AccountLocalData (trackingLocal)",
+        "Services/Review/ReviewStateFileStore.swift": "fenêtre d'avis (dates, issue) : teardown (ReviewPromptServices)"
     ]
 
     func testEveryLocalStorageHasBeenReadForTheDeletionOfAnAccount() throws {

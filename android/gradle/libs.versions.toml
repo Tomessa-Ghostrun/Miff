@@ -50,6 +50,10 @@ firebase-appcheck-debug = { module = "com.google.firebase:firebase-appcheck-debu
 firebase-appcheck-playintegrity = { module = "com.google.firebase:firebase-appcheck-playintegrity" }
 firebase-crashlytics = { module = "com.google.firebase:firebase-crashlytics" }
 firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
+# Push (SRV-2, docs/tickets/notification-update-membres.md): Firebase Cloud Messaging. Its version is given by the BOM above (no version of its own, so it moves with the
+# other Firebase libraries and stays pinned by firebaseBom). Free (FCM has no fee), same Google Android SDK terms as firebase-auth and firestore already used, no permission
+# of its own asked of the person. Used for DATA-ONLY messages: the app composes the notification itself, FCM never displays anything.
+firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
 androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
 androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
 google-googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }

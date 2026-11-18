@@ -90,6 +90,15 @@ final class CameraController: NSObject, ObservableObject, AVCapturePhotoCaptureD
         applyPreviewMirror()
     }
 
+    #if DEBUG
+    /// Captures de la CI (`-MiffPreview update-...`) : le simulateur n'a aucune caméra, donc ni bascule ni flash ; on les montre pour voir où ils
+    /// se placent par rapport à la barre d'état et à l'île dynamique. Absent de tout build distribué.
+    func showDemoControls() {
+        canSwitch = true
+        flash.setAvailable(true)
+    }
+    #endif
+
     // MARK: - Cycle de vie
 
     /// Démarre la caméra : la FRONTALE d'abord (selfie par défaut, à chaque ouverture) ; sans frontale, l'arrière ; sans aucune, l'écran

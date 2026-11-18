@@ -5,7 +5,9 @@ import java.time.ZoneId
 
 /*
  * The centre of notifications (ticket section 20.4): a LOCAL list of what Miff told the person on this phone. It holds a type, a Miff identifier and
- * times: NO position, NO address, NO name of a place, NO name of a person, NO photo (criteria N-C4, N-P0-10). The text shown is the text of the type.
+ * times: NO position, NO address, NO name of a place, NO photo (criteria N-C4, N-P0-10). The ONE exception is N9 (a loved one gave news, a push of the server):
+ * its line holds the FIRST NAME of the author, 20 characters at most, as the validated ticket asks (notification-update-membres.md, 13: "{Prénom} a donné des
+ * nouvelles", Q6); never a family name. The text shown is the text of the type.
  */
 
 /** How the notification came to the centre: shown by the system, or only written there (app in front, late catch-up, daily cap reached). */
@@ -22,6 +24,8 @@ data class NotificationItem(
     val createdAtMillis: Long,
     val readAtMillis: Long? = null,
     val state: ItemState = ItemState.SHOWN,
+    /** N9 only: the first name of the author (cleaned, 20 characters at most). Null for every other type. */
+    val who: String? = null,
 ) {
     val unread: Boolean get() = readAtMillis == null
 
@@ -114,4 +118,27 @@ object NotificationList {
     ): List<NotificationItem> = items.filterNot { it.id == id }
 
     fun unreadCount(items: List<NotificationItem>): Int = items.count { it.unread }
+
+    /**
+     * NOTIF-P1A: the group "Depuis ta dernière visite" is REPLACED as a whole (or removed when [lines] is empty): there are never more than [LastVisit.MAX_LINES] lines
+     * of it, and never an old one. A line whose key is still there keeps what the person did with it (read), so an identical comparison changes nothing.
+     */
+    fun replaceVisit(
+        items: List<NotificationItem>,
+        lines: List<NotificationItem>,
+        nowMillis: Long,
+    ): List<NotificationItem> {
+        val before = items.filter { it.type == NotificationType.C1 }.associateBy { it.id }
+        val kept = items.filter { it.type != NotificationType.C1 }
+        return NotificationRetention.apply(
+            kept + lines.take(LastVisit.MAX_LINES).map { before[it.id] ?: it },
+            nowMillis,
+        )
+    }
+
+    /** NOTIF-P1A: the lines of the group that are about nobody still in the Miff, or about a Miff that is gone, are removed (the retreat of a member, the loss of access). */
+    fun removeVisit(
+        items: List<NotificationItem>,
+        remove: (NotificationItem) -> Boolean,
+    ): List<NotificationItem> = items.filterNot { it.type == NotificationType.C1 && remove(it) }
 }

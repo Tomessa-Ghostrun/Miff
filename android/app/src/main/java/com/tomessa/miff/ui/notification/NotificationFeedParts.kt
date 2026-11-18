@@ -27,14 +27,17 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.ui.components.MiffButton
+import com.tomessa.miff.ui.main.FeedFocus
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorActionPrimary
 import com.tomessa.miff.ui.theme.colorActionPrimaryTint10
 import com.tomessa.miff.ui.theme.colorBgCanvas
 import com.tomessa.miff.ui.theme.colorBrandPrimary
+import com.tomessa.miff.ui.theme.colorTextDescription
 import com.tomessa.miff.ui.theme.colorTextForm
 import com.tomessa.miff.ui.theme.textBodyBold16
+import com.tomessa.miff.ui.theme.textBodyRegular14
 
 /**
  * What the Feed shows of the notifications (NOTIF-1A and NOTIF-6A): the dot of the bell, the way to the centre, and the card of the "second chance".
@@ -47,6 +50,10 @@ class FeedNotifications(
     val onOpenCenter: () -> Unit = {},
     val onSecondChanceEnable: () -> Unit = {},
     val onSecondChanceLater: () -> Unit = {},
+    /** NOTIF-P1A: the card of this member is brought into view (a tap on a line of "Depuis ta dernière visite"); null when nobody is asked for. */
+    val focusMember: FeedFocus? = null,
+    /** The Feed took the request (or found no such card): it is forgotten. */
+    val onFocusHandled: (FeedFocus) -> Unit = {},
 )
 
 /**
@@ -117,6 +124,7 @@ fun NotificationSecondChanceCard(
             style = textBodyBold16,
             color = colorTextForm,
         )
+        PushIdentifierNote()
         MiffButton(
             text = stringResource(R.string.notif_second_chance_action),
             onClick = onEnable,
@@ -132,4 +140,22 @@ fun NotificationSecondChanceCard(
             }
         }
     }
+}
+
+/**
+ * The sentence that says what registering for the notifications means: Miff keeps a technical identifier of the phone, provided by Google, to send them (SRV-2). It sits on every
+ * screen whose "yes" is the consent to that registration (the pop-in of the onboarding, Settings > Notifications, the card of the Feed, the centre), so that no yes is given without it.
+ */
+@Composable
+fun PushIdentifierNote(
+    modifier: Modifier = Modifier,
+    textAlign: androidx.compose.ui.text.style.TextAlign? = null,
+) {
+    Text(
+        text = stringResource(R.string.android_notif_push_identifier_note),
+        style = textBodyRegular14,
+        color = colorTextDescription,
+        textAlign = textAlign,
+        modifier = modifier,
+    )
 }

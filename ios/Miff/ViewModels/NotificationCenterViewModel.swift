@@ -52,18 +52,31 @@ final class NotificationCenterViewModel: ObservableObject {
     }
 
     /// La personne quitte l'écran : ce qu'elle vient de voir est lu (la pastille de la cloche s'éteint). Derrière le flou, rien n'a été vu :
-    /// rien n'est marqué comme lu.
+    /// rien n'est marqué comme lu, sauf le groupe « Depuis ta dernière visite », qui reste visible au-dessus du flou.
     func onDisappear() {
         if showsContent {
             service.markAllRead()
+        } else if lock != nil {
+            service.history.visitItems.forEach { service.markRead(id: $0.id) }
         }
     }
 
     /// Toucher une ligne : elle est lue, et l'on dit où aller. Jamais une erreur, même si la Miff n'existe plus.
-    /// Une ligne de demande mène au Profil, sur la Miff concernée.
+    /// Une ligne de demande mène au Profil, sur la Miff concernée ; une ligne « Depuis ta dernière visite », au Feed, sur la carte du proche.
     func open(_ item: NotificationItem) -> NotificationDestination {
         ids(of: item).forEach { service.markRead(id: $0) }
+        if item.type == .c1 {
+            guard let uid = LastVisit.uid(of: item) else {
+                return .feed
+            }
+            return .feedCard(miffId: item.miffId, uid: uid)
+        }
         return item.type == .n8 ? .placeRequests(miffId: item.miffId) : item.type.destination
+    }
+
+    /// Le prénom du proche d'une ligne « Depuis ta dernière visite », tel que l'app le sait maintenant (le centre n'en garde aucun).
+    func visitName(of item: NotificationItem) -> String? {
+        LastVisit.uid(of: item).flatMap { directory.firstName(miffId: item.miffId, uid: $0) }
     }
 
     func delete(_ item: NotificationItem) {

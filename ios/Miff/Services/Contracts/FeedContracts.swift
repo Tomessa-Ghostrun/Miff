@@ -55,3 +55,22 @@ protocol FeedRefresher {
     /// règles refuseraient et rien n'est voulu, donc ils ne sont pas demandés.
     func refresh(miffId: String, readStatuses: Bool) async -> ServerRead
 }
+
+/// Ce que l'écoute de MON SEUL statut a dit (un document, jamais la liste).
+enum OwnStatusFeed: Equatable, CustomStringConvertible {
+    /// Mon statut tel que le serveur (ou, hors ligne, le cache du téléphone) le décrit ; nil quand le document n'existe pas.
+    case data(MemberStatus?)
+    /// L'écoute s'est terminée : les règles ont refusé (mon statut n'est pas publié, mon partage est arrêté) ou autre chose l'a arrêtée.
+    /// Rien n'est relancé en boucle : l'appelant la rattache au prochain changement d'onglet.
+    case ended
+
+    var description: String {
+        "OwnStatusFeed(redacted)"
+    }
+}
+
+/// L'écoute de MON statut seul (`miffs/{id}/status/{moi}`), pour les onglets où le Feed n'écoute pas (Profil, Update) : un document, donc au
+/// plus une lecture par changement de MON statut, jamais la liste des membres. Froide : l'abandonner retire l'écoute.
+protocol OwnStatusObserver {
+    func observe(miffId: String, uid: String) -> AsyncStream<OwnStatusFeed>
+}

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- "Répartition de ton temps": three bars (header badge of the card). Drawn for Miff, 24 grid. Colour given by the tint of the Icon. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#222222"
+        android:pathData="M4.5,20L4.5,11.5Q4.5,10.5 5.5,10.5L8,10.5Q9,10.5 9,11.5L9,20ZM10.5,20L10.5,5Q10.5,4 11.5,4L13.5,4Q14.5,4 14.5,5L14.5,20ZM16,20L16,8.5Q16,7.5 17,7.5L19,7.5Q20,7.5 20,8.5L20,20Z" />
+</vector>

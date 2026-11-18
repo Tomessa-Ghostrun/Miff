@@ -2,6 +2,7 @@ package com.tomessa.miff.domain.feed
 
 import com.tomessa.miff.domain.miff.MiffMember
 import com.tomessa.miff.domain.place.PlaceCategory
+import com.tomessa.miff.domain.tracking.CountdownAnchor
 import com.tomessa.miff.domain.tracking.StatusLevel
 import com.tomessa.miff.domain.travel.TravelDay
 import com.tomessa.miff.domain.update.PromptLevel
@@ -141,7 +142,7 @@ data class MyPhotoFacts(
     val lastUpdateAtMillis: Long?,
 )
 
-/** One card: a member, me included. MY card is the LAST of the list (no Localiser, no Message, no Appeler on it). */
+/** One card: a member, me included. MY card is sorted like the others (FEED-ORDRE) and has no Localiser, no Message, no Appeler. */
 data class MemberCard(
     val member: MiffMember,
     val isMe: Boolean,
@@ -299,6 +300,11 @@ data class FeedContent(
     val myPhoto: MyPhotoFacts? = null,
     /** MODE VOYAGE: the line added to the usual bubble when other members are on a trip (null: none, or the bubble already says it). */
     val travelNote: TravelNote? = null,
+    /**
+     * COUNTDOWN-A: the anchor of the countdown before MY status turns orange (null: nothing to show). It is MY status only, never somebody else's (the
+     * countdown is for the person concerned, on her own phone); the clock decides, on the screen, whether it is still shown.
+     */
+    val myCountdown: CountdownAnchor? = null,
 ) {
     override fun toString(): String = "FeedContent(redacted)"
 }
