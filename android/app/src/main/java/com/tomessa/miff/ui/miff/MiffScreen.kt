@@ -572,6 +572,9 @@ private fun MiffDeletionDialog(
  */
 val LocalAlertInThisMiff = compositionLocalOf { false }
 
+/** The Miff my alert (in progress or on its way) is in, or null: given once at the root of the signed-in app, so that every screen that asks "Quitter la Miff" can warn (review of #275 v2, 4). */
+val LocalAlertMiffId = compositionLocalOf<String?> { null }
+
 /** The sentence of the question, and, when an alert of mine is in this Miff, the calm warning under it. */
 @Composable
 internal fun withAlertWarning(body: String): String =

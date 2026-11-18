@@ -135,8 +135,12 @@ class AlertController(
             }
 
             PointerPhase.ABANDONED -> {
-                // Closed by the person, but the server has not yet confirmed that nothing is alive there.
-                launchVerifyAbandoned(pointer.miffId)
+                // Closed by the person, but the server has not yet confirmed that nothing is alive there. An alert lives 7 days at most: after that nothing can be alive.
+                if (now - pointer.armedAtMillis > AlertRules.DURATION_MILLIS) {
+                    local.clearPointer()
+                } else {
+                    launchVerifyAbandoned(pointer.miffId)
+                }
             }
 
             PointerPhase.ACTIVE -> {
@@ -246,6 +250,12 @@ class AlertController(
                             return@launch
                         }
 
+                        // The Miff is closed to me (removed, deleted, rules): no alert of mine can be alive there, the pointer is not kept for ever (review of #275 v2, 8).
+                        MineRead.Denied -> {
+                            if (mutableState.value is MyAlert.None) local.clearPointer()
+                            return@launch
+                        }
+
                         MineRead.Unavailable -> {
                             delay(pauseFor(attempt++))
                         }
@@ -274,20 +284,6 @@ class AlertController(
         if (current.expiresAtMillis <= nowMillis()) drop()
     }
 
-    /**
-     * The Miffs of the person are known: an alert whose Miff is no longer one of them (left, removed, deleted) is gone with it. The server deleted the document in the same lot as
-     * the departure, the removal or the deletion (nothing to write here).
-     */
-    fun onMiffsKnown(
-        miffIds: Collection<String>,
-        authoritative: Boolean = true,
-    ) {
-        // A list read from the cache of the phone, or a transient one, never ends an alert (review of #275, m8): only a list the server confirmed does.
-        if (!authoritative) return
-        val miffId = mutableState.value.miffId ?: return
-        if (miffIds.isNotEmpty() && miffId !in miffIds) drop()
-    }
-
     /** MY sharing in [miffId] was stopped, or I left it: the document went in the same lot (the rules require it), so the alert is gone. */
     fun onAlertRemoved(miffId: String) {
         if (mutableState.value.miffId == miffId) drop()
@@ -305,6 +301,7 @@ class AlertController(
         val read = store.readMine(uid, current.miffId)
         val again = mutableState.value as? MyAlert.Active ?: return
         if (again.miffId != current.miffId || again.end != EndStep.NONE) return
+        // Unavailable or Denied: nothing changes (never a banner removed on a doubt, a passing refusal included).
         if (read is MineRead.Value) {
             val doc = read.doc
             if (doc == null || !doc.isLive(nowMillis())) {
@@ -350,7 +347,7 @@ class AlertController(
                     }
                 }
 
-                MineRead.Unavailable -> {
+                MineRead.Unavailable, MineRead.Denied -> {
                     complete = false
                 }
             }

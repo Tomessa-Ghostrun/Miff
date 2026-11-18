@@ -1327,14 +1327,14 @@
     <string name="alert_sending_title_no_name">Envoi de l\'alerte…</string>
     <string name="alert_waiting_title">Pas de réseau pour le moment. Ton alerte partira dès que possible.</string>
     <string name="alert_refused_title">Ton alerte n\'est pas partie. Vérifie la date et l\'heure de ton téléphone, puis réessaie. Si tu es en danger, tu peux appeler directement les secours.</string>
-    <string name="alert_quota_title">Tu as atteint la limite de 3 alertes par jour ; elle se libère dans quelques heures. Si tu es en danger, appelle directement les secours.</string>
+    <string name="alert_quota_title">Tu as atteint la limite de 3 alertes par jour. Si tu es en danger, appelle directement les secours.</string>
     <string name="alert_refused_retry">Réessayer</string>
     <string name="alert_cancel_pending">Annuler l\'alerte</string>
     <string name="alert_stopped_title">Tu as arrêté de partager avec la Miff %1$s : reprends le partage pour alerter tes proches.</string>
     <string name="alert_stopped_title_no_name">Tu as arrêté de partager : reprends le partage pour alerter tes proches.</string>
     <string name="alert_stopped_resume">Reprendre le partage</string>
     <string name="alert_stale_title">Veux-tu toujours envoyer ton alerte ?</string>
-    <string name="alert_stale_body">Elle n\'a pas pu partir depuis un moment.</string>
+    <string name="alert_stale_body">Cela fait un moment qu\'elle n\'est pas partie : la situation a peut-être changé.</string>
     <string name="alert_stale_send">Envoyer</string>
     <string name="alert_stale_cancel">Annuler</string>
     <string name="alert_call_action">Appeler</string>
@@ -1377,7 +1377,7 @@
     <string name="alert_banner_sending_no_name">Envoi de ton alerte…</string>
     <string name="alert_banner_emergency">Numéros d\'urgence</string>
     <string name="alert_banner_retry">Réessayer</string>
-    <string name="alert_banner_decide">Décider</string>
+    <string name="alert_banner_decide">Choisir</string>
     <string name="alert_banner_close_a11y">Fermer et abandonner l\'envoi de l\'alerte</string>
     <string name="alert_ended_notice_no_name">Alerte terminée. Tes proches ont été prévenus.</string>
     <string name="alert_already_active_no_name">Une alerte est déjà en cours.</string>

@@ -20,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -38,10 +39,13 @@ import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.miffScreenInsets
 import com.tomessa.miff.ui.miff.ConsentLine
 import com.tomessa.miff.ui.miff.DialogTone
+import com.tomessa.miff.ui.miff.LocalAlertInThisMiff
+import com.tomessa.miff.ui.miff.LocalAlertMiffId
 import com.tomessa.miff.ui.miff.MiffConfirmDialog
 import com.tomessa.miff.ui.miff.MiffNotice
 import com.tomessa.miff.ui.miff.RenewalDetailsCard
 import com.tomessa.miff.ui.miff.actionMessageText
+import com.tomessa.miff.ui.miff.withAlertWarning
 import com.tomessa.miff.ui.theme.GradientAuthBackground
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeFull
@@ -516,17 +520,20 @@ fun RenewalScreen(
     }
     if (state.leaveAsked) {
         state.leavable?.let { miff ->
-            MiffConfirmDialog(
-                title = stringResource(R.string.miff_leave_title, miff.name),
-                body = stringResource(R.string.miff_leave_body),
-                confirmLabel = stringResource(R.string.miff_leave_action),
-                cancelLabel = stringResource(R.string.common_cancel),
-                tone = DialogTone.SENSITIVE,
-                busy = state.busy,
-                message = state.message,
-                onConfirm = onLeaveConfirmed,
-                onCancel = onLeaveCancelled,
-            )
+            // ALERTE: leaving the Miff of an alert in progress removes it without telling the circle: the same warning as on the screen of the Miff (review of #275 v2, 4).
+            CompositionLocalProvider(LocalAlertInThisMiff provides (LocalAlertMiffId.current == miff.miffId)) {
+                MiffConfirmDialog(
+                    title = stringResource(R.string.miff_leave_title, miff.name),
+                    body = withAlertWarning(stringResource(R.string.miff_leave_body)),
+                    confirmLabel = stringResource(R.string.miff_leave_action),
+                    cancelLabel = stringResource(R.string.common_cancel),
+                    tone = DialogTone.SENSITIVE,
+                    busy = state.busy,
+                    message = state.message,
+                    onConfirm = onLeaveConfirmed,
+                    onCancel = onLeaveCancelled,
+                )
+            }
         }
     }
 }

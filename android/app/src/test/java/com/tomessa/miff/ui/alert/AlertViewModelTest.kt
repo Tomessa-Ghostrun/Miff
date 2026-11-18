@@ -157,4 +157,43 @@ class AlertViewModelTest {
             assertFalse(state.loadingPeople)
             assertEquals(AlertDialTarget.Emergency::class, state.selected::class)
         }
+
+    @Test
+    fun choosingTheSameServiceAgain_changesNothing_andEmitsNothing_noLoopOnTheScreenOfTheLimit() {
+        val model = vm(SlowFaces())
+        val first = model.call.value
+        model.selectEmergency()
+        model.selectEmergency()
+        model.select((first as CallState.Ready).selected)
+        // the very same state object: nothing was emitted (review of #275 v2, 1)
+        assertTrue(model.call.value === first)
+    }
+
+    @Test
+    fun aServiceChosenByThePerson_isNeverReplacedByTheLimitScreen() {
+        val model = vm(SlowFaces())
+        val police = (model.call.value as CallState.Ready).list.targets.first { it.number == "17" }
+        model.select(police)
+        model.selectEmergency()
+        assertEquals("17", (model.call.value as CallState.Ready).selected.number)
+    }
+
+    @Test
+    fun afterAFailedReading_openingTheScreenAgainForTheSameMiff_readsAgain() =
+        runTest(dispatcher) {
+            var reads = 0
+            val faces =
+                object : MemberFacesReader {
+                    override suspend fun read(miffId: String): FacesRead {
+                        reads++
+                        return FacesRead.Failed
+                    }
+                }
+            val model = vm(faces)
+            model.loadCallList("m1")
+            dispatcher.scheduler.runCurrent()
+            model.loadCallList("m1")
+            dispatcher.scheduler.runCurrent()
+            assertEquals(2, reads)
+        }
 }

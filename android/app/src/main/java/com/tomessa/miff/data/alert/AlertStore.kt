@@ -70,6 +70,12 @@ sealed interface MineRead {
     ) : MineRead
 
     data object Unavailable : MineRead
+
+    /**
+     * The rules REFUSE the reading (the Miff is no longer mine, or the rules do not know alerts yet): nothing alive can be read there. NOT "no alert": a refusal can also come
+     * from a passing problem (App Check), so only the check of an abandoned sending uses it, to stop asking about a Miff that is closed to me.
+     */
+    data object Denied : MineRead
 }
 
 /** The alerts of one Miff as the Feed listener hears them. */
@@ -234,6 +240,8 @@ class FirestoreAlertStore(
             MineRead.Value(if (snapshot.exists()) parse(snapshot) else null)
         } catch (e: CancellationException) {
             throw e
+        } catch (e: FirebaseFirestoreException) {
+            if (e.code == FirebaseFirestoreException.Code.PERMISSION_DENIED) MineRead.Denied else MineRead.Unavailable
         } catch (e: Exception) {
             MineRead.Unavailable
         }

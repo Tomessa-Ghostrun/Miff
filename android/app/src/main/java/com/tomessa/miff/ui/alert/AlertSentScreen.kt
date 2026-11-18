@@ -385,7 +385,11 @@ private fun CallPicker(
                     .clickable(role = Role.Button, onClick = onOpen)
                     .padding(horizontal = Spacing.m)
                     .testTag(ALERT_SENT_PICKER_TAG)
-                    .semantics { contentDescription = "$pick, $selectedText" },
+                    // A change of the choice (the creator replacing 112 when the people arrive) is announced politely, never silently.
+                    .semantics {
+                        contentDescription = "$pick, $selectedText"
+                        liveRegion = LiveRegionMode.Polite
+                    },
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(Spacing.s),
         ) {

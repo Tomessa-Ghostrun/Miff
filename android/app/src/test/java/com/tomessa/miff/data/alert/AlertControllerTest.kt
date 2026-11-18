@@ -545,29 +545,53 @@ class AlertControllerTest {
         }
 
     @Test
-    fun aListNotConfirmedByTheServer_neverEndsAnAlert_review_m8() =
+    fun theAlertOnlyGoesWhenTheLeavingOrTheLossIsConfirmed_neverBecauseAMiffIsMissingFromAList() =
         runTest {
+            // review of #275 v2, 2: when the network jumps, a list of Miffs may miss one (a failed read): the controller has no way to end an alert from a list at all
             val w = world()
             w.controller.trigger("miffA")
             runCurrent()
-            w.controller.onMiffsKnown(listOf("miffB"), authoritative = false)
+            w.controller.adoptFromServer(listOf("miffB"))
             assertTrue(w.controller.state.value is MyAlert.Active)
-            w.controller.onMiffsKnown(listOf("miffB"), authoritative = true)
+            assertEquals(PointerPhase.ACTIVE, w.local.pointer()?.phase)
+            // the repository tells the controller when the lot that stops the sharing, leaves or deletes the Miff of ANOTHER Miff went through: nothing happens
+            w.controller.onAlertRemoved("miffB")
+            assertTrue(w.controller.state.value is MyAlert.Active)
+            // and when it is THIS Miff, the alert is gone with it
+            w.controller.onAlertRemoved("miffA")
             assertTrue(w.controller.state.value is MyAlert.None)
+            assertNull(w.local.pointer())
         }
 
     @Test
-    fun whenTheOriginMiffIsNoLongerMine_theAlertGoesWithIt_otherMiffsChangeNothing() =
+    fun givingUp_aMiffClosedToMe_stopsTheChecking_andTheOldAbandonedPointerIsForgotten() =
+        runTest {
+            val w = world()
+            w.store.starts += StartResult.Failed(AlertFailure.Refused)
+            w.controller.trigger("miffA")
+            runCurrent()
+            w.store.mine = MineRead.Denied
+            w.controller.cancelPending()
+            runCurrent()
+            assertNull(w.local.pointer())
+            assertEquals(1, w.store.reads.size)
+            // an abandoned pointer older than the life of an alert is dropped without a reading
+            w.local.save(AlertPointer("miffA", PointerPhase.ABANDONED, w.base - AlertRules.DURATION_MILLIS - 1))
+            w.controller.restore()
+            runCurrent()
+            assertNull(w.local.pointer())
+            assertEquals(1, w.store.reads.size)
+        }
+
+    @Test
+    fun aPassingRefusalNeverRemovesTheBannerOfAnActiveAlert() =
         runTest {
             val w = world()
             w.controller.trigger("miffA")
             runCurrent()
-            w.controller.onMiffsKnown(listOf("miffA", "miffB"))
+            w.store.mine = MineRead.Denied
+            w.controller.verifyActive()
             assertTrue(w.controller.state.value is MyAlert.Active)
-            w.controller.onAlertRemoved("miffB")
-            assertTrue(w.controller.state.value is MyAlert.Active)
-            w.controller.onMiffsKnown(listOf("miffB"))
-            assertTrue(w.controller.state.value is MyAlert.None)
         }
 
     @Test

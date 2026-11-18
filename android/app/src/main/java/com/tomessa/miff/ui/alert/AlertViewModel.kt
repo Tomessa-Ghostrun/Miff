@@ -96,12 +96,8 @@ class AlertViewModel(
     /** The app opened: an alert on its way goes on, an active one comes back (the pointer of the phone). */
     fun restore() = controller.restore()
 
-    /** The Miffs of the person are known: an alert whose Miff is gone goes with it; a NEW phone reads my alert of each Miff ONCE (1 read per Miff) and adopts one in progress. */
-    suspend fun onMiffsKnown(
-        miffIds: List<String>,
-        authoritative: Boolean = true,
-    ) {
-        controller.onMiffsKnown(miffIds, authoritative)
+    /** The Miffs of the person are known: a NEW phone reads my alert of each Miff ONCE (1 read per Miff) and adopts one in progress. */
+    suspend fun onMiffsKnown(miffIds: List<String>) {
         controller.adoptFromServer(miffIds)
     }
 
@@ -125,7 +121,8 @@ class AlertViewModel(
      */
     fun loadCallList(miffId: String) {
         val state = mutableCall.value as? CallState.Ready
-        if (callMiffId == miffId && state != null && !state.loadingPeople) return
+        // A reading that failed is read again when the screen is opened again for the same Miff.
+        if (callMiffId == miffId && state != null && !state.loadingPeople && !state.contactsUnavailable) return
         callMiffId = miffId
         callJob?.cancel()
         chosen = false
@@ -156,12 +153,16 @@ class AlertViewModel(
         val state = mutableCall.value as? CallState.Ready ?: return
         if (state.list.targets.none { it.id == target.id }) return
         chosen = true
+        // The same line again changes nothing and EMITS nothing: a new state object for the same choice made the screen of the daily limit re-run its effect without end (review of #275 v2, 1).
+        if (state.selected.id == target.id) return
         mutableCall.value = CallState.Ready(state.list, target, state.contactsUnavailable, state.loadingPeople)
     }
 
     /** "Appeler les secours": the emergency number (112 where it exists) is chosen. */
     fun selectEmergency() {
         val state = mutableCall.value as? CallState.Ready ?: return
+        // Already on an emergency service (112 from the start, or the one the person picked): nothing to do, and the choice of the person is never replaced.
+        if (state.selected is AlertDialTarget.Emergency) return
         val entry = state.list.emergency.firstOrNull { it.number == "112" } ?: state.list.emergency.first()
         select(AlertDialTarget.Emergency(entry))
     }

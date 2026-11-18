@@ -110,6 +110,11 @@ Le **drapeau de build** (`BuildConfig.ALERT_DANGER`) est **allumé dans l'APK de
 56. [ ] **ColorOS, économie d'énergie** : appli balayée / mise en veille profonde sur l'OPPO, B déclenche : la notification arrive-t-elle ? en combien de temps ? (à noter, voir l'aide « notifications coupées »).
 57. [ ] **Relance sans nom de Miff** (alerte active, mode avion, tuer l'app, la rouvrir) : la bannière dit « Tu as alerté les proches de ta Miff. » (pas de blanc), puis le nom revient avec le réseau.
 58. [ ] **Écran « avertis » dans les applications récentes** : l'aperçu est masqué.
+59. [ ] **Écran de la limite (4e alerte)** : le téléphone ne chauffe pas et la batterie ne chute pas pendant que l'écran reste ouvert une minute ; le numéro d'urgence (112) reste choisi, « Appeler » fonctionne en un toucher.
+60. [ ] **Arrivée des proches sur l'écran « avertis »** : la liste montre d'abord les numéros d'urgence (112 choisi) ; quand les proches arrivent, le contact présélectionné **passe de 112 au créateur** (le texte de la case change, TalkBack l'annonce). **Si vous aviez déjà choisi un numéro (ex. 17), il ne change pas.**
+61. [ ] **Réseau qui saute** : alerte active, mode avion quelques secondes, retour du réseau, ouvrez l'app / changez de Miff : la bannière **reste**.
+62. [ ] **Alerte refusée puis nouveau maintien** : après un refus (étape 41), maintenez de nouveau 5 s sans fermer la bannière : une nouvelle tentative part (pas de « Une alerte est déjà en cours »).
+63. [ ] **Renouvellement du consentement** (compte non créateur d'une Miff qui doit renouveler, avec une alerte active dans cette Miff) : « Quitter la Miff » avertit que l'alerte sera retirée.
 
 ## Retours à noter
 - Durée du maintien ressentie (400 ms + 5 s) : trop long / trop court ?

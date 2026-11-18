@@ -47,4 +47,14 @@ class AlertWarningInMiffDialogsTest {
         assertTrue(text.contains("withAlertWarning(stringResource(R.string.miff_leave_body))"))
         assertTrue(text.contains("withAlertWarning( if (others)"))
     }
+
+    @Test
+    fun theLeaveDialogOfTheConsentRenewalAlsoWarns() {
+        val text =
+            File(
+                "src/main/java/com/tomessa/miff/ui/permission/PermissionScreens.kt",
+            ).readText().replace(Regex("\\s+"), " ")
+        assertTrue(text.contains("withAlertWarning(stringResource(R.string.miff_leave_body))"))
+        assertTrue(text.contains("LocalAlertMiffId.current == miff.miffId"))
+    }
 }

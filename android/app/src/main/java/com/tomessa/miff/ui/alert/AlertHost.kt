@@ -103,7 +103,10 @@ fun AlertSentHost(
             else -> SentPhase.SENDING
         }
     // The daily limit is reached: the emergency services are the choice already made (never left without a way out).
-    LaunchedEffect(phase, call) { if (phase == SentPhase.QUOTA && call is CallState.Ready) viewModel.selectEmergency() }
+    // Keyed by the PHASE and by "the list exists" only: [AlertViewModel.selectEmergency] changes nothing when an emergency service is already chosen, so this runs once, never in a loop
+    // (review of #275 v2, 1).
+    val listReady = call is CallState.Ready
+    LaunchedEffect(phase, listReady) { if (phase == SentPhase.QUOTA && listReady) viewModel.selectEmergency() }
     // After the daily limit nothing is left to retry: leaving the screen leaves nothing behind either (no "déjà en cours" that is not true), review of #275, m3.
     val leave = {
         if (phase == SentPhase.QUOTA) viewModel.onCancelPending()
@@ -112,7 +115,8 @@ fun AlertSentHost(
     BackHandler(enabled = phase == SentPhase.QUOTA) { leave() }
     AlertSentScreen(
         phase = phase,
-        miffName = miffName,
+        // A blank name is no name: the title says "ta Miff" / no name, never an empty line.
+        miffName = miffName?.takeIf { it.isNotBlank() },
         several = several,
         call = call,
         modifier = modifier,
@@ -154,17 +158,16 @@ private fun dial(
 
 /**
  * What keeps the alert true while the tabs are on screen: the pointer of the phone is picked up at the opening, the alert is checked at each return to the front (1 read, only
- * while an alert is in progress), the clock ends an alert past its 7 days (no write, no notification), and the Miffs of the person tell whether the Miff of origin is still there.
+ * while an alert is in progress), the clock ends an alert past its 7 days (no write, no notification). A list of Miffs NEVER ends an alert (a Miff missing from a list read while the
+ * network jumps is not a lost Miff): the alert goes when the leaving, the removal or the deletion is confirmed (the repository tells the controller), review of #275 v2, 2.
  */
 @Composable
 fun AlertLifecycle(
     viewModel: AlertViewModel,
     miffIds: List<String>,
-    /** The list comes from the server (not the cache of the phone): only then may it end an alert whose Miff is not in it. */
-    authoritative: Boolean = true,
 ) {
     LaunchedEffect(viewModel) { viewModel.restore() }
-    LaunchedEffect(miffIds, authoritative) { if (miffIds.isNotEmpty()) viewModel.onMiffsKnown(miffIds, authoritative) }
+    LaunchedEffect(miffIds) { if (miffIds.isNotEmpty()) viewModel.onMiffsKnown(miffIds) }
     val scope = androidx.compose.runtime.rememberCoroutineScope()
     // Each return to the front (and the first opening): an alert past its date goes, an active one is checked against the server once.
     androidx.lifecycle.compose.LifecycleEventEffect(androidx.lifecycle.Lifecycle.Event.ON_RESUME) {

@@ -52,6 +52,7 @@ import com.tomessa.miff.R
 import com.tomessa.miff.data.alert.AlertEvent
 import com.tomessa.miff.data.alert.AlertFeed
 import com.tomessa.miff.data.alert.MyAlert
+import com.tomessa.miff.data.alert.SendStep
 import com.tomessa.miff.data.alert.TriggerResult
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.domain.auth.SignInProvider
@@ -668,7 +669,12 @@ private fun MainNavigation(
                 AlertSentHost(
                     viewModel = alertViewModel,
                     route = route,
-                    miffName = ready?.miffs?.firstOrNull { it.id == route.miffId }?.name,
+                    miffName =
+                        ready
+                            ?.miffs
+                            ?.firstOrNull { it.id == route.miffId }
+                            ?.name
+                            ?.takeIf { it.isNotBlank() },
                     several = (ready?.miffs?.size ?: 1) > 1,
                     onBack = { navController.popBackStackIfSafe() },
                     // The screen of the Miff holds the dialog and the consent of "Reprendre le partage" (nothing is written from here).
@@ -1055,11 +1061,7 @@ fun MainTabs(
     if (alertVm != null) {
         // The pointer of the phone, the clock of 7 days, the check at each return to the front, the Miffs that are still mine.
         // Only a list the server confirmed may end an alert whose Miff is missing from it (a list from the cache, or a transient one, never does: review of #275, m8).
-        AlertLifecycle(
-            alertVm,
-            ready?.miffs?.map { it.id }.orEmpty(),
-            authoritative = ready != null && !ready.fromCache,
-        )
+        AlertLifecycle(alertVm, ready?.miffs?.map { it.id }.orEmpty())
         LaunchedEffect(alertVm) {
             alertVm.events.collect { event ->
                 when (event) {
@@ -1265,8 +1267,16 @@ fun MainTabs(
                                                     targetMiffName = ready?.activeId?.let(::miffNameOf),
                                                     several = (ready?.miffs?.size ?: 1) > 1,
                                                     // A name that is not known yet is "" (the sentence then says "Une alerte est déjà en cours.").
+                                                    // Only an alert that is REALLY on its way or sent forbids a second hold: a refused one, the daily limit, a question to answer do not
+                                                    // (the person may start again; review of #275 v2, 7).
                                                     activeAlertMiffName =
-                                                        alertState.miffId?.let { miffNameOf(it).orEmpty() },
+                                                        alertState.miffId
+                                                            ?.takeIf {
+                                                                val sending = alertState as? MyAlert.Sending
+                                                                sending == null ||
+                                                                    sending.step == SendStep.SENDING ||
+                                                                    sending.step == SendStep.WAITING_NETWORK
+                                                            }?.let { miffNameOf(it).orEmpty() },
                                                     bannerInset = bannerInset,
                                                     onTrigger = {
                                                         val origin = ready?.activeId
