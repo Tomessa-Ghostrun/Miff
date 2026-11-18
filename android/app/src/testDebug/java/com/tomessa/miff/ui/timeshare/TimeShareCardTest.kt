@@ -315,27 +315,82 @@ class TimeShareCardTest {
     }
 
     @Test
-    fun aDangerLineThatIsNotAmongTheFourLines_isStillInTheSentence_sinceNoButtonReadsIt() {
-        val small =
-            item(SliceKind.DANGER, null, null, 4, count = 1, details = listOf(DetailItem("Le parc", null, 4, false)))
-        val body =
-            TimeShareBody.Chart(
-                items =
-                    listOf(
-                        item(SliceKind.PLACE, "Maison", PlaceCategory.HOME, 30, rank = 0),
-                        item(SliceKind.PLACE, "Sport", PlaceCategory.SPORT, 26, rank = 1),
-                        item(SliceKind.PLACE, "Bureau", PlaceCategory.WORK, 20, rank = 2),
-                        item(SliceKind.PLACE, "Club", PlaceCategory.LEISURE, 12, rank = 3),
-                        item(SliceKind.ELSEWHERE, null, null, 8),
-                        small,
-                    ),
-                centerPercent = 88,
-            )
-        show(shown(body))
+    fun aDangerLineOfOnePercentOrMore_isAlwaysInTheLegend_replacingTheFourth_andReadOnceAsAButton() {
+        // Danger 4 % is not among the four biggest (Maison, Sport, Bureau, Club): it takes the place of the fourth, "Club".
+        show(
+            shown(
+                TimeShareBody.Chart(
+                    items =
+                        listOf(
+                            item(SliceKind.PLACE, "Maison", PlaceCategory.HOME, 30, rank = 0),
+                            item(SliceKind.PLACE, "Sport", PlaceCategory.SPORT, 26, rank = 1),
+                            item(SliceKind.PLACE, "Bureau", PlaceCategory.WORK, 20, rank = 2),
+                            item(SliceKind.PLACE, "Club", PlaceCategory.LEISURE, 12, rank = 3),
+                            item(SliceKind.ELSEWHERE, null, null, 8),
+                            item(
+                                SliceKind.DANGER,
+                                null,
+                                null,
+                                4,
+                                count = 1,
+                                details = listOf(DetailItem("Le parc", null, 4, false)),
+                                tiny = false,
+                            ),
+                        ),
+                    centerPercent = 88,
+                ),
+            ),
+        )
+        nodes("Club").assertCountEquals(0)
+        node("Zone de danger").assertIsDisplayed()
+        val asButton =
+            composeRule
+                .onAllNodes(
+                    hasContentDescription("Zone de danger, ${pct(4)}, afficher le détail"),
+                ).fetchSemanticsNodes()
+                .size
+        assertEquals(1, asButton)
         val inSentence =
             composeRule
                 .onAllNodes(
                     hasContentDescription("Zone de danger ${pct(4)}", substring = true),
+                ).fetchSemanticsNodes()
+                .size
+        assertEquals("not read a second time in the sentence", 0, inSentence)
+    }
+
+    @Test
+    fun aDangerLineUnderOnePercent_hasNoLine_butIsStillInTheSentence() {
+        show(
+            shown(
+                TimeShareBody.Chart(
+                    items =
+                        listOf(
+                            item(SliceKind.PLACE, "Maison", PlaceCategory.HOME, 30, rank = 0),
+                            item(SliceKind.PLACE, "Sport", PlaceCategory.SPORT, 26, rank = 1),
+                            item(SliceKind.PLACE, "Bureau", PlaceCategory.WORK, 20, rank = 2),
+                            item(SliceKind.PLACE, "Club", PlaceCategory.LEISURE, 12, rank = 3),
+                            item(SliceKind.ELSEWHERE, null, null, 8),
+                            item(
+                                SliceKind.DANGER,
+                                null,
+                                null,
+                                0,
+                                count = 1,
+                                details = listOf(DetailItem("Le parc", null, 0, true)),
+                                tiny = true,
+                            ),
+                        ),
+                    centerPercent = 88,
+                ),
+            ),
+        )
+        nodes("Zone de danger").assertCountEquals(0)
+        node("Club").assertIsDisplayed()
+        val inSentence =
+            composeRule
+                .onAllNodes(
+                    hasContentDescription("Zone de danger", substring = true),
                 ).fetchSemanticsNodes()
                 .size
         assertEquals(1, inSentence)

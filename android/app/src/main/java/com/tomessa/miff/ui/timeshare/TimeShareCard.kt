@@ -455,16 +455,13 @@ private fun ChartBody(
     if (detailOpen && danger != null) DangerDetailSheet(danger, onDismiss = { detailOpen = false })
 }
 
-/** The four biggest shares only (the ring keeps every slice): the legend of the mockup has four lines. Kept in the order of the ring. */
-private fun legendItems(items: List<LegendItem>): List<LegendItem> {
-    val biggest = items.sortedByDescending { it.share }.take(LEGEND_LINES).toSet()
-    return items.filter { it in biggest }
-}
+/** The lines of the legend (see [LegendLines]): the four biggest shares, and always the danger zone when it is 1 % or more. */
+private fun legendItems(items: List<LegendItem>): List<LegendItem> = LegendLines.select(items)
 
 @Composable
 private fun describe(body: TimeShareBody.Chart): String {
     // The danger line, when it is drawn in the legend, is a button that reads itself ("Zones de danger, 12 %, afficher le détail"): the sentence does not say it a second
-    // time. When it is NOT among the four lines (no button), the sentence still lists it.
+    // time. When it is NOT among the lines (under 1 %, no button), the sentence still lists it.
     val shown = legendItems(body.items)
     val spoken = body.items.filterNot { it.kind == SliceKind.DANGER && it in shown }
     val parts = spoken.map { "${labelOf(it)} ${percentText(it.percent, it.tiny)}" }
@@ -898,7 +895,6 @@ private fun DangerDetailSheet(
 
 private val CardShape = RoundedCornerShape(20.dp)
 private val BADGE_SIZE = 40.dp
-private const val LEGEND_LINES = 4
 private val RING_SIZE = 120.dp
 private val EMOJI_SIZE = 18.dp
 private val PARTY_SIZE = 24.dp
