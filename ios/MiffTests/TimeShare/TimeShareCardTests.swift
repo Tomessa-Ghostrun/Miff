@@ -189,7 +189,7 @@ final class TimeShareCardTests: XCTestCase {
 
         XCTAssertEqual(L10n.string("profile_timeshare_elsewhere", bundle: french), "Hors-zone")
         XCTAssertEqual(L10n.string("profile_timeshare_elsewhere", bundle: english), "Outside zones")
-        XCTAssertEqual(L10n.string("profile_timeshare_a11y_card", bundle: french), "Répartition du temps. %1$@ : %2$@.")
+        XCTAssertEqual(L10n.string("profile_timeshare_a11y_card", bundle: french), "Répartition du temps : %1$@.")
 
         XCTAssertEqual(L10n.string("profile_timeshare_title", bundle: french), "Répartition du temps")
         XCTAssertEqual(L10n.string("profile_timeshare_center_caption", bundle: french), "en zone de confiance")

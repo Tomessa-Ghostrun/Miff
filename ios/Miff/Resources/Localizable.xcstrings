@@ -12483,13 +12483,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Time breakdown. %1$@: %2$@."
+            "value": "Time breakdown: %1$@."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Répartition du temps. %1$@ : %2$@."
+            "value": "Répartition du temps : %1$@."
           }
         }
       }

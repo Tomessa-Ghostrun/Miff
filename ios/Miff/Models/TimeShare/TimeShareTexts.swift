@@ -64,13 +64,11 @@ enum TimeShareTexts {
 
     // MARK: - Pour le lecteur d'écran
 
-    /// La description unique de l'anneau (qui est caché : décoratif) : « Répartition du temps. 7 jours : Maison 48 %,
+    /// La description unique de l'anneau (qui est caché : décoratif) : « Répartition du temps : Maison 48 %,
     /// Sport 24 %, Zone de danger 8 %, Hors-zone 20 %. en zone de confiance, 72 %. » Le NOM de la catégorie est dit, jamais l'emoji.
     static func spokenSummary(_ result: TimeShareResult, locale: Locale = .current) -> String {
         let parts = result.rows.map { "\(name(of: $0)) \(percent(of: $0, locale: locale))" }
-        let card = L10n.format(
-            "profile_timeshare_a11y_card", windowLabel(result.windowDays), parts.joined(separator: ", ")
-        )
+        let card = L10n.format("profile_timeshare_a11y_card", parts.joined(separator: ", "))
         let center = L10n.format(
             "profile_timeshare_a11y_row",
             L10n.string("profile_timeshare_center_caption"),
