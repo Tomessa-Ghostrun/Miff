@@ -192,6 +192,7 @@ struct MiffHomeHost: View {
                             environment.awaitingAgreement.requestReview()
                         }
                     ),
+                    danger: environment.dangerShell,
                     onOpenMiff: { open(.miff($0)) },
                     onCreateMiff: { createMiffFromProfile() },
                     onOpenSettings: { open(.settings($0)) },
@@ -215,6 +216,8 @@ struct MiffHomeHost: View {
                 AccessLostView(miffName: notice.name, onAcknowledge: { acknowledge(notice) })
             }
         }
+        // ALERTE : l'écran d'une Miff sait si une alerte de moi y est en cours (la phrase d'un arrêt de partage ou d'un départ le dit avant de confirmer).
+        .environment(\.dangerAlertSignal, environment.dangerShell.signal)
         // L'offre est présentée en plein écran (ticket `paywall-v2.md` §6.3) : pas de geste à tirer pendant les 3 secondes de la croix.
         .fullScreenCover(item: $paywall) { presentation in
             PlacePaywallView(

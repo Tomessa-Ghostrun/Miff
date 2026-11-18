@@ -84,7 +84,7 @@ struct FeedShellContext {
 /// Aucune pile de navigation n'est créée ici : une pile imbriquée dans celle de l'hôte (où l'écran de la Miff est empilé) est ce qui
 /// faisait planter l'app au toucher d'une carte « Mes Miffs » sur le Profil.
 struct MainShellView<Feed: View>: View {
-    private let miffs: DirectoryState
+    let miffs: DirectoryState
     @ObservedObject private var profile: ProfileTabViewModel
     /// Les membres des cartes du Profil : le Profil les observe lui-même (la coquille n'a pas à se redessiner pour eux).
     private let memberPreviews: MiffMemberPreviews
@@ -92,7 +92,10 @@ struct MainShellView<Feed: View>: View {
     private let places: ProfilePlacesShell
     /// Les demandes d'ajout d'un lieu (LIEU-REQ-C) : le point de l'onglet Profil suit ce que le créateur n'a pas encore vu.
     @ObservedObject private var requests: ProfileRequestsViewModel
-    @ObservedObject private var updateModel: UpdateViewModel
+    @ObservedObject var updateModel: UpdateViewModel
+    // ALERTE : le signal « une alerte est en cours » (toujours faux sans la fonction) et ce que la coquille reçoit d'elle.
+    @ObservedObject private var dangerSignal: DangerAlertSignal
+    let danger: DangerAlertShell
     @ObservedObject private var myStatus: MyStatusStore
     private let update: UpdateShell
     private let onOpenMiff: (String) -> Void
@@ -110,7 +113,11 @@ struct MainShellView<Feed: View>: View {
     @State private var confirmation: String?
     @State private var lastPrompt: PromptLevel = .hidden
     /// Le haut RÉEL de la barre (coordonnées globales), mesuré : l'Update s'arrête au-dessus (jamais de hauteur écrite en dur).
-    @State private var barTopY: CGFloat?
+    @State var barTopY: CGFloat?
+    #if ALERT_DANGER
+    // Le haut RÉEL de la bannière de l'alerte (mesuré) : l'obturateur de l'Update se pose au-dessus.
+    @State var dangerBannerTopY: CGFloat?
+    #endif
     @Environment(\.scenePhase) private var scenePhase
 
     init(
@@ -120,6 +127,7 @@ struct MainShellView<Feed: View>: View {
         travel: TravelViewModel,
         places: ProfilePlacesShell,
         update: UpdateShell,
+        danger: DangerAlertShell,
         onOpenMiff: @escaping (String) -> Void,
         onCreateMiff: @escaping () -> Void,
         onOpenSettings: @escaping (SettingsRoute) -> Void,
@@ -136,6 +144,8 @@ struct MainShellView<Feed: View>: View {
         _updateModel = ObservedObject(wrappedValue: update.model)
         _myStatus = ObservedObject(wrappedValue: update.status)
         self.update = update
+        self.danger = danger
+        _dangerSignal = ObservedObject(wrappedValue: danger.signal)
         self.onOpenMiff = onOpenMiff
         self.onCreateMiff = onCreateMiff
         self.onOpenSettings = onOpenSettings
@@ -149,7 +159,7 @@ struct MainShellView<Feed: View>: View {
     }
 
     /// L'onglet réellement montré : le Feed dès que la dernière Miff a disparu.
-    private var shownTab: MainTab {
+    var shownTab: MainTab {
         MainShellRules.effectiveTab(selected: selected, hasNoMiff: hasNoMiff)
     }
 
@@ -159,20 +169,20 @@ struct MainShellView<Feed: View>: View {
     }
 
     /// Les écrans empilés recouvrent cette coquille (pile de l'hôte) : `pathIsEmpty` vaut toujours vrai ici.
-    private var barVisible: Bool {
+    var barVisible: Bool {
         MainShellRules.barVisible(keyboardVisible: keyboardVisible, pathIsEmpty: true, directory: miffs)
     }
 
     // MARK: - L'Update : la couleur, la bulle
 
-    private var activeMiffId: String? {
+    var activeMiffId: String? {
         if case .ready(let ready) = miffs {
             return ready.activeId
         }
         return nil
     }
 
-    private var miffCount: Int {
+    var miffCount: Int {
         if case .ready(let ready) = miffs {
             return ready.miffs.count
         }
@@ -189,7 +199,9 @@ struct MainShellView<Feed: View>: View {
     }
 
     private var bubbleVisible: Bool {
-        MainShellRules.bubbleVisible(prompt: prompt, selected: shownTab, barVisible: barVisible)
+        // ALERTE : pendant une alerte, la bulle d'incitation est remplacée par la bannière (jamais deux messages qui se contredisent).
+        !dangerSignal.inProgress
+            && MainShellRules.bubbleVisible(prompt: prompt, selected: shownTab, barVisible: barVisible)
     }
 
     private var countdownContext: CountdownContext {
@@ -204,7 +216,7 @@ struct MainShellView<Feed: View>: View {
         CleanupKey(ready: activeMiffId != nil, facts: myStatus.facts)
     }
 
-    private var updateActions: UpdateActions {
+    var updateActions: UpdateActions {
         UpdateActions(
             onClose: { selected = .feed },
             onResumeSharing: {
@@ -257,12 +269,11 @@ struct MainShellView<Feed: View>: View {
                     }
                 }
                 if shownTab == .update {
-                    UpdateTabView(model: updateModel, miffCount: miffCount, actions: updateActions)
-                        .environment(\.tabBarTopY, barVisible ? barTopY : nil)
+                    updateTab
                 }
             }
             // Le compte à rebours (Feed et Profil) lit MON statut et ouvre l'écran Update par le point d'entrée existant (le bouton central).
-            .environment(\.countdownContext, countdownContext)
+            .environment(\.countdownContext, dangerSignal.inProgress ? nil : countdownContext)
             .background(
                 // L'écouteur du créateur sur UNE Miff, branché seulement pendant que l'app est devant (LIEU-REQ-C).
                 ProfileRequestsWatcher(model: places.requests, miffs: miffs, myUid: places.context.myUid)
@@ -275,6 +286,10 @@ struct MainShellView<Feed: View>: View {
             }
         }
         .onPreferenceChange(TabBarTopPreference.self) { barTopY = $0 }
+        #if ALERT_DANGER
+        .onPreferenceChange(DangerBannerTopPreference.self) { dangerBannerTopY = $0 }
+        .modifier(DangerAlertHost(model: danger.model, directory: miffs, onOpenMiff: onOpenMiff))
+        #endif
         // Un toucher sur une notification du serveur : l'onglet Feed.
         .onChange(of: openFeedToken) { _ in
             selected = .feed
@@ -353,6 +368,9 @@ struct MainShellView<Feed: View>: View {
                 IncentiveBubble(level: prompt, maxBodyHeight: screenHeight * UpdateLayout.bubbleMaxScreenShare)
                     .transition(.opacity)
             }
+            #if ALERT_DANGER
+            dangerBanner
+            #endif
             MainTabBar(
                 config: .current,
                 selected: shownTab,
@@ -384,6 +402,10 @@ struct MainShellView<Feed: View>: View {
         let text = L10n.string("update_published")
         confirmation = text
         UpdateAnnouncer.post(text)
+        #if ALERT_DANGER
+        // ALERTE : une publication réussie après la livraison valide la bulle bleue (ticket 7.1, AD8).
+        danger.model.onHintDone()
+        #endif
     }
 
     /// La bulle est annoncée au lecteur d'écran une fois à son apparition et au passage de l'orange au rouge (D34), sans son ni vibration.

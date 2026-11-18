@@ -271,10 +271,20 @@ final class FirestoreMiffRepository: MiffRepository {
                 deviceId: deviceId
             )
         } else {
-            writes = MiffWrites.stopSharing(miffId: miffId, uid: uid)
+            writes = MiffWrites.stopSharing(miffId: miffId, uid: uid, withAlert: rules.alertsEnabled)
         }
-        let result = await write { try await store.commit(writes) }
+        var result = await write { try await store.commit(writes) }
+        // ALERTE : les règles en production peuvent ne pas connaître l'alerte (pas déployées) : un lot refusé AVEC sa suppression est réessayé une fois
+        // SANS, pour qu'arrêter le partage ne casse jamais à cause d'une fonction qui n'est pas en service. S'il existe vraiment une alerte, les
+        // règles refusent aussi ce second lot (même résultat qu'avant).
+        if !enabled, rules.alertsEnabled, result == .failed(.refused) {
+            let plain = MiffWrites.stopSharing(miffId: miffId, uid: uid)
+            result = await write { try await store.commit(plain) }
+        }
         if result == .done {
+            if !enabled && rules.alertsEnabled {
+                rules.onAlertGone(miffId)
+            }
             noteSharingChange(miffId: miffId, resumed: enabled)
         }
         // Un refus peut aussi vouloir dire « déjà dans l'état demandé » : la fenêtre demande le contraire de ce que disait la

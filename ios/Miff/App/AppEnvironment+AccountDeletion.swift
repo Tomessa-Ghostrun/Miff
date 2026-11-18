@@ -33,17 +33,22 @@ struct AccountDeletionServices {
         let session = environment.session
         let miffStore = FirestoreMiffStore()
         let procedure = AccountDeletion(
-            store: FirestoreAccountDataStore(),
+            store: FirestoreAccountDataStore(alertsEnabled: BuildFlavor.includesAlertDanger),
             gateway: session.gateway,
             cache: session.cache,
             session: DeviceAccountSession(device: session.device, network: environment.network),
             miffs: StoreAccountMiffs(
                 store: miffStore,
-                deleter: MiffDeletion(store: miffStore, repository: environment.miffRepository),
+                deleter: MiffDeletion(
+                    store: miffStore,
+                    repository: environment.miffRepository,
+                    alertsEnabled: BuildFlavor.includesAlertDanger
+                ),
                 // LIEU-REQ : les demandes d'ajout d'un lieu du compte sont reprises avant son départ de chaque Miff rejointe.
                 beforeLeave: { uid, miffId in
                     await environment.placeRequestRepository.withdrawAllMine(uid: uid, miffId: miffId)
-                }
+                },
+                alertsEnabled: BuildFlavor.includesAlertDanger
             )
         )
         let controller = AccountDeletionController(

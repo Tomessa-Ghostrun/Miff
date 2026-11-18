@@ -225,7 +225,7 @@ enum MiffWrites {
     /// ne survit à un consentement retiré). Les règles lisent 3 documents pour cela, donc 6 Miffs au plus tiendraient dans un
     /// lot (18 des 20 permis) : l'app écrit un lot par Miff. Deux sous-champs seulement changent : la date et la version du
     /// premier consentement restent telles quelles.
-    static func stopSharing(miffId: String, uid: String) -> [DocWrite] {
+    static func stopSharing(miffId: String, uid: String, withAlert: Bool = false) -> [DocWrite] {
         [
             DocWrite(
                 path: "miffs/\(miffId)/members/\(uid)",
@@ -235,7 +235,7 @@ enum MiffWrites {
             DocWrite(path: "miffs/\(miffId)/status/\(uid)", kind: .delete),
             DocWrite(path: "miffs/\(miffId)/photos/\(uid)", kind: .delete),
             DocWrite(path: "miffs/\(miffId)/positions/\(uid)", kind: .delete)
-        ]
+        ] + DangerAlertWrites.deletion(miffId: miffId, uid: uid, enabled: withAlert)
     }
 
     /// Reprendre le partage (critère K6) : un nouveau consentement (date et MÊME version qu'à l'entrée, donc la version 3 à
@@ -279,13 +279,15 @@ enum MiffWrites {
     /// L'index n'est laissé de côté que s'il n'a pas été trouvé (`membershipKey` nil) : les règles refusent la suppression
     /// d'un index qui n'existe pas. AUCUNE écriture sur la Miff ni sur son code : une sortie volontaire ne renouvelle pas le
     /// code (décision du PM du 2026-10-31).
-    static func leave(miffId: String, uid: String, membershipKey: String?) -> [DocWrite] {
+    static func leave(miffId: String, uid: String, membershipKey: String?, withAlert: Bool = false) -> [DocWrite] {
         var writes = [
             DocWrite(path: "miffs/\(miffId)/members/\(uid)", kind: .delete),
             DocWrite(path: "miffs/\(miffId)/status/\(uid)", kind: .delete),
             DocWrite(path: "miffs/\(miffId)/photos/\(uid)", kind: .delete),
             DocWrite(path: "miffs/\(miffId)/positions/\(uid)", kind: .delete)
         ]
+        // ALERTE : une alerte ne vit que tant que la personne partage et appartient à la Miff (les règles exigent sa suppression dans ce lot).
+        writes += DangerAlertWrites.deletion(miffId: miffId, uid: uid, enabled: withAlert)
         if let membershipKey {
             writes.append(DocWrite(path: "users/\(uid)/memberships/\(membershipKey)", kind: .delete))
         }

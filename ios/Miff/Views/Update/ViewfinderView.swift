@@ -117,6 +117,11 @@ struct ViewfinderView: View {
     @StateObject private var camera = CameraController()
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+    #if ALERT_DANGER
+    // ALERTE : le maintien de 5 secondes sur l'obturateur, la bulle bleue, la voie accessible (nil : la fonction est éteinte pour cet écran).
+    @Environment(\.dangerUpdateHooks) private var dangerHooks
+    @StateObject private var dangerState = DangerViewfinderState()
+    #endif
 
     var body: some View {
         GeometryReader { proxy in
@@ -140,6 +145,9 @@ struct ViewfinderView: View {
         }
         // Fond sombre : la barre d'état (heure, réseau, batterie) passe en clair tant que le viseur est à l'écran.
         .lightStatusBar()
+        #if ALERT_DANGER
+        .dangerViewfinder(state: dangerState, hooks: dangerHooks)
+        #endif
         .onAppear {
             camera.onUnavailable = onUnavailable
             camera.start()
@@ -240,11 +248,32 @@ struct ViewfinderView: View {
             .padding(.horizontal, Spacing.sm)
             Spacer(minLength: 0)
             VStack(spacing: Spacing.md) {
+                #if ALERT_DANGER
+                if let hooks = dangerHooks {
+                    DangerHintSlot(state: dangerState, hooks: hooks)
+                }
+                #endif
                 helpLine
-                ShutterButton(onTap: { shoot(aspect: aspect) }, onSwitchCamera: switchAction)
+                shutter(aspect: aspect)
             }
             .padding(.bottom, UpdateLayout.shutterAboveBar)
         }
+    }
+
+    /// L'obturateur : celui d'avant, ou (alerte allumée) celui qui porte aussi le maintien de 5 secondes.
+    @ViewBuilder
+    private func shutter(aspect: Double) -> some View {
+        #if ALERT_DANGER
+        if let hooks = dangerHooks {
+            DangerShutter(
+                state: dangerState, hooks: hooks, onPhoto: { shoot(aspect: aspect) }, onSwitchCamera: switchAction
+            )
+        } else {
+            ShutterButton(onTap: { shoot(aspect: aspect) }, onSwitchCamera: switchAction)
+        }
+        #else
+        ShutterButton(onTap: { shoot(aspect: aspect) }, onSwitchCamera: switchAction)
+        #endif
     }
 
     /// Un toucher sur le flash : l'état est dit à VoiceOver en mots (« Flash activé » / « Flash désactivé »), sans son ni vibration.
