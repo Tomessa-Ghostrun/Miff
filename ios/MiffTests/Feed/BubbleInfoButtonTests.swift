@@ -151,7 +151,7 @@ final class BubbleInfoButtonTests: XCTestCase {
         XCTAssertFalse(code.contains("TapGesture"), "toucher la bulle ne fait rien")
         // Les deux boutons de la bulle gardent leur action propre.
         XCTAssertTrue(code.contains("onResumeSharing: actions.onResumeSharing"))
-        XCTAssertTrue(code.contains("AlertLines(page: current, texts: texts, onMessage: onMessage)"))
+        XCTAssertTrue(code.contains("AlertLines(page: current, texts: texts, onMessage: onMessage, onCall: onCall)"))
     }
 
     func testTheInfoButtonIsNamedByTheSpokenLabelNeverBareI() throws {
