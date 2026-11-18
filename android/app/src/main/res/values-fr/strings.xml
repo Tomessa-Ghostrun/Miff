@@ -410,6 +410,8 @@
     <string name="feed_refresh_a11y">Actualiser</string>
     <string name="feed_refresh_started_a11y">Actualisation en cours</string>
     <string name="feed_refresh_done_a11y">Informations actualisées</string>
+    <!-- FEED-REFRESH-POSITION : phrase calme (toast) quand « Actualiser » ne peut pas relire MA position faute d'accès à la localisation. Clé partagée avec iOS. -->
+    <string name="feed_refresh_position_unavailable">Ta position n\'a pas pu être actualisée. Pour cela, Miff a besoin que la localisation soit activée, sur « Toujours » et en précis. Tu peux régler ça dans les réglages de ton téléphone.</string>
     <!-- FEED-ORDRE : annonce polie (lecteur d'écran) quand l'ordre des cartes change. %1$s = le prénom du proche. Clés partagées avec iOS. -->
     <string name="feed_order_updated_one_a11y">%1$s a donné des nouvelles</string>
     <string name="feed_order_updated_many_a11y">Le Feed a été mis à jour</string>
