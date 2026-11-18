@@ -410,6 +410,8 @@
     <string name="feed_refresh_a11y">Actualiser</string>
     <string name="feed_refresh_started_a11y">Actualisation en cours</string>
     <string name="feed_refresh_done_a11y">Informations actualisées</string>
+    <!-- FEED-REFRESH-POSITION : phrase calme (toast) quand « Actualiser » ne peut pas relire MA position faute d'accès à la localisation. Clé partagée avec iOS. -->
+    <string name="feed_refresh_position_unavailable">Ta position n\'a pas pu être actualisée. Pour cela, Miff a besoin que la localisation soit activée, sur « Toujours » et en précis. Tu peux régler ça dans les réglages de ton téléphone.</string>
     <!-- FEED-ORDRE : annonce polie (lecteur d'écran) quand l'ordre des cartes change. %1$s = le prénom du proche. Clés partagées avec iOS. -->
     <string name="feed_order_updated_one_a11y">%1$s a donné des nouvelles</string>
     <string name="feed_order_updated_many_a11y">Le Feed a été mis à jour</string>
@@ -1200,7 +1202,7 @@
     <string name="feed_colors_not_verdict">Orange ou rouge ne veut pas dire qu\'il y a un problème, seulement qu\'on n\'a pas eu de nouvelles depuis un moment.</string>
     <string name="feed_colors_not_delay">Ton téléphone calcule les couleurs à partir des dernières informations reçues. Sans connexion, elles peuvent avoir un peu de retard : le fil indique alors l\'heure des dernières informations.</string>
     <string name="feed_colors_bubble_action_a11y">Comprendre les couleurs</string>
-    <!-- Répartition de ton temps (docs/tickets/profil-repartition-temps.md, TIME-2) : carte du Profil et réglage de Confidentialité. Tutoiement, ton descriptif, aucun reproche ni félicitation. -->
+    <!-- Répartition de ton temps (docs/tickets/profil-repartition-temps.md, TIME-2) : carte du Profil et réglage de Confidentialité. Tutoiement, ton descriptif, aucun reproche ; la seule note de fête est l'emoji de l'encart de synthèse (décision du PM). -->
     <string name="profile_timeshare_title">Répartition du temps</string>
     <string name="profile_timeshare_window_7">7 jours</string>
     <string name="profile_timeshare_window_14">14 jours</string>

@@ -463,7 +463,11 @@ private fun legendItems(items: List<LegendItem>): List<LegendItem> {
 
 @Composable
 private fun describe(body: TimeShareBody.Chart): String {
-    val parts = body.items.map { "${labelOf(it)} ${percentText(it.percent, it.tiny)}" }
+    // The danger line, when it is drawn in the legend, is a button that reads itself ("Zones de danger, 12 %, afficher le détail"): the sentence does not say it a second
+    // time. When it is NOT among the four lines (no button), the sentence still lists it.
+    val shown = legendItems(body.items)
+    val spoken = body.items.filterNot { it.kind == SliceKind.DANGER && it in shown }
+    val parts = spoken.map { "${labelOf(it)} ${percentText(it.percent, it.tiny)}" }
     return stringResource(R.string.profile_timeshare_a11y_card, parts.joinToString(", "))
 }
 

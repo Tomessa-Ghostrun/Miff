@@ -40,6 +40,7 @@ import com.tomessa.miff.data.feed.OwnPositionResolver
 import com.tomessa.miff.data.feed.PhotoCache
 import com.tomessa.miff.data.feed.PhotoReader
 import com.tomessa.miff.data.feed.PositionReader
+import com.tomessa.miff.data.feed.PresenceRefresh
 import com.tomessa.miff.data.feed.StatusObserver
 import com.tomessa.miff.data.miff.AndroidLocationAccessProbe
 import com.tomessa.miff.data.miff.AwaitingAgreement
@@ -872,6 +873,21 @@ class AppContainer(
 
     /** "Actualiser" (pull to refresh): one forced reading from the server, at most every 15 s, reads only. */
     val feedRefresher: FeedRefresher by lazy { FirestoreFeedRefresher() }
+
+    /**
+     * FEED-REFRESH-POSITION: the same gesture also checks MY presence once (one position, the engine's own gates and limit of one reading every 30 s). The pass lives in the detection's
+     * own scope, so that leaving the Feed never cuts a status in the middle of its writing; the Feed does not wait for it.
+     */
+    val presenceRefresh: PresenceRefresh by lazy {
+        PresenceRefresh {
+            trackingScope
+                .async {
+                    // A purge of the cache left by a failed sign-out comes before any other access to Firestore (as in [trackingLooksAgain]).
+                    cachePurger.purgeIfPending()
+                    trackingEngine.refreshFromFeed()
+                }.await()
+        }
+    }
 
     /** After a voluntary "Quitter" the server confirmed: no message of lost access for it, purge of the cache, fresh list of Miffs. */
     suspend fun onMiffLeft(miffId: String) {

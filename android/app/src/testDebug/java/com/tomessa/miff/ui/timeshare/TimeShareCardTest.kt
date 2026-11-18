@@ -149,7 +149,7 @@ class TimeShareCardTest {
     // --- The nominal card ---------------------------------------------------------------------------------------------------------------------------------
 
     @Test
-    fun theNominalCard_hasTheHeader_theLegend_theCentre_theBand_andThePrivacyLine() {
+    fun theNominalCard_hasTheHeader_theLegend_theCentre_andTheBand() {
         show(shown())
         node("Répartition du temps").assertIsDisplayed()
         nodes("Sur les 7 derniers jours").assertCountEquals(0)
@@ -285,15 +285,60 @@ class TimeShareCardTest {
     @Test
     fun theChartIsDescribedByOneSentence_theRingAndTheEmojiAreNotRead() {
         show(shown())
-        val expected = "Répartition du temps : Maison ${pct(
-            48,
-        )}, Sport ${pct(24)}, Zones de danger ${pct(12)}, Hors-zone ${pct(16)}."
+        // The danger line is a button of its own: the sentence does not read it a second time.
+        val expected = "Répartition du temps : Maison ${pct(48)}, Sport ${pct(24)}, Hors-zone ${pct(16)}."
         val described = composeRule.onAllNodes(hasContentDescription(expected)).fetchSemanticsNodes().size
         assertEquals("one description of the chart", 1, described)
         val root = composeRule.onRoot(useUnmergedTree = false).fetchSemanticsNode()
         listOf("🏠", "⚽", "🎉").forEach { emoji ->
             assertFalse("the emoji $emoji must not be read", collect(root).any { it.contains(emoji) })
         }
+    }
+
+    @Test
+    fun theDangerLine_isReadOnce_asAButton_andNotInTheSentence() {
+        show(shown())
+        val inSentence =
+            composeRule
+                .onAllNodes(
+                    hasContentDescription("Zones de danger ${pct(12)}", substring = true),
+                ).fetchSemanticsNodes()
+                .size
+        assertEquals("not in the sentence", 0, inSentence)
+        val asButton =
+            composeRule
+                .onAllNodes(
+                    hasContentDescription("Zones de danger, ${pct(12)}, afficher le détail"),
+                ).fetchSemanticsNodes()
+                .size
+        assertEquals("once, as the button", 1, asButton)
+    }
+
+    @Test
+    fun aDangerLineThatIsNotAmongTheFourLines_isStillInTheSentence_sinceNoButtonReadsIt() {
+        val small =
+            item(SliceKind.DANGER, null, null, 4, count = 1, details = listOf(DetailItem("Le parc", null, 4, false)))
+        val body =
+            TimeShareBody.Chart(
+                items =
+                    listOf(
+                        item(SliceKind.PLACE, "Maison", PlaceCategory.HOME, 30, rank = 0),
+                        item(SliceKind.PLACE, "Sport", PlaceCategory.SPORT, 26, rank = 1),
+                        item(SliceKind.PLACE, "Bureau", PlaceCategory.WORK, 20, rank = 2),
+                        item(SliceKind.PLACE, "Club", PlaceCategory.LEISURE, 12, rank = 3),
+                        item(SliceKind.ELSEWHERE, null, null, 8),
+                        small,
+                    ),
+                centerPercent = 88,
+            )
+        show(shown(body))
+        val inSentence =
+            composeRule
+                .onAllNodes(
+                    hasContentDescription("Zone de danger ${pct(4)}", substring = true),
+                ).fetchSemanticsNodes()
+                .size
+        assertEquals(1, inSentence)
     }
 
     private fun collect(node: SemanticsNode): List<String> {
