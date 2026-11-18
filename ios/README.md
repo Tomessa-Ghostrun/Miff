@@ -929,7 +929,7 @@ Décision du PM du 2026-11-17 (sans spec produit ; ticket `docs/tickets/lieu-dan
 - **Cas limites** : un créateur qui perd Miff+ garde ses demandes « danger » en attente (aucune suppression) : « Accepter » ouvre l'offre, « Refuser » marche, les demandes « confiance » s'acceptent dans les emplacements gratuits ; un lieu « danger » déjà là se modifie et se supprime, et peut repasser à « confiance » ; un membre gratuit peut occuper ses 3 emplacements avec des demandes « danger » (même plafond).
 - **Le demandeur ne voit RIEN de plus** (ticket §3.4) : « En attente » jusqu'à l'acceptation, au refus (la carte disparaît) ou à l'expiration ; jamais un mot sur l'abonnement du créateur.
 - **Écart à signaler** : le ticket (§3.3) attend la phrase `place_request_paywall_danger` (« ... La demande reste en attente, tu peux aussi la refuser. ») dans l'offre du créateur gratuit. L'écran d'offre est UNIQUE pour tous les points d'entrée (décision du PM du 2026-11-12) et, déjà avant cette PR, cette phrase n'y est pas affichée (la clé existe, non utilisée). Rien n'a été ajouté : à trancher par le PM avec Android.
-- Tests : `MiffTests/Place/DangerRequestRightsTests.swift` (matrice demander / déclarer / accepter / refuser, gratuit et Miff+, et tests de source), `PlaceRequestRepositoryTests`, `PlaceRequestFormViewModelTests`.
+- Tests : `MiffTests/Place/DangerRequestRightsTests.swift` (matrice demander / déclarer / accepter / refuser, gratuit et Miff+, et tests de source), `PlaceRequestRepositoryTests`, `PlaceRequestRefusalTests` (refus sans cause connue, course puis second échec, relecture en échec), `PlaceRequestFormViewModelTests`.
 
 ## Lieux de la Miff du carrousel, visibles par tous les membres (décision du PM, 2026-11-11 ; miroir d'Android PR #181)
 
