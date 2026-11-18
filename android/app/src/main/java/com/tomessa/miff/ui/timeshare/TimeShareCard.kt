@@ -69,7 +69,6 @@ import com.tomessa.miff.domain.permission.BackgroundRoute
 import com.tomessa.miff.domain.permission.LocationFlow
 import com.tomessa.miff.domain.place.Place
 import com.tomessa.miff.domain.place.PlaceCategory
-import com.tomessa.miff.domain.timeshare.PresenceLog
 import com.tomessa.miff.domain.timeshare.SliceKind
 import com.tomessa.miff.domain.timeshare.TimeShareRules
 import com.tomessa.miff.domain.timeshare.TimeShareTracking
@@ -140,8 +139,6 @@ fun TimeShareSection(
     miffId: String?,
     places: List<Place>?,
     onOpenMiff: (String) -> Unit,
-    /** Only used by the debug build (the tool that fills the journal with test data, see [TimeShareDemoTools]); the release build draws nothing with it. */
-    journal: PresenceLog,
 ) {
     LaunchedEffect(viewModel, miffId, places) { viewModel.onInputs(miffId, places) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.refresh() }
@@ -154,9 +151,7 @@ fun TimeShareSection(
                 onOpenMiff = onOpenMiff,
             )
         }
-    // No wrapper: a layout node with nothing in it would still take its share of the spacing of the tab while the card is hidden.
     TimeShareCard(state, actions)
-    if (miffId != null && !places.isNullOrEmpty()) TimeShareDemoTools.Panel(journal, miffId, places)
 }
 
 @Composable

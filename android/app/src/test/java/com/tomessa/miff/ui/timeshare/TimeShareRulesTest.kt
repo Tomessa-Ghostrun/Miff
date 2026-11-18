@@ -144,36 +144,21 @@ class TimeShareRulesTest {
         assertTrue(engine.contains("logPresence(miffId, fact.presence, fact.placeId, fact.presenceAtMillis)"))
     }
 
-    // --- The tool of test data exists in the debug build only (TS-23) --------------------------------------------------------------------------------------
+    // --- No tool of test data anywhere (removed after the recette of the PM) -----------------------------------------------------------------------
 
     @Test
-    fun theToolOfTestData_isInTheDebugSources_theReleaseHasNone() {
-        val debug = read("src/debug/java/com/tomessa/miff/domain/timeshare/DemoPresence.kt")
-        val debugPanel = read("src/debug/java/com/tomessa/miff/ui/timeshare/TimeShareDemoTools.kt")
-        val release = read("src/release/java/com/tomessa/miff/ui/timeshare/TimeShareDemoTools.kt")
-        assertTrue(debug.contains("const val MARKER = \"TIMESHAREDEMO\""))
-        assertTrue(debugPanel.contains("DemoPresence.fill("))
-        // The release draws nothing: neither the generator, nor the marker, nor a write to the journal.
-        assertFalse(release.contains("DemoPresence") || release.contains("TIMESHAREDEMO"))
-        assertFalse(
-            Regex(
-                "\\.record\\(|\\.fill\\(|forgetMiff|testTag",
-            ).containsMatchIn(code(File("src/release/java/com/tomessa/miff/ui/timeshare/TimeShareDemoTools.kt"))),
-        )
-        // The main sources know the tool only through its name, never the generator or the marker.
-        timeShareSources.forEach {
-            val text = code(it)
-            assertFalse(
-                "${it.name} knows the generator",
-                text.contains("DemoPresence") || text.contains("TIMESHAREDEMO"),
-            )
-        }
-        val everythingElse = main.walkTopDown().filter { it.isFile && it.extension == "kt" }.toList()
-        everythingElse.forEach { assertFalse("${it.name} knows the generator", code(it).contains("DemoPresence")) }
-        // The CI looks for the marker in the release bundle and in releaseLike, and for its presence in the debug APK.
-        val workflow = read("../../.github/workflows/android.yml")
-        assertTrue(workflow.contains("TIMESHAREDEMO"))
-        assertTrue(read("../ci/check-release-bundle.sh").contains("TIMESHAREDEMO"))
+    fun noToolOfTestData_isLeftInTheSources_orTheCi() {
+        val markers = listOf("TIMESHAREDEMO", "DemoPresence", "TimeShareDemoTools")
+        File("src")
+            .walkTopDown()
+            .filter {
+                it.isFile && it.extension in setOf("kt", "xml") &&
+                    it.name != "TimeShareRulesTest.kt"
+            }.forEach { file ->
+                markers.forEach { assertFalse("${file.name} still mentions $it", file.readText().contains(it)) }
+            }
+        assertFalse(read("../../.github/workflows/android.yml").contains("TIMESHAREDEMO"))
+        assertFalse(read("../ci/check-release-bundle.sh").contains("TIMESHAREDEMO"))
     }
 
     // --- No chart library, no payment (TS-24) --------------------------------------------------------------------------------------------------------------

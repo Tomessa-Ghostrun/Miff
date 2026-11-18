@@ -520,7 +520,6 @@ private fun MainNavigation(
                         miffId = profilePlaces.selectedMiffId,
                         places = (profilePlaces.view as? MiffPlacesView.Ready)?.places,
                         onOpenMiff = { navController.open(MiffRoute(it)) },
-                        journal = container.presenceLog,
                     )
                 },
                 placesContent = {
