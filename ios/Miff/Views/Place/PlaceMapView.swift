@@ -191,7 +191,7 @@ final class PlaceMapCoordinator: NSObject, MKMapViewDelegate {
     /// glisser la page) ; il est rendu dès que les doigts se lèvent. Un doigt seul, lui, fait défiler l'écran normalement.
     /// Le `UIScrollView` est cherché dans les parents de la carte : le `ScrollView` de SwiftUI en est un jusqu'à iOS 18 ; sur iOS 26
     /// ce n'est pas garanti (point de la recette). S'il n'est pas trouvé, rien n'est suspendu : UIKit n'accepte alors qu'un seul des
-    /// deux gestes à la fois (pincer OU faire défiler), et le zoom reste correct. `require(toFail:)` a été écarté : il retarderait
+    /// deux gestes à la fois (pincer OU faire défiler), et le zoom reste correct. Faire attendre le défilement (exigence d'échec préalable de son geste) a été écarté : il retarderait
     /// ou bloquerait le défilement à un doigt.
     private func pauseParentScroll() {
         var parent = map?.superview
