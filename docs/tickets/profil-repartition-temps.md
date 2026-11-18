@@ -4,7 +4,8 @@
 **Rédigé le** : 2026-11-17 (agent `product-specs`), à la demande du PM (« je te laisse faire », sans spec fournie), d'après la capture `19.webp` (onglet Profil Android).
 **Révisé le** : 2026-11-17, **après lecture du code et des tickets à jour d'`origin/main`** (copie en lecture seule `C:\dev\miff-main-ro`). La première version avait été écrite sur un `main` local périmé : toutes ses hypothèses « à vérifier » sont remplacées par les faits constatés (§3), et deux de ses constats étaient faux (libellé « Zone à risque », dépendance au Tracking).
 **Décisions finales du PM intégrées** : (1) le wording de l'état « pas assez de données » est **figé** (§7) ; (2) la **zone de danger** est le **type de lieu** choisi à la création du lieu ; ses lieux sont représentés dans le graphique en couleur d'alerte douce (§10).
-**Révision 2 (2026-11-17, retours du PM sur l'APK de recette, PR Android #260)** : elle **prime sur le reste du document** là où il la contredit. (1) **Seuil de données = 7 jours d'historique** (plus 24 h de temps mesuré) ; avant, **pas de graphique ni de sélecteur**, seulement l'état « pas assez de données » dont le **wording est figé et dynamique** : « Ton graphique arrive dans X jours, nous analysons tes habitudes » (§6.2, §7, D8). (2) **Mise en page de la maquette** : légende à **gauche** (4 lignes au plus), petit anneau à **droite**, carte aux grands angles, pastille verte, titre « Répartition du temps » (§5.2, §9.1). (3) **Centre** : « 72 % » et « en zone de confiance ». (4) **Encart de synthèse** de la maquette (fond vert très léger, coche, « Tu as passé x % de ton temps dans tes zones de confiance », emoji fête 🎉), **remplace** les phrases descriptives et la décision « sans coche verte ni emoji de fête » (§5.4, D13). (5) **Couleurs** : lieux de confiance en **vert et bleu Miff**, zones de danger = **exactement** le rouge `status/danger` de la bulle de statut danger, « Ailleurs » = le gris de la maquette (§9.2, §15). Le reste (journal local, vie privée, effacement) est inchangé.
+**Révision 2 (2026-11-17, retours du PM sur l'APK de recette, PR Android #260)** : elle **prime sur le reste du document** là où il la contredit. (1) **Seuil de données = 7 jours d'historique** (plus 24 h de temps mesuré) ; avant, **pas de graphique ni de sélecteur**, seulement l'état « pas assez de données » dont le **wording est figé et dynamique** : « Ton graphique arrive dans X jours, nous analysons tes habitudes » (§6.2, §7, D8). (2) **Mise en page de la maquette** : légende à **gauche** (4 lignes au plus), petit anneau à **droite**, carte aux grands angles, pastille verte, titre « Répartition du temps » (§5.2, §9.1). (3) **Centre** : « 72 % » et « en zone de confiance ». (4) **Encart de synthèse** de la maquette (fond vert très léger, coche, « Tu as passé x % de ton temps dans tes zones de confiance », emoji fête 🎉), **remplace** les phrases descriptives et la décision « sans coche verte ni emoji de fête » (§5.4, D13). (5) **Couleurs** : lieux de confiance en **vert et bleu Miff**, zones de danger = **exactement** le rouge `status/danger` de la bulle de statut danger, « Hors-zone » = le gris de la maquette (§9.2, §15). Le reste (journal local, vie privée, effacement) est inchangé.
+**Révision 3 (2026-11-18, recette du PM sur l'APK, PR Android #260)** : elle prime sur ce qui précède. (1) **Plus de sous-titre** « Sur les N derniers jours » sous le titre. (2) **Disposition inversée : le donut à GAUCHE, la légende à DROITE** (mêmes tailles ; grande police ou écran étroit : donut au-dessus de la légende). (3) **« Ailleurs » devient « Hors-zone »** (EN « Outside zones ») partout (légende, description du lecteur d'écran, tests). (4) **Plus de ligne « Ces données restent sur ton téléphone. Personne d'autre ne peut les voir. »** : le journal reste local, la section « Historique de temps » de Réglages > Confidentialité le dit toujours. Description du lecteur d'écran : « Répartition du temps : Maison 48 %, … ».
 **Complète** : `docs/tickets/lieux-de-confiance.md`, `docs/tickets/feed-profil-reglages.md` (Profil), `docs/tickets/mode-voyage.md`, `docs/contracts/profile-places-members.md`, `docs/contracts/place-categories.md`. **Ne remplace rien.**
 **Sources lues** : `CLAUDE.md` ; la capture ; le code Android (`data/tracking/*`, `domain/tracking/*`, `domain/place/*`, `ui/profile/ProfileTabScreen.kt`, `ui/components/RecentsPrivacy.kt`, `data/session/AccountLocalData.kt`, ressources `values-fr`) et iOS (`Services/Tracking/*`, `Models/Tracking/*`) ; les tickets `lieux-de-confiance`, `mode-voyage`, `feed-profil-reglages` ; `backend/data-model.md` et `firestore.rules` ; `docs/contracts/*` ; `docs/legal/politique-confidentialite.fr.md` ; la mémoire du projet.
 **Limites de cette lecture** : pas de shell (aucun test lancé, aucune mesure) ; Notion non relu (un ticket Notion « Profil » ou « Statistiques » prime s'il existe) ; le comportement réel sur appareil (retard des événements, OPPO) n'est pas mesuré.
@@ -14,13 +15,13 @@
 
 ## 1. Résumé pour le PM
 
-**En une phrase** : sous le carrousel de Miffs du Profil, une carte « Répartition de ton temps » montre, en anneau, comment **tu** as réparti ton temps entre les lieux de la Miff sélectionnée, ses éventuelles zones de danger et « Ailleurs », sur 7, 14 ou 30 jours ; **tout est calculé sur le téléphone, rien n'est envoyé, aucune écriture Firestore**.
+**En une phrase** : sous le carrousel de Miffs du Profil, une carte « Répartition de ton temps » montre, en anneau, comment **tu** as réparti ton temps entre les lieux de la Miff sélectionnée, ses éventuelles zones de danger et « Hors-zone », sur 7, 14 ou 30 jours ; **tout est calculé sur le téléphone, rien n'est envoyé, aucune écriture Firestore**.
 
 **Ce que le code fait déjà (bonne nouvelle)** : le suivi des lieux existe sur Android et iOS. Il détecte les entrées et sorties, en déduit une **présence par Miff** (dans un lieu de confiance, dans une zone de danger, dehors, inconnue), et l'envoie à l'état courant du serveur. **Mais il n'en garde aucun historique** : c'est exactement ce qu'il faut ajouter, **sur le téléphone seulement**. On enregistre chaque **changement de présence** que le suivi calcule déjà (même instant que celui envoyé aux proches), si bien que **le graphique et le Feed ne peuvent jamais se contredire**.
 
 **Données (décision centrale)** : **option A, journal local** (gratuit, privé, 0 écriture serveur, pas de nouveau consentement). Limite connue : historique propre à l'appareil, **commence à la livraison**, perdu au changement de téléphone ; **jamais de donnée inventée** (« pas encore assez de données » tant qu'il en manque). Signal de bascule vers un journal Firestore : §4 D1.
 
-**Autres décisions par défaut** (§4) : seulement **mon** temps, jamais celui des proches ; catégories = lieux de confiance (5 nommés max, puis « {n} autres lieux »), **une ligne agrégée « Zone de danger »**, « Ailleurs » ; la zone de confiance **l'emporte** sur la zone de danger en cas de chevauchement (**comme le Feed**) ; phrase de synthèse neutre, sans coche verte ni emoji de fête ; gratuit pour tous ; aucun événement Analytics ; palette dérivée du design system.
+**Autres décisions par défaut** (§4) : seulement **mon** temps, jamais celui des proches ; catégories = lieux de confiance (5 nommés max, puis « {n} autres lieux »), **une ligne agrégée « Zone de danger »**, « Hors-zone » ; la zone de confiance **l'emporte** sur la zone de danger en cas de chevauchement (**comme le Feed**) ; phrase de synthèse neutre, sans coche verte ni emoji de fête ; gratuit pour tous ; aucun événement Analytics ; palette dérivée du design system.
 
 **Écarts de libellé constatés (à connaître)** : le type de lieu s'appelle **« Zone de danger »** dans l'app (formulaire de lieu, Feed, notifications ; valeur technique `risk`), pas « Zone à risque » comme sur la maquette (Figma et capture). **Le graphique reprend « Zone de danger »**. Le sous-texte du type, « Lieu à éviter », est un jugement : hors périmètre, signalé (§10.1).
 
@@ -78,11 +79,11 @@
 |---|---|---|---|---|
 | **D1** | **Où vit l'historique** | **A : journal local.** Un enregistrement par **changement de présence** d'une Miff : (Miff, état, lieu, instant). **Aucune coordonnée, aucun nom, aucune adresse.** Rétention **35 jours** glissants, fichier privé de l'app **exclu des sauvegardes**. | 0 lecture, 0 écriture Firestore ; **rien ne quitte le téléphone** : pas de nouveau partage de localisation, pas de nouveau consentement, ni règles ni modèle serveur modifiés. Au plus 60 faits par jour (disjoncteur existant `MAX_STATUS_WRITES_PER_DAY`), soit quelques centaines de Ko au pire sur 35 jours. | **B : journal Firestore**, écarté : une écriture par fait (~10 par jour et par personne : 20 000 écritures gratuites par jour atteintes à ~2 000 personnes actives) et des lectures pour dessiner 30 jours ; TTL payant sur Spark (nettoyage à la main) ; règles à écrire et déployer ; **un historique serveur d'habitudes contredit la promesse « pas d'historique »** et appelle un nouveau consentement, une durée, l'effacement à chaque sortie, un risque « stalkerware ». **Signal pour basculer** : le PM veut un historique qui survit au changement de téléphone, la vue des proches (§18 Q1), plus de 30 jours, ou des retours testeurs en nombre. B se ferait en **compteurs journaliers par lieu**, pas en journal d'événements. |
 | **D2** | **Qui** | **Mon temps seulement.** | Le détail du temps passé des proches serait une nouvelle information de localisation partagée. | Extension future : §18 Q1, jamais par défaut. Le titre dit « ton temps ». |
-| **D3** | **Catégories** | Un **lieu de confiance = une part** ; **une ligne agrégée « Zone de danger »** (§10) ; **« Ailleurs »**. Pas de « Hors-zone » de la capture. | Décision du PM pour la zone de danger. « Ailleurs » : le « ? » de « Hors-zone » évoque l'inconnu. | — |
-| **D4** | **Lisibilité** | **5 lieux de confiance** nommés au plus (les 5 plus longs), les suivants regroupés en « {n} autres lieux », puis « Zone de danger » (si du temps y a été passé), puis « Ailleurs » en dernier. Un lieu à 0 n'est pas listé. | Premium = lieux illimités. « {n} autres lieux » plutôt que « Autres lieux » pour ne pas être confondu avec « Ailleurs ». | — |
+| **D3** | **Catégories** | Un **lieu de confiance = une part** ; **une ligne agrégée « Zone de danger »** (§10) ; **« Hors-zone »**. Pas de « Hors-zone » de la capture. | Décision du PM pour la zone de danger. « Hors-zone » : le « ? » de « Hors-zone » évoque l'inconnu. | — |
+| **D4** | **Lisibilité** | **5 lieux de confiance** nommés au plus (les 5 plus longs), les suivants regroupés en « {n} autres lieux », puis « Zone de danger » (si du temps y a été passé), puis « Hors-zone » en dernier. Un lieu à 0 n'est pas listé. | Premium = lieux illimités. « {n} autres lieux » plutôt que « Autres lieux » pour ne pas être confondu avec « Hors-zone ». | — |
 | **D5** | **Compte gratuit (≤ 3 lieux)** | Anneau de **2 à 4 parts**, traité comme le cas normal. | Cas le plus fréquent. | — |
 | **D6** | **Fenêtre** | **Glissante**, [maintenant − N × 24 h ; maintenant], N = 7, 14, 30. Défaut **7 jours**, **choix mémorisé sur l'appareil, effacé à la déconnexion** (comme la Miff active du Feed). | Pas de remise à zéro le lundi. | — |
-| **D7** | **Dénominateur** | Le **temps mesuré** seulement (hors présence « inconnue », voyage, suivi arrêté, lieu supprimé, plafond dépassé). **Jamais compté en « Ailleurs ».** | Règle d'honnêteté : ne jamais inventer. | — |
+| **D7** | **Dénominateur** | Le **temps mesuré** seulement (hors présence « inconnue », voyage, suivi arrêté, lieu supprimé, plafond dépassé). **Jamais compté en « Hors-zone ».** | Règle d'honnêteté : ne jamais inventer. | — |
 | **D8** | **Seuil « assez de données »** (révisé le 2026-11-17) | Le graphique n'apparaît que si le journal de la Miff **remonte à au moins 7 jours écoulés depuis son premier enregistrement** (durée écoulée, quelle que soit la fenêtre 7 / 14 / 30 choisie) **et** si du temps a été mesuré dans la fenêtre choisie. Sinon : état « pas assez de données », **sans graphique ni sélecteur**. | Décision du PM sur l'APK : un anneau sur 3 jours de journal serait trompeur. Constante partagée iOS / Android (`MIN_HISTORY` = 7 jours). | Ancienne valeur : 24 h de temps mesuré. |
 | **D9** | **Présence ouverte très longue** | Un état n'est compté que **48 h au plus sans nouveau fait** ; au-delà, **non mesuré**. | Si l'app est tuée, le système retarde l'événement ou le téléphone est éteint, une sortie manquée transformerait une journée en « 14 jours au bureau ». 48 h couvre un week-end sans sortie. | Plafond plus haut = plus de précision pour les longs séjours, plus d'erreur après une sortie manquée. |
 | **D10** | **Chevauchement** | **Même règle que le Feed** : la **zone de confiance l'emporte** sur la zone de danger ; entre deux zones du même type, la **dernière entrée**. Le graphique **reproduit la présence que le moteur calcule** (`PresenceMachine.derive`), il ne la recalcule pas. | Décision existante du PM (« la zone de confiance l'emporte ») ; cohérence totale Feed / graphique. | — |
@@ -104,11 +105,11 @@ Onglet Profil, **sous le carrousel « Mes Miffs » (et ses pastilles)**, **au-de
 **Masquée** (pas d'espace vide) seulement quand la Miff sélectionnée n'a **aucun lieu** (la section « Lieux » porte déjà le message). Quand la carte « Créer une nouvelle Miff » du carrousel est affichée, la carte **reste celle de la dernière Miff affichée**, comme la liste des lieux (`profile-places-members.md` §2) : pas de clignotement.
 
 ### 5.2 Contenu (état nominal)
-1. **En-tête** : pastille d'icône **verte** (disque vert clair, barres vert foncé) à gauche, titre **« Répartition du temps »** (EN « Time breakdown »), sous-titre **« Sur les 7 derniers jours »** (14 / 30), **sélecteur** « 7 jours ⌄ » à droite (pastille bordée, menu à 3 choix, le choix actuel coché). Le sous-titre et le sélecteur **n'existent qu'avec le graphique**.
-2. **Anneau**, **petit, à droite** de la légende : une tranche par catégorie (**toutes**, même au-delà de 4), séparées par un mince espace. **Au centre** : « **72 %** » en gros et dessous « **en zone de confiance** » (EN « in trusted zones ») = somme des **lieux de confiance seulement** (ni zone de danger ni « Ailleurs »).
-3. **Légende, à gauche** (ordre de l'anneau, sens horaire depuis midi), **4 lignes au plus : les 4 plus grandes parts** (le reste n'est que dans l'anneau et dans la description du lecteur d'écran, qui liste tout) : pastille de couleur, **emoji de la catégorie du lieu** (table `place-categories.md`, repli épingle ; **nom du lieu actuel**), pourcentage **aligné à droite**. Parts possibles : lieux, « {n} autres lieux », **« Zone de danger »** (§10), **« Ailleurs »**. Si la zone de danger n'est pas parmi les 4 plus grandes parts, son détail n'est pas atteignable depuis la légende (limite connue).
+1. **En-tête** : pastille d'icône **verte** à gauche, titre **« Répartition du temps »** (EN « Time breakdown »), **sélecteur** « 7 jours ⌄ » à droite (pastille bordée, menu à 3 choix, le choix actuel coché). **Pas de sous-titre.** Le sélecteur **n'existe qu'avec le graphique**.
+2. **Anneau**, **petit, à gauche** de la légende : une tranche par catégorie (**toutes**, même au-delà de 4), séparées par un mince espace. **Au centre** : « **72 %** » en gros et dessous « **en zone de confiance** » (EN « in trusted zones ») = somme des **lieux de confiance seulement** (ni zone de danger ni « Hors-zone »).
+3. **Légende, à droite** (ordre de l'anneau, sens horaire depuis midi), **4 lignes au plus : les 4 plus grandes parts** (le reste n'est que dans l'anneau et dans la description du lecteur d'écran, qui liste tout) : pastille de couleur, **emoji de la catégorie du lieu** (table `place-categories.md`, repli épingle ; **nom du lieu actuel**), pourcentage **aligné à droite**. Parts possibles : lieux, « {n} autres lieux », **« Zone de danger »** (§10), **« Hors-zone »**. Si la zone de danger n'est pas parmi les 4 plus grandes parts, son détail n'est pas atteignable depuis la légende (limite connue).
 4. **Encart de synthèse** (§5.4) : fond vert très léger, coche, phrase, emoji fête.
-5. **Confidentialité**, toujours visible : cadenas + « **Ces données restent sur ton téléphone. Personne d'autre ne peut les voir.** »
+5. *(supprimé en révision 3)* ~~Confidentialité : « Ces données restent sur ton téléphone… »~~ : plus de ligne sur la carte.
 
 ### 5.3 Pourcentages
 Entiers, somme **exactement 100 %** (méthode du plus grand reste ; égalité : le plus grand temps réel, puis l'ordre de la légende). Part réelle > 0 et < 1 % : « **< 1 %** » (compte 0 dans la répartition). **Règle d'arrondi commune iOS / Android (précisée le 2026-11-17)** : une part réelle < 1 % **compte 0** et **les autres parts se partagent les 100 points d'après leur propre temps** (le total de référence est la somme des temps des parts ≥ 1 %, pas le temps mesuré entier), au plus grand reste ; la part < 1 % ne reçoit jamais de point de reste. Exemple : maison 100 h, dehors 219 h, un lieu 3 h → maison 31 %, dehors 69 %, lieu « < 1 % » (et non 32 / 68). Le détail de la zone de danger est arrondi à l'intérieur de sa ligne (inchangé). Format du système (« 72 % » FR avec espace insécable, « 72% » EN). **Pas d'animation** en v1.
@@ -122,7 +123,7 @@ x = le pourcentage du centre (lieux de confiance seulement), au format du systè
 
 ---|---|---|
 | Plus grande part = un lieu de confiance nommé | « Sur les 7 derniers jours, c'est à {lieu} que tu as passé le plus de temps. » | “Over the last 7 days, you spent the most time at {place}.” |
-| Plus grande part = « Ailleurs » | « Sur les 7 derniers jours, tu as surtout été ailleurs que dans tes lieux de confiance. » | “Over the last 7 days, you were mostly somewhere other than your trusted places.” |
+| Plus grande part = « Hors-zone » | « Sur les 7 derniers jours, tu as surtout été ailleurs que dans tes lieux de confiance. » | “Over the last 7 days, you were mostly somewhere other than your trusted places.” |
 | Plus grande part = « {n} autres lieux » **ou « Zone de danger »**, ou égalité avec elle | **phrase générique** : « Voici comment ton temps s'est réparti sur les 7 derniers jours. » | “Here is how your time was spread over the last 7 days.” |
 Égalité : la première de la légende ; si c'est la zone de danger, phrase générique. **Règle de ton** : la phrase **ne nomme jamais** la zone de danger, ne donne **aucun pourcentage**, ne compare à aucune période ni objectif. « 7 » devient « 14 » / « 30 » (clés distinctes). **Écart avec la capture** : plus de coche verte, de « cette semaine ! » ni d'emoji de fête ; fond neutre bleuté.
 
@@ -144,7 +145,7 @@ Un **fait de présence** par changement de la présence **que le moteur calcule 
 1. Fenêtre = [maintenant − N × 24 h ; maintenant] en **durée écoulée** (168 h pour 7 jours même si l'heure change).
 2. Chaque fait vaut **de son instant jusqu'au fait suivant** ; le dernier jusqu'à maintenant ; **aucun état n'est compté plus de 48 h sans nouveau fait** (surplus = non mesuré). Les durées sont **rognées à la fenêtre**.
 3. Temps « inconnue » = **non mesuré**. **Temps mesuré** = tout le reste.
-4. **Lieu de confiance P** = temps des faits `dans un lieu de confiance` de P ; **zone de danger** = somme des faits `dans une zone de danger` ; **Ailleurs** = faits `dehors`.
+4. **Lieu de confiance P** = temps des faits `dans un lieu de confiance` de P ; **zone de danger** = somme des faits `dans une zone de danger` ; **Hors-zone** = faits `dehors`.
 5. Un fait dont le **lieu n'existe plus** dans la liste actuelle, ou dont le **type actuel du lieu ne correspond plus** à l'état enregistré (type modifié), est **non mesuré** (le moteur ne l'a pas su non plus : jamais une réattribution devinée).
 6. Pourcentage = temps / temps mesuré, arrondi selon §5.3 ; le détail de la zone de danger est arrondi **à l'intérieur** de sa ligne (plus grand reste), pour que le détail totalise toujours la ligne. Le pourcentage central ne compte que les lieux de confiance.
 7. **Historique** = durée écoulée entre le **premier fait du journal de la Miff** et maintenant (0 sans fait ; un premier fait dans le futur compte 0). Si **historique < 7 jours** **ou** temps mesuré = 0 dans la fenêtre : « pas assez de données », **aucun pourcentage, aucun graphique**. **X (jours restants)** = 7 jours − historique, **arrondi au jour supérieur**, borné à **[1 ; 7]** : 7 sans fait, 6 j 2 h écoulés → 1, jamais moins de 1 tant que le graphique n'est pas affichable. Recalculé à l'affichage du Profil et à la reprise de l'app, **sans minuterie**. Un effacement (réglage, déconnexion) repart à 7.
@@ -153,7 +154,7 @@ Un **fait de présence** par changement de la présence **que le moteur calcule 
 ### 6.3 Cas de test (identiques iOS et Android ; fenêtre 7 jours = 168 h ; tout mesuré sauf mention)
 | # | Situation | Résultat attendu |
 |---|---|---|
-| T1 | Maison 84 h, Sport 21 h, dehors 63 h | Maison 50 %, Sport 12 %, Ailleurs 38 % (égalité à 0,5 : le plus grand temps réel, Ailleurs, reçoit le point) ; somme 100 ; centre 62 % |
+| T1 | Maison 84 h, Sport 21 h, dehors 63 h | Maison 50 %, Sport 12 %, Hors-zone 38 % (égalité à 0,5 : le plus grand temps réel, Hors-zone, reçoit le point) ; somme 100 ; centre 62 % |
 | T2 | État « Maison » depuis 10 h **avant** la fenêtre, fait suivant 20 h après son début | 20 h comptées |
 | T3 | État « Maison » depuis 5 h, aucun fait suivant | 5 h |
 | T4 | État « Maison » depuis 60 h, aucun fait suivant | 48 h comptées ; 12 h non mesurées, exclues |
@@ -163,23 +164,23 @@ Un **fait de présence** par changement de la présence **que le moteur calcule 
 | T8 | « Inconnue » de la 100e à la 130e heure | 30 h non mesurées ; dénominateur 138 h |
 | T9 | Journal de 3 jours, tout mesuré | « pas assez de données », **X = 4** ; historique exactement 7 jours : graphique ; 7 jours − 1 ms : pas de graphique |
 | T9b | Calcul de X (historique → X) | 0 → 7 ; 1 h → 7 ; 1 j → 6 ; 3 j → 4 ; 5 j → 2 ; 5 j − 1 min → 3 ; 6 j → 1 ; 6 j 2 h → 1 ; 7 j − 1 min → 1 ; ≥ 7 j → 1 |
-| T10 | 7 lieux avec du temps | 5 nommés + « 2 autres lieux » + Ailleurs ; somme 100 |
-| T11 | Lieu supprimé qui comptait 10 h | ces 10 h sont non mesurées (pas « Ailleurs ») ; son enregistrement est purgé |
+| T10 | 7 lieux avec du temps | 5 nommés + « 2 autres lieux » + Hors-zone ; somme 100 |
+| T11 | Lieu supprimé qui comptait 10 h | ces 10 h sont non mesurées (pas « Hors-zone ») ; son enregistrement est purgé |
 | T12 | Fenêtre traversant un changement d'heure | exactement 168 h écoulées |
 | T13 | Un lieu à 0,3 % | « < 1 % » ; les autres totalisent 100 |
-| T14 | Jamais dans un lieu, 100 h de « dehors » | centre « 0 % » ; légende « Ailleurs 100 % » ; encart « Tu as passé 0 % de ton temps dans tes zones de confiance » |
-| T15 | Un seul lieu (compte gratuit), 30 % du temps | 2 parts : lieu 30 %, Ailleurs 70 % |
+| T14 | Jamais dans un lieu, 100 h de « dehors » | centre « 0 % » ; légende « Hors-zone 100 % » ; encart « Tu as passé 0 % de ton temps dans tes zones de confiance » |
+| T15 | Un seul lieu (compte gratuit), 30 % du temps | 2 parts : lieu 30 %, Hors-zone 70 % |
 | T16 | Fait dans le futur | ramené à « maintenant » |
 | T17 | Lieu de confiance A entré à 0 h ; zone de danger R entrée à 1 h, sortie à 3 h ; sortie de A à 6 h | **A 6 h, aucune zone de danger** (la confiance l'emporte, comme le Feed) |
 | T18 | Zone de danger seule : R entrée à 1 h, sortie à 3 h | zone de danger 2 h |
-| T19 | Deux lieux de danger : 5 % et 7 % (Maison 50 %, Ailleurs 38 %) | ligne « Zone de danger » 12 % ; détail 7 % et 5 % ; centre 50 % ; somme 100 |
+| T19 | Deux lieux de danger : 5 % et 7 % (Maison 50 %, Hors-zone 38 %) | ligne « Zone de danger » 12 % ; détail 7 % et 5 % ; centre 50 % ; somme 100 |
 | T20 | Aucune zone de danger, ou aucun temps dedans | **aucune ligne** (jamais « 0 % ») |
 | T21 | Zone de danger = plus grande part | l'encart est le même (il ne nomme jamais la zone de danger) |
 | T22 | Lieu dont le type est passé de confiance à danger depuis | faits antérieurs non mesurés (§6.2 point 5) |
 | T23 | Voyage de 60 h dans la fenêtre | 60 h non mesurées |
 
 ### 6.4 Précision à annoncer (limite connue)
-L'événement est daté **à son arrivée dans l'app** : retard possible (économie d'énergie, surcouches constructeur Android, iOS relancé en arrière-plan). Android ne corrige une sortie manquée qu'au prochain événement ou redémarrage ; iOS redemande l'état des zones à l'ouverture. Le graphique est **indicatif** : jamais de durée précise affichée, seulement des pourcentages entiers. Un téléphone éteint ou à plat ne se voit pas : après une sortie, le temps est compté « Ailleurs » jusqu'au plafond de 48 h.
+L'événement est daté **à son arrivée dans l'app** : retard possible (économie d'énergie, surcouches constructeur Android, iOS relancé en arrière-plan). Android ne corrige une sortie manquée qu'au prochain événement ou redémarrage ; iOS redemande l'état des zones à l'ouverture. Le graphique est **indicatif** : jamais de durée précise affichée, seulement des pourcentages entiers. Un téléphone éteint ou à plat ne se voit pas : après une sortie, le temps est compté « Hors-zone » jusqu'au plafond de 48 h.
 
 ---
 
@@ -229,16 +230,16 @@ Reprise fidèle : carte blanche arrondie, pastille d'icône à gauche du titre, 
 | E1 | « Répartition du temps » | **« Répartition du temps »** (libellé de la maquette repris ; EN « Time breakdown ») | Révision 2 : le PM veut les libellés de la maquette |
 | E2 | « 72 % en zone sécurisée » | « 72 % **en zone de confiance** » (EN « in trusted zones ») | Révision 2 : libellé court du PM ; aucune promesse de sécurité |
 | E3 | « Zone à risque » (rouge vif, ⚠️) | **« Zone de danger »** (libellé de l'app), une ligne agrégée, **exactement** `status/danger` (le rouge de la bulle), tranche **hachurée** et icône d'avertissement, détail au toucher | Libellé de l'app ; jamais la couleur seule |
-| E4 | « Hors-zone » + « ? » | « Ailleurs » + icône neutre | Le « ? » évoque l'inconnu |
-| E5 | Vert / jaune / rouge / gris génériques | Lieux de confiance en **nuances de vert et de bleu Miff** (assombries pour tenir 3:1), danger = rouge `status/danger`, « Ailleurs » = gris de la maquette (`#d4d7df`, sous 3:1 voulu par la maquette ; nom et % dans la légende) | Révision 2 : décision du PM |
+| E4 | « Hors-zone » + « ? » | **« Hors-zone »** (libellé de la maquette repris, révision 3) + icône neutre (boussole) | Le PM veut le libellé de la maquette ; EN « Outside zones » |
+| E5 | Vert / jaune / rouge / gris génériques | Lieux de confiance en **nuances de vert et de bleu Miff** (assombries pour tenir 3:1), danger = rouge `status/danger`, « Hors-zone » = gris de la maquette (`#d4d7df`, sous 3:1 voulu par la maquette ; nom et % dans la légende) | Révision 2 : décision du PM |
 | E6 | Bandeau vert, coche, « ! », emoji de fête | **Repris** : bandeau vert très léger, coche, « Tu as passé x % de ton temps dans tes zones de confiance » et 🎉 (sans « ! ») | Révision 2 : décision du PM (risque de ton si x est bas, assumé) |
 | E7 | Légende à droite | Mise en page du PM : **légende à gauche, petit anneau à droite** ; avec une police agrandie (≥ 130 %) ou un écran étroit, l'anneau passe **au-dessus** de la légende | Révision 2 ; accessibilité (200 % sans rien couper) |
 | E8 | — | Ajout de la ligne de confidentialité, des états (§7) | Non designés |
 | E9 | Emoji de la légende ⚽🏋️ | Emoji de la **table de catégories** de l'app (⚽ pour le sport) | Même glyphe que la liste des lieux |
 
 ### 9.2 Accessibilité
-- **Couleur jamais seule** : chaque tranche reliée à une légende (emoji + nom + %) dans le même ordre ; espace entre tranches ; **contraste ≥ 3:1** avec le fond de la carte pour les lieux de confiance (verts assombris et bleus, jetons `chart/*`), `status/danger` `#ff5650` (3,1:1) pour la zone de danger, qui a en plus un **motif** et son icône ; **exception voulue par la maquette** : « Ailleurs » en gris clair `#d4d7df` (1,4:1), distingué par son nom, son pourcentage et l'espace entre tranches.
-- **Lecteur d'écran** : carte = groupe titré ; **anneau caché** (décoratif) ; **une description textuelle unique** (« Répartition de ton temps sur les 7 derniers jours : Maison 48 %, Sport 24 %, Zone de danger 8 %, Ailleurs 20 %. ») ; lignes de légende en éléments de liste, sans doublon ; sélecteur « Période, 7 jours, bouton » ; **le nom de la catégorie est lu, jamais l'emoji** (règle `place-categories.md`).
+- **Couleur jamais seule** : chaque tranche reliée à une légende (emoji + nom + %) dans le même ordre ; espace entre tranches ; **contraste ≥ 3:1** avec le fond de la carte pour les lieux de confiance (verts assombris et bleus, jetons `chart/*`), `status/danger` `#ff5650` (3,1:1) pour la zone de danger, qui a en plus un **motif** et son icône ; **exception voulue par la maquette** : « Hors-zone » en gris clair `#d4d7df` (1,4:1), distingué par son nom, son pourcentage et l'espace entre tranches.
+- **Lecteur d'écran** : carte = groupe titré ; **anneau caché** (décoratif) ; **une description textuelle unique** (« Répartition de ton temps sur les 7 derniers jours : Maison 48 %, Sport 24 %, Zone de danger 8 %, Hors-zone 20 %. ») ; lignes de légende en éléments de liste, sans doublon ; sélecteur « Période, 7 jours, bouton » ; **le nom de la catégorie est lu, jamais l'emoji** (règle `place-categories.md`).
 - Cibles ≥ 48 dp / 44 pt ; texte jusqu'à **200 %** sans troncature ; droite-à-gauche miroité ; pas d'animation ; thème clair seulement.
 
 ### 9.3 Langues
@@ -258,7 +259,7 @@ FR + EN (repli EN), tutoiement, pluriels corrects (« 1 autre lieu » / « 2 aut
 ### 10.2 Comportement [Défaut, recommandation du PM]
 - **Une seule ligne « Zone de danger »** (« Zones de danger » si plusieurs lieux de ce type) avec le **total** ; **détail au toucher** : feuille du bas (Android) / feuille (iOS) listant chaque lieu (emoji de catégorie, nom, %), dont la somme égale la ligne ; bouton de fermeture et geste « retour » du système ; lue au lecteur d'écran (« Zone de danger, 12 pour cent, afficher le détail »). Aucune phrase d'origine (retirée par prudence de ton).
 - **Couleur d'alerte** : tranche en **`status/danger` exactement** (le rouge de la bulle de statut danger), **hachurée**, icône d'avertissement (le triangle existant de l'app) ; **nom et pourcentage en texte courant** (`status/danger` ne sert jamais au texte). Ni fond rouge, ni clignotement.
-- **Place** : après les lieux de confiance et « {n} autres lieux », avant « Ailleurs ». **Centre** : lieux de confiance seulement.
+- **Place** : après les lieux de confiance et « {n} autres lieux », avant « Hors-zone ». **Centre** : lieux de confiance seulement.
 - **Chevauchement** : la zone de confiance l'emporte (D10, T17).
 - **Ton** : la phrase de synthèse **ne nomme jamais** cette catégorie et n'en donne aucun pourcentage ; plus grande part = phrase générique (T21). **Aucune ligne** sans temps passé (T20) ni place réservée. États vides et erreurs : calmes, **sans couleur d'alerte**.
 - **Ce qui change pour la personne** : elle voit, sur sa propre carte, le mot « danger » avec son pourcentage. **Cohérent avec l'app** (le Feed et N6 lui disent déjà « Tu es dans une zone de danger de ta Miff »). Risque de lecture accusatrice **assumé par le PM** (§16 R7).
@@ -275,7 +276,7 @@ Liste ordonnée de **catégories typées**, jamais de « lieux » en dur : ajout
 | `lieu` | nom + emoji de catégorie | palette graphique en séquence | 5 au plus, puis `autres lieux` |
 | `autres lieux` | « {n} autres lieux » + icône neutre | token dédié | — |
 | `danger` | « Zone de danger » + icône d'avertissement | `status/danger` + hachures | **agrégée**, détail au toucher |
-| `ailleurs` | « Ailleurs » + icône neutre | gris neutre | — |
+| `ailleurs` | « Hors-zone » + icône neutre | gris neutre | — |
 Ordre : `lieu` (du plus grand au plus petit), `autres lieux`, `danger`, `ailleurs`. La palette garde **une couleur de réserve** (§15).
 
 ---
@@ -284,7 +285,7 @@ Ordre : `lieu` (du plus grand au plus petit), `autres lieux`, `danger`, `ailleur
 
 1. **Premier jour après la livraison** : journal vide → « pas assez de données » ; aucun temps antérieur reconstitué (jamais de lecture du statut serveur pour « deviner »).
 2. **Nouveau téléphone, réinstallation** : le journal repart de zéro (limite D1). **Deux téléphones** : un journal chacun ; **un seul appareil tient la session** (SESS-2) et seul celui-ci écrit des présences : l'autre n'a pas de suivi actif.
-3. **Même lieu rattaché à plusieurs Miffs** : un fait par Miff (le moteur dérive par Miff) ; « Ailleurs » d'une Miff inclut le temps passé dans un lieu d'une autre Miff.
+3. **Même lieu rattaché à plusieurs Miffs** : un fait par Miff (le moteur dérive par Miff) ; « Hors-zone » d'une Miff inclut le temps passé dans un lieu d'une autre Miff.
 4. **Changement d'heure, fuseau, voyage à l'étranger** : instants absolus, fenêtre en durée écoulée.
 5. **Horloge modifiée à la main** : §6.2 point 8.
 6. **App tuée / événement manqué / redémarrage** : plafond 48 h ; au redémarrage le moteur écrit une présence reconstruite ou « inconnue » (jamais un « dehors » deviné).
@@ -316,12 +317,12 @@ Android et iOS, sauf mention. **Les mêmes cas de calcul (§6.3) passent à l'id
 **Calcul**
 - [ ] **TS-9** T1 à T23 passent sur les deux plateformes.
 - [ ] **TS-10** Somme = 100 % ; jamais de temps négatif ; jamais un lieu compté deux fois.
-- [ ] **TS-11** Le temps non mesuré n'est jamais compté en « Ailleurs ».
+- [ ] **TS-11** Le temps non mesuré n'est jamais compté en « Hors-zone ».
 
 **Affichage et états**
 - [ ] **TS-12** La carte est entre le carrousel et « Lieux de confiance de … », suit la Miff sélectionnée, conserve la fenêtre, ne clignote pas au balayage ; la carte « Mode voyage » reste en dernier.
 - [ ] **TS-13** Défaut 7 jours ; 14 et 30 disponibles ; choix mémorisé au redémarrage, oublié à la déconnexion.
-- [ ] **TS-14** Compte gratuit (≤ 3 lieux) : 2 à 4 parts lisibles ; plus de 5 lieux : « {n} autres lieux » ; « Ailleurs » toujours en dernier.
+- [ ] **TS-14** Compte gratuit (≤ 3 lieux) : 2 à 4 parts lisibles ; plus de 5 lieux : « {n} autres lieux » ; « Hors-zone » toujours en dernier.
 - [ ] **TS-15** Chaque état de §7 dans la bonne condition, **texte exact** FR et EN ; l'état « pas assez de données » reprend le wording figé du PM **avec X** (7 sans journal, 1 au plus bas, « 1 jour » au singulier) ; avant 7 jours d'historique : **ni graphique ni sélecteur**.
 - [ ] **TS-16** Carte masquée sans lieu ; jamais de carte tant que la lecture des lieux n'est pas faite (comme la liste des lieux : rien dessiné pendant le chargement).
 - [ ] **TS-17** Aucune formule de reproche ni de jugement ; **l'encart de synthèse ne nomme jamais la zone de danger** (il félicite avec 🎉, décision du PM) ; la couleur d'alerte n'apparaît **que** sur la tranche et la ligne « Zone de danger ».
@@ -381,13 +382,13 @@ Le suivi existe déjà : **plus de dépendance bloquante**. La carte n'est plus 
 ## 15. Maquettes nécessaires (exports PNG avant développement, règle du 2026-10-28)
 
 Fournie : `19.webp` (carte nominale Android, 7 jours). **À dessiner dans « Miff - Claude »** :
-1. **Palette « graphique »** (révisée) : 5 couleurs de lieux en **nuances de vert Miff (assombri) et de bleu Miff** alternées, « autres lieux », **1 couleur de réserve**, toutes ≥ 3:1 contre la carte ; la **zone de danger** = `status/danger` exact ; « Ailleurs » = gris de la maquette `#d4d7df`. Tokens `chart/1`…, `chart/danger`, `chart/other`, `chart/elsewhere`.
-2. **Carte nominale** : 2 parts (gratuit), 4 parts, 5 lieux + « autres lieux » + « Ailleurs », **avec** la ligne « Zone de danger ».
+1. **Palette « graphique »** (révisée) : 5 couleurs de lieux en **nuances de vert Miff (assombri) et de bleu Miff** alternées, « autres lieux », **1 couleur de réserve**, toutes ≥ 3:1 contre la carte ; la **zone de danger** = `status/danger` exact ; « Hors-zone » = gris de la maquette `#d4d7df`. Tokens `chart/1`…, `chart/danger`, `chart/other`, `chart/elsewhere`.
+2. **Carte nominale** : 2 parts (gratuit), 4 parts, 5 lieux + « autres lieux » + « Hors-zone », **avec** la ligne « Zone de danger ».
 3. **Tous les états** de §7.
 4. **Menu du sélecteur** (7 / 14 / 30), iOS et Android.
 5. **Feuille de détail de la zone de danger**.
 6. **Grande police (200 %)** : légende sous l'anneau, texte central.
-7. **Icônes neutres** « Ailleurs » et « {n} autres lieux » ; pastille d'en-tête ; cadenas.
+7. **Icônes neutres** « Hors-zone » et « {n} autres lieux » ; pastille d'en-tête ; cadenas.
 8. **Ligne Réglages > Confidentialité** « Effacer mon historique de temps » et sa confirmation.
 9. **Bandeau de synthèse** neutre ; **variante iOS** complète.
 
@@ -398,7 +399,7 @@ Fournie : `19.webp` (carte nominale Android, 7 jours). **À dessiner dans « Mif
 | # | Risque | Effet | Mitigation |
 |---|---|---|---|
 | R1 | **Promesse « pas d'historique »** (politique, stores) | Perte de confiance, rejet | Journal **local**, jamais envoyé ; phrase de confidentialité sur la carte ; **mise à jour de la politique avant publication** (§8) |
-| R2 | **Précision** : événements datés à l'arrivée, app tuée (OPPO), téléphone éteint compté « Ailleurs » | Graphique inexact | Pourcentages entiers, jamais de durée ; plafond 48 h ; temps non mesuré exclu ; mesure sur les deux téléphones du PM |
+| R2 | **Précision** : événements datés à l'arrivée, app tuée (OPPO), téléphone éteint compté « Hors-zone » | Graphique inexact | Pourcentages entiers, jamais de durée ; plafond 48 h ; temps non mesuré exclu ; mesure sur les deux téléphones du PM |
 | R3 | **Historique propre à l'appareil, qui démarre à la livraison** | « Ça ne marche pas » le premier jour ; perte au changement de téléphone | Wording figé du PM ; limite documentée ; signal de bascule B (D1) ; déployer TIME-1 tôt |
 | R4 | **Journal d'habitudes sur un téléphone** (téléphone déverrouillé par un tiers) | Routines révélées | Stockage privé, sans coordonnées ni noms, 35 jours, effaçable |
 | R5 | **Palette** : peu de couleurs distinctes et contrastées dans la marque | Tranches confondues | Légende emoji + nom + %, espaces, 8 catégories au plus ; `design-system` valide |
@@ -408,7 +409,7 @@ Fournie : `19.webp` (carte nominale Android, 7 jours). **À dessiner dans « Mif
 | R9 | **iOS non testable en local** | Cycle lent | Android d'abord ; tests de calcul identiques ; TestFlight |
 | R10 | **Aperçu des apps récentes sur iOS et Android ≤ 12** | La carte peut apparaître dans le sélecteur d'applications | Limite connue, déjà acceptée pour le reste de l'app (README Android) |
 | R11 | **Politique de confidentialité inexacte sur l'appareil** tant qu'elle n'est pas mise à jour | Risque juridique assumé par le PM | Rappel §8 ; TIME-1 non publié sur les stores avant ; aucune relecture juridique prétendue |
-| R12 | **Plus de 20 zones** (Miff+ multi-lieux) | « Ailleurs » gonflé pour les zones non surveillées | Note sous l'anneau (D18) |
+| R12 | **Plus de 20 zones** (Miff+ multi-lieux) | « Hors-zone » gonflé pour les zones non surveillées | Note sous l'anneau (D18) |
 
 ---
 
@@ -430,7 +431,7 @@ Aucun moyen de paiement ajouté ; aucun choix économique ne réduit la sécurit
 1. **Extension future aux proches** : veux-tu un jour voir, ou montrer à ton cercle, le temps passé par lieu ? Cela suppose l'option B, un **nouveau consentement distinct**, la mise à jour des textes légaux et un examen anti-stalkerware. **Par défaut : non, jamais sans ta décision explicite.**
 2. **Publication de la politique de confidentialité** : la mention du journal local doit partir **avant** toute publication stores de TIME-1 ; c'est toi qui publies les textes (risque assumé, sans relecture juridique). Veux-tu qu'on prépare la phrase maintenant (par `release-manager`) ?
 
-*Tout le reste est tranché par défaut en §4 et contestable : valeurs 24 h / 48 h, journal conservé 35 jours à l'arrêt du partage, la confiance l'emporte sur la danger, « Ailleurs », « {n} autres lieux », phrase d'origine retirée, coche verte et emoji de fête retirés, masquage dans les apps récentes (déjà fait sur Android, non traité sur iOS), ligne « Effacer mon historique ».*
+*Tout le reste est tranché par défaut en §4 et contestable : valeurs 24 h / 48 h, journal conservé 35 jours à l'arrêt du partage, la confiance l'emporte sur la danger, « Hors-zone », « {n} autres lieux », phrase d'origine retirée, coche verte et emoji de fête retirés, masquage dans les apps récentes (déjà fait sur Android, non traité sur iOS), ligne « Effacer mon historique ».*
 
 ---
 
