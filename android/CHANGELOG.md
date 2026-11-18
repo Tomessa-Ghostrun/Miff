@@ -51,6 +51,8 @@ Ticket `docs/tickets/alerte-danger.md` (sur `main`, décisions du PM du 2026-11-
 - **Aucun** contournement de quota. Une alerte = 1 écriture de début, 1 de fin, 1 nettoyage TTL (côté serveur) ; lectures de règles : 3 pour un début, 1 pour une fin. Pas de sondage : un écouteur sur la Miff affichée seulement, 1 lecture à la reprise d'une alerte active, 1 lecture par Miff à la connexion d'un nouveau téléphone.
 - **Limites connues** : le compteur du plafond est une lecture de plus (1) et une écriture de plus par début ; l'app ne décompte **rien** de son côté (la source de vérité est le serveur) ; une horloge de téléphone en avance peut faire croire qu'une case de 24 h est libre : le serveur refuse alors (phrase générique avec numéros). Le lot de retrait avec alerte est à la limite des 20 lectures de règles : **à vérifier sur le vrai serveur après déploiement**.
 - **Non fait dans cette PR** : ligne « {Prénom} a déclaré une alerte » dans le centre de notifications ; aide « Si les alertes n'arrivent pas » (canal, OPPO) ; confirmation préalable de l'arrêt du partage / départ quand une alerte est en cours (l'alerte est retirée sans question, comme le serveur l'impose dans le même lot) ; annonces TalkBack d'annulation et de fin.
+## [0.44.0] - 2026-11-17 : zoom sur l'aperçu de carte d'un lieu (LIEU-ZOOM)
+
 ## [0.50.0] - 2026-11-18 : la ligne « Zone de danger » est toujours dans la légende du graphique (décision du PM)
 
 Décision du PM après la recette de « Répartition du temps » : la ligne **« Zone de danger »** de la légende s'affiche **toujours quand sa part arrondie est de 1 % ou plus**, quitte à remplacer le 4e lieu. Branche `android/legende-danger`, PR de suivi. Numéro : #224 (À propos) a pris 0.49.0, celle-ci prend 0.50.0 (à renuméroter au merge si l'ordre change).49.0) puis celle-ci (0.50.0) puis #275 (0.51.0) ; à renuméroter au merge si l'ordre change. Android seulement. **Aucune nouvelle clé de texte, aucune lecture ni écriture serveur, aucune permission, aucune dépendance.**
@@ -145,6 +147,7 @@ Demande directe du PM (« je te laisse faire », sans ticket Notion ni maquette)
 ### À savoir
 - **Écarts avec une demande générique** : pas de boutons + / − (décision du PM) ; zoom limité à ±3 niveaux autour du cadrage ; pas de déplacement de la carte.
 - **Non testable sur la JVM** : la carte native elle-même (gestes réels, fluidité sur l'OPPO) : recette PM.
+
 
 ## [0.46.0] - 2026-11-17 : « Répartition du temps » sur le Profil (TIME-1 et TIME-2)
 
