@@ -1116,6 +1116,16 @@ class AppContainer(
         }
     }
 
+    /** ALERTE: nothing of my alert stays in memory or on the phone for the next account (the blue bubble, about the installation, stays). Nothing is built while the function is off. */
+    private val alertTeardown: SessionTeardown by lazy {
+        SessionTeardown {
+            if (BuildConfig.ALERT_DANGER) {
+                alertController.onSessionEnded()
+                alertLocal.clearAccount()
+            }
+        }
+    }
+
     val sessionManager: SessionManager by lazy {
         StartupTrace.section("Miff.container.sessionManager") {
             SessionManager(
@@ -1143,18 +1153,12 @@ class AppContainer(
                         photoCache,
                         SessionTeardown { publishLedger.clear() },
                         SessionTeardown { reviewStateStore.clear() },
-                        // ALERTE: nothing of my alert stays in memory or on the phone for the next account (the blue bubble, about the installation, stays).
-                        SessionTeardown {
-                            if (BuildConfig.ALERT_DANGER) {
-                                alertController.onSessionEnded()
-                                alertLocal.clearAccount()
-                            }
-                        },
                         timeShareTeardown,
                         placeNotices,
                         requesterDirectory,
                         addressSearch,
                         mapTileCache,
+                        alertTeardown,
                     ),
                 scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
                 device = deviceSession,
