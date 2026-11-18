@@ -959,6 +959,13 @@
     <string name="update_close_a11y">Fermer</string>
     <string name="update_retake_a11y">Recommencer</string>
     <string name="update_publish_action">Publier</string>
+    <string name="update_description_placeholder">Renseigne une description</string>
+    <string name="update_description_a11y_label">Description de ta photo (facultatif)</string>
+    <string name="update_description_a11y_hint">Tes proches la verront avec ta photo pendant 24 h.</string>
+    <string name="update_description_counter">%1$d/%2$d</string>
+    <string name="update_description_counter_a11y">%1$d caractères sur %2$d</string>
+    <string name="update_description_limit">Limite de %1$d caractères atteinte.</string>
+    <string name="update_description_shown_a11y">Description : %1$s</string>
     <string name="update_preview_visibility">Tes proches verront cette photo pendant 24 h.</string>
     <string name="update_preview_visibility_many">Ta photo sera visible des membres de tes %1$d Miffs pendant 24 h.</string>
     <string name="update_preview_place">Publiée avec ta position. Ceux qui partagent aussi la leur peuvent voir où tu l\'as prise.</string>
