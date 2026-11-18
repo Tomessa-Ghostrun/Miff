@@ -139,6 +139,8 @@ Les règles des stores changent : `release-manager` les relit **avant chaque sou
 
 ## 8. Fiches des stores : ce qu'elles peuvent et ne peuvent pas dire
 
+**Décision du PM, 2026-11-18** : les fiches **mentionnent l'alerte, sobrement**, avec la phrase « Miff n'est pas un service d'urgence », **jamais en titre ni en capture principale** (une phrase factuelle dans la description et les nouveautés, au plus une capture secondaire). Les règles ci-dessous s'appliquent.
+
 - **Aujourd'hui** (`marketing/store-listing-ios.md`, `marketing/store-listing-android.md`) : les deux fiches disent « notifications non actives » et ne mentionnent pas l'alerte. Elles sont à revoir **le jour de la livraison, pas avant**, par `aso-marketing`.
 - **Formule autorisée** (ticket §14.4) : « Prévenir ses proches en un geste ». **Précaution** : `web/tests/landing.test.mjs` interdit sur la page d'accueil web « prévient / alerte tes proches » ; cette formule vaut pour les fiches des stores, pas telle quelle pour la page web (voir la liste des fichiers de la proposition légale, ligne 6).
 - **Jamais** : « sécurité garantie », « sauve des vies », « alerte les secours », « SOS », « bouton d'urgence », « appelle les secours pour toi », toute promesse de livraison, de lecture ou de délai, « en direct » (Google *Misleading Claims* ; Apple 2.3 et 5.1.5).
@@ -149,7 +151,7 @@ Les règles des stores changent : `release-manager` les relit **avant chaque sou
 
 | # | Action |
 |---|---|
-| 1 | **Décider** si la fiche des stores mentionne l'alerte, et comment les comptes existants sont informés de la nouvelle version des textes (voir la PR : décisions proposées avec un défaut) |
+| 1 | *(Décidé le 2026-11-18, rien à décider)* Les fiches mentionnent l'alerte sobrement (§8) ; les comptes existants sont informés par la bulle bleue et la fiche « En savoir plus », sans acceptation forcée (JA13). À toi seulement : relire la fiche rédigée par `aso-marketing` avant de la coller |
 | 2 | **Créer** les comptes de démonstration A, B, C et la Miff de démonstration (§6.3), **sans** jeton sur B et C ; choisir des numéros fictifs ou à toi ; me communiquer **uniquement** les adresses e-mail de test à mettre dans les notes (pas les mots de passe dans le dépôt) |
 | 3 | **Activer la capacité Time Sensitive** sur `com.tomessa.miff` dans le portail développeur Apple et régénérer les profils (`docs/dev/apple-certificats-ci.md`) ; **vérifier sur l'iPhone** le libellé exact du réglage en français et le comportement (mode silencieux, Concentration) |
 | 4 | **Poser la règle TTL** sur `alerts.purgeAt` dans la console Firebase (`--project miff-3d283`) |
