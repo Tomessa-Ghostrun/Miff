@@ -9,6 +9,7 @@ import com.tomessa.miff.data.update.UpdatePublisher
 import com.tomessa.miff.domain.feed.MyPhotoFacts
 import com.tomessa.miff.domain.update.CameraAccess
 import com.tomessa.miff.domain.update.CameraAccessScreen
+import com.tomessa.miff.domain.update.PhotoDescription
 import com.tomessa.miff.domain.update.UpdatePhoto
 import com.tomessa.miff.ui.theme.GlassVariant
 import kotlinx.coroutines.Job
@@ -25,6 +26,10 @@ import kotlinx.coroutines.launch
  * system, the clipboard). It is forgotten as soon as the person leaves the Update, retakes, publishes, or waits more than 5 minutes. Nothing is written
  * until "Publier" (criterion V2), and "Publier" exists only on the preview of a photo that was taken (D16, criterion U9): no path of this class
  * publishes without a photo.
+ *
+ * The optional DESCRIPTION (ticket description-update) lives in the same place and follows the photo's whole life: it is in the memory of the preview only (never on
+ * the disk, never in the state saved by the system, never in a log), it is cleaned as it is typed ([PhotoDescription]), and it is forgotten with the photo
+ * (retake, cross, leaving the Update, the photo going stale, a publication that left). After a failure it STAYS with the photo: "Réessayer" sends both.
  */
 
 /** What the Update screen shows. */
@@ -60,6 +65,8 @@ sealed interface UpdateStage {
         val notice: PreviewNotice? = null,
         /** After a partial success: the Miffs the photo did not reach (null = all). */
         val remaining: List<String>? = null,
+        /** What the person typed under the preview, already cleaned (control and invisible characters out, at most 140 units). Empty = no description. */
+        val description: String = "",
     ) : UpdateStage {
         override fun toString(): String = "Preview(redacted)"
     }
@@ -144,6 +151,7 @@ class UpdateViewModel(
         val current = mutableStage.value
         if (current is UpdateStage.Preview) {
             if (!current.photo.isStale(nowMillis())) return
+            // The photo is forgotten as usual (it cannot be published any more): so is its description.
             mutableStage.value = UpdateStage.Preview(current.photo, notice = PreviewNotice.Stale)
             return
         }
@@ -218,6 +226,18 @@ class UpdateViewModel(
         }
     }
 
+    /**
+     * The person typed, pasted or erased in the description field. Only on the preview, and not while the publication is under way (the field cannot be
+     * edited then). [raw] is whatever the field holds (the word being composed included): it is cleaned and cut to 140 units, and the text kept is returned.
+     */
+    fun onDescriptionChanged(raw: String): String {
+        val current = mutableStage.value as? UpdateStage.Preview ?: return ""
+        if (current.publishing) return current.description
+        val kept = PhotoDescription.limitInput(raw).text
+        if (kept != current.description) mutableStage.value = current.copy(description = kept)
+        return kept
+    }
+
     /** The photo taken could not be prepared (not decodable, or it never fits in 150 000 bytes): a calm sentence, nothing is written. */
     fun onPhotoFailed() {
         val current = mutableStage.value
@@ -263,7 +283,12 @@ class UpdateViewModel(
         mutableStage.value = current.copy(publishing = true, notice = null)
         publishJob =
             viewModelScope.launch {
-                val result = publisher.publish(current.photo, only = current.remaining)
+                val result =
+                    publisher.publish(
+                        current.photo,
+                        only = current.remaining,
+                        description = current.description,
+                    )
                 val now = mutableStage.value as? UpdateStage.Preview
                 when (result) {
                     is PublishResult.Published -> {
@@ -283,7 +308,12 @@ class UpdateViewModel(
                     }
 
                     else -> {
-                        if (now != null) mutableStage.value = now.copy(publishing = false, notice = noticeOf(result))
+                        if (now != null) {
+                            // A photo older than 5 minutes is forgotten, and so is its description (same as iOS). After any other failure the description STAYS.
+                            val kept = if (result == PublishResult.Stale) "" else now.description
+                            mutableStage.value =
+                                now.copy(publishing = false, notice = noticeOf(result), description = kept)
+                        }
                     }
                 }
             }

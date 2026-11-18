@@ -434,6 +434,8 @@
     <string name="feed_refresh_a11y">Refresh</string>
     <string name="feed_refresh_started_a11y">Refreshing</string>
     <string name="feed_refresh_done_a11y">Up to date</string>
+    <!-- FEED-REFRESH-POSITION: calm sentence (toast) when "Refresh" cannot read MY position again for lack of access to the location. Key shared with iOS. -->
+    <string name="feed_refresh_position_unavailable">Your position couldn\'t be refreshed. For that, Miff needs location turned on, set to \"Always\" and precise. You can change this in your phone\'s settings.</string>
     <!-- FEED-ORDRE: polite screen-reader announcement when the order of the cards changes. %1$s = the first name of the member. Keys shared with iOS. -->
     <string name="feed_order_updated_one_a11y">%1$s shared an update</string>
     <string name="feed_order_updated_many_a11y">The Feed was updated</string>
@@ -558,6 +560,27 @@
     <string name="settings_privacy_open_phone_settings">Open phone settings</string>
     <string name="settings_privacy_texts_title">Our texts</string>
     <string name="settings_privacy_contact">Contact us</string>
+    <string name="about_title">About and help</string>
+    <string name="about_row_subtitle">Version, help, licenses and contact</string>
+    <string name="about_version_label">Version %1$s (build %2$s)</string>
+    <string name="about_version_copy_hint_a11y">copy the version</string>
+    <string name="about_copied">Copied.</string>
+    <string name="about_help_title">Need a hand?</string>
+    <string name="about_info_title">Information</string>
+    <string name="about_feedback_title">Feedback on the app?</string>
+    <string name="about_feedback_subtitle">Tell us what you like and what could be better.</string>
+    <string name="about_feedback_hint_a11y">open the form in your browser</string>
+    <string name="about_feedback_note">The form opens in your browser, on a website outside Miff.</string>
+    <string name="about_contact_unavailable">No email app opened. You can write to us at %1$s.</string>
+    <string name="about_contact_copy_action">Copy the address</string>
+    <string name="about_licenses_title">Licenses and attributions</string>
+    <string name="about_licenses_intro">Miff relies on free software and data. Thank you to everyone who creates them. Here is what we use, and under which license.</string>
+    <string name="about_licenses_software_title">Software</string>
+    <string name="about_licenses_maps_title">Maps and addresses</string>
+    <string name="about_licenses_fonts_title">Fonts</string>
+    <string name="about_licenses_maps_privacy">When you type an address to create a place, the text is sent to the address service, without your name or your location.</string>
+    <string name="about_licenses_open_hint_a11y">show the license text</string>
+    <string name="about_licenses_close_hint_a11y">hide the license text</string>
     <string name="settings_privacy_open_browser_a11y">open the page in your browser</string>
     <string name="settings_privacy_open_mail_a11y">write an email</string>
     <!-- Miff: remove a loved one, leave, delete the Miff, renew the code (ticket MIFF-2). Friendly, calm tone. -->
@@ -958,6 +981,13 @@
     <string name="update_close_a11y">Close</string>
     <string name="update_retake_a11y">Retake</string>
     <string name="update_publish_action">Publish</string>
+    <string name="update_description_placeholder">Add a description</string>
+    <string name="update_description_a11y_label">Photo description (optional)</string>
+    <string name="update_description_a11y_hint">Your loved ones will see it with your photo for 24 hours.</string>
+    <string name="update_description_counter">%1$d/%2$d</string>
+    <string name="update_description_counter_a11y">%1$d of %2$d characters</string>
+    <string name="update_description_limit">Limit of %1$d characters reached.</string>
+    <string name="update_description_shown_a11y">Description: %1$s</string>
     <string name="update_preview_visibility">Your loved ones will see this photo for 24 hours.</string>
     <string name="update_preview_visibility_many">Your photo will be visible to the members of your %1$d Miffs for 24 hours.</string>
     <string name="update_preview_place">Published with your position. Members who share theirs too can see where you took it.</string>
@@ -1221,6 +1251,45 @@
     <string name="feed_colors_not_verdict">Orange or red doesn\'t mean something is wrong, only that there\'s been no news for a while.</string>
     <string name="feed_colors_not_delay">Your phone works out the colors from the latest information received. Without a connection they can lag a little: the feed then shows the time of the latest information.</string>
     <string name="feed_colors_bubble_action_a11y">Understand the colors</string>
+    <!-- "How your time is spread" (docs/tickets/profil-repartition-temps.md, TIME-2): the Profile card and the Privacy setting. Friendly, descriptive tone, no blame; the only celebratory note is the party emoji of the summary band (PM decision). -->
+    <string name="profile_timeshare_title">Time breakdown</string>
+    <string name="profile_timeshare_window_7">7 days</string>
+    <string name="profile_timeshare_window_14">14 days</string>
+    <string name="profile_timeshare_window_30">30 days</string>
+    <string name="profile_timeshare_window_a11y">Period, %1$s</string>
+    <string name="profile_timeshare_window_selected_a11y">selected</string>
+    <string name="profile_timeshare_center_caption">in trusted zones</string>
+    <string name="profile_timeshare_a11y_card">Time breakdown: %1$s.</string>
+    <string name="profile_timeshare_a11y_row">%1$s, %2$s</string>
+    <string name="profile_timeshare_a11y_danger_row">%1$s, %2$s, show details</string>
+    <plurals name="profile_timeshare_other_places">
+        <item quantity="one">%1$d other place</item>
+        <item quantity="other">%1$d other places</item>
+    </plurals>
+    <string name="profile_timeshare_danger_zones">Danger zone</string>
+    <string name="profile_timeshare_danger_zones_several">Danger zones</string>
+    <string name="profile_timeshare_elsewhere">Outside zones</string>
+    <string name="profile_timeshare_percent_tiny">&lt; 1%</string>
+    <string name="profile_timeshare_detail_close">Close</string>
+    <string name="profile_timeshare_summary">You spent %1$s of your time in your trusted zones</string>
+    <plurals name="profile_timeshare_not_enough">
+        <item quantity="one">Your chart arrives in %1$d day, we\'re analysing your habits</item>
+        <item quantity="other">Your chart arrives in %1$d days, we\'re analysing your habits</item>
+    </plurals>
+    <string name="profile_timeshare_paused">Tracking of your places is paused.</string>
+    <string name="profile_timeshare_travel">You are in travel mode: your chart is paused until you are back.</string>
+    <string name="profile_timeshare_sharing_stopped">You stopped sharing your status with this Miff: your chart is no longer updated for it.</string>
+    <string name="profile_timeshare_sharing_stopped_action">See this Miff</string>
+    <string name="profile_timeshare_location_needed">To measure your time in your places, Miff needs the \"Always\" location with precise position. You can also carry on without it.</string>
+    <string name="profile_timeshare_over_limit">Not all your places are tracked at the same time: the chart may be incomplete.</string>
+    <string name="profile_timeshare_error">The chart is not available right now.</string>
+    <string name="settings_privacy_time_title">Time history</string>
+    <string name="settings_privacy_time_body">To work out how your time is spread, your phone keeps for 35 days the moments you arrive at and leave your places, with no position or address. Nothing is sent: nobody else can see it.</string>
+    <string name="settings_privacy_time_erase">Erase my time history</string>
+    <string name="settings_privacy_time_confirm_title">Erase the history?</string>
+    <string name="settings_privacy_time_confirm_body">Your chart will start again from zero. This changes nothing for your loved ones.</string>
+    <string name="settings_privacy_time_confirm_action">Erase</string>
+    <string name="settings_privacy_time_done">Done: your chart starts again from zero.</string>
 
     <!-- COUNTDOWN-A: countdown before orange (Feed and Profile). Same keys as iOS. Durations are catalogue strings (not the system formatter) so that Android and iOS write exactly the same thing; non-breaking space between the number and the unit. -->
     <string name="countdown_title">You\'re outside your trusted places</string>
@@ -1241,4 +1310,16 @@
     <string name="countdown_a11y_hours_and_minutes">%1$s and %2$s</string>
     <string name="countdown_a11y_less_than_minute">less than a minute</string>
     <string name="countdown_a11y_action">Share an update</string>
+    <!-- ABOUT-1A : textes propres a Android de Reglages > A propos et aide (lignes de cartes et d'adresses, detail d'une licence, indice de la version) -->
+    <string name="android_about_copy_hint">Tap to copy</string>
+    <string name="android_about_contact_subtitle">A question, a problem, an idea: write to us.</string>
+    <string name="android_about_licenses_footnote">The licenses are taken from the public description of each library.</string>
+    <string name="android_about_licenses_includes">What it includes</string>
+    <string name="android_about_licenses_text_unavailable">This text couldn\'t be shown just now.</string>
+    <string name="android_about_licenses_unavailable">The list couldn\'t be shown just now.</string>
+    <string name="android_about_licenses_map_engine">Map engine: MapLibre Native</string>
+    <string name="android_about_licenses_map_tiles">Map: OpenFreeMap, © OpenMapTiles, data © OpenStreetMap contributors</string>
+    <string name="android_about_licenses_address_search">Addresses: Photon service by komoot, data © OpenStreetMap contributors</string>
+    <string name="android_about_licenses_map_tiles_notice">Maps are drawn with the tiles of OpenFreeMap (https://openfreemap.org), which use the © OpenMapTiles schema. The data is © OpenStreetMap contributors, available under the ODbL 1.0 license (https://opendatacommons.org/licenses/odbl/1-0/). The credit stays visible under every map.</string>
+    <string name="android_about_licenses_address_search_notice">The addresses suggested while you type come from Photon, the public service of komoot (https://photon.komoot.io), whose software is published under the Apache 2.0 license. Its data is © OpenStreetMap contributors, available under the ODbL 1.0 license (https://opendatacommons.org/licenses/odbl/1-0/).</string>
 </resources>

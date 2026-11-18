@@ -74,7 +74,7 @@ struct Battery: Equatable {
     let pct: Int
 }
 
-/// Une carte : un membre, moi compris. MA carte est la DERNIÈRE de la liste (décision D43) et n'a ni Localiser, ni Message, ni Appeler.
+/// Une carte : un membre, moi compris. Ma carte est triée comme les autres (FEED-ORDRE, qui remplace D43 « moi en dernier ») et n'a ni Localiser, ni Message, ni Appeler.
 struct FeedMemberCard: Equatable, CustomStringConvertible {
     let member: MiffMember
     let isMe: Bool

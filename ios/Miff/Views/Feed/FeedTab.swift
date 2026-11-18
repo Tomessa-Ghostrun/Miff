@@ -79,7 +79,7 @@ struct FeedTab: View {
                 Task { await reconciler.feedStatusesLoaded(event) }
             }
         )
-        // L'Update ne lit pas ma fiche : le Feed la lui donne (UN seul écouteur, D19).
+        // L'Update ne lit pas ma fiche : le Feed la lui donne tant qu'il écoute (D19) ; sur le Profil et l'Update, `OwnStatusWatcher` prend le relais.
         dependencies.onMyStatus = { facts, stopped in myStatus.update(facts, sharingStopped: stopped) }
         // « Depuis ta dernière visite » : l'image fraîche des proches est comparée à la dernière vue (aucune lecture de plus).
         dependencies.onFreshPicture = environment.notifications.freshPicture

@@ -19,11 +19,11 @@
 | R5 | **Limite de fréquence** : une revérification par 30 s au plus, **ouverture de l'app comprise** (elle vient de mesurer). Un geste plus rapproché n'actualise que les proches, sans bruit. | [Décidé] : batterie et lectures |
 | R6 | **L'actualisation ne dépend jamais de la position** : la revérification est lancée en parallèle et **n'est pas attendue** ; l'indicateur se termine comme avant. | [Décidé] : fluidité |
 | R7 | **Hors connexion** : le geste se termine tout de suite (comme avant) et ne revérifie rien ; aucune alerte. | [Existant] + [Décidé] : calme |
-| R8 | **Autorisation absente, refusée ou approximative** : rien n'est mesuré ni envoyé, et le geste n'ajoute **aucun message** (voir §3, D2). | [Décidé] |
+| R8 | **Autorisation absente, refusée ou approximative** : rien n'est mesuré ni envoyé, et le geste n'ajoute **aucun message** sur iOS (voir §3, D2) ; Android affiche un court message calme (§6, A1), à trancher par le PM. | [Décidé] |
 | R9 | **Partage arrêté** (aucune Miff où je partage) : rien n'est mesuré ni envoyé. | [Existant] |
 | R10 | **Aucune position stockée en plus** : ni nouvelle copie, ni historique, ni journal, ni événement Analytics (seul le journal local des builds de test note « geste utilisé », sans coordonnée). | Confidentialité |
 | R11 | **L'instant du statut** est celui où le système répond « dedans / dehors » (heure de détection), jamais une heure inventée : même règle que pour une ouverture de l'app. Une arrivée manquée est donc écrite « maintenant », une sortie manquée devient « pas de nouvelles récentes » (`unknown`) à cet instant. | [Existant] |
-| R12 | Annonce VoiceOver / TalkBack du geste **inchangée**. Aucun nouveau texte, aucune nouvelle traduction. | [Décidé] |
+| R12 | Annonce VoiceOver / TalkBack du geste **inchangée**. Aucun nouveau texte, aucune nouvelle traduction (exception Android : le message de R8, une clé fr / en). | [Décidé] |
 
 ## 3. Décisions et points à confirmer
 
@@ -54,7 +54,30 @@
 
 ## 6. Section Android (REFRESH-POS-A)
 
-*À compléter par l'agent Android dans sa PR (mêmes règles §2).*
+**Branche** `android/feed-refresh-position` (issue de `origin/main` `90d2b497`), PR brouillon, recette `docs/qa/checklists/feed-refresh-position-android-recette-pm.md`, entrée `android/CHANGELOG.md` (numéro provisoire, à renuméroter au merge). Compilé et testé en local (spotless, lint, tests unitaires).
+
+**Ce qui existait déjà côté Android [Existant, relu sur `origin/main`]** : comme sur iOS, `FeedViewModel.onRefresh()` ne relisait que les données des proches (`FeedRefresher` : Miff, membres, lieux, statuts ; 15 s mini, 8 s au plus, aucune écriture) et **ne revérifiait pas MA présence**. Différence de fond avec iOS : sur Android la présence se déduit **uniquement des événements du géofencing** (`INITIAL_TRIGGER_ENTER` à l'armement des zones, puis ENTER / EXIT) ; la position lue à l'ouverture sert à choisir les 20 zones les plus proches et à publier la dernière position, mais n'en déduit une présence qu'après un redémarrage du téléphone (`REARM`) ou une reprise de partage. Un événement raté (surcouches constructeur qui tuent les apps, zone perdue) laissait donc le statut faux jusqu'au suivant, y compris un départ non vu (vert figé chez les proches). Il n'existe pas d'équivalent de `recheckStates` : le système ne « redit » pas l'état des zones sur demande.
+
+**Ce qui est fait** :
+
+- `TrackingEngine.refreshFromFeed()` (nouvelle `Reason.FEED_PULLED`) : la passe habituelle `doRefresh`, **sans** batterie. Une **seule** lecture de position (`PositionSource.currentFresh()`, même fournisseur « équilibré » que partout, **jamais** la copie de 2 min de l'ouverture : un cache de 15 s au plus), attendue **3 s** au plus ; aucun suivi continu, aucune nouvelle permission.
+- La présence de chaque Miff est recalculée **par la même machinerie** : `reconcile` (la fonction qui rattrape déjà les zones après un redémarrage) avec deux fonctions pures ajoutées à `PresenceMachine` (`insideAfterReading`, `afterReading`). Elle passe par `tellPresence` / journal comme un événement : les rappels N1/N2/N6 et le **futur journal local du graphique de temps** (PR #260, `logPresence` dans `reconcile`) la voient, **sans rien dupliquer**.
+- **Arrivée** : dès que la position est **dans** le rayon d'un lieu que le statut ne nomme pas. **Départ** : seulement **au-delà du rayon + 100 m** (hystérésis : la position équilibrée est précise à quelques dizaines de mètres, une fausse alerte « parti » est pire qu'un départ tardif que le géofencing signalera seul). Un départ non vu devient **`unknown`** à l'instant du constat (jamais un `out` inventé, comme sur iOS et comme après un redémarrage : sa vraie heure est inconnue, un `out` daté de maintenant afficherait deux heures de vert de plus). Aucun statut « de confirmation » : `lastUpdateAt` n'est jamais touché, rien n'est écrit si la présence est déjà la bonne.
+- **Une position de plus de 30 s ne déplace jamais ma présence** (`PULL_FIX_MAX_AGE_MILLIS`) ; sans position (timeout, indisponible) la passe se termine seule, rien n'est écrit.
+- **Limite** : `TrackingLimits.PULL_MIN_INTERVAL_MILLIS` = 30 s, appliquée **par le moteur** (en mémoire seulement), en plus des 15 s de la relecture des proches ; une passe du moteur déjà en cours n'est **pas** mise en file (`tryLock`).
+- **Gardes** : session, « Toujours » + précis (la position approximative seule compte comme insuffisante), localisation du téléphone allumée, hors connexion → rien n'est mesuré ; partage arrêté ou rien de partagé → rien ; consentement v3, session unique, disjoncteurs inchangés. **Mode voyage** : aucun statut de présence, la position est rafraîchie comme à l'ouverture (aligné sur iOS, D3).
+- `FeedViewModel.refreshMyPresence()` : tâche à part, **non attendue** par l'indicateur ; exécutée dans la portée propre du moteur (`AppContainer.presenceRefresh`) : quitter l'onglet ne coupe pas une écriture. Annonce d'accessibilité inchangée.
+- Tests : `PresenceFromReadingTest`, `TrackingEnginePullTest`, `FeedViewModelTest` (voir le CHANGELOG).
+
+**Écarts volontaires avec iOS (à confirmer par le PM, voir aussi §3)** :
+
+| # | Sujet | Android | iOS | Raison |
+|---|---|---|---|---|
+| A1 | Message quand l'accès à la localisation est insuffisant (R8, D2) | **Un court toast calme** : « Ta position n'a pas pu être actualisée. Pour cela, Miff a besoin que la localisation soit activée, sur « Toujours » et en précis. Tu peux régler ça dans les réglages de ton téléphone. » Pas d'écran, pas de bouton. Seul cas qui parle. | Aucun (D2) | La demande faite à l'agent Android demandait un message calme et utile. Un toast n'a pas de lien : le texte dit où aller ; quand c'est l'autorisation qui manque, la porte `PermissionGate` ramène déjà à l'écran dédié ; le toast sert surtout quand la localisation du téléphone est **coupée** pendant que le Feed est ouvert (cas que la porte ne voit pas). Clé partagée **`feed_refresh_position_unavailable`**, ajoutée aussi au catalogue iOS pour la parité (non utilisée par iOS tant que D2 n'est pas tranché : l'agent iOS peut la brancher ou la retirer, des deux côtés ensemble). Exception à R12 « aucun nouveau texte ». |
+| A2 | Limite de 30 s (R5) | Entre **deux gestes** seulement ; l'ouverture de l'app n'est pas comptée. | Ouverture comprise | Sur Android l'ouverture ne recalcule pas la présence depuis la position : un geste juste après l'ouverture reste utile pour un départ non vu. |
+| A3 | Départ non vu | Hystérésis de 100 m (déduit de la position) | Le système redit l'état des zones | Pas d'équivalent de `recheckStates` sur Android. Résultat identique côté proches (`unknown` à l'instant du constat). |
+
+Les **cas de test purs** de `PresenceFromReadingTest` (arrivée dans le rayon, départ au-delà du rayon + 100 m, bord, pas d'`out` inventé, rien à écrire si rien ne change) sont le contrat de parité de comportement ; l'agent iOS les reprend s'il le juge utile.
 
 ## 7. Critères d'acceptation
 

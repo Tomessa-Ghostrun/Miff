@@ -1,8 +1,8 @@
 import SwiftUI
 
 // La carte d'un membre (maquette 06 et le « Welcoming screen » du PM) : un liseré de la couleur du niveau à gauche, l'avatar et son
-// anneau, le prénom, la batterie, l'étiquette de l'état, la ligne de temps, et les trois gestes. MA carte est la DERNIÈRE de la
-// liste et n'a aucun geste. La couleur est le seul signal du niveau (liseré, anneau, étiquette : pas de pictogramme, décision du PM,
+// anneau, le prénom, la batterie, l'étiquette de l'état, la ligne de temps, et les trois gestes. MA carte est triée comme les autres (FEED-ORDRE) et n'a
+// aucun geste. La couleur est le seul signal du niveau (liseré, anneau, étiquette : pas de pictogramme, décision du PM,
 // 2026-11-06) ; les MOTS de l'état restent et sont lus. Pour le lecteur d'écran, l'information est UN bloc (« Thomas, à la maison,
 // depuis 12 min, batterie 85 % ») ; les gestes sont des boutons à part, après lui.
 

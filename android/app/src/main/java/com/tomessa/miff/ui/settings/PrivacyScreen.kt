@@ -23,9 +23,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.notification.NotificationPermissionState
@@ -35,6 +37,7 @@ import com.tomessa.miff.domain.permission.LocationFlow
 import com.tomessa.miff.ui.auth.LegalLinks
 import com.tomessa.miff.ui.auth.MessageText
 import com.tomessa.miff.ui.components.MiffSecondaryButton
+import com.tomessa.miff.ui.miff.MiffConfirmDialog
 import com.tomessa.miff.ui.notification.PermissionStateBlock
 import com.tomessa.miff.ui.permission.rememberBackgroundLocationRequest
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -52,8 +55,9 @@ import com.tomessa.miff.ui.theme.textBodyRegular14
 /**
  * Settings > Confidentialité (ticket ONB-3b, criteria B5 and B6; not in the mockups, drawn here from the ticket): the ONE
  * switch for anonymous statistics and crash reports, what the app does with the location and the notifications (said
- * honestly: nothing yet), the links to the terms and the privacy policy (web pages of AUTH-W, in the language of the app),
- * and the contact. The location is never part of anything that is collected.
+ * honestly: nothing yet), and the links to the terms and the privacy policy (web pages of AUTH-W, in the language of the app).
+ * "Nous contacter" is NOT here any more: the PM moved it to Settings > "À propos et aide" on 2026-11-13 (ticket reglages-a-propos.md, AP7). The location is never
+ * part of anything that is collected.
  */
 @Composable
 fun PrivacyScreen(
@@ -67,6 +71,8 @@ fun PrivacyScreen(
     onOpenDetectionHelp: () -> Unit = {},
     /** NOTIF-1A: the state of the notifications, with the SAME words as Settings > Notifications and the centre (criterion N-A4). */
     notifications: NotificationPermissionState = NotificationPermissionState.ALLOWED,
+    /** TIME-1: "Effacer mon historique de temps", asked and confirmed on this screen. */
+    onEraseTimeHistory: () -> Unit = {},
 ) {
     val context = LocalContext.current
     // The location line: when only "all the time" is missing (Android 10+), the button asks the system, which opens ITS OWN screen of the location
@@ -119,6 +125,9 @@ fun PrivacyScreen(
             color = colorTextDescription,
         )
 
+        Section(R.string.settings_privacy_time_title)
+        TimeHistoryBlock(erased = state.timeHistoryErased, onErase = onEraseTimeHistory)
+
         Section(R.string.settings_privacy_texts_title)
         val browser = stringResource(R.string.settings_privacy_open_browser_a11y)
         LinkRow(stringResource(R.string.auth_consent_terms_link), browser) {
@@ -127,12 +136,51 @@ fun PrivacyScreen(
         LinkRow(stringResource(R.string.auth_consent_privacy_link), browser) {
             LegalLinks.open(context, LegalLinks.privacyUrl(context))
         }
-        LinkRow(
-            stringResource(R.string.settings_privacy_contact),
-            stringResource(R.string.settings_privacy_open_mail_a11y),
-        ) {
-            ExternalLinks.contactSupport(context)
+    }
+}
+
+/**
+ * "Historique de temps" (docs/tickets/profil-repartition-temps.md, D15 and TS-6): says what the phone keeps for the chart of the Profile (changes of place, no position, no
+ * address, 35 days, never sent) and lets the person erase it, after a calm confirmation. Local only: nothing is written to the server.
+ */
+@Composable
+private fun TimeHistoryBlock(
+    erased: Boolean,
+    onErase: () -> Unit,
+) {
+    var confirming by remember { mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
+        Text(
+            text = stringResource(R.string.settings_privacy_time_body),
+            style = textBodyRegular14,
+            color = colorTextDescription,
+        )
+        MiffSecondaryButton(
+            text = stringResource(R.string.settings_privacy_time_erase),
+            onClick = { confirming = true },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        if (erased) {
+            Text(
+                text = stringResource(R.string.settings_privacy_time_done),
+                style = textBodyRegular14,
+                color = colorTextForm,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
         }
+    }
+    if (confirming) {
+        MiffConfirmDialog(
+            title = stringResource(R.string.settings_privacy_time_confirm_title),
+            body = stringResource(R.string.settings_privacy_time_confirm_body),
+            confirmLabel = stringResource(R.string.settings_privacy_time_confirm_action),
+            cancelLabel = stringResource(R.string.common_cancel),
+            onConfirm = {
+                confirming = false
+                onErase()
+            },
+            onCancel = { confirming = false },
+        )
     }
 }
 

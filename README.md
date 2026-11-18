@@ -42,7 +42,7 @@ npm run test:emulator    # démarre l'émulateur Firestore local et lance les te
 - Un test en échec n'est jamais « réparé » en modifiant `firestore.rules` à la volée : il est consigné dans `backend/rules-test-report.md` pour `backend-data` et le PM.
 - Les règles ne sont déployées qu'après tests verts, revue sécurité et accord du PM (voir `backend/README.md`).
 
-Vérifier la parité des traductions Android/iOS : `node scripts/check-i18n-parity.mjs` (et `node --test "scripts/tests/*.test.mjs"` pour tester le script).
+Vérifier la parité des traductions (Android/iOS et langues du registre `docs/contracts/i18n-languages.json`, voir `docs/contracts/i18n-languages.md`) : `node scripts/check-i18n-parity.mjs` (et `node --test "scripts/tests/*.test.mjs"` pour tester le script).
 
 ## Process de travail (pull requests)
 

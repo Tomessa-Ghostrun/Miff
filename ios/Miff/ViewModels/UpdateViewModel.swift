@@ -194,6 +194,19 @@ final class UpdateViewModel: ObservableObject {
         stage = .idle
     }
 
+    /// La personne a tapé, collé ou effacé dans le champ de description (facultatif). Seulement sur l'aperçu, et pas pendant l'envoi (le champ
+    /// n'est alors pas modifiable). `raw` est ce que contient le champ, le mot en cours de composition compris : il est nettoyé et coupé à
+    /// 140 unités. La description reste en MÉMOIRE, avec la photo : jamais un fichier, ni l'état restauré, ni un journal.
+    func onDescriptionChanged(_ raw: String) {
+        guard case .preview(var current) = stage, !current.publishing else {
+            return
+        }
+        let limited = PhotoDescription.limitInput(raw)
+        current.descriptionText = limited.text
+        current.descriptionLimitHit = limited.wasCut || PhotoDescription.isAtLimit(length: limited.text.utf16.count)
+        stage = .preview(current)
+    }
+
     /// « Publier ». Seulement sur l'aperçu d'une photo.
     func onPublish() {
         guard case .preview(let current) = stage, !current.publishing, publishTask == nil else {
@@ -211,8 +224,11 @@ final class UpdateViewModel: ObservableObject {
         publishing.notice = nil
         stage = .preview(publishing)
         let publisher = self.publisher
+        // La description part AVEC la photo, dans le même lot : celle de l'aperçu, rien d'autre (jamais un brouillon gardé ailleurs).
+        let only = current.remaining
+        let text = current.descriptionText
         publishTask = Task { [weak self] in
-            let result = await publisher.publish(current.photo, only: current.remaining)
+            let result = await publisher.publish(current.photo, only: only, description: text)
             self?.finishPublication(result)
         }
     }
@@ -239,6 +255,11 @@ final class UpdateViewModel: ObservableObject {
             stage = .preview(current)
         default:
             current.notice = PreviewNotice(result: result)
+            // Une photo qui date de plus de 5 minutes est oubliée : sa description avec elle. Après tout autre échec, la description RESTE.
+            if result == .stale {
+                current.descriptionText = ""
+                current.descriptionLimitHit = false
+            }
             stage = .preview(current)
         }
     }

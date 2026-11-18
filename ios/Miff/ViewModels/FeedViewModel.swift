@@ -254,7 +254,11 @@ final class FeedViewModel: ObservableObject {
         }
         offlineRetry.setNeed(offlineNeed)
         if case .ready(let content) = next {
-            dependencies.onMyStatus(content.myFacts, content.myLabel == .sharingStopped)
+            // MON statut n'est donné qu'AU COURS d'une observation : quand le Feed n'est plus l'onglet en usage, c'est `OwnStatusWatcher` qui le
+            // tient à jour, et un calcul tardif du Feed (annuaire, accord) ne doit jamais le remplacer par une copie périmée.
+            if observedMiffId != nil {
+                dependencies.onMyStatus(content.myFacts, content.myLabel == .sharingStopped)
+            }
             tellVisit(content)
         }
     }
