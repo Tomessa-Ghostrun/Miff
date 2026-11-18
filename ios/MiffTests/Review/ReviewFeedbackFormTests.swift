@@ -65,7 +65,8 @@ final class ReviewFeedbackFormTests: XCTestCase {
         let sources = try ReviewSourceFiles.swiftFiles(under: "Miff")
         let writing = sources.filter { $0.text.contains("forms.gle") }.map(\.path)
 
-        XCTAssertEqual(writing, ["Models/Review/ReviewPromptRules.swift"])
+        // ABOUT-1I : l'adresse vit dans `FeedbackForm.address` (Réglages > À propos et aide), que `ReviewFeedbackForm` reprend.
+        XCTAssertEqual(writing, ["Models/About/AboutModels.swift"])
     }
 }
 #endif

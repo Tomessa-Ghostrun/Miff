@@ -132,12 +132,7 @@ enum FeedBuilder {
         guard mySharing, !input.waitingAgreement, let mine = statuses[input.myUid] else {
             return nil
         }
-        return MyStatusFacts(
-            presence: mine.presence,
-            presenceAtMillis: mine.presenceAtMillis,
-            lastUpdateAtMillis: mine.lastUpdateAtMillis,
-            hasPhoto: mine.hasPhoto
-        )
+        return MyStatusFacts(mine)
     }
 
     /// L'ordre d'ARRIVÉE (décision du PM, 2026-11-07, D43) : les AUTRES membres d'abord, dans l'ordre où la liste les donne (le créateur,

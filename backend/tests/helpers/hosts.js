@@ -46,5 +46,9 @@ export const H = {
   devicesCreate: { match: 'match /devices/{deviceId} {', method: 'create' },
   devicesUpdate: { match: 'match /devices/{deviceId} {', method: 'update' },
   devicesDelete: { match: 'match /devices/{deviceId} {', method: 'delete' },
+  // AD-B1 : alerte « Je suis en danger » (suppression par la créatrice dans le lot de retrait : 2 lectures de règles).
+  alertsCreate: { match: 'match /alerts/{uid} {', method: 'create' },
+  quotaUpdate: { match: 'match /quota/alerts {', method: 'update' },
+  alertsDelete: { match: 'match /alerts/{uid} {', method: 'delete' },
   sessionUpdate: { match: 'match /session/active {', method: 'update' },
 };

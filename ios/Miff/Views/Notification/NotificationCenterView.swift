@@ -230,7 +230,7 @@ struct NotificationCenterView: View {
         let time = NotificationTimeText.text(
             createdAtMillis: item.createdAtMillis,
             section: section ?? .today,
-            locale: .current,
+            locale: AppLanguage.locale,
             timeZone: .current
         )
         let text = NotificationRowTexts.text(

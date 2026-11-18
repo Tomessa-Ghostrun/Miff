@@ -585,4 +585,24 @@ class PrivacyAndAccountViewModelsTest {
             vm.onChangePasswordRequested()
             assertEquals("no send while signing out", PasswordEmailStatus.IDLE, vm.uiState.value.passwordStatus)
         }
+
+    // --- TIME-1: "Effacer mon historique de temps" (criterion TS-6) -----------------------------------------------------------------------
+
+    @Test
+    fun erasingTheTimeHistory_clearsTheLocalJournal_saysSo_andWritesNothingToTheServer() =
+        runTest(dispatcher) {
+            val e = privacyEnv(startEnabled = true)
+            val log =
+                com.tomessa.miff.testsupport
+                    .RecordingPresenceLog()
+            val vm = PrivacyViewModel(e.privacy, e.withdrawals, e.harness.manager, network, presenceLog = log)
+            assertFalse(vm.uiState.value.timeHistoryErased)
+            vm.onEraseTimeHistory()
+            advanceUntilIdle()
+            assertEquals(1, log.cleared)
+            assertTrue(vm.uiState.value.timeHistoryErased)
+            // Local only: no consent, no document, nothing changes for the loved ones.
+            assertTrue(e.consents.calls.isEmpty())
+            assertTrue(e.privacy.analyticsEnabled.value)
+        }
 }

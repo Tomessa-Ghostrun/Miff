@@ -1,6 +1,6 @@
 # Mini-ticket : Réglages > « À propos et aide » (version, aide, contact, licences, avis)
 
-**Statut** : **proposition de l'agent `product-specs`, en attente de la décision du PM** (rien n'est décidé tant que le PM n'a pas répondu à §9). Aucun développement lancé, aucun statut Notion modifié, aucune écriture dans Notion.
+**Statut** : **décidé par le PM le 2026-11-13** (toutes les valeurs par défaut de §10 validées, voir « Décisions du PM, 2026-11-13 » ci-dessous). **ABOUT-1A (Android) en développement** : branche `android/reglages-a-propos`, PR brouillon, recette `docs/qa/checklists/reglages-a-propos-android-recette-pm.md`. ABOUT-1I (iOS) : à lancer après Android. Aucun statut Notion modifié par cette PR.
 **Rédigé le** : 2026-11-11 (agent `product-specs`). **Ticket Notion** : à créer par le PM ou sur son accord (non créé).
 **Demande** : le PM veut que « Nous contacter » ne soit plus caché dans Confidentialité, qu'une version soit visible, qu'un écran de licences et d'attributions existe, et qu'une entrée « Donner mon avis » apparaisse dès que l'adresse du formulaire externe existe.
 
@@ -9,6 +9,27 @@
 - Je n'ai pas d'outil shell dans cette session : **je n'ai pas pu faire `git fetch`**. J'ai lu l'exemplaire du dépôt d'un autre worktree (`C:\dev\miff-ios-notifs-c`), **peut-être en retard sur `origin/main`**. Tout ce que j'écris sur « l'existant » est **à revérifier sur `origin/main`** avant le développement.
 - Les conditions des services et des bibliothèques ne sont pas relues ici : je reprends ce qui est déjà consigné dans `lieux-fournisseurs-gratuits.md` et les README. **Pas de relecture juridique** (décision du PM du 2026-10-23, risque assumé) : l'écran des licences n'affirme jamais « conforme » ni « relu ».
 
+## Décisions du PM, 2026-11-13
+
+Le PM a validé **toutes les valeurs par défaut de §10** et complété la question du formulaire. Ces décisions **remplacent** les « [Proposé] » ci-dessous quand elles diffèrent.
+
+| # | Décision |
+|---|---|
+| **Q1** | Une seule ligne **« À propos et aide »**, **en dernière position** de Réglages, **aussi présente** dans les Réglages restreints (compte sans Miff). |
+| **Q2** | « Nous contacter » est **DÉPLACÉ** hors de Confidentialité (plus de doublon). RG6 (`onboarding.md`), B5 (`feed-profil-reglages.md`) et les checklists `onb-3b-android-recette-pm.md` et `onb-7-ios-recette-pm.md` sont **mis à jour** (fait dans la PR Android). Les liens Conditions et Politique **restent** dans Confidentialité. |
+| **Q3** | **Formulaire** : l'adresse est **fournie** (`https://forms.gle/5EEH4sEfsnCCLzEx7`, Google Forms, publique, ce n'est pas un secret ; configurée dans `BuildConfig.FEEDBACK_FORM_URL`, propriété `miff.feedbackFormUrl`, PR `android/feedback-form-url`). La ligne **« Un retour sur l'app ? »** (libellé exact voulu par le PM) est donc **AFFICHÉE**, **y compris dans un build de diffusion** (elle n'est plus « masquée tant que vide » : elle ne l'est que si l'adresse est vide ou invalide). Elle ouvre le formulaire **dans le navigateur**, l'adresse **telle quelle** : **aucune donnée personnelle ni identifiant** n'y est ajouté. |
+| **Q4** | **Version** seulement dans cet écran (iOS perd son pied de liste), avec **copie** au toucher. |
+| **Q5** | **Licences** : **texte complet** au toucher, **hors connexion**. |
+| **Q6** | Les aides existantes sont **liées depuis cet écran**, en plus de leur place actuelle (mêmes écrans, aucun contenu copié). |
+| **Q7** | **Aucune** info technique de plus (modèle de téléphone, identifiants) dans la version copiée. |
+| **Q8** | **Pas de maquette** : gabarit des écrans de Réglages, écarts listés dans la PR. |
+| **Ordre et mise en avant (retour du PM sur l'APK, 2026-11-13)** | L'écran est **réorganisé** : **tout en HAUT et mis en avant**, « **Nous contacter** » puis « **Un retour sur l'app ?** » (deux **cartes** pleines, plus grandes, avec icône, titre clair et une courte phrase calme, dans le design system) ; **tout le reste, PLUS BAS et discret** (lignes de liste standard), sous un titre « **Informations** » : version (copie au toucher), aides existantes (« Si les détections tardent », « Si les rappels n'arrivent pas »), Conditions, Politique, Licences et attributions. Les comportements ne changent pas. Cette décision **remplace l'ordre du wireframe §3.2 et des blocs « Besoin d'un coup de main ? » / « Nos textes »** (plus de ces deux titres : les lignes sont regroupées sous « Informations »). Critère **AP20**. |
+
+**Écarts constatés à l'implémentation Android (2026-11-13)** :
+- **Libellé de la ligne du formulaire** : « Un retour sur l'app ? » (décision du PM) remplace « Donner mon avis » partout dans ce document. Son sous-titre reste « Dis-nous ce qui te plaît et ce qui pourrait être mieux. » (aucune promesse de réponse, ni store, ni note, ni étoiles : AP10).
+- **« Si les rappels n'arrivent pas »** ouvre **le même écran** que le lien du même nom de Réglages > Notifications, c'est-à-dire l'aide « Si les détections tardent » (`DetectionHelpRoute`) : la lecture de §3.3 (« Notifications coupées ») était fausse, le critère **AP5** (« mêmes écrans ») fait foi. Les deux lignes mènent donc à la même aide aujourd'hui ; la ligne « rappels » n'est **pas** dans les Réglages restreints (comme Réglages > Notifications : rien à notifier sans Miff).
+- **Licences** : la liste est regroupée **par bibliothèque principale** (une ligne par famille, ses composants listés dans le détail) pour rester lisible ; la garde de CI (AP15) vérifie que **chaque composant** livré dans le build de diffusion est couvert par une ligne.
+
 **Convention** : **[Décidé]** = décision du PM déjà écrite. **[Proposé]** = ma proposition. **[À vérifier]** = fait de l'existant à reconfirmer sur `origin/main`.
 
 ---
@@ -16,8 +37,8 @@
 ## 1. Résumé pour le PM
 
 1. **Une seule nouvelle ligne dans Réglages : « À propos et aide »**, qui ouvre **un seul écran**, court, avec quatre blocs : **version**, **besoin d'un coup de main** (aide + contact + avis), **nos textes**, **licences**. Le nombre de touches pour « Nous contacter » ne change pas (3 depuis l'onglet Profil : engrenage, ligne, contact) ; ce qui change, c'est qu'on **trouve** le contact là où on le cherche (une ligne « aide »), au lieu de le chercher dans « Confidentialité ».
-2. **L'existant, tel que je l'ai lu [À vérifier]** : « Nous contacter » est dans Confidentialité, section « Nos textes », sur Android et iOS. **iOS affiche déjà** « Version X (build Y) » en bas de la liste des Réglages ; **Android n'affiche aucune version**. Aucun écran de licences. `FEEDBACK_FORM_URL` (Android) est vide, et **iOS n'a pas encore d'équivalent**.
-3. **« Donner mon avis » est masquée tant que l'adresse est vide** : aucune ligne morte, aucun écran « bientôt ». Dès que le PM donne l'adresse (un seul endroit par plateforme), la ligne apparaît sans autre développement.
+2. **L'existant, tel que je l'ai lu [À vérifier]** : « Nous contacter » est dans Confidentialité, section « Nos textes », sur Android et iOS. **iOS affiche déjà** « Version X (build Y) » en bas de la liste des Réglages ; **Android n'affiche aucune version**. Aucun écran de licences. `FEEDBACK_FORM_URL` (Android) **est renseignée depuis le 2026-11-13** (`https://forms.gle/5EEH4sEfsnCCLzEx7`, Google Forms, adresse fournie par le PM ; PR `android/feedback-form-url`), et **iOS n'a pas encore d'équivalent**.
+3. **« Un retour sur l'app ? » (ex- « Donner mon avis »)** : décision du PM du 2026-11-13, la ligne est **affichée** (l'adresse existe). Elle reste **masquée si l'adresse devenait vide ou invalide** : aucune ligne morte, aucun écran « bientôt ». Un seul endroit par plateforme pour l’adresse.
 4. **Licences** : une liste lisible (nom, licence), le texte complet au toucher, **hors connexion**, et les **attributions de cartes et d'adresses** (OpenStreetMap, OpenFreeMap, Photon) que l'on avait promis d'écrire « quand l'écran existera ». Les attributions **sous la carte et sous la liste d'adresses restent en place** : l'écran les complète, il ne les remplace pas.
 5. **Coût : 0 €.** Aucune lecture ni écriture Firestore, aucune permission, aucun événement Analytics, aucun appel réseau à l'ouverture de l'écran (seuls les liens externes touchés sortent de l'app).
 6. **Android d'abord, puis iOS** (une branche, une PR par plateforme). Taille : **M** par plateforme (la liste de licences est le gros morceau).
@@ -83,7 +104,7 @@
 ## 4. « Donner mon avis » (formulaire externe)
 
 - **Visible seulement si l'adresse est renseignée et valide** (`https://`, sans espace, guillemet, antislash ni `$` : règle déjà en vigueur pour `miff.feedbackFormUrl`, `pop-ins-avis.md` §8). Sinon : **aucune ligne**, aucun message.
-- **Même adresse** que celle de « Peux faire mieux... » (fenêtre d'avis) : **un seul endroit par plateforme**. Android : `BuildConfig.FEEDBACK_FORM_URL` existe ; iOS : équivalent à créer, **même règle** (HTTPS seulement, vide autorisé, jamais lue depuis un lien reçu).
+- **Même adresse** que celle de « Peux faire mieux... » (fenêtre d'avis) : **un seul endroit par plateforme**. Android : `BuildConfig.FEEDBACK_FORM_URL` existe ; iOS : équivalent à créer, **même règle** (HTTPS seulement, vide autorisé, jamais lue depuis un lien reçu). **Mise à jour 2026-11-13 : l'adresse existe (Google Forms, fournie par le PM, valeur par défaut de `miff.feedbackFormUrl`) : la ligne « Donner mon avis » sera donc visible dès la livraison de ABOUT-1A ; aucune configuration supplémentaire à attendre. Non codé dans la PR `android/feedback-form-url`.**
 - **Aucune donnée personnelle n'est ajoutée à l'adresse** (ni nom, ni e-mail, ni identifiant, ni position). Le navigateur et le service du formulaire verront l'adresse IP : c'est un site tiers, comme n'importe quel lien.
 - **Texte** : « Donner mon avis » / « Dis-nous ce qui te plaît et ce qui pourrait être mieux. » (sous-titre ; aucune promesse de réponse). **Séparation nette avec les stores** : ce lien n'ouvre **jamais** une fiche de store et ne parle pas de « note » ni d'« étoiles » (pour rester loin du filtrage d'avis décrit en `pop-ins-avis.md` §2).
 - **Cette ligne est indépendante du drapeau de build de la fenêtre d'avis** (`REVIEW_PROMPT`, éteint en release) : elle peut figurer dans un build de diffusion, puisqu'elle n'ouvre qu'un formulaire privé. À confirmer à la porte « prêt à soumettre » avec le reste (Q3).
@@ -130,7 +151,7 @@
 | Version | À **ajouter** (nom + numéro de version interne) | **Déjà affichée** en pied de liste des Réglages [À vérifier] : **déplacée** dans l'écran (Q4), le pied de liste disparaît |
 | Aide « rappels » | Oui | Non (pas d'équivalent) |
 | Aide « détections » | Écran existant | Écran propre à iOS existant |
-| Formulaire externe | `BuildConfig` existant, vide | **À créer** (même règle, même texte) |
+| Formulaire externe | `BuildConfig` existant, **renseigné le 2026-11-13** (même adresse) | **À créer** (même règle, même texte) |
 | Licences | Bibliothèques (README Android) + MapLibre, OpenFreeMap, OSM, Photon | firebase-ios-sdk, GoogleSignIn-iOS, AppAuth, GTMAppAuth, PhoneNumberKit (MIT), etc. + mention d'Apple pour les cartes ; **aucun MapLibre / OpenFreeMap / Photon** |
 | Copie de la version | Toast du système sur Android 13+ ; sinon message dans l'écran | Message dans l'écran (pas de toast système) |
 
@@ -170,6 +191,7 @@
 - [ ] **AP17** Accessibilité : chaque ligne est un seul élément nommé (« {titre}, {sous-titre} ») ; cibles 48 dp / 44 pt ; **plus grand texte du système** : tout défile, rien n'est coupé ; droite-à-gauche correct ; la copie de la version est annoncée.
 - [ ] **AP18** **Aucune** permission nouvelle, **aucun** événement Analytics, **aucune** lecture ni écriture Firestore, **aucun** appel réseau à l'ouverture de l'écran ; aucune donnée personnelle dans un journal.
 - [ ] **AP19** Les liens externes (page légale, formulaire) n'acceptent que `https://` ; l'adresse du formulaire n'est lue que depuis la configuration de build.
+- [ ] **AP20** (décision du PM du 2026-11-13) **Ordre et mise en avant** : dans « À propos et aide », « Nous contacter » puis « Un retour sur l'app ? » sont **en premier** (haut de l'écran), présentés en **cartes pleines** (icône, titre, courte phrase calme, au moins 72 dp, un seul élément nommé pour le lecteur d'écran) ; **tout le reste** (version, aides, Conditions, Politique, Licences) vient **dessous**, sous le titre « Informations », en **lignes de liste discrètes** (titre non gras). Sans adresse de formulaire : seule la carte « Nous contacter » reste en haut. Tous les comportements de AP3 à AP19 sont conservés.
 
 ---
 

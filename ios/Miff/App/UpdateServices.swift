@@ -11,6 +11,8 @@ struct UpdateServices {
     let cleaner: PhotoCleaner
     /// MON statut dans la Miff affichée : la couleur du bouton central, l'anneau de ma photo, la bulle d'incitation.
     let myStatus: MyStatusStore
+    /// MON statut, écouté (un seul document) quand le Feed n'écoute pas : onglets Profil et Update de l'écran principal (compte à rebours).
+    let ownStatus: OwnStatusWatcher
     let permission: CameraPermissionProviding
     let sharingStopped: () async -> Bool
     /// FEED-8 : les photos lues par le Feed, EN MÉMOIRE seulement ; ma photo publiée y est posée à la publication (ma carte ne la relit pas).
@@ -69,11 +71,19 @@ struct UpdateServices {
         let sharingStopped: () async -> Bool = {
             myStatus.sharingStopped && Self.miffIds(of: directory.state).count == 1
         }
+        let awaiting = miff.awaiting
+        let ownStatus = OwnStatusWatcher(
+            observer: FirestoreOwnStatusObserver(),
+            currentUid: { gateway.currentUid },
+            isWaitingAgreement: { awaiting.waiting.contains($0) },
+            store: myStatus
+        )
         return UpdateServices(
             ledger: ledger,
             publisher: UpdatePublisher(publisherDependencies),
             cleaner: PhotoCleaner(cleanerDependencies),
             myStatus: myStatus,
+            ownStatus: ownStatus,
             permission: SystemCameraPermission(),
             sharingStopped: sharingStopped,
             photoCache: photoCache

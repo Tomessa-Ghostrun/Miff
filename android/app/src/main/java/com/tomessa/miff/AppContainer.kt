@@ -144,6 +144,12 @@ import com.tomessa.miff.data.settings.AndroidLanguageStore
 import com.tomessa.miff.data.settings.LanguageStore
 import com.tomessa.miff.data.subscription.FirestoreSubscriptionStore
 import com.tomessa.miff.data.subscription.SubscriptionRepository
+import com.tomessa.miff.data.timeshare.EngineTimeShareTracking
+import com.tomessa.miff.data.timeshare.SharedPreferencesPresenceLogStorage
+import com.tomessa.miff.data.timeshare.SharedPreferencesTimeShareWindowStore
+import com.tomessa.miff.data.timeshare.StoredPresenceLog
+import com.tomessa.miff.data.timeshare.TimeShareTrackingSource
+import com.tomessa.miff.data.timeshare.TimeShareWindowStore
 import com.tomessa.miff.data.tracking.AlarmManagerTravelAlarm
 import com.tomessa.miff.data.tracking.AndroidTrackingEnvironment
 import com.tomessa.miff.data.tracking.ConnectivityNetworkWake
@@ -177,6 +183,7 @@ import com.tomessa.miff.domain.paywall.MonotonicClock
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.profile.GooglePhotoPrefill
 import com.tomessa.miff.domain.push.DeviceAppVersion
+import com.tomessa.miff.domain.timeshare.PresenceLog
 import com.tomessa.miff.domain.tracking.DetectionJournal
 import com.tomessa.miff.domain.tracking.Fix
 import com.tomessa.miff.domain.tracking.PresenceValue
@@ -571,6 +578,8 @@ class AppContainer(
                             )
                             // The picture and the lines of a Miff that is gone (left, deleted, access lost) go too; a list that only the cache vouches for decides nothing.
                             if (!state.fromCache) lastVisitTracker.onMiffsKnown(state.miffs.map { it.id }.toSet())
+                            // TIME-1: the same for the local journal of the presence ("Répartition de ton temps"): a Miff that is gone takes its history with it.
+                            if (!state.fromCache) presenceLog.retainOnly(state.miffs.map { it.id }.toSet())
                         }
                     }
                 }
@@ -616,6 +625,28 @@ class AppContainer(
      * Built on first use; the system never starts it by itself: the screens, the receiver and [MiffApplication] ask it to look again.
      */
     val detectionJournal: DetectionJournal by lazy { DetectionJournals.create(context) }
+
+    /**
+     * TIME-1 (docs/tickets/profil-repartition-temps.md): the LOCAL journal of the presence (Miff, state, place identifier, instant; no coordinate, no name) that feeds "Répartition de ton temps".
+     * A private file of the app, excluded from the backups, erased with the session and with a Miff; it never leaves the phone. Active in EVERY build (unlike [detectionJournal]).
+     */
+    val presenceLog: PresenceLog by lazy {
+        StoredPresenceLog(SharedPreferencesPresenceLogStorage(context), currentUid = { authGateway.currentUid })
+    }
+
+    /** The window (7, 14 or 30 days) chosen on the card "Répartition de ton temps": kept on the phone, erased with the session. */
+    val timeShareWindow: TimeShareWindowStore by lazy { SharedPreferencesTimeShareWindowStore(context) }
+
+    /** What the card says about the tracking of a Miff (a trip, a sharing stopped, a location that is not enough): read from the phone, never from the server. */
+    val timeShareTracking: TimeShareTrackingSource by lazy {
+        EngineTimeShareTracking(
+            local = SharedPreferencesTrackingLocalStore(context),
+            currentUid = { authGateway.currentUid },
+            permissions = devicePermissions,
+            travelOn = ::travelOn,
+            waitingAgreement = { awaitingAgreement.waiting.value },
+        )
+    }
 
     /** What the detection and the Update ask of the phone (battery, network, clock). One instance for both. */
     private val trackingEnvironment: TrackingEnvironment by lazy {
@@ -674,6 +705,8 @@ class AppContainer(
                 },
             // MODE VOYAGE: the alarm of the end of a trip (inexact, no special permission).
             travelAlarm = AlarmManagerTravelAlarm(context),
+            // TIME-1: every change of presence worked out for a Miff is also kept, with the instant of the status, in the local journal of "Répartition de ton temps".
+            presenceLog = presenceLog,
         )
     }
 
@@ -862,6 +895,8 @@ class AppContainer(
         knownMiffsKeeper.onLeft(miffId)
         notificationScope.launch { notificationScheduler.onMiffGone(miffId) }
         notificationScope.launch { lastVisitTracker.onMiffGone(miffId) }
+        // TIME-1: what the local journal of the presence says about that Miff is erased.
+        presenceLog.forgetMiff(miffId)
         cachePurger.markPurgePending()
         cachePurger.purge()
         miffDirectory.refresh()
@@ -1005,12 +1040,27 @@ class AppContainer(
 
     /** What is kept on the phone FOR ONE ACCOUNT and goes with it when the account is deleted (AUTH-5, ticket 5.10). */
     private val localDataErasers: List<LocalDataEraser> by lazy {
-        accountLocalDataErasers(notificationAsks, pendingMiffDeletions, publishLedger, reviewStateStore)
+        accountLocalDataErasers(
+            notificationAsks,
+            pendingMiffDeletions,
+            publishLedger,
+            reviewStateStore,
+            presenceLog,
+            timeShareWindow,
+        )
     }
 
     /** The read-only "Abonnement" line of the Settings (ticket ABO-1): one read of `entitlements/{uid}` per opening of the Settings. */
     val subscriptionRepository: SubscriptionRepository by lazy {
         SubscriptionRepository(store = FirestoreSubscriptionStore(), currentUid = { authGateway.currentUid })
+    }
+
+    /** TIME-1 / TIME-2: the journal of the presence and the window of the chart go with the session (the engine erases the journal too, in its own stop). */
+    private val timeShareTeardown: SessionTeardown by lazy {
+        SessionTeardown {
+            presenceLog.clear()
+            timeShareWindow.clear()
+        }
     }
 
     val sessionManager: SessionManager by lazy {
@@ -1040,6 +1090,7 @@ class AppContainer(
                         photoCache,
                         SessionTeardown { publishLedger.clear() },
                         SessionTeardown { reviewStateStore.clear() },
+                        timeShareTeardown,
                         placeNotices,
                         requesterDirectory,
                         addressSearch,

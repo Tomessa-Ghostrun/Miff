@@ -63,7 +63,7 @@ struct ProfileScreenPreview: View {
             state: profile,
             miffs: directory,
             previews: previews,
-            isActive: false,
+            isActive: CountdownPreviewSupport.remainingMillis(for: name) != nil,
             initialCarouselPage: initialPage,
             travel: travel,
             offlineRetry: offlineRetry,
@@ -80,6 +80,7 @@ struct ProfileScreenPreview: View {
                 onCreateMiff: {}
             )
         )
+        .environment(\.countdownContext, CountdownPreviewSupport.context(for: name))
     }
 
     /// La Miff dont la liste est montrée : celle de la carte de départ (la dernière carte, « Créer une Miff », garde la dernière Miff).

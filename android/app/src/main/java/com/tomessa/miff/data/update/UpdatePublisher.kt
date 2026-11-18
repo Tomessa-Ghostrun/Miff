@@ -17,6 +17,7 @@ import com.tomessa.miff.domain.tracking.DetectionJournal
 import com.tomessa.miff.domain.tracking.Fix
 import com.tomessa.miff.domain.tracking.JournalKind
 import com.tomessa.miff.domain.tracking.NoDetectionJournal
+import com.tomessa.miff.domain.update.PhotoDescription
 import com.tomessa.miff.domain.update.PhotoLocation
 import com.tomessa.miff.domain.update.PhotoPlace
 import com.tomessa.miff.domain.update.PublishGuard
@@ -135,11 +136,14 @@ class UpdatePublisher(
     private val travelOn: () -> Boolean = { false },
 ) {
     /**
-     * Publishes [photo]. [only]: the Miffs a previous try did not reach (null = all). Never throws except for the cancellation of the caller.
+     * Publishes [photo]. [only]: the Miffs a previous try did not reach (null = all). [description]: what the person wrote under the preview (optional): it is cleaned
+     * here, written in the SAME document as the photo in every Miff of the lot, and left out when nothing is left. It is never logged. Never throws except for the
+     * cancellation of the caller.
      */
     suspend fun publish(
         photo: UpdatePhoto,
         only: List<String>? = null,
+        description: String? = null,
     ): PublishResult {
         val uid = currentUid() ?: return PublishResult.Failed
         val now = nowMillis()
@@ -218,7 +222,17 @@ class UpdatePublisher(
         // The date of the sending is written BEFORE it starts (review C2): a transaction that leaves after the screen gave up is still cleaned up 24 h later.
         val previousNote = ledger.photoSentMillis(uid)
         ledger.notePhotoSent(uid, nowMillis())
-        val result = writeLots(uid, photo, place, withPosition, targets, deviceId, traveling)
+        val result =
+            writeLots(
+                uid,
+                photo,
+                place,
+                withPosition,
+                targets,
+                deviceId,
+                traveling,
+                description?.let(PhotoDescription::normalize),
+            )
         // The sending is KNOWN not to have left (a refusal, no connection, nothing shared): the previous note comes back. Unconfirmed keeps the new one.
         val leftNothing =
             result == PublishResult.Offline || result == PublishResult.Refused || result == PublishResult.Failed ||
@@ -252,6 +266,7 @@ class UpdatePublisher(
         all: List<String>,
         deviceId: String,
         traveling: Boolean,
+        description: String?,
     ): PublishResult {
         val written = mutableListOf<String>()
         val notSharing = mutableListOf<String>()
@@ -273,6 +288,7 @@ class UpdatePublisher(
                                     moment,
                                     if (traveling) null else battery(),
                                     deviceId,
+                                    description,
                                 )
                             }
                         }
@@ -312,7 +328,7 @@ class UpdatePublisher(
             notSharing += outcome.notSharing
             needsAgreement += outcome.needsAgreement
         }
-        if (written.isNotEmpty()) afterSuccess(uid, photo, place, written)
+        if (written.isNotEmpty()) afterSuccess(uid, photo, place, written, description)
         val untried = all.filter { it !in written && it !in notSharing && it !in needsAgreement }
         return when {
             written.isEmpty() && failure != null -> {
@@ -345,6 +361,7 @@ class UpdatePublisher(
         photo: UpdatePhoto,
         place: PhotoPlace,
         written: List<String>,
+        description: String?,
     ) {
         val now = nowMillis()
         val (day, count) = PublishGuard.next(now, zone(), ledger.countedDay(), ledger.countToday())
@@ -356,6 +373,7 @@ class UpdatePublisher(
                 createdAtMillis = now,
                 expiresAtMillis = now + UpdateWrites.PHOTO_LIFETIME_MILLIS,
                 location = PhotoLocation(place.lat, place.lng, place.measuredAtMillis),
+                description = description,
             )
         written.forEach { photos.putOwn(it, uid, shared) }
         try {
