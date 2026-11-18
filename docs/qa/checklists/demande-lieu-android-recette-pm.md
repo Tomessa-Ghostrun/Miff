@@ -36,7 +36,7 @@
 19. [ ] **Demande de zone de danger** (membre Miff+) et créateur gratuit : **Accepter** ouvre l'offre avec « Les zones de danger font partie de Miff+. La demande reste en attente… » ; **Refuser** marche.
 20. [ ] **Abonnement illisible** (mode avion, puis « Accepter ») : message calme « Impossible de vérifier ton abonnement pour l'instant. Réessaie dans un instant. », pas d'offre à tort.
 21. [ ] Une demande **traitée sur un autre téléphone** (ou retirée par le membre) alors que l'écran est ouvert : elle disparaît de la liste ; si on touche sa ligne du centre : « Cette demande n'est plus en attente. » ; si on ouvrait son détail : retour à la liste avec ce message.
-22. [ ] Le créateur d'une Miff peut avoir **jusqu'à 10 demandes** ; la 11e est refusée au membre avec « Cette Miff a déjà plusieurs demandes en attente. Réessaie un peu plus tard. ».
+22. [ ] Le créateur d'une Miff peut avoir **jusqu'à 10 demandes** ; la 11e est refusée au membre ; le téléphone du membre ne peut pas lire le plafond (réservé au créateur) : il voit le message générique « Ça n'a pas fonctionné. Réessaie dans un instant. », jamais un message de plafond.
 23. [ ] **Un membre retiré** de la Miff par le créateur : ses demandes disparaissent de la liste du créateur.
 24. [ ] **Supprimer la Miff** (créateur) avec des demandes en attente : la suppression va au bout (les demandes et le compteur partent avec).
 

@@ -73,8 +73,11 @@ sealed interface RequestSubmitResult {
     /** Nothing was sent: the person already has 3 pending requests in this Miff (criterion M5). */
     data object MemberLimit : RequestSubmitResult
 
-    /** The server refused: the Miff already has all the pending requests it takes (10), or a rule said no. */
-    data object MiffLimit : RequestSubmitResult
+    /**
+     * The server refused the lot for a reason the phone cannot tell (a rule said no; the cap of 10 per Miff is only readable by the creator, so it is NEVER guessed here):
+     * a calm generic sentence, never the sentence of a limit that was not proven.
+     */
+    data object Refused : RequestSubmitResult
 
     /** The Miff is gone, or the person is no longer in it. */
     data object MiffUnavailable : RequestSubmitResult
@@ -391,7 +394,7 @@ class FirestorePlaceRequestRepository(
             if (gone) return RequestSubmitResult.MiffUnavailable
         }
         if (failure != MiffFailure.REFUSED) return RequestSubmitResult.Failed(failure)
-        // A refusal on a Miff that is still there (contract of the backend, section 4): two causes are told apart, the last one is the limit of the Miff.
+        // A refusal on a Miff that is still there (contract of the backend, section 4): one cause can be told apart (a race on the slot); for any other refusal nothing is claimed.
         // The type is NOT a cause: a danger zone is asked by a free member like any other place (decision of the PM, 2026-11-17), the rules no longer read his plan.
         // (a) a race on the slot (another phone took it): the requests are read again and, if a slot is free, the lot is sent once more.
         val freshRead = guarded { store.readMine(miffId, uid, fromServer = true) }
@@ -406,10 +409,10 @@ class FirestorePlaceRequestRepository(
             val slot = PlaceRequestSlots.firstFree(uid, fresh) ?: return RequestSubmitResult.MemberLimit
             val again = sentRequest(uid, miffId, slot, draft)
             val outcome = guarded { store.commit(PlaceRequestWrites.create(uid, miffId, slot, draft)) }
-            return if (outcome is Guarded.Value) RequestSubmitResult.Done(again) else RequestSubmitResult.MiffLimit
+            return if (outcome is Guarded.Value) RequestSubmitResult.Done(again) else RequestSubmitResult.Refused
         }
-        // (b) all the slots were free: the Miff holds all the requests it takes (10), or the counter drifted too high.
-        return RequestSubmitResult.MiffLimit
+        // (b) all the slots were free: the cause cannot be known by a member (a rule, or the counter of the Miff that only the creator reads): nothing is claimed.
+        return RequestSubmitResult.Refused
     }
 
     override suspend fun withdraw(request: PlaceRequest): RequestWithdrawResult {

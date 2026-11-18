@@ -69,7 +69,7 @@ sealed interface SuggestionsState {
 }
 
 /** What the form says under the button (calm sentences, never a code). */
-enum class PlaceMessage { OFFLINE, GENERIC, MIFF_GONE, REQUEST_LIMIT_MEMBER, REQUEST_LIMIT_MIFF, REQUESTS_UNAVAILABLE }
+enum class PlaceMessage { OFFLINE, GENERIC, MIFF_GONE, REQUEST_LIMIT_MEMBER, REQUESTS_UNAVAILABLE }
 
 /** How the form ends: the host leaves the screen (and shows what must be shown). */
 enum class PlaceFormEnd { SAVED, DELETED, PLACE_GONE }
@@ -638,8 +638,8 @@ class PlaceFormViewModel(
                     }
                 }
 
-                RequestSubmitResult.MiffLimit -> {
-                    mutableState.update { it.copy(saving = false, message = PlaceMessage.REQUEST_LIMIT_MIFF) }
+                RequestSubmitResult.Refused -> {
+                    mutableState.update { it.copy(saving = false, message = PlaceMessage.GENERIC) }
                 }
 
                 RequestSubmitResult.RequestsUnavailable -> {

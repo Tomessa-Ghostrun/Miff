@@ -232,13 +232,16 @@ class PlaceRequestFormViewModelTest {
     }
 
     @Test
-    fun theLimitOfTheMiff_isSaidCalmly_andTheFormStaysOpen() {
+    fun aRefusalOfTheServer_isTheGenericCalmSentence_neverTheSentenceOfALimitThatWasNotProven() {
+        // The cap of 10 per Miff is only readable by the creator: a member who is refused is never told that the Miff is full.
         val vm = viewModel()
         vm.fill()
-        requests.submitResult = RequestSubmitResult.MiffLimit
+        requests.submitResult = RequestSubmitResult.Refused
         vm.onSave()
         dispatcher.scheduler.runCurrent()
-        assertEquals(PlaceMessage.REQUEST_LIMIT_MIFF, vm.uiState.value.message)
+        assertEquals(PlaceMessage.GENERIC, vm.uiState.value.message)
+        assertNull(vm.uiState.value.loadFailed)
+        assertFalse(vm.uiState.value.requestBlocked)
         assertFalse(vm.uiState.value.saving)
         assertNull(vm.uiState.value.end)
     }

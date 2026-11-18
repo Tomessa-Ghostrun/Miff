@@ -236,12 +236,12 @@ class PlaceRequestRepositoryTest {
         }
 
     @Test
-    fun submit_refusedByTheServer_onAMiffThatIsStillThere_isTheLimitOfTheMiff() =
+    fun submit_refusedByTheServer_onAMiffThatIsStillThere_isNeverPresentedAsTheLimitOfTheMiff() =
         runTest {
             val loaded = context()
             requests.commitFailures.add(firestoreError(FirebaseFirestoreException.Code.PERMISSION_DENIED))
             val result = repo.submit(uid, MIFF_ID, testRequestDraft(), loaded, online = true)
-            assertTrue(result is RequestSubmitResult.MiffLimit)
+            assertTrue(result is RequestSubmitResult.Refused)
         }
 
     @Test
@@ -396,13 +396,26 @@ class PlaceRequestRepositoryTest {
     // --- The causes of a refusal (contract of the backend, section 4) -----------------------------------------------------------------------
 
     @Test
+    fun submit_refusedAgainAfterTheRaceRetry_isStillTheGenericRefusal_neverALimitOfTheMiff() =
+        runTest {
+            val loaded = context()
+            // The lot is refused, a slot looks taken meanwhile, the second lot is refused too (old rules, or any rule): nothing proves a full Miff.
+            requests.commitFailures.add(firestoreError(FirebaseFirestoreException.Code.PERMISSION_DENIED))
+            requests.commitFailures.add(firestoreError(FirebaseFirestoreException.Code.PERMISSION_DENIED))
+            requests.mine = listOf(testRequest(uid = uid, slot = 1, createdAtMillis = now))
+            val result = repo.submit(uid, MIFF_ID, testRequestDraft(type = PlaceType.RISK), loaded, online = true)
+            assertTrue(result is RequestSubmitResult.Refused)
+            assertTrue(requests.commits.isEmpty())
+        }
+
+    @Test
     fun submit_aDangerZoneRefused_isNeverTheOffer_itFollowsTheOtherCauses() =
         runTest {
-            // The type is no longer a cause of refusal (the rules do not read the plan of the person who asks): a refusal is a race, or the limit of the Miff.
+            // The type is no longer a cause of refusal (the rules do not read the plan of the person who asks): a refusal is a race, or a rule: nothing else is claimed.
             val loaded = context()
             requests.commitFailures.add(firestoreError(FirebaseFirestoreException.Code.PERMISSION_DENIED))
             val result = repo.submit(uid, MIFF_ID, testRequestDraft(type = PlaceType.RISK), loaded, online = true)
-            assertTrue(result is RequestSubmitResult.MiffLimit)
+            assertTrue(result is RequestSubmitResult.Refused)
         }
 
     @Test

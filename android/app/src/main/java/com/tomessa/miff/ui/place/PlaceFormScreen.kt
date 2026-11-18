@@ -1098,7 +1098,6 @@ private fun Foot(
                             PlaceMessage.GENERIC -> R.string.miff_message_generic
                             PlaceMessage.MIFF_GONE -> R.string.place_message_miff_gone
                             PlaceMessage.REQUEST_LIMIT_MEMBER -> R.string.place_request_limit_member
-                            PlaceMessage.REQUEST_LIMIT_MIFF -> R.string.place_request_limit_miff
                             PlaceMessage.REQUESTS_UNAVAILABLE -> R.string.place_request_unavailable
                         },
                     ),
@@ -1106,7 +1105,6 @@ private fun Foot(
                 isError =
                     message != PlaceMessage.OFFLINE &&
                         message != PlaceMessage.REQUEST_LIMIT_MEMBER &&
-                        message != PlaceMessage.REQUEST_LIMIT_MIFF &&
                         message != PlaceMessage.REQUESTS_UNAVAILABLE,
             )
         }

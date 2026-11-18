@@ -6,7 +6,7 @@
 
 ## À savoir avant de commencer
 
-- **À déployer par vous AVANT l'étape 2** : les règles Firestore de la PR `backend/demande-lieu-danger` (procédure `docs/dev/deploiement-regles.md`, projet `miff-3d283` uniquement, à n'exécuter qu'avec votre accord explicite). Les règles actuelles refusent encore toute demande de zone de danger d'un membre gratuit : sans le déploiement, l'étape 2 affichera à tort « Cette Miff a déjà plusieurs demandes en attente. Réessaie un peu plus tard. ». Ce n'est pas un bug de l'app. Les parties B et D n'ont pas besoin du déploiement.
+- **À déployer par vous AVANT l'étape 3** : les règles Firestore de la PR `backend/demande-lieu-danger` (procédure `docs/dev/deploiement-regles.md`, projet `miff-3d283` uniquement, à n'exécuter qu'avec votre accord explicite). Les règles actuelles refusent encore toute demande de zone de danger d'un membre gratuit : sans le déploiement, l'étape 3 affichera le message générique « Ça n'a pas fonctionné. Réessaie dans un instant. » (et plus jamais « Cette Miff a déjà plusieurs demandes en attente », qui n'est plus affiché à un membre). Ce n'est pas un bug de l'app. Les parties B et D n'ont pas besoin du déploiement.
 - Règle de fond (décision du 2026-11-17) : **demander** une zone de danger = tout membre ; **accepter** une demande de zone de danger = le créateur, **seulement avec Miff+** ; **déclarer directement** une zone de danger = le créateur, **seulement avec Miff+**.
 - Un défaut : capture d'écran + numéro de l'étape, puis étape suivante.
 
@@ -14,7 +14,7 @@
 
 1. [ ] Onglet **Profil**, liste des lieux de la Miff : **« Demander l'ajout d'un lieu »**. Touchez-le : le formulaire « Proposer un lieu » s'ouvre.
 2. [ ] Dans **Type**, la carte **« Zone de danger »** n'a **aucune pastille « Miff+ »** ; touchez-la : elle se **sélectionne** (coche, fond teinté), **aucune offre Miff+ ne s'ouvre**. On peut revenir à « Zone de confiance » et la reprendre.
-3. [ ] Renseignez un nom et une adresse, gardez « Zone de danger », touchez **« Soumettre la demande »** : retour à la liste, **« Demande envoyée. Elle est en attente dans la liste. »** (**nécessite le déploiement des règles**).
+3. [ ] Renseignez un nom et une adresse, gardez « Zone de danger », touchez **« Soumettre la demande »** : retour à la liste, **« Demande envoyée. Elle est en attente dans la liste. »** (**nécessite le déploiement des règles**, sinon message générique calme).
 4. [ ] La carte de votre demande est **en tête**, avec la pastille **« En attente »** et l'étiquette **« Zone de danger »** ; **aucun** texte sur un abonnement, rien de rouge ni d'orange pour « En attente ».
 5. [ ] Touchez la carte : bandeau **« En attente de réponse. »**, bouton **« Retirer ma demande »** ; le retrait fonctionne.
 6. [ ] **Plafond inchangé** : trois demandes de zone de danger de suite sont possibles ; la **4e** affiche « Tu as déjà 3 demandes en attente… », le formulaire ne s'ouvre pas.
