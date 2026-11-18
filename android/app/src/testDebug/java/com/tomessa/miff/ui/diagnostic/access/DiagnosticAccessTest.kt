@@ -66,7 +66,7 @@ class DiagnosticAccessTest {
     @Test
     fun theSettingsLine_isThere_andAsksForTheDiagnostic() {
         composeRule.setContent {
-            MiffTheme { SettingsScreen({}, {}, {}, {}, {}) }
+            MiffTheme { SettingsScreen({}, {}, {}, {}, {}, {}) }
         }
         assertFalse(DiagnosticRequests.isOpen.value)
         composeRule.onNodeWithText("Diagnostic").performScrollTo().performClick()
@@ -76,7 +76,7 @@ class DiagnosticAccessTest {
     @Test
     fun theSettingsLine_isThereInTheRestrictedListToo() {
         composeRule.setContent {
-            MiffTheme { SettingsScreen({}, null, {}, null, {}) }
+            MiffTheme { SettingsScreen({}, null, {}, null, {}, {}) }
         }
         composeRule.onNodeWithText("Diagnostic").performScrollTo().performClick()
         assertTrue(DiagnosticRequests.isOpen.value)
