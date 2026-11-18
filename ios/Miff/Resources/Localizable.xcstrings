@@ -3360,6 +3360,40 @@
         }
       }
     },
+    "feed_order_updated_many_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Feed was updated"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le Feed a été mis à jour"
+          }
+        }
+      }
+    },
+    "feed_order_updated_one_a11y": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ shared an update"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ a donné des nouvelles"
+          }
+        }
+      }
+    },
     "feed_pane_a11y": {
       "extractionState": "manual",
       "localizations": {

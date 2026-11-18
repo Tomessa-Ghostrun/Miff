@@ -1,5 +1,8 @@
 package com.tomessa.miff.ui.place
 
+import android.graphics.PointF
+import android.view.ViewGroup.LayoutParams.MATCH_PARENT
+import android.widget.FrameLayout
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,11 +18,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.MutableFloatState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
@@ -43,6 +49,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.place.PlaceMapGeometry
+import com.tomessa.miff.domain.place.PlaceMapZoom
 import com.tomessa.miff.ui.theme.ShapeMd
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorActionPrimary
@@ -55,7 +62,9 @@ import com.tomessa.miff.ui.theme.textBodyBold16
 import com.tomessa.miff.ui.theme.textBodyCaption
 import com.tomessa.miff.ui.theme.textBodyRegular14
 import org.maplibre.android.MapLibre
+import org.maplibre.android.camera.CameraPosition
 import org.maplibre.android.camera.CameraUpdateFactory
+import org.maplibre.android.constants.MapLibreConstants
 import org.maplibre.android.geometry.LatLng
 import org.maplibre.android.geometry.LatLngBounds
 import org.maplibre.android.maps.MapLibreMap
@@ -71,16 +80,22 @@ import org.maplibre.android.style.sources.GeoJsonSource
 /*
  * SECURITY, for this file: the position of a place is sensitive. It is given to the map (tiles from OpenFreeMap: the server sees
  * which tiles are asked, that is the area on screen, and the IP address of the phone) and nowhere else; nothing is logged. The map
- * is a still picture: no gesture, no "my position" layer, no permission. The style address is https only (BuildConfig).
+ * has no "my position" layer and no permission. In the form (and only there) it can be ZOOMED (pinch, double tap): nothing else
+ * moves it (no drag, no rotation, no tilt), so a gesture can never change the place or its radius, and zooming out only asks more
+ * tiles of the same provider (same data as before: tiles and IP address). The style address is https only (BuildConfig).
  */
 
-/** What the map draws: a point and a circle. [description] is what a screen reader says instead of the picture. */
+/**
+ * What the map draws: a point and a circle. [description] is what a screen reader says instead of the picture. [zoomable]: the
+ * person may pinch or double-tap to zoom (the form and the detail of a place); otherwise the map is a still picture.
+ */
 class PlaceMapSpec(
     val lat: Double,
     val lng: Double,
     val radiusM: Int,
     val danger: Boolean,
     val description: String,
+    val zoomable: Boolean = false,
 ) {
     override fun toString(): String = "PlaceMapSpec(redacted)"
 }
@@ -227,12 +242,34 @@ private const val LAYER_LINE = "miff-place-line"
 private const val LAYER_CENTER = "miff-place-center-dot"
 private const val CAMERA_PADDING_PX = 48
 
-/** What the map of one composable holds between two redraws. */
-private class MapHolder {
+/** What the map was last framed for: when it changes (address, radius), the map is framed again; a zoom alone does not change it. */
+private class FrameKey(
+    val lat: Double,
+    val lng: Double,
+    val radiusM: Int,
+) {
+    override fun equals(other: Any?): Boolean =
+        other is FrameKey && other.lat == lat && other.lng == lng && other.radiusM == radiusM
+
+    override fun hashCode(): Int = 31 * (31 * lat.hashCode() + lng.hashCode()) + radiusM
+
+    override fun toString(): String = "FrameKey(redacted)"
+}
+
+/**
+ * What the map of one composable holds between two redraws. [zoomOffset] is the zoom the person chose, in levels above (+) or below
+ * (-) the framing of the circle: it survives a rotation or a trip to another screen (saved by the composable), and goes back to 0
+ * when the circle is framed again.
+ */
+private class MapHolder(
+    val zoomOffset: MutableFloatState,
+) {
     var map: MapLibreMap? = null
     var styleReady = false
     var styleRequested = false
     var spec: PlaceMapSpec? = null
+    var framedKey: FrameKey? = null
+    var fitZoom = Double.NaN
 }
 
 @Composable
@@ -243,7 +280,8 @@ private fun MapLibrePlaceMap(
 ) {
     val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current.lifecycle
-    val holder = remember { MapHolder() }
+    val savedOffset = rememberSaveable { mutableFloatStateOf(0f) }
+    val holder = remember { MapHolder(savedOffset) }
     val mapView =
         remember {
             // One call per process: sets the application context (no key, no account, no telemetry in MapLibre Native).
@@ -288,26 +326,66 @@ private fun MapLibrePlaceMap(
         mapView.addOnDidFailLoadingMapListener(failure)
         onDispose { mapView.removeOnDidFailLoadingMapListener(failure) }
     }
+    val frame =
+        remember(mapView) {
+            PinchFriendlyFrame(context).apply {
+                addView(mapView, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
+                // The first layout (or a rotation) gives the map its size: the circle is framed then if it could not be before, and
+                // the zoom stays centred on the place (the focal point of the gestures is the middle of the view).
+                addOnLayoutChangeListener { _, left, top, right, bottom, _, _, _, _ ->
+                    val map = holder.map ?: return@addOnLayoutChangeListener
+                    map.uiSettings.focalPoint = PointF((right - left) / 2f, (bottom - top) / 2f)
+                    if (holder.framedKey == null) render(holder, map)
+                }
+            }
+        }
     AndroidView(
-        factory = { mapView },
+        factory = { frame },
         modifier = modifier,
-        update = { view ->
+        update = {
             holder.spec = spec
             val ready = holder.map
             if (ready != null) {
                 render(holder, ready)
             } else {
-                view.getMapAsync { map ->
+                mapView.getMapAsync { map ->
                     holder.map = map
-                    map.uiSettings.setAllGesturesEnabled(false)
                     map.uiSettings.isAttributionEnabled = false
                     map.uiSettings.isLogoEnabled = false
                     map.uiSettings.isCompassEnabled = false
+                    map.uiSettings.focalPoint = PointF(frame.width / 2f, frame.height / 2f)
+                    map.addOnCameraIdleListener { rememberZoom(holder, map) }
                     render(holder, map)
                 }
             }
         },
     )
+}
+
+/**
+ * The gestures of the map. Zoom only (pinch, double tap; the two-finger tap that zooms out comes with it): no drag (the place stays in
+ * the middle, nothing can move it by accident), no rotation, no tilt, and no "double tap then slide" (it would fight the scrolling
+ * of the page). Without [zoomable], the map is a still picture.
+ */
+private fun applyGestures(
+    map: MapLibreMap,
+    zoomable: Boolean,
+) {
+    val ui = map.uiSettings
+    ui.setAllGesturesEnabled(false)
+    if (zoomable) {
+        ui.isZoomGesturesEnabled = true
+        ui.isDoubleTapGesturesEnabled = true
+    }
+}
+
+/** Keeps the zoom the person chose, relative to the framing, so that it comes back after a rotation. */
+private fun rememberZoom(
+    holder: MapHolder,
+    map: MapLibreMap,
+) {
+    if (holder.fitZoom.isNaN()) return
+    holder.zoomOffset.floatValue = PlaceMapZoom.offsetOf(map.cameraPosition.zoom, holder.fitZoom).toFloat()
 }
 
 /** Draws the current spec: loads the style once, then only moves the shape and the camera. */
@@ -316,6 +394,7 @@ private fun render(
     map: MapLibreMap,
 ) {
     val spec = holder.spec ?: return
+    applyGestures(map, spec.zoomable)
     if (!holder.styleReady) {
         if (holder.styleRequested) return
         holder.styleRequested = true
@@ -323,7 +402,7 @@ private fun render(
             holder.styleReady = true
             val current = holder.spec ?: spec
             installLayers(style, current)
-            moveCamera(map, current)
+            frameCircle(holder, map, current)
         }
         return
     }
@@ -335,7 +414,7 @@ private fun render(
     )?.setGeoJson(PlaceMapGeometry.areaGeoJson(spec.lat, spec.lng, spec.radiusM))
     (style.getSource(SOURCE_CENTER) as? GeoJsonSource)?.setGeoJson(PlaceMapGeometry.pointGeoJson(spec.lat, spec.lng))
     colorLayers(style, spec)
-    moveCamera(map, spec)
+    frameCircle(holder, map, spec)
 }
 
 private fun installLayers(
@@ -371,11 +450,18 @@ private fun colorLayers(
     style.getLayer(LAYER_CENTER)?.setProperties(PropertyFactory.circleColor(color))
 }
 
-/** Frames the whole circle: the map moves away by itself when the radius grows (design 20C). */
-private fun moveCamera(
+/**
+ * Frames the whole circle, centred on the place (design 20C: the map moves away by itself when the radius grows), then sets how far
+ * the person may zoom out and in around that framing ([PlaceMapZoom]). Done once per (place, radius): a zoom is never undone by a
+ * redraw. The first time (a new view after a rotation) the zoom chosen before is given back.
+ */
+private fun frameCircle(
+    holder: MapHolder,
     map: MapLibreMap,
     spec: PlaceMapSpec,
 ) {
+    val key = FrameKey(spec.lat, spec.lng, spec.radiusM)
+    if (holder.framedKey == key) return
     val edges = PlaceMapGeometry.bounds(PlaceMapGeometry.ring(spec.lat, spec.lng, spec.radiusM))
     val bounds =
         LatLngBounds
@@ -384,9 +470,32 @@ private fun moveCamera(
             .include(LatLng(edges[2], edges[3]))
             .build()
     try {
-        map.moveCamera(CameraUpdateFactory.newLatLngBounds(bounds, CAMERA_PADDING_PX))
+        // Free range first: the framing must be measured without the limits of the previous circle.
+        map.setMinZoomPreference(MapLibreConstants.MINIMUM_ZOOM.toDouble())
+        map.setMaxZoomPreference(MapLibreConstants.MAXIMUM_ZOOM.toDouble())
+        val padding = CAMERA_PADDING_PX
+        val fit = map.getCameraForLatLngBounds(bounds, intArrayOf(padding, padding, padding, padding))?.zoom ?: return
+        val range = PlaceMapZoom.range(fit)
+        val first = holder.framedKey == null
+        val wanted = if (first) PlaceMapZoom.restore(fit, holder.zoomOffset.floatValue.toDouble()) else range.fit
+        map.setMinZoomPreference(range.min)
+        map.setMaxZoomPreference(range.max)
+        map.moveCamera(
+            CameraUpdateFactory.newCameraPosition(
+                CameraPosition
+                    .Builder()
+                    .target(LatLng(spec.lat, spec.lng))
+                    .zoom(wanted)
+                    .bearing(0.0)
+                    .tilt(0.0)
+                    .build(),
+            ),
+        )
+        holder.fitZoom = range.fit
+        holder.framedKey = key
+        if (!first) holder.zoomOffset.floatValue = 0f
     } catch (e: IllegalStateException) {
-        // The view has no size yet: the next redraw frames it.
+        // The view has no size yet: the layout listener frames it as soon as it has one.
     }
 }
 

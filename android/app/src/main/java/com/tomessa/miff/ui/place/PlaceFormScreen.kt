@@ -146,7 +146,8 @@ class PlaceFormActions(
 
 /**
  * "Nouveau lieu" and "Modifier le lieu" (mockups 01 to 07 of the PM, fiches nouveau-lieu.md and modifier-lieu.md). One scrolling
- * body, one fixed foot with THE button "Enregistrer" (no tick at the top, decision of the PM). The map is a still picture: the
+ * body, one fixed foot with THE button "Enregistrer" (no tick at the top, decision of the PM). The map can be zoomed with the
+ * fingers only (pinch, double tap; decision of the PM: no + / - buttons) and never moves the place: the
  * address and the slider are enough to make a place (screen reader, no map).
  */
 @Composable
@@ -810,6 +811,7 @@ private fun RadiusSection(
                         radiusM = state.radiusM,
                         danger = state.type == PlaceType.RISK,
                         description = stringResource(R.string.place_map_a11y, state.radiusM, address),
+                        zoomable = true,
                     )
                 },
             height = MAP_HEIGHT,

@@ -1,63 +1,76 @@
-# Mini-ticket : zoomer et dézoomer sur la carte d'un lieu (formulaire de création et de modification, et détail du lieu)
+# Zoom sur l'aperçu de carte d'un lieu (LIEU-ZOOM)
 
-**Statut** : demande du PM du 2026-11-17, « je te laisse faire », sans maquette ni ticket Notion. Rédigé par l'agent `ios-dev` (aucun agent `android-dev` n'avait poussé son texte à ce moment : la partie commune ci-dessous est écrite pour que les deux plateformes aient **le même comportement** ; la section Android reste à compléter par son agent). Aucun statut Notion modifié, rien écrit dans Notion.
-**Convention** : [Décidé PM] = dit par le PM. [Défaut] = décision par défaut prise ici, contestable.
+**Statut** : mini-ticket rédigé sur demande directe du PM (2026-11-17, « je te laisse faire », sans ticket Notion ni maquette) ; Android d'abord, iOS en parallèle par un autre agent (même comportement). Décisions par défaut ci-dessous : à contester avant la recette si besoin.
+**Dépend de** : lieux de confiance (`docs/tickets/lieux-de-confiance.md` §12, ADR2), fournisseurs gratuits (`docs/dev/lieux-fournisseurs-gratuits.md`).
 
 ## 1. Contexte
 
-Dans le formulaire d'un lieu (création et modification), la section « Périmètre » montre une carte avec le point du lieu et le cercle du rayon. Aujourd'hui la carte est **fixe** : cadrée automatiquement pour que le cercle tienne, sans aucun geste. Le PM veut pouvoir **zoomer et dézoomer** dessus. **Extension demandée par le PM le 2026-11-17, pour les deux plateformes : le même zoom sur l'aperçu de carte de l'écran de détail d'un lieu** (celui qu'on ouvre en touchant un lieu dans la liste).
+Quand on crée un lieu (« Nouveau lieu »), qu'on en modifie un (« Modifier le lieu ») ou qu'on ouvre son détail depuis la liste, l'écran montre (dans le formulaire, sous « Rayon ») un **aperçu de carte** : le point de l'adresse choisie et un cercle qui suit le curseur de rayon. Aujourd'hui cet aperçu est **une carte figée** (aucun geste) : on ne peut pas regarder les alentours du lieu. Le PM veut pouvoir **zoomer et dézoomer** dessus.
 
-État de départ côté iOS (relu dans le code) : `MKMapView` interactive mais volontairement bridée (zoom, déplacement, rotation éteints), hauteur de 176 pt dans un `ScrollView`, cadrage = `PlaceMapLayout.visibleMeters` (4,8 fois le rayon, jamais moins de 400 m). **Le lieu ne se choisit pas sur la carte** : il vient de l'adresse choisie dans les suggestions ; la carte ne fait que le montrer.
+**État technique constaté** : l'aperçu n'est **pas** une image statique payante. C'est déjà une **carte interactive MapLibre Native** (open source, BSD-2-Clause) avec les **tuiles d'OpenFreeMap** (gratuit, sans clé), dont les gestes étaient simplement coupés. Le zoom ne demande donc **ni nouveau SDK, ni nouvelle dépendance, ni clé, ni compte**.
 
-## 2. Décisions
+## 2. Décisions par défaut (contestables)
 
-- **[Décidé PM, 2026-11-17] Pas de boutons + / − sur la carte. Le zoom se fait uniquement par gestes (pincer, double toucher).** Le PM accepte que ce point ne couvre pas l'accessibilité (VoiceOver, grande police, personnes qui ne peuvent pas pincer) : **choix assumé du PM**, hors périmètre de ce ticket. Rien n'est ajouté pour compenser (ni bouton, ni action VoiceOver de réglage).
-- **[Décidé PM] La carte du formulaire ET celle du détail d'un lieu se zooment**, avec les mêmes gestes, les mêmes bornes et les mêmes règles (cercle à l'échelle réelle, centre sur le lieu). La carte du détail est dans une page qui défile, comme le formulaire : même règle de défilement.
-- **[Défaut] Le centre ne bouge jamais : c'est le lieu.** Pas de déplacement de la carte (un doigt qui glisse sur la carte **fait défiler l'écran**, comme avant). Zoomer ne peut donc ni déplacer le lieu ni changer l'adresse choisie. Le lieu se choisit toujours par l'adresse, jamais par un toucher sur la carte.
-- **[Défaut] Gestes** : pincer (continu) ; **double toucher = un cran plus près** (moitié de la hauteur montrée) ; **toucher à deux doigts = un cran plus loin** (le double), comme l'app Plans. Pas de rotation, pas d'inclinaison, pas de boussole.
-- **[Défaut] Bornes, en hauteur de carte montrée** (la même définition sur les deux plateformes, à l'équivalent du niveau de zoom près) : **le plus près = 100 m** ; **le plus loin = 22 fois le rayon** (le diamètre du cercle garde au moins 1/11 de la hauteur : environ 16 pt sur 176 pt), donc 1 100 m pour 50 m de rayon, 17 600 m pour 800 m. Le cadrage de départ est toujours dans les bornes.
-- **[Défaut] Cercle à l'échelle réelle** : le cercle reste un cercle de `rayon` mètres, dessiné par la carte, qui grandit et rétrécit avec le zoom. **Lisible à tout zoom** grâce à la borne du plus loin (il ne devient jamais un point) ; au plus près, un grand cercle dépasse de la carte, ce qui est juste. Le trait pointillé et le repère gardent leur taille d'écran. **Aucun changement de la plage du curseur** (50 à 800 m par pas de 50) ni du rayon enregistré : zoomer ne modifie jamais le rayon.
-- **[Défaut] Niveau de départ** : inchangé, adapté au rayon (`visibleMeters`). Un **autre lieu** (autre adresse choisie) remet le cadrage de départ ; le curseur de rayon **garde le zoom de la personne** (ramené dans les nouvelles bornes) pour ne pas défaire son geste à chaque cran ; sans zoom de sa part, le cadrage suit le cercle comme aujourd'hui.
-- **[Défaut] Pas d'indice visuel** (« pincez pour zoomer ») : zéro texte de plus ; le geste est celui de toute carte. Contestable si la recette montre que personne ne le trouve.
-- **[Défaut] Rotation de l'appareil** : l'app est en portrait seulement ; au cas où la taille de la carte change (clavier, grande police), le lieu est recadré au même niveau.
+| # | Sujet | Décision par défaut | Pourquoi |
+|---|---|---|---|
+| Z1 | Gestes | **Pincer** (deux doigts) et **double toucher** (zoom avant d'un cran). Le **toucher à deux doigts** (zoom arrière) vient avec, c'est le geste standard du moteur de carte. | Les deux gestes demandés par le PM. |
+| Z2 | Boutons + / − | **Aucun.** **Choix assumé du PM** : zoom par les gestes seulement. Conséquence connue : un lecteur d'écran (TalkBack) ne peut pas zoomer la carte ; l'adresse et le curseur de rayon suffisent pour créer le lieu (critère TRA2 du ticket des lieux), la carte reste décrite en une phrase. | Décision du PM du 2026-11-17. |
+| Z3 | Déplacer la carte au doigt | **Non** : pas de glissement, pas de rotation, pas d'inclinaison, pas de « double toucher puis glisser ». Le lieu reste **toujours au centre** et le zoom se fait **autour du centre**. | Le lieu ne peut pas être déplacé ni perdu de vue par accident ; pas de conflit avec le défilement de la page. |
+| Z4 | Limites de zoom | **3 niveaux** de dézoom et **3 niveaux** de zoom autour du cadrage initial (facteur 8 de chaque côté), bornés à des niveaux absolus 3 et 19. | Dézoomer jusqu'au quartier et à la ville (contexte), zoomer jusqu'à la rue ; le cercle reste lisible partout (voir Z5). |
+| Z5 | Cercle du rayon | Reste **à l'échelle réelle** (tracé en mètres, pas en pixels). Épaisseur du trait et point central en **taille fixe** à l'écran. Au dézoom maximal le plus petit cercle (50 m) fait environ 16 px : toujours un disque visible, avec le point du centre. Au zoom maximal sur un grand rayon, le cercle dépasse du cadre (la zone teintée remplit la carte) : c'est attendu. **Plage du curseur inchangée** (50 à 800 m, 16 valeurs). | Réutilise le tracé existant. |
+| Z6 | Zoom initial | **Le cercle entier tient dans la carte** (comme aujourd'hui), centré sur le lieu : petit rayon = zoom serré, grand rayon = zoom large. | Comportement actuel conservé (maquette 20C). |
+| Z7 | Rayon qui change pendant que la personne a zoomé | La carte **se recadre sur le cercle** (le zoom choisi est remis au cadrage). Idem si l'adresse change. | Prévisible : le cadre suit le rayon, comme avant. Alternative écartée : garder le zoom au risque de perdre le cercle de vue. |
+| Z8 | Retour, rotation | Le zoom choisi **revient** après une rotation de l'écran ou un passage vers un autre écran (retour). Il repart du cadrage si le formulaire est quitté puis rouvert. | Moins de surprise ; l'état est gardé comme distance (en niveaux) au cadrage, pas comme position. |
+| Z9 | Défilement de la page | **Un doigt** qui commence sur la carte fait défiler la page, comme avant. Dès qu'un **deuxième doigt** touche la carte, la page lâche le geste (pas de saut pendant un pincement) et le reprend à la fin. | Le formulaire est une page qui défile, la carte occupe 176 dp de haut. |
+| Z10 | Où | **Formulaire** (création et modification) **et détail d'un lieu** (celui qui s'ouvre depuis la liste « Lieux de confiance », y compris le détail d'une demande de lieu), mêmes gestes, mêmes bornes, mêmes règles. « Voir sur la carte » (application de cartes du système) reste. | Extension demandée par le PM après la recette de l'APK v1 (2026-11-17). |
+| Z11 | Choix du point | **Inchangé** : le point est choisi **par l'adresse** (suggestions), jamais en touchant la carte. Le zoom ne peut donc **jamais déplacer le lieu**, ni changer le rayon. | Le zoom est de la lecture seule. |
 
 ## 3. Comportement
 
-1. Pincer sur la carte : la hauteur montrée suit les doigts, bornée. Pendant le pincement, **l'écran ne défile pas** ; il redevient défilable dès que les doigts se lèvent.
-2. Double toucher : un cran plus près (animé, instantané si « Réduire les animations » est actif). Au plus près, rien ne se passe. Toucher à deux doigts : un cran plus loin ; au plus loin, rien ne se passe.
-3. Un doigt qui glisse sur la carte : l'écran défile, la carte ne bouge pas.
-4. Le zoom n'est jamais enregistré ni envoyé : c'est un état d'affichage de l'écran ; quitter le formulaire l'oublie.
-5. Hors connexion ou tuiles indisponibles : inchangé, la phrase calme « Ton lieu est bien placé, tu peux continuer » avec « Réessayer » remplace la carte, jamais bloquant ; « Réessayer » rétablit la carte au cadrage de départ.
+- Carte visible dès qu'une adresse est choisie (sinon fond rayé avec « Choisis d'abord une adresse », inchangé). Tant qu'elle est grisée (pas d'adresse) : aucun geste.
+- Pincer : zoom continu autour du centre, borné (Z4). Double toucher : un cran de zoom avant. Au bout de la plage, le geste ne fait rien (pas de message).
+- Le cercle et le point central ne bougent jamais par rapport au centre de la carte ; le curseur de rayon continue de fonctionner (Z7).
+- L'attribution « OpenFreeMap / OpenStreetMap » reste toujours visible.
 
 ## 4. Critères d'acceptation
 
-- **Z1** Dans le formulaire (création et modification), pincer zoome et dézoome la carte, le lieu reste au centre.
-- **Z2** Un double toucher rapproche d'un cran, un toucher à deux doigts éloigne d'un cran.
-- **Z3** Aucun zoom n'est possible au-delà de 100 m de hauteur ni au-delà de 22 fois le rayon.
-- **Z4** Le cercle correspond au rayon réel à tout zoom ; il reste visible (jamais réduit à un point) au plus loin, pour 50 m comme pour 800 m.
-- **Z5** Le rayon du curseur et la valeur enregistrée ne changent pas quand on zoome ; le curseur garde sa plage de 50 à 800 m.
-- **Z6** Le lieu et l'adresse choisie ne changent pas quand on zoome ou touche la carte ; la carte ne se déplace pas.
-- **Z7** Glisser un doigt sur la carte fait défiler le formulaire ; pincer ne le fait pas défiler.
-- **Z8** Changer d'adresse remet le cadrage de départ ; bouger le curseur de rayon garde le zoom de la personne.
-- **Z9** Hors connexion : même message calme qu'avant, aucun blocage de l'enregistrement.
-- **Z10** Les critères Z1 à Z9 valent aussi pour la carte du détail d'un lieu (lecture seule : le lieu, l'adresse et le rayon ne changent évidemment jamais). Aucune permission de localisation, aucune clé, aucune dépendance, aucun appel réseau de plus que les tuiles de la carte.
+- **LZ1** Sur « Nouveau lieu » et « Modifier le lieu », une fois une adresse choisie, pincer zoome et dézoome la carte ; double toucher zoome d'un cran.
+- **LZ2** Le lieu reste au centre à tout niveau de zoom ; aucun geste ne le déplace (pas de glissement, rotation, inclinaison).
+- **LZ3** Le cercle garde son rayon réel (en mètres) à tout niveau de zoom ; au dézoom maximal le plus petit cercle (50 m) reste un disque visible avec son point central.
+- **LZ4** Le zoom ne modifie ni l'adresse ni le rayon ni l'enregistrement ; la plage du curseur (50 à 800 m) est inchangée.
+- **LZ5** Le niveau de zoom est limité (Z4) ; la carte ne montre jamais le monde entier.
+- **LZ6** Le zoom initial fait tenir le cercle entier, centré ; il s'adapte au rayon et se recale si le rayon ou l'adresse change.
+- **LZ7** Un doigt sur la carte fait défiler la page ; un pincement ne fait pas défiler la page.
+- **LZ8** Rotation de l'écran ou retour d'un autre écran : le zoom choisi est conservé.
+- **LZ9** Sans réseau ou tuiles indisponibles : phrase calme existante « La carte n'est pas disponible pour le moment. Ton lieu est bien placé, tu peux continuer. » avec « Réessayer » ; le formulaire reste utilisable.
+- **LZ10** Aucun bouton + / − (choix assumé du PM). La carte reste décrite en une phrase pour le lecteur d'écran (adresse et rayon).
+- **LZ11** Sur le détail d'un lieu (lecture, y compris pour un membre non créateur et pour le détail d'une demande), la carte se zoome et se dézoome avec les mêmes gestes, bornes et règles que dans le formulaire ; un doigt sur la carte fait défiler la page de détail, un pincement ne la fait pas défiler.
+- **LZ12** Aucune permission nouvelle, aucune clé, aucune donnée nouvelle envoyée à un tiers (voir §7), aucun journal de coordonnées.
 
 ## 5. Cas limites
 
-Valeurs de pincement absurdes (échelle nulle, négative, infinie) : rien ne change ; rayon changé pendant un zoom lointain avec un cercle plus petit : niveau ramené au plus loin permis ; carte pas encore mise en page au premier affichage : recadrée dès qu'elle a sa taille ; zoom en cours puis perte des tuiles : message calme, retour au cadrage de départ au « Réessayer » ; pincement interrompu (appel, notification) : l'écran redevient défilable.
+- **Hors connexion** : sans tuile en cache, le fond reste uni mais le cercle et le point (tracés localement) sont visibles ; si le fournisseur ne répond pas du tout au chargement, message calme + « Réessayer » (recrée la carte au cadrage initial).
+- **Zoom arrière sur une zone jamais vue** : de nouvelles tuiles sont demandées (plus lentes) ; la carte reste utilisable, le formulaire aussi.
+- **Plus petit rayon (50 m) et plus grand (800 m)** : les deux sont cadrés sans coupure ; limites de zoom relatives au cadrage.
+- **Rotation avant la première mise en page** (carte de taille nulle) : le cadrage est refait dès que la carte a une taille.
+- **Grande police, droite-à-gauche** : la carte ne dépend ni de l'un ni de l'autre ; pas de contrôle ajouté.
+- **Pincer avec un doigt hors de la carte** : le doigt hors carte appartient à la page ; le comportement est celui d'un seul doigt sur la carte.
 
 ## 6. Tests
 
-Règles pures testées (`PlaceMapZoomTests`) : bornes pour tous les rayons du curseur, départ dans les bornes, pincement (rapprocher / éloigner / borné / absurde), double toucher et deux doigts (jusqu'aux bornes), cercle visible au plus loin, zoom gardé ou ramené au changement de rayon, plage du curseur inchangée. Tests de source : centre fixe, aucun déplacement ni bouton, aucune position de personne, le formulaire et le détail sont zoomables, tous deux dans une page qui défile (le défilement est suspendu pendant un pincement), aucune clé ni dépendance de cartes. Les gestes eux-mêmes (UI) ne sont pas testés unitairement : recette PM sur iPhone.
+- **Logique pure** (`PlaceMapZoomTest`) : plage de zoom autour du cadrage (3 niveaux de chaque côté), planchers et plafonds absolus, valeurs aberrantes (NaN, infini), distance au cadrage, restitution après rotation, valeur sauvegardée invalide.
+- **Géométrie** (`PlaceMapGeometryTest`) : le cercle est centré sur le lieu pour 50 m et 800 m ; rayon réel de chaque point.
+- **Écrans** (`PlaceMapZoomScreensTest`, JVM) : le formulaire et le détail d'un lieu donnent `zoomable` à la carte, avec le point et le rayon choisis ; zone de danger (rouge) zoomable aussi ; pas de carte sans adresse ; carte décrite pour le lecteur d'écran ; un doigt ne bloque pas le défilement de la page ; un deuxième doigt le bloque puis le rend ; geste annulé rend la main.
+- **Garde-fou de code** (`PlacePrivacyTest`) : seuls le zoom et le double toucher sont activés ; jamais de couche « ma position ».
+- **Sur téléphone** (carte native, non testable sur la JVM) : recette PM `docs/qa/checklists/lieu-carte-zoom-android-recette-pm.md`.
 
-## 7. Coût
+## 7. Coût, conditions d'utilisation, vie privée
 
-**Aucun.** MapKit est livré avec iOS, sans clé ni compte ; aucune dépendance ajoutée (`project.yml` et `Package.resolved` inchangés). Zoomer sur la carte demande plus de tuiles à Apple (limite connue : quota non publié, déjà notée dans `ios/README.md` « Cartes et adresses ») ; le plus près est limité à 100 m, et la carte n'est jamais rafraîchie en boucle. **Signal de bascule** : tuiles lentes ou refusées pendant la recette.
+- **Coût : 0 €.** Même moteur (MapLibre, BSD-2-Clause) et mêmes tuiles (OpenFreeMap : gratuit, sans clé, sans limite de requêtes, usage commercial permis, attribution requise, aucun SLA) que l'aperçu actuel. **Aucune clé API, aucun projet Google Maps, aucune facturation** : le SDK Google Maps interactif a été écarté dès le ticket des lieux (il exige un projet avec facturation, `docs/dev/lieux-fournisseurs-gratuits.md`) ; Static Maps n'est pas utilisé.
+- **Limite connue** : zoomer et dézoomer demande **un peu plus de tuiles** à OpenFreeMap qu'une carte figée (quelques dizaines par séance au plus, la plage est bornée à ±3 niveaux). Le service n'impose aucune limite de requêtes mais n'a aucune garantie. **Signal de bascule** (inchangé) : tuiles lentes ou absentes pendant la recette, message du fournisseur, ou changement de ses conditions ; le style se remplace par un réglage de compilation (`-Pmiff.mapStyleUrl=…`, https obligatoire) ; un fournisseur à clé serait une décision du PM.
+- **Vie privée** : **aucune donnée nouvelle** envoyée à un tiers. OpenFreeMap reçoit déjà les tuiles demandées (la zone affichée) et l'adresse IP ; en dézoomant, la zone affichée est plus large (quartier, ville), de même nature. **La politique de confidentialité n'a pas besoin de nouvelle mention** (elle doit déjà citer la zone de carte affichée et l'IP). Si elle décrit la carte comme « figée » ou « sans geste », le `release-manager` doit relire cette phrase.
+- **Sécurité** : aucun nouveau flux réseau, aucun stockage, aucune permission ; les coordonnées ne sont ni journalisées ni sauvegardées (l'état de zoom sauvegardé est une **distance en niveaux** au cadrage, pas une position).
 
-## 8. Section iOS
+## 8. Parité iOS
 
-Branche `ios/lieu-carte-zoom`. `MKMapView` garde zoom et déplacement **éteints** ; le zoom est refait avec `UIPinchGestureRecognizer` et deux `UITapGestureRecognizer`, qui recadrent toujours sur le lieu (`MKCoordinateRegion` centrée sur lui) via les règles pures de `Models/Place/PlaceMapZoom.swift`. Pendant un pincement, le `UIScrollView` parent est suspendu puis rendu. Recette : `docs/qa/checklists/lieu-carte-zoom-ios-recette-pm.md`.
-
-## 9. Section Android
-
-À compléter par l'agent `android-dev` (MapLibre : mêmes bornes en hauteur montrée, mêmes gestes, centre verrouillé sur le lieu, défilement non capturé par un doigt seul).
+Même comportement avec MapKit : pincer et double toucher seulement ; pas de déplacement, de rotation ni d'inclinaison ; lieu au centre ; limites de zoom de facteur 8 de chaque côté du cadrage initial ; cercle en mètres ; recadrage quand le rayon ou l'adresse change ; zoom conservé à la rotation ; détail d'un lieu zoomable de la même façon ; **aucun bouton + / −**.
