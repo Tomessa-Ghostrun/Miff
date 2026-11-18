@@ -5,7 +5,6 @@ import com.tomessa.miff.data.place.RequestContext
 import com.tomessa.miff.data.place.RequestContextLoad
 import com.tomessa.miff.data.place.RequestSubmitResult
 import com.tomessa.miff.domain.miff.MiffFailure
-import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.domain.place.PlaceType
 import com.tomessa.miff.testsupport.FakeAddressSearch
 import com.tomessa.miff.testsupport.FakeNetwork
@@ -52,12 +51,10 @@ class PlaceRequestFormViewModelTest {
         Dispatchers.resetMain()
     }
 
-    private fun loaded(
-        premium: Boolean = false,
-        mine: Int = 0,
-    ) = RequestContextLoad.Loaded(
-        RequestContext("Famille", premium, (1..mine).map { testRequest(slot = it, createdAtMillis = 1L) }),
-    )
+    private fun loaded(mine: Int = 0) =
+        RequestContextLoad.Loaded(
+            RequestContext("Famille", (1..mine).map { testRequest(slot = it, createdAtMillis = 1L) }),
+        )
 
     private fun viewModel(load: RequestContextLoad = loaded()): PlaceFormViewModel {
         requests.context = load
@@ -184,23 +181,42 @@ class PlaceRequestFormViewModelTest {
     // --- The limits (M5, M7, M8) ------------------------------------------------------------------------------------------------
 
     @Test
-    fun theDangerZone_isLockedForAMemberWithoutMiffPlus_andOpensTheOffer() {
-        val vm = viewModel(loaded(premium = false))
-        vm.onTypeSelected(PlaceType.RISK)
-        assertEquals(PaywallReason.DANGER, vm.uiState.value.paywall)
-        assertEquals(PlaceType.TRUSTED, vm.uiState.value.type)
-    }
-
-    @Test
-    fun theDangerZone_canBeChosenByAMiffPlusMember_andIsSent() {
-        val vm = viewModel(loaded(premium = true))
+    fun theDangerZone_canBeChosenByAnyMember_noLock_noOffer_andIsSent() {
+        // Decision of the PM, 2026-11-17: a member asks for a danger zone whatever his plan (the form does not even know it).
+        val vm = viewModel()
+        assertFalse(vm.uiState.value.dangerLocked)
         vm.onTypeSelected(PlaceType.RISK)
         assertNull(vm.uiState.value.paywall)
         assertEquals(PlaceType.RISK, vm.uiState.value.type)
+        assertFalse(vm.uiState.value.dangerLocked)
         vm.fill()
         vm.onSave()
         dispatcher.scheduler.runCurrent()
+        assertEquals(PlaceFormEnd.SAVED, vm.uiState.value.end)
         assertEquals(PlaceType.RISK, requests.submitted.single().type)
+        assertNull(vm.uiState.value.paywall)
+    }
+
+    @Test
+    fun theDangerZone_canBeChosenThenGivenUp_inTheFormOfARequest() {
+        val vm = viewModel()
+        vm.onTypeSelected(PlaceType.RISK)
+        vm.onTypeSelected(PlaceType.TRUSTED)
+        assertEquals(PlaceType.TRUSTED, vm.uiState.value.type)
+        assertNull(vm.uiState.value.paywall)
+    }
+
+    @Test
+    fun aDangerZoneAsked_leavesNoPaywallAndNoMessageForTheRequester() {
+        val vm = viewModel()
+        vm.onTypeSelected(PlaceType.RISK)
+        vm.fill()
+        vm.onSave()
+        dispatcher.scheduler.runCurrent()
+        // Nothing about a plan, nothing about a refusal: the form closes, the list shows "En attente".
+        assertNull(vm.uiState.value.paywall)
+        assertNull(vm.uiState.value.message)
+        assertFalse(notices.requestNotice.value!!.queued)
     }
 
     @Test
@@ -216,13 +232,16 @@ class PlaceRequestFormViewModelTest {
     }
 
     @Test
-    fun theLimitOfTheMiff_isSaidCalmly_andTheFormStaysOpen() {
+    fun aRefusalOfTheServer_isTheGenericCalmSentence_neverTheSentenceOfALimitThatWasNotProven() {
+        // The cap of 10 per Miff is only readable by the creator: a member who is refused is never told that the Miff is full.
         val vm = viewModel()
         vm.fill()
-        requests.submitResult = RequestSubmitResult.MiffLimit
+        requests.submitResult = RequestSubmitResult.Refused
         vm.onSave()
         dispatcher.scheduler.runCurrent()
-        assertEquals(PlaceMessage.REQUEST_LIMIT_MIFF, vm.uiState.value.message)
+        assertEquals(PlaceMessage.GENERIC, vm.uiState.value.message)
+        assertNull(vm.uiState.value.loadFailed)
+        assertFalse(vm.uiState.value.requestBlocked)
         assertFalse(vm.uiState.value.saving)
         assertNull(vm.uiState.value.end)
     }

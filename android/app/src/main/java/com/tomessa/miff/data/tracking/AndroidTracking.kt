@@ -130,22 +130,27 @@ class FusedPositionSource(
 ) : PositionSource {
     private val client by lazy { LocationServices.getFusedLocationProviderClient(context.applicationContext) }
 
+    override suspend fun current(): Fix? = read(MAX_AGE_MILLIS)
+
+    /** FEED-REFRESH-POSITION: the same single reading, with the same balanced-power precision, but a cached location of the provider counts only up to [FRESH_AGE_MILLIS]. */
+    override suspend fun currentFresh(): Fix? = read(FRESH_AGE_MILLIS)
+
     @Suppress("MissingPermission")
-    override suspend fun current(): Fix? {
+    private suspend fun read(maxAgeMillis: Long): Fix? {
         val token = CancellationTokenSource()
         return try {
             val request =
                 CurrentLocationRequest
                     .Builder()
                     .setPriority(Priority.PRIORITY_BALANCED_POWER_ACCURACY)
-                    .setMaxUpdateAgeMillis(MAX_AGE_MILLIS)
+                    .setMaxUpdateAgeMillis(maxAgeMillis)
                     .setDurationMillis(WAIT_MILLIS)
                     .build()
             // The last location the phone has is only a fallback, and only when it is recent (review I2): an old one would be a position the person left.
             val location = client.getCurrentLocation(request, token.token).await() ?: client.lastLocation.await()
             location
                 ?.takeIf {
-                    System.currentTimeMillis() - it.time <= MAX_AGE_MILLIS
+                    System.currentTimeMillis() - it.time <= maxAgeMillis
                 }?.let { Fix(it.latitude, it.longitude, it.time) }
         } catch (e: CancellationException) {
             token.cancel()
@@ -159,6 +164,9 @@ class FusedPositionSource(
 
     private companion object {
         const val MAX_AGE_MILLIS = 2L * 60L * 1000L
+
+        /** A pull to refresh asks for "now": a copy up to 15 s old is still the same place for somebody on foot (and costs no new fix of the provider). */
+        const val FRESH_AGE_MILLIS = 15_000L
         const val WAIT_MILLIS = TrackingLimits.POSITION_WAIT_MILLIS
     }
 }
