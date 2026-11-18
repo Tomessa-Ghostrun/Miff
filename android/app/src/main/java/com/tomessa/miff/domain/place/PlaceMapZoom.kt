@@ -29,6 +29,32 @@ object PlaceMapZoom {
         val max: Double,
     )
 
+    /** The highest framing a circle of the allowed radii (50 m and more) can really have; above it, the measure is not believable. */
+    const val MAX_PLAUSIBLE_FIT = 22.0
+
+    /** What to do with a measured framing: the limits, and the zoom to give to the camera. */
+    class Plan(
+        val range: Range,
+        val wanted: Double,
+    )
+
+    /**
+     * The decision of the framing from the zoom measured by the map for the whole circle ([measuredFit]). Null (do nothing, record
+     * nothing, try again later) when the measure is missing, not a number or not believable (a map of size 0 answers with the lowest
+     * zoom): recording it would leave the map framed at the floor and never framed again. [restoring]: the first framing of a new view
+     * gives back the zoom chosen before ([savedOffset], in levels); the next ones go back to the framing.
+     */
+    fun plan(
+        measuredFit: Double?,
+        restoring: Boolean,
+        savedOffset: Double,
+    ): Plan? {
+        if (measuredFit == null || !measuredFit.isFinite() || measuredFit < FLOOR || measuredFit > MAX_PLAUSIBLE_FIT) return null
+        val range = range(measuredFit)
+        val wanted = if (restoring) restore(measuredFit, savedOffset) else range.fit
+        return Plan(range, wanted)
+    }
+
     fun range(fitZoom: Double): Range {
         val fit = clamp(if (fitZoom.isFinite()) fitZoom else FLOOR, FLOOR, CEILING)
         return Range(fit = fit, min = max(FLOOR, fit - LEVELS_OUT), max = min(CEILING, fit + LEVELS_IN))

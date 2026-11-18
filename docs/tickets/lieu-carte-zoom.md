@@ -1,6 +1,6 @@
 # Zoom sur l'aperçu de carte d'un lieu (LIEU-ZOOM)
 
-**Statut** : mini-ticket rédigé sur demande directe du PM (2026-11-17, « je te laisse faire », sans ticket Notion ni maquette) ; Android d'abord, iOS en parallèle par un autre agent (même comportement). Décisions par défaut ci-dessous : à contester avant la recette si besoin.
+**Statut** : ticket unique des deux plateformes (Android et iOS), rédigé sur demande directe du PM (2026-11-17, « je te laisse faire », sans ticket Notion ni maquette) ; Android d'abord, iOS en parallèle par un autre agent (même comportement). Décisions par défaut ci-dessous : à contester avant la recette si besoin.
 **Dépend de** : lieux de confiance (`docs/tickets/lieux-de-confiance.md` §12, ADR2), fournisseurs gratuits (`docs/dev/lieux-fournisseurs-gratuits.md`).
 
 ## 1. Contexte
@@ -19,7 +19,7 @@ Quand on crée un lieu (« Nouveau lieu »), qu'on en modifie un (« Modifier le
 | Z4 | Limites de zoom | **3 niveaux** de dézoom et **3 niveaux** de zoom autour du cadrage initial (facteur 8 de chaque côté), bornés à des niveaux absolus 3 et 19. | Dézoomer jusqu'au quartier et à la ville (contexte), zoomer jusqu'à la rue ; le cercle reste lisible partout (voir Z5). |
 | Z5 | Cercle du rayon | Reste **à l'échelle réelle** (tracé en mètres, pas en pixels). Épaisseur du trait et point central en **taille fixe** à l'écran. Au dézoom maximal le plus petit cercle (50 m) fait environ 16 px : toujours un disque visible, avec le point du centre. Au zoom maximal sur un grand rayon, le cercle dépasse du cadre (la zone teintée remplit la carte) : c'est attendu. **Plage du curseur inchangée** (50 à 800 m, 16 valeurs). | Réutilise le tracé existant. |
 | Z6 | Zoom initial | **Le cercle entier tient dans la carte** (comme aujourd'hui), centré sur le lieu : petit rayon = zoom serré, grand rayon = zoom large. | Comportement actuel conservé (maquette 20C). |
-| Z7 | Rayon qui change pendant que la personne a zoomé | La carte **se recadre sur le cercle** (le zoom choisi est remis au cadrage). Idem si l'adresse change. | Prévisible : le cadre suit le rayon, comme avant. Alternative écartée : garder le zoom au risque de perdre le cercle de vue. |
+| Z7 | Rayon qui change pendant que la personne a zoomé | La carte **se recadre sur le cercle** (le zoom choisi est remis au cadrage). Idem si l'adresse change. | Prévisible : le cadre suit le rayon, comme avant. **Règle commune Android et iOS** (revue de la PR #262). Alternative écartée : garder le zoom au risque de perdre le cercle de vue. |
 | Z8 | Retour, rotation | Le zoom choisi **revient** après une rotation de l'écran ou un passage vers un autre écran (retour). Il repart du cadrage si le formulaire est quitté puis rouvert. | Moins de surprise ; l'état est gardé comme distance (en niveaux) au cadrage, pas comme position. |
 | Z9 | Défilement de la page | **Un doigt** qui commence sur la carte fait défiler la page, comme avant. Dès qu'un **deuxième doigt** touche la carte, la page lâche le geste (pas de saut pendant un pincement) et le reprend à la fin. | Le formulaire est une page qui défile, la carte occupe 176 dp de haut. |
 | Z10 | Où | **Formulaire** (création et modification) **et détail d'un lieu** (celui qui s'ouvre depuis la liste « Lieux de confiance », y compris le détail d'une demande de lieu), mêmes gestes, mêmes bornes, mêmes règles. « Voir sur la carte » (application de cartes du système) reste. | Extension demandée par le PM après la recette de l'APK v1 (2026-11-17). |
@@ -58,7 +58,7 @@ Quand on crée un lieu (« Nouveau lieu »), qu'on en modifie un (« Modifier le
 
 ## 6. Tests
 
-- **Logique pure** (`PlaceMapZoomTest`) : plage de zoom autour du cadrage (3 niveaux de chaque côté), planchers et plafonds absolus, valeurs aberrantes (NaN, infini), distance au cadrage, restitution après rotation, valeur sauvegardée invalide.
+- **Logique pure** (`PlaceMapZoomTest`) : plage de zoom autour du cadrage (3 niveaux de chaque côté), planchers et plafonds absolus, valeurs aberrantes (NaN, infini), distance au cadrage, restitution après rotation, valeur sauvegardée invalide ; **décision du cadrage** (`PlaceMapZoom.plan` : mesure absente, NaN, infinie ou absurde = rien n'est enregistré ; premier cadrage = zoom sauvegardé rendu dans les limites ; recadrage = retour au cadrage).
 - **Géométrie** (`PlaceMapGeometryTest`) : le cercle est centré sur le lieu pour 50 m et 800 m ; rayon réel de chaque point.
 - **Écrans** (`PlaceMapZoomScreensTest`, JVM) : le formulaire et le détail d'un lieu donnent `zoomable` à la carte, avec le point et le rayon choisis ; zone de danger (rouge) zoomable aussi ; pas de carte sans adresse ; carte décrite pour le lecteur d'écran ; un doigt ne bloque pas le défilement de la page ; un deuxième doigt le bloque puis le rend ; geste annulé rend la main.
 - **Garde-fou de code** (`PlacePrivacyTest`) : seuls le zoom et le double toucher sont activés ; jamais de couche « ma position ».
@@ -71,6 +71,25 @@ Quand on crée un lieu (« Nouveau lieu »), qu'on en modifie un (« Modifier le
 - **Vie privée** : **aucune donnée nouvelle** envoyée à un tiers. OpenFreeMap reçoit déjà les tuiles demandées (la zone affichée) et l'adresse IP ; en dézoomant, la zone affichée est plus large (quartier, ville), de même nature. **La politique de confidentialité n'a pas besoin de nouvelle mention** (elle doit déjà citer la zone de carte affichée et l'IP). Si elle décrit la carte comme « figée » ou « sans geste », le `release-manager` doit relire cette phrase.
 - **Sécurité** : aucun nouveau flux réseau, aucun stockage, aucune permission ; les coordonnées ne sont ni journalisées ni sauvegardées (l'état de zoom sauvegardé est une **distance en niveaux** au cadrage, pas une position).
 
-## 8. Parité iOS
+## 8. Section iOS (MapKit) et parité
 
-Même comportement avec MapKit : pincer et double toucher seulement ; pas de déplacement, de rotation ni d'inclinaison ; lieu au centre ; limites de zoom de facteur 8 de chaque côté du cadrage initial ; cercle en mètres ; recadrage quand le rayon ou l'adresse change ; zoom conservé à la rotation ; détail d'un lieu zoomable de la même façon ; **aucun bouton + / −**.
+**Ce ticket est le ticket unique des deux plateformes** (Android : `android/lieu-carte-zoom`, PR #262 ; iOS : `ios/lieu-carte-zoom`). Les décisions Z1 à Z11 et les critères LZ1 à LZ12 valent pour les deux ; seule la mise en oeuvre et les bornes chiffrées diffèrent, ci-dessous.
+
+**Règle commune du rayon** : quand le rayon (ou l'adresse) change pendant que la personne a zoomé, la carte **se recadre sur le cercle et le zoom revient à 0** (Z7). Ce n'est pas « le curseur garde le zoom » : aucune des deux plateformes ne garde le zoom au changement de rayon.
+
+**Mise en oeuvre iOS** (agent `ios-dev`, branche `ios/lieu-carte-zoom`) : `MKMapView` garde zoom et déplacement **éteints** ; le zoom est refait avec `UIPinchGestureRecognizer` et deux `UITapGestureRecognizer` (double toucher = un cran plus près, toucher à deux doigts = un cran plus loin), qui recadrent toujours sur le lieu (`MKCoordinateRegion` centrée sur lui) via les règles pures de `Models/Place/PlaceMapZoom.swift`. Pendant un pincement, le `UIScrollView` parent est suspendu puis rendu. Le zoom n'est ni enregistré ni envoyé. Recette : `docs/qa/checklists/lieu-carte-zoom-ios-recette-pm.md`. iOS est en portrait seulement : pas de rotation d'écran, le lieu est recadré au même niveau si la taille de la carte change (clavier, grande police). Coût : aucun (MapKit livré avec iOS, sans clé ni dépendance) ; quota de tuiles d'Apple non publié (limite connue de `ios/README.md`), signal de bascule : tuiles lentes ou refusées pendant la recette.
+
+**Différence de bornes Android / iOS, assumée** (même idée, deux unités natives) :
+
+| | Android (MapLibre) | iOS (MapKit) |
+|---|---|---|
+| Bornes | **±3 niveaux autour du cadrage du cercle** (facteur 8 de chaque côté), planchers absolus 3 et 19 | **hauteur de carte montrée** : le plus près **100 m**, le plus loin **22 fois le rayon** |
+| Cadrage de départ | le cercle entier tient (zoom mesuré par le moteur de carte, 48 px de marge) | `visibleMeters` : 4,8 fois le rayon, jamais moins de 400 m |
+| Plus petit cercle (50 m) au plus loin | environ 16 px de diamètre | environ 16 pt de diamètre |
+| Plus grand rayon (800 m) au plus loin | cadrage divisé par 8 (environ 18 km de haut à 48° de latitude, 176 dp de carte) | 17 600 m de haut |
+
+Les deux garantissent le même résultat visible : **le cercle reste lisible (jamais réduit à un point) à tout zoom**, le lieu reste au centre, la plage du curseur (50 à 800 m) est inchangée. L'écart de portée au plus loin ne change rien à l'usage (on regarde les alentours du lieu) ; il est **assumé**, pas à corriger, sauf retour du PM en recette.
+
+## 9. Corrections de la revue indépendante de la PR #262
+
+- Le cadrage n'est **jamais enregistré** quand la carte n'a pas de taille (0 par 0) ou que le zoom mesuré n'est pas un nombre crédible : la carte retente au prochain affichage ou à la prochaine mise en page, et les limites de zoom en vigueur sont conservées (décision pure `PlaceMapZoom.plan`, testée).

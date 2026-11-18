@@ -270,6 +270,12 @@ private class MapHolder(
     var spec: PlaceMapSpec? = null
     var framedKey: FrameKey? = null
     var fitZoom = Double.NaN
+
+    /** The box of the map: a map of size 0 cannot be framed (the layout listener tries again when it has a size). */
+    var view: android.view.View? = null
+
+    /** The zoom limits in force (the ones of the last framing), given back if a new framing cannot be measured. */
+    var range: PlaceMapZoom.Range? = null
 }
 
 @Composable
@@ -330,6 +336,7 @@ private fun MapLibrePlaceMap(
         remember(mapView) {
             PinchFriendlyFrame(context).apply {
                 addView(mapView, FrameLayout.LayoutParams(MATCH_PARENT, MATCH_PARENT))
+                holder.view = this
                 // The first layout (or a rotation) gives the map its size: the circle is framed then if it could not be before, and
                 // the zoom stays centred on the place (the focal point of the gestures is the middle of the view).
                 addOnLayoutChangeListener { _, left, top, right, bottom, _, _, _, _ ->
@@ -462,6 +469,9 @@ private fun frameCircle(
 ) {
     val key = FrameKey(spec.lat, spec.lng, spec.radiusM)
     if (holder.framedKey == key) return
+    // A map of size 0 cannot be measured: leave everything as it is, the layout listener tries again when it has a size.
+    val view = holder.view
+    if (view == null || view.width <= 0 || view.height <= 0) return
     val edges = PlaceMapGeometry.bounds(PlaceMapGeometry.ring(spec.lat, spec.lng, spec.radiusM))
     val bounds =
         LatLngBounds
@@ -469,33 +479,47 @@ private fun frameCircle(
             .include(LatLng(edges[0], edges[1]))
             .include(LatLng(edges[2], edges[3]))
             .build()
+    val previous = holder.range
     try {
         // Free range first: the framing must be measured without the limits of the previous circle.
         map.setMinZoomPreference(MapLibreConstants.MINIMUM_ZOOM.toDouble())
         map.setMaxZoomPreference(MapLibreConstants.MAXIMUM_ZOOM.toDouble())
         val padding = CAMERA_PADDING_PX
-        val fit = map.getCameraForLatLngBounds(bounds, intArrayOf(padding, padding, padding, padding))?.zoom ?: return
-        val range = PlaceMapZoom.range(fit)
-        val first = holder.framedKey == null
-        val wanted = if (first) PlaceMapZoom.restore(fit, holder.zoomOffset.floatValue.toDouble()) else range.fit
-        map.setMinZoomPreference(range.min)
-        map.setMaxZoomPreference(range.max)
+        val measured = map.getCameraForLatLngBounds(bounds, intArrayOf(padding, padding, padding, padding))?.zoom
+        val plan = PlaceMapZoom.plan(measured, restoring = holder.framedKey == null, savedOffset = holder.zoomOffset.floatValue.toDouble())
+        if (plan == null) {
+            // Not measurable (no size yet, or an absurd answer): NOTHING is recorded, so that the next layout or redraw tries again,
+            // and the limits that were in force stay in force.
+            previous?.let {
+                map.setMinZoomPreference(it.min)
+                map.setMaxZoomPreference(it.max)
+            }
+            return
+        }
+        map.setMinZoomPreference(plan.range.min)
+        map.setMaxZoomPreference(plan.range.max)
         map.moveCamera(
             CameraUpdateFactory.newCameraPosition(
                 CameraPosition
                     .Builder()
                     .target(LatLng(spec.lat, spec.lng))
-                    .zoom(wanted)
+                    .zoom(plan.wanted)
                     .bearing(0.0)
                     .tilt(0.0)
                     .build(),
             ),
         )
-        holder.fitZoom = range.fit
+        val first = holder.framedKey == null
+        holder.range = plan.range
+        holder.fitZoom = plan.range.fit
         holder.framedKey = key
         if (!first) holder.zoomOffset.floatValue = 0f
     } catch (e: IllegalStateException) {
-        // The view has no size yet: the layout listener frames it as soon as it has one.
+        // The view has no size yet: nothing is recorded, the layout listener frames it as soon as it has one.
+        previous?.let {
+            map.setMinZoomPreference(it.min)
+            map.setMaxZoomPreference(it.max)
+        }
     }
 }
 

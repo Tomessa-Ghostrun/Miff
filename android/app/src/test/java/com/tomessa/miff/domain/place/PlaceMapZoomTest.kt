@@ -1,6 +1,7 @@
 package com.tomessa.miff.domain.place
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -66,5 +67,45 @@ class PlaceMapZoomTest {
         assertEquals(15.0, PlaceMapZoom.restore(15.0, 0.0), 0.0)
         assertEquals(18.0, PlaceMapZoom.restore(15.0, 40.0), 0.0)
         assertEquals(12.0, PlaceMapZoom.restore(15.0, -40.0), 0.0)
+    }
+
+    // --- The decision of the framing (review of PR #262) -----------------------------------------------------------------------
+
+    @Test
+    fun plan_aMeasureThatIsMissingOrNotBelievable_decidesNothing() {
+        // A map of size 0 (or not laid out yet) answers with nothing, NaN, infinity, or the lowest zoom: recording that would leave the
+        // map framed at the floor for good. The caller records nothing and tries again at the next layout.
+        listOf(null, Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, -3.0, 0.0, 2.9, 22.1, 25.5).forEach { measured ->
+            assertNull("measure $measured", PlaceMapZoom.plan(measured, restoring = true, savedOffset = 1.0))
+            assertNull("measure $measured", PlaceMapZoom.plan(measured, restoring = false, savedOffset = 0.0))
+        }
+    }
+
+    @Test
+    fun plan_aRealMeasure_isBelievable_forEveryRadiusOfTheSlider() {
+        // About level 12 (800 m) to 17 (50 m) in a box of 176 dp: well inside what is accepted.
+        listOf(PlaceMapZoom.FLOOR, 12.0, 14.5, 17.0, PlaceMapZoom.MAX_PLAUSIBLE_FIT).forEach { measured ->
+            val plan = PlaceMapZoom.plan(measured, restoring = false, savedOffset = 0.0)!!
+            assertEquals(PlaceMapZoom.range(measured).min, plan.range.min, 0.0)
+            assertEquals(PlaceMapZoom.range(measured).max, plan.range.max, 0.0)
+        }
+    }
+
+    @Test
+    fun plan_firstFraming_givesBackTheSavedZoom_withinTheLimits() {
+        val plan = PlaceMapZoom.plan(15.0, restoring = true, savedOffset = 2.0)!!
+        assertEquals(17.0, plan.wanted, 1e-9)
+        assertEquals(15.0, plan.range.fit, 0.0)
+        assertEquals(18.0, PlaceMapZoom.plan(15.0, restoring = true, savedOffset = 40.0)!!.wanted, 0.0)
+        assertEquals(12.0, PlaceMapZoom.plan(15.0, restoring = true, savedOffset = -40.0)!!.wanted, 0.0)
+        assertEquals(15.0, PlaceMapZoom.plan(15.0, restoring = true, savedOffset = Double.NaN)!!.wanted, 0.0)
+    }
+
+    @Test
+    fun plan_aNewFraming_goesBackToTheFraming_whateverWasSaved() {
+        // Radius or address changed while the person had zoomed: the circle is framed again, the zoom is back to 0 (rule Z7).
+        val plan = PlaceMapZoom.plan(14.0, restoring = false, savedOffset = 2.5)!!
+        assertEquals(14.0, plan.wanted, 0.0)
+        assertEquals(plan.range.fit, plan.wanted, 0.0)
     }
 }
