@@ -315,6 +315,8 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.crashlytics)
     implementation(libs.firebase.analytics)
+    // Push (SRV-2): data-only messages from the server, see data/push. Version from the BOM.
+    implementation(libs.firebase.messaging)
     // App Check: Play Integrity in release, debug provider in debug (never shipped in release).
     releaseImplementation(libs.firebase.appcheck.playintegrity)
     add("releaseLikeImplementation", libs.firebase.appcheck.playintegrity)

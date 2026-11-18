@@ -146,7 +146,8 @@ class PlaceFormActions(
 
 /**
  * "Nouveau lieu" and "Modifier le lieu" (mockups 01 to 07 of the PM, fiches nouveau-lieu.md and modifier-lieu.md). One scrolling
- * body, one fixed foot with THE button "Enregistrer" (no tick at the top, decision of the PM). The map is a still picture: the
+ * body, one fixed foot with THE button "Enregistrer" (no tick at the top, decision of the PM). The map can be zoomed with the
+ * fingers only (pinch, double tap; decision of the PM: no + / - buttons) and never moves the place: the
  * address and the slider are enough to make a place (screen reader, no map).
  */
 @Composable
@@ -810,6 +811,7 @@ private fun RadiusSection(
                         radiusM = state.radiusM,
                         danger = state.type == PlaceType.RISK,
                         description = stringResource(R.string.place_map_a11y, state.radiusM, address),
+                        zoomable = true,
                     )
                 },
             height = MAP_HEIGHT,
@@ -913,8 +915,9 @@ private fun TypeSection(
             TypeCard(
                 type = PlaceType.RISK,
                 selected = state.type == PlaceType.RISK,
-                // A free account sees at once that this one is Miff+ (design decision 11): no surprise when touching it.
-                locked = !state.premium && state.type != PlaceType.RISK,
+                // A free CREATOR sees at once that this one is Miff+ (design decision 11): no surprise when touching it. Never in the form of a REQUEST:
+                // any member may ask for a danger zone (decision of the PM, 2026-11-17), the plan of the creator counts at the acceptance.
+                locked = state.dangerLocked,
                 enabled = state.canEditAddress,
                 onClick = { actions.onTypeSelected(PlaceType.RISK) },
                 modifier = cardModifier,
@@ -1097,7 +1100,6 @@ private fun Foot(
                             PlaceMessage.GENERIC -> R.string.miff_message_generic
                             PlaceMessage.MIFF_GONE -> R.string.place_message_miff_gone
                             PlaceMessage.REQUEST_LIMIT_MEMBER -> R.string.place_request_limit_member
-                            PlaceMessage.REQUEST_LIMIT_MIFF -> R.string.place_request_limit_miff
                             PlaceMessage.REQUESTS_UNAVAILABLE -> R.string.place_request_unavailable
                         },
                     ),
@@ -1105,7 +1107,6 @@ private fun Foot(
                 isError =
                     message != PlaceMessage.OFFLINE &&
                         message != PlaceMessage.REQUEST_LIMIT_MEMBER &&
-                        message != PlaceMessage.REQUEST_LIMIT_MIFF &&
                         message != PlaceMessage.REQUESTS_UNAVAILABLE,
             )
         }

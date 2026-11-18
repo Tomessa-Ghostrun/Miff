@@ -98,7 +98,7 @@ shot 63-fr-miff-accueil-sans-miff 2 "${fr_args[@]}" -MiffPreview miff-home-empty
 shot 64-en-miff-rejoindre-confirmation 2 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview miff-join-confirm
 shot 65-en-miff-ecran-createur 2 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview miff-screen-owner
 # MIFF-4 : retirer (question puis nouveau code), supprimer (question puis progression). Les questions sont des feuilles : attente
-# de 3 s (animation). Peu de captures exprès : le job macOS est proche de sa limite de 30 minutes (les autres états sont dans les
+# de 3 s (animation). Peu de captures exprès : l'étape des captures dure 11 à 14 min sur les runners actuels, limite 30 min dans ios.yml (les autres états sont dans les
 # previews `miff-screen-*` et se lancent à la main).
 shot 68-fr-miff-retirer 3 "${fr_args[@]}" -MiffPreview miff-screen-remove
 shot 69-fr-miff-retire-nouveau-code 3 "${fr_args[@]}" -MiffPreview miff-screen-removed
@@ -139,7 +139,7 @@ shot 153-fr-photo-plein-ecran-zones-sures-nulles 4 "${fr_args[@]}" -MiffPreview 
 # PAY-UI-I : l'écran d'offre Miff+ (ticket paywall-v2.md), plein écran. La capture 95b ci-dessus montre la variante « sans
 # achat » (la seule de la production) AVANT les 3 secondes : croix absente, emplacement réservé. Les variantes « -cross » ont un délai
 # de 0 (croix présente, comme après 3 secondes). Les états avec offre (essai, deux formules, chargement, erreurs, abonné) ne sont
-# atteints que par ces aperçus (essai et deux formules capturés ici ; chargement, indisponible, achat en cours, en attente, erreur, abonné : à lancer à la main, `-MiffPreview paywall-loading` etc., pour tenir dans les 15 min de l étape) : aucun achat n existe avant SRV-8. Prix de démonstration.
+# atteints que par ces aperçus (essai et deux formules capturés ici ; chargement, indisponible, achat en cours, en attente, erreur, abonné : à lancer à la main, `-MiffPreview paywall-loading` etc., pour garder l'étape courte, limite 30 min) : aucun achat n existe avant SRV-8. Prix de démonstration.
 shot 95c-fr-offre-sans-achat-croix 3 "${fr_args[@]}" -MiffPreview paywall-soon-cross
 shot 95e-fr-offre-essai-croix 3 "${fr_args[@]}" -MiffPreview paywall-trial-cross
 shot 95f-fr-offre-deux-formules-croix 3 "${fr_args[@]}" -MiffPreview paywall-plans-cross
@@ -152,6 +152,10 @@ shot 170-fr-reglages-a-propos-ligne 2 "${fr_args[@]}" -MiffPreview about-setting
 shot 172-fr-a-propos 2 "${fr_args[@]}" -MiffPreview about-screen
 shot 174-fr-licences 2 "${fr_args[@]}" -MiffPreview about-licenses
 shot 176-en-a-propos 2 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview about-screen
+# La fenêtre d'avis « Que penses-tu de Miff ? » (docs/tickets/pop-ins-avis.md ; build Debug seulement, drapeau REVIEW_PROMPT) : la VRAIE carte par-dessus
+# un Feed de démonstration, (question, puis « Merci de nous le dire ! »), et plus bas en très grand texte ; « Merci ! » et l'anglais : `-MiffPreview review-thanks` à la main (l'étape est limitée en temps). Aucun réseau, rien d'écrit.
+shot 160-fr-avis-question 4 "${fr_args[@]}" -MiffPreview review-question
+shot 162-fr-avis-merci-formulaire 3 "${fr_args[@]}" -MiffPreview review-feedback
 
 
 # Le vrai parcours de l'app (session, routage) : première ouverture = carrousel, après le splash animé.
@@ -167,6 +171,9 @@ splash_args=(-MiffSkipSplash YES)
 shot 90-fr-feed-bulle-verte 3 "${fr_args[@]}" -MiffPreview feed-green
 shot 91-fr-feed-bulle-orange 3 "${fr_args[@]}" -MiffPreview feed-orange
 shot 92-fr-feed-bulle-rouge 3 "${fr_args[@]}" -MiffPreview feed-red
+# COULEURS-2 : le bouton « i » hors de la bulle (carrousel ; les bulles verte, orange et rouge ci-dessus le montrent aussi) et l'écran des couleurs. Peu de captures : l'étape est limitée à 15 min.
+shot 96-fr-feed-bulle-carrousel 3 "${fr_args[@]}" -MiffPreview feed-carousel
+shot 98-fr-couleurs-ecran 3 "${fr_args[@]}" -MiffPreview colors-info
 
 # Mode sombre du système : l'app doit rester claire.
 xcrun simctl ui "$udid" appearance dark > /dev/null 2>&1 || true
@@ -188,15 +195,10 @@ shot 79-fr-miff-supprimer-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview miff-s
 shot 152-fr-photo-plein-ecran-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview photo-3-4
 shot 93-fr-feed-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-orange
 
-shot 93-fr-feed-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview feed-orange
-
-shot 152-fr-photo-plein-ecran-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview photo-3-4
-
-
-
 shot 99-fr-offre-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview paywall-trial-cross
 shot 99b-fr-offre-sans-achat-texte-tres-grand 3 "${fr_args[@]}" -MiffPreview paywall-soon-cross
 shot 178-fr-a-propos-texte-tres-grand 2 "${fr_args[@]}" -MiffPreview about-screen
+shot 164-fr-avis-question-texte-tres-grand 4 "${fr_args[@]}" -MiffPreview review-question
 
 xcrun simctl ui "$udid" content_size large > /dev/null 2>&1 || true
 

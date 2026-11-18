@@ -11,7 +11,10 @@ import kotlinx.coroutines.flow.asStateFlow
  * never in a file, a log or an event, and gone at the sign-out (this class is part of the teardown of the session).
  */
 
-/** The first names of the people who asked for a place, by Miff and by person: what the centre needs to write its lines. */
+/**
+ * The first names of the people who asked for a place, by Miff and by person: what the centre needs to write its lines. Since NOTIF-P1A it also holds the first names of the
+ * members the Feed showed (the lines of "Depuis ta dernière visite" are written from them at draw time); same rule: memory only, gone with the session.
+ */
 class RequesterDirectory : SessionTeardown {
     private val mutable = MutableStateFlow<Map<String, String>>(emptyMap())
 

@@ -3,6 +3,7 @@ package com.tomessa.miff
 import android.app.Application
 import com.tomessa.miff.data.AppCheckInstaller
 import com.tomessa.miff.data.notification.AppVisibility
+import com.tomessa.miff.data.push.PushHost
 import com.tomessa.miff.data.tracking.ForegroundObserver
 import com.tomessa.miff.data.tracking.TrackingEngine
 import com.tomessa.miff.domain.startup.StartupMark
@@ -24,7 +25,9 @@ import java.util.concurrent.atomic.AtomicBoolean
  * ones now run on a background thread ([startWarmUp]); the session starts after the first image of the animation
  * ([startSession]).
  */
-class MiffApplication : Application() {
+class MiffApplication :
+    Application(),
+    PushHost {
     lateinit var container: AppContainer
         private set
 
@@ -52,9 +55,12 @@ class MiffApplication : Application() {
                         container.foregroundTicks.arrived()
                         // NOTIF-1A / 4A: the channels follow the language of the app, and the reminders are brought in line with the plan.
                         container.notificationsLookAgain()
+                        // NOTIF-P1A: back after 30 minutes or more (or a cold start) = the next fresh picture of the Feed is compared with the last one seen.
+                        container.lastVisitForeground()
                     },
                     onBackground = {
                         AppVisibility.inForeground = false
+                        container.lastVisitBackground()
                         container.trackingLooksAgain(TrackingEngine.Reason.BACKGROUNDED)
                     },
                 ),
@@ -62,6 +68,14 @@ class MiffApplication : Application() {
         }
         StartupTrace.mark(StartupMark.APP_CREATE_END)
     }
+
+    // SRV-2: the messaging service (data/push) reaches the container through this seam.
+    override fun handlePushMessage(
+        data: Map<String, String>,
+        messageId: String?,
+    ): Boolean = container.pushMessageHandler.handle(data, messageId)
+
+    override suspend fun onNewPushToken(token: String) = container.onNewPushToken(token)
 
     /**
      * Builds the rest on another thread while the main thread creates the screen. Only an optimisation: the main thread

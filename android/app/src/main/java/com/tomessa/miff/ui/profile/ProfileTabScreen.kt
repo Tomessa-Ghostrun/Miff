@@ -63,7 +63,8 @@ private val GearSize = Spacing.minTouchTarget
 /**
  * The Profile tab (mockup "profil", ticket ONB-3a, criterion A3): the photo (or the initials), "Prénom Nom", "C'est toi" and
  * the gear that opens Settings. A tap on the photo and the name opens "Mes informations". Under the header come
- * the carousel "Mes Miffs" ([MiffCarouselSection]), the places of the Miff, then (last) the card "Mode voyage". [scrollToTopSignal] goes up when the person taps
+ * the countdown before orange when it applies (COUNTDOWN-A), the carousel "Mes Miffs" ([MiffCarouselSection]), the card "Répartition de ton temps" (TIME-2), the places of the Miff,
+ * then (last) the card "Mode voyage". [scrollToTopSignal] goes up when the person taps
  * the tab they are already on.
  */
 @Composable
@@ -77,6 +78,8 @@ fun ProfileTabScreen(
     onOpenMiff: (String) -> Unit = {},
     /** The carousel of Miffs (decision of the PM, 2026-11-10): the faces known, what to do when a card appears and when the last card is touched. */
     carousel: MiffCarouselHost = MiffCarouselHost(),
+    /** The card "Répartition de ton temps" (docs/tickets/profil-repartition-temps.md), drawn between the carousel and the places; nothing until the host gives it. */
+    timeShareContent: @Composable () -> Unit = {},
     /** The places of the Miff (ticket LOC-1, mockup 17), drawn under the cards of the Miffs; nothing until the host gives them. */
     placesContent: @Composable () -> Unit = {},
     /** The pop-in "Pas de connexion" (bug of 2026-11-10): the profile is not there and cannot be read. */
@@ -84,6 +87,11 @@ fun ProfileTabScreen(
     popInSuppressed: Boolean = false,
     /** MODE VOYAGE (VOY-2A): the card "Mode voyage", the LAST block of the tab (after "Mes Miffs" and the places); nothing until the host gives it. */
     travelContent: @Composable () -> Unit = {},
+    /**
+     * COUNTDOWN-A: the encart "Tu es en dehors de tes lieux de confiance", the FIRST block of the content, above "Mes Miffs" (nothing until the host gives it).
+     * It carries its own air below it (inside its animated block), so that nothing jumps when it comes or goes.
+     */
+    countdownContent: @Composable () -> Unit = {},
 ) {
     RecentsPrivacy()
     val scroll = rememberScrollState()
@@ -127,7 +135,13 @@ fun ProfileTabScreen(
         } else if (state.status == ProfileTabStatus.UNAVAILABLE) {
             Unavailable(onRetry)
         }
-        MiffCarouselSection(miffs, carousel, onOpenMiff)
+        // COUNTDOWN-A: the countdown, then "Mes Miffs": one block with no spacing of its own (the countdown brings its air with it, only while it is shown).
+        Column {
+            countdownContent()
+            MiffCarouselSection(miffs, carousel, onOpenMiff)
+        }
+        // TIME-2: under the carousel of Miffs, above the places of the Miff the carousel is on (it follows that Miff).
+        timeShareContent()
         placesContent()
         // MODE VOYAGE: the card is the LAST block of the Profile (decision of the PM, 2026-11-11), after the carousel of Miffs and the places.
         travelContent()

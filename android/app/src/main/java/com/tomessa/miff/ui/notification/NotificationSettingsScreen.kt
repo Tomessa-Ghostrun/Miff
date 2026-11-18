@@ -74,7 +74,8 @@ fun NotificationSettingsScreen(
 
         SwitchRow(
             title = stringResource(R.string.notif_settings_general),
-            body = null,
+            // SRV-2: this switch is a yes to being notified, so it carries what registering means (the identifier of the phone).
+            body = stringResource(R.string.android_notif_push_identifier_note),
             checked = state.generalChecked,
             enabled = state.generalEnabled,
             onCheckedChange = actions.onGeneralToggled,
@@ -93,6 +94,11 @@ fun NotificationSettingsScreen(
         // N6: turning it off cuts the notification, never what the Miff sees (said on the screen, ticket 20.11).
         TypeRow(NotificationType.N6, state, actions, body = stringResource(R.string.notif_settings_n6_hint))
         ChannelBlockedNote(state.blocked(NotificationFamily.CIRCLE), actions.onOpenPhoneSettings)
+
+        // N9 (push of the server): "Quand un proche donne des nouvelles", ON by default; the switch is also what the server reads (notify.updates).
+        SectionTitle(R.string.notif_settings_section_loved_ones)
+        TypeRow(NotificationType.N9, state, actions, body = stringResource(R.string.notif_settings_circle_update_hint))
+        ChannelBlockedNote(state.blocked(NotificationFamily.NEWS), actions.onOpenPhoneSettings)
 
         Spacer(Modifier.size(Spacing.m))
         SwitchRow(

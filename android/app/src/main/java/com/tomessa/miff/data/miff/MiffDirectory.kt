@@ -4,6 +4,7 @@ import android.content.Context
 import com.tomessa.miff.data.auth.CachePurger
 import com.tomessa.miff.data.session.SessionTeardown
 import com.tomessa.miff.domain.miff.MiffSummary
+import com.tomessa.miff.domain.notification.MiffIdShape
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -165,6 +166,25 @@ class MiffDirectory(
         mutableNotices.value = mutableNotices.value.drop(1)
     }
 
+    /**
+     * A tap on a notification of the circle (N9) is about the Miff [miffId]: the Feed shows that one, IF the person belongs to it. The identifier comes from an intent that any
+     * application could build, so its shape is checked and a Miff that is not in the list is ignored. While the list is not loaded yet (a cold start) the request waits in
+     * memory for the first list, then is used once and forgotten; it never reaches the disk and goes with the session.
+     */
+    fun preselect(miffId: String) {
+        if (!MiffIdShape.isValid(miffId)) return
+        val ready = mutableState.value as? DirectoryState.Ready
+        if (ready == null) {
+            requestedActive = miffId
+        } else if (ready.miffs.any { it.id == miffId }) {
+            select(miffId)
+        }
+    }
+
+    /** The Miff a tap asked for before the list was loaded (see [preselect]). */
+    @Volatile
+    private var requestedActive: String? = null
+
     /** The person picked another Miff in the selector (Premium). */
     fun select(miffId: String) {
         val ready = mutableState.value as? DirectoryState.Ready ?: return
@@ -178,6 +198,7 @@ class MiffDirectory(
         announced.clear()
         mutableNotices.value = emptyList()
         mutableState.value = DirectoryState.Loading
+        requestedActive = null
         activeStore.clear()
     }
 
@@ -187,6 +208,10 @@ class MiffDirectory(
         fromCache: Boolean,
         premiumKnown: Boolean,
     ) {
+        // A tap on a notification of the circle asked for a Miff before the list was there: used once, and only if the person belongs to it.
+        val requested = requestedActive
+        requestedActive = null
+        if (requested != null && miffs.any { it.id == requested }) activeStore.set(requested)
         val wanted = activeStore.get()
         val active = miffs.firstOrNull { it.id == wanted }?.id ?: miffs.firstOrNull()?.id
         mutableState.value = DirectoryState.Ready(miffs, active, premium, fromCache, premiumKnown)

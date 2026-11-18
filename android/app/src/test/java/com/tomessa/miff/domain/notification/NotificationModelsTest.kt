@@ -23,8 +23,8 @@ class NotificationModelsTest {
     // --- Types ---------------------------------------------------------------------------------------------------------------------
 
     @Test
-    fun thereAreSixTypes_n5IsAbandonedAndAbsent_n7IsTheEndOfMyTrip() {
-        assertEquals(listOf("n1", "n2", "n3", "n4", "n6", "n7"), NotificationType.PERIMETER.map { it.code })
+    fun thereAreSevenTypes_n5IsAbandonedAndAbsent_n7IsTheEndOfMyTrip_n9IsTheNewsPushedByTheServer() {
+        assertEquals(listOf("n1", "n2", "n3", "n4", "n6", "n7", "n9"), NotificationType.PERIMETER.map { it.code })
         assertNull(NotificationType.fromCode("n5"))
         assertNull(NotificationType.fromCode(null))
         assertEquals(NotificationType.N6, NotificationType.fromCode("n6"))
@@ -42,9 +42,9 @@ class NotificationModelsTest {
     }
 
     @Test
-    fun theNightIsQuietForN1N3N6_andTheRedOnesKeepTheirNormalLevel_decisionQ30() {
+    fun theNightIsQuietForN1N3N6N9_andTheRedOnesKeepTheirNormalLevel_decisionQ30() {
         assertEquals(
-            setOf(NotificationType.N1, NotificationType.N3, NotificationType.N6),
+            setOf(NotificationType.N1, NotificationType.N3, NotificationType.N6, NotificationType.N9),
             NotificationType.PERIMETER.filter { it.quietAtNight }.toSet(),
         )
     }
@@ -145,10 +145,10 @@ class NotificationModelsTest {
     }
 
     @Test
-    fun atNight_n1n3n6AreQuiet_n2n4AreNot_andTheSwitchOffMakesNothingQuiet() {
+    fun atNight_n1n3n6n9AreQuiet_n2n4AreNot_andTheSwitchOffMakesNothingQuiet() {
         val on = NotificationPreferences()
         val quiet = NotificationType.PERIMETER.filter { NightCalm.isQuiet(it, on, localHour = 2) }.toSet()
-        assertEquals(setOf(NotificationType.N1, NotificationType.N3, NotificationType.N6), quiet)
+        assertEquals(setOf(NotificationType.N1, NotificationType.N3, NotificationType.N6, NotificationType.N9), quiet)
         NotificationType.PERIMETER.forEach { assertFalse("$it by day", NightCalm.isQuiet(it, on, localHour = 14)) }
         val off = on.copy(nightCalm = false)
         NotificationType.PERIMETER.forEach {

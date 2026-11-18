@@ -63,6 +63,9 @@ struct ScreenPreview: View {
         case _ where name.hasPrefix("profile-carousel"):
             // L'onglet Profil et son carrousel de Miffs : voir `ProfileScreenPreview`.
             ProfileScreenPreview(name: name)
+        case "colors-info":
+            // « Les couleurs de ta Miff » (COULEURS-2), l'écran statique ouvert par le bouton « i » de la bulle du Feed.
+            ColorsInfoView(onBack: ignoreAction)
         case _ where name.hasPrefix("feed-"):
             // Le Feed (en-tête, bulle, cartes) : voir `FeedScreenPreview`.
             FeedScreenPreview(name: name)
@@ -72,6 +75,9 @@ struct ScreenPreview: View {
         case _ where name.hasPrefix("about-"):
             // Réglages > À propos et aide et ses licences (ABOUT-1I) : voir `AboutScreenPreview`.
             AboutScreenPreview(name: name)
+        case _ where name.hasPrefix("review-"):
+            // La fenêtre d'avis (question, « Merci ! », « Merci de nous le dire ! ») : voir `ReviewScreenPreview`.
+            ReviewScreenPreview(name: name)
         case "lookup-failed":
             AccountLookupFailedView(onRetry: ignoreAction, onSignOut: ignoreAction)
         default:
