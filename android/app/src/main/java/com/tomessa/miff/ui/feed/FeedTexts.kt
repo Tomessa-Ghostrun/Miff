@@ -187,6 +187,10 @@ class FeedTexts(
             StateLabel.TravelEnded -> {
                 s(R.string.voyage_feed_label_ended)
             }
+
+            StateLabel.AlertActive -> {
+                s(R.string.feed_label_alert)
+            }
         }
 
     /** "15 nov." ("15 nov. 2027" when it is not this year), by the formatter of the system. */
@@ -271,6 +275,18 @@ class FeedTexts(
                     s(R.string.feed_bubble_me_red_stale, since(kind.since))
                 } else {
                     s(R.string.feed_bubble_red_stale, name, since(kind.since))
+                }
+            }
+
+            is AlertKind.Declared -> {
+                // ALERTE: factual and calm, attributed to the person ("a déclaré une alerte à 15 h 02"); never "en sécurité", never a point of exclamation.
+                if (page.isMe) {
+                    s(
+                        R.string.feed_bubble_me_alert,
+                        at(kind.at),
+                    )
+                } else {
+                    s(R.string.feed_bubble_alert, name, at(kind.at))
                 }
             }
 

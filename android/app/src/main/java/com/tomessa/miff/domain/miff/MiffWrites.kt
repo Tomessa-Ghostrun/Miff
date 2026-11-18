@@ -198,6 +198,7 @@ object MiffWrites {
     fun stopSharing(
         miffId: String,
         uid: String,
+        withAlert: Boolean = false,
     ): List<DocWrite> =
         listOf(
             DocWrite(
@@ -208,7 +209,29 @@ object MiffWrites {
             DocWrite("miffs/$miffId/status/$uid", WriteKind.DELETE),
             DocWrite("miffs/$miffId/photos/$uid", WriteKind.DELETE),
             DocWrite("miffs/$miffId/positions/$uid", WriteKind.DELETE),
-        )
+        ) + alertDeletion(miffId, uid, withAlert)
+
+    /**
+     * ALERTE « Je suis en danger » (backend/data-model.md 2.18, NOT DEPLOYED): once the rules know the alert, every lot that stops the sharing, leaves, removes a member or deletes a Miff
+     * must delete `miffs/{id}/alerts/{uid}` of that Miff in the same lot, or the rules refuse the lot (an alert only lives while the person shares and belongs there). The deletion of a
+     * document that does not exist is allowed and does nothing. [withAlert] is false while the function is switched off (BuildConfig.ALERT_DANGER): the rules in production do not know
+     * the path yet and would refuse the whole lot, so nothing is added then. The cost for the rules is one more read per lot (budgets of the backend: 4 Miffs per lot at most for the
+     * stop of sharing, the app writes ONE per lot).
+     */
+    fun alertDeletion(
+        miffId: String,
+        uid: String,
+        withAlert: Boolean,
+    ): List<DocWrite> = if (withAlert) listOf(DocWrite("miffs/$miffId/alerts/$uid", WriteKind.DELETE)) else emptyList()
+
+    /**
+     * The creator removes the alert of a member in a lot of its OWN, BEFORE the lot that removes the member (the removal lot already costs 18 reads of rules of the 20 allowed: with the
+     * alert it would cost 19, the backend asks to keep them apart). Nothing else goes in this lot.
+     */
+    fun deleteMemberAlert(
+        miffId: String,
+        targetUid: String,
+    ): List<DocWrite> = listOf(DocWrite("miffs/$miffId/alerts/$targetUid", WriteKind.DELETE))
 
     /**
      * Resume sharing (ticket K6): a new consent (date and the same [MiffSharingConsent.VERSION] as at the entry, so version 3 from
@@ -262,6 +285,7 @@ object MiffWrites {
         miffId: String,
         uid: String,
         membershipKey: String?,
+        withAlert: Boolean = false,
     ): List<DocWrite> {
         val writes =
             mutableListOf(
@@ -270,6 +294,7 @@ object MiffWrites {
                 DocWrite("miffs/$miffId/photos/$uid", WriteKind.DELETE),
                 DocWrite("miffs/$miffId/positions/$uid", WriteKind.DELETE),
             )
+        writes += alertDeletion(miffId, uid, withAlert)
         if (membershipKey != null) writes += DocWrite("users/$uid/memberships/$membershipKey", WriteKind.DELETE)
         return writes
     }
@@ -402,6 +427,7 @@ object MiffWrites {
         code: String,
         codeExists: Boolean,
         membershipKey: String?,
+        withAlert: Boolean = false,
     ): List<DocWrite> {
         require(JoinCode.isValid(code)) { "join code shape" }
         val writes =
@@ -413,6 +439,7 @@ object MiffWrites {
         writes += DocWrite("miffs/$miffId/status/$uid", WriteKind.DELETE)
         writes += DocWrite("miffs/$miffId/photos/$uid", WriteKind.DELETE)
         writes += DocWrite("miffs/$miffId/positions/$uid", WriteKind.DELETE)
+        writes += alertDeletion(miffId, uid, withAlert)
         writes += DocWrite("miffs/$miffId/members/$uid", WriteKind.DELETE)
         if (membershipKey != null) writes += DocWrite("users/$uid/memberships/$membershipKey", WriteKind.DELETE)
         return writes

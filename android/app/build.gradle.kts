@@ -19,6 +19,13 @@ val locationBlockingProperty: String = providers.gradleProperty("miff.locationBl
 // reconfirmed the window at the gate "prêt à soumettre". Checked by ReviewPromptReleaseTest, and on the real bundle by android.yml.
 val reviewPromptProperty: String? = providers.gradleProperty("miff.reviewPrompt").orNull
 
+// ALERTE « Je suis en danger » (ticket docs/tickets/alerte-danger.md, decision of the PM of 2026-11-18). BuildConfig.ALERT_DANGER is the SWITCH of the whole function (the gesture of
+// 5 seconds, the banner, the red card, the listener of the alerts, the deletion of the alert in the lots of stop of sharing / leaving / removal / deletion of a Miff, the push
+// "circle_alert"). It is TRUE in the debug build (internal tests) and FALSE in release and releaseLike: the function is ABSENT from every build that can be distributed until
+// the rules (backend/firestore.rules, point 16) AND the function notifierAlerte are deployed by the PM. -Pmiff.alertDanger=true|false forces it either way for a TEST; a RELEASE
+// build (release, releaseLike) refuses "true" unless -Pmiff.allowAlertDangerInRelease=true is ALSO given, on purpose, once the PM has deployed the backend. Checked by AlertDangerFlagTest.
+val alertDangerProperty: String? = providers.gradleProperty("miff.alertDanger").orNull
+
 // VERSIONS (docs/release/checklist-android.md). Nothing is frozen here any more:
 // - versionName = the first "## [x.y.z]" heading of android/CHANGELOG.md (one place: the changelog the team already keeps), or -Pmiff.versionName=... for a test.
 // - versionCode = -Pmiff.versionCode=N when given (the release workflow gives its own run number: Google Play only accepts a code HIGHER than every one it has
@@ -130,6 +137,11 @@ android {
             reviewPromptProperty == null || reviewPromptProperty == "true" || reviewPromptProperty == "false",
         ) { "miff.reviewPrompt must be true or false" }
         buildConfigField("boolean", "REVIEW_PROMPT", reviewPromptProperty ?: "false")
+        // Alert of danger: off unless the flag says otherwise; the debug build turns it on (see buildTypes).
+        require(
+            alertDangerProperty == null || alertDangerProperty == "true" || alertDangerProperty == "false",
+        ) { "miff.alertDanger must be true or false" }
+        buildConfigField("boolean", "ALERT_DANGER", alertDangerProperty ?: "false")
         // Review window, "Peux faire mieux..." (decision of the PM, 2026-11-08): the EXTERNAL FEEDBACK FORM the PM will provide. ONE place: the default value of
         // "miff.feedbackFormUrl" just below (empty for now; or -Pmiff.feedbackFormUrl=... for a test). Empty = the window shows its "Merci de nous le dire !" screen with
         // "Nous écrire" instead. HTTPS only (checked here, and again in the app); it is read from BuildConfig ONLY (never from a received link) and opened as it is:
@@ -172,6 +184,7 @@ android {
         debug {
             buildConfigField("boolean", "STARTUP_METRICS", "true")
             buildConfigField("boolean", "REVIEW_PROMPT", reviewPromptProperty ?: "true")
+            buildConfigField("boolean", "ALERT_DANGER", alertDangerProperty ?: "true")
             // en-XA (long accented text) and ar-XB (right-to-left) pseudo-locales, to test layouts without translations.
             isPseudoLocalesEnabled = true
         }
@@ -359,6 +372,23 @@ run {
                     "miff.reviewPrompt=true is not allowed in a release build (the review window must be absent " +
                         "from distributed builds). Add -Pmiff.allowReviewPromptInRelease=true only after the PM " +
                         "reconfirmed the window at the gate \"prêt à soumettre\".",
+                )
+            }
+        }
+    }
+}
+
+run {
+    val alertOnInRelease = alertDangerProperty == "true"
+    val allowedInRelease = providers.gradleProperty("miff.allowAlertDangerInRelease").orNull == "true"
+    if (alertOnInRelease && !allowedInRelease) {
+        tasks.matching { it.name == "preReleaseBuild" || it.name == "preReleaseLikeBuild" }.configureEach {
+            doFirst {
+                throw GradleException(
+                    "miff.alertDanger=true is not allowed in a release build (the alert of danger must be " +
+                        "absent from " +
+                        "distributed builds until the PM has deployed the rules and the function notifierAlerte). " +
+                        "Add -Pmiff.allowAlertDangerInRelease=true only after that deployment.",
                 )
             }
         }

@@ -270,6 +270,13 @@ class FirestoreMiffRepository(
      * this Miff are taken back. It never blocks the departure (a failure is its own business).
      */
     private val beforeLeave: suspend (uid: String, miffId: String) -> Unit = { _, _ -> },
+    /**
+     * ALERTE « Je suis en danger » (BuildConfig.ALERT_DANGER): when true, the lots that stop the sharing, leave and remove a member also delete the alert of that Miff (the rules of the alert
+     * demand it, backend/data-model.md 2.18). False (the default, and every build without the function): nothing is added, the rules in production do not know the path.
+     */
+    private val alertsEnabled: Boolean = false,
+    /** Told, with the identifier of the Miff, when my sharing there stopped or I left it: an alert of mine in that Miff went with it (the same lot deleted it). */
+    private val onAlertGone: (miffId: String) -> Unit = {},
 ) : MiffRepository {
     // --- Create ---------------------------------------------------------------------------------------------
 
@@ -499,9 +506,15 @@ class FirestoreMiffRepository(
                     }
                 MiffWrites.resumeSharing(miffId, uid, location.current(), deviceId)
             } else {
-                MiffWrites.stopSharing(miffId, uid)
+                MiffWrites.stopSharing(miffId, uid, withAlert = alertsEnabled)
             }
-        val result = write { store.commit(writes) }
+        var result = write { store.commit(writes) }
+        // The rules in production may not know the alert yet (not deployed): a refusal of the lot WITH the deletion of the alert is tried once more without it, so that stopping the
+        // sharing never breaks because of a function that is not live. If an alert really exists, the rules refuse this second lot too (it is the same result as before).
+        if (!enabled && alertsEnabled && result is MiffWriteResult.Failed && result.failure == MiffFailure.REFUSED) {
+            result = write { store.commit(MiffWrites.stopSharing(miffId, uid)) }
+        }
+        if (result == MiffWriteResult.Done && !enabled && alertsEnabled) onAlertGone(miffId)
         if (result == MiffWriteResult.Done) sharingChanged(miffId, resumed = enabled)
         // A refusal can also mean "already in the state asked for": the dialog asks for the opposite of what the card said when it
         // was opened, and the card may have changed since (another phone), in which case the rules refuse a no-op write
@@ -535,6 +548,16 @@ class FirestoreMiffRepository(
         }
 
     override suspend fun removeMember(
+        miffId: String,
+        targetUid: String,
+    ): CodeChangeResult {
+        // The alert of the member goes FIRST, in a lot of its own (the removal lot already costs 18 reads of rules of the 20 allowed). A refusal (the rules do not know the alert yet) or a
+        // network failure changes nothing here: the removal lot that follows either goes through or says why it did not.
+        if (alertsEnabled) write { store.commit(MiffWrites.deleteMemberAlert(miffId, targetUid)) }
+        return removeMemberLot(miffId, targetUid)
+    }
+
+    private suspend fun removeMemberLot(
         miffId: String,
         targetUid: String,
     ): CodeChangeResult =
@@ -600,7 +623,12 @@ class FirestoreMiffRepository(
                 is Guarded.Value -> read.value.firstOrNull { it.miffId == miffId }?.key
                 is Guarded.Failed -> return MiffWriteResult.Failed(read.failure)
             }
-        val result = write { store.commit(MiffWrites.leave(miffId, uid, key)) }
+        var result = write { store.commit(MiffWrites.leave(miffId, uid, key, withAlert = alertsEnabled)) }
+        // Same tolerance as the stop of the sharing: the rules in production may not know the alert yet.
+        if (alertsEnabled && result is MiffWriteResult.Failed && result.failure == MiffFailure.REFUSED) {
+            result = write { store.commit(MiffWrites.leave(miffId, uid, key)) }
+        }
+        if (result == MiffWriteResult.Done && alertsEnabled) onAlertGone(miffId)
         if (result == MiffWriteResult.Done) onSharingChanged()
         if (result is MiffWriteResult.Failed && result.failure.mayHaveLanded()) {
             // The answer was lost: if the server now refuses the Miff to this person, the lot did leave.
@@ -635,8 +663,13 @@ class FirestoreMiffRepository(
         lost: LostMiff,
     ): Boolean {
         // Clean-up needs the server: without it nothing is touched (the next start will do it).
-        val leave = write { store.commit(MiffWrites.leave(lost.ref.miffId, uid, lost.ref.key)) }
+        var leave =
+            write { store.commit(MiffWrites.leave(lost.ref.miffId, uid, lost.ref.key, withAlert = alertsEnabled)) }
+        if (alertsEnabled && leave is MiffWriteResult.Failed && leave.failure == MiffFailure.REFUSED) {
+            leave = write { store.commit(MiffWrites.leave(lost.ref.miffId, uid, lost.ref.key)) }
+        }
         if (leave == MiffWriteResult.Done) {
+            if (alertsEnabled) onAlertGone(lost.ref.miffId)
             onSharingChanged()
             return true
         }

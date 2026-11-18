@@ -14,6 +14,11 @@ import com.tomessa.miff.data.account.AccountSession
 import com.tomessa.miff.data.account.FirestoreAccountDataStore
 import com.tomessa.miff.data.account.SharedPreferencesAccountDeletionMarker
 import com.tomessa.miff.data.account.StoreAccountMiffs
+import com.tomessa.miff.data.alert.AlertController
+import com.tomessa.miff.data.alert.AlertLocalStore
+import com.tomessa.miff.data.alert.AlertStore
+import com.tomessa.miff.data.alert.FirestoreAlertStore
+import com.tomessa.miff.data.alert.SharedPreferencesAlertLocalStore
 import com.tomessa.miff.data.auth.AccountRepository
 import com.tomessa.miff.data.auth.AndroidNetworkMonitor
 import com.tomessa.miff.data.auth.AuthGateway
@@ -349,6 +354,9 @@ class AppContainer(
             online = { networkMonitor.isOnline() },
             // LIEU-REQ: leaving a Miff takes back the pending requests to add a place that the person made there (before the lot, never blocking it).
             beforeLeave = { uid, miffId -> placeRequestRepository.withdrawAllMine(uid, miffId) },
+            // ALERTE « Je suis en danger »: the lots that stop the sharing, leave and remove also delete the alert of that Miff (only while the function is switched on).
+            alertsEnabled = BuildConfig.ALERT_DANGER,
+            onAlertGone = { miffId -> alertController.onAlertRemoved(miffId) },
             // An automatic id of Firestore (20 characters), drawn on the phone: no network needed to draw it.
             newMiffId = {
                 FirebaseFirestore
@@ -465,6 +473,18 @@ class AppContainer(
         PushMessageHandler(
             currentUid = { authGateway.currentUid },
             onCircleNews = { uid, news -> notificationScheduler.onCircleNews(uid, news) },
+            // ALERTE « Je suis en danger »: only while the function is switched on (BuildConfig.ALERT_DANGER).
+            onCircleAlert =
+                if (BuildConfig.ALERT_DANGER) {
+                    {
+                        uid,
+                        alert,
+                        ->
+                        notificationScheduler.onCircleAlert(uid, alert)
+                    }
+                } else {
+                    null
+                },
         )
     }
 
@@ -889,6 +909,27 @@ class AppContainer(
         }
     }
 
+    // ---- ALERTE « Je suis en danger » (docs/tickets/alerte-danger.md; BuildConfig.ALERT_DANGER switches the whole function) -------------------------------------------------
+
+    /** The alerts of the Miffs (the documents `miffs/{id}/alerts/{uid}`, no position, no text). Built on first use; nothing reaches Firestore before a screen asks. */
+    val alertStore: AlertStore by lazy { FirestoreAlertStore() }
+
+    /** The pointer to MY alert (Miff of origin, phase, three moments) and the indicator of the blue bubble: local, erased with the account (the indicator stays with the installation). */
+    val alertLocal: AlertLocalStore by lazy { SharedPreferencesAlertLocalStore(context) }
+
+    /** MY alert, from the author's side. ONE measure of the position is asked when it starts, through the detection (its own gates and limit), never awaited. */
+    val alertController: AlertController by lazy {
+        AlertController(
+            store = alertStore,
+            device = deviceSession,
+            network = networkMonitor,
+            local = alertLocal,
+            currentUid = { authGateway.currentUid },
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+            onSending = { notificationScope.launch { presenceRefresh.refreshMyPresence() } },
+        )
+    }
+
     /** After a voluntary "Quitter" the server confirmed: no message of lost access for it, purge of the cache, fresh list of Miffs. */
     suspend fun onMiffLeft(miffId: String) {
         miffDirectory.expectDeparture(miffId)
@@ -914,7 +955,12 @@ class AppContainer(
 
     val miffDeletions: MiffDeletionCoordinator by lazy {
         MiffDeletionCoordinator(
-            deletion = MiffDeletion(store = miffStore, repository = miffRepository),
+            deletion =
+                MiffDeletion(
+                    store = miffStore,
+                    repository = miffRepository,
+                    alertsEnabled = BuildConfig.ALERT_DANGER,
+                ),
             pending = pendingMiffDeletions,
             network = networkMonitor,
             currentUid = { authGateway.currentUid },
@@ -1004,9 +1050,15 @@ class AppContainer(
     private val accountMiffs: AccountMiffs by lazy {
         StoreAccountMiffs(
             store = miffStore,
-            deleter = MiffDeletion(store = miffStore, repository = miffRepository),
+            deleter =
+                MiffDeletion(
+                    store = miffStore,
+                    repository = miffRepository,
+                    alertsEnabled = BuildConfig.ALERT_DANGER,
+                ),
             // RGPD (contract of the backend 2.7.3): the pending requests of the account (address, coordinates) are taken back BEFORE each "Quitter", best effort.
             beforeLeave = { uid, miffId -> placeRequestRepository.withdrawAllMine(uid, miffId) },
+            alertsEnabled = BuildConfig.ALERT_DANGER,
         )
     }
 
@@ -1047,6 +1099,7 @@ class AppContainer(
             reviewStateStore,
             presenceLog,
             timeShareWindow,
+            alertLocal = if (BuildConfig.ALERT_DANGER) alertLocal else null,
         )
     }
 
@@ -1090,6 +1143,13 @@ class AppContainer(
                         photoCache,
                         SessionTeardown { publishLedger.clear() },
                         SessionTeardown { reviewStateStore.clear() },
+                        // ALERTE: nothing of my alert stays in memory or on the phone for the next account (the blue bubble, about the installation, stays).
+                        SessionTeardown {
+                            if (BuildConfig.ALERT_DANGER) {
+                                alertController.onSessionEnded()
+                                alertLocal.clearAccount()
+                            }
+                        },
                         timeShareTeardown,
                         placeNotices,
                         requesterDirectory,
