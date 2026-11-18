@@ -173,6 +173,7 @@ struct PlaceDetailBody: View {
             radiusM: place.radiusM,
             isDanger: place.type == .risk,
             emoji: place.category?.emoji,
+            isZoomable: true,
             height: 210
         )
         if !address.isEmpty {

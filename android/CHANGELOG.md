@@ -97,6 +97,7 @@ Demande directe du PM (« je te laisse faire », sans ticket Notion ni maquette)
 - **Écarts avec une demande générique** : pas de boutons + / − (décision du PM) ; zoom limité à ±3 niveaux autour du cadrage ; pas de déplacement de la carte.
 - **Non testable sur la JVM** : la carte native elle-même (gestes réels, fluidité sur l'OPPO) : recette PM.
 
+
 ## [0.46.0] - 2026-11-17 : « Répartition du temps » sur le Profil (TIME-1 et TIME-2)
 
 Ticket `docs/tickets/profil-repartition-temps.md` (PR docs #256 ; décisions par défaut du §4 déléguées par le PM), maquette `19.webp` du PM, recette `docs/qa/checklists/profil-repartition-temps-android-recette-pm.md` ; branche `android/profil-repartition-temps`, PR brouillon. Numéro de version : le dernier de `main` est 0.45.0, celui-ci prend le suivant (à renuméroter au merge si une autre PR l'a pris). Android seulement. **Aucune lecture ni écriture Firestore, aucun événement Analytics, aucune permission, aucune dépendance (le graphique est dessiné par Compose, aucune bibliothèque de graphique), aucun service payant, aucune règle de sécurité ni modèle de données modifiés ; aucune Cloud Function.**

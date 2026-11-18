@@ -33,6 +33,32 @@ Limites connues, écrites ici et dans la PR :
 - **Aperçu des applications récentes** : non masqué sur iOS (aucun mécanisme dans l'app, D17), comme le reste de l'app.
 - « Chargement » (squelette après 300 ms) non dessiné : la lecture est locale et immédiate.
 
+### Demander une zone de danger sans Miff+ (LIEU-DANGER-REQ, numéro provisoire ; miroir d'Android, décision du PM du 2026-11-17)
+
+Branche `ios/lieu-danger-demande`, PR brouillon. Ticket `docs/tickets/lieu-danger-demande-gratuite.md`, recette `docs/qa/checklists/lieu-danger-demande-ios-recette-pm.md`, détail : `ios/README.md`. **Rien n'est compilé en local** (la CI fait foi). **Dépend d'un déploiement des règles Firestore par le PM** (PR `backend/demande-lieu-danger`) avant tout envoi de ce build à des testeurs.
+
+Modifié :
+- **Tout membre peut DEMANDER une zone de danger**, gratuit ou Miff+ : plus de pastille « Miff+ » ni d'offre sur « Zone de danger » dans le formulaire « Proposer un lieu » ; l'abonnement du demandeur n'est plus lu (une lecture en moins à l'ouverture du formulaire).
+- Inchangés : le créateur gratuit qui DÉCLARE une zone de danger (offre), qui ACCEPTE une demande « danger » (offre avant toute écriture, la demande reste en attente), qui la REFUSE (toujours possible) ; les quotas ; la carte « En attente » du demandeur (aucun mot sur l'abonnement du créateur).
+- Retiré (code mort) : `RequestContext.premium`, `RequestSubmitResult.needsPremium`, la relecture de l'abonnement après un refus du serveur.
+- Tests : `DangerRequestRightsTests` (matrice des droits et tests de source), tests du dépôt et du formulaire de demande mis à jour.
+
+À savoir :
+- **Ordre de mise en ligne** : règles Firestore d'abord. Avec l'ancienne règle, le serveur refuse la demande « danger » d'un membre gratuit ; l'app affiche alors la phrase générique calme « Ça n'a pas fonctionné. Réessaie dans un instant. » (jamais une offre).
+- **Retour de la revue (miroir d'Android #267, v2)** : un refus du serveur sans cause identifiée n'est plus JAMAIS présenté comme « Cette Miff a déjà plusieurs demandes en attente » : le plafond de 10 par Miff n'est lisible que par le créateur (compteur réservé), le téléphone d'un membre ne peut pas le prouver. `RequestSubmitResult.miffLimit` devient `.refused` (phrase générique `miff_message_generic`, aucune nouvelle clé) ; `PlaceMessage.requestLimitMiff` disparaît ; la clé `place_request_limit_miff` reste dans le catalogue (partagée avec Android, parité), non utilisée. Le plafond de 3 par membre, la course sur l'emplacement, la Miff disparue et « demandes pas encore disponibles » gardent leurs phrases ; le réseau coupé garde « pas de connexion », y compris sur la relecture et sur le second lot après une course.
+- Écart signalé : la phrase `place_request_paywall_danger` du ticket n'est pas affichée dans l'offre du créateur (écran d'offre unique, décision du PM du 2026-11-12) ; comportement inchangé par cette PR.
+- Aucune permission, aucune dépendance, aucun service payant.
+
+### Zoom sur la carte du lieu (formulaire de création et de modification ; demande du PM du 2026-11-17)
+
+Branche `ios/lieu-carte-zoom`, PR brouillon. Ticket `docs/tickets/lieu-carte-zoom.md`, recette `docs/qa/checklists/lieu-carte-zoom-ios-recette-pm.md`, détail : `ios/README.md` (« Zoom de la carte du lieu »). **Rien n'est compilé en local** (la CI fait foi). Aucune permission, aucune dépendance, aucun service payant (MapKit, sans clé).
+
+Ajouté :
+- **Zoom par gestes** sur la carte du formulaire et du détail d'un lieu : pincer, double toucher (un cran plus près), toucher à deux doigts (un cran plus loin). **Pas de boutons + / − : décision du PM** (accessibilité de ce point non couverte, choix assumé).
+- **Le lieu reste au centre** et ne peut pas être déplacé : le zoom est refait (`PlaceMapZoom`, bornes de 100 m de haut à 22 fois le rayon), le cercle est à l'échelle réelle et reste visible à tout zoom, le rayon du curseur (50 à 800 m) n'est jamais modifié. Un doigt seul fait défiler le formulaire ; le défilement est suspendu pendant un pincement seulement.
+- **Rayon ou adresse qui change : le zoom est remis au cadrage de départ** (même règle qu'Android, retour de revue) ; seul un changement de type ou de catégorie garde le zoom. **Même zoom sur la carte du détail d'un lieu** (extension demandée par le PM le 2026-11-17, mêmes gestes, mêmes bornes, même suspension du défilement de la page pendant un pincement).
+- Tests : `PlaceMapZoomTests` (bornes, pas, cercle, rayon, sources) et `PlaceMapCoordinatorTests` (gestes exécutés : niveau, centre, rayon qui change, suspension et reprise du défilement). `PlacePrivacyTests` : test de la carte renommé (toujours pas de position de personne, ni zoom ni déplacement de MapKit).
+
 ### Réglages > Langue dans l'app (retour de recette du PM, 2026-11-13)
 
 Branche `ios/reglages-langue` (PR en brouillon). Décision du PM : « Langue » ouvre **le même écran qu'Android** (Français, English, Langue du téléphone), au lieu des réglages de l'iPhone. Le choix d'origine (ouvrir les réglages de l'iPhone) était une recommandation de `product-specs` (Onboarding Q11), pas une obligation d'Apple. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM : `docs/qa/checklists/reglages-langue-ios-recette-pm.md`. Détail : `ios/README.md`, section « Réglages > Langue dans l'app ». **0 € : aucune lecture ni écriture Firestore, aucun événement Analytics.**

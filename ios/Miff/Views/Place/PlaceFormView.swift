@@ -260,8 +260,6 @@ struct PlaceFormFoot: View {
             return L10n.string("ios_place_message_id_taken")
         case .requestLimitMember:
             return L10n.string("place_request_limit_member")
-        case .requestLimitMiff:
-            return L10n.string("place_request_limit_miff")
         case .requestsUnavailable:
             return L10n.string("place_request_unavailable")
         }
