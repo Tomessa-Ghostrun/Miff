@@ -37,8 +37,11 @@ export const REQUEST_MUTATIONS = [
   mut('RQ-requestedBy-usurpe', "requestedBy n'est plus l'auteur de l'écriture",
     [edit('&& request.resource.data.requestedBy == request.auth.uid', '&& true')], ['RQ3', 'RQ4']),
   // --- Qui peut créer ----------------------------------------------------------------------------------------------------------------
-  mut('RQ-risk-sans-premium', "une demande `risk` n'exige plus le Miff+ du demandeur",
-    [edit("(request.resource.data.type == 'trusted' || isPremiumOneRead(request.auth.uid))", 'true')], ['RQ13']),
+  // LIEU-DANGER-REQ : la demande `risk` ne dépend plus du Miff+ du demandeur ; le Miff+ du CRÉATEUR (acceptation = création du lieu, déclaration directe, passage à `risk`) reste imposé.
+  mut('LD-accepter-risk-sans-premium-createur', "créer un lieu (donc accepter une demande) `risk` n'exige plus le Miff+ du créateur",
+    [edit('|| isPremiumOneRead(request.auth.uid)\n        );', '|| true\n        );')], ['LD4', 'LD5', 'LD6']),
+  mut('LD-passage-risk-sans-premium-createur', "passer un lieu à `risk` n'exige plus le Miff+ du créateur",
+    [edit("d.type == 'trusted' || isPremiumOneRead(request.auth.uid));", "d.type == 'trusted' || true);")], ['LD6', 'LD7']),
   mut('RQ-createur-peut-demander', 'le créateur peut déposer une demande (membre quelconque au lieu de membre non créateur)',
     [edit('&& isPlainMember(miffId)', '&& isMember(miffId)')], ['RQ5']),
   mut('RQ-non-membre-peut-demander', "l'appartenance à la Miff n'est plus vérifiée à la création",
