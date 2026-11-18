@@ -89,7 +89,7 @@ final class TimeShareCardTests: XCTestCase {
             "profile_timeshare_title", "profile_timeshare_window_a11y", "profile_timeshare_window_selected_a11y",
             "profile_timeshare_center_caption", "profile_timeshare_a11y_card", "profile_timeshare_a11y_row",
             "profile_timeshare_a11y_danger_row", "profile_timeshare_elsewhere",
-            "profile_timeshare_percent_tiny", "profile_timeshare_detail_close", "profile_timeshare_privacy",
+            "profile_timeshare_percent_tiny", "profile_timeshare_detail_close",
             "profile_timeshare_not_enough", "profile_timeshare_summary", "profile_timeshare_paused",
             "profile_timeshare_travel",
             "profile_timeshare_sharing_stopped", "profile_timeshare_sharing_stopped_action",
@@ -101,7 +101,7 @@ final class TimeShareCardTests: XCTestCase {
         ]
         for window in TimeShareLimits.windowsDays {
             for base in [
-                "profile_timeshare_subtitle", "profile_timeshare_window"
+                "profile_timeshare_window"
             ] {
                 keys.append("\(base)_\(window)")
             }
@@ -129,13 +129,9 @@ final class TimeShareCardTests: XCTestCase {
         XCTAssertEqual(TimeShareTexts.notEnough(daysLeft: 2).contains("2"), true)
     }
 
-    func testThePrivacyLineAndTheErasingConfirmationAreExactInFrench() throws {
+    func testTheErasingConfirmationIsExactInFrench() throws {
         let french = try bundle("fr")
 
-        XCTAssertEqual(
-            L10n.string("profile_timeshare_privacy", bundle: french),
-            "Ces données restent sur ton téléphone. Personne d'autre ne peut les voir."
-        )
         XCTAssertEqual(L10n.string("settings_privacy_time_erase", bundle: french), "Effacer mon historique de temps")
         XCTAssertEqual(L10n.string("settings_privacy_time_confirm_title", bundle: french), "Effacer l'historique ?")
         XCTAssertEqual(
@@ -189,12 +185,15 @@ final class TimeShareCardTests: XCTestCase {
 
     func testTheHeaderTextsAreTheOnesOfTheMockUp() throws {
         let french = try bundle("fr")
+        let english = try bundle("en")
+
+        XCTAssertEqual(L10n.string("profile_timeshare_elsewhere", bundle: french), "Hors-zone")
+        XCTAssertEqual(L10n.string("profile_timeshare_elsewhere", bundle: english), "Outside zones")
+        XCTAssertEqual(L10n.string("profile_timeshare_a11y_card", bundle: french), "Répartition du temps. %1$@ : %2$@.")
 
         XCTAssertEqual(L10n.string("profile_timeshare_title", bundle: french), "Répartition du temps")
         XCTAssertEqual(L10n.string("profile_timeshare_center_caption", bundle: french), "en zone de confiance")
-        XCTAssertEqual(L10n.string("profile_timeshare_subtitle_14", bundle: french), "Sur les 14 derniers jours")
         for window in TimeShareLimits.windowsDays {
-            XCTAssertTrue(TimeShareTexts.subtitle(window: window).contains("\(window)"))
             XCTAssertTrue(TimeShareTexts.windowLabel(window).contains("\(window)"))
         }
     }

@@ -26,18 +26,13 @@ enum TimeShareTexts {
         return percent(detail.percent, locale: locale)
     }
 
-    /// « Sur les 7 derniers jours ».
-    static func subtitle(window: Int) -> String {
-        L10n.string("profile_timeshare_subtitle_\(window)")
-    }
-
     /// « 7 jours » : le choix du sélecteur.
     static func windowLabel(_ window: Int) -> String {
         L10n.string("profile_timeshare_window_\(window)")
     }
 
     /// Le nom d'une ligne de la légende : le nom ACTUEL du lieu, « {n} autres lieux », « Zone de danger » (« Zones de danger » s'il y en a
-    /// plusieurs), « Ailleurs ».
+    /// plusieurs), « Hors-zone ».
     static func name(of row: TimeShareRow) -> String {
         switch row.kind {
         case .place:
@@ -69,12 +64,12 @@ enum TimeShareTexts {
 
     // MARK: - Pour le lecteur d'écran
 
-    /// La description unique de l'anneau (qui est caché : décoratif) : « Répartition de ton temps. Sur les 7 derniers jours : Maison 48 %,
-    /// Sport 24 %, Zone de danger 8 %, Ailleurs 20 %. dans tes lieux de confiance, 72 %. » Le NOM de la catégorie est dit, jamais l'emoji.
+    /// La description unique de l'anneau (qui est caché : décoratif) : « Répartition du temps. 7 jours : Maison 48 %,
+    /// Sport 24 %, Zone de danger 8 %, Hors-zone 20 %. en zone de confiance, 72 %. » Le NOM de la catégorie est dit, jamais l'emoji.
     static func spokenSummary(_ result: TimeShareResult, locale: Locale = .current) -> String {
         let parts = result.rows.map { "\(name(of: $0)) \(percent(of: $0, locale: locale))" }
         let card = L10n.format(
-            "profile_timeshare_a11y_card", subtitle(window: result.windowDays), parts.joined(separator: ", ")
+            "profile_timeshare_a11y_card", windowLabel(result.windowDays), parts.joined(separator: ", ")
         )
         let center = L10n.format(
             "profile_timeshare_a11y_row",

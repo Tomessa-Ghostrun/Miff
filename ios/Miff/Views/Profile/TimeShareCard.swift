@@ -1,10 +1,9 @@
 import SwiftUI
 
 // La carte « Répartition du temps » de l'onglet Profil (ticket « Profil, répartition du temps », TIME-4), sous le carrousel de Miffs, mise en
-// page d'après la maquette du PM (retour du 2026-11-17) : carte blanche très arrondie ; en-tête (pastille verte, titre, « Sur les N derniers
-// jours », sélecteur déroulant à droite) ; légende à GAUCHE (les 4 parts les plus longues : pastille, emoji, nom, % à droite) et anneau plus
-// petit à DROITE (toutes les tranches), avec au centre le pourcentage en zone de confiance ; encart vert très léger « Tu as passé x % de ton temps
-// dans tes zones de confiance » avec la coche et 🎉 ; ligne de confidentialité, toujours visible. Tout est calculé sur le téléphone ; rien n'est
+// page d'après la maquette du PM (retour du 2026-11-17) : carte blanche très arrondie ; en-tête (pastille verte, titre, sélecteur déroulant à droite) ; anneau plus petit à GAUCHE (toutes les tranches) et légende à DROITE (les 4 parts les plus
+// longues : pastille, emoji, nom, % à droite), avec au centre le pourcentage en zone de confiance ; encart vert très léger « Tu as passé x % de ton temps
+// dans tes zones de confiance » avec la coche et 🎉. Tout est calculé sur le téléphone ; rien n'est
 // envoyé. Accessibilité : l'anneau est décoratif, UNE description liste TOUTES les parts (le NOM de la catégorie, jamais l'emoji), le sélecteur est
 // annoncé « Période, 7 jours » (le choix actuel « choisi »), la ligne de la zone de danger est un bouton qui ouvre le détail ; aux grandes tailles de
 // texte la légende passe SOUS l'anneau. Sans 7 jours de données : pas de graphique, pas de sélecteur, seulement le texte figé par le PM.
@@ -44,7 +43,6 @@ struct TimeShareCard: View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             header
             content
-            privacyLine
         }
         .padding(Spacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -103,12 +101,6 @@ struct TimeShareCard: View {
                 .foregroundColor(colorTextForm.color)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
-            if showsPeriod {
-                Text(verbatim: TimeShareTexts.subtitle(window: display.windowDays))
-                    .miffTextStyle(textBodyRegular14)
-                    .foregroundColor(colorTextDescription.color)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
         }
         .frame(maxWidth: stacked ? .infinity : nil, alignment: .leading)
     }
@@ -221,7 +213,7 @@ struct TimeShareCard: View {
         }
     }
 
-    /// La légende à gauche (4 parts au plus) et l'anneau à droite ; sous les très grandes tailles de texte, l'anneau passe au-dessus. Pour le
+    /// L'anneau à gauche et la légende à droite (4 parts au plus) ; sous les très grandes tailles de texte, l'anneau passe au-dessus. Pour le
     /// lecteur d'écran : l'anneau (caché, décoratif) est remplacé par UNE description qui liste TOUTES les parts ; les lignes de la légende ne
     /// sont pas relues (pas de doublon), sauf celle de la zone de danger, un bouton qui ouvre le détail.
     private func chart(_ result: TimeShareResult) -> some View {
@@ -235,10 +227,10 @@ struct TimeShareCard: View {
                     .accessibilityLabel(Text(verbatim: TimeShareTexts.spokenSummary(result)))
                 legend(result, styles: styles)
             } else {
-                legend(result, styles: styles)
                 donutColumn(result)
                     .accessibilityElement(children: .ignore)
                     .accessibilityLabel(Text(verbatim: TimeShareTexts.spokenSummary(result)))
+                legend(result, styles: styles)
             }
         }
     }
@@ -337,23 +329,6 @@ extension TimeShareCard {
             .foregroundColor(colorTextDescription.color)
             .frame(maxWidth: .infinity, alignment: .leading)
             .fixedSize(horizontal: false, vertical: true)
-    }
-
-    // MARK: - La confidentialité, toujours visible
-
-    private var privacyLine: some View {
-        HStack(alignment: .top, spacing: Spacing.xs) {
-            Image(systemName: "lock")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundColor(colorTextDescription.color)
-                .padding(.top, 2)
-                .accessibilityHidden(true)
-            Text("profile_timeshare_privacy")
-                .miffTextStyle(textBodyCaption)
-                .foregroundColor(colorTextDescription.color)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
-        }
     }
 
     // MARK: - Le détail de la zone de danger
