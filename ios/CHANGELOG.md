@@ -2,6 +2,16 @@
 
 ## Non publié
 
+### « Tirer pour actualiser » : indicateur visible et Feed qui ne sautille plus (retour du PM, TestFlight 38, PR #263)
+
+Ce que le PM doit voir : en tirant le Feed, **une pastille claire avec une roue apparaît sous l'en-tête pendant au moins 0,8 s** (jamais cachée par l'en-tête ni la bulle), et **la bulle et les cartes ne sautent plus**. Recette : `docs/qa/checklists/feed-refresh-position-ios-recette-pm.md` (§1, §4, §18 à §20). **Rien n'est compilé en local** (la CI fait foi).
+
+Corrigé :
+- **Indicateur** : la roue d'UIKit passe derrière l'en-tête et l'indicateur propre du Feed ne durait que le temps de la lecture (presque rien, la position n'étant pas attendue). Il reste maintenant au moins `FeedTimings.minRefreshDisplayMillis` = 800 ms depuis le geste (un minimum d'AFFICHAGE : aucune lecture de plus, la position n'est toujours pas attendue), aussi pour un geste trop rapproché qui ne relit rien ; hors connexion, fin immédiate comme avant. Pastille de la couleur des cartes, ombre légère, fondu de 0,15 s (aucun avec « Réduire les animations »).
+- **Sautillement** : cause trouvée dans le code (à confirmer sur l'iPhone) : pendant le geste, UIKit ajoute la hauteur de la roue à la marge haute de la vue de défilement ; `ScrollDistanceReader` la lisait comme une nouvelle origine du contenu et la marge haute de la liste se réduisait d'autant (SwiftUI, aussitôt) pendant qu'UIKit déplaçait le contenu (animé), puis l'inverse à la fin : deux sauts. `RefreshInsetGuard` ignore la mesure de l'origine pendant l'actualisation et 0,6 s après (reprise automatique ensuite) ; `FeedCollapsingLayout` l'ignore aussi tant que `refreshing` est vrai.
+- Inchangés : l'ordre du Feed (dernière update), les identifiants des cartes (un membre = une carte), les règles du geste (15 s pour les proches, 30 s pour la position, une seule mesure, aucune écriture si rien ne change), VoiceOver.
+- Tests : `RefreshInsetGuardTests`, `FeedRefreshIndicatorTests` (minimum d'affichage, reste du délai, rien de plus si la lecture a été lente, geste trop rapproché, hors connexion), `FeedRefreshSourcesTests` (garde avant toute mesure, identités des cartes, aucune animation ni identité instable dans la liste, indicateur au-dessus de tout).
+
 ### « Tirer pour actualiser » revérifie aussi MA présence (REFRESH-POS-I, demande du PM du 2026-11-17, miroir d'Android)
 
 Branche `ios/feed-refresh-position`, PR brouillon. Ticket `docs/tickets/feed-refresh-position.md`, recette `docs/qa/checklists/feed-refresh-position-ios-recette-pm.md`, détail : `ios/README.md`. **Rien n'est compilé en local** (la CI fait foi). Aucune dépendance, aucune permission, aucun service payant, aucun texte nouveau.

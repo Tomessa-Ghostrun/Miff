@@ -73,10 +73,13 @@ struct FeedTimings {
     /// En ligne, ce que dit le cache n'est pas montré comme le présent : le Feed attend ce délai que le serveur le confirme (une copie
     /// d'hier peut dire « orange » pour quelqu'un qui vient de rentrer : une fausse alerte). Après, la copie est montrée AVEC sa date.
     var cacheGraceMillis = 5_000
-    /// « Actualiser » ne lit le serveur qu'une fois par ce délai (15 s) : un geste plus rapproché se termine aussitôt, sans lecture.
+    /// « Actualiser » ne lit le serveur qu'une fois par ce délai (15 s) : un geste plus rapproché ne lit rien (l'indicateur reste le temps minimum ci-dessous).
     var minRefreshIntervalMillis = 15_000
     /// L'indicateur d'« Actualiser » se termine au plus tard après ce délai (8 s), avec la mention honnête « Dernières informations de… ».
     var refreshTimeoutSeconds: TimeInterval = 8
+    /// L'indicateur d'« Actualiser » reste visible au moins ce temps depuis le geste (0,8 s ; retour du PM sur le TestFlight 38 : il ne se voyait
+    /// pas). Un minimum d'AFFICHAGE : rien n'est relu de plus, la position n'est jamais attendue.
+    var minRefreshDisplayMillis = 800
     /// La pop-in « Pas de connexion » : un essai automatique toutes les 10 s, et le délai sans aucune donnée avant qu'elle vienne
     /// quand le système dit pourtant « en ligne » (8 s).
     var offlinePopin = OfflinePopinTimings()

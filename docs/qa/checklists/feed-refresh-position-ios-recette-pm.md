@@ -12,10 +12,10 @@
 
 ## Partie 1 : le geste de base (A, onglet Feed) (4 min)
 
-1. [ ] Tirez le Feed vers le bas **une fois** : l'indicateur tourne puis disparaît **en quelques secondes au plus**, comme avant. Les cartes des proches se mettent à jour. **Aucun nouveau message, aucune fenêtre.**
+1. [ ] Tirez le Feed vers le bas **une fois** : une **pastille claire avec une roue qui tourne** apparaît **juste sous l'en-tête**, bien visible, **au moins 0,8 s**, puis disparaît en fondu (en quelques secondes au plus). **Aucun sautillement** : la bulle et les cartes ne bougent pas brusquement, ni au début, ni à la fin du geste (elles peuvent descendre doucement avec le doigt, comme sur n'importe quelle liste iOS). Les cartes des proches se mettent à jour. **Aucun nouveau message, aucune fenêtre.**
 2. [ ] Journal : une ligne **`wakePull`**, puis `positionRead` (une mesure). Rien d'autre d'obligatoire.
 3. [ ] **VoiceOver** : l'action « Actualiser » est annoncée comme avant (rotor des actions, double toucher). Rien de nouveau n'est lu.
-4. [ ] Tirez **immédiatement** une seconde fois : l'indicateur se termine tout de suite (limite habituelle de 15 s pour les proches), **aucune nouvelle ligne `wakePull`**.
+4. [ ] Tirez **immédiatement** une seconde fois : la roue s'affiche aussi **0,8 s** (le geste ne doit jamais avoir l'air de ne rien faire) mais **rien n'est relu** (limite habituelle de 15 s pour les proches), **aucune nouvelle ligne `wakePull`**.
 5. [ ] Attendez **20 s**, tirez encore : les proches sont relus (plus de 15 s), mais **aucune nouvelle ligne `wakePull`** (moins de 30 s depuis le geste de l'étape 1). Attendez **encore 15 s**, tirez : une ligne `wakePull`.
 
 ## Partie 2 : ma présence est rattrapée (A, B regarde) (6 min)
@@ -41,6 +41,12 @@
 
 16. [ ] Tirez le Feed **cinq fois de suite** à quelques secondes d'intervalle : le Feed reste fluide, **une seule** ligne `wakePull` dans la minute.
 17. [ ] Dans les 24 h qui suivent un usage normal, **Réglages iOS > Batterie > Miff** : pas d'écart notable avec les jours précédents (le geste ne mesure qu'au plus une fois par 30 s). Notez le pourcentage « Miff » si vous voulez que je compare.
+
+## Partie 6 : retour du TestFlight 38 (indicateur visible, aucun sautillement) (3 min)
+
+18. [ ] Tirez le Feed **en haut de liste**, puis **après avoir un peu défilé** (l'en-tête partiellement masqué) : la pastille est visible **sous l'en-tête**, jamais cachée derrière lui ni derrière la bulle, et **rien ne saute**.
+19. [ ] Filmez l'écran (enregistrement d'écran d'iOS) et rejouez-le au ralenti : **aucune image où la bulle ou une carte disparaît, remonte puis redescend**. Si un sautillement reste, envoyez-moi la vidéo et l'étape où il apparaît (début du geste, relâchement ou fin de la roue).
+20. [ ] **Réglages iOS > Accessibilité > Mouvement > Réduire les animations** activé : la pastille apparaît et disparaît **sans fondu**, le Feed ne saute pas non plus.
 
 ## Ce que je vous demande de trancher (voir `docs/tickets/feed-refresh-position.md`, §3)
 

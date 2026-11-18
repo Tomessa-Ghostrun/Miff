@@ -21,6 +21,12 @@ extension FeedViewModel {
         }
         let now = dependencies.clock()
         if let last = lastRefreshAtMillis, now - last >= 0, now - last < dependencies.timings.minRefreshIntervalMillis {
+            // Trop tôt pour relire : rien n'est lu, mais le geste n'a pas l'air de ne rien faire : l'indicateur reste visible un instant.
+            refreshing = true
+            defer {
+                refreshing = false
+            }
+            await holdIndicator(since: now)
             return
         }
         guard dependencies.network.isOnline() else {
@@ -46,6 +52,18 @@ extension FeedViewModel {
             answer = .unreachable
         }
         applyRefresh(miffId: miffId, answer: answer, askedForStatuses: readStatuses)
+        await holdIndicator(since: now)
+    }
+
+    /// L'indicateur d'« Actualiser » reste affiché AU MOINS `minRefreshDisplayMillis` depuis le début du geste (retour du PM, TestFlight 38 : il
+    /// se terminait presque aussitôt et ne se voyait pas). Ce que la lecture a déjà rendu est déjà montré ; on ne fait qu'attendre le reste du
+    /// délai, sans attendre la position (le suivi tourne à part). Un délai écoulé n'ajoute rien.
+    private func holdIndicator(since start: Int) async {
+        let elapsed = max(dependencies.clock() - start, 0)
+        let remaining = dependencies.timings.minRefreshDisplayMillis - elapsed
+        if remaining > 0 {
+            await dependencies.sleep(remaining)
+        }
     }
 
     private func applyRefresh(miffId: String, answer: ServerRead, askedForStatuses: Bool) {
