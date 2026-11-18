@@ -37,8 +37,8 @@ test('aucune fonction exportée n\'est appelable ni HTTP : seules des fonctions 
   }
 });
 
-test('`ping` (retirée) et `notifierUpdate` (déclencheur Firestore) ne répondent à aucune requête HTTP', async () => {
-  for (const nom of ['ping', 'notifierUpdate']) {
+test('`ping` (retirée), `notifierUpdate` et `notifierAlerte` (déclencheurs Firestore) ne répondent à aucune requête HTTP', async () => {
+  for (const nom of ['ping', 'notifierUpdate', 'notifierAlerte']) {
     const r = await appeler(nom);
     assert.notEqual(r.statut, 200, `${nom} : ne doit pas répondre 200 (${r.texte})`);
     assert.ok(r.statut >= 400, `${nom} : statut ${r.statut} (${r.texte})`);

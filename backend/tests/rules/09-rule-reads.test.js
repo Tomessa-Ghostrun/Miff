@@ -129,6 +129,49 @@ const scenarios = [
     run: (env) => commit(db(env, 'alice'), all(removeMemberWithPositionOps({ target: 'bob' }))),
   },
   {
+    id: 'READS-remove-member-alert',
+    title: "AD-B1 : retirer un membre EN ALERTE avec renouvellement du code (batch de 8 : fiche, statut, photo, position, alerte, Miff, nouveau code, ancien code) : le pire lot du modèle (20 sur 20 sans cache)",
+    name: 'Retirer un membre en alerte + nouveau code (batch de 8)',
+    lot: true,
+    hosts: [H.membersDelete, H.statusDelete, H.photosDelete, H.positionsDelete, H.alertsDelete, H.miffsUpdate, H.joinCodesCreate, H.joinCodesDelete],
+    // Comptage SANS CACHE : 20 sur 20 (data-model.md §2.18 et §12, budgets-alerte.test.js) ; l'émulateur met en cache les lectures d'un même document et en compte beaucoup moins (mesure ci-dessous : marge >= 19) : cette mesure ne prouve PAS la marge réelle.
+    prepare: async (env) => {
+      await seedBobPhoto(env);
+      await seedBobV3Position(env);
+      await env.withSecurityRulesDisabled((ctx) =>
+        ctx.firestore().doc(`${M1}/alerts/bob`).set({
+          status: 'active', startedAt: T0, expiresAt: Timestamp.fromMillis(Date.now() + 6 * 86_400_000), endedAt: null, seq: 1, deviceId: DEVICE_A,
+          purgeAt: Timestamp.fromMillis(Date.now() + 8 * 86_400_000),
+        }));
+    },
+    run: (env) => {
+      const o = removeMemberWithPositionOps({ target: 'bob' });
+      return commit(db(env, 'alice'), [o.member, o.status, o.photo, o.position, del(`${M1}/alerts/bob`), o.miff, o.newCode, o.oldCode]);
+    },
+  },
+  {
+    id: 'READS-alert-start',
+    title: "alerte : début d'alerte (batch de 2 : compteur du quota + alerte, session et partage lus) : 4 lectures de règles attendues",
+    name: "Début d'alerte + quota (batch de 2)",
+    lot: true,
+    hosts: [H.quotaUpdate, H.alertsCreate],
+    maxReads: 4,
+    prepare: async (env) => {
+      await seedSessions('bob')(env);
+      await env.withSecurityRulesDisabled((ctx) =>
+        ctx.firestore().doc('users/bob/quota/alerts').set({ s0: T0, s1: null, s2: null, lastMiffId: ID.M1, updatedAt: T0, expireAt: Timestamp.fromMillis(Date.now() + 2 * 86_400_000) }));
+    },
+    run: (env) => {
+      const exp = Date.now() + 7 * 86_400_000 - 2 * 3_600_000;
+      return commit(db(env, 'bob'), [
+        update('users/bob/quota/alerts', { s0: serverTs(), lastMiffId: ID.M1, updatedAt: serverTs(), expireAt: Timestamp.fromMillis(Date.now() + 2 * 86_400_000) }),
+        set(`${M1}/alerts/bob`, {
+          status: 'active', startedAt: serverTs(), expiresAt: Timestamp.fromMillis(exp), endedAt: null, seq: 1, deviceId: DEVICE_A, purgeAt: Timestamp.fromMillis(exp + 2 * 86_400_000),
+        }),
+      ]);
+    },
+  },
+  {
     id: 'READS-delete-miff',
     title: 'la créatrice supprime la Miff (batch de 7, avec pierre tombale et sa dernière position)',
     name: 'Supprimer la Miff (batch de 7, avec pierre tombale)',
@@ -825,7 +868,7 @@ for (const sc of scenarios) {
     const documented = sc.docLimit ?? r.limit;
     const margin = documented - r.readsUpperBound;
     t.diagnostic(`${sc.name} : <= ${r.readsUpperBound} lectures de règles sur ${documented} (marge >= ${margin})`);
-    assert.ok(margin >= MIN_MARGIN, `${sc.name} : marge de ${margin} lecture(s), moins de ${MIN_MARGIN} exigées`);
+    assert.ok(margin >= (sc.minMargin ?? MIN_MARGIN), `${sc.name} : marge de ${margin} lecture(s), moins de ${sc.minMargin ?? MIN_MARGIN} exigées`);
     if (sc.maxReads !== undefined) {
       assert.ok(r.readsUpperBound <= sc.maxReads, `${sc.name} : ${r.readsUpperBound} lecture(s) de règles, plus que les ${sc.maxReads} documentées`);
     }
