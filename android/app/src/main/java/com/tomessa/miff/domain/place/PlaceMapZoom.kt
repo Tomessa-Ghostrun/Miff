@@ -49,7 +49,11 @@ object PlaceMapZoom {
         restoring: Boolean,
         savedOffset: Double,
     ): Plan? {
-        if (measuredFit == null || !measuredFit.isFinite() || measuredFit < FLOOR || measuredFit > MAX_PLAUSIBLE_FIT) return null
+        if (measuredFit == null || !measuredFit.isFinite() || measuredFit < FLOOR ||
+            measuredFit > MAX_PLAUSIBLE_FIT
+        ) {
+            return null
+        }
         val range = range(measuredFit)
         val wanted = if (restoring) restore(measuredFit, savedOffset) else range.fit
         return Plan(range, wanted)

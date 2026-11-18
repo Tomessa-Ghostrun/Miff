@@ -486,7 +486,12 @@ private fun frameCircle(
         map.setMaxZoomPreference(MapLibreConstants.MAXIMUM_ZOOM.toDouble())
         val padding = CAMERA_PADDING_PX
         val measured = map.getCameraForLatLngBounds(bounds, intArrayOf(padding, padding, padding, padding))?.zoom
-        val plan = PlaceMapZoom.plan(measured, restoring = holder.framedKey == null, savedOffset = holder.zoomOffset.floatValue.toDouble())
+        val plan =
+            PlaceMapZoom.plan(
+                measured,
+                restoring = holder.framedKey == null,
+                savedOffset = holder.zoomOffset.floatValue.toDouble(),
+            )
         if (plan == null) {
             // Not measurable (no size yet, or an absurd answer): NOTHING is recorded, so that the next layout or redraw tries again,
             // and the limits that were in force stay in force.

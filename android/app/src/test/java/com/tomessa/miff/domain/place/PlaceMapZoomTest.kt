@@ -75,7 +75,17 @@ class PlaceMapZoomTest {
     fun plan_aMeasureThatIsMissingOrNotBelievable_decidesNothing() {
         // A map of size 0 (or not laid out yet) answers with nothing, NaN, infinity, or the lowest zoom: recording that would leave the
         // map framed at the floor for good. The caller records nothing and tries again at the next layout.
-        listOf(null, Double.NaN, Double.POSITIVE_INFINITY, Double.NEGATIVE_INFINITY, -3.0, 0.0, 2.9, 22.1, 25.5).forEach { measured ->
+        listOf(
+            null,
+            Double.NaN,
+            Double.POSITIVE_INFINITY,
+            Double.NEGATIVE_INFINITY,
+            -3.0,
+            0.0,
+            2.9,
+            22.1,
+            25.5,
+        ).forEach { measured ->
             assertNull("measure $measured", PlaceMapZoom.plan(measured, restoring = true, savedOffset = 1.0))
             assertNull("measure $measured", PlaceMapZoom.plan(measured, restoring = false, savedOffset = 0.0))
         }
