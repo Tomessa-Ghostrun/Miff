@@ -40,6 +40,16 @@ Choix économiques et limites :
 - **Non fait dans cette PR** : ligne « {Prénom} a déclaré une alerte » dans le centre de notifications de l'app (le système affiche déjà la notification) ; aide « Si les alertes n'arrivent pas » (Concentration, Time Sensitive) ; annonces VoiceOver d'annulation et de fin ; captures d'écran de la CI pour les nouveaux écrans ; ajout du droit Time Sensitive (attend le PM, voir ci-dessus).
 
 
+### Zoom sur la carte du lieu (formulaire de création et de modification ; demande du PM du 2026-11-17)
+
+Branche `ios/lieu-carte-zoom`, PR brouillon. Ticket `docs/tickets/lieu-carte-zoom.md`, recette `docs/qa/checklists/lieu-carte-zoom-ios-recette-pm.md`, détail : `ios/README.md` (« Zoom de la carte du lieu »). **Rien n'est compilé en local** (la CI fait foi). Aucune permission, aucune dépendance, aucun service payant (MapKit, sans clé).
+
+Ajouté :
+- **Zoom par gestes** sur la carte du formulaire et du détail d'un lieu : pincer, double toucher (un cran plus près), toucher à deux doigts (un cran plus loin). **Pas de boutons + / − : décision du PM** (accessibilité de ce point non couverte, choix assumé).
+- **Le lieu reste au centre** et ne peut pas être déplacé : le zoom est refait (`PlaceMapZoom`, bornes de 100 m de haut à 22 fois le rayon), le cercle est à l'échelle réelle et reste visible à tout zoom, le rayon du curseur (50 à 800 m) n'est jamais modifié. Un doigt seul fait défiler le formulaire ; le défilement est suspendu pendant un pincement seulement.
+- **Rayon ou adresse qui change : le zoom est remis au cadrage de départ** (même règle qu'Android, retour de revue) ; seul un changement de type ou de catégorie garde le zoom. **Même zoom sur la carte du détail d'un lieu** (extension demandée par le PM le 2026-11-17, mêmes gestes, mêmes bornes, même suspension du défilement de la page pendant un pincement).
+- Tests : `PlaceMapZoomTests` (bornes, pas, cercle, rayon, sources) et `PlaceMapCoordinatorTests` (gestes exécutés : niveau, centre, rayon qui change, suspension et reprise du défilement). `PlacePrivacyTests` : test de la carte renommé (toujours pas de position de personne, ni zoom ni déplacement de MapKit).
+
 ### Réglages > Langue dans l'app (retour de recette du PM, 2026-11-13)
 
 Branche `ios/reglages-langue` (PR en brouillon). Décision du PM : « Langue » ouvre **le même écran qu'Android** (Français, English, Langue du téléphone), au lieu des réglages de l'iPhone. Le choix d'origine (ouvrir les réglages de l'iPhone) était une recommandation de `product-specs` (Onboarding Q11), pas une obligation d'Apple. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM : `docs/qa/checklists/reglages-langue-ios-recette-pm.md`. Détail : `ios/README.md`, section « Réglages > Langue dans l'app ». **0 € : aucune lecture ni écriture Firestore, aucun événement Analytics.**
