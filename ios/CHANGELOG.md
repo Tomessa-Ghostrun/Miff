@@ -2,6 +2,13 @@
 
 ## Non publié
 
+### Build 38 TestFlight : contenu de la branche d'intégration `ios/recette-groupee-15` (jamais fusionnée dans `main`)
+
+Le numéro de build est celui de l'exécution du workflow `ios-testflight` (`github.run_number`), pas une valeur du dépôt : « 38 » désigne le build visé après le 37. Contenu :
+- **Déjà dans `main`** (82c0817b) : À propos et aide (#222), Langue (#218), description facultative d'une photo (#253), compte à rebours avant l'orange (#244), viseur de l'Update en plein écran (#248), ordre du Feed par dernière update (#255).
+- **PR iOS encore en brouillon, fusionnées ici par des merges simples** : #259 (`ios/profil-repartition-temps` : graphique « Répartition de ton temps » du Profil, légende avec la zone de danger dès 1 %, données de test `TIMESHAREDEMO` conservées, builds Debug et TestFlight seulement, absentes de Release), #261 (`ios/lieu-carte-zoom` : zoom de la carte du lieu), #263 (`ios/feed-refresh-position` : tirer pour actualiser revérifie ma présence), #264 (`ios/lieu-danger-demande` : demande de zone de danger sans Miff+).
+- Conflits de fusion résolus en gardant tout (CHANGELOG, README, `ScreenPreviews`, catalogue `Localizable.xcstrings`) ; pour les fichiers Android et les tickets déjà passés dans `main` par les PR Android, la version de `main` est gardée.
+
 ### Réglages > Langue dans l'app (retour de recette du PM, 2026-11-13)
 
 Branche `ios/reglages-langue` (PR en brouillon). Décision du PM : « Langue » ouvre **le même écran qu'Android** (Français, English, Langue du téléphone), au lieu des réglages de l'iPhone. Le choix d'origine (ouvrir les réglages de l'iPhone) était une recommandation de `product-specs` (Onboarding Q11), pas une obligation d'Apple. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** Recette PM : `docs/qa/checklists/reglages-langue-ios-recette-pm.md`. Détail : `ios/README.md`, section « Réglages > Langue dans l'app ». **0 € : aucune lecture ni écriture Firestore, aucun événement Analytics.**
