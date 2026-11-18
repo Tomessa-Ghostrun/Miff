@@ -64,10 +64,11 @@ test('BUDGET - coût figé de chaque fonction de règles (direct, avec fonctions
     validRequestCounter: [0, 3],
     // AD-B1 (alerte « Je suis en danger », NON DÉPLOYÉ) : partage actif après le lot 1 ; session 1 ; début = session 1 ; ré-armement = session + Miff + partage 3 ; fin = session 1.
     // Aucune de ces fonctions n'est appelée par une règle existante (budgets-alerte.test.js).
+    alertQuotaOk: [1, 1], // quota d'alertes (3 débuts par 24 h) : getAfter du compteur écrit dans le même lot
     alertSharingAfter: [1, 1],
     alertDeviceOk: [1, 1],
     alertStart: [0, 1],
-    alertRearm: [0, 3],
+    alertRearm: [0, 4],
     alertEnd: [0, 1],
     validPhoto: [1, 1], // inchangé : la localisation (obligatoire) réutilise le getAfter du consentement déjà lu (aucune lecture de plus à l'écriture)
   });

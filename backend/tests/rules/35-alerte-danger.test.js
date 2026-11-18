@@ -6,7 +6,7 @@
 // dave (Miff+, créateur de M3 dans les cas multi-Miffs).
 import {
   ID, CODE, T0, DAY, HOUR, suite, assertFails, assertSucceeds, commit, update, set, del, serverTs, Timestamp,
-  statusDoc, positionSeed, sharingOnNow, leaveOps, removeMemberOps,
+  statusDoc, positionSeed, sharingOnNow, leaveOps, removeMemberOps, removeMemberWithPositionOps,
   DEVICE_A, DEVICE_B, sessionSeed, SESSION_PATH,
 } from '../helpers/fixtures.js';
 
@@ -48,7 +48,30 @@ const stored = async (h, uid, miffId = ID.M1) => {
   });
   return data;
 };
-const ref = (h, as, of = as, miffId = ID.M1) => h.db(as).doc(alertPath(of, miffId));
+// Quota d'alertes (3 débuts par 24 h et par utilisateur) : tout début ou ré-armement écrit AUSSI users/{uid}/quota/alerts dans le même lot. Par défaut le compteur est
+// REMIS À ZÉRO (règles désactivées) avant chaque début pour que chaque tentative soit jugée sur ses seules autres conditions ; AL25 à AL30 testent le quota lui-même.
+const quotaPath = (uid) => `users/${uid}/quota/alerts`;
+const quotaDoc = (miffId = ID.M1, over = {}) => ({ s0: serverTs(), s1: null, s2: null, lastMiffId: miffId, updatedAt: serverTs(), expireAt: ts(2 * DAY), ...over });
+const quotaSeed = (over = {}) => ({ s0: null, s1: null, s2: null, lastMiffId: ID.M1, updatedAt: ts(-HOUR), expireAt: ts(2 * DAY), ...over });
+const seedQuota = (h, uid, over = {}) => h.admin((f) => f.doc(quotaPath(uid)).set(quotaSeed(over)));
+const resetQuota = (h, uid) => h.admin((f) => f.doc(quotaPath(uid)).delete());
+const storedQuota = async (h, uid) => {
+  let data = null;
+  await h.admin(async (f) => {
+    const snap = await f.doc(quotaPath(uid)).get();
+    data = snap.exists ? snap.data() : null;
+  });
+  return data;
+};
+/** Début ou ré-armement tel qu'un client l'écrit : le compteur (case s0) et l'alerte dans UN lot. */
+const begin = async (h, as, of, miffId, doc) => {
+  await resetQuota(h, as);
+  return commit(h.db(as), [set(quotaPath(as), quotaDoc(miffId)), set(alertPath(of, miffId), doc)]);
+};
+const ref = (h, as, of = as, miffId = ID.M1) => {
+  const r = h.db(as).doc(alertPath(of, miffId));
+  return { get: () => r.get(), update: (d) => r.update(d), delete: () => r.delete(), set: (doc) => begin(h, as, of, miffId, doc) };
+};
 
 const KEYS = ['deviceId', 'endedAt', 'expiresAt', 'purgeAt', 'seq', 'startedAt', 'status'];
 
@@ -150,6 +173,7 @@ s.tc('AL7', 'conditions de création : étrangère, autre Miff, partage ARRÊTÉ
   // Lot : activer le partage de carol (heure du serveur) + alerte : le partage est jugé APRÈS le lot.
   await assertSucceeds(commit(h.db('carol'), [
     update(`${M1}/members/carol`, { sharing: sharingOnNow() }),
+    set(quotaPath('carol'), quotaDoc()),
     set(alertPath('carol'), startDoc()),
   ]));
   // Ex-membre.
@@ -229,7 +253,7 @@ s.tc('AL12', 'état de départ : status active imposé (ended, autre texte, nul 
   await sess(h, 'bob');
   const r = ref(h, 'bob');
   for (const status of ['ended', 'Active', 'pending', 'danger', null, 1]) await assertFails(r.set(startDoc({ status })));
-  await assertFails(r.set(startDoc({ startedAt: ts(0) }))); // heure du client
+  await assertFails(r.set(startDoc({ startedAt: ts(-1000) }))); // heure du client
   await assertFails(r.set(startDoc({ startedAt: ts(-DAY) })));
   await assertFails(r.set(startDoc({ startedAt: 'maintenant' })));
   await assertFails(r.set(startDoc({ endedAt: serverTs() })));
@@ -274,7 +298,7 @@ s.tc('AL14', 'fin manuelle : seuls status, endedAt, purgeAt (et deviceId) change
   await assertFails(r.update(endChange({ expiresAt: ts(DAY) })));
   await assertFails(r.update(endChange({ startedAt: serverTs() })));
   await assertFails(r.update(endChange({ seq: 9 })));
-  await assertFails(r.update(endChange({ endedAt: ts(0) }))); // heure du client
+  await assertFails(r.update(endChange({ endedAt: ts(-1000) }))); // heure du client
   await assertFails(r.update(endChange({ endedAt: null })));
   await assertFails(r.update(endChange({ purgeAt: ts(10 * DAY) })));
   await assertFails(r.update(endChange({ purgeAt: ts(4 * DAY) })));
@@ -313,7 +337,7 @@ s.tc('AL15', 'ré-armement : après une fin et >= 60 s depuis l\'ancien début, 
   // Un ré-armement reste soumis aux mêmes conditions qu'un début.
   await seed(h, 'bob', endedSeed());
   await assertFails(r.set(startDoc({ seq: 2, status: 'ended' })));
-  await assertFails(r.set(startDoc({ seq: 2, startedAt: ts(0) })));
+  await assertFails(r.set(startDoc({ seq: 2, startedAt: ts(-1000) })));
   await assertFails(r.set(startDoc({ seq: 2, deviceId: DEVICE_B })));
   await assertFails(r.set(startDoc({ seq: 2, lat: 48.85 })));
 });
@@ -334,7 +358,7 @@ s.tc('AL16', 'ré-armement : partage arrêté, ex-membre, Miff supprimée : refu
 // =====================================================================================================================
 // Suppression
 // =====================================================================================================================
-s.tc('AL17', 'suppression : l\'auteur (active ou terminée) et la créatrice peuvent supprimer ; un autre membre, une étrangère, un visiteur : refusés ; un ex-membre efface la sienne', async (h) => {
+s.tc('AL17', 'suppression : l\'auteur (active ou terminée) supprime la sienne ; la créatrice NE PEUT PAS la supprimer seule (M1 de la revue de #274) ; un autre membre, une étrangère, un visiteur : refusés ; un ex-membre efface la sienne', async (h) => {
   await seed(h, 'bob', activeSeed());
   for (const acteur of ['carol', 'eve', 'zoe']) await assertFails(ref(h, acteur, 'bob').delete());
   await assertFails(h.anon().doc(alertPath('bob')).delete());
@@ -343,7 +367,8 @@ s.tc('AL17', 'suppression : l\'auteur (active ou terminée) et la créatrice peu
   await seed(h, 'bob', endedSeed());
   await assertSucceeds(ref(h, 'bob').delete()); // terminée : l'auteur nettoie
   await seed(h, 'bob', activeSeed());
-  await assertSucceeds(ref(h, 'alice', 'bob').delete()); // la créatrice
+  await assertFails(ref(h, 'alice', 'bob').delete()); // la créatrice seule : refusé (elle ne peut pas effacer en silence l'alerte d'un membre)
+  if (!(await stored(h, 'bob'))) throw new Error("l'alerte de bob doit exister encore");
   await seed(h, 'bob', activeSeed());
   await h.admin((f) => f.doc(`${M1}/members/bob`).delete());
   await assertSucceeds(ref(h, 'bob').delete()); // ex-membre : droit de suppression de sa propre trace (comme le statut)
@@ -427,4 +452,190 @@ s.tc('AL23', 'indépendance : écrire ou supprimer le statut, la photo, la posit
   await h.admin((f) => f.doc(`${M1}/positions/bob`).set(positionSeed()));
   await assertSucceeds(ref(h, 'alice', 'bob').get());
   await assertFails(h.db('alice').doc(`${M1}/positions/bob`).get());
+});
+
+s.tc('AL24', "M1 (revue de #274) : la créatrice NE PEUT PAS supprimer seule l'alerte d'un membre (active ou terminée) ; elle PEUT dans le lot qui retire ce membre ; elle nettoie l'alerte orpheline d'un membre déjà parti ; un autre membre, jamais", async (h) => {
+  await seed(h, 'bob', activeSeed());
+  await assertFails(ref(h, 'alice', 'bob').delete()); // seule
+  await assertFails(commit(h.db('alice'), [del(alertPath('bob'))])); // seule, dans un lot
+  // Dans un lot qui change le code mais ne retire PAS le membre : refusé.
+  await assertFails(commit(h.db('alice'), [
+    del(alertPath('bob')),
+    update(`miffs/${ID.M1}`, { joinCode: CODE.REGEN }),
+    set(`joinCodes/${CODE.REGEN}`, { miffId: ID.M1, miffName: 'Famille', createdAt: serverTs() }),
+    del(`joinCodes/${CODE.M1}`),
+  ]));
+  await seed(h, 'bob', endedSeed());
+  await assertFails(ref(h, 'alice', 'bob').delete()); // terminée : toujours refusé
+  await assertFails(ref(h, 'carol', 'bob').delete());
+  if (!(await stored(h, 'bob'))) throw new Error("l'alerte de bob doit exister encore");
+  // Dans le lot de retrait (avec la photo et la position du membre) : accepté, lot complet de 8 écritures.
+  const lot = removeMemberWithPositionOps({ target: 'bob' });
+  await assertSucceeds(commit(h.db('alice'), [...Object.values(lot), del(alertPath('bob'))]));
+  if (await stored(h, 'bob')) throw new Error("l'alerte du membre retiré devrait avoir disparu");
+  // Alerte orpheline d'un membre dont la fiche n'existe plus : la créatrice peut la nettoyer.
+  await seed(h, 'bob', activeSeed());
+  await assertSucceeds(ref(h, 'alice', 'bob').delete());
+  // L'auteur, lui, supprime toujours seul.
+  await seed(h, 'carol', endedSeed());
+  await assertSucceeds(ref(h, 'carol').delete());
+});
+
+// =====================================================================================================================
+// Quota d'alertes : 3 débuts par 24 h et par utilisateur, toutes Miffs confondues (décision du PM du 2026-11-18)
+// =====================================================================================================================
+/** Début qui consomme VRAIMENT le quota (sans remise à zéro) : crée le compteur, ou remplit une case libre ou périmée ; sinon tente quand même s0 (refus attendu). */
+const startWithQuota = async (h, uid, miffId, doc) => {
+  const q = await storedQuota(h, uid);
+  let op;
+  if (!q) op = set(quotaPath(uid), quotaDoc(miffId));
+  else {
+    const slot = ['s0', 's1', 's2'].find((k) => q[k] == null || q[k].toMillis() <= Date.now() - DAY - 60_000) ?? 's0';
+    op = update(quotaPath(uid), { [slot]: serverTs(), lastMiffId: miffId, updatedAt: serverTs(), expireAt: ts(2 * DAY) });
+  }
+  return commit(h.db(uid), [op, set(alertPath(uid, miffId), doc)]);
+};
+const alertOf = (h, uid, miffId = ID.M1) => h.db(uid).doc(alertPath(uid, miffId));
+const threeRecent = () => ({ s0: ts(-3 * HOUR), s1: ts(-2 * HOUR), s2: ts(-HOUR) });
+
+s.tc('AL25', 'QUOTA : 1re, 2e et 3e alertes acceptées ; la 4e dans les 24 h refusée (permission-denied) ; CRÉATION + ARRÊT EN BOUCLE (terminer, supprimer, recréer) refusés au 4e ; terminer ne rend aucun crédit', async (h) => {
+  await sess(h, 'bob');
+  for (let i = 1; i <= 3; i++) {
+    await assertSucceeds(startWithQuota(h, 'bob', ID.M1, startDoc()));
+    await assertSucceeds(alertOf(h, 'bob').update(endChange())); // terminer : aucun crédit rendu
+    await assertSucceeds(alertOf(h, 'bob').delete()); // supprimer l'alerte terminée : aucun crédit rendu non plus
+    const q = await storedQuota(h, 'bob');
+    if (['s0', 's1', 's2'].filter((k) => q[k] != null).length !== i) throw new Error(`après ${i} début(s), ${i} case(s) pleine(s) attendue(s)`);
+  }
+  await assertFails(startWithQuota(h, 'bob', ID.M1, startDoc())); // 4e : refusée
+  const avant = await storedQuota(h, 'bob');
+  await assertFails(startWithQuota(h, 'bob', ID.M1, startDoc({}, 6 * DAY + HOUR))); // encore refusée, autre durée valide
+  if (await stored(h, 'bob')) throw new Error("la 4e alerte ne doit pas exister");
+  const apres = await storedQuota(h, 'bob');
+  if (JSON.stringify(avant) !== JSON.stringify(apres)) throw new Error('un lot refusé ne consomme aucun crédit');
+});
+
+s.tc('AL26', "QUOTA : fenêtre glissante de 24 h à l'heure du SERVEUR : la 4e acceptée dès qu'une case a 24 h ; refusée à 23 h 59 ; le ré-armement en consomme un aussi", async (h) => {
+  await sess(h, 'bob');
+  await seedQuota(h, 'bob', { s0: ts(-DAY - 2 * MIN), s1: ts(-2 * HOUR), s2: ts(-HOUR) });
+  await assertSucceeds(startWithQuota(h, 'bob', ID.M1, startDoc())); // la case s0 a plus de 24 h : remplacée
+  const q = await storedQuota(h, 'bob');
+  if (q.s0.toMillis() < Date.now() - 60_000 || !q.s1 || !q.s2) throw new Error('seule la case périmée est remplacée');
+  await assertSucceeds(alertOf(h, 'bob').delete());
+  await assertFails(startWithQuota(h, 'bob', ID.M1, startDoc())); // 3 cases pleines de nouveau
+  // À 23 h 58 : refusé.
+  await seedQuota(h, 'bob', { s0: ts(-DAY + 2 * MIN), s1: ts(-2 * HOUR), s2: ts(-HOUR) });
+  await assertFails(startWithQuota(h, 'bob', ID.M1, startDoc()));
+  // Ré-armement : consomme un crédit comme un début.
+  await seed(h, 'bob', endedSeed({ startedAt: ts(-61_000), endedAt: ts(-50_000) }));
+  await seedQuota(h, 'bob', threeRecent());
+  await assertFails(startWithQuota(h, 'bob', ID.M1, startDoc({ seq: 2 })));
+  await assertFails(h.db('bob').doc(alertPath('bob')).set(startDoc({ seq: 2 }))); // ré-armement SANS écrire le compteur : refusé même avec un crédit libre
+  await seedQuota(h, 'bob', { ...threeRecent(), s1: ts(-DAY - HOUR) });
+  await assertFails(h.db('bob').doc(alertPath('bob')).set(startDoc({ seq: 2 })));
+  await seedQuota(h, 'bob', { ...threeRecent(), s1: ts(-DAY - HOUR) });
+  await assertSucceeds(startWithQuota(h, 'bob', ID.M1, startDoc({ seq: 2 })));
+  // L'heure de l'APPAREIL ne compte pas : une case remplie avec l'heure du client (même lointaine) est refusée.
+  await seedQuota(h, 'bob', threeRecent());
+  await assertFails(commit(h.db('bob'), [update(quotaPath('bob'), { s0: ts(-3 * DAY), lastMiffId: ID.M1, updatedAt: serverTs(), expireAt: ts(2 * DAY) })]));
+});
+
+s.tc('AL27', "QUOTA : par utilisateur : un autre utilisateur (même Miff, autre Miff) n'est pas affecté par les crédits épuisés de bob", async (h) => {
+  await sess(h, 'bob', 'alice');
+  await seedQuota(h, 'bob', threeRecent());
+  await assertFails(startWithQuota(h, 'bob', ID.M1, startDoc()));
+  await assertSucceeds(startWithQuota(h, 'alice', ID.M1, startDoc())); // alice : son propre compteur
+  // bob ne peut pas utiliser le compteur d'alice, ni alice celui de bob.
+  await seedQuota(h, 'alice', {});
+  await assertFails(commit(h.db('bob'), [update(quotaPath('alice'), { s0: serverTs(), lastMiffId: ID.M1, updatedAt: serverTs(), expireAt: ts(2 * DAY) })])); // seul
+  await assertFails(commit(h.db('bob'), [update(quotaPath('alice'), { s0: serverTs(), lastMiffId: ID.M1, updatedAt: serverTs(), expireAt: ts(2 * DAY) }), set(alertPath('bob'), startDoc())]));
+});
+
+s.tc('AL28', "QUOTA : TOUTES les Miffs ensemble : 3 débuts répartis sur deux Miffs épuisent le crédit ; un lot ne peut pas démarrer deux alertes avec un seul crédit", async (h) => {
+  await h.seedMiff({
+    miffId: ID.M3, name: 'Amis', code: CODE.M3, ownerUid: 'dave',
+    members: [{ uid: 'dave', role: 'owner', sharing: true }, { uid: 'bob', role: 'member', sharing: true, key: ID.M3 }],
+    status: ['dave', 'bob'],
+  });
+  await sess(h, 'bob');
+  // Un seul crédit pour deux Miffs dans le même lot : refusé (lastMiffId ne désigne qu'une Miff).
+  await assertFails(commit(h.db('bob'), [set(quotaPath('bob'), quotaDoc(ID.M1)), set(alertPath('bob', ID.M1), startDoc()), set(alertPath('bob', ID.M3), startDoc())]));
+  await assertSucceeds(startWithQuota(h, 'bob', ID.M1, startDoc()));
+  await assertSucceeds(startWithQuota(h, 'bob', ID.M3, startDoc()));
+  await assertSucceeds(alertOf(h, 'bob', ID.M1).delete());
+  await assertSucceeds(startWithQuota(h, 'bob', ID.M1, startDoc())); // 3e, de nouveau dans M1
+  await assertSucceeds(alertOf(h, 'bob', ID.M3).delete());
+  await assertFails(startWithQuota(h, 'bob', ID.M3, startDoc())); // 4e, dans l'autre Miff : refusée aussi (le crédit est par utilisateur)
+  await assertFails(startWithQuota(h, 'bob', ID.M1, startDoc({ seq: 2 })));
+});
+
+s.tc('AL29', "QUOTA : le compteur n'existe pas encore : l'alerte SANS écriture du compteur est refusée ; avec un compteur mal formé, d'une autre Miff, ou écrit dans un lot précédent (crédit réutilisé) : refusée", async (h) => {
+  await sess(h, 'bob');
+  await assertFails(alertOf(h, 'bob').set(startDoc())); // aucun compteur
+  await assertFails(h.db('alice').doc(quotaPath('bob')).set(quotaDoc())); // créer le compteur d'un autre
+  const ok = (over = {}) => commit(h.db('bob'), [set(quotaPath('bob'), quotaDoc(ID.M1, over)), set(alertPath('bob'), startDoc())]);
+  await assertFails(ok({ lastMiffId: ID.M2 })); // Miff d'une autre alerte
+  await assertFails(ok({ lastMiffId: 'pas-un-id' }));
+  await assertFails(ok({ s0: null, s1: serverTs() })); // la première case doit être s0
+  await assertFails(ok({ s1: serverTs() })); // deux cases pleines à la création
+  await assertFails(ok({ s0: ts(-1000) })); // heure du client
+  await assertFails(ok({ updatedAt: ts(-1000) }));
+  await assertFails(ok({ expireAt: ts(-1000) }));
+  await assertFails(ok({ expireAt: ts(30 * DAY) }));
+  await assertFails(ok({ expireAt: null }));
+  await assertFails(ok({ extra: 1 })); // clé en plus
+  await assertSucceeds(ok());
+  // Crédit réutilisé : l'alerte supprimée, un nouveau début SANS nouvelle écriture du compteur (updatedAt d'un lot précédent) est refusé.
+  await assertSucceeds(alertOf(h, 'bob').delete());
+  await assertFails(h.db('bob').doc(alertPath('bob')).set(startDoc()));
+  // Compteur écrit seul puis alerte dans un autre lot : refusé (le crédit doit être revendiqué dans le même lot).
+  await seedQuota(h, 'bob', { s0: null });
+  await assertSucceeds(commit(h.db('bob'), [update(quotaPath('bob'), { s0: serverTs(), lastMiffId: ID.M1, updatedAt: serverTs(), expireAt: ts(2 * DAY) })]));
+  await assertFails(h.db('bob').doc(alertPath('bob')).set(startDoc()));
+});
+
+s.tc('AL30', "QUOTA : le compteur ne se modifie PAS à la main : remise à zéro, case reculée, deux cases, case non périmée, heure du client, suppression seule, écriture par un autre, lecture par un autre : refusées ; lecture par son propriétaire", async (h) => {
+  await sess(h, 'bob');
+  await seedQuota(h, 'bob', threeRecent());
+  const q = () => h.db('bob').doc(quotaPath('bob'));
+  const upd = (extra) => q().update({ updatedAt: serverTs(), expireAt: ts(2 * DAY), ...extra });
+  await assertFails(upd({ s0: null, s1: null, s2: null })); // remise à zéro
+  await assertFails(upd({ s0: null })); // vider une case
+  await assertFails(upd({ s0: ts(-5 * DAY) })); // reculer une case
+  await assertFails(upd({ s0: serverTs() })); // la case s0 a moins de 24 h : non remplaçable
+  await assertFails(upd({ s1: serverTs() }));
+  await assertFails(upd({ s0: serverTs(), s1: serverTs() })); // deux cases
+  await assertFails(q().set(quotaSeed({ s0: null, s1: null, s2: null, updatedAt: serverTs() }))); // set complet : remise à zéro
+  await assertFails(q().delete()); // supprimer le compteur seul
+  await assertFails(commit(h.db('bob'), [del(quotaPath('bob')), set(alertPath('bob'), startDoc())])); // supprimer et recréer : refusé (suppression seule)
+  await assertFails(h.db('alice').doc(quotaPath('bob')).update({ s0: serverTs(), updatedAt: serverTs() }));
+  await assertFails(h.db('alice').doc(quotaPath('bob')).get());
+  await assertFails(h.db('alice').doc(quotaPath('bob')).delete());
+  await assertFails(h.anon().doc(quotaPath('bob')).get());
+  await assertFails(h.db('bob').collection('users/bob/quota').get()); // aucune liste
+  const garde = await storedQuota(h, 'bob');
+  if (!garde.s0 || !garde.s1 || !garde.s2) throw new Error('le compteur ne doit pas avoir bougé');
+  const snap = await assertSucceeds(q().get());
+  if (!snap.data().s0) throw new Error('le propriétaire relit son compteur');
+  // Avec des cases LIBRES : heure de l'appareil refusée ; plusieurs cases à la fois refusées ; vider une case récente en même temps refusé.
+  await seedQuota(h, 'bob', { s0: null, s1: null, s2: ts(-HOUR) });
+  await assertFails(upd({ s0: ts(-1000) })); // heure du client
+  await assertFails(upd({ s0: ts(-3 * DAY) }));
+  await assertFails(upd({ s0: serverTs(), s1: serverTs() })); // deux cases libres à la fois
+  await assertFails(upd({ s0: serverTs(), s2: null })); // vider une case récente en même temps
+  await assertFails(upd({ s0: serverTs(), s2: serverTs() })); // case récente non remplaçable
+  await assertFails(upd({ s0: serverTs(), lastMiffId: 'pas-un-id' }));
+  await assertSucceeds(upd({ s0: serverTs() })); // une seule case libre : permis
+  // Écriture légitime isolée (une case périmée remplacée) : permise (elle ne fait que consommer un crédit).
+  await seedQuota(h, 'bob', { s0: ts(-2 * DAY), s1: ts(-HOUR), s2: ts(-HOUR) });
+  await assertSucceeds(upd({ s0: serverTs(), lastMiffId: ID.M1 }));
+});
+
+s.tc('AL31', "QUOTA : suppression de compte (RGPD) : le compteur part AVEC le profil (même lot, ou après) ; jamais seul ; un compteur orphelin (profil déjà supprimé) se supprime", async (h) => {
+  await seedQuota(h, 'bob', threeRecent());
+  await assertFails(h.db('bob').doc(quotaPath('bob')).delete());
+  await assertSucceeds(commit(h.db('bob'), [del(quotaPath('bob')), del('users/bob')]));
+  if (await storedQuota(h, 'bob')) throw new Error('le compteur doit avoir disparu avec le profil');
+  await seedQuota(h, 'bob', threeRecent());
+  await assertSucceeds(h.db('bob').doc(quotaPath('bob')).delete()); // le profil n'existe plus : compteur orphelin
 });

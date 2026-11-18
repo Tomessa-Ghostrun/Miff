@@ -6,7 +6,7 @@
 //   - TOUS les membres de la Miff d'origine qui ont un appareil de session sont prevenus, MEME sans partage de position (D16) ; l'auteur ne l'est jamais ;
 //   - l'interrupteur « Quand un proche donne des nouvelles » (notify.updates) n'agit PAS (un reglage de confort ne coupe pas une alerte) : seuls l'absence de
 //     jeton (interrupteur general, desinstallation) ou de session ecartent un destinataire ;
-//   - aucune heure calme, aucun plafond horaire des updates ; PLAFOND TECHNIQUE silencieux a la place : 10 debuts par auteur, par Miff et par 24 h, 1 par minute ;
+//   - aucune heure calme, aucun plafond horaire des updates ; garde silencieuse de 1 debut par minute (le plafond de 3 debuts par 24 h et par utilisateur est dans les REGLES Firestore, qui refusent le 4e) ;
 //   - DEBUT et FIN MANUELLE seulement (le declencheur ne transmet jamais une expiration) ; une fin n'est notifiee que si le DEBUT de cette alerte l'a ete.
 //
 // Ordre (chaque etape peut s'arreter sans rien ecrire) :
@@ -35,11 +35,9 @@ import { prenomAffichable } from "./notifRegles.js";
 import {
   AGE_MAX_EVENEMENT_MS,
   DUREE_ETAT_ALERTE_MS,
-  FENETRE_PLAFOND_MS,
   INTERVALLE_MIN_DEBUTS_MS,
   MAX_DESTINATAIRES_ALERTE,
   MAX_FICHES_ALERTE,
-  PLAFOND_DEBUTS,
   construireMessageAlerte,
   type Phase,
 } from "./alerteRegles.js";
@@ -90,24 +88,15 @@ type Verdict = "reserve" | "deja_vu" | "plafond" | "debut_non_notifie";
 
 const lire = (etat: Etat, auteurUid: string, champ: string): unknown => etat.get(new FieldPath("alerts", auteurUid, champ));
 
-/** Liste d'horodatages valides (les valeurs d'un autre type sont ignorees : un document d'etat abime ne bloque jamais une alerte). */
-function horodatages(valeur: unknown): Timestamp[] {
-  return Array.isArray(valeur) ? valeur.map(enTimestamp).filter((t): t is Timestamp => t !== null) : [];
-}
-
 /**
- * Verdict d'un DEBUT : "deja_vu" (livraison en double, ou debut plus ancien que le dernier traite), "plafond" (10 debuts notifies dans les 24 h qui precedent,
- * ou moins d'une minute depuis le dernier) ou "reserve". Identite du debut = startedAt (heure du serveur, unique), PAS seq : une alerte supprimee puis recreee
+ * Verdict d'un DEBUT : "deja_vu" (livraison en double, ou debut plus ancien que le dernier traite), "plafond" (moins d'une minute depuis le dernier debut reserve ;
+ * le plafond de 3 debuts par 24 h est applique par les regles Firestore, pas ici) ou "reserve". Identite du debut = startedAt (heure du serveur, unique), PAS seq : une alerte supprimee puis recreee
  * repart a seq 1 mais avec un autre startedAt.
  */
 function verdictDebut(etat: Etat, auteurUid: string, startedAt: Timestamp): Verdict {
   const vu = enTimestamp(lire(etat, auteurUid, "lastSeenStartedAt"));
   if (vu && nanos(startedAt) <= nanos(vu)) return "deja_vu";
-  const debuts = horodatages(lire(etat, auteurUid, "starts"));
-  const dansLaJournee = debuts.filter((t) => startedAt.toMillis() - t.toMillis() < FENETRE_PLAFOND_MS);
-  if (dansLaJournee.length >= PLAFOND_DEBUTS) return "plafond";
-  const dernier = debuts.reduce((max, t) => Math.max(max, t.toMillis()), Number.NEGATIVE_INFINITY);
-  if (startedAt.toMillis() - dernier < INTERVALLE_MIN_DEBUTS_MS) return "plafond";
+  if (vu && startedAt.toMillis() - vu.toMillis() < INTERVALLE_MIN_DEBUTS_MS) return "plafond";
   return "reserve";
 }
 
@@ -229,11 +218,9 @@ async function executer(dep: Dependances, evenement: EvenementAlerte, bilan: Bil
     const verdict = verdictDe(phase, etat, auteurUid, startedAt);
     if (verdict !== "reserve") return verdict;
     if (phase === "debut") {
-      const recents = horodatages(lire(etat, auteurUid, "starts")).filter((t) => startedAt.toMillis() - t.toMillis() < FENETRE_PLAFOND_MS);
-      const starts = [...recents, startedAt].slice(-PLAFOND_DEBUTS);
       const expireActuel = enTimestamp(etat.get(new FieldPath("expireAt")));
       const expireAt = Timestamp.fromMillis(Math.max(maintenantMs + DUREE_ETAT_ALERTE_MS, expireActuel?.toMillis() ?? 0));
-      tx.set(refEtat, { alerts: { [auteurUid]: { lastSeenStartedAt: startedAt, starts } }, expireAt }, { merge: true });
+      tx.set(refEtat, { alerts: { [auteurUid]: { lastSeenStartedAt: startedAt } }, expireAt }, { merge: true });
     } else {
       // La fin ne rallonge JAMAIS la duree de vie de l'etat (fixee a la reservation du debut) : elle note seulement qu'une fin a ete notifiee pour ce debut.
       tx.set(refEtat, { alerts: { [auteurUid]: { lastEndedStartedAt: startedAt } } }, { merge: true });

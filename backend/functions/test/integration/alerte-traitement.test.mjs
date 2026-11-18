@@ -152,9 +152,8 @@ test('AD32 : A déclare une alerte à 03:00 (heure calme à Paris) -> B, C, D no
   const e = await etat();
   assert.deepEqual(Object.keys(e).sort(), ['alerts', 'expireAt']);
   assert.deepEqual(Object.keys(e.alerts), ['A']);
-  assert.deepEqual(Object.keys(e.alerts.A).sort(), ['lastSeenStartedAt', 'starts']);
+  assert.deepEqual(Object.keys(e.alerts.A).sort(), ['lastSeenStartedAt']);
   assert.ok(e.alerts.A.lastSeenStartedAt.isEqual(ts(T_DEBUT)));
-  assert.equal(e.alerts.A.starts.length, 1);
   assert.ok(e.expireAt.isEqual(ts(plus(T_DEBUT, 5000 + 9 * 24 * H))), 'suppression automatique (TTL) 9 jours après la réservation du début');
   assert.equal(await existe(`notifState/${MIFF}`), false, "l'état des updates (notifState/{miffId}) n'est jamais touché");
 });
@@ -290,31 +289,27 @@ test('AD37 / D20 : 1 début notifié par minute au plus : un second début 30 s 
   assert.equal(c.fcm.messages.length, 6);
 });
 
-test('AD37 / D20 : 10 débuts notifiés en 24 h au plus par auteur et par Miff ; le 11e est écarté SANS ERREUR ; une autre personne de la Miff et une autre Miff ne sont pas touchées ; après 24 h, un début repasse', async () => {
+test("D20 (décision du PM du 2026-11-18) : la fonction n'a PLUS de plafond journalier (le quota de 3 débuts par 24 h est dans les règles, qui refusent le 4e) : tous les débuts acceptés par les règles, espacés d'au moins 1 minute, sont notifiés ; l'état ne garde qu'un horodatage par auteur", async () => {
   await creerMiff(MIFF, quatre());
   await creerMiff('Miff2', quatre());
   const c = contexte();
   const quand = (i) => plus(T_DEBUT, i * 2 * MIN);
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 4; i++) {
     c.horloge.maintenant = plus(quand(i), 3000);
     assert.equal((await debut(c, { quand: quand(i) })).envoyes, 3, `début ${i + 1}`);
   }
-  assert.equal(c.fcm.messages.length, 30);
-  c.horloge.maintenant = plus(quand(10), 3000);
-  const onzieme = await debut(c, { quand: quand(10) });
-  assert.equal(onzieme.motif, 'plafond');
-  assert.equal(onzieme.erreur, undefined);
-  assert.equal(c.fcm.messages.length, 30, 'aucun push au-delà du plafond');
-  // Une autre personne de la même Miff (B déclare à son tour) et la même personne dans une autre Miff : non plafonnées.
-  c.horloge.maintenant = plus(quand(10), 4000);
-  assert.equal((await debut(c, { auteurUid: 'B', quand: quand(10) })).envoyes, 3);
-  assert.equal((await debut(c, { miffId: 'Miff2', quand: quand(10) })).envoyes, 3);
-  // Le tableau de l'état est borné à 10 horodatages.
-  assert.equal((await etat()).alerts.A.starts.length, 10);
-  // 24 h après le premier début : la fenêtre glissante repasse sous 10 (les 9 suivants comptent encore, le premier non).
-  const plusTard = plus(T_DEBUT, 24 * H + MIN);
-  c.horloge.maintenant = plus(plusTard, 3000);
-  assert.equal((await debut(c, { quand: plusTard })).envoyes, 3);
+  assert.equal(c.fcm.messages.length, 12);
+  // Une autre personne de la même Miff et la même personne dans une autre Miff : indépendantes.
+  c.horloge.maintenant = plus(quand(4), 4000);
+  assert.equal((await debut(c, { auteurUid: 'B', quand: quand(4) })).envoyes, 3);
+  assert.equal((await debut(c, { miffId: 'Miff2', quand: quand(4) })).envoyes, 3);
+  assert.deepEqual(Object.keys((await etat()).alerts.A), ['lastSeenStartedAt']);
+  // Le 1 par minute reste une garde silencieuse de la fonction.
+  c.horloge.maintenant = plus(quand(4), 20_000);
+  // Le dernier début réservé de A est quand(3) ; un début à +30 s est trop rapproché.
+  const rapide = await debut(c, { quand: plus(quand(3), 30_000) });
+  assert.equal(rapide.motif, 'plafond', 'à moins de 60 s du dernier début réservé : écarté sans erreur');
+  assert.equal(rapide.erreur, undefined);
 });
 
 // --- Fin manuelle ---------------------------------------------------------------------------------------------------------------------

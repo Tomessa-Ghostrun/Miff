@@ -13,16 +13,22 @@ const squash = (s) => s.replace(/\s+/g, ' ').trim();
 const rules = stripComments(readFileSync(RULES_FILE, 'utf8'));
 const fn = (name) => squash(model.fns[name]);
 
-test('BUDGET ALERTE - lire 2, créer 3, ré-armer 3, terminer 1, supprimer 1 (borne haute : 0 pour l\'auteur) ; la mise à jour cumule ré-armement et fin (3 + 1 = 4)', () => {
+test('BUDGET ALERTE - lire 2, créer 4, ré-armer 4, terminer 1, supprimer 2 en borne haute (0 pour l\'auteur ; 2 pour la créatrice : créatrice + fiche du membre après le lot) ; la mise à jour cumule ré-armement et fin (4 + 1 = 5)', () => {
   const cost = Object.fromEntries(['get', 'list', 'create', 'update', 'delete'].map((m) => [m, allow(ALERTS, m)]));
-  assert.deepEqual(cost, { get: 2, list: 2, create: 3, update: 4, delete: 1 });
-  assert.equal(model.costOfFn('alertRearm'), 3, 'session + Miff + partage');
+  assert.deepEqual(cost, { get: 2, list: 2, create: 4, update: 5, delete: 2 });
+  assert.equal(model.costOfFn('alertRearm'), 4, 'session + Miff + partage + quota');
+  assert.equal(model.costOfFn('alertQuotaOk'), 1, 'getAfter du compteur écrit dans le même lot');
   assert.equal(model.costOfFn('alertEnd'), 1, 'session seule');
   assert.equal(model.costOfFn('alertStart'), 1, 'session seule');
   assert.equal(model.costOfFn('alertSharingAfter'), 1);
   assert.equal(model.costOfFn('alertDeviceOk'), 1);
-  for (const f of ['alertExpiryWindow', 'alertShape']) assert.equal(model.costOfFn(f), 0, `${f} ne lit rien`);
-  assert.ok(10 - cost.update >= 6, 'marge sur la limite de 10 par écriture simple');
+  for (const f of ['alertExpiryWindow', 'alertShape', 'quotaShape', 'quotaFirstStart', 'quotaSlotUsed']) assert.equal(model.costOfFn(f), 0, `${f} ne lit rien`);
+  assert.ok(10 - cost.update >= 5, 'marge sur la limite de 10 par écriture simple');
+  // Le compteur lui-même : 0 lecture pour l'écrire, 1 pour le supprimer (existsAfter du profil), propriétaire seul pour le lire. Un lot « compteur + alerte » = 0 + 4 = 4 sur 20.
+  const Q = 'match /quota/alerts {';
+  assert.deepEqual(Object.fromEntries(['get', 'create', 'update', 'delete'].map((m) => [m, allow(Q, m)])), { get: 0, create: 0, update: 0, delete: 1 });
+  assert.equal(allow(Q, 'create') + allow(ALERTS, 'create'), 4);
+  assert.ok(LIMIT - (allow(Q, 'update') + allow(ALERTS, 'update')) >= 14);
 });
 
 test('BUDGET ALERTE - une alerte ne coûte aucune lecture d\'abonnement ni de position : GRATUITE POUR TOUS (D8), aucune règle de position modifiée', () => {
@@ -44,7 +50,7 @@ test('BUDGET ALERTE - une alerte ne coûte aucune lecture d\'abonnement ni de po
   assert.equal(model.costOfFn('targetSharingOn'), 1);
 });
 
-test('BUDGET ALERTE - impact sur les lots existants : arrêt du partage 3 -> 4, départ 4 -> 5, suppression de la Miff 13 -> 14 ; RETRAIT inchangé à 18 (19 avec la suppression de l\'alerte du membre dans le lot)', () => {
+test('BUDGET ALERTE - impact sur les lots existants : arrêt du partage 3 -> 4, départ 4 -> 5, suppression de la Miff 13 -> 14 ; RETRAIT inchangé à 18 (20 sur 20 avec la suppression de l\'alerte du membre dans le lot)', () => {
   const existsAfterAlert = (rules.match(/existsAfter\(\/databases\/\$\(database\)\/documents\/miffs\/\$\(miffId\)\/alerts\/\$\(uid\)\)/g) ?? []).length;
   assert.equal(existsAfterAlert, 2, 'une seule vérification dans validSharingChange et une dans memberDeleteOk');
   assert.ok(fn('memberDeleteOk').includes('!existsAfter(/databases/$(database)/documents/miffs/$(miffId)/alerts/$(uid))'));
@@ -63,8 +69,11 @@ test('BUDGET ALERTE - impact sur les lots existants : arrêt du partage 3 -> 4, 
   assert.equal(fiche, 7);
   const retrait = fiche + 1 + 1 + 1 /* statut, photo, position */ + allow('match /miffs/{miffId} {', 'update') + 3 /* nouveau code */ + 1 /* ancien code */;
   assert.equal(retrait, 18, 'inchangé par AD-B1 (marge 2)');
-  assert.equal(retrait + 1, 19, 'avec la suppression de l\'alerte du membre par le créateur dans le même lot (marge 1)');
-  assert.ok(LIMIT - (retrait + 1) >= 1);
+  // Revue de #274 (M1) : le créateur ne supprime l'alerte d'un membre QUE dans le lot de retrait (existsAfter de la fiche) : créatrice 1 + fiche après le lot 1 = 2.
+  const alerteParLaCreatrice = model.costOfFn('isOwnerOneRead') + 1;
+  assert.equal(allow(ALERTS, 'delete'), alerteParLaCreatrice);
+  assert.equal(retrait + alerteParLaCreatrice, 20, 'retrait d\'un membre EN ALERTE : 20 sur 20 sans cache, marge nulle (limite non dépassée)');
+  assert.ok(LIMIT - (retrait + alerteParLaCreatrice) >= 0);
   // La branche « retrait » lit le créateur en UNE lecture (même verdict qu'isOwner : une Miff absente fait échouer get()).
   assert.ok(fn('memberDeleteOk').includes('!isSelf(uid) && isOwnerOneRead(miffId) && codeRenewed(miffId)'));
   assert.doesNotMatch(fn('memberDeleteOk'), /isOwner\(miffId\)/);
@@ -94,13 +103,36 @@ test('BUDGET ALERTE - qui peut quoi : auteur seul écrit ; tout membre lit SANS 
   assert.equal(squash(r.get), 'miffAlive(miffId) && isMember(miffId)');
   assert.equal(squash(r.list), 'miffAlive(miffId) && isMember(miffId)');
   assert.doesNotMatch(r.get, /mySharingOn|statusPublished|positionPublished|targetSharingOn/, 'D16 : aucune réciprocité de partage pour lire une alerte');
-  assert.match(squash(r.create), /^isSelf\(uid\) && miffAlive\(miffId\) && alertShape\(request\.resource\.data\) && request\.resource\.data\.seq == 1 && alertStart\(request\.resource\.data, uid\) && alertSharingAfter\(miffId, uid\)$/);
+  assert.match(squash(r.create), /^isSelf\(uid\) && miffAlive\(miffId\) && alertShape\(request\.resource\.data\) && request\.resource\.data\.seq == 1 && alertQuotaOk\(miffId, uid\) && alertStart\(request\.resource\.data, uid\) && alertSharingAfter\(miffId, uid\)$/);
+  assert.ok(fn('alertRearm').includes('alertQuotaOk(miffId, uid)'), 'le ré-armement consomme un crédit comme un début');
   assert.match(squash(r.update), /^isSelf\(uid\) && alertShape\(request\.resource\.data\) && \(alertRearm\(miffId, uid\) \|\| alertEnd\(uid\)\)$/);
-  assert.equal(squash(r.delete), 'isSelf(uid) || isOwnerOneRead(miffId)');
+  // Suppression : l'auteur seul, OU la créatrice mais seulement dans le lot qui retire le membre (la fiche n'existe plus après le lot).
+  assert.equal(squash(r.delete), 'isSelf(uid) || (isOwnerOneRead(miffId) && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)))');
   assert.ok(!/allow\s+[a-z, ]*write/.test(rules.slice(rules.indexOf(ALERTS), rules.indexOf(ALERTS) + 1500)), 'aucune règle « write » large dans le bloc alerts');
 });
 
 test('BUDGET ALERTE - notifState/{miffId}_alertes n\'a AUCUNE règle (serveur seul) : refusé par défaut', () => {
   assert.doesNotMatch(rules, /match \/notifState/, 'aucune règle ne mentionne notifState');
   assert.match(rules, /match \/\{document=\*\*\} \{\s*allow read, write: if false;/);
+});
+
+test('QUOTA ALERTE - 3 débuts par 24 h et par utilisateur appliqués par les règles : forme, mécanisme de cases, écriture réservée au propriétaire, suppression avec le profil seulement', () => {
+  const Q = 'match /quota/alerts {';
+  const r = model.allowRules(Q);
+  assert.equal(squash(r.get), 'request.auth != null && request.auth.uid == uid');
+  assert.match(squash(r.create), /^isSelf\(uid\) && quotaShape\(request\.resource\.data\) && quotaFirstStart\(request\.resource\.data\)$/);
+  assert.match(squash(r.update), /^isSelf\(uid\) && quotaShape\(request\.resource\.data\) && \(quotaSlotUsed\('s0'\) \|\| quotaSlotUsed\('s1'\) \|\| quotaSlotUsed\('s2'\)\)$/);
+  assert.equal(squash(r.delete), 'isSelf(uid) && !existsAfter(/databases/$(database)/documents/users/$(uid))', 'jamais supprimé seul : seulement avec le profil (RGPD) ; pas de règle de liste');
+  assert.equal(r.list, undefined);
+  // Trois cases exactement, 24 h à l'heure du SERVEUR, jamais l'horloge de l'appareil.
+  assert.ok(fn('quotaShape').includes("d.keys().hasOnly(['s0', 's1', 's2', 'lastMiffId', 'updatedAt', 'expireAt'])"));
+  assert.ok(fn('quotaShape').includes('d.updatedAt == request.time'));
+  assert.ok(fn('quotaSlotUsed').includes("resource.data[slot] <= request.time - duration.value(24, 'h')"));
+  assert.ok(fn('quotaSlotUsed').includes('d[slot] == request.time'));
+  assert.ok(fn('quotaFirstStart').includes('d.s0 == request.time && d.s1 == null && d.s2 == null'));
+  // Le crédit est revendiqué par l'alerte DANS LE MÊME LOT et pour SA Miff.
+  assert.ok(fn('alertQuotaOk').includes('q.updatedAt == request.time && q.lastMiffId == miffId'));
+  assert.ok(fn('alertQuotaOk').includes('getAfter('));
+  // Ni lecture d'abonnement, ni position : le quota est le même pour tous (alerte gratuite, D8).
+  assert.doesNotMatch(model.fns.quotaSlotUsed + model.fns.quotaShape + model.fns.alertQuotaOk, /isPremium|entitlements|position/i);
 });

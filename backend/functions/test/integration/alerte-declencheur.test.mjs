@@ -68,8 +68,7 @@ test("DÉBUT : création d'une alerte -> la fonction s'exécute (elle réserve l
   await membre('B1');
   await db.doc(`miffs/${MIFF}/alerts/A1`).set(alerte());
   const a = await attendre(() => etatAuteur('A1'), "notifState/{miff}_alertes.alerts.A1 n'est jamais apparu : le déclencheur ne s'est pas exécuté");
-  assert.deepEqual(Object.keys(a).sort(), ['lastSeenStartedAt', 'starts']);
-  assert.equal(a.starts.length, 1);
+  assert.deepEqual(Object.keys(a).sort(), ['lastSeenStartedAt']);
 });
 
 test("FIN MANUELLE : active -> ended avec endedAt <= expiresAt -> la fin est réservée (lastEndedStartedAt) ; un second passage identique n'ajoute rien", async () => {
@@ -109,6 +108,5 @@ test("ÉCRITURE SANS CHANGEMENT D'ÉTAT : modifier seulement purgeAt / deviceId 
   await db.doc(`miffs/${MIFF}/alerts/A5`).update({ deviceId: 'autre-appareil-session-2', purgeAt: Timestamp.fromMillis(Date.now() + 10 * 24 * 3_600_000) });
   await dormir(4000);
   const apres = await etatAuteur('A5');
-  assert.equal(apres.starts.length, 1, 'aucun second début');
   assert.ok(apres.lastSeenStartedAt.isEqual(avant.lastSeenStartedAt));
 });

@@ -22,9 +22,11 @@ export const CLES_ALERTE = {
 /** Valeur du champ `event` du message de donnees. */
 export const EVENEMENT_ALERTE: Record<Phase, string> = { debut: "start", fin: "end" };
 
-/** Plafond silencieux (D20) : au plus 10 DEBUTS notifies par auteur, par Miff et par 24 h ; au plus 1 par minute. Au-dela : l'alerte reste visible dans le Feed, sans push. */
-export const PLAFOND_DEBUTS = 10;
-export const FENETRE_PLAFOND_MS = 24 * 60 * 60 * 1000;
+/**
+ * Garde de la fonction : au plus 1 DEBUT notifie par minute, par auteur et par Miff (silencieux : l'alerte reste visible dans le Feed, sans push). Le plafond de 3 debuts par 24 h
+ * et par utilisateur (decision du PM du 2026-11-18) est applique PAR LES REGLES FIRESTORE (users/{uid}/quota/alerts, refus permission-denied du 4e) : la fonction ne voit donc que des
+ * debuts deja acceptes et n'a plus de plafond journalier propre.
+ */
 export const INTERVALLE_MIN_DEBUTS_MS = 60 * 1000;
 /** Une ecriture de plus de 5 min au moment du traitement n'envoie rien (pas d'alerte tardive apres un incident de la fonction). */
 export const AGE_MAX_EVENEMENT_MS = 5 * 60 * 1000;

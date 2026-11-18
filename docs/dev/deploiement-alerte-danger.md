@@ -12,7 +12,7 @@
 
 | # | Quoi | Quand | Pourquoi dans cet ordre |
 |---|---|---|---|
-| **0** | Poser la règle TTL `alerts.purgeAt` (section 1.2) ; **aucun compte à créer** | Dès maintenant, sans risque (rien n'est en ligne) | Sans cette règle, rien ne casse : les alertes terminées restent simplement stockées |
+| **0** | Poser **les deux règles TTL** : `alerts.purgeAt` et `quota.expireAt` (section 1.2) ; **aucun compte à créer** | Dès maintenant, sans risque (rien n'est en ligne) | Sans cette règle, rien ne casse : les alertes terminées restent simplement stockées |
 | **1** | **Déployer les règles Firestore** (section 2) | **Avant** toute application (APK, TestFlight) qui écrit une alerte | Sans les règles, l'écriture d'une alerte est refusée (`permission-denied`). Les règles sont **sans effet** tant qu'aucune application n'écrit d'alerte |
 | **2** | Livrer l'APK Android puis le build TestFlight iOS (hors de ce document : `android-dev`, `ios-dev`) | Après l'étape 1 | |
 | **3** | **Déployer la fonction `notifierAlerte`** (section 3) | **EN DERNIER**, quand l'APK et TestFlight sont prêts, les textes légaux publiés (AD-L) et ta recette prête | **C'est l'interrupteur de mise en service des notifications** : tant qu'elle n'est pas en ligne, une alerte apparaît dans le Feed des proches **mais aucun push ne part** (comportement prévu, testé) |
@@ -49,6 +49,14 @@ Les **4 rôles de projet** qu'il porte déjà couvrent exactement ce dont la nou
 ```bash
 gcloud firestore fields ttls update purgeAt --collection-group=alerts --enable-ttl --project=miff-3d283
 ```
+
+**Seconde règle TTL, pour le quota d'alertes** (3 débuts par 24 h et par utilisateur, décision du PM du 2026-11-18) : groupe de collections **`quota`**, champ **`expireAt`** (le petit compteur privé `users/{uid}/quota/alerts` disparaît au plus ~3 jours après le dernier début : minimisation des données). Console : même écran, **Créer une règle** une seconde fois. Cloud Shell :
+
+```bash
+gcloud firestore fields ttls update expireAt --collection-group=quota --enable-ttl --project=miff-3d283
+```
+
+Sans cette règle rien ne casse (le compteur reste jusqu'à la suppression du compte, quelques dizaines d'octets).
 
 La règle existante `notifState.expireAt` couvre **déjà** le nouveau document d'état `notifState/{miffId}_alertes` (même groupe de collections `notifState`, même champ) : **rien à faire**.
 
@@ -102,7 +110,8 @@ npx firebase deploy --only firestore:rules --project miff-3d283 --message "AD-B1
 | 1 | Console Firebase > Firestore Database > **Règles** | La date et l'heure de publication ont changé ; le texte contient `match /alerts/{uid}` et les fonctions `alertShape`, `alertStart`, `alertRearm`, `alertEnd` |
 | 2 | Avec une application **déjà installée** (sans alerte) : parcours habituel (publier une update, arrêter puis reprendre le partage, quitter puis rejoindre une Miff de test) | Tout fonctionne comme avant (aucun refus inattendu) : les lots d'arrêt, de départ et de retrait ne sont refusés que **s'il existe une alerte** |
 | 3 | Le lendemain : Firestore Database > **Utilisation** | Pas d'écart de lectures : une alerte ne coûte rien tant qu'il n'y en a pas |
-| 4 | Tu notes le déploiement | Date, commit déployé, version précédente (`b5f0d8b0`) |
+| 4 | **Retrait d'un membre EN ALERTE** (compte de test : le membre déclenche une alerte, la créatrice le retire) | Le retrait **réussit** et l'alerte disparaît du Feed. **Ce lot est le plus gros du modèle : 20 lectures de règles sur 20 sans cache, marge nulle** (18 sans alerte). **S'il est refusé** (« permission refusée » alors que tout est en règle) : ne rien forcer, copier le message à Claude : la solution de repli est de rendre la suppression de l'alerte au créateur possible hors de ce lot (règle précédente), à décider avec toi |
+| 5 | Tu notes le déploiement | Date, commit déployé, version précédente (`b5f0d8b0`) |
 
 **Rien d'autre n'est visible côté utilisateurs à ce stade** : les règles n'ont aucun effet tant qu'une application n'écrit pas d'alerte.
 
@@ -116,8 +125,10 @@ npx firebase deploy --only firestore:rules --project miff-3d283 --message "AD-B1
 |---|---|---|
 | 1 | Les règles de l'étape 1 sont en ligne ; l'APK et le build TestFlight qui écrivent des alertes sont **prêts** à tester | Oui |
 | 2 | Le compte `notify-update@…` (celui de `notifierUpdate`) porte ses **4 rôles** et **aucune clé** (section 1.1) : rien à créer | Oui |
-| 3 | La règle TTL `alerts.purgeAt` est posée (section 1.2) | Visible dans la console Firestore |
+| 3 | Les **deux** règles TTL (`alerts.purgeAt` et `quota.expireAt`) sont posées (section 1.2) | Visibles dans la console Firestore |
 | 4 | Les textes légaux (AD-L) sont publiés et aucune fiche de store ne contredit la fonction | « Oui » du PM écrit |
+| 4 bis | **PRÉCONDITION (revue de #274, M2) : un build TestFlight (et l'APK) contenant les clés de texte `notif_alert_*` en FR **et** EN, et la capacité Time Sensitive activée, AVANT de déployer la fonction.** Sans cela, une notification iOS d'alerte s'afficherait avec une clé brute à la place du texte (les clés `notif_alert_start_title`, `notif_alert_start_body`, `notif_alert_end_title`, `notif_alert_end_body` ne sont pas encore dans `Localizable.xcstrings` sur `main` au 2026-11-18) | Tu as installé le build sur l'iPhone et l'APK sur l'OPPO ; chaque appli a ces 4 textes en FR et EN |
+| 4 ter | **La fonction se déploie APRÈS l'APK et TestFlight, livrés à TOUS les testeurs** (revue de #274, m4) : une application **ancienne** (qui ne supprime pas l'alerte dans ses lots) voit ses lots d'**arrêt du partage, de départ et de retrait REFUSÉS tant qu'une alerte existe dans la Miff** (l'alerte de la personne qui part, ou du membre retiré). Tant que la fonction n'est pas en ligne, personne ne reçoit de notification d'alerte et le risque reste confiné aux testeurs ; une fois la fonction en ligne, les alertes sont réelles : plus aucune ancienne version ne doit rester chez un testeur | | Tous les testeurs ont la dernière version |
 | 5 | L'alerte de budget existe (Google Cloud > Facturation > Budgets) | `Miff 5 EUR par mois` |
 | 6 | Tu notes l'état actuel : Console Firebase > **Functions** | Capture : seule `notifierUpdate` est listée |
 
@@ -160,7 +171,8 @@ gcloud run services add-iam-policy-binding notifieralerte --region=europe-west9 
 | 4 | Aucune erreur | `npx firebase functions:log --project miff-3d283 --only notifierAlerte -n 30` | Aucune ligne `ERROR` ; **aucun** « The request was not authenticated… » ni « lacks {run.routes.invoke} permission » |
 | 5 | **Essai de bout en bout, deux comptes de test dans la même Miff** (OPPO + iPhone) | Compte A : maintenir 5 s le bouton de l'écran Update ; compte B : attendre | B reçoit **« A a déclaré une alerte »** (FR ou EN selon son téléphone), **en moins de 2 minutes**, **sans position, ni nom de Miff, ni nom de famille** ; A ne reçoit rien ; les journaux montrent `notif.alerte.debut.bilan` (`resultat: ok`, `envoyes` = 1) |
 | 6 | Fin manuelle | A : maintenir 5 s la bannière | B reçoit **« A a mis fin à son alerte »** ; journaux : `notif.alerte.fin.bilan` puis `notif.alerte.fin.duree` (durée en minutes) |
-| 7 | Plafond silencieux | Journaux après quelques déclenchements rapprochés | Une ligne `notif.alerte.debut.ignore` avec `motif: plafond` pour un début trop rapproché (moins d'une minute) ; **aucun message ni erreur côté utilisateur** |
+| 7 | Garde de la fonction (1 début par minute) | Journaux après deux débuts à moins d'une minute (compte de test, le 2e passe les règles : ré-armement impossible < 60 s, donc supprimer puis recréer) | Une ligne `notif.alerte.debut.ignore` avec `motif: plafond` ; **aucune erreur côté utilisateur** |
+| 7 bis | **Quota de 3 débuts par 24 h (règles)** | Compte de test : déclencher 3 alertes (en terminer et supprimer chacune), puis une 4e | La **4e est refusée** par l'application avec un message **calme**, **les numéros d'urgence restent accessibles** ; la 4e n'apparaît pas dans le Feed des proches ; aucune ligne `notif.alerte` pour elle ; **c'est normal et voulu** (pas un incident). Le compte de test retrouve un crédit 24 h après son premier début de la série |
 | 8 | Pas d'envoi à l'expiration | **Non vérifiable à la main en 7 jours** : garanti par le code (aucune fonction planifiée) et par les tests (`alerte-regles`, `alerte-declencheur`) ; à vérifier à l'échéance de la première vraie alerte : aucune ligne `notif.alerte.*` ce jour-là | Rien n'est journalisé ni envoyé |
 | 9 | Pas de dépense | Google Cloud > Facturation > Rapports (le lendemain) | 0 € à quelques centimes |
 | 10 | Tu notes le déploiement | Date, commit (8 caractères), version précédente | Noté dans la conversation avec Claude |
@@ -195,9 +207,9 @@ Effet : l'écriture d'une alerte est de nouveau refusée (`permission-denied`) ;
 
 ## 5. Coût et signal de bascule (pour que tu voies venir la facture)
 
-- **Estimation** (pas une mesure) : 1 alerte pour 1 000 utilisateurs actifs et par jour = **2 invocations et ≈ 26 lectures par jour** : **0 €** (très en dessous des 2 millions d'invocations et des 50 000 lectures par jour offerts). **Pire cas d'abus** (borné par le plafond de la fonction : 10 débuts par personne, par Miff et par 24 h ; 1 lecture par événement écarté) : quelques centimes à quelques dizaines de centimes par jour. Détail : `backend/data-model.md` §12.
-- **À regarder chaque semaine pendant la bêta** (1 minute) : `docs/dev/surveillance-quotas.md` §5 octies (invocations, notifications envoyées, **plafond atteint**, **taux d'alertes de moins de 2 minutes**, erreurs d'envoi, dépense).
-- **Signaux de bascule ou de revue** : facture Blaze > **5 $ par mois** ; plus de **100 invocations par jour** de `notifierAlerte` sans alerte réelle ; plus de **5 « plafond » par jour** ; plus de **5 % d'alertes terminées en moins de 2 minutes** (revoir la durée du maintien, pas le serveur) ; erreurs d'envoi > **5 %**.
+- **Estimation** (pas une mesure) : 1 alerte pour 1 000 utilisateurs actifs et par jour = **2 invocations et ≈ 26 lectures par jour** : **0 €** (très en dessous des 2 millions d'invocations et des 50 000 lectures par jour offerts). **Pire cas d'abus** (borné **par les règles** : 3 débuts par utilisateur et par 24 h, plus 1 par minute dans la fonction) : 1 000 comptes qui abusent ≈ 40 000 lectures par jour au plus pour la fonction, **sous les 50 000 gratuites** ; 0 € à quelques centimes par jour. **Ce qui n'est PAS plafonné par la fonction** (revue de #274, m1) : une sortie avant réservation (compte seul dans sa Miff, Miff absente) coûte 3 à 5 lectures ; avant le quota, un compte seul dans sa Miff pouvait créer et supprimer son alerte en boucle (≈ 1 écriture par seconde : ≈ 1 € par jour au plus, borné par le budget d'alerte à 5 €) ; **depuis le quota, ce scénario est impossible (3 débuts par jour et par compte)**. Reste : plusieurs comptes (non empêchable) et des écritures refusées en boucle par un client modifié (≈ 4 à 5 lectures de règles facturées par tentative, bornées par App Check et le budget d'alerte). Détail : `backend/data-model.md` §12.
+- **À regarder chaque semaine pendant la bêta** (1 minute) : `docs/dev/surveillance-quotas.md` §5 octies (invocations, notifications envoyées, **garde « 1 par minute » atteinte**, **taux d'alertes de moins de 2 minutes**, erreurs d'envoi, dépense).
+- **Signaux de bascule ou de revue** : facture Blaze > **5 $ par mois** ; plus de **100 invocations par jour** de `notifierAlerte` sans alerte réelle ; plus de **5 lignes « plafond »** (1 par minute) par jour ; plus de **5 % d'alertes terminées en moins de 2 minutes** (revoir la durée du maintien, pas le serveur) ; erreurs d'envoi > **5 %**.
 
 ---
 

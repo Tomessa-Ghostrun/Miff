@@ -55,9 +55,9 @@ test('classement : accepte les horodatages sous forme { seconds, nanoseconds } (
 
 // --- Plafonds -----------------------------------------------------------------------------------------------------------------------
 
-test('plafonds du ticket (D20) : 10 debuts par auteur, Miff et 24 h ; 1 par minute ; evenement de 5 min au plus ; etat conserve 9 jours (7 j d\'alerte + 2 j)', () => {
-  assert.equal(A.PLAFOND_DEBUTS, 10);
-  assert.equal(A.FENETRE_PLAFOND_MS, 24 * 3600_000);
+test('garde de la fonction : 1 debut par minute ; PLUS de plafond journalier propre (3 debuts par 24 h : regles Firestore) ; evenement de 5 min au plus ; etat conserve 9 jours (7 j d\'alerte + 2 j)', () => {
+  assert.equal(A.PLAFOND_DEBUTS, undefined, 'le plafond journalier est dans les regles (quota users/{uid}/quota/alerts)');
+  assert.equal(A.FENETRE_PLAFOND_MS, undefined);
   assert.equal(A.INTERVALLE_MIN_DEBUTS_MS, 60_000);
   assert.equal(A.AGE_MAX_EVENEMENT_MS, 300_000);
   assert.equal(A.DUREE_ETAT_ALERTE_MS, 9 * 24 * 3600_000);
