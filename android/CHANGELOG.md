@@ -2,6 +2,18 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.48.0] - 2026-11-18 : la ligne « Zone de danger » est toujours dans la légende du graphique (décision du PM)
+
+Décision du PM après la recette de « Répartition du temps » : la ligne **« Zone de danger »** de la légende s'affiche **toujours quand sa part arrondie est de 1 % ou plus**, quitte à remplacer le 4e lieu. Branche `android/legende-danger`, PR de suivi. Numéro : le dernier de `main` est 0.46.0 ; 0.47.0 est réservé à LIEU-ZOOM (#262), celui-ci prend 0.48.0 (à renuméroter au merge si l'ordre change). Android seulement. **Aucune nouvelle clé de texte, aucune lecture ni écriture serveur, aucune permission, aucune dépendance.**
+
+### Changé
+- **Règle de la légende** (`ui/timeshare/LegendLines.kt`, fonction pure) : la légende garde **4 lignes au plus** : les 4 plus grandes parts (égalité : la plus tôt dans l'anneau), **sauf** que la zone de danger y est **toujours** si sa part arrondie est ≥ 1 % ; si elle n'est pas déjà dans les 4 plus grandes, **elle prend la place de la 4e** (la plus petite des quatre, lieu ou « Hors-zone »). Sous 1 % (« < 1 % », part nulle) : pas de ligne, comme avant. Les lignes restent dans l'ordre de l'anneau ; l'anneau garde toutes les tranches ; « Hors-zone » suit la règle ordinaire.
+- **Effet** : le détail de la zone de danger (feuille du bas) est maintenant atteignable dès que sa part est ≥ 1 % (la limite connue de la première version disparaît).
+- **TalkBack** : la zone de danger est **citée une seule fois** : sa ligne est un bouton qui se lit « Zone de danger, 4 %, afficher le détail » et la phrase globale ne la répète pas ; sous 1 % (pas de ligne, pas de bouton) la phrase la garde.
+- **Parité iOS** : la même règle est appliquée sur la PR iOS #259 (pas de nouvelle clé de texte).
+- Tests : `LegendLinesTest` (sous / au-dessus de 1 %, exactement 1 %, déjà dans le top 4, part nulle, un seul lieu, égalités, « Hors-zone » qui cède sa place, « autres lieux »), `TimeShareCardTest` (la ligne remplace le 4e et se lit une fois ; sous 1 % pas de ligne mais citée dans la phrase). Ticket : PR docs #256 (révision 4) ; recette mise à jour.
+
+
 ## [0.46.0] - 2026-11-17 : « Répartition du temps » sur le Profil (TIME-1 et TIME-2)
 
 Ticket `docs/tickets/profil-repartition-temps.md` (PR docs #256 ; décisions par défaut du §4 déléguées par le PM), maquette `19.webp` du PM, recette `docs/qa/checklists/profil-repartition-temps-android-recette-pm.md` ; branche `android/profil-repartition-temps`, PR brouillon. Numéro de version : le dernier de `main` est 0.45.0, celui-ci prend le suivant (à renuméroter au merge si une autre PR l'a pris). Android seulement. **Aucune lecture ni écriture Firestore, aucun événement Analytics, aucune permission, aucune dépendance (le graphique est dessiné par Compose, aucune bibliothèque de graphique), aucun service payant, aucune règle de sécurité ni modèle de données modifiés ; aucune Cloud Function.**
