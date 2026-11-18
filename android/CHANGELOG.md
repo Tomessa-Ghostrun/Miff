@@ -2,6 +2,27 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.47.0] - 2026-11-17 : zoom sur l'aperçu de carte d'un lieu (LIEU-ZOOM)
+
+Demande directe du PM (« je te laisse faire », sans ticket Notion ni maquette), ticket `docs/tickets/lieu-carte-zoom.md`, recette `docs/qa/checklists/lieu-carte-zoom-android-recette-pm.md` ; branche `android/lieu-carte-zoom`, PR brouillon. Numéro 0.47.0 (0.46.0 réservé à la PR #260). iOS en parallèle (même comportement).
+
+### Ajouté
+- **Zoom et dézoom sur l'aperçu de carte de « Nouveau lieu » et « Modifier le lieu »** : **pincer** et **double toucher** (le toucher à deux doigts, zoom arrière, vient avec le moteur de carte). **Pas de boutons + / − : choix assumé du PM** (le zoom ne se fait qu'aux gestes ; un lecteur d'écran ne peut pas zoomer la carte, l'adresse et le curseur de rayon suffisent pour créer le lieu).
+- **La carte ne se déplace pas** : ni glissement, ni rotation, ni inclinaison, ni « double toucher puis glisser » ; le lieu reste **au centre** et le zoom se fait autour du centre. Le zoom ne peut donc ni déplacer le lieu ni changer le rayon. Le point reste choisi par l'adresse (jamais en touchant la carte).
+- **Limites** (`domain/place/PlaceMapZoom.kt`, fonction pure) : 3 niveaux de dézoom et 3 de zoom autour du cadrage (facteur 8), planchers absolus 3 et 19. Le cercle reste **à l'échelle réelle** (tracé en mètres) ; au dézoom maximal le plus petit (50 m) fait environ 16 px. Plage du curseur inchangée (50 à 800 m).
+- **Cadrage** : le cercle entier tient dans la carte, centré sur le lieu (comme avant) ; la carte se recadre (zoom remis au cadrage) quand le rayon ou l'adresse change. Le zoom choisi **revient** après une rotation ou un retour (état sauvegardé = distance en niveaux au cadrage, jamais une position).
+- **Défilement de la page** : un doigt sur la carte fait défiler la page comme avant ; un deuxième doigt (pincement) empêche la page de prendre le geste jusqu'à la fin (`PinchFriendlyFrame`).
+- **Le détail d'un lieu** (celui qui s'ouvre depuis la liste « Lieux de confiance », y compris le détail d'une demande de lieu et pour un membre non créateur) a le **même zoom** : mêmes gestes, mêmes bornes, mêmes règles (carte centrée sur le lieu, cercle à l'échelle réelle, pas de boutons + / −) ; le défilement de la page de détail est partagé de la même façon (un doigt fait défiler, un pincement ne fait pas défiler). Extension demandée par le PM après la recette de l'APK v1.
+- Tests : `PlaceMapZoomTest`, `PlaceMapGeometryTest` (cercle centré), `PlaceMapZoomScreensTest` (formulaire et détail zoomables, carte décrite, partage des doigts avec la page), `PlacePrivacyTest` (seuls le zoom et le double toucher sont activés).
+
+### Coûts et sécurité
+- **0 €, aucune clé, aucun compte, aucune dépendance, aucune permission.** L'aperçu était déjà une carte MapLibre avec les tuiles d'OpenFreeMap (gratuit, sans clé) dont les gestes étaient coupés : le SDK Google Maps (facturation) et Static Maps (payant) ne sont pas utilisés. **Limite connue** : zoomer demande un peu plus de tuiles à OpenFreeMap (service sans garantie, plage bornée à ±3 niveaux) ; **signal de bascule** inchangé (tuiles lentes ou absentes, message du fournisseur, changement de conditions) ; le style se remplace par `-Pmiff.mapStyleUrl=…` (https).
+- **Vie privée** : aucune donnée nouvelle vers un tiers (OpenFreeMap reçoit déjà les tuiles demandées et l'adresse IP ; une zone affichée plus large est de même nature). Pas de mention nouvelle nécessaire dans la politique de confidentialité ; le `release-manager` relit seulement toute phrase qui décrirait la carte comme figée.
+
+### À savoir
+- **Écarts avec une demande générique** : pas de boutons + / − (décision du PM) ; zoom limité à ±3 niveaux autour du cadrage ; pas de déplacement de la carte.
+- **Non testable sur la JVM** : la carte native elle-même (gestes réels, fluidité sur l'OPPO) : recette PM.
+
 ## [0.46.0] - 2026-11-17 : « Répartition du temps » sur le Profil (TIME-1 et TIME-2)
 
 Ticket `docs/tickets/profil-repartition-temps.md` (PR docs #256 ; décisions par défaut du §4 déléguées par le PM), maquette `19.webp` du PM, recette `docs/qa/checklists/profil-repartition-temps-android-recette-pm.md` ; branche `android/profil-repartition-temps`, PR brouillon. Numéro de version : le dernier de `main` est 0.45.0, celui-ci prend le suivant (à renuméroter au merge si une autre PR l'a pris). Android seulement. **Aucune lecture ni écriture Firestore, aucun événement Analytics, aucune permission, aucune dépendance (le graphique est dessiné par Compose, aucune bibliothèque de graphique), aucun service payant, aucune règle de sécurité ni modèle de données modifiés ; aucune Cloud Function.**
