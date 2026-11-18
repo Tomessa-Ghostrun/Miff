@@ -9,8 +9,8 @@ Branche `ios/lieu-carte-zoom`, PR brouillon. Ticket `docs/tickets/lieu-carte-zoo
 Ajouté :
 - **Zoom par gestes** sur la carte du formulaire et du détail d'un lieu : pincer, double toucher (un cran plus près), toucher à deux doigts (un cran plus loin). **Pas de boutons + / − : décision du PM** (accessibilité de ce point non couverte, choix assumé).
 - **Le lieu reste au centre** et ne peut pas être déplacé : le zoom est refait (`PlaceMapZoom`, bornes de 100 m de haut à 22 fois le rayon), le cercle est à l'échelle réelle et reste visible à tout zoom, le rayon du curseur (50 à 800 m) n'est jamais modifié. Un doigt seul fait défiler le formulaire ; le défilement est suspendu pendant un pincement seulement.
-- Le curseur de rayon garde le zoom de la personne ; une autre adresse remet le cadrage de départ. **Même zoom sur la carte du détail d'un lieu** (extension demandée par le PM le 2026-11-17, mêmes gestes, mêmes bornes, même suspension du défilement de la page pendant un pincement).
-- Tests : `PlaceMapZoomTests` (bornes, pas, cercle, rayon, sources). `PlacePrivacyTests` : test de la carte renommé (toujours pas de position de personne, ni zoom ni déplacement de MapKit).
+- **Rayon ou adresse qui change : le zoom est remis au cadrage de départ** (même règle qu'Android, retour de revue) ; seul un changement de type ou de catégorie garde le zoom. **Même zoom sur la carte du détail d'un lieu** (extension demandée par le PM le 2026-11-17, mêmes gestes, mêmes bornes, même suspension du défilement de la page pendant un pincement).
+- Tests : `PlaceMapZoomTests` (bornes, pas, cercle, rayon, sources) et `PlaceMapCoordinatorTests` (gestes exécutés : niveau, centre, rayon qui change, suspension et reprise du défilement). `PlacePrivacyTests` : test de la carte renommé (toujours pas de position de personne, ni zoom ni déplacement de MapKit).
 
 ### Intégration du build TestFlight 36 : retouches de fusion (client push, couleurs, fenêtre d'avis)
 

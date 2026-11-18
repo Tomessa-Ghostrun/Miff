@@ -66,15 +66,7 @@ struct PlaceMapView: UIViewRepresentable {
         let point = MKPointAnnotation()
         point.coordinate = center
         map.addAnnotation(point)
-        // Un AUTRE lieu : le zoom de la personne est oublié, le cadrage de départ revient. Le même lieu avec un autre rayon (le
-        // curseur) : son zoom est gardé, ramené dans les bornes du nouveau cercle.
-        let samePlace = coordinator.center.latitude == lat && coordinator.center.longitude == lng
-        if !samePlace {
-            coordinator.userLevel = nil
-        }
-        coordinator.center = center
-        coordinator.radiusM = radiusM
-        coordinator.show(PlaceMapZoom.reframed(keeping: coordinator.userLevel, radiusM: radiusM), animated: false)
+        coordinator.reframe(center: center, radiusM: radiusM)
     }
 }
 
@@ -119,6 +111,16 @@ final class PlaceMapCoordinator: NSObject, MKMapViewDelegate {
         UIColor((isDanger ? colorStatusDanger : colorActionPrimary).color)
     }
 
+    /// Le lieu ou son rayon change (même règle qu'Android, Z7) : le zoom de la personne est oublié et le cadrage de départ revient,
+    /// pour qu'un cercle plus grand ne dépasse jamais la carte. Seul un changement de type ou de catégorie garde le zoom.
+    func reframe(center newCenter: CLLocationCoordinate2D, radiusM newRadius: Int) {
+        let samePlace = center.latitude == newCenter.latitude && center.longitude == newCenter.longitude
+        userLevel = PlaceMapZoom.userLevel(keeping: userLevel, samePlace: samePlace, sameRadius: radiusM == newRadius)
+        center = newCenter
+        radiusM = newRadius
+        show(userLevel ?? PlaceMapLayout.visibleMeters(radiusM: newRadius), animated: false)
+    }
+
     /// Cadre le lieu à ce niveau : le centre est toujours le lieu, jamais un autre point.
     func show(_ meters: Double, animated: Bool) {
         level = meters
@@ -146,24 +148,37 @@ final class PlaceMapCoordinator: NSObject, MKMapViewDelegate {
     @objc private func pinched(_ gesture: UIPinchGestureRecognizer) {
         switch gesture.state {
         case .began:
-            pinchStart = level
-            pauseParentScroll()
+            pinchBegan()
         case .changed:
-            let meters = PlaceMapZoom.pinched(from: pinchStart, scale: Double(gesture.scale), radiusM: radiusM)
-            userLevel = meters
-            show(meters, animated: false)
+            pinchChanged(scale: Double(gesture.scale))
         case .ended, .cancelled, .failed:
-            resumeParentScroll()
+            pinchEnded()
         default:
             break
         }
     }
 
-    @objc private func doubleTapped() {
+    // Les trois temps d'un pincement et les deux touchers sont internes (non privés) pour que les tests les appellent sans doigts.
+    func pinchBegan() {
+        pinchStart = level
+        pauseParentScroll()
+    }
+
+    func pinchChanged(scale: Double) {
+        let meters = PlaceMapZoom.pinched(from: pinchStart, scale: scale, radiusM: radiusM)
+        userLevel = meters
+        show(meters, animated: false)
+    }
+
+    func pinchEnded() {
+        resumeParentScroll()
+    }
+
+    @objc func doubleTapped() {
         zoom(to: PlaceMapZoom.doubleTapped(from: level, radiusM: radiusM))
     }
 
-    @objc private func twoFingerTapped() {
+    @objc func twoFingerTapped() {
         zoom(to: PlaceMapZoom.twoFingerTapped(from: level, radiusM: radiusM))
     }
 
@@ -174,6 +189,10 @@ final class PlaceMapCoordinator: NSObject, MKMapViewDelegate {
 
     /// Pendant un pincement, l'écran qui contient la carte ne défile pas (deux doigts qui bougent ensemble ne doivent pas faire
     /// glisser la page) ; il est rendu dès que les doigts se lèvent. Un doigt seul, lui, fait défiler l'écran normalement.
+    /// Le `UIScrollView` est cherché dans les parents de la carte : le `ScrollView` de SwiftUI en est un jusqu'à iOS 18 ; sur iOS 26
+    /// ce n'est pas garanti (point de la recette). S'il n'est pas trouvé, rien n'est suspendu : UIKit n'accepte alors qu'un seul des
+    /// deux gestes à la fois (pincer OU faire défiler), et le zoom reste correct. `require(toFail:)` a été écarté : il retarderait
+    /// ou bloquerait le défilement à un doigt.
     private func pauseParentScroll() {
         var parent = map?.superview
         while let view = parent {

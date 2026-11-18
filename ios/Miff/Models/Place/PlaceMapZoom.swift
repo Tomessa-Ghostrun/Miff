@@ -43,13 +43,10 @@ enum PlaceMapZoom {
         clamped(current * tapFactor, radiusM: radiusM)
     }
 
-    /// Le niveau après un changement de rayon (le curseur) : sans zoom de la personne, le cadrage suit le cercle comme avant ; sinon
-    /// son niveau est gardé, ramené dans les nouvelles bornes.
-    static func reframed(keeping current: Double?, radiusM: Int) -> Double {
-        guard let current else {
-            return PlaceMapLayout.visibleMeters(radiusM: radiusM)
-        }
-        return clamped(current, radiusM: radiusM)
+    /// Le zoom de la personne après un changement (règle commune avec Android, Z7) : gardé seulement si le lieu ET le rayon sont les
+    /// mêmes (le type ou la catégorie changent) ; sinon oublié, et le cadrage de départ revient (le cercle tient toujours entier).
+    static func userLevel(keeping current: Double?, samePlace: Bool, sameRadius: Bool) -> Double? {
+        samePlace && sameRadius ? current : nil
     }
 
     /// La part de la hauteur de la carte que prend le diamètre du cercle à ce niveau (1 : le cercle touche les bords).

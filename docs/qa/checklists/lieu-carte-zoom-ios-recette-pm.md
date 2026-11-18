@@ -1,7 +1,7 @@
 # Recette iOS : zoomer sur la carte d'un lieu (formulaire de création et de modification) — parcours pour le PM
 
 **Pour qui** : vous, sur votre iPhone 11 Pro (iOS 26.5.2), build TestFlight de la PR `ios/lieu-carte-zoom`.
-**Il vous faut** : un compte créateur d'une Miff, avec ou sans lieu existant. **Durée** : environ 10 minutes. **Source** : demande du PM du 2026-11-17, `docs/tickets/lieu-carte-zoom.md` (critères Z1 à Z10), pas de maquette.
+**Il vous faut** : un compte créateur d'une Miff, avec ou sans lieu existant. **Durée** : environ 10 minutes. **Source** : demande du PM du 2026-11-17, `docs/tickets/lieu-carte-zoom.md` (critères LZ1 à LZ12), pas de maquette.
 
 ## À savoir avant de commencer
 
@@ -19,13 +19,19 @@
 5. [ ] **Double toucher** sur la carte : un cran plus près (animé). Répétez jusqu'au plus près : plus rien ne bouge. **Toucher à deux doigts** : un cran plus loin.
 6. [ ] **Défilement** : posez **un doigt** sur la carte et faites glisser vers le haut : **c'est le formulaire qui défile**, la carte ne bouge pas. Faites un pincement : **le formulaire ne défile pas** pendant le geste, et redéfile normalement ensuite.
 7. [ ] **Le lieu ne bouge pas** : touchez la carte à divers endroits, double touchez loin du point : **l'adresse affichée et le point ne changent jamais**.
-8. [ ] **Le rayon** : zoomez, puis bougez le **curseur de rayon** de 50 m à 800 m : le cercle suit à l'échelle réelle, **le zoom que vous avez fait est gardé** (la carte ne revient pas au départ à chaque cran), la valeur du curseur ne change pas quand vous zoomez. À 50 m, le cercle reste visible au plus loin ; à 800 m aussi.
+8. [ ] **Le rayon** : zoomez un peu, puis bougez le **curseur de rayon** (par exemple jusqu'à 800 m) : **la carte se recadre toute seule sur le cercle entier** (le zoom que vous aviez fait est remis au départ, comme sur Android : un cercle plus grand ne dépasse jamais la carte). Le cercle suit à l'échelle réelle, la valeur du curseur ne change **pas** quand vous zoomez. À 50 m, le cercle reste visible au plus loin ; à 800 m aussi.
 9. [ ] **Autre adresse** : choisissez une autre suggestion : la carte revient au **cadrage de départ** sur le nouveau lieu.
-10. [ ] **Type et catégorie** : passez en « Zone de danger » (cercle rouge) et choisissez une catégorie (emoji dans le repère) : le zoom est gardé, le cercle et le repère gardent leurs couleurs.
+10. [ ] **Type et catégorie** : zoomez, puis passez en « Zone de danger » (cercle rouge) et choisissez une catégorie (emoji dans le repère) : **ici le zoom est gardé** (seul un autre lieu ou un autre rayon remet le départ), le cercle et le repère gardent leurs couleurs.
 11. [ ] **Enregistrez**, puis, dans la liste des lieux, **touchez le lieu** pour ouvrir son **détail**. Sa carte **se zoome** de la même façon (pincer, double toucher, toucher à deux doigts), mêmes bornes, cercle à l'échelle réelle, le lieu reste au centre. **Un doigt qui glisse sur la carte fait défiler la page** ; **un pincement ne la fait pas défiler**. L'adresse, le rayon affiché et « Voir sur la carte » ne changent pas. Touchez « Modifier » : la carte du formulaire se zoome pareil ; le rayon enregistré est celui du curseur, pas celui du zoom.
 12. [ ] **Réduire les animations** (Réglages > Accessibilité > Animations) : le double toucher recadre **sans animation**.
 13. [ ] **Hors connexion** : mode avion, ouvrez le formulaire d'un lieu existant puis zoomez : si des tuiles manquent, la phrase calme « Ton lieu est bien placé, tu peux continuer » avec « Réessayer » peut remplacer la carte, **sans bloquer l'enregistrement**. Réseau remis puis « Réessayer » : la carte revient au cadrage de départ.
 14. [ ] **Pas de position** : aucune demande d'autorisation de localisation n'apparaît en zoomant, aucun point bleu « ma position » sur la carte.
+
+## Points de vigilance sur votre iPhone (iOS 26)
+
+- **Défilement de la page** (étapes 6 et 11) : l'app suspend le défilement de la page pendant un pincement en cherchant le conteneur de défilement de l'écran ; **ce n'est pas garanti sur iOS 26**. Si la page glisse ou saute pendant un pincement, notez-le : le zoom reste correct dans tous les cas.
+- **Trait pointillé** du cercle : même épaisseur à tous les niveaux de zoom ?
+- **Double toucher** et **toucher à deux doigts** : réactifs, sans retard ni double effet ?
 
 ## À me dire en fin de recette
 

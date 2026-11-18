@@ -71,6 +71,18 @@ Quand on crée un lieu (« Nouveau lieu »), qu'on en modifie un (« Modifier le
 - **Vie privée** : **aucune donnée nouvelle** envoyée à un tiers. OpenFreeMap reçoit déjà les tuiles demandées (la zone affichée) et l'adresse IP ; en dézoomant, la zone affichée est plus large (quartier, ville), de même nature. **La politique de confidentialité n'a pas besoin de nouvelle mention** (elle doit déjà citer la zone de carte affichée et l'IP). Si elle décrit la carte comme « figée » ou « sans geste », le `release-manager` doit relire cette phrase.
 - **Sécurité** : aucun nouveau flux réseau, aucun stockage, aucune permission ; les coordonnées ne sont ni journalisées ni sauvegardées (l'état de zoom sauvegardé est une **distance en niveaux** au cadrage, pas une position).
 
-## 8. Parité iOS
+## 8. iOS (section de l'agent `ios-dev`, PR #261)
 
-Même comportement avec MapKit : pincer et double toucher seulement ; pas de déplacement, de rotation ni d'inclinaison ; lieu au centre ; limites de zoom de facteur 8 de chaque côté du cadrage initial ; cercle en mètres ; recadrage quand le rayon ou l'adresse change ; zoom conservé à la rotation ; détail d'un lieu zoomable de la même façon ; **aucun bouton + / −**.
+Même comportement qu'Android avec MapKit : pincer, double toucher et toucher à deux doigts ; ni déplacement, ni rotation, ni inclinaison ; lieu toujours au centre ; cercle en mètres (`MKCircle`) ; zoom remis au cadrage de départ quand le rayon ou l'adresse change (Z7) ; formulaire ET détail d'un lieu (y compris le détail d'une demande, qui réutilise le même corps d'écran) ; aucun bouton + / − (choix assumé du PM) ; hors connexion : la phrase calme existante, « Réessayer » recrée la carte au cadrage de départ ; aucune clé, aucune dépendance, coût 0 (MapKit, tuiles d'Apple).
+
+**Écarts assumés avec Android** (les critères LZ1 à LZ12 valent des deux côtés ; seule la façon de les tenir diffère) :
+
+| Sujet | Android (Z4) | iOS | Pourquoi |
+|---|---|---|---|
+| Bornes de zoom | 3 niveaux de chaque côté du cadrage (facteur 8), niveaux absolus 3 et 19 | Hauteur de carte montrée de **100 m** (le plus près) à **22 fois le rayon** (le plus loin : le cercle garde au moins 1/11 de la hauteur, environ 16 pt ; 1 100 m pour 50 m de rayon, 17 600 m pour 800 m) | MapKit n'a pas de niveaux entiers comparables à ceux de MapLibre ; mesurer en mètres rend les bornes testables et garantit un cercle lisible. Les plages ne sont **pas** identiques : à rayon égal le plus près d'iOS est plus ou moins serré selon le rayon. Assumé, à ne pas « aligner » sans décision du PM. |
+| Moment où la page lâche le défilement (Z9) | Dès qu'un deuxième doigt touche la carte | Au début du pincement reconnu (pas au simple toucher du second doigt) ; un toucher à deux doigts sans pincement ne suspend rien | Le moteur de gestes d'iOS ne donne pas l'événement plus tôt sans bloquer le défilement à un doigt (`require(toFail:)` écarté). |
+| Conteneur de défilement | Géré par le composant | Cherché dans les parents de la carte (`UIScrollView`) ; **non garanti sur iOS 26** : sinon rien n'est suspendu, UIKit n'accepte qu'un seul geste à la fois, le zoom reste correct | À valider sur l'iPhone du PM. |
+| Zoom gardé à la rotation / au retour (Z8) | Sauvegardé | Gardé tant que la carte existe (rotation, taille qui change, clavier) ; l'app est en portrait seulement ; perdu si l'écran est recréé | Pas d'état sauvegardé ; contestable. |
+| Animation du double toucher | — | Animé, instantané si « Réduire les animations » | Convention Apple. |
+
+Pas de boutons + / − : un lecteur d'écran ne peut pas zoomer la carte (choix assumé du PM). Tests : `PlaceMapZoomTests` (règles pures, sources), `PlaceMapCoordinatorTests` (gestes exécutés). Recette : `docs/qa/checklists/lieu-carte-zoom-ios-recette-pm.md`.

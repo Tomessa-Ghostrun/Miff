@@ -124,22 +124,17 @@ final class PlaceMapZoomTests: XCTestCase {
         XCTAssertEqual(level, PlaceMapZoom.farthestMeters(radiusM: 50))
     }
 
-    // MARK: - Le curseur de rayon pendant un zoom
+    // MARK: - Le rayon ou le lieu change pendant un zoom (règle commune avec Android, Z7)
 
-    func testWithoutAZoomOfThePersonTheFrameFollowsTheRadiusLikeBefore() {
-        for radius in PlaceRadius.values {
-            XCTAssertEqual(
-                PlaceMapZoom.reframed(keeping: nil, radiusM: radius),
-                PlaceMapLayout.visibleMeters(radiusM: radius)
-            )
-        }
+    func testAZoomIsForgottenWhenTheRadiusOrThePlaceChanges() {
+        XCTAssertNil(PlaceMapZoom.userLevel(keeping: 300, samePlace: true, sameRadius: false))
+        XCTAssertNil(PlaceMapZoom.userLevel(keeping: 300, samePlace: false, sameRadius: true))
+        XCTAssertNil(PlaceMapZoom.userLevel(keeping: 300, samePlace: false, sameRadius: false))
     }
 
-    func testAZoomOfThePersonIsKeptWhenTheRadiusChangesAndBroughtBackInsideTheNewBounds() {
-        XCTAssertEqual(PlaceMapZoom.reframed(keeping: 300, radiusM: 100), 300)
-        XCTAssertEqual(PlaceMapZoom.reframed(keeping: 300, radiusM: 800), 300)
-        // Un cercle plus petit : le niveau très éloigné est ramené au plus loin permis pour lui.
-        XCTAssertEqual(PlaceMapZoom.reframed(keeping: 10_000, radiusM: 50), PlaceMapZoom.farthestMeters(radiusM: 50))
+    func testAZoomIsKeptWhenOnlyTheTypeOrTheCategoryChanges() {
+        XCTAssertEqual(PlaceMapZoom.userLevel(keeping: 300, samePlace: true, sameRadius: true), 300)
+        XCTAssertNil(PlaceMapZoom.userLevel(keeping: nil, samePlace: true, sameRadius: true))
     }
 
     func testTheRangeOfTheRadiusSliderIsUnchanged() {
@@ -194,6 +189,9 @@ final class PlaceMapZoomTests: XCTestCase {
         XCTAssertTrue(map.contains("pausedScroll?.isScrollEnabled = true"))
         XCTAssertTrue(map.contains("case .ended, .cancelled, .failed:"))
         XCTAssertTrue(map.contains("deinit"))
+        // Le comportement lui-même (suspension, reprise, libération) est exécuté dans PlaceMapCoordinatorTests.
+        // Pas de require(toFail:) : il retarderait le défilement à un doigt.
+        XCTAssertFalse(map.contains("require(toFail"))
     }
 
     func testTheMapStillNeedsNoKeyNoPackageAndNoNetworkAddress() throws {
