@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -52,6 +53,7 @@ import com.tomessa.miff.domain.auth.SignInProvider
 import com.tomessa.miff.domain.feed.StateLabel
 import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
+import com.tomessa.miff.domain.place.MiffPlacesView
 import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.domain.place.PlaceViewerRole
 import com.tomessa.miff.domain.profile.AvatarCodec
@@ -68,11 +70,13 @@ import com.tomessa.miff.ui.feed.ColorsInfoScreen
 import com.tomessa.miff.ui.feed.FeedActions
 import com.tomessa.miff.ui.feed.FeedHost
 import com.tomessa.miff.ui.feed.FeedMe
+import com.tomessa.miff.ui.feed.FeedNote
 import com.tomessa.miff.ui.feed.FeedScreen
 import com.tomessa.miff.ui.feed.FeedUiState
 import com.tomessa.miff.ui.feed.FeedViewModel
 import com.tomessa.miff.ui.feed.LocalPhotoReader
 import com.tomessa.miff.ui.feed.LocateUiState
+import com.tomessa.miff.ui.feed.OrangeCountdownSlot
 import com.tomessa.miff.ui.feed.rememberSystemFeedActions
 import com.tomessa.miff.ui.miff.AccessLostScreen
 import com.tomessa.miff.ui.miff.AgreementUi
@@ -137,6 +141,8 @@ import com.tomessa.miff.ui.settings.SubscriptionScreen
 import com.tomessa.miff.ui.settings.SubscriptionViewModel
 import com.tomessa.miff.ui.settings.rememberLocationPrivacy
 import com.tomessa.miff.ui.theme.Spacing
+import com.tomessa.miff.ui.timeshare.TimeShareSection
+import com.tomessa.miff.ui.timeshare.TimeShareViewModel
 import com.tomessa.miff.ui.update.UpdateActions
 import com.tomessa.miff.ui.update.UpdateBottomLayer
 import com.tomessa.miff.ui.update.UpdateEvent
@@ -330,6 +336,7 @@ private fun MainNavigation(
                                     waitingAgreement = container.awaitingAgreement.waiting,
                                     notifications = container.feedNotificationLink,
                                     visits = container.feedVisitLink,
+                                    presence = container.presenceRefresh,
                                 )
                             }
                         },
@@ -397,12 +404,45 @@ private fun MainNavigation(
                         },
                 )
             val profilePlaces by profilePlacesViewModel.state.collectAsStateWithLifecycle()
+            // "Répartition de ton temps" (docs/tickets/profil-repartition-temps.md): worked out ON THE PHONE from the journal of the presence and from the places the Profile already
+            // read for the Miff of the carousel; no reading, no writing, no listener of Firestore.
+            val timeShareViewModel: TimeShareViewModel =
+                viewModel(
+                    key = "time-share-$scopeKey",
+                    factory =
+                        viewModelFactory {
+                            initializer {
+                                TimeShareViewModel(
+                                    log = container.presenceLog,
+                                    windows = container.timeShareWindow,
+                                    tracking = container.timeShareTracking,
+                                )
+                            }
+                        },
+                )
             // The pending requests of a member who is not the creator (ticket LIEU-REQ-B): ONE reading of its own requests when the card of the Miff appears.
             val profileRequestsViewModel: ProfileRequestsViewModel =
                 viewModel(key = profileRequestsKey(scopeKey), factory = profileRequestsFactory(container))
             val profileRequests by profileRequestsViewModel.state.collectAsStateWithLifecycle()
             val notificationsState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
             val focusMember by container.tabRequests.pendingFocus.collectAsStateWithLifecycle()
+            // FEED-REFRESH-POSITION: the one calm note of "Actualiser" (the access to the location is not enough to refresh my position): a short toast, no screen, no button.
+            val noteContext = LocalContext.current
+            val positionNotRefreshed = stringResource(R.string.feed_refresh_position_unavailable)
+            LaunchedEffect(feedViewModel, positionNotRefreshed) {
+                feedViewModel.notes.collect { note ->
+                    when (note) {
+                        FeedNote.PositionNotRefreshed -> {
+                            Toast
+                                .makeText(
+                                    noteContext,
+                                    positionNotRefreshed,
+                                    Toast.LENGTH_LONG,
+                                ).show()
+                        }
+                    }
+                }
+            }
             val requestNotificationWindow =
                 rememberNotificationPermissionRequest(onAnswered = notificationsViewModel::onSystemWindowAnswered)
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { notificationsViewModel.refresh() }
@@ -459,6 +499,7 @@ private fun MainNavigation(
                         refreshing = refreshing,
                         onRefresh = feedViewModel::onRefresh,
                         observe = feedViewModel::observe,
+                        observeForProfile = feedViewModel::observeForProfile,
                         photos = container.photoReader,
                         connection =
                             ConnectionHost(
@@ -492,6 +533,14 @@ private fun MainNavigation(
                 profileDot = profileRequests.profileDot,
                 profileConnection = profileViewModel.connectionHost(profileConnection),
                 travelContent = { TravelCard(state = travelState, actions = travelActions) },
+                timeShareContent = {
+                    TimeShareSection(
+                        viewModel = timeShareViewModel,
+                        miffId = profilePlaces.selectedMiffId,
+                        places = (profilePlaces.view as? MiffPlacesView.Ready)?.places,
+                        onOpenMiff = { navController.open(MiffRoute(it)) },
+                    )
+                },
                 placesContent = {
                     (directoryState as? DirectoryState.Ready)?.let { ready ->
                         val myUid = container.authGateway.currentUid
@@ -798,6 +847,8 @@ fun MainTabs(
     agreement: AgreementUi = AgreementUi(),
     feed: FeedHost = FeedHost(),
     placesContent: @Composable () -> Unit = {},
+    /** The card "Répartition de ton temps" of the Profile tab, between the carousel and the places (docs/tickets/profil-repartition-temps.md). */
+    timeShareContent: @Composable () -> Unit = {},
     travelContent: @Composable () -> Unit = {},
     update: UpdateHost? = null,
     /** A tap on a line of the centre of notifications asks for the Feed or the Update from outside (NOTIF-6A). */
@@ -950,6 +1001,8 @@ fun MainTabs(
                                             onRetryFeed = feed.onRetry,
                                             onRefresh = feed.onRefresh,
                                             onOpenColors = onOpenColors,
+                                            // COUNTDOWN-A: the SAME way as the central button of the bar (the Update tab; the back gesture comes back here).
+                                            onOpenUpdate = { if (update != null) select(MainTab.UPDATE) },
                                         ),
                                     )
                                 FeedScreen(
@@ -981,6 +1034,15 @@ fun MainTabs(
                                         Lifecycle.State.STARTED,
                                     ) { observeProfile?.invoke() }
                                 }
+                                // COUNTDOWN-A: the encart of the countdown comes from the statuses the Feed reads, and the Feed only listens while it is the tab in use: the Profile
+                                // keeps the SAME listeners (no new reading) while it is shown, so that the encart never tells what is no longer true (an update just published, an
+                                // arrival in a place of trust noticed while the Profile is open).
+                                val observeForProfile by rememberUpdatedState(feed.observeForProfile)
+                                LaunchedEffect(lifecycleOwner) {
+                                    lifecycleOwner.lifecycle.repeatOnLifecycle(
+                                        Lifecycle.State.STARTED,
+                                    ) { observeForProfile() }
+                                }
                                 ProfileTabScreen(
                                     state = profileState,
                                     scrollToTopSignal = scrollToTop,
@@ -993,10 +1055,18 @@ fun MainTabs(
                                         onOpenMiff(id)
                                     },
                                     carousel = profileMiffs,
+                                    timeShareContent = timeShareContent,
                                     placesContent = placesContent,
                                     popIn = profileConnection,
                                     popInSuppressed = popInSuppressed,
                                     travelContent = travelContent,
+                                    countdownContent = {
+                                        OrangeCountdownSlot(
+                                            anchor = feedContent?.myCountdown,
+                                            onOpenUpdate = { if (update != null) select(MainTab.UPDATE) },
+                                            padding = PaddingValues(bottom = Spacing.l),
+                                        )
+                                    },
                                 )
                             }
 
@@ -1112,6 +1182,7 @@ internal fun NavGraphBuilder.sharedSettingsRoutes(
                                 withdrawals = container.consentWithdrawals,
                                 session = session,
                                 network = container.networkMonitor,
+                                presenceLog = container.presenceLog,
                             )
                         }
                     },
@@ -1127,6 +1198,7 @@ internal fun NavGraphBuilder.sharedSettingsRoutes(
             onReviewAgreement = container.awaitingAgreement::requestReview,
             onOpenDetectionHelp = { navController.open(DetectionHelpRoute) },
             notifications = rememberNotificationPermissionState(container),
+            onEraseTimeHistory = viewModel::onEraseTimeHistory,
         )
     }
     composable<DetectionHelpRoute> {

@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.tomessa.miff.data.auth.NetworkMonitor
 import com.tomessa.miff.data.feed.FeedRefresher
 import com.tomessa.miff.data.feed.PositionReader
+import com.tomessa.miff.data.feed.PresenceRefresh
 import com.tomessa.miff.data.feed.ServerRead
 import com.tomessa.miff.data.feed.StatusFeed
 import com.tomessa.miff.data.feed.StatusObserver
@@ -13,6 +14,7 @@ import com.tomessa.miff.data.miff.MiffDirectory
 import com.tomessa.miff.data.miff.MiffRepository
 import com.tomessa.miff.data.notification.FeedNotificationLink
 import com.tomessa.miff.data.notification.FeedVisitLink
+import com.tomessa.miff.data.tracking.PullOutcome
 import com.tomessa.miff.domain.feed.FeedBuilder
 import com.tomessa.miff.domain.feed.FeedContent
 import com.tomessa.miff.domain.feed.FeedInput
@@ -34,9 +36,12 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
@@ -59,7 +64,8 @@ import java.time.ZoneId
  *   stays on the phone until the purge of the cache at sign-out or at the loss of access to a Miff (CachePurger). The Feed shows, keeps and logs
  *   nothing of it;
  * - the Feed never writes (0 write, 0 deletion): it listens to the Miff (members, places, as the Miff screen does) and to the statuses, and
- *   reads one position per tap on "Localiser";
+ *   reads one position per tap on "Localiser". The Feed itself still writes nothing: "Actualiser" (FEED-REFRESH-POSITION) only ASKS the detection engine to check MY presence (it reads
+ *   my own position and writes a status or a position under ITS OWN gates and limits, see TrackingEngine.refreshFromFeed); no position ever reaches this class;
  * - the listeners exist ONLY while the Feed is on screen (the screen calls [observe] inside repeatOnLifecycle(STARTED), and only while the tab
  *   is the one in use): nothing listens to a Miff nobody is looking at, and only for the Miff shown;
  * - the colour is computed at the time of the reading, again each minute, from the clock: no reading of the server for it.
@@ -97,6 +103,12 @@ sealed interface LocateUiState {
     ) : LocateUiState {
         override fun toString(): String = "Shown(redacted)"
     }
+}
+
+/** A calm note the gesture "Actualiser" may bring (FEED-REFRESH-POSITION): a short toast, never a screen of error. */
+enum class FeedNote {
+    /** The position could not be refreshed because the access to the location is not enough (permission, precise location, location of the phone off). */
+    PositionNotRefreshed,
 }
 
 /** What the listener of the Miff last said, for the Miff it was attached to. */
@@ -162,6 +174,13 @@ class FeedViewModel(
     private val notifications: FeedNotificationLink = FeedNotificationLink.None,
     /** NOTIF-P1A, "Depuis ta dernière visite": told the picture of the Miff shown, ONLY when it is fresh (confirmed by the server). Local; nothing is read or written because of it. */
     private val visits: FeedVisitLink = FeedVisitLink.None,
+    /**
+     * FEED-REFRESH-POSITION: "Actualiser" also asks the detection to check MY presence once (one position, a status only if something changed; the gates and the limit of one reading
+     * every 30 s are the engine's). Independent of the indicator: the Feed never waits for it, and its answer only ever brings one calm note ([FeedNote]).
+     */
+    private val presence: PresenceRefresh = PresenceRefresh.None,
+    /** How long the answer of [presence] is waited for to say its calm note: a late one is dropped, never told after the fact. */
+    private val presenceNoteWaitMillis: Long = PRESENCE_NOTE_WAIT_MILLIS,
 ) : ViewModel() {
     val directoryState: StateFlow<DirectoryState> = directory.state
 
@@ -240,6 +259,11 @@ class FeedViewModel(
                 values[6] as Boolean,
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, FeedUiState.Loading)
+
+    private val mutableNotes = MutableSharedFlow<FeedNote>(extraBufferCapacity = 1)
+
+    /** One-shot calm notes of the gesture "Actualiser" (a toast): nothing is kept, a note that finds no collector is dropped. */
+    val notes: SharedFlow<FeedNote> = mutableNotes.asSharedFlow()
 
     private val mutableLocate = MutableStateFlow<LocateUiState>(LocateUiState.Idle)
     val locate: StateFlow<LocateUiState> = mutableLocate.asStateFlow()
@@ -471,6 +495,35 @@ class FeedViewModel(
         }
     }
 
+    /**
+     * COUNTDOWN-A: what the Profile tab needs to keep the encart "Tu es en dehors de tes lieux de confiance" TRUE while it is the tab in use (the screen calls it from
+     * `repeatOnLifecycle(STARTED)`, like [observe], and the two never run together: the tabs exclude each other). The SAME listeners as the Feed (the Miff shown and its statuses,
+     * so no new kind of reading: my own status is in them), the network and the minute, for as long as the Profile is on screen: an update published from the encart, or an arrival
+     * in a place of trust noticed while the Profile is open, changes the encart at once instead of leaving what the Feed last read.
+     *
+     * It leaves out everything that belongs to the Feed alone: the comparison "Depuis ta dernière visite" (a change must not be taken for SEEN by a tab that does not show it), the
+     * pop-in "Pas de connexion" and its attempts (the Profile has its own), and the sheet "Localiser". What is already read for this Miff stays on screen while the listeners are
+     * attached again (no flash of the encart on each entry), see [observeMiff].
+     */
+    suspend fun observeForProfile() {
+        coroutineScope {
+            launch { network.onlineChanges().collect { online -> offline.value = !online } }
+            launch { tickEachMinute() }
+            launch {
+                combine(
+                    directory.state.map { (it as? DirectoryState.Ready)?.activeId }.distinctUntilChanged(),
+                    restarts,
+                ) { id, _ -> id }.collectLatest { id ->
+                    if (id == null) {
+                        piece.value = null
+                    } else {
+                        observeMiff(id, resume = true)
+                    }
+                }
+            }
+        }
+    }
+
     /** The colour is recomputed with the clock, once per minute, aligned on the minute: no reading of the server. */
     private suspend fun tickEachMinute() {
         while (true) {
@@ -480,14 +533,26 @@ class FeedViewModel(
         }
     }
 
-    private suspend fun observeMiff(miffId: String) {
-        piece.value = MiffPiece.Loading(miffId)
-        // What was said about another Miff is never drawn on this one.
-        statusView.value = StatusesView.Waiting
-        // Neither the wait for the server's confirmation nor the mention "Dernières informations de…" of ANOTHER Miff follows to this one.
-        cacheGraceOver.value = false
-        staleAfterRefresh.value = false
-        serverConfirmed.value = false
+    /**
+     * [resume] (the Profile tab only): the listeners are attached again for the Miff that is ALREADY read and confirmed by the server, and what is shown is kept until they answer
+     * (the Feed starts from the skeleton instead, as it always did). Never for another Miff: what was said about one is not drawn on another.
+     */
+    private suspend fun observeMiff(
+        miffId: String,
+        resume: Boolean = false,
+    ) {
+        val keep =
+            resume && (piece.value as? MiffPiece.Data)?.miffId == miffId &&
+                (statusView.value as? StatusesView.Loaded)?.fromCache == false
+        if (!keep) {
+            piece.value = MiffPiece.Loading(miffId)
+            // What was said about another Miff is never drawn on this one.
+            statusView.value = StatusesView.Waiting
+            // Neither the wait for the server's confirmation nor the mention "Dernières informations de…" of ANOTHER Miff follows to this one.
+            cacheGraceOver.value = false
+            staleAfterRefresh.value = false
+            serverConfirmed.value = false
+        }
         coroutineScope {
             launch {
                 repository.observe(miffId).collect { observation -> handle(miffId, observation) }
@@ -573,6 +638,10 @@ class FeedViewModel(
                     when (feed) {
                         is StatusFeed.Data -> {
                             waitingTimeout.cancel()
+                            // The Profile attached the listener again over what the server had confirmed: the copy of the cache that comes first is not the present and must not
+                            // replace it (the encart would flash away and back). Offline nothing better will come, so the copy is taken (it holds an update just published).
+                            val confirmed = (statusView.value as? StatusesView.Loaded)?.fromCache == false
+                            if (feed.fromCache && confirmed && !offline.value) return@collect
                             if (feed.fromCache) {
                                 // A copy of the cache is NOT an answer of the server: it does not give the attempts back (a listener that
                                 // keeps ending right after its cached answer must not be attached again every 10 s, for ever).
@@ -625,6 +694,7 @@ class FeedViewModel(
         lastRefreshAtMillis = now
         mutableRefreshing.value = true
         val readStatuses = statusView.value !is StatusesView.Off
+        refreshMyPresence()
         viewModelScope.launch {
             try {
                 val answer =
@@ -640,6 +710,25 @@ class FeedViewModel(
             } finally {
                 mutableRefreshing.value = false
             }
+        }
+    }
+
+    /**
+     * FEED-REFRESH-POSITION: in a job of its own, so that the indicator and the reading of the loved ones never wait for the position (which may take its few seconds, or never come). The only
+     * thing that comes back to the screen is the calm note when the access to the location is not enough: every other outcome is silent (the Feed already shows a trip, a sharing that is
+     * stopped, an agreement awaited or the lack of network).
+     */
+    private fun refreshMyPresence() {
+        viewModelScope.launch {
+            val outcome =
+                try {
+                    withTimeoutOrNull(presenceNoteWaitMillis) { presence.refreshMyPresence() }
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Exception) {
+                    null
+                }
+            if (outcome == PullOutcome.NO_ACCESS) mutableNotes.tryEmit(FeedNote.PositionNotRefreshed)
         }
     }
 
@@ -719,5 +808,6 @@ class FeedViewModel(
         const val CACHE_GRACE_MILLIS = 5_000L
         const val MIN_REFRESH_INTERVAL_MILLIS = 15_000L
         const val REFRESH_TIMEOUT_MILLIS = 8_000L
+        const val PRESENCE_NOTE_WAIT_MILLIS = 10_000L
     }
 }

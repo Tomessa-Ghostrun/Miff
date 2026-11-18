@@ -102,6 +102,8 @@ private struct PublishJob {
     let place: PhotoPlace
     let deviceId: String
     let batteryPct: Int?
+    /// La description facultative, DÉJÀ nettoyée (nil = aucune) : la même dans chaque Miff du lot.
+    let description: String?
 }
 
 @MainActor
@@ -136,8 +138,10 @@ final class UpdatePublisher {
         handOverTimeoutSeconds = dependencies.handOverTimeoutSeconds
     }
 
-    /// Publie `photo`. `only` : les Miffs qu'un essai précédent n'a pas atteintes (nil = toutes). Ne lève jamais.
-    func publish(_ photo: UpdatePhoto, only: [String]? = nil) async -> PublishResult {
+    /// Publie `photo`. `only` : les Miffs qu'un essai précédent n'a pas atteintes (nil = toutes). `description` : ce que la personne a écrit sous
+    /// l'aperçu (facultatif) : elle est nettoyée ICI, écrite dans le MÊME document que la photo dans chaque Miff du lot, et omise quand il ne
+    /// reste rien. Elle n'est jamais journalisée. Ne lève jamais.
+    func publish(_ photo: UpdatePhoto, only: [String]? = nil, description: String? = nil) async -> PublishResult {
         guard let uid = environment.currentUid() else {
             return .failed
         }
@@ -189,7 +193,10 @@ final class UpdatePublisher {
             return .positionNotFound
         }
         let battery = await environment.battery()
-        let job = PublishJob(uid: uid, photo: photo, place: place, deviceId: deviceId, batteryPct: battery)
+        let job = PublishJob(
+            uid: uid, photo: photo, place: place, deviceId: deviceId, batteryPct: battery,
+            description: description.flatMap(PhotoDescription.normalize)
+        )
         return await send(job, targets: publishable, all: targets)
     }
 
@@ -281,7 +288,8 @@ final class UpdatePublisher {
             jpeg: job.photo.jpeg,
             createdAtMillis: now,
             expiresAtMillis: now + UpdateWrites.photoLifetimeMillis,
-            place: job.place
+            place: job.place,
+            descriptionText: job.description
         )
         onPhotoPublished(PublishedPhoto(uid: job.uid, miffIds: written, photo: shared))
     }
@@ -301,7 +309,8 @@ final class UpdatePublisher {
     private func commit(_ job: PublishJob, lot: [String]) async throws -> PhotoCommit {
         // L'heure du lot est prise quand il est construit.
         let context = PublishContext(
-            nowMillis: environment.nowMillis(), batteryPct: job.batteryPct, deviceId: job.deviceId
+            nowMillis: environment.nowMillis(), batteryPct: job.batteryPct, deviceId: job.deviceId,
+            photoDescription: job.description
         )
         let store = self.store
         let uid = job.uid

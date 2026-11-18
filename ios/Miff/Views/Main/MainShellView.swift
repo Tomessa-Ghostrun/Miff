@@ -98,6 +98,8 @@ struct MainShellView<Feed: View>: View {
     private let onOpenMiff: (String) -> Void
     private let onCreateMiff: () -> Void
     private let onOpenSettings: (SettingsRoute) -> Void
+    /// Monte chaque fois qu'on demande le Feed (toucher sur la notification « un proche a donné des nouvelles ») : l'onglet Feed est alors montré.
+    private let openFeedToken: Int
     private let feed: (FeedShellContext) -> Feed
     /// NOTIF-6I : un toucher sur une ligne du centre de notifications demande un onglet (le Feed, ou l'écran Update).
     @ObservedObject private var tabRequests: TabRequests
@@ -122,6 +124,7 @@ struct MainShellView<Feed: View>: View {
         onCreateMiff: @escaping () -> Void,
         onOpenSettings: @escaping (SettingsRoute) -> Void,
         tabRequests: TabRequests,
+        openFeedToken: Int = 0,
         @ViewBuilder feed: @escaping (FeedShellContext) -> Feed
     ) {
         self.miffs = miffs
@@ -137,6 +140,7 @@ struct MainShellView<Feed: View>: View {
         self.onCreateMiff = onCreateMiff
         self.onOpenSettings = onOpenSettings
         _tabRequests = ObservedObject(wrappedValue: tabRequests)
+        self.openFeedToken = openFeedToken
         self.feed = feed
     }
 
@@ -271,6 +275,13 @@ struct MainShellView<Feed: View>: View {
             }
         }
         .onPreferenceChange(TabBarTopPreference.self) { barTopY = $0 }
+        // Un toucher sur une notification du serveur : l'onglet Feed.
+        .onChange(of: openFeedToken) { _ in
+            selected = .feed
+        }
+        // La fenêtre d'avis ne recouvre jamais l'Update ni la pop-in « Pas de connexion » du Profil (docs/tickets/pop-ins-avis.md). Sans effet
+        // dans un build sans le drapeau REVIEW_PROMPT (Release).
+        .reviewReportsShell(updateOpen: shownTab == .update, profilePopIn: profile.offlineRetry)
         // La dernière Miff a disparu : on repart du Feed.
         .onChange(of: hasNoMiff) { noMiff in
             if noMiff {
@@ -351,6 +362,9 @@ struct MainShellView<Feed: View>: View {
                 onSelect: { selected = $0 }
             )
             .background(TabBarTopReader())
+            // La barre garde son apparence d'avant : le viseur demande une barre d'état claire à la racine (`AppAppearance`), ce qui bascule le
+            // schéma de couleurs de tout l'écran ; la barre, elle, reste en schéma clair (sa variante « sur photo » gère déjà ses couleurs).
+            .environment(\.colorScheme, .light)
         }
     }
 

@@ -89,14 +89,30 @@ object StatusColor {
         }
     }
 
+    /**
+     * The reference of the colour by age (decision N2): the most recent of the departure (or arrival) and the last update; null when neither is known.
+     * ONE place: the countdown before orange (COUNTDOWN-A) reads it here, it never recomputes it.
+     */
+    fun reference(facts: MemberStatusFacts): Long? =
+        listOfNotNull(facts.presenceAtMillis, facts.lastUpdateAtMillis).maxOrNull()
+
     /** The normal rule: the age of the most recent of the departure (or arrival) and the last update. */
     private fun byAge(
         facts: MemberStatusFacts,
         nowMillis: Long,
     ): StatusLevel {
-        val reference =
-            listOfNotNull(facts.presenceAtMillis, facts.lastUpdateAtMillis).maxOrNull()
-                ?: return StatusLevel.NEUTRAL
+        val reference = reference(facts) ?: return StatusLevel.NEUTRAL
+        return levelByAge(reference, nowMillis)
+    }
+
+    /**
+     * The colour of somebody who is OUT, from the reference alone and the time of the moment (the second half of [byAge], also read by the countdown
+     * before orange so that the encart and the card of the person can never disagree). A reference in the future counts as "now": green.
+     */
+    fun levelByAge(
+        reference: Long,
+        nowMillis: Long,
+    ): StatusLevel {
         val elapsed = nowMillis - reference
         return when {
             elapsed <= StatusThresholds.ORANGE_AFTER_MILLIS -> StatusLevel.GREEN
@@ -120,7 +136,7 @@ object StatusColor {
         if (facts.presence != PresenceValue.OUT && facts.presence != PresenceValue.IN_RISK) return emptyList()
         val candidates = mutableListOf<Long>()
         if (facts.presence == PresenceValue.OUT) {
-            listOfNotNull(facts.presenceAtMillis, facts.lastUpdateAtMillis).maxOrNull()?.let { reference ->
+            reference(facts)?.let { reference ->
                 safeAfter(reference, StatusThresholds.ORANGE_AFTER_MILLIS)?.let(candidates::add)
                 safeAfter(reference, StatusThresholds.RED_AFTER_MILLIS)?.let(candidates::add)
             }

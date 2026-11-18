@@ -1,8 +1,8 @@
 import CoreGraphics
 import Foundation
 
-// La mise en page du plein écran de la photo d'un proche (FEED-8, retours de la recette TestFlight). VRAI plein écran : la photo (entière, `scaledToFit`)
-// occupe TOUT l'écran, zones sûres comprises, sur fond noir ; la LÉGENDE, « Position mesurée… » et « Voir où c'était » sont POSÉES PAR-DESSUS, en bas,
+// La mise en page du plein écran de la photo d'un proche (FEED-8, retours de la recette TestFlight). VRAI plein écran, SANS AUCUNE MARGE (exigence du PM) : la photo (`scaledToFill`)
+// REMPLIT TOUT l'écran, zones sûres comprises, quel que soit son rapport (recadrage centré quand il diffère de celui de l'écran) ; la LÉGENDE, « Position mesurée… » et « Voir où c'était » sont POSÉES PAR-DESSUS, en bas,
 // sur un voile sombre (texte blanc, contraste d'au moins 4,5:1 même sur la photo la plus claire), dans la zone sûre du bas ; leur zone est BORNÉE (jamais
 // plus de 45 % de la hauteur) : en grand texte ou en paysage elle défile, et la photo n'est jamais masquée en entier. La croix et l'icône
 // « Enregistrer cette photo » restent en haut. Du Swift pur : aucune mesure de vue, aucune lecture, aucune écriture.
@@ -33,6 +33,30 @@ enum PhotoFullScreenLayout {
     /// large. Elle grandit avec la taille du texte (`@ScaledMetric` côté écran) ; au-delà de 45 % de la hauteur, la légende défile.
     static let footerEstimate: CGFloat = 170
 
+    /// La même estimation QUAND il y a une description : « Photo de … » passe alors au corps 16 (22 pt de haut au lieu de 26) et la description porte
+    /// seule le grand titre. Le titre et le lieu sont comptés sur une ligne chacun avec de la marge, le bouton à 44 pt : sans cette réduction,
+    /// presque toute description ferait défiler le pied sur un iPhone de 812 pt (une zone de voile vide, jusqu'à 45 % de l'écran).
+    static let footerEstimateWithDescription: CGFloat = 130
+
+    /// Largeur moyenne d'un caractère de la description, en part du corps de la police : la description est en GRAS (titre 20/26), donc plus large
+    /// que le corps normal (texte français, emojis compris : un emoji compte 2 unités UTF-16 pour environ 1 corps de large). Un peu large pour
+    /// couvrir la perte des fins de ligne (mots qui ne tiennent pas).
+    static let averageGlyphWidth: CGFloat = 0.56
+
+    /// La hauteur ajoutée au pied par une description de `unitCount` unités UTF-16 (0 quand il n'y en a pas) : le nombre de lignes estimé pour
+    /// `width` de large, à `lineHeight` chacune, plus l'espace sous le texte. Le corps et l'interligne passés sont DÉJÀ agrandis avec la taille du
+    /// texte du système (titre 20 pt, interligne 26 pt avant agrandissement) : plus la police est grande, plus la description pèse, jusqu'à faire
+    /// défiler le pied. Le plus long texte (140 unités) ne fait jamais plus d'une quinzaine de lignes à la plus grande taille : le pied, borné à
+    /// 45 %, défile.
+    static func descriptionHeight(unitCount: Int, fontSize: CGFloat, lineHeight: CGFloat, width: CGFloat) -> CGFloat {
+        guard unitCount > 0, fontSize > 0, lineHeight > 0, width > 0 else {
+            return 0
+        }
+        let perLine = max(1, Int((width / (fontSize * averageGlyphWidth)).rounded(.down)))
+        let lines = (unitCount + perLine - 1) / perLine
+        return CGFloat(lines) * lineHeight + captionSpacing
+    }
+
     /// La légende défile-t-elle ? Oui quand son contenu estimé (zone sûre du bas comprise) dépasse sa hauteur maximale (grand texte, paysage).
     static func footerScrolls(estimate: CGFloat, screenHeight: CGFloat) -> Bool {
         estimate > footerMaxHeight(screenHeight: screenHeight)
@@ -54,15 +78,30 @@ enum PhotoFullScreenLayout {
         )
     }
 
-    /// La taille de la photo entière (`scaledToFit`) dans la zone qui lui reste : elle REMPLIT la largeur ou la hauteur de la zone, sans jamais la
-    /// dépasser, et quelle que soit la taille propre de l'image (jamais limitée par elle : la zone décide).
-    static func fittedSize(imageSize: CGSize, in area: CGSize) -> CGSize {
+    /// La taille de la photo qui REMPLIT la zone (aspect « fill », `scaledToFill`) : le plus grand des deux rapports, de sorte que la photo touche les
+    /// QUATRE bords de la zone, quel que soit le rapport photo / écran, et quelle que soit la taille propre de l'image (jamais limitée par elle : la
+    /// zone décide). Quand les rapports diffèrent, elle DÉPASSE de la zone d'un côté (recadrage centré, voir `croppedShare`) : jamais de bande vide.
+    static func filledSize(imageSize: CGSize, in area: CGSize) -> CGSize {
         guard imageSize.width > 0, imageSize.height > 0, area.width > 0, area.height > 0 else {
             return .zero
         }
-        let scale = min(area.width / imageSize.width, area.height / imageSize.height)
+        let scale = max(area.width / imageSize.width, area.height / imageSize.height)
         return CGSize(width: imageSize.width * scale, height: imageSize.height * scale)
     }
+
+    /// La part de la photo (de 0 à moins de 1) qui sort de l'écran avec le recadrage centré : 0 quand la photo a le rapport de l'écran. Sert aux
+    /// tests et à la recette (« combien de la photo est coupé sur un écran plus allongé »).
+    static func croppedShare(imageSize: CGSize, in area: CGSize) -> CGFloat {
+        let filled = filledSize(imageSize: imageSize, in: area)
+        guard filled.width > 0, filled.height > 0 else {
+            return 0
+        }
+        return max(0, 1 - (area.width * area.height) / (filled.width * filled.height))
+    }
+
+    /// Le voile léger du HAUT (la barre d'état et les boutons sont maintenant sur la photo elle-même) : opacité de départ, en part de celle du voile
+    /// du design system (`colorPhotoCaptionScrim`, 0,70), qui s'efface vers le bas sur la hauteur de la zone sûre haute.
+    static let topScrimOpacity: Double = 0.6
 
     /// Le contraste d'un texte BLANC posé sur le voile noir d'opacité `alpha`, dans le PIRE cas (une photo toute blanche dessous), selon WCAG 2.x.
     static func whiteTextContrast(overScrimAlpha alpha: Double) -> Double {
@@ -72,7 +111,40 @@ enum PhotoFullScreenLayout {
     }
 }
 
+/// Le niveau typographique d'une ligne de texte du pied (retour du PM sur la recette Android de la description).
+enum PhotoFooterTextLevel: Equatable {
+    /// Le grand titre : gras, 20 pt (`textTitleBold20`).
+    case heading
+    /// Le texte courant : normal, 16 pt (`textBodyRegular`).
+    case body
+}
+
+/// Les lignes du pied du plein écran, de haut en bas.
+enum PhotoFooterRow: Hashable {
+    /// La description de l'auteur (facultative).
+    case description
+    /// « Photo de {Prénom} · {heure} ».
+    case title
+    /// « Position mesurée … », et « Voir où c'était » (quand la photo a un lieu).
+    case place
+}
+
 extension PhotoFullScreenLayout {
+    /// L'ordre du pied : la DESCRIPTION d'abord (quand il y en a une), puis « Photo de … », puis le lieu. Sans description, le pied est exactement celui
+    /// d'avant : aucune ligne vide, aucun libellé « pas de description ».
+    static func footerRows(hasDescription: Bool, hasPlace: Bool) -> [PhotoFooterRow] {
+        (hasDescription ? [PhotoFooterRow.description] : []) + [.title] + (hasPlace ? [.place] : [])
+    }
+
+    /// Le niveau de la DESCRIPTION de l'auteur : toujours le grand titre (c'est elle que le proche vient lire).
+    static let descriptionLevel = PhotoFooterTextLevel.heading
+
+    /// Le niveau de « Photo de {Prénom} · {heure} » : le grand titre comme avant quand il n'y a PAS de description (pied inchangé) ; le texte
+    /// courant, plus petit, quand une description existe (elle prend alors le titre). L'en-tête VoiceOver reste « Photo de … » dans les deux cas.
+    static func titleLevel(hasDescription: Bool) -> PhotoFooterTextLevel {
+        hasDescription ? .body : .heading
+    }
+
     /// Le décalage de la croix et de l'icône depuis le bord HAUT de l'écran : le plus grand de la zone sûre lue et du plancher (47 pt), plus 12 pt.
     /// Le plancher ne vaut qu'en portrait (en paysage il n'y a pas d'encoche en haut : le plancher ferait perdre de la place pour rien).
     static func topMargin(safeInset: CGFloat, isPortrait: Bool) -> CGFloat {
