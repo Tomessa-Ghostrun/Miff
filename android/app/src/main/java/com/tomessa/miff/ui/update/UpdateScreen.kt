@@ -41,6 +41,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -56,6 +57,8 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -88,6 +91,7 @@ import com.tomessa.miff.domain.update.UpdatePhotoFormat
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
+import com.tomessa.miff.ui.components.miffKeyboardInsets
 import com.tomessa.miff.ui.components.miffTopInsets
 import com.tomessa.miff.ui.main.LocalTabBarInset
 import com.tomessa.miff.ui.theme.ShadowDefault
@@ -293,6 +297,7 @@ fun UpdateTab(
                     miffCount = miffCount,
                     onRetake = viewModel::onRetake,
                     onPublish = viewModel::onPublish,
+                    onDescriptionChange = { viewModel.onDescriptionChanged(it) },
                     actions = actions,
                 )
             }
@@ -623,6 +628,7 @@ private fun PreviewStage(
     miffCount: Int,
     onRetake: () -> Unit,
     onPublish: () -> Unit,
+    onDescriptionChange: (String) -> Unit,
     actions: UpdateActions,
 ) {
     val photo = stage.photo
@@ -630,6 +636,15 @@ private fun PreviewStage(
     val bitmap = remember(photo) { BitmapFactory.decodeByteArray(photo.jpeg, 0, photo.jpeg.size)?.asImageBitmap() }
     val takenAnnouncement = stringResource(R.string.update_preview_taken_a11y)
     val canPublish = !stage.publishing && stage.notice != PreviewNotice.Stale && stage.notice != PreviewNotice.TooMany
+    val focusManager = LocalFocusManager.current
+    val keyboard = LocalSoftwareKeyboardController.current
+    // "Publier" and "Réessayer" first put the keyboard away (the calm card is then fully visible), then publish: ONE touch, the word being typed included (it is
+    // already in the view model: the field reports every change, the composing word too).
+    val publish: () -> Unit = {
+        focusManager.clearFocus()
+        keyboard?.hide()
+        onPublish()
+    }
     Column(
         modifier =
             Modifier
@@ -637,7 +652,16 @@ private fun PreviewStage(
                 .background(
                     colorUpdateStage,
                 ).miffTopInsets()
-                .padding(bottom = LocalTabBarInset.current),
+                .padding(bottom = LocalTabBarInset.current)
+                // The tab bar goes away while the keyboard is open: the field, "Recommencer" and "Publier" are lifted above the keyboard and the photo gives room.
+                .miffKeyboardInsets()
+                // A touch on the photo or the background (not on a button, which keeps its own touch) puts the keyboard away and does nothing else.
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = {
+                        focusManager.clearFocus()
+                        keyboard?.hide()
+                    })
+                },
     ) {
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().padding(horizontal = Spacing.m, vertical = Spacing.s)) {
             val density = LocalDensity.current
@@ -667,7 +691,7 @@ private fun PreviewStage(
                         onOpenSettings = onOpenSettings,
                         notice = notice,
                         canRetry = !stage.publishing,
-                        onRetry = onPublish,
+                        onRetry = publish,
                         actions = actions,
                         modifier = Modifier.align(Alignment.BottomCenter).padding(Spacing.s),
                     )
@@ -682,6 +706,16 @@ private fun PreviewStage(
                 contentDescription = takenAnnouncement
             },
         )
+        // The OPTIONAL description, under the preview of the photo (it never blocks "Publier"). It starts from what the view model holds (a rotation keeps it) and
+        // starts again with each photo, and when the photo went stale (its description was forgotten with it).
+        key(photo, stage.notice == PreviewNotice.Stale) {
+            DescriptionField(
+                initial = stage.description,
+                enabled = !stage.publishing,
+                onTextChange = onDescriptionChange,
+                modifier = Modifier.padding(horizontal = Spacing.m, vertical = Spacing.xs),
+            )
+        }
         Column(
             modifier = Modifier.fillMaxWidth().padding(horizontal = Spacing.m),
             verticalArrangement = Arrangement.spacedBy(Spacing.xs),
@@ -720,7 +754,7 @@ private fun PreviewStage(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             RetakeButton(enabled = !stage.publishing, onClick = onRetake)
-            PublishButton(enabled = canPublish, onClick = onPublish)
+            PublishButton(enabled = canPublish, onClick = publish)
         }
     }
 }

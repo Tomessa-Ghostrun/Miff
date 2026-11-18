@@ -14,12 +14,16 @@ class PhotoLocation(
     override fun toString(): String = "PhotoLocation(redacted)"
 }
 
-/** The photo of an update: the JPEG, when it was published (server time), when it stops being readable, and its place if it has one. */
+/**
+ * The photo of an update: the JPEG, when it was published (server time), when it stops being readable, its place if it has one and its DESCRIPTION if the
+ * author wrote one (a free text of 1 to 140 units, already cleaned: see [PhotoDescription]; null = none). It lives and dies with the photo.
+ */
 class SharedPhoto(
     val jpeg: ByteArray,
     val createdAtMillis: Long,
     val expiresAtMillis: Long,
     val location: PhotoLocation?,
+    val description: String? = null,
 ) {
     override fun toString(): String = "SharedPhoto(redacted)"
 
@@ -39,6 +43,8 @@ class SharedPhoto(
             lng: Number?,
             measuredAtMillis: Long?,
             nowMillis: Long,
+            /** The raw value of the field `description`: ignored when it is not a text of 1 to 140 units, cleaned otherwise (criterion C5). */
+            description: Any? = null,
         ): SharedPhoto? {
             if (jpeg == null || jpeg.isEmpty() || jpeg.size > UpdatePhotoFormat.MAX_BYTES) return null
             if (createdAtMillis == null || expiresAtMillis == null) return null
@@ -54,7 +60,13 @@ class SharedPhoto(
                 } else {
                     null
                 }
-            return SharedPhoto(jpeg, createdAtMillis, expiresAtMillis, location)
+            return SharedPhoto(
+                jpeg,
+                createdAtMillis,
+                expiresAtMillis,
+                location,
+                PhotoDescription.fromServer(description),
+            )
         }
     }
 }
