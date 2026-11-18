@@ -326,6 +326,28 @@ class PlaceScreensTest {
         composeRule.onAllNodesWithText(text(R.string.place_premium_pill)).assertCountEquals(0)
     }
 
+    // Decision of the PM, 2026-11-17: any member asks for a danger zone. In the form of a REQUEST the card never carries the Miff+ pill (free or not), and a
+    // touch just chooses it (the view model opens no offer in this mode: see PlaceRequestFormViewModelTest).
+    @Test
+    fun requestForm_free_dangerZoneHasNoMiffPlusPill_andIsChosenLikeTheOtherOne() {
+        var chosenType: PlaceType? = null
+        form(
+            filled(premium = false).copy(mode = PlaceFormMode.REQUEST),
+            PlaceFormActions(onTypeSelected = { chosenType = it }),
+        )
+        composeRule.onNodeWithText(text(R.string.place_type_danger)).performScrollTo().assertIsDisplayed()
+        composeRule.onAllNodesWithText(text(R.string.place_premium_pill)).assertCountEquals(0)
+        composeRule.onNodeWithText(text(R.string.place_type_danger)).performClick()
+        assertEquals(PlaceType.RISK, chosenType)
+    }
+
+    @Test
+    fun requestForm_miffPlus_dangerZoneHasNoMiffPlusPillEither() {
+        form(filled(premium = true).copy(mode = PlaceFormMode.REQUEST))
+        composeRule.onNodeWithText(text(R.string.place_type_danger)).performScrollTo().assertIsDisplayed()
+        composeRule.onAllNodesWithText(text(R.string.place_premium_pill)).assertCountEquals(0)
+    }
+
     @Test
     fun form_typeTexts_useDangerZone_neverRiskZone() {
         form(filled())

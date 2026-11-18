@@ -46,15 +46,22 @@ struct ProfileTabView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.lg) {
-                Group {
-                    header
-                    if state == .unavailable {
-                        unavailable
-                    } else if state == .loading && offlineRetry.isInlineVisible {
-                        OfflineInlineNote(model: offlineRetry)
+                // COMPTE À REBOURS (COUNTDOWN-I) : premier bloc de contenu, au-dessus de « Mes Miffs ». L'en-tête et l'encart sont rangés dans
+                // UNE pile d'espacement 0 (l'en-tête garde son propre espacement de 24 pt) : l'espace au-dessus de l'encart est porté par
+                // l'encart, donc masqué il ne change RIEN à la mise en page d'avant (jamais un enfant vide avec ses 24 pt).
+                VStack(alignment: .leading, spacing: 0) {
+                    VStack(alignment: .leading, spacing: Spacing.lg) {
+                        header
+                        if state == .unavailable {
+                            unavailable
+                        } else if state == .loading && offlineRetry.isInlineVisible {
+                            OfflineInlineNote(model: offlineRetry)
+                        }
                     }
+                    .padding(.horizontal, Spacing.lg)
+                    CountdownSlot(isActive: isActive, topSpacing: Spacing.lg)
+                        .padding(.horizontal, Spacing.lg)
                 }
-                .padding(.horizontal, Spacing.lg)
                 miffCards
                 placesSection
                 // MODE VOYAGE : l'encart est le DERNIER bloc de l'écran (décision du PM après la recette du build 26).

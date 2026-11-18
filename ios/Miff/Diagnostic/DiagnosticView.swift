@@ -26,6 +26,7 @@ struct DiagnosticView: View {
                     appCheckCard
                     privacyCard
                     DetectionJournalCard(journal: environment.detectionJournal)
+                    ReviewDebugCard(services: environment.reviewPrompt)
                     TokenGalleryView()
                     languageCard
                 }

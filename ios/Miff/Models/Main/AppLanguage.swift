@@ -6,6 +6,11 @@ import Foundation
 
 /// Ce que la personne choisit dans Réglages > Langue (miroir de `AppLanguage` d'Android : français, anglais, ou « la langue du téléphone »).
 /// Rien d'autre n'est proposé : ajouter une langue est une décision produit (relecture du ton, des textes légaux, des captures).
+///
+/// POUR AJOUTER UNE LANGUE (es, it, pt, de : chantier traduction, registre `docs/contracts/i18n-languages.json`) : un cas ci-dessous dont la valeur
+/// est le code (`case spanish = "es"`, placé AVANT `system`), son libellé dans `LanguageLabels` (le compilateur refuse un `switch` incomplet ;
+/// nom écrit dans sa propre langue, clé `ios_settings_language_*`), le code dans `CFBundleLocalizations` (`project.yml`) et les textes dans le catalogue.
+/// Rien d'autre : la liste de l'écran, la lecture du choix gardé et la langue effective se déduisent de `allCases`.
 enum AppLanguageChoice: String, CaseIterable, Equatable {
     case french = "fr"
     case english = "en"
@@ -19,7 +24,7 @@ enum AppLanguageChoice: String, CaseIterable, Equatable {
         }
         let cleaned = stored.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let language = cleaned.split(whereSeparator: { $0 == "-" || $0 == "_" }).first.map(String.init) ?? ""
-        return [AppLanguageChoice.french, .english].first { $0.rawValue == language } ?? .system
+        return allCases.first { $0 != .system && $0.rawValue == language } ?? .system
     }
 
     /// Le code de langue imposé, ou nil quand c'est le téléphone qui décide.

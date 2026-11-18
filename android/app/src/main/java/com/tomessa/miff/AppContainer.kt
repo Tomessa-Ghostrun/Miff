@@ -40,6 +40,7 @@ import com.tomessa.miff.data.feed.OwnPositionResolver
 import com.tomessa.miff.data.feed.PhotoCache
 import com.tomessa.miff.data.feed.PhotoReader
 import com.tomessa.miff.data.feed.PositionReader
+import com.tomessa.miff.data.feed.PresenceRefresh
 import com.tomessa.miff.data.feed.StatusObserver
 import com.tomessa.miff.data.miff.AndroidLocationAccessProbe
 import com.tomessa.miff.data.miff.AwaitingAgreement
@@ -66,8 +67,10 @@ import com.tomessa.miff.data.notification.AndroidNotificationPresenter
 import com.tomessa.miff.data.notification.AndroidNotificationTray
 import com.tomessa.miff.data.notification.AppVisibility
 import com.tomessa.miff.data.notification.FeedNotificationLink
+import com.tomessa.miff.data.notification.FeedVisitLink
 import com.tomessa.miff.data.notification.KnownMiffs
 import com.tomessa.miff.data.notification.KnownMiffsKeeper
+import com.tomessa.miff.data.notification.LastVisitTracker
 import com.tomessa.miff.data.notification.NotificationAuthorization
 import com.tomessa.miff.data.notification.NotificationCenter
 import com.tomessa.miff.data.notification.NotificationChannels
@@ -76,6 +79,7 @@ import com.tomessa.miff.data.notification.NotificationSettings
 import com.tomessa.miff.data.notification.NotificationTeardownSteps
 import com.tomessa.miff.data.notification.NotificationTray
 import com.tomessa.miff.data.notification.SharedPreferencesKnownMiffs
+import com.tomessa.miff.data.notification.SharedPreferencesLastVisitStore
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationCenterStore
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationLedger
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationPreferencesStore
@@ -140,6 +144,12 @@ import com.tomessa.miff.data.settings.AndroidLanguageStore
 import com.tomessa.miff.data.settings.LanguageStore
 import com.tomessa.miff.data.subscription.FirestoreSubscriptionStore
 import com.tomessa.miff.data.subscription.SubscriptionRepository
+import com.tomessa.miff.data.timeshare.EngineTimeShareTracking
+import com.tomessa.miff.data.timeshare.SharedPreferencesPresenceLogStorage
+import com.tomessa.miff.data.timeshare.SharedPreferencesTimeShareWindowStore
+import com.tomessa.miff.data.timeshare.StoredPresenceLog
+import com.tomessa.miff.data.timeshare.TimeShareTrackingSource
+import com.tomessa.miff.data.timeshare.TimeShareWindowStore
 import com.tomessa.miff.data.tracking.AlarmManagerTravelAlarm
 import com.tomessa.miff.data.tracking.AndroidTrackingEnvironment
 import com.tomessa.miff.data.tracking.ConnectivityNetworkWake
@@ -168,10 +178,12 @@ import com.tomessa.miff.domain.auth.SignInProvider
 import com.tomessa.miff.domain.miff.JoinAttemptLimiter
 import com.tomessa.miff.domain.notification.CircleNewsKeys
 import com.tomessa.miff.domain.notification.SnapshotMember
+import com.tomessa.miff.domain.notification.VisitState
 import com.tomessa.miff.domain.paywall.MonotonicClock
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.profile.GooglePhotoPrefill
 import com.tomessa.miff.domain.push.DeviceAppVersion
+import com.tomessa.miff.domain.timeshare.PresenceLog
 import com.tomessa.miff.domain.tracking.DetectionJournal
 import com.tomessa.miff.domain.tracking.Fix
 import com.tomessa.miff.domain.tracking.PresenceValue
@@ -490,6 +502,41 @@ class AppContainer(
     }
 
     /**
+     * NOTIF-P1A, "Depuis ta dernière visite": compares the picture of the Miff the Feed shows with the one of the last visit when the app was just opened, and keeps the picture
+     * the Feed last showed. Local: no read or write of Firestore, no event, no log, no notification of the system.
+     */
+    val lastVisitTracker: LastVisitTracker by lazy {
+        LastVisitTracker(
+            store = SharedPreferencesLastVisitStore(context),
+            center = notificationCenter,
+            sessionValid = ::notificationSessionValid,
+        )
+    }
+
+    /** What the Feed tells "Depuis ta dernière visite": the first names go to memory (the centre stores none), the comparison runs on the worker of the notifications. */
+    val feedVisitLink: FeedVisitLink by lazy {
+        object : FeedVisitLink {
+            override fun onFreshPicture(
+                myUid: String,
+                state: VisitState,
+                firstNames: Map<String, String>,
+            ) {
+                firstNames.forEach { (uid, name) -> requesterDirectory.put(state.miffId, uid, name) }
+                notificationScope.launch { lastVisitTracker.onFreshPicture(myUid, state) }
+            }
+        }
+    }
+
+    /** The app came to the front: after 30 minutes or more away (or a cold start) the next fresh picture of the Feed is compared. In order with [lastVisitBackground]. */
+    fun lastVisitForeground() {
+        notificationScope.launch { lastVisitTracker.onForeground() }
+    }
+
+    fun lastVisitBackground() {
+        notificationScope.launch { lastVisitTracker.onBackground() }
+    }
+
+    /**
      * Is somebody signed in on this phone with the session of [uid]? Answered on the PHONE (no read of the server, no wait): the account, the identifier of the session
      * and the three markers (replaced by another phone, deletion under way, sign-out under way). A reminder never leaves for an account that is not the one in use.
      */
@@ -529,6 +576,10 @@ class AppContainer(
                             notificationScheduler.onMiffsKnown(
                                 state.miffs.map { it.id }.toSet(),
                             )
+                            // The picture and the lines of a Miff that is gone (left, deleted, access lost) go too; a list that only the cache vouches for decides nothing.
+                            if (!state.fromCache) lastVisitTracker.onMiffsKnown(state.miffs.map { it.id }.toSet())
+                            // TIME-1: the same for the local journal of the presence ("Répartition de ton temps"): a Miff that is gone takes its history with it.
+                            if (!state.fromCache) presenceLog.retainOnly(state.miffs.map { it.id }.toSet())
                         }
                     }
                 }
@@ -549,6 +600,7 @@ class AppContainer(
                     knownMiffsKeeper::onSessionEnded,
                     notificationScheduler::clearAll,
                     notificationCenter::purge,
+                    lastVisitTracker::purge,
                     notificationSettings::reset,
                     notificationTray::cancelAll,
                     tabRequests::clear,
@@ -573,6 +625,28 @@ class AppContainer(
      * Built on first use; the system never starts it by itself: the screens, the receiver and [MiffApplication] ask it to look again.
      */
     val detectionJournal: DetectionJournal by lazy { DetectionJournals.create(context) }
+
+    /**
+     * TIME-1 (docs/tickets/profil-repartition-temps.md): the LOCAL journal of the presence (Miff, state, place identifier, instant; no coordinate, no name) that feeds "Répartition de ton temps".
+     * A private file of the app, excluded from the backups, erased with the session and with a Miff; it never leaves the phone. Active in EVERY build (unlike [detectionJournal]).
+     */
+    val presenceLog: PresenceLog by lazy {
+        StoredPresenceLog(SharedPreferencesPresenceLogStorage(context), currentUid = { authGateway.currentUid })
+    }
+
+    /** The window (7, 14 or 30 days) chosen on the card "Répartition de ton temps": kept on the phone, erased with the session. */
+    val timeShareWindow: TimeShareWindowStore by lazy { SharedPreferencesTimeShareWindowStore(context) }
+
+    /** What the card says about the tracking of a Miff (a trip, a sharing stopped, a location that is not enough): read from the phone, never from the server. */
+    val timeShareTracking: TimeShareTrackingSource by lazy {
+        EngineTimeShareTracking(
+            local = SharedPreferencesTrackingLocalStore(context),
+            currentUid = { authGateway.currentUid },
+            permissions = devicePermissions,
+            travelOn = ::travelOn,
+            waitingAgreement = { awaitingAgreement.waiting.value },
+        )
+    }
 
     /** What the detection and the Update ask of the phone (battery, network, clock). One instance for both. */
     private val trackingEnvironment: TrackingEnvironment by lazy {
@@ -631,6 +705,8 @@ class AppContainer(
                 },
             // MODE VOYAGE: the alarm of the end of a trip (inexact, no special permission).
             travelAlarm = AlarmManagerTravelAlarm(context),
+            // TIME-1: every change of presence worked out for a Miff is also kept, with the instant of the status, in the local journal of "Répartition de ton temps".
+            presenceLog = presenceLog,
         )
     }
 
@@ -798,11 +874,29 @@ class AppContainer(
     /** "Actualiser" (pull to refresh): one forced reading from the server, at most every 15 s, reads only. */
     val feedRefresher: FeedRefresher by lazy { FirestoreFeedRefresher() }
 
+    /**
+     * FEED-REFRESH-POSITION: the same gesture also checks MY presence once (one position, the engine's own gates and limit of one reading every 30 s). The pass lives in the detection's
+     * own scope, so that leaving the Feed never cuts a status in the middle of its writing; the Feed does not wait for it.
+     */
+    val presenceRefresh: PresenceRefresh by lazy {
+        PresenceRefresh {
+            trackingScope
+                .async {
+                    // A purge of the cache left by a failed sign-out comes before any other access to Firestore (as in [trackingLooksAgain]).
+                    cachePurger.purgeIfPending()
+                    trackingEngine.refreshFromFeed()
+                }.await()
+        }
+    }
+
     /** After a voluntary "Quitter" the server confirmed: no message of lost access for it, purge of the cache, fresh list of Miffs. */
     suspend fun onMiffLeft(miffId: String) {
         miffDirectory.expectDeparture(miffId)
         knownMiffsKeeper.onLeft(miffId)
         notificationScope.launch { notificationScheduler.onMiffGone(miffId) }
+        notificationScope.launch { lastVisitTracker.onMiffGone(miffId) }
+        // TIME-1: what the local journal of the presence says about that Miff is erased.
+        presenceLog.forgetMiff(miffId)
         cachePurger.markPurgePending()
         cachePurger.purge()
         miffDirectory.refresh()
@@ -946,12 +1040,27 @@ class AppContainer(
 
     /** What is kept on the phone FOR ONE ACCOUNT and goes with it when the account is deleted (AUTH-5, ticket 5.10). */
     private val localDataErasers: List<LocalDataEraser> by lazy {
-        accountLocalDataErasers(notificationAsks, pendingMiffDeletions, publishLedger, reviewStateStore)
+        accountLocalDataErasers(
+            notificationAsks,
+            pendingMiffDeletions,
+            publishLedger,
+            reviewStateStore,
+            presenceLog,
+            timeShareWindow,
+        )
     }
 
     /** The read-only "Abonnement" line of the Settings (ticket ABO-1): one read of `entitlements/{uid}` per opening of the Settings. */
     val subscriptionRepository: SubscriptionRepository by lazy {
         SubscriptionRepository(store = FirestoreSubscriptionStore(), currentUid = { authGateway.currentUid })
+    }
+
+    /** TIME-1 / TIME-2: the journal of the presence and the window of the chart go with the session (the engine erases the journal too, in its own stop). */
+    private val timeShareTeardown: SessionTeardown by lazy {
+        SessionTeardown {
+            presenceLog.clear()
+            timeShareWindow.clear()
+        }
     }
 
     val sessionManager: SessionManager by lazy {
@@ -981,6 +1090,7 @@ class AppContainer(
                         photoCache,
                         SessionTeardown { publishLedger.clear() },
                         SessionTeardown { reviewStateStore.clear() },
+                        timeShareTeardown,
                         placeNotices,
                         requesterDirectory,
                         addressSearch,

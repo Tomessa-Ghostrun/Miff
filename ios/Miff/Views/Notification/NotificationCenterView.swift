@@ -51,9 +51,8 @@ struct NotificationCenterView: View {
             header
             if let lock = model.lock {
                 // Refusées ou jamais demandées : le centre flou, jamais une vraie ligne (la personne les voit dès qu'elle les active).
-                NotificationCenterLockedView(lock: lock) {
-                    Task { await model.enable(openHelp: actions.onOpenHelp) }
-                }
+                // Seul le groupe « Depuis ta dernière visite » reste visible, AU-DESSUS du flou (ce n'est pas une notification du téléphone).
+                lockedContent(lock)
             } else if model.showsContent {
                 if service.history.isEmpty {
                     emptyState
@@ -90,13 +89,22 @@ struct NotificationCenterView: View {
             MiffHeader(title: L10n.string("notif_center_title"), onBack: actions.onBack)
             HStack {
                 Spacer()
-                if model.showsContent && !service.history.isEmpty {
+                if hasMenu {
                     menu
                 }
             }
         }
         .padding(.horizontal, Spacing.lg)
         .padding(.vertical, Spacing.sm)
+    }
+
+    /// Le menu « Tout marquer comme lu » / « Tout effacer » : quand le centre a des lignes à montrer, ou, derrière le flou, le groupe
+    /// « Depuis ta dernière visite » (visible quoi que dise l'autorisation du téléphone).
+    private var hasMenu: Bool {
+        if model.showsContent {
+            return !service.history.isEmpty
+        }
+        return model.lock != nil && !service.history.visitItems.isEmpty
     }
 
     private var menu: some View {
@@ -136,9 +144,26 @@ struct NotificationCenterView: View {
     private var list: some View {
         let now = NotificationClock.wallMillis()
         let groups = NotificationGrouping.groups(
-            of: PlaceRequestLines.displayed(service.history.items), nowMillis: now, calendar: .current
+            of: PlaceRequestLines.displayed(service.history.dayItems), nowMillis: now, calendar: .current
         )
         return List {
+            // NOTIF-P1I : « Depuis ta dernière visite », au-dessus d'« Aujourd'hui », puis la phrase qui dit ce que ces lignes sont.
+            if !visitItems.isEmpty {
+                Section {
+                    ForEach(visitItems) { item in
+                        row(item, section: nil)
+                    }
+                } header: {
+                    Text(verbatim: L10n.string("notif_c1_title"))
+                        .miffTextStyle(textBodyBold16)
+                        .foregroundColor(colorTextForm.color)
+                        .accessibilityAddTraits(.isHeader)
+                } footer: {
+                    Text(verbatim: L10n.string("notif_c1_limit"))
+                        .miffTextStyle(textBodyCaption)
+                        .foregroundColor(colorTextSecondary.color)
+                }
+            }
             ForEach(groups, id: \.section.titleKey) { group in
                 Section {
                     ForEach(group.items) { item in
@@ -156,10 +181,55 @@ struct NotificationCenterView: View {
         .scrollContentBackground(.hidden)
     }
 
-    private func row(_ item: NotificationItem, section: NotificationSection) -> some View {
+    /// Les lignes du groupe « Depuis ta dernière visite » (3 au plus, la plus récente d'abord).
+    private var visitItems: [NotificationItem] {
+        service.history.visitItems
+    }
+
+    /// Le groupe quand les notifications du téléphone sont coupées ou jamais demandées : il reste visible AU-DESSUS du flou (décision Q4 :
+    /// ce n'est pas une notification), le reste du centre derrière le flou et son unique bouton.
+    @ViewBuilder
+    private func lockedContent(_ lock: NotificationCenterLock) -> some View {
+        let locked = NotificationCenterLockedView(lock: lock) {
+            Task { await model.enable(openHelp: actions.onOpenHelp) }
+        }
+        if visitItems.isEmpty {
+            locked
+        } else {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Spacing.xs) {
+                    Text(verbatim: L10n.string("notif_c1_title"))
+                        .miffTextStyle(textBodyBold16)
+                        .foregroundColor(colorTextForm.color)
+                        .accessibilityAddTraits(.isHeader)
+                    ForEach(visitItems) { item in
+                        row(item, section: nil)
+                    }
+                    Text(verbatim: L10n.string("notif_c1_limit"))
+                        .miffTextStyle(textBodyCaption)
+                        .foregroundColor(colorTextSecondary.color)
+                    locked
+                }
+                .padding(.horizontal, Spacing.md)
+            }
+        }
+    }
+
+    private func rowContent(_ item: NotificationItem, section: NotificationSection?) -> NotificationRowContent {
+        if item.type == .c1 {
+            // Une phrase entière faite maintenant (prénom connu maintenant, heure au format du téléphone) : l'heure y est, aucune seconde ligne.
+            var sentence = L10n.string("notif_c1_title")
+            if let parsed = LastVisit.parse(item) {
+                sentence = LastVisitTexts().sentence(
+                    parsed, firstName: model.visitName(of: item), nowMillis: NotificationClock.wallMillis()
+                )
+            }
+            let text = NotificationRowText(title: sentence, body: nil, miffName: miffName(item.miffId))
+            return NotificationRowContent(item: item, text: text, time: nil)
+        }
         let time = NotificationTimeText.text(
             createdAtMillis: item.createdAtMillis,
-            section: section,
+            section: section ?? .today,
             locale: AppLanguage.locale,
             timeZone: .current
         )
@@ -170,10 +240,15 @@ struct NotificationCenterView: View {
             requestMiffName: requestMiffName(item.miffId),
             firstName: model.requesterName(of: item)
         )
+        return NotificationRowContent(item: item, text: text, time: time)
+    }
+
+    private func row(_ item: NotificationItem, section: NotificationSection?) -> some View {
+        let content = rowContent(item, section: section)
         return Button {
             actions.onOpen(model.open(item))
         } label: {
-            NotificationRowContent(item: item, text: text, time: time)
+            content
         }
         .buttonStyle(.plain)
         .listRowBackground(colorBgCanvas.color)
@@ -191,7 +266,15 @@ struct NotificationCenterView: View {
 private struct NotificationRowContent: View {
     let item: NotificationItem
     let text: NotificationRowText
-    let time: String
+    /// nil pour une ligne « Depuis ta dernière visite » : sa phrase porte déjà son heure.
+    let time: String?
+
+    private var spoken: String {
+        guard let time else {
+            return NotificationTimeText.spokenLabel(sentence: text.title, unread: item.isUnread)
+        }
+        return NotificationTimeText.spokenLabel(title: text.title, time: time, unread: item.isUnread)
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: Spacing.sm) {
@@ -214,9 +297,11 @@ private struct NotificationRowContent: View {
                         .miffTextStyle(textBodyCaption)
                         .foregroundColor(colorTextSecondary.color)
                 }
-                Text(verbatim: time)
-                    .miffTextStyle(textBodyCaption)
-                    .foregroundColor(colorTextSecondary.color)
+                if let time {
+                    Text(verbatim: time)
+                        .miffTextStyle(textBodyCaption)
+                        .foregroundColor(colorTextSecondary.color)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .fixedSize(horizontal: false, vertical: true)
@@ -225,11 +310,7 @@ private struct NotificationRowContent: View {
         .frame(minHeight: Spacing.minTouchTarget)
         .contentShape(Rectangle())
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(
-            Text(verbatim: NotificationTimeText.spokenLabel(
-                title: text.title, time: time, unread: item.isUnread
-            ))
-        )
+        .accessibilityLabel(Text(verbatim: spoken))
         .accessibilityAddTraits(.isButton)
     }
 }

@@ -9,7 +9,7 @@ rules_version = '2';
 // connue R-LIEU-POS ; renouvellement d'un consentement actif R-LIEU-3), puis le 2026-11-05 (SESS-1 temps 1) et le 2026-11-06
 // (R-PHOTO-LOC), puis le 2026-11-10 (fichier de `main` de ce jour : 3 lieux gratuits p1/p2/p3, mode voyage, R-LIEU-1 au plus tard
 // à cette date ; informations du PM, non vérifiables par l'agent, à confirmer dans la console : Firestore > Règles). NON DÉPLOYÉ :
-// SESS-1 temps 2 (deviceIdRequired() = true) et, depuis la PR backend/lieu-demande, la demande d'ajout d'un lieu (LIEU-REQ-A, point 13). Et, depuis la PR backend/jetons-appareil, les jetons d'appareil (SRV-2R, point 14). Tout déploiement suit la procédure
+// SESS-1 temps 2 (deviceIdRequired() = true) et, depuis la PR backend/lieu-demande, la demande d'ajout d'un lieu (LIEU-REQ-A, point 13). Et, depuis la PR backend/jetons-appareil, les jetons d'appareil (SRV-2R, point 14). Et, depuis la PR backend/description-update, la description facultative d'une photo d'update (DESC-R, clé « description » de validPhoto). Tout déploiement suit la procédure
 // docs/dev/deploiement-regles.md et l'accord explicite du PM.
 //
 // Principes :
@@ -79,7 +79,7 @@ rules_version = '2';
 // 13. Demande d'ajout d'un lieu par un membre (LIEU-REQ-A, ticket docs/tickets/demande-ajout-lieu.md, décisions du PM D1 à D9 du 2026-11-11) — NON DÉPLOYÉ
 //     (le fichier déployé est celui du 2026-11-10 : en production, `placeRequests` et `meta` sont refusés par défaut). Un membre NON créateur dépose
 //     une demande miffs/{id}/placeRequests/{uid}_{1..3} (trois emplacements fixes par membre ; 9 clés exactes dont la catégorie ; `requestedBy` = soi ; `createdAt` =
-//     heure serveur ; `risk` = demandeur Miff+) ; un compteur miffs/{id}/meta/placeRequests tient le plafond de 10 par Miff, écrit DANS LE MÊME LOT
+//     heure serveur ; `type` = `trusted` ou `risk` : la zone de danger se DEMANDE sans Miff+, voir point 15) ; un compteur miffs/{id}/meta/placeRequests tient le plafond de 10 par Miff, écrit DANS LE MÊME LOT
 //     (la règle de la demande exige `lastReqId` = cette demande et `updatedAt` = request.time ; la règle du compteur contrôle +1 / -1 et la borne).
 //     Lecture : le créateur lit toutes les demandes, le demandeur les siennes (requête filtrée), les autres membres rien. Aucune modification.
 //     Suppression : le créateur (sans contrainte) ou le demandeur (compteur -1 dans le lot). Accepter = lot de 3 : lieu (règles de `places` INCHANGÉES)
@@ -98,6 +98,13 @@ rules_version = '2';
 //     compté (les règles ne savent pas compter) : un seul identifiant est écrivable à la fois (celui de la session) ; le nouvel appareil supprime les autres au
 //     lot de connexion. `notifState/{miffId}` (état du serveur : idempotence, plafond horaire) n'a AUCUNE règle : refusé par défaut, lu et écrit avec les droits
 //     Admin seulement. Remplace l'ancien bloc `devices` (seule règle existante modifiée : voir data-model.md §2.10).
+//
+// 15. Zone de danger DEMANDÉE sans Miff+ (LIEU-DANGER-REQ, ticket docs/tickets/lieu-danger-demande-gratuite.md, décision du PM du 2026-11-17) — NON DÉPLOYÉ.
+//     Une demande `placeRequests` de type `risk` n'exige PLUS que le demandeur soit Miff+ (une seule condition retirée de la création de la demande :
+//     `isPremiumOneRead(demandeur)`). Les deux autres contraintes restent APPLIQUÉES PAR LES RÈGLES, inchangées : (a) ACCEPTER = créer le lieu `risk`
+//     dans `places` : Miff+ du CRÉATEUR (validPlaceCreate, isPremiumOneRead du créateur) ; la demande n'est supprimée que dans le même lot : lot refusé en
+//     entier si le créateur n'est pas Miff+ ; (b) DÉCLARER directement un lieu `risk` ou passer un lieu à `risk` : même fonction (validPlaceCreate /
+//     validPlaceUpdate), Miff+ du créateur. Aucune règle de `places` n'est modifiée. Une demande `risk` coûte 5 lectures de règles au lieu de 6.
 //
 // Coût : chaque get()/exists()/getAfter()/existsAfter() dans une règle est
 // facturé comme une lecture (même si la requête est refusée) et est limité à
@@ -804,11 +811,19 @@ service cloud.firestore {
 
     // Photo de la dernière update (au plus une par membre et par Miff).
     // Clés : jpeg, createdAt, expiresAt, lat, lng, measuredAt, TOUTES obligatoires (R-PHOTO-LOC : une photo est toujours localisée). PAS de deviceId (SESS-1).
+    // + description (DESC-R, ticket docs/tickets/description-update.md) : texte libre FACULTATIF de 1 à 140 unités UTF-16 (même comptage que les noms,
+    // isStr), « absente plutôt que vide » : jamais null, jamais "" (le client n'écrit la clé que si le texte nettoyé n'est pas vide). La règle ne peut pas
+    // juger les espaces seuls, les retours à la ligne ni les caractères de contrôle : le nettoyage (trim, retours à la ligne remplacés) est un contrat du
+    // client. Donnée saisie librement, pouvant contenir des données personnelles : même durée de vie, même lecture et mêmes suppressions que la photo
+    // (aucune règle de lecture ni de suppression ne change). Contrôle pur sur les données : aucune lecture de règles de plus.
+    // Republication : « set » sans fusion = le document est ÉCRASÉ, description comprise (une republication sans description l'efface) ; une mise à jour
+    // PARTIELLE (update / merge) qui ne touche pas la clé GARDE l'ancienne description (document fusionné jugé) : le contrat du client impose « set ».
     function validPhoto(miffId, uid) {
       let d = request.resource.data;
       let s = getAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)).data.sharing;
-      return d.keys().hasOnly(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt'])
+      return d.keys().hasOnly(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt', 'description'])
         && d.keys().hasAll(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt'])
+        && (!('description' in d) || isStr(d.description, 1, 140))
         && d.jpeg is bytes && d.jpeg.size() > 0 && d.jpeg.size() <= 150000
         && d.createdAt == request.time
         && d.expiresAt is timestamp
@@ -1138,7 +1153,7 @@ service cloud.firestore {
       // Un membre NON créateur dépose une demande ; seul le créateur la transforme en lieu (règles de `places` INCHANGÉES : limite gratuite et zone
       // de danger Miff+ s'appliquent à l'acceptation comme à une création directe). Lecture : le créateur lit TOUTES les demandes de sa Miff ; le demandeur
       // lit les SIENNES (requête filtrée sur requestedBy, encore membre, Miff existante) ; les autres membres : rien. Création : emplacement
-      // {uid}_{1..3} du demandeur, forme exacte (9 clés), requestedBy = soi, createdAt = heure serveur, `risk` = demandeur Miff+, créateur et non-membre exclus,
+      // {uid}_{1..3} du demandeur, forme exacte (9 clés), requestedBy = soi, createdAt = heure serveur, `type` = `trusted` ou `risk` SANS condition d'abonnement du demandeur (LIEU-DANGER-REQ, point 15), créateur et non-membre exclus,
       // compteur +1 dans le même lot. Aucune modification (update interdit : on retire et on redemande). Suppression : le créateur (refuser, accepter,
       // nettoyer les demandes expirées ou d'un ex-membre : aucune contrainte sur le compteur, il est maître de sa Miff) ou le demandeur (retrait, compteur -1
       // dans le même lot ; sans condition d'appartenance : un ex-membre peut effacer sa propre demande). L'expiration à 30 jours n'est PAS contrôlée par
@@ -1152,7 +1167,6 @@ service cloud.firestore {
           && validRequestShape(request.resource.data)
           && request.resource.data.requestedBy == request.auth.uid
           && request.time == request.resource.data.createdAt
-          && (request.resource.data.type == 'trusted' || isPremiumOneRead(request.auth.uid))
           && isPlainMember(miffId)
           && miffAlive(miffId)
           && requestCounterMoved(miffId, reqId);

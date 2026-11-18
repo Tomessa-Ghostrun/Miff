@@ -79,17 +79,26 @@ final class NotificationPrivacyTests: XCTestCase {
         }
         let everything = try sources { _ in true }
         XCTAssertEqual(offenders(in: everything, matching: ["timeSensitive", "criticalAlert", "setBadgeCount"]), [])
-        XCTAssertEqual(offenders(in: everything, matching: ["registerForRemoteNotifications"]), [])
+        // Les notifications push (SRV-2I) : l'inscription auprès d'APNs n'est demandée qu'à UN endroit, la source du jeton, après l'accord.
+        XCTAssertEqual(
+            offenders(in: everything, matching: ["registerForRemoteNotifications"]),
+            ["Services/Firebase/FirebasePushTokenSource.swift : registerForRemoteNotifications"]
+        )
     }
 
-    func testNoPushCapabilityIsDeclared() throws {
+    func testNoCapabilityBeyondTheApnsEnvironmentIsDeclared() throws {
         let entitlements = try String(
             contentsOf: iosRoot.appendingPathComponent("Config/Miff.entitlements"),
             encoding: .utf8
         )
-        let project = try String(contentsOf: iosRoot.appendingPathComponent("project.yml"), encoding: .utf8)
+        let projectText = try String(contentsOf: iosRoot.appendingPathComponent("project.yml"), encoding: .utf8)
+        // Les commentaires de project.yml parlent de « remote-notification » pour dire qu'il n'est PAS déclaré : seules les lignes actives comptent.
+        let project = projectText.split(separator: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.hasPrefix("#") }
+            .joined(separator: "\n")
 
-        XCTAssertFalse(entitlements.contains("<key>aps-environment</key>"))
+        // SRV-2I : la clé `aps-environment` est désormais déclarée (notifications push, voir PushPrivacyTests) ; rien d'autre.
         XCTAssertFalse(entitlements.contains("com.apple.developer.usernotifications"))
         XCTAssertFalse(project.contains("remote-notification"))
         XCTAssertFalse(project.contains("aps-environment"))
