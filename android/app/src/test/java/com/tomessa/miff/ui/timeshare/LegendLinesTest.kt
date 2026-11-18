@@ -150,4 +150,46 @@ class LegendLinesTest {
         assertEquals(4, lines.size)
         assertTrue("danger" in lines && "A" in lines && "B" in lines && "autres" in lines)
     }
+
+    @Test
+    fun aDangerZoneUnderOnePercent_hasNoLine_whateverTheNumberOfShares() {
+        // Two shares + a danger zone of 0.4 % (rounds to 0): two lines, not three.
+        assertEquals(
+            listOf("A", "hors"),
+            names(LegendLines.select(listOf(place("A", 60, 0), danger(0, share = 0.004f), elsewhere(40)))),
+        )
+        // Three shares: three lines, not four.
+        assertEquals(
+            listOf("A", "B", "hors"),
+            names(
+                LegendLines.select(
+                    listOf(place("A", 50, 0), place("B", 30, 1), danger(0, share = 0.004f), elsewhere(20)),
+                ),
+            ),
+        )
+        // Four shares without the danger zone, plus one under 1 %: still the four.
+        assertEquals(
+            listOf("A", "B", "C", "D"),
+            names(
+                LegendLines.select(
+                    listOf(
+                        place("A", 40, 0),
+                        place("B", 30, 1),
+                        place("C", 20, 2),
+                        place("D", 10, 3),
+                        danger(0, share = 0.004f),
+                    ),
+                ),
+            ),
+        )
+    }
+
+    @Test
+    fun aDangerZoneJustAboveOnePercent_hasALine_withFewShares_too() {
+        assertEquals(
+            listOf("A", "danger", "hors"),
+            names(LegendLines.select(listOf(place("A", 60, 0), danger(1, share = 0.0104f), elsewhere(39)))),
+        )
+        assertEquals(listOf("A", "danger"), names(LegendLines.select(listOf(place("A", 99, 0), danger(1)))))
+    }
 }
