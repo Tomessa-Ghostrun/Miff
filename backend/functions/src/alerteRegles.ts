@@ -3,7 +3,7 @@
 // journal) : tout est teste directement (test/unit/alerte-regles.test.mjs).
 //
 // CONTENU STRICT du message (ticket §11.2, test de forme exacte) : prenom de l'auteur (tronque a 20 caracteres, comme notifRegles.prenomAffichable),
-// identifiant de la Miff et de l'auteur (pour ouvrir sa carte et remplacer l'ancienne notification), type, phase. JAMAIS : position, lieu, nom de la Miff,
+// identifiant de la Miff et de l'auteur (pour ouvrir sa carte et remplacer l'ancienne notification), type, phase, identifiant de la ligne du journal (entryId, CNC-B). JAMAIS : position, lieu, nom de la Miff,
 // nom de famille, photo, heure precise.
 import type { Message } from "firebase-admin/messaging";
 import { Timestamp } from "firebase-admin/firestore";
@@ -98,6 +98,8 @@ export interface EntreeMessageAlerte {
   prenom: string;
   phase: Phase;
   maintenant: Date;
+  /** Identifiant de la ligne du journal du destinataire (journalNotif.identifiantEntree) : permet a l'app de ne jamais doubler une ligne deja relue du journal. */
+  entryId: string;
 }
 
 /**
@@ -114,13 +116,13 @@ export function construireMessageAlerte(e: EntreeMessageAlerte): Message {
   if (e.plateforme === "android") {
     return {
       token: e.token,
-      data: { type: TYPE_ALERTE, event: EVENEMENT_ALERTE[e.phase], miffId: e.miffId, authorUid: e.auteurUid, firstName: e.prenom },
+      data: { type: TYPE_ALERTE, event: EVENEMENT_ALERTE[e.phase], miffId: e.miffId, authorUid: e.auteurUid, firstName: e.prenom, entryId: e.entryId },
       android: { priority: "high", ttl: DUREE_DE_VIE_MS },
     };
   }
   return {
     token: e.token,
-    data: { type: TYPE_ALERTE, event: EVENEMENT_ALERTE[e.phase], miffId: e.miffId, authorUid: e.auteurUid },
+    data: { type: TYPE_ALERTE, event: EVENEMENT_ALERTE[e.phase], miffId: e.miffId, authorUid: e.auteurUid, entryId: e.entryId },
     apns: {
       headers: {
         "apns-push-type": "alert",

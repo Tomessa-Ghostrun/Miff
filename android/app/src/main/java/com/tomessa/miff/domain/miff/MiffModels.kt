@@ -99,15 +99,16 @@ sealed interface MiffObservation {
 /** Version of the text shown before "Rejoindre et partager" / "Créer et partager" / "Reprendre le partage" (rules: 1 to 20 chars). */
 object MiffSharingConsent {
     /**
-     * Shared constant with iOS: change it together with the text of `miff_consent3_*` (criterion K8). Version "2026-11-v03" (LOC-2a):
-     * the text of docs/legal/consentement-localisation-v3.md, option A (decision of the PM of 2026-11-04), which says that Miff keeps
-     * the LAST KNOWN LOCATION with the time of the measure, that the members who share too can see it, that Miff uses the phone's
-     * location even when the app is closed, and that it is erased when the person stops. A new wording = a new version; the number NN
-     * never starts again from zero and the format is `AAAA-MM-vNN` of FIXED WIDTH (the rules compare versions as strings: backend/
-     * firestore.rules, isConsentVersion and isPositionConsentVersion). ("2026-10-v1" and "2026-10-v2" are the older texts, which say
-     * nothing about a position.)
+     * Shared constant with iOS: change it together with the text of `miff_consent3_*` (criterion K8). Version "2026-11-v04" (CONS-4-A, option D
+     * of the PM, decision of 2026-11-19): the text of docs/tickets/consentement-localisation-historique.md, section 7. It keeps what the version 3
+     * says (the LAST KNOWN LOCATION with the time of the measure, the members who share too, the phone's location even when the app is closed,
+     * erased when the person stops), says "no history of trips ON OUR SERVERS", and adds the PLACE OF THE PHOTO (visible 24 h) and the local journal
+     * ON THE PHONE ONLY (35 days, nothing sent). A new wording = a new version; the number NN never starts again from zero and the format is
+     * `AAAA-MM-vNN` of FIXED WIDTH (the rules compare versions as strings: backend/firestore.rules, isConsentVersion and
+     * isPositionConsentVersion). ("2026-10-v1" and "2026-10-v2" are the older texts, which say nothing about a position; "2026-11-v03" is the
+     * text archived in docs/legal/consentement-localisation-v3.md: it still COVERS the position and the photo, see [coversPosition].)
      */
-    const val VERSION = "2026-11-v03"
+    const val VERSION = "2026-11-v04"
 
     /** Maximum number of members, creator included (decision QM5): a soft ceiling, shown by the app only. */
     const val SOFT_MEMBER_LIMIT = 15
@@ -133,6 +134,20 @@ object MiffSharingConsent {
      */
     fun isRenewalDue(stored: String?): Boolean =
         stored != null && (FIXED_WIDTH.matches(stored) || LEGACY.matches(stored)) && stored < VERSION
+
+    /**
+     * "The sharing is PAUSED until the person agrees": the stored text is older than this build's AND does not cover the location (the tracking
+     * and the photo REALLY stop then: [coversPosition]). It is the ONLY case where the screens may say "En attente de ton accord" (CONS-4-A, criterion
+     * CA-10: the interface says "paused" if and only if the tracking is really stopped). A text that still covers the location (version 03 or more)
+     * is never paused: see [isClarificationDue].
+     */
+    fun pausesSharing(stored: String?): Boolean = isRenewalDue(stored) && !coversPosition(stored)
+
+    /**
+     * An older text that STILL covers the location and the photo (version 03 under this build's 04): nothing is paused, the person is only offered the
+     * calm card "Une précision sur ce que tu partages" (option D of the PM). Never a reason to say that something is waiting.
+     */
+    fun isClarificationDue(stored: String?): Boolean = isRenewalDue(stored) && coversPosition(stored)
 }
 
 /** What the phone's permission to locate says, written in the first status (ticket 5.4, step 7). */

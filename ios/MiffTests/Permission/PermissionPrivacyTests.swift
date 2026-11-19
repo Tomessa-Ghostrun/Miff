@@ -263,7 +263,8 @@ final class PermissionPrivacyTests: XCTestCase {
 
         XCTAssertTrue(try text("permission_location_closed_title", "fr", in: catalog).contains("app est fermée"))
         let seen = try text("permission_location_seen_body", "fr", in: catalog)
-        XCTAssertTrue(seen.contains("qui partagent aussi") && seen.contains("Pas d'historique"))
+        XCTAssertTrue(seen.contains("qui partagent aussi"))
+        XCTAssertTrue(seen.contains("Aucun historique de trajets sur nos serveurs"))
         XCTAssertTrue(try text("permission_location_control_body", "fr", in: catalog).contains("effacée"))
         XCTAssertTrue(try text("permission_location_closed_title", "en", in: catalog).contains("app is closed"))
     }

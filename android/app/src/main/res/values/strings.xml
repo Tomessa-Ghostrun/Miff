@@ -554,7 +554,7 @@
     <string name="settings_privacy_withdrawal_not_recorded">It is switched off on this phone, even after a restart. Your choice will be saved as soon as the connection is back; you can also tap “Save my choice”.</string>
     <string name="settings_privacy_retry_action">Save my choice</string>
     <string name="settings_privacy_location_title">Location</string>
-    <string name="settings_privacy_location_body">Miff uses your phone\'s location, even when the app is closed, to notice your arrivals and departures at the places of your Miff. Only the members of a Miff who also share theirs see your last known location, with the time. No history of trips is kept. You can stop sharing at any time: your location is then erased.</string>
+    <string name="settings_privacy_location_body">Miff uses your phone\'s location, even when the app is closed, to notice your arrivals and departures at the places of your Miff. Only the members of a Miff who also share theirs see your last known location, with the time, and the place of your photo if you publish one. No history of trips is kept on our servers. You can stop sharing at any time: your location is then erased.</string>
     <string name="settings_privacy_notifications_title">Notifications</string>
     <string name="settings_privacy_notifications_body">Notifications are coming soon. Nothing is sent for now.</string>
     <string name="settings_privacy_open_phone_settings">Open phone settings</string>
@@ -795,7 +795,9 @@
     <string name="permission_location_closed_title">Even when the app is closed</string>
     <string name="permission_location_closed_body">Miff notices when you arrive at or leave your places, without you having to open the app.</string>
     <string name="permission_location_seen_title">What your loved ones see</string>
-    <string name="permission_location_seen_body">The members of your Miff who also share see your status (for example \"at home\") and your last known location, with the time. No history.</string>
+    <string name="permission_location_seen_body">The members of your Miff who also share see your status (for example \"at home\") and your last known location, with the time. No history of trips on our servers.</string>
+    <string name="permission_location_local_title">For you only</string>
+    <string name="permission_location_local_body">On your phone only, Miff also notes your arrivals and departures to show you how your time is spread. Nothing is sent.</string>
     <string name="permission_location_control_title">You stay in control</string>
     <string name="permission_location_control_body">You can stop sharing with a Miff at any time. Your location is then erased.</string>
     <string name="permission_location_action">Always allow</string>
@@ -812,31 +814,44 @@
     <string name="android_permission_location_system_step_2">Choose Allow all the time</string>
     <string name="android_permission_location_system_step_3">Keep precise location turned on</string>
     <string name="miff_consent3_title">What you share with this Miff</string>
-    <string name="miff_consent3_create">By creating this Miff, you share your status and your last known location with its members; you can stop at any time in the Miff\'s settings.</string>
-    <string name="miff_consent3_join">By joining this Miff, you share your status and your last known location with its members; you can stop at any time in the Miff\'s settings.</string>
-    <string name="miff_consent3_resume">You are sharing your status and your last known location with the members of this Miff again; you can stop at any time.</string>
+    <string name="miff_consent3_create">By creating this Miff, you share your status, your last known location and, if you publish a photo, the place where it was taken, with its members; you can stop at any time in the Miff\'s settings.</string>
+    <string name="miff_consent3_join">By joining this Miff, you share your status, your last known location and, if you publish a photo, the place where it was taken, with its members; you can stop at any time in the Miff\'s settings.</string>
+    <string name="miff_consent3_resume">You are sharing your status, your last known location and, if you publish a photo, the place where it was taken, with the members of this Miff again; you can stop at any time.</string>
     <string name="miff_consent3_kept_title">Your last known location</string>
-    <string name="miff_consent3_kept_body">Miff only keeps your last known location, with the time it was measured. No history of trips: each location replaces the previous one. This is not live tracking.</string>
+    <string name="miff_consent3_kept_body">Miff only keeps your last known location, with the time it was measured, on its servers. No history of trips on our servers: each location replaces the previous one. This is not live tracking.</string>
+    <string name="miff_consent3_photo_title">The place of your photo</string>
+    <string name="miff_consent3_photo_body">When you publish a photo, the place where you took it is attached to it, with the time of the measurement. The members who also share their location can see it for 24 hours, then the photo can no longer be read.</string>
+    <string name="miff_consent3_local_title">On your phone only</string>
+    <string name="miff_consent3_local_body">To show you how your time is spread, your phone also notes your arrivals at and departures from your places, for 35 days, with no position or address. Nothing is sent and nobody else can see it. You can erase it in Settings > Privacy.</string>
     <string name="miff_consent3_who_title">Who sees it</string>
     <string name="miff_consent3_who_body">Only the members of this Miff who also share theirs can see it. The creator has no extra rights.</string>
     <string name="miff_consent3_closed_title">Even when the app is closed</string>
     <string name="miff_consent3_closed_body">To do this, Miff uses your phone\'s location, even when the app is closed.</string>
     <string name="miff_consent3_erase_title">Your location is erased</string>
-    <string name="miff_consent3_erase_body">If you stop sharing, leave the Miff or delete your account, your location is erased. After 24 h it is hidden and only its date remains visible.</string>
+    <string name="miff_consent3_erase_body">If you stop sharing, leave the Miff or delete your account, your location and your photo with its place are erased. After 24 h your location is hidden and only its date remains visible.</string>
     <string name="miff_consent3_members_title">What the members also see of you</string>
     <string name="miff_consent3_members_body">Your first name, last name, photo, phone number and battery level.</string>
     <string name="miff_consent3_places_title">Trusted places</string>
     <string name="miff_consent3_places_body">The trusted places of this Miff are chosen by its creator and visible to all its members, address included.</string>
     <string name="miff_consent3_system_note">Your phone will ask separately for access to your location. Miff needs the \"Always\" option to work.</string>
     <string name="miff_renewal_title">A clarification about what you share</string>
-    <string name="miff_renewal_intro_one">For \"%1$s\", Miff can now keep your last known location, with the time it was measured. The members of this Miff who also share theirs can see it. No history, never live, and it is erased if you stop sharing. To keep sharing with this Miff, we need your agreement.</string>
-    <string name="miff_renewal_intro_unnamed">For this Miff, Miff can now keep your last known location, with the time it was measured. The members of this Miff who also share theirs can see it. No history, never live, and it is erased if you stop sharing. To keep sharing with this Miff, we need your agreement.</string>
-    <string name="miff_renewal_intro_many">For your Miffs, Miff can now keep your last known location, with the time it was measured. The members of each Miff who also share theirs can see it. No history, never live, and it is erased if you stop sharing. To keep sharing with these Miffs, we need your agreement.</string>
+    <string name="miff_renewal_intro_one">For \"%1$s\", Miff can now keep your last known location, with the time it was measured, and, if you publish a photo, the place where it was taken. The members of this Miff who also share theirs can see them. No history of trips on our servers, never live. If you stop sharing, your location and your photo are erased. To keep sharing with this Miff, we need your agreement.</string>
+    <string name="miff_renewal_intro_unnamed">For this Miff, Miff can now keep your last known location, with the time it was measured, and, if you publish a photo, the place where it was taken. The members of this Miff who also share theirs can see them. No history of trips on our servers, never live. If you stop sharing, your location and your photo are erased. To keep sharing with this Miff, we need your agreement.</string>
+    <string name="miff_renewal_intro_many">For your Miffs, Miff can now keep your last known location, with the time it was measured, and, if you publish a photo, the place where it was taken. The members of each Miff who also share theirs can see them. No history of trips on our servers, never live. If you stop sharing, your location and your photo are erased. To keep sharing with these Miffs, we need your agreement.</string>
     <string name="miff_renewal_exit_note">Nothing is recorded until you agree. You can also leave this Miff.</string>
     <string name="miff_renewal_accept">I agree</string>
     <string name="miff_renewal_later">Not now</string>
     <string name="miff_renewal_saving">Saving your agreement…</string>
     <string name="miff_renewal_error_extra">Your agreement is not saved: nothing is shared for now.</string>
+    <string name="miff_clarify_title">A clarification about what you share</string>
+    <string name="miff_clarify_body_one">For \"%1$s\", we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo, readable for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your time breakdown; you can erase it in Settings > Privacy.</string>
+    <string name="miff_clarify_body_unnamed">For this Miff, we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo, readable for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your time breakdown; you can erase it in Settings > Privacy.</string>
+    <string name="miff_clarify_body_many">For your Miffs, we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo, readable for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your time breakdown; you can erase it in Settings > Privacy.</string>
+    <string name="miff_clarify_continue">Everything goes on as before.</string>
+    <string name="miff_clarify_accept">Got it</string>
+    <string name="miff_clarify_later">Later</string>
+    <string name="miff_clarify_saving">Saving…</string>
+    <string name="miff_clarify_error_extra">This is not saved, but everything goes on as before.</string>
 
     <!-- AUTH-5a: account deletion -->
     <string name="settings_delete_entry">Delete my account</string>
@@ -930,6 +945,7 @@
     <string name="settings_privacy_location_status_todo">To complete in the phone settings</string>
     <string name="settings_privacy_miff_waiting_pill">Waiting</string>
     <string name="settings_privacy_miff_waiting_body">Your agreement is waiting: Miff no longer updates your status with this Miff. You can stop sharing from the Miff screen.</string>
+    <string name="settings_privacy_clarify_body">Miff has clarified what it keeps on our servers and on your phone only. Everything goes on as before: you can read this clarification and accept it whenever you like.</string>
     <string name="settings_privacy_detection_help_link">If detections are slow</string>
     <!-- ABO-1: Settings > Subscription, read only (Miff+ granted by hand). No price, no purchase button. -->
     <string name="settings_subscription_plan_name" translatable="false">Miff+</string>
@@ -1289,8 +1305,9 @@
     <string name="profile_timeshare_over_limit">Not all your places are tracked at the same time: the chart may be incomplete.</string>
     <string name="profile_timeshare_error">The chart is not available right now.</string>
     <string name="settings_privacy_time_title">Time history</string>
-    <string name="settings_privacy_time_body">To work out how your time is spread, your phone keeps for 35 days the moments you arrive at and leave your places, with no position or address. Nothing is sent: nobody else can see it.</string>
+    <string name="settings_privacy_time_body">To work out how your time is spread, your phone keeps for 35 days the moments you arrive at and leave your places, with no position or address. Nothing is sent: nobody else can see them. Stopping sharing does not erase it: you can do it here.</string>
     <string name="settings_privacy_time_erase">Erase my time history</string>
+    <string name="settings_privacy_time_erase_note">Erases the arrivals and departures Miff keeps on your phone for your time breakdown. This changes nothing for your loved ones.</string>
     <string name="settings_privacy_time_confirm_title">Erase the history?</string>
     <string name="settings_privacy_time_confirm_body">Your chart will start again from zero. This changes nothing for your loved ones.</string>
     <string name="settings_privacy_time_confirm_action">Erase</string>

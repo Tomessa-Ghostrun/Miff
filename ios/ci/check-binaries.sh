@@ -248,4 +248,30 @@ case "$mode" in
     ;;
 esac
 
+# --- Alerte « Je suis en danger » (docs/tickets/alerte-danger.md, décision du PM du 2026-11-18) : présente en Debug et Internal (témoin positif : le build TestFlight de la
+#     recette du PM), ABSENTE de la publication. Tout son code (contrôleur, magasins, écrans, bannière, geste, réception du message d'alerte) est derrière la condition de
+#     compilation ALERT_DANGER (project.yml : Debug et Internal oui, Release non) : en Release il n'est même pas compilé. Marqueurs : les noms de ses types. Pour
+#     l'inclure EXPRÈS dans un build de publication (décision du PM, après déploiement du serveur), MIFF_ALLOW_ALERT_DANGER_IN_RELEASE=1 : jamais un oubli.
+alert_markers='DangerAlertController|FirestoreDangerAlertStore|DangerAlertFileStore|DangerAlertViewModel|DangerBannerView|DangerSentView|DangerHoldModel|CircleAlertParser'
+alert_hits="$(count_strings "$alert_markers")"
+case "$mode" in
+  debug | internal)
+    if [ "${alert_hits:-0}" -eq 0 ]; then
+      fail "Le build ${mode} devrait contenir l'alerte « Je suis en danger » (aucune trace trouvée : le drapeau ALERT_DANGER est-il dans project.yml ?). La recherche de chaînes ne prouve rien."
+    else
+      report "Alerte « Je suis en danger » : présente dans le build ${mode} (${alert_hits} traces, OK)"
+    fi
+    ;;
+  release)
+    if [ "${alert_hits:-0}" -ne 0 ] && [ "${MIFF_ALLOW_ALERT_DANGER_IN_RELEASE:-0}" != "1" ]; then
+      fail "Le build Release contient l'alerte « Je suis en danger » (${alert_hits} trace(s)) : elle doit être absente des builds de diffusion tant que le PM n'en a pas décidé la mise en service (MIFF_ALLOW_ALERT_DANGER_IN_RELEASE=1 en toute connaissance de cause)."
+      strings -a "$binary" | grep -E "$alert_markers" | head -n 5
+    elif [ "${alert_hits:-0}" -ne 0 ]; then
+      report "Release : l'alerte est PRÉSENTE (voulu : MIFF_ALLOW_ALERT_DANGER_IN_RELEASE=1)"
+    else
+      report "Release : aucune trace de l'alerte « Je suis en danger » (OK)"
+    fi
+    ;;
+esac
+
 exit "$failed"

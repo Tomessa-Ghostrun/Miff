@@ -70,6 +70,7 @@ struct PermissionGateHost<Content: View>: View {
         case .renewal:
             if let renewal = state.renewal {
                 RenewalScreen(state: renewal, actions: renewalActions)
+                    .environment(\.dangerAlertSignal, environment.dangerShell.signal)
             } else {
                 SessionLoadingView()
             }

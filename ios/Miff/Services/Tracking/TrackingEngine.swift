@@ -106,6 +106,10 @@ final class TrackingEngine {
         case sharingChanged
         case networkBack
         case accessChanged
+        /// La personne a tiré le Feed vers le bas (« Actualiser ») : MA présence est revérifiée MAINTENANT, comme à l'ouverture de l'app,
+        /// mais avec une mesure toujours fraîche (jamais la position réutilisée de BATT-3). Demandée par `TrackingRuntime.feedPulled()`,
+        /// qui borne la fréquence (une fois par 30 s).
+        case pulled
     }
 
     let deps: TrackingDependencies
