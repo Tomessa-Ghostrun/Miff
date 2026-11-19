@@ -28,20 +28,42 @@ enum class AppLanguage(
     SYSTEM(null),
     ;
 
+    /**
+     * The tag APPLIED to the system (`LocaleManager`, the locale of the process): the Portuguese of the app is the one of PORTUGAL, `pt-PT`, not the bare `pt`.
+     * The plural rules depend on it: for `pt` ICU uses the Brazilian ones ("0 dia", zero is `one`), for `pt-PT` the European ones ("0 dias", zero is `other`),
+     * the ones the texts are written for (ticket I18N-4L, criterion 19). The resources `values-pt` serve both. Null for [SYSTEM].
+     */
+    val localeTag: String?
+        get() = if (this == PORTUGUESE) "pt-PT" else tag
+
     companion object {
+        /**
+         * The languages offered in Settings > Langue: those whose texts are really in the app ([provided] = codes of the language, `BuildConfig.PROVIDED_LANGUAGES`),
+         * then [SYSTEM]. A language declared in the registry but not translated yet (es, it, pt, de before the lot 4) is NOT offered: it would show English under its
+         * own name. It appears by itself the day its `values-xx/strings.xml` is in the build.
+         */
+        fun offered(provided: Set<String>): List<AppLanguage> = entries.filter { it == SYSTEM || it.tag in provided }
+
         /**
          * Reads a tag given back by the system or kept on the device. Only the language counts ("fr-FR" is French, "es-MX" is Spanish, "pt-BR" is the
          * Portuguese of the app, which is the one of Portugal: the resources `values-pt` serve every region of the language); anything unknown, empty or
          * null is [SYSTEM]: a value written by a future version never breaks the screen.
+         *
+         * With [provided] (the languages really in the app), a language that is not provided is [SYSTEM] too: it is never applied, so that the dates and numbers do not
+         * come out in a language while the texts are English.
          */
-        fun fromTag(tag: String?): AppLanguage {
+        fun fromTag(
+            tag: String?,
+            provided: Set<String>? = null,
+        ): AppLanguage {
             val language =
                 tag
                     ?.trim()
                     ?.takeIf { it.isNotEmpty() }
                     ?.let { Locale.forLanguageTag(it.replace('_', '-')).language }
                     ?.lowercase(Locale.ROOT)
-            return entries.firstOrNull { it.tag != null && it.tag == language } ?: SYSTEM
+            val found = entries.firstOrNull { it.tag != null && it.tag == language } ?: SYSTEM
+            return if (provided != null && found != SYSTEM && found.tag !in provided) SYSTEM else found
         }
     }
 }

@@ -69,6 +69,44 @@ class SettingsDomainTest {
         assertEquals(AppLanguage.PORTUGUESE, AppLanguage.fromTag("pt_BR"))
     }
 
+    /** Only the languages whose texts are in the build are offered (ticket I18N-4L, review of the lot 3): the others appear by themselves with their texts. */
+    @Test
+    fun onlyTheLanguagesThatAreProvidedAreOffered_thePhoneAlways() {
+        assertEquals(
+            listOf(AppLanguage.ENGLISH, AppLanguage.FRENCH, AppLanguage.SYSTEM),
+            AppLanguage.offered(setOf("fr", "en")),
+        )
+        assertEquals(
+            listOf(AppLanguage.GERMAN, AppLanguage.ENGLISH, AppLanguage.SPANISH, AppLanguage.SYSTEM),
+            AppLanguage.offered(setOf("es", "de", "en")),
+        )
+        assertEquals(listOf(AppLanguage.SYSTEM), AppLanguage.offered(emptySet()))
+        assertEquals(
+            AppLanguage.entries.toList(),
+            AppLanguage.offered(AppLanguage.entries.mapNotNull { it.tag }.toSet()),
+        )
+    }
+
+    /** A language that is not provided is never applied (neither read back nor kept): dates and numbers would follow it while the texts are English. */
+    @Test
+    fun aLanguageThatIsNotProvidedIsNeverApplied() {
+        val provided = setOf("fr", "en")
+        assertEquals(AppLanguage.FRENCH, AppLanguage.fromTag("fr-FR", provided))
+        assertEquals(AppLanguage.SYSTEM, AppLanguage.fromTag("es", provided))
+        assertEquals(AppLanguage.SYSTEM, AppLanguage.fromTag("pt-BR", provided))
+        assertEquals(AppLanguage.SYSTEM, AppLanguage.fromTag("de", provided))
+        assertEquals(AppLanguage.SPANISH, AppLanguage.fromTag("es", provided + "es"))
+    }
+
+    /** The Portuguese of the app is applied as `pt-PT`: ICU gives the European plural rules ("0 dias") to it, the Brazilian ones ("0 dia") to the bare `pt`. */
+    @Test
+    fun portugueseIsAppliedAsThePortugueseOfPortugal_everyOtherLanguageAsItsOwnTag() {
+        assertEquals("pt-PT", AppLanguage.PORTUGUESE.localeTag)
+        assertEquals("pt", AppLanguage.PORTUGUESE.tag)
+        assertEquals(AppLanguage.PORTUGUESE, AppLanguage.fromTag("pt-PT"))
+        AppLanguage.entries.filter { it != AppLanguage.PORTUGUESE }.forEach { assertEquals(it.tag, it.localeTag) }
+    }
+
     @Test
     fun anythingElseMeansThePhoneDecides() {
         assertEquals(AppLanguage.SYSTEM, AppLanguage.fromTag(null))

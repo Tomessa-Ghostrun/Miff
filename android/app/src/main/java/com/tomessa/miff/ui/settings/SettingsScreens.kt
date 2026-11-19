@@ -40,6 +40,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
+import com.tomessa.miff.data.settings.ProvidedLanguages
 import com.tomessa.miff.domain.settings.AppLanguage
 import com.tomessa.miff.navigation.InternalDestinations
 import com.tomessa.miff.ui.components.miffBottomInsets
@@ -294,10 +295,12 @@ fun LanguageScreen(
     selected: AppLanguage,
     onBack: () -> Unit,
     onSelect: (AppLanguage) -> Unit,
+    // Only the languages whose texts are in this build (a language not translated yet would show English under its own name): the others appear by themselves.
+    languages: List<AppLanguage> = AppLanguage.offered(ProvidedLanguages.tags),
 ) {
     SettingsScaffold(title = stringResource(R.string.settings_language_title), onBack = onBack) {
         Column(modifier = Modifier.selectableGroup()) {
-            AppLanguage.entries.forEach { language ->
+            languages.forEach { language ->
                 // Each name is written in its own language and never translated (`translatable="false"`).
                 LanguageRow(
                     label =

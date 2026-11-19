@@ -56,6 +56,7 @@ import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
 import com.tomessa.miff.domain.profile.MyProfile
 import com.tomessa.miff.domain.settings.AppLanguage
+import com.tomessa.miff.testsupport.I18nResources
 import com.tomessa.miff.ui.feed.FeedScreen
 import com.tomessa.miff.ui.main.MainTabBar
 import com.tomessa.miff.ui.profile.ProfileTabScreen
@@ -454,7 +455,10 @@ class SettingsScreensTest {
     @Test
     fun language_offersTheSixLanguagesAndThePhone_eachNamedInItsOwnLanguage_noSaveButton() {
         val chosen = mutableListOf<AppLanguage>()
-        show { LanguageScreen(selected = AppLanguage.FRENCH, onBack = {}, onSelect = { chosen += it }) }
+        show {
+            LanguageScreen(selected = AppLanguage.FRENCH, onBack = {
+            }, onSelect = { chosen += it }, languages = AppLanguage.entries)
+        }
         shoot("language")
         // Exactly one row is selected; the names are the ones of the registry (ticket I18N-4L, criterion 10), written in their own language.
         composeRule.onNodeWithText("Français").assertIsSelected()
@@ -494,9 +498,33 @@ class SettingsScreensTest {
         )
     }
 
+    /**
+     * The screen of the app (no list given) only offers the languages whose texts are in the build: Deutsch, Español, Italiano and Português do not appear before their
+     * texts do (they would show English under their own name). They appear by themselves the day `values-xx/strings.xml` is in the build.
+     */
+    @Test
+    fun language_theScreenOfTheApp_offersOnlyTheLanguagesThatAreTranslated_andThePhone() {
+        show { LanguageScreen(AppLanguage.SYSTEM, {}, {}) }
+        val provided = I18nResources.present.map { it.code }.toSet()
+        val names =
+            mapOf(
+                "de" to "Deutsch",
+                "en" to "English",
+                "es" to "Español",
+                "fr" to "Français",
+                "it" to "Italiano",
+                "pt" to "Português",
+            )
+        names.forEach { (code, name) ->
+            composeRule.onAllNodesWithText(name).assertCountEquals(if (code in provided) 1 else 0)
+        }
+        composeRule.onAllNodes(isSelectable()).assertCountEquals(provided.size + 1)
+        composeRule.onNodeWithText(text(R.string.settings_language_system)).assertIsSelected()
+    }
+
     @Test
     fun language_theRowsFollowTheOrderOfTheNames_andEachOneIsReadAsItsNameAndItsState() {
-        show { LanguageScreen(AppLanguage.SPANISH, {}, {}) }
+        show { LanguageScreen(AppLanguage.SPANISH, {}, {}, AppLanguage.entries) }
         val rows = composeRule.onAllNodes(isSelectable())
         val names =
             listOf(
@@ -517,7 +545,7 @@ class SettingsScreensTest {
 
     @Test
     fun language_theRowsAreRadioButtonsOfAtLeast48dp() {
-        show { LanguageScreen(AppLanguage.SYSTEM, {}, {}) }
+        show { LanguageScreen(AppLanguage.SYSTEM, {}, {}, AppLanguage.entries) }
         listOf(
             "Deutsch",
             "English",

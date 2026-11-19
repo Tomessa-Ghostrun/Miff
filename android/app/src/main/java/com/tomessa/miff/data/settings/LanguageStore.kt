@@ -5,11 +5,24 @@ import android.content.Context
 import android.content.res.Configuration
 import android.os.Build
 import android.os.LocaleList
+import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.domain.settings.AppLanguage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.Locale
+
+/**
+ * The languages whose texts are really in this build (`res/values` for English, `res/values-xx` for the others), from `BuildConfig.PROVIDED_LANGUAGES`. A language that is
+ * not in it is never applied, whatever is kept or asked: the texts would be English while the dates and numbers followed another language.
+ */
+object ProvidedLanguages {
+    val tags: Set<String> =
+        BuildConfig.PROVIDED_LANGUAGES
+            .split(',')
+            .filter { it.isNotBlank() }
+            .toSet()
+}
 
 /**
  * The language chosen in Settings > Langue (Onboarding ticket 6.10, decision Q4): French, English or the phone's. The
@@ -37,24 +50,28 @@ interface LanguageStore {
  */
 class AndroidLanguageStore(
     private val context: Context,
+    /** For the tests only: the languages whose texts are in the build. */
+    private val provided: Set<String> = ProvidedLanguages.tags,
 ) : LanguageStore {
-    private val mutable = MutableStateFlow(read(context))
+    private val mutable = MutableStateFlow(read(context, provided))
     override val selected: StateFlow<AppLanguage> = mutable.asStateFlow()
 
     override fun refresh() {
-        mutable.value = read(context)
+        mutable.value = read(context, provided)
     }
 
     override fun select(language: AppLanguage) {
+        // A language without its texts in this build is not applied (the screen does not offer it either): "Langue du téléphone" instead.
+        val applied = if (language.tag != null && language.tag !in provided) AppLanguage.SYSTEM else language
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val manager = context.getSystemService(LocaleManager::class.java)
-            // An empty list = "no choice of our own": the language of the phone applies again.
+            // An empty list = "no choice of our own": the language of the phone applies again. Portuguese is applied as pt-PT (plural rules of Portugal).
             manager.applicationLocales =
-                language.tag?.let { LocaleList.forLanguageTags(it) } ?: LocaleList.getEmptyLocaleList()
+                applied.localeTag?.let { LocaleList.forLanguageTags(it) } ?: LocaleList.getEmptyLocaleList()
         } else {
-            preferences(context).edit().putString(KEY, language.tag.orEmpty()).apply()
+            preferences(context).edit().putString(KEY, applied.tag.orEmpty()).apply()
         }
-        mutable.value = language
+        mutable.value = applied
     }
 
     companion object {
@@ -64,12 +81,19 @@ class AndroidLanguageStore(
         private fun preferences(context: Context) = context.getSharedPreferences(FILE, Context.MODE_PRIVATE)
 
         /** What is in force now, read from the right place for this version of Android. */
-        fun read(context: Context): AppLanguage =
+        fun read(
+            context: Context,
+            provided: Set<String> = ProvidedLanguages.tags,
+        ): AppLanguage =
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 val locales = context.getSystemService(LocaleManager::class.java).applicationLocales
-                if (locales.isEmpty) AppLanguage.SYSTEM else AppLanguage.fromTag(locales[0].toLanguageTag())
+                if (locales.isEmpty) {
+                    AppLanguage.SYSTEM
+                } else {
+                    AppLanguage.fromTag(locales[0].toLanguageTag(), provided)
+                }
             } else {
-                AppLanguage.fromTag(preferences(context).getString(KEY, null))
+                AppLanguage.fromTag(preferences(context).getString(KEY, null), provided)
             }
 
         /**
@@ -78,7 +102,7 @@ class AndroidLanguageStore(
          */
         fun wrap(base: Context): Context {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) return base
-            val tag = AppLanguage.fromTag(preferences(base).getString(KEY, null)).tag
+            val tag = AppLanguage.fromTag(preferences(base).getString(KEY, null), ProvidedLanguages.tags).localeTag
             if (tag == null) {
                 // "Langue du téléphone": the default language of the process goes back to the phone's own (it may still be
                 // the one that was forced before), so that everything that reads it (the e-mail of Firebase) follows.

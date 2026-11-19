@@ -42,6 +42,19 @@ val changelogVersion: String =
                     "android/CHANGELOG.md has no heading like \"## [0.32.0]\": the versionName cannot be derived from it",
                 )
         }.get()
+// LANGUAGES REALLY PROVIDED (ticket I18N-4L): the languages of the registry whose texts exist in this build (res/values for English, res/values-xx/strings.xml for
+// the others). Settings > Langue only offers these (a language declared in the registry but not yet translated would show English under its own name), and the
+// language chosen in the app is only applied when it is one of them. Each file is read through a Gradle provider, so that the configuration cache notices when
+// a language is added. The candidates are the languages of docs/contracts/i18n-languages.json (AppLanguageRegistryTest fails if the two differ).
+val providedLanguages: String =
+    listOf("de", "en", "es", "fr", "it", "pt")
+        .filter { code ->
+            val folder = if (code == "en") "values" else "values-$code"
+            providers
+                .fileContents(layout.projectDirectory.file("src/main/res/$folder/strings.xml"))
+                .asBytes
+                .isPresent
+        }.joinToString(",")
 val appVersionName: String = providers.gradleProperty("miff.versionName").getOrElse(changelogVersion)
 require(Regex("""\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?""").matches(appVersionName)) {
     "miff.versionName must look like 1.2.3 (optionally followed by -suffix)"
@@ -109,6 +122,7 @@ android {
         require(legalBaseUrl.startsWith("https://")) { "miff.legalBaseUrl must be an https:// address (no clear text)" }
         buildConfigField("String", "LEGAL_BASE_URL", "\"$legalBaseUrl\"")
         buildConfigField("String", "SUPPORT_EMAIL", "\"$supportEmail\"")
+        buildConfigField("String", "PROVIDED_LANGUAGES", "\"$providedLanguages\"")
         // LOC-1 (places). Providers of the map and of the address suggestions: all free, none needs a key (decision of the ticket,
         // section 12). Override without editing the code: -Pmiff.mapStyleUrl=..., -Pmiff.photonUrl=... (https only).
         // The optional fallback of the suggestions (Geoapify, free plan) is OFF unless a key is given at build time with

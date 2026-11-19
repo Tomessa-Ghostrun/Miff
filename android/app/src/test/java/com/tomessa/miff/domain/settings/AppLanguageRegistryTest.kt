@@ -1,5 +1,6 @@
 package com.tomessa.miff.domain.settings
 
+import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.testsupport.I18nResources
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -46,6 +47,18 @@ class AppLanguageRegistryTest {
                 declaration.groupValues[1].contains("translatable=\"false\""),
             )
         }
+    }
+
+    /**
+     * The languages OFFERED are the ones that have their texts in the build (`BuildConfig.PROVIDED_LANGUAGES`, computed by the build file from the folders): exactly the languages
+     * of the registry whose `strings.xml` exists. Español, Italiano, Português and Deutsch therefore stay out of Settings > Langue until their texts are merged (lot 4).
+     */
+    @Test
+    fun theLanguagesOfferedAreExactlyTheOnesThatHaveTheirTexts() {
+        val provided = BuildConfig.PROVIDED_LANGUAGES.split(',').filter { it.isNotBlank() }
+        assertEquals(I18nResources.present.map { it.code }.sorted(), provided.sorted())
+        assertTrue("English is always provided (fallback)", "en" in provided)
+        assertEquals(provided.toSet(), AppLanguage.offered(provided.toSet()).mapNotNull { it.tag }.toSet())
     }
 
     @Test
