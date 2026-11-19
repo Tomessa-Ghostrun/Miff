@@ -1,11 +1,11 @@
 # Ticket : Centre de notifications complet (toutes les notifications reçues, avec la photo de la personne concernée)
 
-**Statut** : **proposition en attente du GO du PM** (aucun développement lancé). Aucune lecture ni écriture dans Notion, Figma ou Firebase ; aucun statut Notion modifié ; aucun déploiement.
+**Statut** : **décidé par le PM le 2026-11-19** (Q1 à Q5 tranchées, voir §11 ; développement prêt à démarrer). Aucune lecture ni écriture dans Notion, Figma ou Firebase par ce document ; aucun statut Notion modifié ; aucun déploiement.
 **Rédigé le** : 2026-11-19 (agent `product-specs`). **Vérité du code** : `origin/main` au commit `424e858a` (lu dans un worktree propre ; le dossier `C:\dev\miff` local est périmé et n'a pas servi). **Tickets liés** : `docs/tickets/notifications.md` (§7 « Centre de notifications »), `docs/tickets/notifications-p1-derniere-visite.md` (NOTIF-P1A / P1I), `docs/tickets/notification-update-membres.md` (SRV-4, « {Prénom} a donné des nouvelles »), `docs/tickets/alerte-danger.md` (AD-A2 / AD-I2, §11 et ligne « cloche / centre »).
 
 **Demande du PM** : « J'ai l'impression que certaines push notifications reçues ne s'enregistrent pas dans le centre de notifications. Je veux que toutes les notifications reçues soient dans le centre + que dans le centre il y ait la photo de la personne concernée ; si c'est plusieurs personnes ou une Miff, remplacer la photo par le logo de l'app Miff (le M avec un cœur). »
 
-**Convention** : **[Confirmé]** = lu dans le code de `origin/main` (fichier:ligne). **[Hypothèse]** = plausible, non vérifiable sans mesure sur appareil. **[Décidé]** = décision déjà écrite du PM. **[Défaut]** = ma proposition, validée si le PM ne dit rien (le PM a délégué la spec). **[Question]** = vraie question au PM (section 11).
+**Convention** : **[Confirmé]** = lu dans le code de `origin/main` (fichier:ligne). **[Hypothèse]** = plausible, non vérifiable sans mesure sur appareil. **[Décidé]** = décision écrite du PM (celles du 2026-11-19 sont en §11). **[Défaut]** = proposition de la spec, non contestée par le PM (le PM a délégué la spec).
 
 ---
 
@@ -13,8 +13,9 @@
 
 1. **Votre impression est exacte, et la cause est identifiée.** Sur **iPhone, aucune notification push reçue n'entre jamais dans le centre** (ni « a donné des nouvelles », ni alerte) : l'iPhone affiche la notification lui-même et l'app n'est pas exécutée, donc rien n'est enregistré, et le code qui devait le faire n'est pas branché. Sur **Android, les alertes « Je suis en danger » ne sont pas inscrites non plus** (la notification s'affiche, la ligne n'est jamais écrite). Les « a donné des nouvelles » arrivent bien dans le centre Android, sauf cas limites (section 4).
 2. **Pourquoi on ne peut pas réparer en rustinant l'app** : tant que le centre est rempli *par le téléphone au moment de la réception*, il manquera tout ce que le téléphone n'a pas reçu ou pas traité (iPhone app fermée, téléphone éteint plus de 2 h, app arrêtée de force, autorisation retirée). **La solution fiable est que le serveur note lui-même chaque notification envoyée** dans un petit journal rattaché à chaque personne, que l'app relit à l'ouverture. Même principe sur iPhone et Android, **0 € jusqu'à environ 1 000 utilisateurs actifs par jour, 3 à 4 $ par mois à 10 000** (section 8.7, hypothèses dites).
-3. **Photo ou logo** : une personne = sa **photo de profil** (celle que ses proches voient déjà dans leur Miff ; pas la photo d'update, qui expire en 24 h et porte un lieu) ; sans photo = **ses initiales**, comme le Feed ; **plusieurs personnes ou la Miff entière = le logo Miff** (le « M » avec le cœur jaune-vert sur fond bleu). Aujourd'hui seules « Ta Miff est passée en orange / rouge » concernent la Miff entière.
-4. **Ce qui change pour la vie privée** : une trace de chaque notification (type, Miff, identifiant de la personne, date ; **ni prénom, ni photo, ni lieu, ni position**) est gardée **30 jours sur nos serveurs** (aujourd'hui le centre est uniquement local). **Il faut publier le texte légal mis à jour avant la mise en service** ; c'est la seule question bloquante (Q1). Aucun texte n'est présenté comme relu par un juriste.
+3. **Photo ou logo [Décidé 2026-11-19]** : une personne = sa **photo de profil** (celle que ses proches voient déjà dans leur Miff ; pas la photo d'update, qui expire en 24 h et porte un lieu) ; sans photo = **ses initiales**, comme le Feed ; **tes propres rappels (N1, N2, N6, N7) = ta propre photo** ; **la Miff entière, plusieurs personnes, un acteur inconnu ou parti = le logo Miff** (le « M » avec le cœur jaune-vert sur disque bleu `#043CD1`). Aujourd'hui seules « Ta Miff est passée en orange / rouge » concernent la Miff entière.
+4. **Ce qui change pour la vie privée [Décidé : Q1 = oui]** : une trace de chaque notification (type, Miff, identifiant de la personne, date ; **ni prénom, ni photo, ni lieu, ni position**) est gardée **30 jours sur nos serveurs** (aujourd'hui le centre est uniquement local). **Le texte légal mis à jour est publié AVANT la mise en service.** Aucun texte n'est présenté comme relu par un juriste.
+4 bis. **Rétroactivité** : les notifications **antérieures** au déploiement de la fonction **ne seront pas dans le journal** (pas de rétro-remplissage ; §8.9).
 5. **Rien de plus sur l'écran verrouillé** : pas de photo dans la notification du système (v1), pas de pastille sur l'icône, pas de nouveau son. Seul le centre dans l'app change.
 6. **Découpage** : 1 lot backend (règles + fonctions existantes), 1 lot Android, 1 lot iOS, 1 petit lot logo, 1 lot légal, 1 lot traductions (section 9). Android et iOS en parallèle une fois le backend en ligne.
 
@@ -113,11 +114,13 @@ Dédoublonnage (clé = auteur + identifiant de message FCM, 48 h : un message li
 | C1 « Depuis ta dernière visite » | le proche cité | sa photo / initiales |
 | N8 « {Prénom} propose un lieu » | le demandeur | sa photo / initiales |
 | N3 / N4 « Ta Miff est passée en orange / rouge » | **la Miff entière** | **logo Miff** |
-| N1 / N2 / N6 / N7 (rappels et information **à toi**, voix de Miff) | toi | **logo Miff** **[Question Q2]** |
-| Acteur introuvable (a quitté la Miff, compte supprimé, fiche pas encore lue) | inconnu | **logo Miff** + texte « Un proche » (jamais un rond vide ni un « ? ») |
-| **Plusieurs personnes** (ligne regroupée) | plusieurs | **logo Miff** : **non utilisée en v1** [Question Q4] ; aujourd'hui aucune ligne ne concerne plusieurs personnes |
+| N1 / N2 / N6 / N7 (rappels et information **à toi**) | toi | **ta propre photo de profil** (ou tes initiales si tu n'en as pas) **[Décidé : Q2]**. Source : ton profil `users/{uid}`, déjà lu par l'app : **0 lecture de plus** |
+| Acteur introuvable (a quitté la Miff, compte supprimé, fiche pas encore lue) | inconnu | **logo Miff** + texte « Un proche » (jamais un rond vide ni un « ? ») **[Décidé : Q3]** |
+| **Plusieurs personnes** (ligne regroupée) | plusieurs | **logo Miff** : **pas de regroupement en v1** **[Décidé : Q4]** : **une ligne par personne** ; la règle est écrite pour les futurs événements de Miff |
 
-**Règle générale** : **la photo dit « qui »** ; **le logo dit « Miff »** (la Miff, plusieurs personnes, ou personne d'identifiable). Les initiales sont le **repli d'une personne sans photo**, pas un cas de logo : le logo ne doit jamais laisser croire que plusieurs personnes sont concernées quand il s'agit d'une seule.
+**Règle générale [Décidé]** : **la photo dit « qui »** (une personne, y compris toi pour tes propres rappels) ; **le logo dit « Miff »** (la Miff entière, plusieurs personnes, ou personne d'identifiable). Les initiales sont le **repli d'une personne sans photo**, pas un cas de logo : le logo ne doit jamais laisser croire que plusieurs personnes sont concernées quand il s'agit d'une seule.
+
+**Notifications locales d'aujourd'hui (N1 à N7) [Décidé]** : elles **restent écrites localement**, exactement comme aujourd'hui (aucun changement de leur production ni de leurs plafonds), **et** leur ligne s'affiche désormais avec **la photo de l'utilisateur** (N1, N2, N6, N7) ou le **logo** (N3, N4 : la Miff entière). Elles **ne passent pas par le journal serveur**.
 
 ---
 
@@ -195,13 +198,13 @@ match /users/{uid}/notifications/{entryId} {
 - **Première synchronisation d'un appareil** (nouvel appareil, réinstallation, première mise à jour) : les lignes **de plus de 24 h arrivent déjà lues** (aucun point de cloche pour du passé) ; celles des dernières 24 h sont non lues.
 - **Lecture / suppression** : lire = local ; **supprimer une ligne ou « Tout effacer » = suppression locale + suppression serveur** (en lot, au mieux hors connexion).
 - **Types ajoutés** (noms provisoires) : `N9` (existe côté Android, à créer côté iOS), `N10` = alerte déclarée, `N11` = alerte terminée. **Hors périmètre des réglages** (comme N8 et C1 : `PERIMETER` / `allCases` à exclure ; tout `when` exhaustif le signalera à la compilation). **État `silent`** pour les lignes venues du journal (elles ne comptent pas dans les plafonds du tiroir).
-- **Écritures locales ajoutées** : **Android** : `onCircleAlert` écrit sa ligne (C2) ; `onCircleNews` utilise `entryId` quand il est présent (sinon la clé actuelle : compatibilité d'un serveur plus ancien). **iOS** : le crochet de premier plan est relié (C1/C3), le toucher d'un push inscrit et lit sa ligne, une synchronisation part à chaque retour au premier plan.
+- **Écritures locales ajoutées** : **Android** : `onCircleAlert` écrit sa ligne (C2) ; `onCircleNews` utilise `entryId` quand il est présent (sinon la clé actuelle : compatibilité d'un serveur plus ancien). **iOS [Décidé : obligatoire]** : l'app **traite enfin la réception d'un push au premier plan** pour `circle_update` **et** `circle_alert` (le crochet `onCircleNews` est relié, un équivalent existe pour l'alerte : la ligne est inscrite immédiatement avec son `entryId`, plus de push « avalé » sans trace) ; **le toucher** d'une notification de l'un ou l'autre type **ouvre le Feed de la Miff** (carte de l'auteur) et inscrit / lit sa ligne ; une synchronisation part à chaque retour au premier plan.
 - **Lignes déjà existantes (migration, §8.9)** : une ancienne ligne N9 d'Android porte l'identifiant de l'auteur **dans sa clé** (`n9|u|{auteur}|…`, `CircleNews.kt:198-215`) : sa photo est retrouvée sans rien migrer.
 
 ### 8.5 Affichage d'une ligne
 
 - **Mise en page [Défaut]** : `[point non lu] [avatar 40 dp / 40 pt, rond] [texte]` ; le texte, l'heure relative (« 14 h 05 », « hier », jour), le nom de la Miff **seulement si le compte en a plusieurs** : **inchangés**. Titre en gras si non lu (jamais la couleur seule).
-- **Avatar** : photo décodée (≤ 20 000 octets, jamais plus), sinon initiales sur disque de la couleur neutre du Feed, sinon (acteur inconnu, Miff, toi) **logo** ; pendant le chargement : disque neutre, **sans clignotement**.
+- **Avatar** : photo décodée (≤ 20 000 octets, jamais plus), sinon initiales sur disque de la couleur neutre du Feed, sinon (acteur inconnu ou parti, Miff entière) **logo** ; les lignes **N1, N2, N6, N7 affichent ta propre photo** (ou tes initiales), lue dans ton profil déjà chargé ; pendant le chargement : disque neutre, **sans clignotement**.
 - **Résolution de l'acteur** (`CenterFaces` Android, extension de `RequesterDirectory` iOS) : d'abord la mémoire du Feed (Miff active : **0 lecture**), sinon **un `get members/{uid}` par acteur distinct et par session** (cache Firestore de l'appareil, 5 min en mémoire, pas de boucle en cas d'échec) : au pire une dizaine de lectures à l'ouverture du centre. Nom et photo suivent la même source : jamais l'un sans l'autre.
 - **Alertes** : mêmes mots que le push (« {Prénom} a déclaré une alerte » / « a mis fin à son alerte », corps de `notif_alert_*`), **sans rouge ni icône d'alarme** dans le centre (le Feed porte déjà la couleur) ; ton calme.
 - **Toucher** : ferme le centre et ouvre le Feed de la Miff, sur la carte de la personne quand elle est connue (comportement actuel de N9 et de C1).
@@ -228,13 +231,13 @@ Hypothèses : Miff de 4 membres (3 destinataires), **2 publications par utilisat
 
 ### 8.8 Ce qui n'est pas fait en v1 (assumé)
 
-- **Pas de photo dans la notification du système** (écran verrouillé, tiroir). Android : possible plus tard avec la photo déjà en cache (grande icône) ; iOS : exigerait l'extension de service rejetée en §7. **[Question Q5]**
-- **Pas de regroupement** de plusieurs personnes (« 3 proches ont donné des nouvelles ») : une ligne par personne, avec sa photo. **[Question Q4]**
+- **Pas de photo dans la notification du système** (écran verrouillé, tiroir). Android : possible plus tard avec la photo déjà en cache (grande icône) ; iOS : exigerait l'extension de service rejetée en §7. **[Décidé : Q5, non en v1]**
+- **Pas de regroupement** de plusieurs personnes (« 3 proches ont donné des nouvelles ») : une ligne par personne, avec sa photo. **[Décidé : Q4]**
 - **Pas d'historique des mises à jour au-delà de la règle « 1 par heure et par auteur »** (C6) : le Feed reste la source de vérité.
 
 ### 8.9 Migration des utilisateurs existants
 
-Aucune migration de données : **pas de rétro-remplissage** (le journal commence au déploiement de la fonction). Ordre : **règles puis TTL, puis texte légal publié, puis fonctions, puis apps**. Une app ancienne ignore la clé `entryId` du message et le journal : **aucune régression**. Android : les anciennes lignes N9 gardent leur identifiant, la photo se retrouve via la clé. iOS : rien à migrer (aucune ligne n'existait). **Retour arrière** : redéployer la révision précédente des fonctions (les journaux déjà écrits expirent seuls en 30 jours ; les apps lisent un journal vide sans erreur).
+Aucune migration de données : **pas de rétro-remplissage** : **les notifications antérieures au déploiement de la fonction ne sont pas dans le journal** et n'apparaîtront jamais dans le centre si le téléphone ne les a pas déjà inscrites (impossible : le serveur n'a rien gardé). Le journal commence au déploiement. **Ordre de mise en ligne [Décidé]** : **1. règles + règle TTL `notifications.expireAt`** (le PM) → **2. texte légal publié** (site, par le PM) → **3. fonctions `notifierUpdate` et `notifierAlerte` redéployées** (le PM) → **4. app Android, puis 5. app iOS** (APK / TestFlight). Une app ancienne ignore la clé `entryId` du message et le journal : **aucune régression**. Android : les anciennes lignes N9 gardent leur identifiant, la photo se retrouve via la clé. iOS : rien à migrer (aucune ligne n'existait). **Retour arrière** : redéployer la révision précédente des fonctions (les journaux déjà écrits expirent seuls en 30 jours ; les apps lisent un journal vide sans erreur).
 
 ---
 
@@ -244,11 +247,15 @@ Une branche et une PR par plateforme, jamais de push direct sur `main`. **Déplo
 
 | # | Ticket | Contenu | Taille | Dépend de |
 |---|---|---|---|---|
+**Ordre de mise en ligne [Décidé]** : **règles + TTL → texte légal publié → fonctions redéployées → app Android → app iOS.** Le **développement** peut avancer en parallèle (CNC-L, CNC-B, CNC-J d'abord ; CNC-A puis CNC-I sur les émulateurs / CI), mais **rien n'est déployé** avant le « oui » explicite du PM pour chaque étape (le PM tape les commandes).
+
+| # | Ticket | Contenu | Taille | Dépend de |
+|---|---|---|---|---|
 | **CNC-L** | **Logo en avatar** (`design-system`, puis dev) | Avatar « logo Miff » rond (disque `#043CD1` + glyphe) en vectoriel Android (drawable) et iOS (forme existante), test de lisibilité à 40 dp / pt (le cœur), **confirmation des droits par le PM** | S | Aucune |
-| **CNC-B** | **Backend** (`backend-data`) | `data-model.md` §2.21 ; règle `notifications` + tests d'émulateur ; `entryId` dans les 2 messages ; écriture du journal **dans la transaction de réservation** de `notifierUpdate` et `notifierAlerte` ; tests (forme exacte du document, idempotence, atomicité avec la réservation, aucun journal pour un destinataire sans envoi) ; suppression de compte ; guide de déploiement (règles → TTL `notifications.expireAt` → fonctions) ; `surveillance-quotas.md` | M | Aucune ; **déployé après CNC-J publié** |
-| **CNC-J** | **Légal** (`release-manager`) | Politique de confidentialité FR/EN : art. 3 (journal serveur), 5, 7 (30 jours), 8 (effacement), 11 (le centre n'est plus « sans photo » : la photo est lue, pas stockée) ; registre des risques assumés (`docs/legal/README.md` §4) ; fiches des stores à contrôler (Data safety, App Privacy : probablement aucune nouvelle catégorie, **à vérifier**) ; publication du site par le PM | S | Aucune (en parallèle) ; **publié avant la mise en service de CNC-B** |
-| **CNC-A** | **Android** (`android-dev`) | Types `N10`/`N11` ; ligne d'alerte (C2) ; `entryId` ; synchronisation incrémentale ; avatar dans la ligne ; `CenterFaces` ; première synchronisation « lue si > 24 h » ; suppression serveur ; masquage Miff perdue ; purge | M | CNC-B (en ligne), CNC-L |
-| **CNC-I** | **iOS** (`ios-dev`) | Types `n9`/`n10`/`n11` ; **branchement du crochet de premier plan** (C1) ; **lecture de `circle_alert`** (premier plan, toucher → Feed, C3) ; `entryId` inscrit au toucher ; synchronisation incrémentale ; avatar ; `CenterFaces` ; suppression serveur ; purge. TestFlight sur l'iPhone 11 Pro | M | CNC-B, CNC-L ; coordination avec AD-I2 |
+| **CNC-B** | **Backend** (`backend-data`) | `data-model.md` §2.21 ; règle `notifications` + tests d'émulateur ; `entryId` dans les 2 messages ; écriture du journal **dans la transaction de réservation** de `notifierUpdate` et `notifierAlerte` ; tests (forme exacte du document, idempotence, atomicité avec la réservation, aucun journal pour un destinataire sans envoi) ; suppression de compte ; guide de déploiement (règles → TTL `notifications.expireAt` → fonctions) ; `surveillance-quotas.md` | M | Aucune (code) ; **règles + TTL déployés en 1er, fonctions redéployées APRÈS CNC-J publié** |
+| **CNC-J** | **Légal** (`release-manager`) | Politique de confidentialité FR/EN : art. 3 (journal serveur), 5, 7 (30 jours), 8 (effacement), 11 (le centre n'est plus « sans photo » : la photo est lue, pas stockée) ; registre des risques assumés (`docs/legal/README.md` §4) ; fiches des stores à contrôler (Data safety, App Privacy : probablement aucune nouvelle catégorie, **à vérifier**) ; publication du site par le PM | S | Aucune (en parallèle) ; **publié avant le redéploiement des fonctions** |
+| **CNC-A** | **Android** (`android-dev`) | Types `N10`/`N11` ; ligne d'alerte (C2) ; `entryId` ; synchronisation incrémentale ; avatar dans la ligne (photo de l'acteur, **ta photo pour N1, N2, N6, N7**, logo pour N3, N4 et l'inconnu) ; `CenterFaces` ; première synchronisation « lue si > 24 h » ; suppression serveur ; masquage Miff perdue ; purge | M | CNC-B (règles + fonctions en ligne pour la recette), CNC-L |
+| **CNC-I** | **iOS** (`ios-dev`) | Types `n9`/`n10`/`n11` ; **branchement de la réception au premier plan** de `circle_update` et `circle_alert` (C1, C3) ; **toucher d'un push d'alerte ou de nouvelles → Feed** ; `entryId` inscrit au toucher ; synchronisation incrémentale ; avatar (mêmes règles qu'Android) ; `CenterFaces` ; suppression serveur ; purge. TestFlight sur l'iPhone 11 Pro | M | CNC-B, CNC-L, **CNC-A mergé d'abord** (mêmes vecteurs) ; coordination avec AD-I2 |
 | **CNC-T** | **Traductions** (6 langues) | Libellé d'accessibilité du logo et toute phrase nouvelle ; parité Android / iOS (`i18n-keys.md`) ; tutoiement | XS | CNC-A / CNC-I |
 
 **Maquettes** : aucune existante pour un avatar dans le centre. **[Défaut]** : les développeurs reprennent la ligne actuelle et y ajoutent l'avatar (§8.5), et **listent leurs écarts dans la PR** (règle du PM du 2026-10-28) ; si le PM a une maquette, il dépose l'export PNG dans `design/exports/centre-notifications/` avant le début du développement.
@@ -268,7 +275,11 @@ Une branche et une PR par plateforme, jamais de push direct sur `main`. **Déplo
 
 **Photo et logo**
 - [ ] **CNC-8** Une ligne d'une personne affiche **sa photo de profil** ; sans photo, **ses initiales** ; photo > 20 000 octets ou illisible : initiales, **jamais décodée**.
-- [ ] **CNC-9** « Ta Miff est passée en orange / rouge » affiche le **logo Miff** ; acteur introuvable (parti, supprimé) : **logo + « Un proche »**, jamais un rond vide ; les rappels à soi (N1, N2, N6, N7) selon la décision Q2.
+- [ ] **CNC-9** « Ta Miff est passée en orange / rouge » (N3, N4) affiche le **logo Miff** ; acteur introuvable (parti, supprimé, fiche non lue) : **logo + « Un proche »**, jamais un rond vide.
+- [ ] **CNC-9 bis** **N1, N2, N6, N7 affichent la photo de l'utilisateur lui-même** (ses initiales s'il n'en a pas), lue dans son profil déjà chargé (**0 lecture de plus**) ; ces lignes restent **écrites localement comme aujourd'hui** (même clé, mêmes plafonds, même rétention), jamais dans le journal serveur.
+- [ ] **CNC-9 ter** **Une ligne par personne** : deux personnes qui donnent des nouvelles font deux lignes, chacune avec sa photo ; aucun regroupement en v1.
+- [ ] **CNC-9 quater** **iOS** : un push `circle_update` ou `circle_alert` reçu **au premier plan** inscrit sa ligne immédiatement (aucune trace perdue, aucune bannière) ; **toucher** la notification de l'un ou l'autre type **ouvre le Feed de la Miff** et lit la ligne.
+- [ ] **CNC-9 quinquies** **Rétroactivité** : les notifications **antérieures** au déploiement de la fonction **n'apparaissent pas** (aucun rétro-remplissage, aucune ligne inventée, aucun message d'erreur) ; la première synchronisation après la mise à jour n'ajoute que ce que le journal contient.
 - [ ] **CNC-10** Le nom et la photo d'une même ligne **viennent de la même source** et changent ensemble (un profil modifié se reflète à la prochaine résolution, sans rien réécrire dans le centre).
 - [ ] **CNC-11** L'avatar est **décoratif** pour le lecteur d'écran ; la ligne se lit en un élément ; texte agrandi et droite-à-gauche corrects ; cible ≥ 48 dp / 44 pt.
 - [ ] **CNC-12** Le **cœur du logo reste identifiable à 40 dp / pt** (sinon variante « avatar » plus grande).
@@ -291,31 +302,38 @@ Une branche et une PR par plateforme, jamais de push direct sur `main`. **Déplo
 - [ ] **CNC-23** Une app **ancienne** avec le serveur nouveau, et une app **nouvelle** avec un serveur ancien (sans `entryId`), fonctionnent comme aujourd'hui, sans erreur.
 - [ ] **CNC-24** Anciennes lignes N9 d'Android : photo retrouvée par l'identifiant contenu dans leur clé ; ligne sans auteur : logo.
 - [ ] **CNC-25** Textes FR, EN, ES, IT, PT, DE présents, **tutoiement**, aucune clé manquante (parité Android / iOS) ; ton calme, aucune ligne alarmiste.
-- [ ] **CNC-26** Politique de confidentialité mise à jour **et publiée avant** le déploiement de la fonction (CNC-J), sans prétendre à une relecture juridique.
+- [ ] **CNC-26** Politique de confidentialité mise à jour **et publiée avant** le redéploiement des fonctions (CNC-J), sans prétendre à une relecture juridique.
+- [ ] **CNC-27** **Ordre de mise en ligne respecté** : règles + TTL → texte légal publié → fonctions redéployées → Android → iOS ; chaque étape sur « oui » explicite du PM ; un `functions:list` / `functions:log` en lecture seule confirme chaque étape.
 
 ---
 
-## 11. Questions pour le PM (avec valeur par défaut)
+## 11. Décisions du PM, 2026-11-19
 
-La **seule bloquante** est **Q1** (elle touche vos engagements envers les utilisateurs). Les autres ont un défaut sûr : le développement peut avancer avec elles.
+Le PM a tranché les cinq questions. Elles sont **[Décidé]** et appliquées à la lettre par CNC-B, CNC-A, CNC-I.
 
-| # | Question | Défaut proposé |
+| # | Question | Décision (2026-11-19) |
 |---|---|---|
-| **Q1** *(bloquante)* | **Journal sur nos serveurs, 30 jours** : acceptez-vous qu'une trace de chaque notification envoyée (type, Miff, identifiant de la personne, date ; ni prénom, ni photo, ni lieu) soit gardée 30 jours sur Firebase, et que la politique de confidentialité le dise avant la mise en service ? Sans cela, **l'iPhone ne pourra jamais avoir tout dans le centre** (l'alternative iPhone serait une extension de service, lourde et non garantie). | **Oui** |
-| **Q2** | **Vos propres rappels** (« donne de tes nouvelles », « tu es passé orange / rouge », zone de danger, fin du mode voyage) : **logo Miff** ou **votre propre photo** ? | **Logo Miff** (c'est Miff qui vous parle ; votre visage n'ajoute rien) |
-| **Q3** | **Membre sans photo** : ses **initiales** (comme le Feed) ou le logo ? Et une personne **partie de la Miff** : logo + « Un proche » ? | **Initiales** ; parti = **logo + « Un proche »** |
-| **Q4** | **Plusieurs personnes** (ex. 3 proches ont donné des nouvelles dans l'heure) : une ligne **regroupée** avec le logo, ou **une ligne par personne** avec sa photo ? | **Une ligne par personne** en v1 ; le logo reste pour la Miff entière et l'inconnu |
-| **Q5** | **Photo dans la notification du système** (tiroir, écran verrouillé) ? | **Non en v1** (confidentialité à l'écran verrouillé ; iPhone exigerait l'extension) ; à rouvrir après la recette |
+| **Q1** | Journal sur nos serveurs, 30 jours | **OUI.** `users/{uid}/notifications/{entryId}` (30 jours, règle TTL posée par le PM), écrit par `notifierUpdate` et `notifierAlerte` dans leur transaction de réservation. **La politique de confidentialité mise à jour est publiée AVANT la mise en service.** |
+| **Q2** | Avatar de tes propres rappels (N1, N2, N6, N7) | **Ta propre photo** (initiales à défaut), **pas le logo**. Ces notifications restent écrites localement. |
+| **Q3** | Membre sans photo ; membre parti | **Initiales** ; membre parti ou acteur inconnu : **logo Miff + « Un proche »**. |
+| **Q4** | Plusieurs personnes | **Une ligne par personne** en v1, pas de regroupement. |
+| **Q5** | Photo dans la notification du système | **Non en v1.** |
+
+**Règle d'avatar finale** : une personne = sa photo (ou ses initiales) ; la Miff entière, plusieurs personnes (cas d'événements de Miff), un acteur inconnu ou parti = **logo Miff** (M + cœur sur disque `#043CD1`) ; ses propres rappels = **sa photo**.
+
+**Précisions demandées avec ces décisions** : (a) **rétroactivité** : les notifications antérieures au déploiement ne sont pas dans le journal (§8.9, CNC-9 quinquies) ; (b) **notifications locales N1 à N7** : elles restent écrites localement **et** s'affichent avec la photo de l'utilisateur (N1, N2, N6, N7) ou le logo (N3, N4) (§5.3, CNC-9 bis) ; (c) **iOS** doit enfin traiter la réception d'un push au premier plan (`circle_update`, `circle_alert`) et ouvrir le Feed au toucher (§8.4, CNC-9 quater, CNC-I).
 
 ---
 
 ## 12. Risques, risques assumés et limites dites
 
-**Risques assumés par le PM** (décision du 2026-10-23 : pas de relecture juridique ; textes rédigés par l'équipe, publiés sous sa responsabilité, jamais présentés comme relus) :
+**Risques assumés par le PM** (Q1 du 2026-11-19 pour le journal ; décision du 2026-10-23 : pas de relecture juridique ; textes rédigés par l'équipe, publiés sous sa responsabilité, jamais présentés comme relus) :
 - **A1** Une **nouvelle donnée personnelle côté serveur** (identifiants + date, 30 jours) alors que la politique actuelle décrit un centre « local » (`docs/legal/politique-confidentialite.fr.md:240`, `:289`) ; la mise à jour du texte précède la mise en service.
 - **A2** Après la suppression du compte d'un auteur, son **identifiant** reste jusqu'à 30 jours dans les journaux de ses anciens proches (pseudonyme, sans prénom ni photo) ; aucune purge croisée n'est possible sans fonction supplémentaire.
 - **A3** Les photos s'affichent dans **une liste de plus** : un tiers qui regarde l'écran déverrouillé les voit, comme dans le Feed.
 - **A4** **Droits du logo** non confirmés (`design/assets/logo/README.md` §1, §6.2) : ne bloque pas le code, bloque la publication si le PM ne les détient pas.
+- **A6** **Rétroactivité nulle** : les notifications d'avant le déploiement ne sont dans aucun journal ; un utilisateur qui en cherche une ancienne ne la trouvera pas si son téléphone ne l'avait pas inscrite (décision du 2026-11-19).
+- **A7** **Ta propre photo dans tes rappels** (N1, N2, N6, N7) : un tiers qui regarde l'écran déverrouillé voit ton visage dans une liste de plus (même exposition que le Feed et le Profil).
 - **A5** Le consentement de localisation v3 dans l'app dit encore « pas d'historique » (J65 du registre) : ce ticket **ne le corrige pas** (ticket séparé déjà prévu).
 
 **Limites connues, dites** :
@@ -330,7 +348,7 @@ La **seule bloquante** est **Q1** (elle touche vos engagements envers les utilis
 ## 13. Plan de test
 
 - **Backend (émulateur Firestore + faux client FCM)** : forme exacte du document ; id déterministe ; idempotence (événement rejoué) ; atomicité avec `notifState` ; aucun journal sans envoi ; alerte début/fin (mêmes destinataires que l'envoi) ; plafond horaire ; suite de règles : propriétaire (get, list ≤ 100, delete), autre utilisateur, créateur, membre, anonyme, create / update refusés, `limit` > 100 refusé ; garde-coûts inchangé ; `npm test` de `backend/` et `functions/`.
-- **Suite commune Android / iOS** (mêmes vecteurs, mêmes résultats) : `(type, acteur) → image + texte`, 12 vecteurs : N9 photo / initiales / inconnu ; alerte début, fin ; C1 ; N8 ; N3, N4 → logo ; N1, N2, N6, N7 (selon Q2) ; photo > 20 000 octets → initiales ; fusion sans doublon (push puis journal, journal puis push) ; curseur et recouvrement de 2 min ; première synchronisation (> 24 h lues) ; migration d'une ancienne clé N9.
+- **Suite commune Android / iOS** (mêmes vecteurs, mêmes résultats) : `(type, acteur) → image + texte`, 12 vecteurs : N9 photo / initiales / inconnu ; alerte début, fin ; C1 ; N8 ; N3, N4 → logo ; N1, N2, N6, N7 (ta photo, ou tes initiales) ; photo > 20 000 octets → initiales ; fusion sans doublon (push puis journal, journal puis push) ; curseur et recouvrement de 2 min ; première synchronisation (> 24 h lues) ; migration d'une ancienne clé N9.
 - **Recette PM (2 comptes, OPPO + iPhone 11 Pro)** : publier de chaque téléphone vers l'autre, app ouverte / en arrière-plan / fermée / mode avion 3 h ; déclarer et terminer une alerte ; effacer une ligne puis réinstaller ; vérifier la lisibilité du logo à 40 dp.
 - **CI iOS** : captures (`ci/…`) et tests Swift à relancer en CI cloud (aucune compilation locale sur ce poste).
 
@@ -338,6 +356,6 @@ La **seule bloquante** est **Q1** (elle touche vos engagements envers les utilis
 
 ## 14. Hors périmètre
 
-Photo dans la notification du système (Q5) ; regroupement de plusieurs personnes (Q4) ; réglage de rétention ; export de l'historique ; accusés de réception ; notification au créateur d'une demande de lieu par push (N8 reste une ligne seule) ; correction du consentement v3 (A5) ; nouvelle fonction planifiée de purge ; changement des seuils orange / rouge ; modification des textes des notifications existantes. **Rien dans Notion, Figma ni Firebase n'a été modifié par ce document.**
+Photo dans la notification du système (Q5, décidé : non en v1) ; regroupement de plusieurs personnes (Q4, décidé : non en v1) ; réglage de rétention ; export de l'historique ; accusés de réception ; notification au créateur d'une demande de lieu par push (N8 reste une ligne seule) ; correction du consentement v3 (A5) ; nouvelle fonction planifiée de purge ; changement des seuils orange / rouge ; modification des textes des notifications existantes. **Rien dans Notion, Figma ni Firebase n'a été modifié par ce document.**
 
 *Ce document ne modifie ni le code, ni les règles, ni les fonctions. Aucun texte légal n'y est rédigé comme définitif ni présenté comme relu par un juriste.*
