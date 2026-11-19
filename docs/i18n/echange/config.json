@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "tailleLot": 100,
+  "gel": {
+    "prefixes": ["consent3_", "miff_consent", "alert_", "notif_alert_", "notif_centre", "feed_place_"],
+    "cles": []
+  },
+  "sensibles": {
+    "motifs": [
+      "^permission_", "^ios_permission_", "^settings_privacy_location_", "^update_notice_location_off$", "^feed_refresh_position_unavailable$",
+      "^consent3_", "^miff_consent", "^miff_renewal_", "^miff_waiting_", "^auth_consent_notice$", "^auth_panel_notice$", "^settings_privacy_analytics_", "^miff_sharing_",
+      "^notif_",
+      "^auth_error_", "^miff_message_", "_error", "_unavailable$", "^feed_offline_", "^settings_delete_failed",
+      "^feed_bubble_", "^feed_label_", "^feed_colors_", "^countdown_", "^feed_time_", "^feed_locate_",
+      "^paywall_", "^place_paywall_", "^settings_subscription_",
+      "^settings_delete_", "^miff_delete_", "^miff_leave_", "^miff_remove_",
+      "^alert_"
+    ]
+  },
+  "internes": {
+    "motifs": ["^diag_", "^ios_diag_", "^android_diag_"]
+  },
+  "motifs": {
+    "feed_time_pattern_24": { "es": "HH:mm", "it": "HH:mm", "pt": "HH:mm", "de": "HH:mm" },
+    "feed_time_pattern_12": { "es": "h:mm a", "it": "h:mm a", "pt": "h:mm a", "de": "h:mm a" },
+    "feed_date_pattern": { "es": "d MMM", "it": "d MMM", "pt": "d MMM", "de": "d. MMM" }
+  },
+  "invariables": {
+    "cles": [],
+    "parLangue": {}
+  }
+}

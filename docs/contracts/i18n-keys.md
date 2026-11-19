@@ -71,5 +71,18 @@ Les clés `ios_` et `android_` sont ignorées par le contrôle de parité. Un pr
 1. Ajouter la clé **dans les deux fichiers sources français** dans la même PR (ou la même série de PR, si Android précède iOS : le contrôle de parité n'est alors actif que lorsque les deux fichiers existent ; dès qu'ils existent tous les deux, une clé ajoutée d'un seul côté fait échouer la CI).
 2. Ajouter la traduction anglaise (langue `required` : une clé sans anglais fait échouer la CI).
 3. **Règle permanente : toute nouvelle clé arrive dans toutes les langues `required` du registre, dans la PR qui l'introduit.** Aujourd'hui `fr` et `en` ; **dès que `es`, `it`, `pt` et `de` sont toutes `required`, dans les six langues**, y compris dans les PR de fonctionnalité, en suivant le glossaire. Tant qu'une langue est `planned`, la CI affiche seulement le décompte de ses clés manquantes. Détail et marche à suivre : `docs/contracts/i18n-languages.md`.
-4. **Clé commune aux deux plateformes** (dès les langues `required`) : la traduire **une seule fois** et copier la même valeur dans Android et iOS (mêmes valeurs insérées, mêmes pluriels). Le fichier d'échange qui porte ces traductions pour la traduction en masse (lot 4 du ticket `docs/tickets/traduction-es-it-pt-de.md`) **n'existe pas encore** : la section est à compléter par la PR qui le crée.
+4. **Clé commune aux deux plateformes** (dès les langues `required`) : la traduire **une seule fois** et copier la même valeur dans Android et iOS (mêmes valeurs insérées, mêmes pluriels). Pour la traduction en masse (lot 4 du ticket `docs/tickets/traduction-es-it-pt-de.md`), cette valeur unique vit dans le **fichier d'échange** (section « Fichier d'échange » ci-dessous) ; pour une clé ajoutée après la traduction en masse, la même valeur est écrite à la main dans les deux apps, ou ajoutée au fichier d'échange de la langue puis réinjectée par le script.
 5. Ne jamais renommer une clé sans la renommer partout (toutes langues, Android et iOS).
+
+## Fichier d'échange (traduction en masse, lot 4)
+
+Pour traduire **une seule fois** les textes communs à Android et iOS, un script extrait les deux apps dans un fichier unique et réinjecte les traductions dans les deux apps : `scripts/i18n-exchange.mjs` (tests : `scripts/tests/i18n-exchange.test.mjs`). Marche à suivre complète : `docs/i18n/procedure-lot4.md`.
+
+| Fichier (dans `docs/i18n/echange/`) | Contenu |
+|---|---|
+| `source-fr-en.json` | Une entrée par **clé commune** : français, anglais, type (texte ou pluriel), valeurs insérées, contexte (légende de section d'Android, fichiers de code), longueur maximale conseillée, drapeau `gele` (clé en mouvement : PR ouverte ou famille en cours de réécriture) |
+| `propres-android.json`, `propres-ios.json` | Les clés `android_*`, `ios_*` et les 4 entrées d'`InfoPlist.xcstrings` (iOS) |
+| `traduction-<langue>.json` | Les traductions d'une langue : `{"langue": "es", "traductions": {"<clé>": "texte" ou {"one": "…", "other": "…"}}}` |
+| `config.json`, `gel-prs.json` | Réglages (préfixes gelés, familles sensibles, motifs de format imposés) et instantané des clés touchées par les PR ouvertes |
+
+Règles pour une clé commune : **notation Android** des valeurs insérées dans le fichier d'échange (`%1$s`, `%2$d` ; le script écrit `%@` et `%lld` côté iOS) ; le texte est écrit **tel qu'il s'affiche** (jamais `&amp;`, jamais `'`), le script encode pour Android ; jamais de modification du français ni de l'anglais par ce script. Quand un texte français **diffère** entre Android et iOS (13 clés au 2026-11-19, surtout l'écran de diagnostic), l'entrée porte `divergent` et la traduction est un objet `{"android": …, "ios": …}`. Une PR qui ajoute ou modifie un texte français **n'a pas** à régénérer `source-fr-en.json` : il est régénéré au gel du lot 4 (`node scripts/i18n-exchange.mjs extraire`).
