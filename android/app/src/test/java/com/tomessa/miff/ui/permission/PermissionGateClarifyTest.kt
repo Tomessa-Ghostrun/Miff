@@ -165,6 +165,27 @@ class PermissionGateClarifyTest {
             assertEquals(listOf(listOf(MIFF_ID)), renewals.renewed)
         }
 
+    @Test
+    fun afterNotNowOnTheBlockingScreen_theCalmCardIsNotChained_inTheSameLaunch() =
+        runTest {
+            renewals.check =
+                ConsentRenewalCheck.Due(
+                    listOf(RenewalMiff(MIFF_ID, "Chez nous")),
+                    listOf(RenewalMiff(OTHER_MIFF_ID, "Amis")),
+                )
+            val phone = Phone(full)
+            val model = vm(phone)
+            advanceUntilIdle()
+            assertEquals(GateScreen.RENEWAL, model.uiState.value.screen)
+            model.onRenewalPutOff()
+            assertEquals(GateScreen.NONE, model.uiState.value.screen)
+            assertEquals("not counted: it was never shown", 0, counts.shownCount(uid))
+            // Next launch: the blocking screen comes back first, as before.
+            val next = vm(phone)
+            advanceUntilIdle()
+            assertEquals(GateScreen.RENEWAL, next.uiState.value.screen)
+        }
+
     // --- The buttons -----------------------------------------------------------------------------------------------------
 
     @Test

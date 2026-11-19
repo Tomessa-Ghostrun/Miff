@@ -8,6 +8,11 @@ Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les 
 
 Ticket `docs/tickets/consentement-localisation-historique.md` (PR #280), décisions du PM du 2026-11-19 (option D, section 0 : elles priment). Branche `android/consentement-v4`, PR brouillon. **Coût ajouté : 0 €** (aucun service, aucune bibliothèque, aucune écriture serveur de plus). **`backend/` n'est pas touché : aucune règle ne change, aucun déploiement** : les règles acceptent toujours « 03 ou plus » (position et photo). Les builds en version 3 continuent de fonctionner.
 
+### À savoir avant de fusionner et de publier
+- **Ne pas lancer de TestFlight entre la fusion de cette PR et celle de CONS-4-I (iOS)** : le catalogue iOS contient déjà les textes v4, mais la constante iOS reste `2026-11-v03` (un compte iOS verrait le texte v4 en enregistrant v03).
+- **Le mois de la constante est celui de la mise en service** : si la livraison passe en décembre, renommer `2026-11-v04` en `2026-12-v04` en Android ET iOS, avec les tests (le numéro 04 ne change pas).
+- Retouches de revue : la carte « Une précision » dit « l'endroit de ta photo, **lisible** pendant 24 h » (le document peut rester jusqu'au nettoyage ; seule la lisibilité est limitée à 24 h) ; après « Pas maintenant » sur l'écran bloquant, la carte calme n'est pas enchaînée dans le même lancement.
+
 ### Pourquoi
 Le texte de consentement v3 disait « pas d'historique de trajets » alors que le téléphone tient un journal local de présence (35 jours, jamais envoyé) ; il ne citait pas non plus l'endroit de la photo. Une phrase de consentement modifiée = un numéro de version de plus (sinon la preuve de ce que la personne a vu est perdue) : constante `2026-11-v04`.
 
