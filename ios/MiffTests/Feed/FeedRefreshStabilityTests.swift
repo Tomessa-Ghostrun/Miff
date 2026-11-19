@@ -102,7 +102,7 @@ final class FeedRefreshSourcesTests: XCTestCase {
         XCTAssertFalse(layout.contains("@StateObject private var pullModel"))
         XCTAssertTrue(indicator.contains(".zIndex(100)"), "z élevé")
         XCTAssertTrue(indicator.contains(".allowsHitTesting(false)"), "jamais un obstacle pour le doigt")
-        XCTAssertTrue(indicator.contains("headerHeight + Spacing.sm"), "juste SOUS l'en-tête, jamais masqué par lui")
+        XCTAssertTrue(indicator.contains("headerBottom + Spacing.sm"), "juste SOUS l'en-tête, jamais masqué par lui")
         XCTAssertTrue(indicator.contains("Circle().fill(colorBgSurface.color)"), "une pastille lisible sur n'importe quel fond")
         XCTAssertTrue(indicator.contains("Circle().stroke(colorBorderStrong.color"), "un contour : lisible aussi sur un fond clair")
         XCTAssertTrue(indicator.contains("reduceMotion ? nil"), "« Réduire les animations » est lu")

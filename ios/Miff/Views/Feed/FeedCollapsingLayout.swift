@@ -91,7 +91,9 @@ struct FeedCollapsingLayout<Content: View>: View {
             // l'en-tête est caché (comme Android, qui coupe le contenu à la zone sûre).
             colorBgCanvas.color.ignoresSafeArea(edges: .top).frame(height: 0)
             headerView
-            FeedPullIndicator(model: pullModel, refreshing: refreshing, forced: pullPreview, headerHeight: headerHeight)
+            FeedPullIndicator(
+                model: pullModel, refreshing: refreshing, forced: pullPreview, headerBottom: headerRestBottom ?? headerHeight
+            )
         }
         .background(colorBgCanvas.color.ignoresSafeArea())
         .onPreferenceChange(HeaderHeightKey.self) { height in

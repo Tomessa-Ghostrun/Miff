@@ -60,7 +60,7 @@ enum FeedPullIndicatorMetrics {
     static let size: CGFloat = 44
     static let ring: CGFloat = 3
     static let fadeSeconds: Double = 0.12
-    /// La pastille descend un peu avec le tirage (au plus ceci) : elle suit le doigt sans quitter l'écran.
+    /// La pastille descend un peu avec le tirage (au plus ceci) : elle suit le doigt ; la roue, elle, est posée sans décalage.
     static let followPoints: CGFloat = 14
 }
 
@@ -70,8 +70,9 @@ struct FeedPullIndicator: View {
     let refreshing: Bool
     /// Les captures de la CI forcent un état (nil : l'état réel).
     let forced: FeedPullIndicatorState?
-    /// Le bas de l'en-tête : la pastille se pose juste dessous.
-    let headerHeight: CGFloat
+    /// Le bas de l'en-tête AU REPOS, dans la fenêtre (`HeaderRestBottomKey`) : la pastille se pose juste dessous. CAUSE trouvée sur la capture de CI : la hauteur
+    /// de l'en-tête seule ne comptait pas la zone sûre du haut, la pastille tombait sur le logo. Le conteneur ignore la zone sûre : ses points sont ceux de la fenêtre.
+    let headerBottom: CGFloat
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var state: FeedPullIndicatorState {
@@ -85,11 +86,12 @@ struct FeedPullIndicator: View {
         ZStack(alignment: .top) {
             if state.isShown {
                 pill
-                    .padding(.top, headerHeight + Spacing.sm + follow)
+                    .padding(.top, headerBottom + Spacing.sm + follow)
                     .transition(.opacity)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .ignoresSafeArea(edges: .top)
         .animation(reduceMotion ? nil : .easeOut(duration: FeedPullIndicatorMetrics.fadeSeconds), value: state.isShown)
         .allowsHitTesting(false)
         .accessibilityHidden(true)
@@ -100,7 +102,7 @@ struct FeedPullIndicator: View {
         if case .pulling(let progress) = state {
             return CGFloat(progress) * FeedPullIndicatorMetrics.followPoints
         }
-        return FeedPullIndicatorMetrics.followPoints
+        return 0
     }
 
     private var pill: some View {
