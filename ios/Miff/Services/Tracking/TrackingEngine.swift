@@ -28,6 +28,9 @@ struct TrackingDependencies {
     /// Qui tient la session du compte : les écritures ne partent qu'avec son identifiant.
     let device: ActiveDevice
     var journal: DetectionJournal = NoDetectionJournal()
+    /// TIME-3 : le journal LOCAL des changements de présence (répartition du temps du Profil). Actif en publication ; ne reçoit que des
+    /// identifiants et des heures ; ne quitte jamais le téléphone. Distinct de `journal` ci-dessus (outil de recette des builds de test).
+    var history: PresenceHistory = NoPresenceHistory()
     var timeoutSeconds: TimeInterval = 15
     /// Monte à chaque fin de session (`SessionManager.generation`) : ce que `stop()` a arrêté reste arrêté jusqu'à ce qu'elle change.
     var generation: () -> Int = { 0 }
@@ -126,6 +129,10 @@ final class TrackingEngine {
         deps.journal
     }
 
+    var history: PresenceHistory {
+        deps.history
+    }
+
     // MARK: - Entrées (sérialisées)
 
     /// L'app est passée au premier plan ou en arrière-plan, le système a signalé un déplacement, le partage ou les autorisations ont changé.
@@ -186,6 +193,12 @@ final class TrackingEngine {
         markStopped()
         await serialized {
             await self.doStop()
+            // TIME-3 : déconnexion, suppression du compte, session perdue : le journal des changements de présence part avec le reste.
+            // Seulement ICI (fin de session voulue), jamais dans `doStop` : celui-ci sert aussi quand « personne n'est connecté » est constaté
+            // à un réveil (téléphone redémarré, pas encore déverrouillé : le Trousseau est illisible), et un historique qu'on ne peut pas
+            // reconstruire n'est pas effacé sur une simple supposition. Une fin de session interrompue est rattrapée à la prochaine
+            // déconnexion ou par la copie d'un autre compte (`stateFor`).
+            self.history.clearAll()
         }
     }
 
@@ -294,6 +307,8 @@ final class TrackingEngine {
             return loaded
         }
         deps.local.clear()
+        // La copie d'un autre compte part avec son journal de présence (jamais lu par le compte suivant).
+        history.clearAll()
         return nil
     }
 
@@ -305,7 +320,10 @@ final class TrackingEngine {
         await stopMovement()
         journal.record(.disarmed)
         var next = state
+        let now = env.nowMillis()
         for miffId in state.miffs.keys {
+            // TIME-3 : le suivi s'arrête (autorisation retirée, partage ou consentement perdu) : le temps qui suit est non mesuré.
+            noteUnknown(miffId, at: now)
             next.update(miffId) { $0.resetDetection() }
         }
         next.inside = [:]

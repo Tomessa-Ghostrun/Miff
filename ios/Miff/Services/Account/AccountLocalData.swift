@@ -12,6 +12,9 @@ struct AccountLocalStores {
     let trackingLocal: TrackingLocalStore
     /// Le journal local de la détection (builds Debug et Internal seulement ; rien en publication) : même raison.
     let detectionJournal: DetectionJournal
+    /// TIME-3 : le journal local des changements de présence (répartition du temps du Profil) : déjà effacé par l'arrêt du suivi, mais cet arrêt
+    /// est borné à 5 s ; la suppression l'efface aussi DIRECTEMENT. La MÊME instance que celle du suivi (elle garde le contenu en mémoire).
+    let presenceHistory: PresenceHistory
     /// NOTIF-P0 : le centre de notifications, les choix de Réglages > Notifications et la carte « deuxième chance » de ce compte.
     let notificationData: NotificationLocalData
     /// Le carnet de l'Update (`update-ledger.json`) : la note de la photo envoyée par ce compte. La MÊME instance que celle de l'Update
@@ -46,6 +49,8 @@ enum AccountLocalData {
             // La copie locale du suivi et le journal de détection, directement.
             { _ in stores.trackingLocal.clear() },
             { _ in stores.detectionJournal.clear() },
+            // Le journal des changements de présence (répartition du temps) et le choix de fenêtre : tout, fichier compris.
+            { _ in stores.presenceHistory.clearAll() },
             // Le centre de notifications, les choix de Réglages > Notifications et la carte « deuxième chance » (NOTIF-P0).
             { uid in stores.notificationData.eraseAccount(uid: uid) },
             // La note de la photo de l'Update de CE compte (la déconnexion simple, elle, la garde : la photo reste en base).

@@ -64,6 +64,9 @@ struct ScreenPreview: View {
         case _ where name.hasPrefix("place-"):
             // Les lieux de confiance (formulaire, liste, détail, offre) : voir `PlaceScreenPreview`.
             PlaceScreenPreview(name: name)
+        case _ where name.hasPrefix("timeshare-"):
+            // La carte « Répartition du temps » du Profil dans ses états : voir `TimeShareScreenPreview`.
+            TimeShareScreenPreview(name: name)
         case _ where name.hasPrefix("lang-"):
             // Réglages et Réglages > Langue : voir `LanguageScreenPreview`.
             LanguageScreenPreview(name: name)
