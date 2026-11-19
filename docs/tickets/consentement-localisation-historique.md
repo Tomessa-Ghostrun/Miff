@@ -1,6 +1,6 @@
 # Ticket : texte de consentement à la localisation et journal local du temps (risque J65), version 4 du consentement (CONS-4)
 
-**Statut** : **proposition de l'agent `product-specs`, avec défauts recommandés** ; le PM a délégué la rédaction, seules les questions du §11 attendent une réponse. Aucun développement lancé, aucun statut Notion modifié, aucun coût, aucun déploiement.
+**Statut** : **décisions du PM prises le 2026-11-19 (§0) ; spec prête pour le développement** (option D, version `2026-11-v04`). Rédigée par l'agent `product-specs` avec défauts recommandés, puis mise à jour des décisions du PM. Aucun développement lancé à la date de rédaction, aucun statut Notion modifié, aucun coût, aucun déploiement.
 **Rédigé le** : 2026-11-19, sur `origin/main` au commit `424e858a` (PR #278, textes légaux 1.1). Copie de travail propre `C:\dev\miff-docs-consentement` ; le dossier `C:\dev\miff` local est périmé et la copie `C:\dev\miff-main-ro` est un cran en arrière (`c492e250`, PR #246) : elles n'ont pas servi de référence.
 **Demande** : corriger l'écart **J65** (`docs/legal/README.md` §4) : le texte de consentement affiché dans l'app (« version 3 ») dit « pas d'historique de trajets » / « pas d'historique », alors que l'app tient, depuis le graphique « Répartition de ton temps », un **journal local de présence** (35 jours, sur le téléphone, jamais envoyé, sans coordonnée ni nom de lieu, exclu des sauvegardes), et que les textes légaux 1.1 précisent « sur ses serveurs ».
 
@@ -8,14 +8,31 @@
 
 ---
 
+## 0. Décisions du PM du 2026-11-19 (elles priment sur tout le reste du document)
+
+| # | Question | Décision | Conséquence dans ce ticket |
+|---|---|---|---|
+| Q1 | Exiger la v4 avant de publier une photo avec son endroit ? | **NON.** | **Le seuil des règles photo reste inchangé (NN ≥ 03, `isPhotoLocationConsentVersion`).** Le lot **CONS-4-R (règles) est supprimé** : aucune modification de `backend/`, aucun déploiement de règles, pas de `coversPhotoPlace` dans les apps. **J66 devient un risque assumé par le PM** (§13, R1). |
+| Q2 | Comptes déjà en v3 : confirmation calme ou re-demande bloquante ? | **Confirmation calme** (option D). | Carte « Une précision sur ce que tu partages », **sans pause de la position ni du statut**, **au plus 3 fois**, puis seulement dans Réglages > Confidentialité (§6.2). |
+| Q3 | Ajouter les deux lignes courtes à l'écran de consentement et à la divulgation Android ? | **OUI.** | Lignes « L'endroit de ta photo » et « Sur ton téléphone seulement » (§7.1) sur la carte de consentement, et ligne « Pour toi seul(e) » sur la divulgation Android et iOS (§7.2). **La ligne du journal local ne se retire pas**, même si le design juge l'écran dense. |
+| — | Option retenue | **D**, version **`2026-11-v04`** | La v4 s'applique aux **comptes neufs** (carte v4 à l'entrée dans une Miff) et aux **re-consentements bloquants des comptes en v1 ou v2**. Les comptes en v3 gardent leur consentement (position, statut **et photo**) sans pause. |
+| — | **J65** | **Clos par ce ticket** | Texte corrigé + version 4. À écrire dans `docs/legal/README.md` par CONS-4-L. |
+| — | **Ordre** | CONS-4-A (Android) → CONS-4-I (iOS) → CONS-4-L (légal : politique 1.2 FR/EN à publier) ; CONS-4-T (i18n) **avant** la traduction en masse | §9 |
+
+**Ce que la décision Q1 implique, dit sans l'adoucir** : un compte resté en v3 peut publier une photo avec son endroit sous un texte de consentement (v3) qui ne citait pas cet endroit. Ce n'est pas bloqué ; il est dit **à la prise de vue** (aperçu de l'Update, texte d'usage de la caméra iOS) et, pour tous, dans la carte « Une précision » et la politique. **Risque assumé par le PM (J66)**, jamais présenté comme un consentement à l'endroit de la photo.
+
+---
+
 ## 1. Résumé pour le PM
 
+> Les points 2 à 6 ci-dessous décrivaient la proposition ; **le §0 les corrige** (pas de lot règles, photo non exigée en v4, décisions prises).
+
 1. **Le problème est réel mais petit, et il est double.** (a) Six textes de l'app disent « pas d'historique » de façon absolue, alors qu'un journal local existe (§3). (b) En vérifiant, on a trouvé un **second écart, plus ancien** : le texte de consentement v3 **tel qu'il est dans les apps ne cite pas l'endroit de la photo**, alors que la politique publiée (art. 3 et 4) dit que la version 3 « les décrit ». L'amendement du 2026-11-06 n'a jamais été appliqué aux chaînes `miff_consent3_*` (§3.2).
-2. **Recommandation : option D, une nouvelle version `2026-11-v04` du consentement**, qui corrige les deux écarts d'un coup, **sans bloquer personne** pour la position et le statut (les comptes en v3 continuent comme avant, un écran calme leur demande de « confirmer »), et qui **exige la v4 seulement avant de publier une photo** (§5, §6).
+2. **Recommandation : option D, une nouvelle version `2026-11-v04` du consentement**, qui corrige les deux écarts d'un coup, **sans bloquer personne** pour la position et le statut (les comptes en v3 continuent comme avant, un écran calme leur demande de « confirmer »), et **sans exiger la v4 pour publier une photo** (décision Q1 du PM : l'écart J66 est un risque assumé) (§5, §6).
 3. **Pourquoi pas seulement corriger le texte (A et C)** : notre propre règle dit « un texte modifié = un numéro de plus, jamais deux textes sous la même version » (`consentement-localisation-v3.md` §2). Garder « v03 » pour un texte différent détruit la preuve de ce que la personne a vu (RGPD art. 7 §1 : savoir démontrer le consentement). L'exception du 2026-11-06 reposait sur « personne d'extérieur n'a accepté la v3 » : **non vérifiable par l'agent** et fausse dès qu'un testeur a accepté (TestFlight en est au build 38).
 4. **Pourquoi pas une re-demande bloquante pour tous (B)** : le traitement côté serveur ne change pas (une dernière position, effacée à l'arrêt) ; on **précise** l'information, on n'ajoute pas de finalité. Bloquer la position de chaque testeur pour une précision serait disproportionné et contraire à « parcours courts, peu de friction ».
-5. **Coût** : petit à moyen. 2 PR de code (Android, iOS) de taille voisine, 1 PR règles (une ligne, un test, une mutation), 1 PR documents (textes légaux 1.2, stores, i18n). **0 € de service.** Traduction es/it/pt/de : à faire **après** ce ticket, pas avant (§9).
-6. **Questions pour le PM : 3, chacune avec son défaut** (§11). Rien ne bloque la rédaction ni la revue.
+5. **Coût** : petit à moyen. 2 PR de code (Android, iOS) de taille voisine, 1 PR documents (textes légaux 1.2, stores, i18n). **Aucune PR règles** (décision Q1). **0 € de service.** Traduction es/it/pt/de : à faire **après** ce ticket, pas avant (§9).
+6. **Les 3 questions ont reçu une réponse le 2026-11-19** (§0, §11).
 
 ---
 
@@ -125,24 +142,24 @@ Remarque : la clé de version `consent3` désigne le **préfixe historique** des
 
 Légende des colonnes : **RGPD** = art. 7 (consentement démontrable, éclairé, spécifique) et art. 12 à 13 (information transparente) [À vérifier : lecture du texte du règlement, non confirmée par un juriste] ; **Apple** = guidelines 5.1.1 (collecte et stockage, textes d'usage « complets ») et 5.1.2 (utilisation) ; **Google** = règle « User Data » : divulgation en vue (« prominent disclosure ») exacte avant la demande de localisation en arrière-plan, et section « Data safety » exacte [À vérifier sur les pages Apple et Google avant soumission, lues pour la dernière fois le 2026-11-17 dans `journal-local-temps-declarations.md` §1 et §2].
 
-| | **A. Corriger le texte seulement, version v03 inchangée** | **B. Version v4 + re-demande bloquante à tous** | **C. Corriger le texte + information non bloquante, sans nouvelle acceptation** | **D. v4 + confirmation non bloquante (position) + v4 exigée pour la photo (recommandée)** |
+| | **A. Corriger le texte seulement, version v03 inchangée** | **B. Version v4 + re-demande bloquante à tous** | **C. Corriger le texte + information non bloquante, sans nouvelle acceptation** | **D. v4 + confirmation non bloquante pour les comptes en v3 (RETENUE par le PM le 2026-11-19)** |
 |---|---|---|---|---|
-| Principe | on réécrit `miff_consent3_*` et on garde « 2026-11-v03 » | constante `2026-11-v04` ; seuil de la position relevé à 04 ; comptes en v3 mis en pause jusqu'à acceptation | texte corrigé, constante inchangée ; une bulle « Ce qui change » (lecture seule) | constante `2026-11-v04` ; écran calme « Une précision » pour les comptes en v3 ; **seul l'endroit de la photo** exige la v4 |
+| Principe | on réécrit `miff_consent3_*` et on garde « 2026-11-v03 » | constante `2026-11-v04` ; seuil de la position relevé à 04 ; comptes en v3 mis en pause jusqu'à acceptation | texte corrigé, constante inchangée ; une bulle « Ce qui change » (lecture seule) | constante `2026-11-v04` pour les comptes neufs et les re-consentements v1/v2 ; écran calme « Une précision » pour les comptes en v3 ; **aucun seuil de règle relevé** (décision Q1) |
 | Preuve de consentement (RGPD 7 §1) | **dégradée** : « v03 » désigne deux textes (celui du build 38 et le nouveau) ; contraire à la règle du dépôt | **la meilleure** : chaque compte a la v4 ou est en pause | dégradée comme A (la bulle n'enregistre rien) | **bonne** : la v4 enregistrée = la personne a vu le texte exact ; v3 = ancien texte, connu et archivé |
 | Information transparente (art. 12-13) | texte juste, mais les comptes existants ne savent pas qu'il a changé | juste, avec acceptation | juste, avec information | juste, avec information **et** acceptation facultative |
-| Apple (5.1.1 / 5.1.2, textes d'usage) | texte d'usage à compléter ; risque faible | idem | idem | idem ; **la photo localisée est couverte par un accord au bon texte** |
+| Apple (5.1.1 / 5.1.2, textes d'usage) | texte d'usage à compléter ; risque faible | idem | idem | idem ; l'endroit de la photo est dit dans le texte d'usage, dans la carte v4 et à la prise de vue |
 | Google (divulgation, Data safety) | divulgation exacte ; Data safety inchangée (le journal n'est pas « collecté ») | idem | idem | idem |
 | Risque de rejet par un store | faible (les stores lisent le texte courant, pas la version) | faible | faible | faible |
-| Impact sur les comptes existants | aucun | **pause du partage** des comptes en v3 jusqu'au clic : friction, risque de refus, **inquiétude** (« Miff ne met plus à jour ton statut ») | aucun | un écran, **sans pause** de la position ; une demande d'accord avant la **prochaine photo** |
-| Coût | le plus bas (chaînes seules) | **le plus haut** : règles (seuil position), déploiement dans le bon ordre, traitement du décalage « pause affichée / pas de pause réelle » (§3.3), tests des deux plateformes | bas (chaînes + une bulle) | moyen : chaînes, constante, un écran réutilisé, un seuil de règle pour la photo |
-| Cohérence avec la politique 1.1 (« version 3 ou plus récente qui les décrit ») | **fausse** pour l'endroit de la photo (v3 ne le dit pas) | vraie | **fausse** pour l'endroit de la photo | **vraie** (la photo exige la v4) |
+| Impact sur les comptes existants | aucun | **pause du partage** des comptes en v3 jusqu'au clic : friction, risque de refus, **inquiétude** (« Miff ne met plus à jour ton statut ») | aucun | un écran, **sans pause** de la position, du statut ni de la photo ; au plus 3 affichages |
+| Coût | le plus bas (chaînes seules) | **le plus haut** : règles (seuil position), déploiement dans le bon ordre, traitement du décalage « pause affichée / pas de pause réelle » (§3.3), tests des deux plateformes | bas (chaînes + une bulle) | moyen : chaînes, constante, un écran réutilisé ; **aucune règle, aucun déploiement** |
+| Cohérence avec la politique 1.1 (« version 3 ou plus récente qui les décrit ») | **fausse** pour l'endroit de la photo (v3 ne le dit pas) | vraie | **fausse** pour l'endroit de la photo | **partielle** : vraie pour les comptes neufs (v4) ; pour les comptes restés en v3 la phrase est inexacte pour l'endroit de la photo : **corrigée dans la politique 1.2** (§8) et **risque J66 assumé** |
 | Cohérence avec la règle « un texte = un numéro » | **violée** | respectée | **violée** | respectée |
 
-**Option D, défaut recommandé, et pourquoi** :
-1. C'est la seule qui rend **vraie** la phrase publiée de la politique sur la photo, sans friction pour la position.
+**Option D, retenue par le PM (2026-11-19), et pourquoi** :
+1. Elle corrige le texte **sans friction** pour la position et le statut, et rend **exacte** la politique pour tout nouveau compte (v4 cite l'endroit de la photo et le journal local).
 2. Elle respecte la règle de versionnement du dépôt et **garde la preuve exploitable** (une v3 archivée dit exactement ce que ces personnes ont vu).
-3. Elle n'inquiète personne : « Tout continue comme avant » est **vrai** pour la position et le statut. La seule chose qui demande un accord est la publication d'une photo, un geste volontaire, où la phrase « Pour partager une photo avec ta position, ton accord au nouveau texte est nécessaire » **existe déjà** (`values-fr/strings.xml:980`).
-4. **Si le PM préfère B** : possible, mais il faut alors relever le seuil de la position à 04 **après** que les builds v4 soient chez les testeurs (sinon des builds v3 se font refuser leurs écritures sans comprendre), et corriger la pastille « En attente ». Plus risqué pour un gain de preuve minime ici.
+3. Elle n'inquiète personne : « Tout continue comme avant » est **vrai** pour la position, le statut **et** la photo (le seuil des règles photo reste à 03, décision Q1).
+4. **Écartée par le PM** : B (re-demande bloquante) et l'exigence de la v4 pour la photo (variante D1 proposée par l'agent : seuil photo 04). Conséquence assumée : J66 (§13, R1).
 5. **Si le PM choisit A ou C** : il doit écrire qu'**aucune personne extérieure** n'a accepté la v3 telle que livrée et que les comptes internes ne comptent pas comme preuve (même formule que `consentement-localisation-v3.md` §1 bis). Ni l'agent ni ce ticket ne peuvent le vérifier (Play Console et TestFlight ne sont pas accessibles).
 
 ---
@@ -153,7 +170,7 @@ Légende des colonnes : **RGPD** = art. 7 (consentement démontrable, éclairé,
 
 1. **Nouvelle constante `2026-11-v04`** (Android `MiffSharingConsent.VERSION`, iOS `MiffSharingConsent.version`, **dans le même commit** que les textes ; largeur fixe `AAAA-MM-vNN` ; le mois est celui de **mise en service** : si la livraison se fait en décembre, `2026-12-v04`, le numéro reste 04 ; le numéro ne repart jamais à zéro).
 2. **Seuil de la position : inchangé (03)** (`isPositionConsentVersion`) : la précision ne change pas ce qui est enregistré sur les serveurs.
-3. **Seuil de la photo : relevé à 04** (`isPhotoLocationConsentVersion`, `firestore.rules:357-359`). Une ligne de règle, un test (`25-photo-localisee.test.js`), une mutation. Côté apps : une fonction `coversPhotoPlace(version)` (NN ≥ 04) à côté de `coversPosition`, utilisée par `PhotoStore.kt:79` et son équivalent iOS ; **le client bloque avant d'écrire**, il n'attend pas le refus des règles.
+3. **Seuil de la photo : inchangé (03)** (décision Q1 du PM) : `isPhotoLocationConsentVersion` (`firestore.rules:357-359`) **ne change pas** ; **aucune modification de `backend/`**, pas de `coversPhotoPlace` dans les apps ; la photo reste couverte par `coversPosition` comme aujourd'hui (`PhotoStore.kt:79`).
 4. **Archivage** : le texte v3 tel que livré (chaînes de `origin/main` au commit `424e858a`) est **conservé** dans `docs/legal/consentement-localisation-v3.md` (en-tête « remplacé par la v4 le AAAA-MM-JJ ; ce document garde ce que les comptes en v3 ont vu ») ; le texte v4 va dans `consentement-localisation-v4.md`.
 
 ### 6.2 Qui voit quoi
@@ -162,7 +179,7 @@ Légende des colonnes : **RGPD** = art. 7 (consentement démontrable, éclairé,
 |---|---|---|
 | **Nouveau** (créer / rejoindre) | la carte v4 (§7) | `consentVersion = 2026-11-v04` dans le lot d'entrée |
 | **Compte en v3** (partage actif) | au lancement suivant, **une** carte calme « Une précision sur ce que tu partages » (§7.4) avec « J'ai compris » ; **rien n'est mis en pause**, pas de pastille « En attente » | « J'ai compris » = renouvellement R-LIEU-3 vers `2026-11-v04` ; « Plus tard » = rien |
-| **Compte en v3 qui veut publier une photo** | si pas encore en v4 : la carte ci-dessus, avec « Pour publier une photo avec son endroit, nous avons besoin de ton accord à ce texte » (réutilise `update_notice_agreement`) | le renouvellement, puis la photo |
+| **Compte en v3 qui veut publier une photo** | **rien de plus qu'aujourd'hui** : la photo part (décision Q1), avec l'aperçu qui dit déjà « Publiée avec ta position. Ceux qui partagent aussi la leur peuvent voir où tu l'as prise » | la photo, sous `consentVersion` v03 (risque J66 assumé) |
 | **Compte en v1 ou v2** (comptes de test d'avant le 2026-11-04) | **comme aujourd'hui** (re-consentement bloquant), avec le texte v4 | R-LIEU-3 vers v04 (la règle « jamais sortir de la couverture position » est respectée) |
 | **Compte qui refuse ou ignore** | « Plus tard » : la carte revient **au plus 3 fois**, puis reste accessible dans Réglages > Confidentialité (« Revoir et accepter ») ; **aucune pression, aucun compte à rebours, aucun blocage de la position** | rien |
 
@@ -171,7 +188,7 @@ Légende des colonnes : **RGPD** = art. 7 (consentement démontrable, éclairé,
 1. **`isRenewalDue` ne doit plus signifier « en pause »** : distinguer « à renouveler » (v < courante) de « en attente bloquante » (v ne couvre pas la position). Sinon la pastille « En attente » (`strings.xml:931-932`) s'afficherait à tort aux comptes en v3 alors que rien n'est en pause (`AwaitingAgreement.replace`, `PermissionGateViewModel.kt:115-120`). **Le texte ne doit jamais dire qu'un partage est en pause quand il ne l'est pas.**
 2. **Un test de cohérence** : pour toute version V, « l'interface dit en pause » ⇔ « le suivi est réellement arrêté » (`coversPosition(V)` faux).
 3. **Les tests qui utilisent « 2026-11-v03 » comme version courante** (≈ 20 fichiers : `ConsentRenewalsTest.kt`, `TrackingEngine*Test.kt`, `MiffWritesTest.kt`, `PermissionDomainTest.kt`, `PermissionScreensTest.kt`, iOS `ConsentRenewalsTests.swift`, `PermissionPrivacyTests.swift:266`, `SharedTextsParityTests.swift`) : distinguer « une version qui couvre la position » de « la version courante » ; **ne pas** remplacer en masse.
-4. **Ordre de livraison** : (1) PR documents ; (2) builds Android et iOS v4 chez les testeurs ; (3) **ensuite seulement**, PR règles (seuil photo 04) et déploiement **par le PM, sur « oui » explicite** (`docs/dev/deploiement-regles.md`). Si les règles passaient avant, un build v3 verrait ses photos refusées sans message adapté. Retour arrière : redéployer le fichier de `main` précédent.
+4. **Ordre de livraison** : (1) PR Android, (2) PR iOS, (3) PR documents légaux (politique 1.2) **publiée en une seule fois avec la mise en service des apps v4** ; **aucun déploiement de règles** (décision Q1) : le fichier `backend/firestore.rules` n'est pas touché. Les builds v3 existants continuent de fonctionner (même seuils).
 5. **iOS : aucun contrôle local possible** (poste Windows) ; textes d'usage et écran vérifiés par la CI et le TestFlight du PM.
 
 ---
@@ -191,7 +208,7 @@ Chaque phrase a été **vérifiée** contre le code et `backend/data-model.md` (
 | `miff_consent3_erase_title` / `_body` | « Effacement de ta position » / « Si tu arrêtes de partager, quittes la Miff ou supprimes ton compte, ta position et ta photo avec son endroit sont effacées. Après 24 h, ta position est masquée et seule sa date reste visible. » | "Your location is erased" / "If you stop sharing, leave the Miff or delete your account, your location and your photo with its place are erased. After 24 h your location is hidden and only its date remains visible." | `data-model.md:915`, `:1073` ; politique art. 4 l. 150 à 152 |
 | Inchangés | `miff_consent3_title`, `_who_*`, `_closed_*`, `_members_*`, `_places_*`, `_system_note` | idem | — |
 
-*Charge cognitive* : **deux lignes de plus** sur la carte (photo, téléphone), les autres sont retouchées. Défaut : garder les deux ; si le design juge la carte trop longue, **la ligne « Sur ton téléphone seulement » ne se retire pas** (c'est elle qui ferme J65) ; la ligne « photo » ne se retire pas non plus (elle ferme J66).
+*Charge cognitive* (décision Q3 du PM) : **deux lignes de plus** sur la carte (photo, téléphone), les autres sont retouchées. Les deux sont **ajoutées** ; si le design juge la carte trop longue, **la ligne « Sur ton téléphone seulement » ne se retire pas** (c'est elle qui ferme J65). La ligne « L'endroit de ta photo » informe les comptes neufs ; elle ne referme pas J66 pour les comptes restés en v3 (risque assumé).
 
 ### 7.2 Textes d'autorisation du système
 
@@ -225,9 +242,9 @@ Chaque phrase a été **vérifiée** contre le code et `backend/data-model.md` (
 ### 7.4 Écran de précision pour les comptes en v3 (non bloquant) et re-consentement des comptes en v1 ou v2
 
 - **Comptes en v3** (nouvelles clés `miff_clarify_*`, **à ne pas confondre** avec `miff_renewal_*`, qui reste le re-consentement bloquant) :
-  - FR titre « Une précision sur ce que tu partages » ; corps « Pour « %1$s », nous précisons ce que Miff garde. Sur nos serveurs : ta dernière position connue, et l'endroit de ta photo pendant 24 h, sans aucun historique de trajets. Sur ton téléphone seulement : un journal de tes arrivées et départs (35 jours, sans position ni adresse) qui dessine ton graphique « Répartition de ton temps » ; tu peux l'effacer dans Réglages > Confidentialité. **Tout continue comme avant.** Seule la publication d'une photo avec son endroit demandera ton accord à ce texte. » ; boutons « J'ai compris » / « Plus tard ».
-  - EN title "A clarification about what you share"; body "For "%1$s", we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your "Time breakdown" chart; you can erase it in Settings > Privacy. **Everything goes on as before.** Only publishing a photo with its place will ask for your agreement to this text."; buttons "Got it" / "Later".
-  - « Tout continue comme avant » est **vrai** uniquement si le seuil de la position reste 03 (§6.1) : **cette phrase ne doit jamais être livrée avec l'option B**.
+  - FR titre « Une précision sur ce que tu partages » ; corps « Pour « %1$s », nous précisons ce que Miff garde. Sur nos serveurs : ta dernière position connue, et l'endroit de ta photo pendant 24 h, sans aucun historique de trajets. Sur ton téléphone seulement : un journal de tes arrivées et départs (35 jours, sans position ni adresse) qui dessine ton graphique « Répartition de ton temps » ; tu peux l'effacer dans Réglages > Confidentialité. **Tout continue comme avant.** » ; boutons « J'ai compris » / « Plus tard ».
+  - EN title "A clarification about what you share"; body "For "%1$s", we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your "Time breakdown" chart; you can erase it in Settings > Privacy. **Everything goes on as before.**"; buttons "Got it" / "Later".
+  - « Tout continue comme avant » est **vrai** parce que le seuil de la position reste 03 **et** le seuil de la photo reste 03 (décision Q1) : **cette phrase ne doit jamais être livrée avec l'option B ni si un seuil de règle était relevé**. La carte appelle « Plus tard » 3 fois au plus (compteur local, jamais envoyé), puis le lien « Revoir et accepter » reste dans Réglages > Confidentialité.
 - **Comptes en v1 ou v2** : `miff_renewal_intro_one` / `_unnamed` / `_many` reprennent la phrase de `consentement-localisation-v3.md` §4 amendée, avec « sans historique de trajets sur nos serveurs » à la place de « Pas d'historique », et la mention de l'endroit de la photo ; ils ne parlent pas du journal (la carte du §7.1 le fait à l'entrée).
 
 ---
@@ -237,11 +254,11 @@ Chaque phrase a été **vérifiée** contre le code et `backend/data-model.md` (
 | Texte | Article / ligne | Aujourd'hui | Avec la v4 |
 |---|---|---|---|
 | Politique, résumé point 1 | l. 9 | « sur nos serveurs… Sur ton téléphone seulement… 35 jours » | **Inchangé** (c'est la référence) |
-| Politique art. 3 (tableau) | l. 42 (journal), l. 43 (position), l. 47 (preuves de consentement) | « version 3 ou plus récente qui les décrit » | **Retouché** : « version 4 ou plus récente » pour l'endroit de la photo ; « version 3 ou plus récente » reste vrai pour la position seule |
-| Politique art. 4 | l. 112 à 139, l. 151 à 153 | idem ; « **Cet accord est distinct…** », « Le journal… n'a pas d'accord à part » | **Retouché** pour la version (l. 151) ; le reste est exact et confirme la ligne « Sur ton téléphone seulement » de la carte. **Ne pas écrire** « le journal a un accord à part » : le journal n'en a pas (D16) |
+| Politique art. 3 (tableau) | l. 42 (journal), l. 43 (position), l. 47 (preuves de consentement) | « version 3 ou plus récente qui les décrit » (la position **et l'endroit d'une photo**) | **Retouché, exact pour tous les comptes** : « version 3 ou plus récente » pour la position ; l'endroit d'une photo est décrit par la version 4 ou plus récente, **et, pour les comptes restés en version 3, à la prise de vue (aperçu de la photo)** ; ne plus écrire que la v3 « les décrit » (J66) |
+| Politique art. 4 | l. 112 à 139, l. 151 à 153 | idem ; « **Cet accord est distinct…** », « Le journal… n'a pas d'accord à part » | **Retouché** pour la version (l. 151 : même exactitude que l'art. 3, avec la phrase sur les comptes en version 3) ; le reste est exact et confirme la ligne « Sur ton téléphone seulement » de la carte. **Ne pas écrire** « le journal a un accord à part » : le journal n'en a pas (D16) |
 | Politique art. 7 | l. 213, l. 239 | « sur ses serveurs ne garde pas d'historique » | Inchangé |
 | CGU art. 6 et 10 | — | « sur ses serveurs » | Inchangé |
-| `docs/legal/README.md` | J65, J37, J48 (e), §12 | « v4 à venir » ; « sur iPhone, il n'est pas encore dans `main` » (**périmé**, §2.3) | **J65 : clos** (renvoi vers ce ticket) ; **J66 nouveau** : « le texte de consentement v3 tel que livré ne citait pas l'endroit de la photo alors que la politique dit qu'il le décrit ; corrigé par la v4 ; comptes en v3 : endroit de photo écrit sous un texte qui ne le citait pas, mitigé par l'aperçu de la photo (risque assumé) » ; J48 (e) mis à jour ; §12 corrigé pour iOS |
+| `docs/legal/README.md` | J65, J37, J48 (e), §12 | « v4 à venir » ; « sur iPhone, il n'est pas encore dans `main` » (**périmé**, §2.3) | **J65 : clos par ce ticket** (renvoi vers lui) ; **J66 nouveau, RISQUE ASSUMÉ par le PM (décision Q1 du 2026-11-19)** : « le texte de consentement v3 tel que livré ne citait pas l'endroit de la photo ; la v4 le cite (comptes neufs et re-consentements v1/v2) ; les comptes restés en v3 publient l'endroit de leurs photos sans que la v4 soit exigée, mitigé par l'aperçu de la photo, la carte « Une précision » et la politique 1.2 » ; J37 : « consentement qui la cite » précisé « (v4) » ; J48 (e) mis à jour ; §12 corrigé pour iOS |
 | `docs/legal/consentement-localisation-v3.md` | §1 bis | plan « version 4 » prévu si un testeur extérieur a accepté la v3 | **Appliqué** : voir §6.1 ; le document est archivé |
 
 **Publication** : ces retouches de la politique forment une **version 1.2** (date = jour de la mise en service des apps v4), **publiée en une seule fois** avec les apps, comme la 1.1. Pas de ré-acceptation des CGU (J32 assumé). **Rien n'est déployé par l'agent** : le PM déploie la page web (`firebase deploy --only hosting --project miff-3d283`) sur son « oui » (d'après la décision du 2026-11-13, le PM tape les commandes de déploiement). **État de la 1.1** : fusionnée dans `main` par la PR #278 ; son déploiement sur l'hébergement n'est **pas vérifiable par l'agent** (la ligne de commit dit « non déployée »).
@@ -254,13 +271,14 @@ Chaque phrase a été **vérifiée** contre le code et `backend/data-model.md` (
 
 | # | Lot | Contenu | Dépend de | Taille |
 |---|---|---|---|---|
-| **CONS-4-L** | **Légal et stores** (agents `release-manager` + `product-specs`, PR documents) | `consentement-localisation-v4.md` (texte, versionnement) ; archivage de la v3 ; politique 1.2 FR/EN (art. 3, 4) ; README légal (J65 clos, J66, J48, §12) ; `google-play-localisation-arriere-plan.md` §4-5 ; `app-store-confidentialite-et-revue.md` §4-5 ; `marketing/launch-plan.md` et `positioning.md` (« sur ses serveurs ») ; `web/tests/legal-1-1.test.mjs` (version) | réponses du PM (§11) | petit |
-| **CONS-4-A** | **Android** (`android-dev`, une branche et une PR) | constante `2026-11-v04` ; `coversPhotoPlace` ; chaînes §7 (FR + EN) ; nouvelles lignes `miff_consent3_photo_*` et `_local_*` ; carte « Une précision » non bloquante ; correction de la pastille « En attente » (§6.3) ; ligne sous « Effacer » ; tests §10 | CONS-4-L (textes validés) ; **maquette de la carte et de la ligne de divulgation** (§12) | moyen |
-| **CONS-4-I** | **iOS** (`ios-dev`, une branche et une PR, **après** Android, parité exacte des textes) | idem ; `InfoPlist.xcstrings:38`, `project.yml:131`, `Localizable.xcstrings` ; adaptation de `PermissionPrivacyTests.swift:266` ; `InfoPlistStaticTests` | CONS-4-A (textes figés) | moyen |
-| **CONS-4-R** | **Règles** (`backend-data`, PR) | `isPhotoLocationConsentVersion` ≥ 04, test + mutation dans `25-photo-localisee.test.js`, `data-model.md` (§11 point 9 ter, tableau des seuils) ; **déploiement par le PM seulement après que les builds v4 soient chez les testeurs** | CONS-4-A et -I livrés ; « oui » explicite du PM | très petit |
-| **CONS-4-T** | **i18n** (`docs/i18n/`, avec le ticket `traduction-es-it-pt-de.md`) | `chaines-reference.md` (S07, S10, nouvelles S), glossaire (nouveaux termes : « journal », « sur nos serveurs », « précision »), guide de style (contrôle « quatre précisions » inclus) ; **les textes de ce ticket sont dans le périmètre de la traduction es / it / pt / de** | **CONS-4-A et -I fusionnées avant la traduction en masse** (sinon les chaînes de consentement seraient traduites deux fois) | petit |
+| **CONS-4-L** | **Légal et stores** (agents `release-manager` + `product-specs`, PR documents ; **après CONS-4-I**) | `consentement-localisation-v4.md` (texte, versionnement) ; archivage de la v3 ; **politique de confidentialité 1.2 FR/EN à publier** (art. 3, 4) ; README légal (J65 clos, J66 assumé, J48, §12) ; `google-play-localisation-arriere-plan.md` §4-5 ; `app-store-confidentialite-et-revue.md` §4-5 ; `marketing/launch-plan.md` et `positioning.md` (« sur ses serveurs ») ; `web/tests/legal-1-1.test.mjs` (version) | CONS-4-I (textes figés par les apps) ; déploiement de la page web par le PM sur « oui » | petit |
+| **CONS-4-A** | **Android** (`android-dev`, une branche et une PR) — **premier lot** | constante `2026-11-v04` ; chaînes §7 (FR + EN) ; nouvelles lignes `miff_consent3_photo_*` et `_local_*` ; ligne « Pour toi seul(e) » de la divulgation ; carte « Une précision » non bloquante (3 fois au plus) ; correction de la pastille « En attente » (§6.3) ; ligne sous « Effacer » ; tests §10 ; **aucun changement de seuil photo** | textes de ce ticket ; **maquette de la carte et de la ligne de divulgation** (§12) | moyen |
+| **CONS-4-I** | **iOS** (`ios-dev`, une branche et une PR, **après** Android, parité exacte des textes) | idem ; `InfoPlist.xcstrings:38`, `project.yml:131`, `Localizable.xcstrings` ; adaptation de `PermissionPrivacyTests.swift:266` ; `InfoPlistStaticTests` | CONS-4-A fusionnée (textes figés) | moyen |
+| **CONS-4-T** | **i18n** (`docs/i18n/`, avec le ticket `traduction-es-it-pt-de.md`) — **avant la traduction en masse** | `chaines-reference.md` (S07, S10, nouvelles S), glossaire (nouveaux termes : « journal », « sur nos serveurs », « précision »), guide de style (contrôle « quatre précisions » inclus) ; **les textes de ce ticket sont dans le périmètre de la traduction es / it / pt / de** | **CONS-4-A et -I fusionnées avant la traduction en masse** (sinon les chaînes de consentement seraient traduites deux fois) | petit |
 
-**Ordre** : CONS-4-L (texte validé) → CONS-4-A → CONS-4-I → builds chez les testeurs → CONS-4-R → déploiement des règles par le PM → publication de la politique 1.2 → traduction. Le process de `CLAUDE.md` s'applique à chaque lot (une PR par plateforme, revue en contexte neuf, **revue sécurité**, QA, recette PM, fusion sur « oui »).
+**Supprimé le 2026-11-19 (décision Q1)** : le lot CONS-4-R (règles : seuil photo 04, test, mutation, déploiement). `backend/` n'est pas touché par ce ticket.
+
+**Ordre (plan de migration)** : **CONS-4-A (Android) → CONS-4-I (iOS) → CONS-4-L (légal : politique 1.2 FR/EN publiée en une seule fois avec la mise en service des apps v4)** ; **CONS-4-T (i18n) avant la traduction en masse**. Migration des comptes : (1) comptes **neufs** : carte v4, `2026-11-v04` écrit dans le lot d'entrée ; (2) comptes en **v1/v2** : re-consentement bloquant avec le texte v4 (R-LIEU-3, strictement supérieur) ; (3) comptes en **v3** : carte calme au lancement, 3 fois au plus, « J'ai compris » = renouvellement R-LIEU-3 vers v04, sinon rien ; position, statut et photo continuent. **Aucun déploiement de règles, aucun changement de seuil, aucun risque de refus pour les builds v3 existants.** Pas de retour arrière côté règles : le renouvellement exige une version strictement supérieure, donc une v04 enregistrée reste valide ; un correctif de texte ultérieur = `v05`. Le process de `CLAUDE.md` s'applique à chaque lot (une PR par plateforme, revue en contexte neuf, **revue sécurité**, QA, recette PM, fusion sur « oui »).
 
 ---
 
@@ -276,31 +294,31 @@ Chaque phrase a été **vérifiée** contre le code et `backend/data-model.md` (
 **Comportement**
 6. **CA-6** : un **nouveau** compte voit la carte v4 et l'enregistre (`consentVersion = 2026-11-v04`, `consentedAt` = heure serveur) ; testé sur Android et iOS.
 7. **CA-7** : un compte en **v3 partage toujours sa position et son statut** après la mise à jour ; **aucune pastille « En attente »** ; la carte « Une précision » apparaît **sans bloquer** le Feed ; « J'ai compris » écrit v04 par R-LIEU-3 ; « Plus tard » n'écrit rien et la carte revient **3 fois au plus** puis reste dans Réglages > Confidentialité.
-8. **CA-8** : un compte en v3 **ne peut pas publier de photo** (le client bloque **avant** d'écrire) tant qu'il n'a pas accepté v04, avec la phrase calme existante ; après l'acceptation, la photo part avec son endroit.
+8. **CA-8** : un compte en v3 **peut toujours publier une photo avec son endroit** (décision Q1 : seuil inchangé à 03, le client n'exige pas v04) ; l'aperçu de la photo qui dit « Publiée avec ta position… » reste affiché ; aucun test n'attend un blocage de la photo en v3.
 9. **CA-9** : un compte en **v1 ou v2** voit le re-consentement bloquant comme avant, avec le texte v4, et la position reste interdite jusqu'à l'acceptation.
 10. **CA-10** : pour toute version V, « l'interface annonce une pause » ⇔ « le suivi est réellement arrêté » (test de cohérence).
 11. **CA-11** : l'arrêt du partage retire toujours statut, photo, position et alerte (inchangé) ; le journal local reste ; « Effacer mon historique de temps » l'efface.
 
 **Règles et sécurité**
-12. **CA-12** : (après CONS-4-R) une photo écrite avec un consentement `2026-11-v03` est **refusée** par les règles, avec `2026-11-v04` elle passe ; la position reste acceptée en v03 ; tests + mutation ; **aucune règle ouverte, aucune validation sautée**.
+12. **CA-12** (remplace l'ancien critère de seuil photo, **supprimé**) : `backend/firestore.rules`, `backend/tests/` et `backend/data-model.md` sont **inchangés** par les PR Android et iOS ; **aucune règle ouverte, aucune validation sautée** ; les écritures v03 restent acceptées.
 13. **CA-13** : aucune coordonnée ni nom de lieu dans le texte, les journaux, Analytics ou Crashlytics ajoutés par ce ticket ; revue sécurité faite.
 
 **Stores et légal**
 14. **CA-14** : la justification Play (§4) et la note de revue Apple (§5) sont alignées sur le texte v4 ; les étiquettes App Privacy et la Data safety **restent inchangées** et le document dit pourquoi et où est la limite.
-15. **CA-15** : la politique 1.2 (FR et EN, deux langues à la fois) est cohérente avec les textes de l'app ; J65 clos, J66 écrit, J48 (e) et §12 du README corrigés.
+15. **CA-15** : la politique 1.2 (FR et EN, deux langues à la fois) est cohérente avec les textes de l'app (y compris la phrase exacte sur les comptes restés en v3) ; **J65 clos par ce ticket, J66 écrit comme risque assumé par le PM**, J48 (e) et §12 du README corrigés.
 16. **CA-16** : la v3 est **archivée** (texte exact de `424e858a`) avec la mention « remplacée par la v4 ».
 
-**Tests à écrire** (en plus de la mise à jour des tests existants, §6.3 point 3) : format `AAAA-MM-vNN` de la nouvelle constante ; `isRenewalDue` pour v1, v2, v3, v4 ; `coversPosition` et `coversPhotoPlace` pour 02, 03, 04, 99 ; pastille « En attente » seulement si `!coversPosition` ; photo bloquée en v3 ; carte « Une précision » : un seul affichage par lancement, trois au plus ; parité FR/EN ; règles (CA-12) et mutation.
+**Tests à écrire** (en plus de la mise à jour des tests existants, §6.3 point 3) : format `AAAA-MM-vNN` de la nouvelle constante ; `isRenewalDue` pour v1, v2, v3, v4 ; `coversPosition` pour 02, 03, 04, 99 ; pastille « En attente » seulement si `!coversPosition` ; **photo non bloquée en v3** ; carte « Une précision » : un seul affichage par lancement, trois au plus, puis lien Réglages ; parité FR/EN ; aucune modification de `backend/` (contrôle de la PR).
 
 ---
 
-## 11. Questions pour le PM (3 au plus, chacune avec son défaut)
+## 11. Questions du PM : réponses du 2026-11-19
 
-1. **Photo : exiger l'accord v4 avant de publier une photo avec son endroit ?** **Défaut : oui.** C'est ce qui rend vraie la phrase publiée de la politique et ferme J66 ; le coût est un écran de plus avant la **première photo** d'un compte en v3. Si **non** : on laisse le seuil de la photo à 03 et on ajoute à J66 « l'endroit de la photo de comptes en v3 est écrit sous un texte qui ne le citait pas » comme risque assumé.
-2. **Les comptes déjà en v3 : confirmation calme sans pause (option D) ou re-demande qui met la position en pause (option B) ?** **Défaut : D, sans pause.** Argument : on précise l'information, on n'ajoute pas de finalité côté serveur ; et « Tout continue comme avant » rassure.
-3. **Écran de consentement et d'autorisation Android/iOS : ajouter les deux lignes courtes (« L'endroit de ta photo », « Sur ton téléphone seulement » / « Pour toi seul(e) ») ou garder l'écran plus court ?** **Défaut : ajouter les deux** (la transparence prime sur la brièveté pour une donnée de localisation ; Apple demande des textes d'usage complets et Google une divulgation exacte). Si l'écran est jugé trop dense, le design arbitre, mais **sans retirer** la ligne du journal local.
+1. **Photo : exiger l'accord v4 avant de publier une photo avec son endroit ?** **Réponse : NON.** Seuil des règles inchangé (03), lot règles supprimé, J66 assumé (§0, §13 R1).
+2. **Comptes déjà en v3 : confirmation calme ou re-demande bloquante ?** **Réponse : confirmation calme**, sans pause (position, statut, photo), 3 fois au plus, puis Réglages.
+3. **Ajouter les deux lignes courtes à l'écran de consentement et à la divulgation Android ?** **Réponse : OUI** ; la ligne du journal local ne se retire pas.
 
-Hors questions (défauts retenus, **non décidés** par le PM, à contredire si besoin) : titre « Historique de temps » conservé ; « Plus tard » 3 fois au plus ; pas de nouveau nom de clé (`miff_consent3_*` conservé) ; politique 1.2 publiée en une seule fois avec les apps.
+Défauts retenus **sans question** (non décidés explicitement par le PM, à contredire si besoin) : titre « Historique de temps » conservé ; « Plus tard » 3 fois au plus ; pas de nouveau nom de clé (`miff_consent3_*` conservé) ; politique 1.2 publiée en une seule fois avec les apps.
 
 ---
 
@@ -314,14 +332,14 @@ Cette évolution a du design : **demander au PM l'export PNG** (dans `design/exp
 
 | # | Risque | Traitement |
 |---|---|---|
-| R1 | **Comptes en v3 qui ignorent la carte** : leur preuve reste « v3 » (un texte sans mention de la photo ni du journal) | **Assumé.** Mitigé : la photo exige v04 (si Q1 = oui) ; le journal est local et décrit à plusieurs endroits ; la v3 est archivée. Jamais présenté comme un consentement au journal |
-| R2 | **Personne extérieure ayant déjà accepté la v3** (inconnu de l'agent) | La v4 couvre ce cas ; le PM n'a rien à vérifier pour D (il le devrait pour A et C) |
+| R1 | **J66 : comptes restés en v3** : l'endroit de leurs photos est écrit sous un texte (v3) qui ne le citait pas, et la v4 n'est pas exigée (décision Q1 du PM) ; leur preuve reste « v3 » | **RISQUE ASSUMÉ PAR LE PM (2026-11-19).** Mitigé : aperçu de la photo à chaque envoi (« Publiée avec ta position… »), texte d'usage de la caméra iOS, carte « Une précision » (3 fois au plus), politique 1.2 qui ne dit plus que la v3 « décrit » l'endroit, v3 archivée. Jamais présenté comme un consentement au journal ni à l'endroit de la photo pour ces comptes. Écrit comme tel dans `docs/legal/README.md` (CONS-4-L) |
+| R2 | **Personne extérieure ayant déjà accepté la v3** (inconnu de l'agent) | La v4 couvre les comptes neufs ; pour les comptes en v3, la carte « Une précision » informe ; rien à vérifier par le PM |
 | R3 | **Le mot « historique » reste dans un libellé** (« Historique de temps ») | Assumé : libellé du bouton cité par la politique ; renommer coûte une traduction de plus et rompt le lien avec les textes publiés |
 | R4 | **Le journal local est tenu sans interrupteur** (J48) | Inchangé et **dit** par la carte v4 ; effaçable en un geste ; reprendre si une option serveur est un jour décidée (nouveau consentement) |
-| R5 | **Décalage de déploiement** (règles avant builds) | §6.3 point 4 : builds d'abord, règles ensuite, déploiement par le PM sur « oui » |
+| R5 | ~~Décalage de déploiement des règles~~ | **Sans objet** : aucun changement de règles (décision Q1) |
 | R6 | **Pas de ré-acceptation des CGU** (J32) | Assumé, inchangé |
 | R7 | **Preuve perdue après un départ ou la suppression de compte** (Q13) | Assumé, inchangé |
 | R8 | **Cette spec n'a pas été relue par un juriste** | Décision du PM du 2026-10-23 ; l'analyse RGPD/stores ci-dessus est celle de l'équipe, sans garantie de conformité |
-| R9 | **Texte iOS « Toujours » plus long** (≈ 600 caractères) | Apple demande des textes complets ; si la fenêtre devient trop dense, retirer la phrase photo avant celle du journal (la photo est aussi dite à la prise de vue) |
+| R9 | **Texte iOS « Toujours » plus long** (≈ 600 caractères ; la phrase photo y figure déjà aujourd'hui, seule la phrase du journal s'ajoute) | Apple demande des textes complets ; si la fenêtre devient trop dense, on garde la phrase du journal et on raccourcit le reste |
 
 **Déclarations qui restent exactes sans changement** : Apple App Privacy (le journal n'est pas collecté), Google Data safety (idem), Google « stalkerware » (J28, assumé), Apple 5.1.2 (J29, assumé).
