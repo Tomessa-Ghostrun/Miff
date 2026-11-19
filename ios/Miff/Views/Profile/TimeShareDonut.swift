@@ -74,7 +74,7 @@ extension TimeShareSlice: Identifiable {
     }
 }
 
-/// L'anneau. Sans tranche : l'anneau VIDE et neutre de l'état « pas assez de données » (décor).
+/// L'anneau (jamais dessiné sans tranche : l'état « pas assez de données » n'a plus d'anneau).
 struct TimeShareDonut: View {
     let slices: [TimeShareSlice]
     let size: CGFloat
@@ -88,10 +88,6 @@ struct TimeShareDonut: View {
 
     var body: some View {
         ZStack {
-            if slices.isEmpty {
-                Circle()
-                    .strokeBorder(colorChartEmpty.color, lineWidth: thickness)
-            }
             ForEach(slices) { slice in
                 sliceView(slice)
             }

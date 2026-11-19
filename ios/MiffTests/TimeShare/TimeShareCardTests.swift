@@ -207,9 +207,11 @@ final class TimeShareCardTests: XCTestCase {
         let facts = Scn.timeline(segments)
         let result = try XCTUnwrap(Scn.ready(Scn.compute(facts, places: [Scn.home, Scn.risk1])))
 
-        let spoken = TimeShareTexts.spokenSummary(result, locale: Locale(identifier: "en_US"))
+        let spoken = try XCTUnwrap(TimeShareTexts.spokenSummary(result, locale: Locale(identifier: "en_US")))
 
         XCTAssertTrue(spoken.contains("Maison 50%"), spoken)
+        // Le pourcentage du centre n'est pas redit : l'encart « Tu as passé x % de ton temps… » le dit.
+        XCTAssertFalse(spoken.contains(L10n.string("profile_timeshare_center_caption")), spoken)
         // La zone de danger n'est citée qu'une fois : par sa propre ligne (un bouton), pas par cette description.
         XCTAssertFalse(spoken.contains(TimeShareTexts.name(of: result.rows[1])), spoken)
         XCTAssertFalse(spoken.contains("17%"), spoken)

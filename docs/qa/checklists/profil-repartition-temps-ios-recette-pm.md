@@ -12,7 +12,7 @@
 
 ## Partie A : avant 7 jours
 
-1. [ ] Ouvrez l'onglet **Profil**. La carte est **entre le carrousel « Mes Miffs » et la liste « Lieux de confiance de … »** ; la carte « Mode voyage » reste **en dernier**. Elle montre le titre **« Répartition du temps »** (**sans** « Sur les N derniers jours »), le texte exact **« Ton graphique arrive dans X jours, nous analysons tes habitudes »** et l'anneau vide gris ; **ni graphique, ni sélecteur**. Carte blanche très arrondie, pastille d'icône **verte** à gauche du titre.
+1. [ ] Ouvrez l'onglet **Profil**. La carte est **entre le carrousel « Mes Miffs » et la liste « Lieux de confiance de … »** ; la carte « Mode voyage » reste **en dernier**. Elle montre le titre **« Répartition du temps »** (**sans** « Sur les N derniers jours »), le texte exact **« Ton graphique arrive dans X jours, nous analysons tes habitudes »** **seul** : **pas d'anneau gris vide**, ni graphique, ni sélecteur. Carte blanche très arrondie, pastille d'icône **verte** à gauche du titre.
 2. [ ] Le lendemain (et chaque jour suivant), X **baisse d'un jour** ; la veille du 7e jour : **« dans 1 jour »** (singulier).
 3. [ ] **Balayez le carrousel** vers une autre Miff : la carte suit **cette Miff** (son propre décompte), **sans clignotement** ; sur la carte « Créer une Miff », la carte garde la dernière Miff regardée.
 4. [ ] **Miff sans lieu** : la carte **n'est pas dessinée** (pas même une marge) ; la section des lieux porte son message.
@@ -33,8 +33,8 @@
 
 ## Partie C : accessibilité, langues
 
-16. [ ] **VoiceOver** : le focus sur l'anneau lit **une description unique** (« Répartition du temps : Maison 48 %, Sport 24 %, … en zone de confiance, 72 % ») sans lire les emoji ; la **zone de danger n'est dite qu'une fois** : par sa ligne (« Zone de danger, 12 %, afficher le détail ») quand la légende la montre, sinon dans la description ; le sélecteur est annoncé **« Période, 7 jours »** et le choix actuel **« choisi »** ; cibles de 44 pt au moins.
-17. [ ] **Plus grand texte** (Réglages > Accessibilité > Affichage et taille du texte > Texte plus grand, tailles d'accessibilité, au maximum) : l'**anneau passe au-dessus de la légende**, rien n'est coupé ni superposé, le sélecteur passe sous le titre.
+16. [ ] **VoiceOver** : le focus sur l'anneau lit **une description unique** (« Répartition du temps : Maison 48 %, Sport 24 %, Hors-zone 20 % ») **sans répéter le pourcentage du centre** (l'encart vert « Tu as passé 72 % de ton temps… » le dit une fois) sans lire les emoji ; la **zone de danger n'est dite qu'une fois** : par sa ligne (« Zone de danger, 12 %, afficher le détail ») quand la légende la montre, sinon dans la description ; le sélecteur est annoncé **« Période, 7 jours »** et le choix actuel **« choisi »** ; cibles de 44 pt au moins.
+17. [ ] **Plus grand texte** (Réglages > Accessibilité > Affichage et taille du texte > Texte plus grand, tailles d'accessibilité, au maximum) : l'**anneau passe au-dessus de la légende dès « très grand » (environ 130 % ; et le sélecteur de période passe sous le titre au même seuil)**, rien n'est coupé ni superposé, le sélecteur passe sous le titre.
 18. [ ] **Anglais** : « Time breakdown », « in trusted zones », « Outside zones », « Danger zone », « You spent 72% of your time in your trusted zones », « Your chart arrives in 3 days, we're analysing your habits » (« in 1 day »), pourcentage au format « 72% ».
 
 ## Partie D : effacement et vie privée

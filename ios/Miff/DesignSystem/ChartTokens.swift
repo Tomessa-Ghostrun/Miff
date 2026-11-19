@@ -27,8 +27,6 @@ let colorChartOthers = ColorToken(hex: 0x7A86B8)
 let colorChartElsewhere = ColorToken(hex: 0xD4D7DF)
 /// `chart/danger` : « Zone de danger » : le rouge de la bulle de statut danger (`status/danger`), jamais utilisé pour du texte.
 let colorChartDanger = colorStatusDanger
-/// Le fond de l'anneau vide (état « pas assez de données ») : un gris très clair, décoratif.
-let colorChartEmpty = ColorToken(hex: 0xEFEFEF)
 /// Le vert de la pastille d'en-tête, de la coche et de l'encart de synthèse (teintes très légères du vert `chart/1`).
 let colorChartGreenTint = colorChart1.withAlpha(0.12)
 let colorChartGreenTintStrong = colorChart1.withAlpha(0.22)
