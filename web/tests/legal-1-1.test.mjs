@@ -37,7 +37,7 @@ test('TEXTES LEGAUX 1.1 - aucune relecture juridique prétendue (décision du PM
 
 test('ALERTE - les CGU disent ce que fait et ne fait pas l\'alerte, sans promesse de secours ni mention de suspension (FR et EN)', () => {
   for (const pattern of [
-    /L.alerte « Je suis en danger » prévient tes proches ; elle ne prévient pas les secours/,
+    /L.alerte « Je suis en danger », quand elle est disponible, prévient tes proches ; elle ne prévient pas les secours/,
     /6 bis\. L.alerte « Je suis en danger »/,
     /arrive progressivement/,
     /Une seule Miff/,
@@ -47,7 +47,7 @@ test('ALERTE - les CGU disent ce que fait et ne fait pas l\'alerte, sans promess
     /n.appelle pas et ne prévient pas les secours/,
   ]) assert.match(TERMS_FR, pattern);
   for (const pattern of [
-    /The .I.m in danger. alert notifies your loved ones; it does not notify the emergency services/,
+    /The .I.m in danger. alert, when available, notifies your loved ones; it does not notify the emergency services/,
     /6 bis\. The .I.m in danger. alert/,
     /rolled out gradually/,
     /A single Miff/,
@@ -73,7 +73,7 @@ test('ALERTE - la politique décrit les données, la notification (sans position
     /aucune notification quand l.alerte prend fin d.elle-même/,
     /Une seule mesure, à l.envoi/,
     /Miff ne transmet ta position à aucun service de secours/,
-    /Supprimé automatiquement 9 jours après la dernière réservation/,
+    /Supprimé automatiquement 9 jours après le dernier début d.alerte notifié/,
     /Time Sensitive/,
     /Alertes d.un proche/,
   ]) assert.match(POLICY_FR, pattern);
@@ -86,7 +86,7 @@ test('ALERTE - la politique décrit les données, la notification (sans position
     /no notification when the alert ends by itself/,
     /A single measurement, at sending/,
     /Miff passes your location to no emergency service/,
-    /Deleted automatically 9 days after the last reservation/,
+    /Deleted automatically 9 days after the last alert start notified/,
     /Time Sensitive/,
     /Alerts from a loved one/,
   ]) assert.match(POLICY_EN, pattern);
@@ -138,4 +138,44 @@ test('PAGE D\'ACCUEIL - aucune promesse d\'alerte aux proches (le test landing r
   assert.doesNotMatch(homeEn, /alerts your (?:circle|loved ones)|notifies your (?:circle|loved ones)/i);
   assert.match(homeFr, /sur (?:ses|nos) serveurs/);
   assert.match(homeEn, /on (?:its|our) servers/);
+});
+
+test("REVUE 2026-11-19 - formulations exactes : position tentée à l'envoi, pas de promesse de prévenir avant, pas d'heure dans le message d'alerte, pas de fin notifiée, app pas à jour (FR et EN)", () => {
+  // M1 : l'alerte ne contient pas la position, mais une mesure est tentée à l'envoi.
+  assert.doesNotMatch(POLICY_FR, /n.ajoute pas ta position/);
+  assert.doesNotMatch(POLICY_EN, /does not add your location/);
+  assert.match(POLICY_FR, /L.alerte elle-même ne contient pas ta position ; une seule mesure de ta position est tentée à l.envoi/);
+  assert.match(POLICY_EN, /The alert itself does not contain your location; a single measurement of your location is attempted when it is sent/);
+  // M2 : plus de promesse de prévenir « avant qu'il s'applique ».
+  for (const content of [TERMS_FR, POLICY_FR]) {
+    assert.doesNotMatch(content, /nous te prévenons dans l.app avant qu.il s.applique/);
+    assert.match(content, /nous le signalons dans l.app lorsque c.est possible ; la version et la date en haut de cette page indiquent toujours le texte en vigueur/);
+    assert.match(content, /nouvel usage ou nouveaux destinataires de ta position/);
+  }
+  for (const content of [TERMS_EN, POLICY_EN]) {
+    assert.doesNotMatch(content, /we tell you in the app before it applies/);
+    assert.match(content, /we flag it in the app when possible; the version and date at the top of this page always show the text in force/);
+    assert.match(content, /a new use or new recipients of your location/);
+  }
+  // M3 : app pas à jour.
+  for (const content of [POLICY_FR, TERMS_FR]) assert.match(content, /Un proche dont l.app n.est pas à jour peut ne pas voir ou ne pas recevoir/);
+  for (const content of [POLICY_EN, TERMS_EN]) assert.match(content, /A loved one whose app is not up to date may not see or not receive/);
+  // m1 : aucune notification de fin quand l'alerte est retirée.
+  assert.match(POLICY_FR, /aucune notification de fin n.est envoyée/);
+  assert.match(TERMS_FR, /aucune notification de fin n.est envoyée/);
+  assert.match(POLICY_EN, /no end notification is sent/);
+  assert.match(TERMS_EN, /no end notification is sent/);
+  // m2 : le message d'alerte contient le type et la phase, pas l'heure.
+  assert.match(POLICY_FR, /type de message .alerte.{0,3} et sa phase .début ou fin./);
+  assert.match(POLICY_EN, /type of message .alert.{0,3} and its phase .start or end./);
+  assert.doesNotMatch(POLICY_FR, /type de message .alerte.{0,3}, des identifiants techniques .celui de la Miff et le tien, pour ouvrir le bon écran. et l.heure d.envoi/);
+  // m4 : sur iPhone, seulement les sauvegardes.
+  assert.match(POLICY_FR, /exclu des sauvegardes .iCloud, ordinateur. et, sur Android, des transferts/);
+  assert.match(POLICY_EN, /excluded from backups .iCloud, computer. and, on Android, from transfers/);
+  // m8 : la mesure est tentée, et peut ne pas aboutir.
+  assert.match(POLICY_FR, /essaie de mesurer ta position/);
+  assert.match(POLICY_EN, /tries to measure your location/);
+  // m9 : une Miff supprimée cite l'alerte.
+  assert.match(POLICY_FR, /photo avec son endroit ou alerte/);
+  assert.match(POLICY_EN, /photo with its place or alert/);
 });

@@ -16,7 +16,7 @@ Préparé le 2026-11-19 par `release-manager`. **C'est toi, et toi seul, qui tap
 | # | À vérifier | Si ce n'est pas le cas |
 |---|---|---|
 | 1 | La pull request `docs/legal-publication-v1-1` est **fusionnée dans `main`** (Claude la fusionne après ton « prêt à merger » : CI verte, revues faites) | Ne rien déployer : le dossier de déploiement lit `main` |
-| 2 | Tu es **d'accord avec les textes** (points à relire dans la description de la PR) et tu assumes les risques écrits dans `docs/legal/README.md` §4 (J44 à J64) : les textes ne sont **pas relus par un juriste**, et ils ne le prétendent nulle part | Dis-le à Claude : on corrige avant |
+| 2 | Tu es **d'accord avec les textes** (points à relire dans la description de la PR) et tu assumes les risques écrits dans `docs/legal/README.md` §4 (J44 à J65) : les textes ne sont **pas relus par un juriste**, et ils ne le prétendent nulle part | Dis-le à Claude : on corrige avant |
 | 3 | **Nous sommes bien le 19 novembre 2026.** Les pages affichent « 19 novembre 2026 ». Si tu publies un autre jour, **dis-le à Claude avant** : il remet le bon jour dans les quatre textes et dans un test | Ne pas publier avec une date fausse |
 | 4 | La **clé web** de Firebase (celle qui commence par `AIza`) est dans ton gestionnaire de mots de passe : Firebase console > Paramètres du projet > Général > Vos applications > application Web « Miff Web » > `apiKey` | Elle n'est pas un secret, mais elle ne s'écrit **jamais** dans un fichier, un message ni une capture |
 | 5 | Dans la console Google Analytics, la conservation est restée à **14 mois** avec « Réinitialiser les données utilisateur lors d'une nouvelle activité » **désactivé** (la politique l'affirme ; action 1 de `docs/legal/README.md` §3, faite pour la 1.0) | Le corriger avant de publier |
@@ -133,7 +133,7 @@ Attendu : neuf lignes `… -> 200`, et **quatre lignes** qui montrent la version
 
 | Page | Ce qu'on doit voir |
 |---|---|
-| `/fr/cgu` | « Version 1.1 — dernière mise à jour : 19 novembre 2026 » sous le titre ; dans l'encadré du début, la puce « L'alerte « Je suis en danger » prévient tes proches ; elle ne prévient pas les secours » ; un article « 6 bis. L'alerte « Je suis en danger » » qui commence par « Disponibilité. L'alerte arrive progressivement » |
+| `/fr/cgu` | « Version 1.1 — dernière mise à jour : 19 novembre 2026 » sous le titre ; dans l'encadré du début, la puce « L'alerte « Je suis en danger », quand elle est disponible, prévient tes proches ; elle ne prévient pas les secours » ; un article « 6 bis. L'alerte « Je suis en danger » » qui commence par « Disponibilité. L'alerte arrive progressivement » |
 | `/en/terms` | « Version 1.1 — last updated: November 19, 2026 » ; l'article « 6 bis. The "I'm in danger" alert » |
 | `/fr/confidentialite` | Version et date ; dans l'article 3, les lignes « Alerte « Je suis en danger » », « Compteur de tes alertes (plafond) » et « Journal de répartition de ton temps » ; dans l'article 4, « Le journal de répartition du temps… en détail » |
 | `/en/privacy` | Version et date ; « "I'm in danger" alert », « Counter of your alerts (cap) », « Log for your time breakdown » |
@@ -157,6 +157,7 @@ Console Firebase (projet **Miff / `miff-3d283`**, vérifier le nom en haut) > **
 
 ## Ce qui reste ouvert (rien n'est caché)
 
-- Les risques J44 à J64 de `docs/legal/README.md` §4 sont **assumés par toi** (décision du 2026-10-23, pas de relecture juridique) : en particulier l'absence de signalement et de blocage dans l'app (J44), la preuve d'acceptation qui reste « 1.0 » (J46, J61), l'alerte non reçue ou non lue (J51), la version anglaise ouverte pour les langues sans traduction légale (J63).
-- **J47 n'est pas tranché** : l'article 15 des CGU promet de prévenir dans l'app avant qu'un changement important s'applique ; la bulle prévue ne parlera que de l'alerte tant que tu n'as pas décidé qu'elle parle aussi de la description et du journal.
+- Les risques J44 à J65 de `docs/legal/README.md` §4 sont **assumés par toi** (décision du 2026-10-23, pas de relecture juridique) : en particulier l'absence de signalement et de blocage dans l'app (J44), la preuve d'acceptation qui reste « 1.0 » (J46, J61), l'alerte non reçue ou non lue (J51), la version anglaise ouverte pour les langues sans traduction légale (J63).
+- **J47 (promesse de prévenir dans l'app) est écrit comme risque assumé** : la promesse « nous te prévenons dans l'app avant qu'il s'applique » n'était pas tenable ; les textes disent maintenant « nous le signalons dans l'app lorsque c'est possible ; la version et la date en haut de cette page indiquent toujours le texte en vigueur ». La bulle prévue ne parle que de l'alerte tant que tu n'as pas décidé qu'elle parle aussi de la description et du journal.
+- **J65** : le texte de consentement à la localisation affiché dans l'app dit encore « pas d'historique de trajets » alors que le journal local existe ; à traiter dans un ticket séparé (nouveau consentement), non modifié ici.
 - Les comptes déjà inscrits n'ont **pas** à accepter la 1.1 : ils sont informés (bulle, à développer) et la version et la date sont visibles sur les pages.
