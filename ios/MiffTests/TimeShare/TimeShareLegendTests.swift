@@ -102,7 +102,7 @@ final class TimeShareLegendTests: XCTestCase {
         let real = try XCTUnwrap(Scn.ready(Scn.compute(Scn.timeline(segments), places: places, days: 30)))
 
         let kinds = real.legendIndices.map { real.rows[$0].kind }
-        let spoken = TimeShareTexts.spokenSummary(real, locale: Locale(identifier: "en_US"))
+        let spoken = try XCTUnwrap(TimeShareTexts.spokenSummary(real, locale: Locale(identifier: "en_US")))
 
         XCTAssertEqual(kinds.count, 4)
         XCTAssertTrue(kinds.contains(.danger(1)))
@@ -120,9 +120,29 @@ final class TimeShareLegendTests: XCTestCase {
         let real = try XCTUnwrap(Scn.ready(Scn.compute(Scn.timeline(segments), places: places, days: 30)))
 
         let kinds = real.legendIndices.map { real.rows[$0].kind }
-        let spoken = TimeShareTexts.spokenSummary(real, locale: Locale(identifier: "en_US"))
+        let spoken = try XCTUnwrap(TimeShareTexts.spokenSummary(real, locale: Locale(identifier: "en_US")))
 
         XCTAssertFalse(kinds.contains(.danger(1)))
         XCTAssertEqual(spoken.components(separatedBy: TimeShareTexts.dangerZones(1)).count - 1, 1, spoken)
+    }
+
+    func testWithOnlyADangerZoneTheRingHasNothingToSayAndIsHidden() {
+        let only = result([row(.danger(1), 10, percent: 100)])
+
+        XCTAssertEqual(only.legendIndices, [0], "sa ligne est dans la légende")
+        XCTAssertNil(TimeShareTexts.spokenSummary(only), "déjà dite par sa ligne : l'anneau est simplement caché")
+    }
+
+    func testTwoPlacesOfExactlyTheSameDurationAreRankedByPlaceIdentifierWhateverTheListOrder() throws {
+        // Deux lieux de confiance de 24 h chacun, déclarés dans l'ordre inverse de leurs identifiants.
+        let late = TimeSharePlace(id: "pB", name: "B", type: .trusted, category: nil)
+        let early = TimeSharePlace(id: "pA", name: "A", type: .trusted, category: nil)
+        let facts = Scn.timeline([(.trusted, "pB", 24), (.out, nil, 10), (.trusted, "pA", 24), (.out, nil, 10)])
+
+        for places in [[late, early], [early, late]] {
+            let real = try XCTUnwrap(Scn.ready(Scn.compute(facts, places: places)))
+
+            XCTAssertEqual(real.rows.prefix(2).map { $0.kind }, [.place("pA"), .place("pB")])
+        }
     }
 }

@@ -202,7 +202,14 @@ final class PresenceHistoryFileStore: PresenceHistory {
             try? FileManager.default.removeItem(at: directory)
             return .file(StoredFile())
         }
-        file.facts = file.facts.filter { Self.fact($0) != nil }
+        // Lecture tolérante : une ligne abîmée est ignorée ; un journal écrit avant la règle « dehors sans lieu » est assaini (le lieu d'un fait
+        // « dehors » est oublié, les répétitions qui en résultent sont fusionnées).
+        let onDisk = file
+        file.facts = Self.collapsed(file.facts.filter { Self.fact($0) != nil }.map(Self.sanitized))
+        if file != onDisk {
+            // Assaini : réécrit UNE fois, pour qu'un identifiant de lieu supprimé ne reste pas sur le disque jusqu'au prochain changement.
+            persist(&file)
+        }
         cache = file
         return .file(file)
     }
@@ -268,8 +275,9 @@ final class PresenceHistoryFileStore: PresenceHistory {
         } else if fact.state == .unknown {
             return false
         }
+        // `fact.placeId` est déjà nil pour « dehors » et « inconnue » (`PresenceFact`) ; la ligne écrite le garantit aussi.
         file.facts.append(
-            StoredFact(miff: fact.miffId, state: fact.state.rawValue, place: fact.placeId, at: fact.atMillis)
+            sanitized(StoredFact(miff: fact.miffId, state: fact.state.rawValue, place: fact.placeId, at: fact.atMillis))
         )
         return true
     }
@@ -279,17 +287,19 @@ final class PresenceHistoryFileStore: PresenceHistory {
         stored.state == PresenceState.trusted.rawValue || stored.state == PresenceState.danger.rawValue
     }
 
-    /// Les faits sans les répétitions : un fait identique au précédent de la même Miff (même état, même lieu) n'est pas gardé, ni une
-    /// première présence « inconnue ». Sert après qu'un lieu supprimé a été remplacé par « inconnue ».
+    /// Une ligne sans lieu quand l'état n'en nomme pas (« dehors », « inconnue »).
+    private static func sanitized(_ stored: StoredFact) -> StoredFact {
+        namesAPlace(stored) ? stored : StoredFact(miff: stored.miff, state: stored.state, place: nil, at: stored.at)
+    }
+
+    /// Les faits sans les répétitions : un fait identique au précédent de la même Miff (même état, même lieu) n'est pas gardé. Le PREMIER fait
+    /// d'une Miff est toujours gardé, même « inconnue » : oublier un lieu supprimé ne raccourcit JAMAIS l'historique (le décompte « dans X jours »
+    /// part du premier enregistrement ; comme Android).
     private static func collapsed(_ facts: [StoredFact]) -> [StoredFact] {
         var lastByMiff: [String: StoredFact] = [:]
         var kept: [StoredFact] = []
         for stored in facts {
-            if let last = lastByMiff[stored.miff] {
-                if last.state == stored.state && last.place == stored.place {
-                    continue
-                }
-            } else if stored.state == PresenceState.unknown.rawValue {
+            if let last = lastByMiff[stored.miff], last.state == stored.state && last.place == stored.place {
                 continue
             }
             lastByMiff[stored.miff] = stored
