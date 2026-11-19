@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertAll
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertHeightIsEqualTo
@@ -190,9 +191,11 @@ class NotificationCenterAvatarScreenTest {
             )[0]
             .assertWidthIsEqualTo(40.dp)
             .assertHeightIsEqualTo(40.dp)
-        // no description anywhere but the menu of the bar: the picture is decorative
+        // the picture itself carries no description and no text: it is decorative (the back arrow and the menu of the bar have their own)
         val described = SemanticsMatcher.keyIsDefined(SemanticsProperties.ContentDescription)
-        composeRule.onAllNodes(described, useUnmergedTree = true).assertCountEquals(1)
+        composeRule
+            .onAllNodesWithTag(CENTER_AVATAR_TAG, useUnmergedTree = true)
+            .assertAll(!described)
         // the line is ONE element, its text starts with the first name, and carries "non lu"
         val merged =
             composeRule.onAllNodes(
@@ -258,6 +261,7 @@ class NotificationCenterAvatarScreenTest {
             composeRule
                 .onNodeWithText(
                     text(R.string.notif_circle_update_title, "Léa"),
+                    useUnmergedTree = true,
                 ).fetchSemanticsNode()
                 .boundsInRoot
         assertTrue("the picture is on the right of the text", avatar.left >= title.right - 1f)
