@@ -333,7 +333,9 @@ export function main(argv, log = console.log) {
     options = parseArgs(argv);
     const name = options._[0];
     if (!name || options.aide || !COMMANDS[name]) {
-      log(readText(fileURLToPath(import.meta.url)).split('\n').filter((l) => l.startsWith('//')).slice(0, 18).map((l) => l.slice(3)).join('\n'));
+      const lines = readText(fileURLToPath(import.meta.url)).split('\n');
+      const end = lines.findIndex((l) => l.startsWith('import '));
+      log(lines.slice(0, end).filter((l) => l.startsWith('//')).map((l) => l.slice(3)).join('\n'));
       return name && !COMMANDS[name] ? 2 : 0;
     }
     return COMMANDS[name](options, log);
