@@ -1,6 +1,7 @@
 package com.tomessa.miff.data.session
 
 import com.tomessa.miff.data.alert.AlertLocalStore
+import com.tomessa.miff.data.miff.ClarifyAskStore
 import com.tomessa.miff.data.miff.PendingDeletionStore
 import com.tomessa.miff.data.permission.NotificationAskStore
 import com.tomessa.miff.data.review.ReviewStateStore
@@ -25,6 +26,8 @@ fun accountLocalDataErasers(
     timeShareWindow: TimeShareWindowStore? = null,
     /** ALERTE « Je suis en danger »: the pointer to my alert and the note of its adoption go with the account (the blue bubble, about the installation, stays). Null: the function is off. */
     alertLocal: AlertLocalStore? = null,
+    /** CONS-4-A: how many times the calm card "Une précision" was shown to this account: a counter, erased with the account. */
+    clarifyAsks: ClarifyAskStore? = null,
 ): List<LocalDataEraser> =
     listOf(
         LocalDataEraser { uid -> notificationAsks.forget(uid) },
@@ -37,4 +40,5 @@ fun accountLocalDataErasers(
         LocalDataEraser { _ -> presenceLog.clear() },
         LocalDataEraser { _ -> timeShareWindow?.clear() },
         LocalDataEraser { _ -> alertLocal?.clearAccount() },
+        LocalDataEraser { uid -> clarifyAsks?.forget(uid) },
     )

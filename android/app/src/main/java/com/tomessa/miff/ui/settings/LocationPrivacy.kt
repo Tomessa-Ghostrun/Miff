@@ -44,6 +44,11 @@ import com.tomessa.miff.ui.theme.textBodyRegular14
 class LocationPrivacyUi(
     val permissionComplete: Boolean = false,
     val waitingMiffNames: List<String> = emptyList(),
+    /**
+     * CONS-4-A: the Miffs under the version 3 text, for which the calm card "Une précision" can be read again ("Revoir et accepter"). NOT waiting:
+     * nothing is paused for them, so no pill "En attente" (criterion CA-10).
+     */
+    val clarifyMiffNames: List<String> = emptyList(),
     /** Only "all the time" is missing and the phone can ask for it on its own (Android 10+): the button then asks the system (see [LocationFlow.backgroundRoute]). */
     val backgroundRequestable: Boolean = false,
 ) {
@@ -54,6 +59,7 @@ class LocationPrivacyUi(
 @Composable
 fun rememberLocationPrivacy(container: AppContainer): LocationPrivacyUi {
     val waiting by container.awaitingAgreement.waiting.collectAsStateWithLifecycle()
+    val clarifying by container.awaitingAgreement.clarifying.collectAsStateWithLifecycle()
     val directory by container.miffDirectory.state.collectAsStateWithLifecycle()
     var snapshot by remember { mutableStateOf(container.devicePermissions.snapshot()) }
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { snapshot = container.devicePermissions.snapshot() }
@@ -63,9 +69,16 @@ fun rememberLocationPrivacy(container: AppContainer): LocationPrivacyUi {
             ?.filter { it.id in waiting }
             ?.map { it.name }
             .orEmpty()
+    val clarifyNames =
+        (directory as? DirectoryState.Ready)
+            ?.miffs
+            ?.filter { it.id in clarifying && it.id !in waiting }
+            ?.map { it.name }
+            .orEmpty()
     return LocationPrivacyUi(
         permissionComplete = snapshot.locationComplete,
         waitingMiffNames = names,
+        clarifyMiffNames = clarifyNames,
         backgroundRequestable = LocationFlow.canRequestBackground(snapshot),
     )
 }
@@ -137,6 +150,29 @@ internal fun LocationBlock(
             }
         }
         if (location.waitingMiffNames.isNotEmpty()) {
+            MiffSecondaryButton(
+                text = stringResource(R.string.miff_waiting_review),
+                onClick = onReviewAgreement,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        // CONS-4-A: the calm card can always be read again from here (it comes by itself 3 times at most). Calm words, no pause, no pill.
+        if (location.clarifyMiffNames.isNotEmpty() && location.waitingMiffNames.isEmpty()) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(top = Spacing.s).semantics(mergeDescendants = true) {},
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+            ) {
+                Text(
+                    text = stringResource(R.string.miff_clarify_title),
+                    style = textBodyBold16,
+                    color = colorTextForm,
+                )
+                Text(
+                    text = stringResource(R.string.settings_privacy_clarify_body),
+                    style = textBodyRegular14,
+                    color = colorTextDescription,
+                )
+            }
             MiffSecondaryButton(
                 text = stringResource(R.string.miff_waiting_review),
                 onClick = onReviewAgreement,
