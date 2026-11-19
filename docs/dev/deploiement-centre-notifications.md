@@ -6,7 +6,7 @@
 
 **Ce que ça change, en une phrase** : à chaque notification envoyée (« a donné des nouvelles », début ou fin d'alerte), le serveur note une ligne de 30 jours par destinataire (**type, Miff, identifiant de la personne, date : ni prénom, ni photo, ni lieu**) dans `users/{uid}/notifications`, que l'app relit pour que le centre de notifications soit complet.
 
-**Coût** : règles 0 € ; **+1 écriture par destinataire et par notification** : **0 $ jusqu'à environ 1 000 utilisateurs actifs par jour, 3 à 4 $ par mois vers 10 000** (estimation, pas une mesure : `backend/data-model.md` §12 « Coût du journal »). Aucun moyen de paiement à ajouter (Blaze est déjà actif).
+**Coût** : règles 0 € ; **+1 écriture par destinataire et par notification** : **0 $ jusqu'à environ 1 000 utilisateurs actifs par jour, 3 à 4 $ par mois vers 10 000** (estimation, **un ordre de grandeur et pas une mesure** : `backend/data-model.md` §12 « Coût du journal » ; **le quota gratuit de 20 000 écritures par jour est partagé avec toutes les autres écritures de l'app** : statuts, positions, photos, alertes, jetons, états des fonctions, donc le seuil réel où la facture démarre arrive plus tôt que les chiffres ci-dessus). Aucun moyen de paiement à ajouter (Blaze est déjà actif).
 
 **Aucun nouveau compte de service, aucun rôle de plus, aucune clé, aucune nouvelle fonction.** Le compte `notify-update@miff-3d283.iam.gserviceaccount.com` écrit dans Firestore avec le rôle qu'il porte déjà (`roles/datastore.user`).
 
@@ -24,7 +24,7 @@
 
 Chaque étape exige **ton « oui » explicite dans la conversation avec Claude, pour le commit annoncé**, la CI verte et la revue de sécurité faite (checklists des procédures de base). Entre deux étapes, tu peux t'arrêter sans rien casser.
 
-**Dernier état en ligne** (information du PM, non vérifiable par l'agent) : règles déployées jusqu'au commit **`13ec6177`** (alerte, 2026-11-18) au plus tôt ; fonctions `notifierUpdate` et `notifierAlerte` en ligne (alerte déployée le 2026-11-19 d'après le ticket). **Note le commit réellement déployé avant de commencer** : c'est ta référence pour le retour arrière (section 4) et pour la commande de contrôle de l'étape A de chaque section (`<DERNIER_COMMIT_DEPLOYE>`).
+**Derniers états en ligne** (informations du PM, non vérifiables par l'agent ; **deux références distinctes, ne pas les confondre**) : **`<COMMIT_REGLES>`** = dernier commit dont tu as déployé les **règles** (au plus tôt **`13ec6177`**, alerte, 2026-11-18) ; **`<COMMIT_FONCTIONS>`** = commit dont tu as déployé les **fonctions** (`notifierAlerte` : **`424e858a`**, 2026-11-19 ; `notifierUpdate` : un commit **antérieur**, 2026-11-13 au plus tôt, donc `<COMMIT_FONCTIONS>` peut valoir deux commits différents, un par fonction). **Comment les retrouver (lecture seule)** : Console Firebase > Firestore Database > Règles > historique des versions (date et message `--message` de chaque publication) ; Console Firebase > Functions > chaque fonction > détails (date de dernière mise à jour) ; ta note de déploiement (`docs/dev/deploiement-alerte-danger.md` §3 E, point 10) ; en dernier recours demande à Claude. **Note-les avant de commencer** : ce sont tes références pour le retour arrière (section 4) et pour la commande de l'étape B de la section 2.
 
 ---
 
@@ -61,10 +61,10 @@ git log -1 --format=%H
 
 Note les **8 premiers caractères** du commit et vérifie avec Claude que c'est bien celui qu'il a validé (la PR `backend/notif-centre-journal` doit être **fusionnée**).
 
-**B. Voir exactement ce qui part** (lecture seule ; remplace `<DERNIER_COMMIT_DEPLOYE>` par le dernier commit de règles que tu as déployé) :
+**B. Voir exactement ce qui part** (lecture seule ; remplace `<COMMIT_REGLES>` par le dernier commit de **règles** que tu as déployé, voir « Derniers états en ligne » en section 0) :
 
 ```bash
-git diff --stat <DERNIER_COMMIT_DEPLOYE> HEAD -- backend/firestore.rules backend/functions
+git diff --stat <COMMIT_REGLES> HEAD -- backend/firestore.rules backend/functions
 ```
 
 Le résultat ne doit lister que les fichiers de cette PR (`firestore.rules`, `functions/src/*`, tests, documents). Si autre chose apparaît (une autre PR fusionnée entre-temps), **arrête-toi et copie la sortie à Claude**.
@@ -165,11 +165,11 @@ gcloud run services add-iam-policy-binding notifieralerte --region=europe-west9 
 
 ## 4. Arrêter ou revenir en arrière (si quelque chose ne va pas)
 
-**Arrêter l'écriture du journal tout de suite** (les notifications continuent de partir comme avant, **sans** ligne de journal) : redéployer la version **d'avant** des deux fonctions.
+**Arrêter l'écriture du journal tout de suite** (les notifications continuent de partir comme avant, **sans** ligne de journal) : redéployer la version **d'avant** des deux fonctions, depuis `<COMMIT_FONCTIONS>` (**pas** le commit des règles). Si les deux fonctions n'ont pas le même commit (`notifierUpdate` antérieur à `notifierAlerte`), le code de `notifierUpdate` d'avant se retrouve dans le commit `<COMMIT_FONCTIONS>` de `notifierAlerte` tant qu'aucun autre changement ne l'a touchée : en cas de doute, demande à Claude le commit exact pour chacune et déploie-les séparément (`--only functions:notifierUpdate` puis `--only functions:notifierAlerte`).
 
 ```bash
 cd C:\dev\miff-deploy
-git switch --detach <DERNIER_COMMIT_DEPLOYE>
+git switch --detach <COMMIT_FONCTIONS>
 cd backend
 npx firebase deploy --only functions:notifierUpdate,functions:notifierAlerte --project miff-3d283
 cd ..
@@ -187,6 +187,7 @@ Effets : plus aucune ligne n'est écrite ; **les lignes déjà écrites expirent
 ## 5. Coût et signal de bascule (pour que tu voies venir la facture)
 
 - **Estimation** (pas une mesure ; hypothèses dites dans `backend/data-model.md` §12) : Miff de 4 membres, 2 publications par utilisateur actif et par jour, 5 ouvertures de l'app par jour. **100 actifs/jour** : 600 lignes/jour, **0 $** ; **1 000** : 6 000 lignes/jour, ≈ 16 000 lectures/jour, **≈ 0 $** (sous les quotas gratuits de 20 000 écritures et 50 000 lectures par jour) ; **10 000** : 60 000 lignes/jour, ≈ 160 000 lectures/jour, **≈ 3 à 4 $ par mois**. Stockage : ≈ 55 Mo à 1 000 actifs, ≈ 0,55 Go à 10 000 (gratuit jusqu'à 1 Go).
+- **Ordre de grandeur, pas une garantie** : le quota gratuit de 20 000 écritures par jour est **partagé** avec toutes les autres écritures de l'app (statuts, positions, photos, alertes, jetons, états des fonctions) ; les 3 à 4 $ à 10 000 actifs sont une fourchette, la facture peut démarrer plus tôt.
 - **À regarder chaque semaine pendant la bêta** (1 minute) : `docs/dev/surveillance-quotas.md` §5 nonies (écritures du journal par jour, `journalisees` dans les journaux, lectures du centre par ouverture, dépense).
 - **Signaux de bascule ou de revue** : écritures dans `notifications` par jour > **3 × (destinataires × publications) attendus** ; lectures du centre par ouverture > **15** ; écritures totales > **~40 000 par jour** (alors : une ligne **par Miff et par jour** regroupée au lieu d'une par destinataire, `data-model.md` §12) ; facture Blaze > **5 $ par mois**.
 
