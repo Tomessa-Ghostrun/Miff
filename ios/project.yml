@@ -61,10 +61,17 @@ settings:
     # reconfirmation du PM à la porte « prêt à soumettre » : ajouter une ligne `Release: SWIFT_ACTIVE_COMPILATION_CONDITIONS: REVIEW_PROMPT`
     # ici ET lancer le contrôle des binaires avec MIFF_ALLOW_REVIEW_PROMPT_IN_RELEASE=1 (ios/ci/check-binaries.sh) ; jamais autrement.
     # ATTENTION : un build Internal ouvert à des testeurs EXTERNES contient la fenêtre ; la retirer de la ligne Internal avant de l'ouvrir.
+    # ALERT_DANGER = l'alerte « Je suis en danger » (docs/tickets/alerte-danger.md, décisions du PM du 2026-11-18) : MÊME principe que REVIEW_PROMPT et que
+    # `BuildConfig.ALERT_DANGER` d'Android (vrai en debug, faux en release). ALLUMÉE en Debug et dans le build TestFlight « interne » (Internal) de la recette du PM,
+    # ÉTEINTE en Release : aucun build de diffusion ne contient la fonction (son code n'est même pas compilé, et les lots d'arrêt du partage, de départ, de retrait
+    # et de suppression n'écrivent rien de plus). Le serveur (règles puis fonction `notifierAlerte`) est déployé par le PM sur « oui » explicite, AVANT tout build qui
+    # écrit une alerte. Pour inclure la fonction dans la publication, après décision du PM : ajouter ALERT_DANGER à la ligne Release ET lancer le contrôle des
+    # binaires avec MIFF_ALLOW_ALERT_DANGER_IN_RELEASE=1 (ios/ci/check-binaries.sh) ; jamais autrement.
+    # ATTENTION : un build Internal ouvert à des testeurs EXTERNES contient la fonction ; la retirer de la ligne Internal avant de l'ouvrir.
     Debug:
-      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG REVIEW_PROMPT
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG REVIEW_PROMPT ALERT_DANGER
     Internal:
-      SWIFT_ACTIVE_COMPILATION_CONDITIONS: INTERNAL REVIEW_PROMPT
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: INTERNAL REVIEW_PROMPT ALERT_DANGER
 
 targets:
   Miff:
@@ -214,7 +221,7 @@ targets:
         # Interrupteur de compilation du blocage de la localisation (LOC-4a) : voir la cle MiffLocationBlocking de l'Info.plist.
         MIFF_LOCATION_BLOCKING: "YES"
       configs:
-        # Capacite App Attest (App Check) : seulement pour les builds qui seront signes et installes sur iPhone.
+        # Capacites App Attest (App Check), Sign in with Apple, push et Time Sensitive (alerte de danger) : seulement pour les builds qui seront signes et installes sur iPhone (signature automatique).
         # En Debug (simulateur, fournisseur de debogage), aucune entitlement.
         Internal:
           CODE_SIGN_ENTITLEMENTS: Config/Miff.entitlements

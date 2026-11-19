@@ -179,6 +179,9 @@ struct FeedTexts {
             return travelLabel(day, mine: mine)
         case .travelEnded:
             return text("voyage_feed_label_ended")
+        case .alertActive:
+            // ALERTE : factuel et calme, jamais « en sécurité », jamais un point d'exclamation.
+            return text("feed_label_alert")
         }
     }
 
@@ -262,6 +265,12 @@ struct FeedTexts {
                 return text("feed_bubble_me_red_stale", since(moment))
             }
             return text("feed_bubble_red_stale", name, since(moment))
+        case .declared(let moment):
+            // ALERTE : attribuée à la personne (« a déclaré une alerte à 15 h 02 ») ; jamais « en sécurité », jamais un point d'exclamation.
+            if page.isMe {
+                return text("feed_bubble_me_alert", at(moment))
+            }
+            return text("feed_bubble_alert", name, at(moment))
         case .danger(let place, _):
             if page.isMe {
                 return text("feed_bubble_me_danger")
@@ -292,6 +301,11 @@ struct FeedTexts {
     /// Le nom parlé du bouton d'une bulle d'alerte : « Contacter Thomas » (même clé qu'Android, `feed_bubble_contact_a11y`).
     func contactA11y(_ name: String) -> String {
         text("feed_bubble_contact_a11y", name)
+    }
+
+    /// Le nom parlé du bouton « Appeler » d'une bulle d'alerte déclarée : « Appeler Thomas » (même clé que le bouton de la carte).
+    func callA11y(_ name: String) -> String {
+        text("feed_card_call_a11y", name)
     }
 
     func offlineAlert(_ page: AlertPage) -> String? {
