@@ -199,6 +199,10 @@ splash_args=(-MiffSkipSplash YES)
 shot 90-fr-feed-bulle-verte 3 "${fr_args[@]}" -MiffPreview feed-green
 shot 91-fr-feed-bulle-orange 3 "${fr_args[@]}" -MiffPreview feed-orange
 shot 92-fr-feed-bulle-rouge 3 "${fr_args[@]}" -MiffPreview feed-red
+# « Tirer pour actualiser » : l'indicateur FORCÉ visible (preuve qu'il se rend, sous l'en-tête et non coupé) : en cours de tirage, assez tiré, roue qui tourne.
+shot 90b-fr-feed-tirage 3 "${fr_args[@]}" -MiffPreview feed-pull
+shot 90c-fr-feed-tirage-pret 3 "${fr_args[@]}" -MiffPreview feed-pull-ready
+shot 90d-fr-feed-roue 3 "${fr_args[@]}" -MiffPreview feed-loading
 # COUNTDOWN-I : le compte à rebours (Feed plein, Feed dans la dernière demi-heure, Profil à 1 h). Peu de captures : l'étape est saturée.
 shot 94-fr-feed-compte-a-rebours-plein 3 "${fr_args[@]}" -MiffPreview feed-countdown-full
 shot 94c-fr-profil-compte-a-rebours 3 "${fr_args[@]}" -MiffPreview profile-countdown-half

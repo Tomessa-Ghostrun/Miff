@@ -30,6 +30,8 @@ enum JournalKind: String, CaseIterable {
     case wakeNetwork
     case wakeRearm
     case wakeSignificantMove
+    /// « Tirer pour actualiser » (Feed) a lancé la revérification de MA présence (une mesure fraîche, jamais plus d'une par 30 s).
+    case wakePull
     case backgroundRefreshOff
     case lowPowerMode
     case monitoringFailed
