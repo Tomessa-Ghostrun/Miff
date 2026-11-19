@@ -128,6 +128,9 @@ struct MiffHomeHost: View {
     /// Les demandes d'ajout d'un lieu (LIEU-REQ), sous la liste des lieux du Profil : un membre lit les siennes, une fois par Miff et par
     /// 5 minutes. Créé avec la session de l'hôte.
     @StateObject private var profileRequests: ProfileRequestsViewModel
+    /// La carte « Répartition de ton temps » du Profil (TIME-4) : calculée sur le téléphone d'après le journal local des changements de
+    /// présence, pour la Miff du carrousel ; aucune lecture ni écriture Firestore. Créée avec la session de l'hôte.
+    @StateObject private var timeShare: TimeShareViewModel
     /// MODE VOYAGE (VOY-2I) : la carte du Profil, créée pour la session ; le voyage est écrit par le moteur de suivi, nulle part ailleurs.
     @StateObject private var travel: TravelViewModel
     /// L'Update (UPDATE-3) : l'écran du bouton central, créé pour la session (la photo prise y vit, en mémoire seulement).
@@ -153,6 +156,7 @@ struct MiffHomeHost: View {
         _memberPreviews = StateObject(wrappedValue: MiffMemberPreviews(reader: environment.memberPreviewReader))
         _profilePlaces = StateObject(wrappedValue: ProfilePlacesViewModel(reader: environment.placesReader))
         _profileRequests = StateObject(wrappedValue: environment.makeProfileRequestsViewModel())
+        _timeShare = StateObject(wrappedValue: environment.makeTimeShareViewModel())
         let reconciler = environment.notifications.reconciler
         // NOTIF-P0 : une update publiée annule N1 à N4 aussitôt (sans attendre le retour du Feed).
         _updateModel = StateObject(
@@ -181,7 +185,8 @@ struct MiffHomeHost: View {
                             actions: ProfilePlacesActions
                                 .make(model: profilePlaces, notices: placeNotices, open: { open($0) })
                                 .withRequests(model: profileRequests, open: { open($0) })
-                        )
+                        ),
+                        timeShare: timeShare
                     ),
                     update: UpdateShell(
                         model: updateModel,
@@ -236,6 +241,8 @@ struct MiffHomeHost: View {
         .onChange(of: path.isEmpty) { isEmpty in
             if isEmpty {
                 profilePlaces.onReturnedToRoot()
+                // Retour des Réglages (« Effacer mon historique de temps ») ou d'un autre écran : la carte relit le journal.
+                timeShare.refresh()
                 // Une demande a pu être envoyée ou reprise : la liste regardée est relue si elle est périmée (aucune lecture sinon).
                 profileRequests.onProfileAppeared()
             }

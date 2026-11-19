@@ -54,7 +54,9 @@ struct SettingsDestinationView: View {
             PrivacyView(
                 permissions: environment.devicePermissions,
                 onBack: onBack,
-                onOpenDetectionHelp: { navigate(.detectionHelp) }
+                onOpenDetectionHelp: { navigate(.detectionHelp) },
+                // TIME-3 (D15) : « Effacer mon historique de temps » : le journal local des changements de présence part ; aucune écriture serveur.
+                onEraseTimeHistory: { environment.presenceHistory.eraseFacts() }
             )
         case .detectionHelp:
             DetectionHelpView(onBack: onBack)

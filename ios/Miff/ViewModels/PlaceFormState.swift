@@ -29,8 +29,6 @@ enum PlaceMessage: Equatable {
     case idTaken
     /// Demande : la personne a déjà 3 demandes en attente dans cette Miff (critère M5). Dit comme une information calme, jamais une erreur.
     case requestLimitMember
-    /// Demande : la Miff porte déjà toutes les demandes qu'elle prend (10). Idem.
-    case requestLimitMiff
     /// Demande : le serveur ne prend pas encore les demandes de lieu. Idem.
     case requestsUnavailable
 
@@ -134,9 +132,10 @@ struct PlaceFormState: CustomStringConvertible {
     }
 
     /// Les messages de limite et d'indisponibilité d'une demande sont des informations calmes : jamais la couleur d'une erreur.
+    /// Le message générique (« Ça n'a pas fonctionné ») garde la couleur d'erreur habituelle des formulaires, comme sur Android (voulu).
     var messageIsCalm: Bool {
         switch displayedMessage {
-        case .offline, .requestLimitMember, .requestLimitMiff, .requestsUnavailable:
+        case .offline, .requestLimitMember, .requestsUnavailable:
             return true
         case .generic, .miffGone, .idTaken, .none:
             return false

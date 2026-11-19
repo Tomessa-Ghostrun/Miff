@@ -79,6 +79,7 @@ extension TrackingEngine {
                 continue
             }
             journal.record(.statusAfterResume, placeId: derived.placeId)
+            noteHistory(miffId, fact)
             state.update(miffId) {
                 $0.derived = derived
                 $0.pending = PendingStatus(fact: fact)

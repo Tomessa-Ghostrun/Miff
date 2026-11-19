@@ -14,8 +14,9 @@ struct SyncResult {
 
 private enum MiffSync {
     case watched(LocalMiff, complete: Bool)
-    /// Pas (ou plus) éligible : pas de partage, pas de consentement de version 3, ou accès perdu.
-    case dropped
+    /// Pas (ou plus) éligible : pas de partage, pas de consentement de version 3 (`lostAccess` faux), ou accès perdu (`lostAccess` vrai :
+    /// retirée, ou Miff supprimée).
+    case dropped(lostAccess: Bool)
     /// Le serveur n'a pas répondu : ce que le téléphone savait est gardé (une coupure réseau n'est jamais « retiré »).
     case unreachable(LocalMiff?)
 }
@@ -263,21 +264,28 @@ extension TrackingEngine {
         let forcePlaces = reason == .sharingChanged || reason == .rearm
         var miffs: [String: LocalMiff] = [:]
         var complete = true
+        var lost = Set<String>()
         for miffId in miffIds {
             let reading = PlacesReading(now: now, force: forcePlaces)
             switch await syncOne(miffId, uid: uid, previous: start.miffs[miffId], read: reading) {
             case .watched(let miff, let isComplete):
                 miffs[miffId] = miff
                 complete = complete && isComplete
-            case .dropped:
-                break
+            case .dropped(let lostAccess):
+                if lostAccess {
+                    lost.insert(miffId)
+                }
             case .unreachable(let kept):
                 complete = false
                 miffs[miffId] = kept
             }
         }
-        if !Set(start.miffs.keys).subtracting(miffs.keys).isEmpty {
+        let dropped = Set(start.miffs.keys).subtracting(miffs.keys)
+        if !dropped.isEmpty {
             journal.record(.notEligible)
+            // TIME-3 : une Miff qui n'est plus suivie. Partage arrêté ou texte à renouveler : son temps devient non mesuré (le journal reste
+            // jusqu'à 35 jours, ou jusqu'à son départ). Plus membre (départ, retrait, Miff supprimée) : son journal est effacé.
+            noteLeft(dropped, noLongerMember: lost.union(dropped.subtracting(miffIds)), now: now)
         }
         var next = start
         next.miffs = miffs
@@ -300,13 +308,13 @@ extension TrackingEngine {
         switch consent {
         case .value(let card):
             guard let card, card.enabled, MiffSharingConsent.coversPosition(card.version) else {
-                return .dropped
+                return .dropped(lostAccess: false)
             }
             let read = await readPlaces(miffId: miffId, previous: previous, reading: reading)
             return .watched(read.miff, complete: read.complete)
         case .failed(_, let lostAccess):
             // Le serveur a refusé : la personne n'est plus membre (retirée, Miff supprimée) ; sinon c'est une coupure.
-            return lostAccess ? .dropped : .unreachable(previous)
+            return lostAccess ? .dropped(lostAccess: true) : .unreachable(previous)
         }
     }
 
@@ -327,13 +335,13 @@ extension TrackingEngine {
         guard case .value(let facts) = read else {
             return PlacesRead(miff: base, complete: false)
         }
-        return PlacesRead(miff: refreshed(base, with: facts, now: now), complete: true)
+        return PlacesRead(miff: refreshed(miffId, base, with: facts, now: now), complete: true)
     }
 
     /// Le lieu où la personne était nommée, déplacé ou redimensionné (ou dont le type a changé) par son créateur : la présence ne
     /// peut plus être confirmée. Un lieu déplacé est une AUTRE zone (sa clé porte sa géométrie) : l'ancienne disparaît, la nouvelle
     /// est armée, et arrive comme une nouvelle arrivée si la personne est dedans.
-    private func refreshed(_ base: LocalMiff, with facts: [PlaceFact], now: Int) -> LocalMiff {
+    private func refreshed(_ miffId: String, _ base: LocalMiff, with facts: [PlaceFact], now: Int) -> LocalMiff {
         var oldById: [String: PlaceFact] = [:]
         for place in base.places {
             if let fact = place.fact {
@@ -347,11 +355,15 @@ extension TrackingEngine {
             return !old.sameGeometry(fresh)
         }
         let moved = Set(changed.map { $0.id })
+        // TIME-3 : la liste des lieux vient du SERVEUR (relecture complète) : le temps d'un lieu supprimé n'est plus mesuré, et son identifiant
+        // est retiré du journal de présence (jamais d'après une liste de l'écran, qui peut être plus ancienne que ce que le suivi a lu).
+        history.forgetPlaces(miffId: miffId, keeping: Set(facts.map { $0.id }))
         var updated = base
         updated.places = facts.map { LocalPlace(fact: $0) }
         updated.readAtMillis = now
         if let named = base.derived?.placeId, moved.contains(named) {
             journal.record(.presenceUnknown, placeId: named)
+            noteUnknown(miffId, at: now)
             updated.derived = DerivedPresence(presence: .unknown, placeId: nil)
             updated.pending = PendingStatus(fact: PresenceMachine.unknown(atMillis: now))
         }
@@ -392,6 +404,7 @@ extension TrackingEngine {
                 continue
             }
             journal.record(.presenceUnknown, placeId: named)
+            noteUnknown(miffId, at: now)
             next.update(miffId) {
                 $0.derived = DerivedPresence(presence: .unknown, placeId: nil)
                 $0.pending = PendingStatus(fact: PresenceMachine.unknown(atMillis: now))

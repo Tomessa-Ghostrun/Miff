@@ -55,6 +55,7 @@ Ticket `docs/tickets/alerte-danger.md` (sur `main`, décisions du PM du 2026-11-
 - **Non fait dans cette PR** : ligne « {Prénom} a déclaré une alerte » dans le centre de notifications ; aide « Si les alertes n'arrivent pas » (canal, OPPO) ; confirmation préalable de l'arrêt du partage / départ quand une alerte est en cours (l'alerte est retirée sans question, comme le serveur l'impose dans le même lot) ; annonces TalkBack d'annulation et de fin.
 ## [0.44.0] - 2026-11-17 : zoom sur l'aperçu de carte d'un lieu (LIEU-ZOOM)
 
+
 ## [0.50.0] - 2026-11-18 : la ligne « Zone de danger » est toujours dans la légende du graphique (décision du PM)
 
 Décision du PM après la recette de « Répartition du temps » : la ligne **« Zone de danger »** de la légende s'affiche **toujours quand sa part arrondie est de 1 % ou plus**, quitte à remplacer le 4e lieu. Branche `android/legende-danger`, PR de suivi. Numéro : #224 (À propos) a pris 0.49.0, celle-ci prend 0.50.0 (à renuméroter au merge si l'ordre change).49.0) puis celle-ci (0.50.0) puis #275 (0.51.0) ; à renuméroter au merge si l'ordre change. Android seulement. **Aucune nouvelle clé de texte, aucune lecture ni écriture serveur, aucune permission, aucune dépendance.**
