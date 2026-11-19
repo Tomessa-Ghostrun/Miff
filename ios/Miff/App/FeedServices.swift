@@ -7,6 +7,11 @@ struct FeedServices {
     let statuses: StatusObserver
     let positions: PositionReader
     let refresher: FeedRefresher
+    #if ALERT_DANGER
+    /// ALERTE « Je suis en danger » : les alertes de la Miff affichée, en direct (UN écouteur sur `miffs/{id}/alerts` tant que le Feed est à l'écran ; aucune lecture
+    /// quand il n'y en a pas). Absent dans un build sans la fonction : rien n'est lu.
+    var dangerAlerts: DangerAlertFeed = FirestoreDangerAlertStore()
+    #endif
 
     static func live() -> FeedServices {
         FeedServices(

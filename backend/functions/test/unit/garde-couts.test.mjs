@@ -266,7 +266,7 @@ test('notifierUpdate : jamais de sujet FCM (topic) ni d\'envoi multiple : un mes
   }
 });
 
-test('M8 : chemins Firestore touchés par les fonctions = liste fermée ; écriture SEULEMENT dans notifState (transaction) et suppression d\'un document devices avec précondition', () => {
+test('M8 : chemins Firestore touchés par les fonctions = liste fermée ; écriture SEULEMENT dans notifState et dans le journal users/*/notifications (même transaction) et suppression d\'un document devices avec précondition', () => {
   const traitement = code(sources.find((s) => nomDe(s.f) === 'notifTraitement.ts').texte);
   // Lectures : chemins passés à doc() / collection() dans tout src/ (notifTraitement.ts, puis alerteTraitement.ts : mêmes chemins + l'état d'alerte, sans fiche de partage).
   const chemins = sources.flatMap(({ texte }) => [...code(texte).matchAll(/\b(?:doc|collection)\(\s*`([^`]+)`/g)].map((m) => m[1])).sort();
@@ -290,8 +290,9 @@ test('M8 : chemins Firestore touchés par les fonctions = liste fermée ; écrit
   // Écritures : une seule écriture de document par traitement (tx.set sur refEtat = état de la fonction) ; une seule suppression (devices, avec précondition sur la version lue).
   for (const { f, texte } of sources) {
     const ecritures = code(texte).match(/\.(set|update|create|add|delete|batch|bulkWriter|recursiveDelete)\(/g) ?? [];
-    if (nomDe(f) === 'notifTraitement.ts') assert.deepEqual(ecritures, ['.set(', '.delete('], f);
-    else if (nomDe(f) === 'alerteTraitement.ts') assert.deepEqual(ecritures, ['.set(', '.set('], `${f} : deux tx.set (début : horodatages et compteur ; fin : une horodatage), aucune suppression`);
+    // CNC-B : un `tx.set` de plus par traitement = la ligne du journal du destinataire (dans la boucle de la transaction de réservation).
+    if (nomDe(f) === 'notifTraitement.ts') assert.deepEqual(ecritures, ['.set(', '.set(', '.delete('], f);
+    else if (nomDe(f) === 'alerteTraitement.ts') assert.deepEqual(ecritures, ['.set(', '.set(', '.set('], `${f} : trois tx.set (début : état ; fin : état ; journal des destinataires), aucune suppression`);
     else assert.deepEqual(ecritures, [], `${f} : aucune écriture Firestore hors notifTraitement.ts et alerteTraitement.ts`);
   }
   assert.equal((traitementAlerte.match(/\.runTransaction\(/g) ?? []).length, 1);
@@ -323,4 +324,23 @@ test('options.ts : retry autorisé = liste vide, minInstances 0, enforceAppCheck
   assert.match(o, /minInstances:\s*0/);
   assert.match(o, /enforceAppCheck:\s*true/);
   assert.match(o, /setGlobalOptions\(/);
+});
+
+test("CNC-B : le journal users/*/notifications n'est écrit QUE dans la transaction de réservation, via cheminEntree (seul endroit où le chemin est construit), jamais lu, jamais supprimé par la fonction", () => {
+  const journalNotif = code(sources.find((s) => nomDe(s.f) === 'journalNotif.ts').texte);
+  assert.match(journalNotif, /cheminEntree = \(destinataireUid: string, entryId: string\): string => `users\/\$\{destinataireUid\}\/notifications\/\$\{entryId\}`;/);
+  for (const { f, texte } of sources) {
+    const c = code(texte);
+    // Aucun autre fichier ne construit un chemin « notifications » à la main.
+    if (nomDe(f) !== 'journalNotif.ts') assert.doesNotMatch(c, /\/notifications\b/, `${f} : le chemin du journal n'est construit que par journalNotif.ts`);
+  }
+  for (const nom of ['notifTraitement.ts', 'alerteTraitement.ts']) {
+    const c = code(sources.find((s) => nomDe(s.f) === nom).texte);
+    const transaction = c.slice(c.indexOf('db.runTransaction('), c.indexOf('bilan.lectures += 1;', c.indexOf('db.runTransaction(')));
+    assert.match(transaction, /for \(const cible of cibles\) tx\.set\(db\.doc\(cheminEntree\(cible\.uid, entryId\)\), construireEntree\(/, `${nom} : une ligne par cible, dans la transaction`);
+    assert.equal((c.match(/cheminEntree\(/g) ?? []).length, 1, `${nom} : une seule écriture de journal`);
+    assert.doesNotMatch(c, /notifications.*\.get\(|\.get\(.*cheminEntree/, `${nom} : le journal n'est jamais lu par la fonction`);
+  }
+  // Aucune donnée de plus que les 6 clés : pas de prénom, photo, lieu, position, nom de Miff, jeton (le contenu exact est prouvé par journal-notif.test.mjs).
+  assert.doesNotMatch(journalNotif, /firstName|prenom|avatar|jpeg|photo\b|lat\b|lng\b|token|jeton|miffName|address/i);
 });

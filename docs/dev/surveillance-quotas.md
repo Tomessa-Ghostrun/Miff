@@ -368,6 +368,8 @@ Les alertes de budget **ne plafonnent pas** la dépense ; le plafond de dépense
 
 ## 5 septies. Cloud Functions : la fonction `notifierUpdate` (SRV-4B, notification d'une update aux proches)
 
+**Mise à jour CNC-B (NON DÉPLOYÉE)** : la colonne « Écritures » ci-dessous passe de **1** à **1 + nombre de destinataires** (une ligne du journal de notifications par destinataire, même transaction, 0 lecture de plus : Miff de 4 = **4** écritures, Miff de 15 = **15**, Miff de 40 = **21**). Voir §5 nonies.
+
 **Ce qu'elle consomme** (comptes faits par la fonction et vérifiés à l'émulateur ; `backend/data-model.md` §2.16, `deploiement-functions.md` §11.2) :
 
 | Cas | Lectures | Écritures |
@@ -398,6 +400,8 @@ Les alertes de budget **ne plafonnent pas** la dépense ; le plafond de dépense
 
 ## 5 octies. Cloud Functions : la fonction `notifierAlerte` (AD-B2, alerte « Je suis en danger », NON DÉPLOYÉE)
 
+**Mise à jour CNC-B (NON DÉPLOYÉE)** : la colonne « Écritures » ci-dessous passe de **1** à **1 + nombre de destinataires** (une ligne du journal de notifications par destinataire, début **et** fin, même transaction, 0 lecture de plus : Miff de 4 = **4** écritures, Miff de 15 = **15**, Miff de 40 = **40**). Voir §5 nonies.
+
 **Ce qu'elle consomme** (comptes faits par la fonction et vérifiés à l'émulateur ; `backend/data-model.md` §2.18 et §2.19, `docs/dev/deploiement-alerte-danger.md`) :
 
 | Cas | Lectures | Écritures |
@@ -427,6 +431,38 @@ Côté règles, une alerte coûte **3 lectures de règles à la création**, **1
 | Dépense | Google Cloud > Facturation > Rapports, filtre projet `miff-3d283` | 0 € à quelques centimes | Une ligne qui monte, ou un e-mail de l'alerte de budget |
 
 **Signaux de bascule ou de revue** : (1) facture Blaze > **5 $ par mois** (alerte de budget déjà posée) ; (2) plus de **100 invocations par jour** de `notifierAlerte` sans alerte réelle, ou plus de **5 lignes « plafond » (1 par minute) par jour** : revoir App Check et le quota ; (3) **plus de 5 % d'alertes de moins de 2 minutes** ; (4) erreurs FCM > **5 %** des envois ; (5) invocations > **1 million par mois** (jamais atteint : les règles limitent chaque compte à 3 débuts par 24 h).
+
+## 5 nonies. Le journal de notifications (CNC-B, centre de notifications complet, NON DÉPLOYÉ)
+
+**Ce que c'est** : une ligne de 30 jours par destinataire et par notification envoyée (`users/{uid}/notifications`, **type, Miff, identifiant de la personne, date ; ni prénom, ni photo, ni lieu**), écrite par `notifierUpdate` et `notifierAlerte` dans leur transaction de réservation, relue par l'app (`backend/data-model.md` §2.21, `docs/dev/deploiement-centre-notifications.md`).
+
+**Ce que ça consomme** (comptes faits par les fonctions, vérifiés à l'émulateur ; **estimations pour le reste, pas des mesures**) :
+
+| Cas | Lectures | Écritures |
+|---|---|---|
+| Update ou alerte, Miff de 4 membres (3 destinataires, 1 téléphone chacun) | **13** (inchangé) | **4** = 1 (état de la fonction) + **3 lignes du journal** |
+| Miff de 15 membres | 46 (inchangé) | 15 |
+| Miff de 40 membres en alerte (39 destinataires) | 121 (inchangé) | 40 (**une seule transaction**, limite de 500 sans objet) |
+| Update plafonnée (2e de l'heure), événement rejoué, début plafonné, fin sans début notifié | 1 | **0, aucune ligne** (conçu ainsi) |
+| Lecture du centre par l'app (requête incrémentale) | **1 minimum, même vide** ; 1 par ligne reçue ; 100 au plus par page, 2 pages au plus | 0 |
+| « Effacer » / « Tout effacer » | 0 (la suppression ne lit rien) | suppressions (20 000 par jour gratuites) |
+| Suppression par la règle TTL (30 jours) | 0 | suppressions TTL (tarif **à vérifier** auprès de Google) |
+
+**Règles** : lire, lister, supprimer = **0 lecture de règles**. **Coût mensuel estimé** (hypothèses du ticket : Miff de 4, 2 publications par utilisateur actif et par jour, 5 ouvertures par jour) : **100 actifs/jour = 0 $** ; **1 000 = ≈ 0 $** (6 000 lignes/jour, ≈ 16 000 lectures/jour, sous les quotas) ; **10 000 = ≈ 3 à 4 $** (60 000 lignes/jour, ≈ 160 000 lectures/jour). Stockage ≈ 55 Mo à 1 000 actifs, ≈ 0,55 Go à 10 000 (gratuit jusqu'à 1 Go).
+
+**Effet sur le ratio de la section 1** : **faible** (une lecture minimum par ouverture du centre, 1 par minute au plus) ; surveiller si le ratio monte après la sortie des apps.
+
+**Quoi regarder (1 minute, chaque semaine pendant la bêta)**
+
+| Quoi | Où | Normal | À examiner |
+|---|---|---|---|
+| Lignes écrites par jour | Journaux (`npx firebase functions:log --only notifierUpdate -n 50 --project miff-3d283`, puis `notifierAlerte`) : lignes `notif.update.bilan` et `notif.alerte.debut.bilan` / `fin.bilan`, champ `journalisees` ; ou Firestore > Utilisation > écritures | `journalisees` = nombre de proches joignables (≤ 20 pour une update, ≤ 39 pour une alerte) | Écritures dans `notifications` par jour **supérieures à 3 × (destinataires × publications) attendus** : emballement ou abus (regarder aussi les lignes `plafond`) |
+| Lectures du centre par ouverture | Firestore > Utilisation (lectures) rapportées au nombre d'ouvertures, ou mesure en recette | **≤ 15 par ouverture** (1 requête + quelques lignes + une dizaine de fiches de membres au pire) | **Plus de 15** : boucle de synchronisation, écouteur permanent oublié, ou abus |
+| Règle TTL | Console Firestore > Time-to-live | `notifications` / `expireAt` : **Actif** | Absente ou en erreur : les lignes ne s'effacent plus (durée annoncée de 30 jours non tenue) : la poser avant tout autre chose |
+| Âge des lignes | Console Firestore > `users/…/notifications` (un compte de test) | Aucune ligne de plus de **31 jours** | Des lignes plus vieilles : TTL en retard ou absente |
+| Dépense | Google Cloud > Facturation > Rapports, filtre projet `miff-3d283` | 0 € à quelques centimes | Une ligne qui monte, ou un e-mail de l'alerte de budget |
+
+**Signaux de bascule ou de revue** : (1) écritures totales **> ~40 000 par jour** : passer à une ligne **par Miff et par jour** regroupée (une écriture au lieu de N ; le client lit déjà par curseur, la forme s'adapte grâce à `v`) ; (2) lectures du centre par ouverture **> 15** ; (3) écritures du journal par jour **> 3 × l'attendu** ; (4) facture Blaze **> 5 $ par mois** ; (5) règle TTL non active.
 
 ## 6. Ce que les agents font de leur côté
 

@@ -21,17 +21,21 @@ final class StoreAccountMiffs: AccountMiffs {
     /// sont reprises (elles portent une adresse et des coordonnées : elles ne restent pas orphelines une fois le compte parti, les règles ne
     /// permettent à leur auteur de les supprimer que tant qu'il est membre). Ne bloque jamais la suppression du compte.
     private let beforeLeave: (_ uid: String, _ miffId: String) async -> Void
+    /// ALERTE (`BuildFlavor.includesAlertDanger`) : le lot « Quitter » supprime AUSSI l'alerte de cette Miff (les règles l'exigent). Faux : rien n'est ajouté.
+    private let alertsEnabled: Bool
 
     init(
         store: MiffStore,
         deleter: MiffDeleter,
         timeoutSeconds: TimeInterval = 20,
-        beforeLeave: @escaping (_ uid: String, _ miffId: String) async -> Void = { _, _ in }
+        beforeLeave: @escaping (_ uid: String, _ miffId: String) async -> Void = { _, _ in },
+        alertsEnabled: Bool = false
     ) {
         self.store = store
         self.deleter = deleter
         self.timeoutSeconds = timeoutSeconds
         self.beforeLeave = beforeLeave
+        self.alertsEnabled = alertsEnabled
     }
 
     func inventory(uid: String) async -> MiffsRead {
@@ -133,8 +137,15 @@ final class StoreAccountMiffs: AccountMiffs {
     /// l'index seul (les règles le permettent une fois la fiche partie). Personne n'en est informé : la personne s'en va.
     private func leaveOrDropIndex(uid: String, ref: MembershipRef) async -> MiffStep {
         let store = self.store
-        let leaveWrites = MiffWrites.leave(miffId: ref.miffId, uid: uid, membershipKey: ref.key)
-        let leave = await guardedCall(timeoutSeconds: timeoutSeconds) { try await store.commit(leaveWrites) }
+        let leaveWrites = MiffWrites.leave(
+            miffId: ref.miffId, uid: uid, membershipKey: ref.key, withAlert: alertsEnabled
+        )
+        var leave = await guardedCall(timeoutSeconds: timeoutSeconds) { try await store.commit(leaveWrites) }
+        // ALERTE : les règles en production peuvent ne pas connaître l'alerte : un lot refusé AVEC sa suppression est réessayé SANS.
+        if alertsEnabled, case .failed(.refused, _) = leave {
+            let plain = MiffWrites.leave(miffId: ref.miffId, uid: uid, membershipKey: ref.key)
+            leave = await guardedCall(timeoutSeconds: timeoutSeconds) { try await store.commit(plain) }
+        }
         if case .value = leave {
             return .done
         }

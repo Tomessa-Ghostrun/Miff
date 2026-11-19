@@ -3,7 +3,7 @@
 // Aucune entree/sortie ici (pas de Firestore, pas de reseau, pas de journal) : tout est teste directement (test/unit/notif-regles.test.mjs).
 //
 // CONTENU STRICT du message (ticket §4, test de forme exacte) : prenom de l'auteur (tronque a 20 caracteres), identifiant de la Miff,
-// identifiant technique de l'auteur (pour ouvrir sa carte et remplacer l'ancienne notification), type, indicateur de nuit. JAMAIS : photo,
+// identifiant technique de l'auteur (pour ouvrir sa carte et remplacer l'ancienne notification), type, indicateur de nuit, identifiant de la ligne du journal (entryId, CNC-B). JAMAIS : photo,
 // position, nom de lieu, nom de famille, nom de la Miff, legende, heure precise, couleur du statut.
 import type { Message } from "firebase-admin/messaging";
 
@@ -76,6 +76,8 @@ export interface EntreeMessage {
   prenom: string;
   nuit: boolean;
   maintenant: Date;
+  /** Identifiant de la ligne du journal du destinataire (journalNotif.identifiantEntree) : permet a l'app de ne jamais doubler une ligne deja relue du journal. */
+  entryId: string;
 }
 
 /**
@@ -104,13 +106,13 @@ export function construireMessage(e: EntreeMessage): Message {
   if (e.plateforme === "android") {
     return {
       token: e.token,
-      data: { type: TYPE_MESSAGE, miffId: e.miffId, authorUid: e.auteurUid, firstName: e.prenom, quiet: e.nuit ? "1" : "0" },
+      data: { type: TYPE_MESSAGE, miffId: e.miffId, authorUid: e.auteurUid, firstName: e.prenom, quiet: e.nuit ? "1" : "0", entryId: e.entryId },
       android: { priority: "high", ttl: DUREE_DE_VIE_MS },
     };
   }
   return {
     token: e.token,
-    data: { type: TYPE_MESSAGE, miffId: e.miffId, authorUid: e.auteurUid },
+    data: { type: TYPE_MESSAGE, miffId: e.miffId, authorUid: e.auteurUid, entryId: e.entryId },
     apns: {
       headers: {
         "apns-push-type": "alert",

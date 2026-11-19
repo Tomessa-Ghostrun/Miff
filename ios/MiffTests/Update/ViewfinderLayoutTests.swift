@@ -248,10 +248,17 @@ final class ViewfinderFullScreenWiringTests: XCTestCase {
             ("contrôles de démonstration (contrôleur)", controller, "func showDemoControls()")
         ] {
             let at = try XCTUnwrap(code.range(of: marker)?.lowerBound, name)
-            let before = String(code[..<at])
-            let opened = before.components(separatedBy: "#if DEBUG").count - 1
-            let closed = before.components(separatedBy: "#endif").count - 1
-            XCTAssertGreaterThan(opened, closed, "\(name) : doit être dans un bloc #if DEBUG")
+            // Pile des blocs de compilation ouverts à cet endroit (d'autres drapeaux, comme ALERT_DANGER, peuvent aussi apparaître).
+            var open: [String] = []
+            for line in String(code[..<at]).components(separatedBy: "\n") {
+                let trimmed = line.trimmingCharacters(in: .whitespaces)
+                if trimmed.hasPrefix("#if ") {
+                    open.append(trimmed)
+                } else if trimmed.hasPrefix("#endif"), !open.isEmpty {
+                    open.removeLast()
+                }
+            }
+            XCTAssertTrue(open.contains("#if DEBUG"), "\(name) : doit être dans un bloc #if DEBUG")
         }
     }
 }

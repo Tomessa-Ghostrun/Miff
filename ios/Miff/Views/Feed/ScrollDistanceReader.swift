@@ -10,6 +10,8 @@ import UIKit
 struct ScrollDistanceReader: UIViewRepresentable {
     let onChange: (CGFloat) -> Void
     var onOrigin: (CGFloat) -> Void = { _ in }
+    /// L'indicateur de « tirer pour actualiser » : la distance tirée (0 au repos), un doigt tire-t-il, la roue d'UIKit tourne-t-elle.
+    var onPull: (CGFloat, Bool, Bool) -> Void = { _, _, _ in }
 
     func makeUIView(context: Context) -> ProbeView {
         ProbeView()
@@ -18,13 +20,17 @@ struct ScrollDistanceReader: UIViewRepresentable {
     func updateUIView(_ view: ProbeView, context: Context) {
         view.onChange = onChange
         view.onOrigin = onOrigin
+        view.onPull = onPull
     }
 
     /// Une vue invisible, posée dans le contenu de la liste : elle retrouve la vue de défilement qui la contient et en observe le décalage.
     final class ProbeView: UIView {
         var onChange: ((CGFloat) -> Void)?
         var onOrigin: ((CGFloat) -> Void)?
+        var onPull: ((CGFloat, Bool, Bool) -> Void)?
         private var observation: NSKeyValueObservation?
+        private var insetGuard = RefreshInsetGuard()
+        private var recheckScheduled = false
 
         override init(frame: CGRect) {
             super.init(frame: frame)
@@ -68,14 +74,40 @@ struct ScrollDistanceReader: UIViewRepresentable {
         }
 
         private func report(_ scroll: UIScrollView) {
-            onChange?(scroll.contentOffset.y + scroll.adjustedContentInset.top)
+            let scrolled = scroll.contentOffset.y + scroll.adjustedContentInset.top
+            onChange?(scrolled)
+            onPull?(max(-scrolled, 0), scroll.isDragging, scroll.refreshControl?.isRefreshing == true)
             reportOrigin(scroll)
         }
 
-        /// Où le contenu commence AU REPOS, dans la fenêtre : le haut de la vue de défilement + sa marge haute automatique.
+        /// Où le contenu commence AU REPOS, dans la fenêtre : le haut de la vue de défilement + sa marge haute automatique. Pas pendant
+        /// « tirer pour actualiser » ni juste après : UIKit y ajoute la hauteur de la roue à la marge, ce qui ferait SAUTER le contenu
+        /// (`RefreshInsetGuard`). La mesure ignorée est reprise quand la roue s'est retirée.
         private func reportOrigin(_ scroll: UIScrollView) {
+            let now = ProcessInfo.processInfo.systemUptime
+            let refreshing = scroll.refreshControl?.isRefreshing == true
+            guard insetGuard.allowsMeasure(refreshing: refreshing, now: now) else {
+                scheduleOriginRecheck(now: now)
+                return
+            }
             let frame = scroll.convert(scroll.bounds, to: nil)
             onOrigin?(frame.minY + scroll.adjustedContentInset.top)
+        }
+
+        private func scheduleOriginRecheck(now: TimeInterval) {
+            guard !recheckScheduled, let wait = insetGuard.secondsUntilMeasure(now: now) else {
+                return
+            }
+            recheckScheduled = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + wait + 0.05) { [weak self] in
+                guard let self else {
+                    return
+                }
+                self.recheckScheduled = false
+                if let scroll = self.enclosingScrollView {
+                    self.reportOrigin(scroll)
+                }
+            }
         }
     }
 }

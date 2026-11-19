@@ -115,7 +115,7 @@ const quatre = () => ({
 
 // --- Début : qui reçoit, forme exacte, coût --------------------------------------------------------------------------------------------
 
-test('AD32 : A déclare une alerte à 03:00 (heure calme à Paris) -> B, C, D notifiés, A non ; messages de forme exacte, priorité haute, Time Sensitive ; 13 lectures, 1 écriture', async () => {
+test('AD32 : A déclare une alerte à 03:00 (heure calme à Paris) -> B, C, D notifiés, A non ; messages de forme exacte, priorité haute, Time Sensitive ; 13 lectures, 4 écritures (état + 3 lignes de journal)', async () => {
   await creerMiff(MIFF, quatre());
   const c = contexte();
   const bilan = await debut(c);
@@ -124,17 +124,18 @@ test('AD32 : A déclare une alerte à 03:00 (heure calme à Paris) -> B, C, D no
   assert.equal(bilan.envoyes, 3);
   assert.equal(bilan.motif, undefined);
   assert.equal(bilan.lectures, 13, '1 pré-contrôle + 1 Miff + 4 fiches + 3 destinataires x (session + appareil) + 1 état (transaction)');
-  assert.equal(bilan.ecritures, 1, "1 écriture : l'état de la fonction");
+  assert.equal(bilan.ecritures, 4, "4 écritures : l'état de la fonction + 3 lignes de journal (une par destinataire, CNC-B)");
+  assert.equal(bilan.journalisees, 3);
 
   const parJeton = Object.fromEntries(c.fcm.messages.map((m) => [m.token, m]));
   assert.deepEqual(parJeton['jeton-C-0'], {
     token: 'jeton-C-0',
-    data: { type: 'circle_alert', event: 'start', miffId: MIFF, authorUid: 'A', firstName: 'Tomessa' },
+    data: { type: 'circle_alert', event: 'start', miffId: MIFF, authorUid: 'A', firstName: 'Tomessa', entryId: `as-${MIFF}-A-${T_DEBUT.getTime()}` },
     android: { priority: 'high', ttl: 7_200_000 },
   });
   assert.deepEqual(parJeton['jeton-B-0'], {
     token: 'jeton-B-0',
-    data: { type: 'circle_alert', event: 'start', miffId: MIFF, authorUid: 'A' },
+    data: { type: 'circle_alert', event: 'start', miffId: MIFF, authorUid: 'A', entryId: `as-${MIFF}-A-${T_DEBUT.getTime()}` },
     apns: {
       headers: { 'apns-push-type': 'alert', 'apns-priority': '10', 'apns-expiration': String(Math.floor(plus(T_DEBUT, 5000 + 2 * H).getTime() / 1000)), 'apns-collapse-id': 'alert-A' },
       payload: {
@@ -327,7 +328,7 @@ test('AD36 : fin manuelle APRÈS un début notifié -> « a mis fin à son alert
   assert.equal(message.length, 3);
   assert.deepEqual(message.find((m) => m.token === 'jeton-C-0'), {
     token: 'jeton-C-0',
-    data: { type: 'circle_alert', event: 'end', miffId: MIFF, authorUid: 'A', firstName: 'Tomessa' },
+    data: { type: 'circle_alert', event: 'end', miffId: MIFF, authorUid: 'A', firstName: 'Tomessa', entryId: `ae-${MIFF}-A-${T_DEBUT.getTime()}` },
     android: { priority: 'high', ttl: 7_200_000 },
   });
   const ios = message.find((m) => m.token === 'jeton-B-0');
@@ -408,7 +409,7 @@ test('F4/V9 : FCM répond « jeton inconnu » pour B -> son document est supprim
   assert.equal(await existe('users/C/devices/dev0'), true);
   assert.deepEqual(bilan.erreursFcm, { 1: 1 });
   assert.deepEqual(c.attentes, []);
-  assert.equal(bilan.ecritures, 2, "état + suppression d'un jeton");
+  assert.equal(bilan.ecritures, 5, "état + 3 lignes de journal (le journal garde la ligne de B : le téléphone la relira) + suppression d'un jeton");
 });
 
 test("jeton renouvelé entre la lecture et la réponse de FCM : le nouveau document n'est PAS supprimé ; invalid-argument ne purge jamais ; erreur passagère -> 2 nouvelles tentatives au plus", async () => {
@@ -493,13 +494,13 @@ test("AD33 : contenu STRICT : prénom tronqué à 20 caractères ; ni nom de fam
 
 // --- Coût ------------------------------------------------------------------------------------------------------------------------------
 
-test('AD-coût : Miff de 15 membres = 46 lectures et 1 écriture ; Miff de 40 membres = 40 fiches, 39 destinataires, 121 lectures (122 si l\'auteur est hors des 40 premières fiches), 1 écriture', async () => {
+test('AD-coût : Miff de 15 membres = 46 lectures et 15 écritures (état + 14 lignes de journal) ; Miff de 40 membres = 40 fiches, 39 destinataires, 121 lectures (122 si l\'auteur est hors des 40 premières fiches), 40 écritures', async () => {
   const membres = (n) => Object.fromEntries(Array.from({ length: n }, (_, i) => [`M${String(i).padStart(2, '0')}`, { prenom: `Prenom${i}` }]));
   await creerMiff('Miff15', membres(15));
   let c = contexte();
   let bilan = await debut(c, { miffId: 'Miff15', auteurUid: 'M00' });
   assert.equal(bilan.lectures, 1 + 1 + 15 + 14 * 2 + 1, '46');
-  assert.equal(bilan.ecritures, 1);
+  assert.equal(bilan.ecritures, 1 + 14);
   assert.equal(c.fcm.messages.length, 14);
 
   await viderEmulateur();
@@ -508,6 +509,7 @@ test('AD-coût : Miff de 15 membres = 46 lectures et 1 écriture ; Miff de 40 me
   bilan = await debut(c, { miffId: 'Miff40', auteurUid: 'M00' });
   assert.equal(bilan.lectures, 1 + 1 + 40 + 39 * 2 + 1, '121');
   assert.equal(bilan.envoyes, 39);
+  assert.equal(bilan.ecritures, 1 + 39, 'une seule transaction de 40 écritures, très loin de la limite de 500');
 
   await viderEmulateur();
   await creerMiff('Miff45', membres(45));

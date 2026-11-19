@@ -179,6 +179,7 @@ struct FeedScreen: View {
             onContentMoved: layout.onContentMoved,
             onScrolled: layout.onScrolled,
             onOrigin: layout.onOrigin,
+            onPull: layout.onPull,
             focus: focus,
             onFocusHandled: onFocusHandled
         )
@@ -200,7 +201,8 @@ struct FeedScreen: View {
             bubble: BubbleActions(
                 onMessage: actions.onMessage,
                 onResumeSharing: { resumeSharing() },
-                onOpenColors: actions.onOpenColors
+                onOpenColors: actions.onOpenColors,
+                onCall: actions.onCall
             ),
             onRetry: { model.retry() },
             onReviewAgreement: { awaiting.requestReview() },
