@@ -1,5 +1,7 @@
 package com.tomessa.miff.domain.feed
 
+import com.tomessa.miff.domain.alert.AlertDoc
+import com.tomessa.miff.domain.alert.liveAt
 import com.tomessa.miff.domain.miff.MiffMember
 import com.tomessa.miff.domain.miff.MiffSharingConsent
 import com.tomessa.miff.domain.place.Place
@@ -11,6 +13,7 @@ import com.tomessa.miff.domain.tracking.PresenceValue
 import com.tomessa.miff.domain.tracking.StatusColor
 import com.tomessa.miff.domain.tracking.StatusLevel
 import com.tomessa.miff.domain.travel.TravelView
+import com.tomessa.miff.domain.update.PromptLevel
 import com.tomessa.miff.domain.update.UpdatePrompt
 import java.time.ZoneId
 
@@ -58,6 +61,8 @@ class FeedInput(
     /** The renewal of my agreement is waited for (design 23): nothing is shared, the statuses of the others are not read. */
     val waitingAgreement: Boolean,
     val offline: Boolean,
+    /** ALERTE: the alerts of THIS Miff as the listener hears them (all of them: [FeedBuilder] keeps the ones in progress at the time of the build, and only for members of the Miff). */
+    val alerts: List<AlertDoc> = emptyList(),
 ) {
     /** No network, OR data that only the cache vouches for: both are told as "informations de 16 h 02", never as the present. */
     val effectivelyOffline: Boolean get() = offline || (statuses as? StatusesView.Loaded)?.fromCache == true
@@ -97,8 +102,15 @@ object FeedBuilder {
             byArrival
                 .mapNotNull { (member, status, card) -> newsDate(card.label, status)?.let { member.uid to it } }
                 .toMap()
-        val cardsByUid = byArrival.associate { (member, _, card) -> member.uid to card }
-        val cards = orderMembers(input.members, newsAt).mapNotNull { cardsByUid[it.uid] }
+        // ALERTE: the alerts in progress, of members of this Miff only, the oldest first (stable). An alert wins over the colour and the label of its card, and its card goes FIRST.
+        val memberUids = input.members.map { it.uid }.toSet()
+        val liveAlerts = input.alerts.filter { it.uid in memberUids }.liveAt(nowMillis)
+        val alertByUid = liveAlerts.associateBy { it.uid }
+        val cardsByUid =
+            byArrival.associate { (member, _, card) ->
+                member.uid to (alertByUid[member.uid]?.let { withAlert(card, it, nowMillis, zone) } ?: card)
+            }
+        val cards = alertsFirst(orderMembers(input.members, newsAt).mapNotNull { cardsByUid[it.uid] }, liveAlerts)
         val mine = cards.firstOrNull { it.isMe }
         val miffLevel = miffLevel(cards.map { it.level })
         val latestUpdate = statuses.values.mapNotNull { it.updatedAtMillis }.maxOrNull()
@@ -115,7 +127,7 @@ object FeedBuilder {
                     add(FeedBanner.Publishing)
                 }
             }
-        val bubble = bubble(input, cards, hidden, mySharing, latestUpdate, miffLevel, nowMillis, zone)
+        val bubble = bubble(input, cards, hidden, mySharing, latestUpdate, miffLevel, nowMillis, zone, liveAlerts)
         // MODE VOYAGE: the other members on a trip, as a line under the usual bubble (the bubble of the travellers already says it).
         val travelNote =
             if (bubble is Bubble.Travelers || hidden ||
@@ -137,15 +149,50 @@ object FeedBuilder {
             banners = banners,
             cards = cards,
             announceKey = announceKey(bubble),
-            myPrompt = UpdatePrompt.level(statuses[input.myUid], mySharing && !input.waitingAgreement, nowMillis),
+            // ALERTE: while my alert is in progress here, the bubble of encouragement ("publie une update pour dire que tout va bien") and the countdown say nothing (never two contradicting messages).
+            myPrompt =
+                if (input.myUid in alertByUid) {
+                    PromptLevel.NONE
+                } else {
+                    UpdatePrompt.level(statuses[input.myUid], mySharing && !input.waitingAgreement, nowMillis)
+                },
             myPhoto =
                 statuses[input.myUid]
                     ?.takeIf {
                         mySharing && !input.waitingAgreement
                     }?.let { MyPhotoFacts(it.hasPhoto, it.lastUpdateAtMillis) },
             travelNote = travelNote,
-            myCountdown = myCountdown(input, mySharing, statuses[input.myUid]),
+            myCountdown = if (input.myUid in alertByUid) null else myCountdown(input, mySharing, statuses[input.myUid]),
         )
+    }
+
+    /** ALERTE: the card of a person whose alert is in progress: red, "Alerte en cours", "Depuis 15 h 02", out of the trip (the alert wins, ticket 12.1). The rest of the card is unchanged. */
+    private fun withAlert(
+        card: MemberCard,
+        alert: AlertDoc,
+        now: Long,
+        zone: ZoneId,
+    ): MemberCard =
+        card.copy(
+            level = StatusLevel.RED,
+            label = StateLabel.AlertActive,
+            time = TimeLine.Since(Moment.of(alert.startedAtMillis ?: now, now, zone)),
+            traveling = false,
+            alertActive = true,
+        )
+
+    /**
+     * ALERTE: the cards of the alerts in progress come BEFORE the others, mine included, the oldest alert first (stable). It is the one exception to the order of the cards (FEED-ORDRE,
+     * decision D43, never reordered by urgency; ticket alerte-danger 7.6): nothing else reorders the Feed. The other cards keep their order.
+     */
+    private fun alertsFirst(
+        ordered: List<MemberCard>,
+        live: List<AlertDoc>,
+    ): List<MemberCard> {
+        if (live.isEmpty()) return ordered
+        val rank = live.withIndex().associate { it.value.uid to it.index }
+        val (alerted, others) = ordered.partition { it.alertActive }
+        return alerted.sortedBy { rank[it.member.uid] ?: Int.MAX_VALUE } + others
     }
 
     /**
@@ -480,7 +527,27 @@ object FeedBuilder {
         miffLevel: StatusLevel,
         now: Long,
         zone: ZoneId,
+        liveAlerts: List<AlertDoc>,
     ): Bubble {
+        // ALERTE: a declared alert is shown whatever else the bubble would say (even when my own sharing is stopped: an alert is a deliberate declaration to the whole circle), and it is
+        // ALWAYS the first page, before the automatic reds (ticket 7.6). The bubble never says "Tout le monde est en sécurité" during an alert.
+        val declared = declaredPages(cards, liveAlerts, now, zone)
+        if (declared.isNotEmpty()) {
+            val others =
+                if (input.waitingAgreement || !mySharing) {
+                    emptyList()
+                } else {
+                    alertPages(
+                        input,
+                        cards,
+                        (input.statuses as? StatusesView.Loaded)?.byUid.orEmpty(),
+                        latestUpdate,
+                        now,
+                        zone,
+                    )
+                }
+            return Bubble.Alerts(declared + others, StatusLevel.RED)
+        }
         if (input.waitingAgreement) return Bubble.AwaitingAgreement
         if (!mySharing) return Bubble.SharingStopped
         val statuses = (input.statuses as? StatusesView.Loaded)?.byUid.orEmpty()
@@ -514,6 +581,28 @@ object FeedBuilder {
         )
     }
 
+    /** ALERTE: one page per alert in progress, in the order of the cards (the oldest alert first). */
+    private fun declaredPages(
+        cards: List<MemberCard>,
+        live: List<AlertDoc>,
+        now: Long,
+        zone: ZoneId,
+    ): List<AlertPage> {
+        val byUid = live.associateBy { it.uid }
+        return cards.filter { it.alertActive }.mapNotNull { card ->
+            val alert = byUid[card.member.uid] ?: return@mapNotNull null
+            AlertPage(
+                member = card.member,
+                isMe = card.isMe,
+                level = StatusLevel.RED,
+                kind = AlertKind.Declared(Moment.of(alert.startedAtMillis ?: now, now, zone)),
+                canMessage = !card.isMe && card.phone != null,
+                offlineSince = null,
+                canCall = !card.isMe && card.phone != null,
+            )
+        }
+    }
+
     /** Reds first, then oranges; at the same level the oldest reference first (the person who has been silent the longest). */
     private fun alertPages(
         input: FeedInput,
@@ -526,7 +615,8 @@ object FeedBuilder {
         val places = input.places.associateBy { it.id }
         val offlineSince = if (input.effectivelyOffline) latestUpdate?.let { Moment.of(it, now, zone) } else null
         return cards
-            .filter { it.level == StatusLevel.RED || it.level == StatusLevel.ORANGE }
+            // A person with an alert in progress has her own page ([declaredPages]): never a second one for the same person.
+            .filter { !it.alertActive && (it.level == StatusLevel.RED || it.level == StatusLevel.ORANGE) }
             .mapNotNull { card ->
                 val status = statuses[card.member.uid] ?: return@mapNotNull null
                 val reference = status.referenceMillis ?: return@mapNotNull null

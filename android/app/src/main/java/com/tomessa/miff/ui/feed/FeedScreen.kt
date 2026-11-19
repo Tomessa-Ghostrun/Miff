@@ -605,6 +605,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.readyItems(
                 announceKey = content.announceKey,
                 texts = texts,
                 onMessage = actions.onMessage,
+                onCall = actions.onCall,
                 onResumeSharing = { actions.onResumeSharing(content.miffId) },
                 travelNote = content.travelNote,
                 onOpenColors = actions.onOpenColors,
