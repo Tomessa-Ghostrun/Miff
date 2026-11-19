@@ -267,6 +267,8 @@ export const DEFAULT_CONFIG = {
   gel: { prefixes: [], cles: [] },
   sensibles: { motifs: [] },
   internes: { motifs: [] },
+  sensiblesRenforces: { motifs: [] },
+  ordreSensibles: [],
   motifs: {},
   invariables: { cles: [], parLangue: {} },
   tailleLot: 100,
@@ -277,6 +279,7 @@ export function normalizeConfig(config) {
   c.gel = { ...DEFAULT_CONFIG.gel, ...(c.gel ?? {}) };
   c.sensibles = { ...DEFAULT_CONFIG.sensibles, ...(c.sensibles ?? {}) };
   c.internes = { ...DEFAULT_CONFIG.internes, ...(c.internes ?? {}) };
+  c.sensiblesRenforces = { ...DEFAULT_CONFIG.sensiblesRenforces, ...(c.sensiblesRenforces ?? {}) };
   c.invariables = { ...DEFAULT_CONFIG.invariables, ...(c.invariables ?? {}) };
   return c;
 }
@@ -330,6 +333,7 @@ export function buildExchange({ androidFrXml, androidEnXml, iosCatalogText, iosI
   const config = normalizeConfig(rawConfig);
   const shortPatterns = (registry?.shortLabelKeyPatterns ?? []).map((p) => new RegExp(p, 'u'));
   const sensiblePatterns = (config.sensibles.motifs ?? []).map((p) => new RegExp(p, 'u'));
+  const reinforcedPatterns = (config.sensiblesRenforces.motifs ?? []).map((p) => new RegExp(p, 'u'));
   const internalPatterns = (config.internes.motifs ?? []).map((p) => new RegExp(p, 'u'));
   const warnings = [];
 
@@ -388,6 +392,10 @@ export function buildExchange({ androidFrXml, androidEnXml, iosCatalogText, iosI
     entry.gele = reasons.length > 0;
     if (reasons.length > 0) entry.geleRaisons = reasons;
     if (sensiblePatterns.some((r) => r.test(key)) || extras.table) entry.sensible = true;
+    if (reinforcedPatterns.some((r) => r.test(key))) {
+      entry.sensible = true;
+      entry.sensibleRenforce = true;
+    }
     if (internalPatterns.some((r) => r.test(key))) entry.interne = true;
     if (config.motifs[key]) entry.motif = true;
     if (fr.kind === 'string' && primary.en?.kind === 'string' && fr.texts[0].value === primary.en.texts[0].value && hasLetters(withoutPlaceholders(fr.texts[0].value))) entry.invariableProbable = true;
@@ -470,6 +478,7 @@ export function buildExchange({ androidFrXml, androidEnXml, iosCatalogText, iosI
     pluriels: all.filter((e) => e.type === 'plural').length,
     sensibles: all.filter((e) => e.sensible).length,
     internes: all.filter((e) => e.interne).length,
+    sensiblesRenforces: all.filter((e) => e.sensibleRenforce).length,
     motifs: all.filter((e) => e.motif).length,
     invariablesProbables: all.filter((e) => e.invariableProbable).length,
     mots: { fr: countWords(all, 'fr'), en: countWords(all, 'en') },
@@ -690,7 +699,7 @@ export function variantsOf(entry) {
 
 const WORD_BRAND = /\bmiff\b/giu;
 
-function exchangeExtraChecks({ lang, key, model, registry, add }) {
+function exchangeExtraChecks({ lang, key, model, registry, add, invariable }) {
   const language = registry.languages.find((l) => l.code === lang);
   for (const text of model.texts) {
     const value = text.value;
@@ -700,14 +709,14 @@ function exchangeExtraChecks({ lang, key, model, registry, add }) {
     if (/^\s|\s$| {2,}/.test(value)) add('espaces', 'error', key, `espace en début ou fin de texte, ou deux espaces de suite${where}`);
     if (value.includes('—')) add('tiret-long', 'error', key, `tiret long « — » interdit par le guide de style${where}`);
     if (value.includes('"')) add('guillemet-droit', 'warning', key, `guillemet droit « " »${where} : utiliser les guillemets de la langue (guide §2.1)`);
-    if (lang === 'it' && value.includes("'")) add('apostrophe', 'warning', key, `apostrophe droite en italien${where} : écrire ’ (U+2019)`);
-    if (['es', 'pt', 'de'].includes(lang) && /['’]/u.test(value) && !/^[\p{L}]+['’]s\b/u.test(value)) add('apostrophe', 'warning', key, `apostrophe${where} : cette langue n'en utilise pas (guide §2.1)`);
+    if (!invariable && lang === 'it' && value.includes("'")) add('apostrophe', 'warning', key, `apostrophe droite en italien${where} : écrire ’ (U+2019)`);
+    if (!invariable && ['es', 'pt', 'de'].includes(lang) && /['’]/u.test(value) && !/^[\p{L}]+['’]s\b/u.test(value)) add('apostrophe', 'warning', key, `apostrophe${where} : cette langue n'en utilise pas (guide §2.1)`);
     if (placeholderSignatures(value).length > 0 && strayPercents(value) > 0) add('pourcent-isole', 'error', key, `« % » isolé dans un texte à valeurs insérées${where} : écrire %%`);
     // Pourcentage et unités : les valeurs insérées sont remplacées par 0 pour que « %1$d % » se lise comme « 0 % ».
     const probe = value.replace(SCAN, (all) => (all.startsWith('%%') ? '%' : '0'));
     if (language && ['es', 'de'].includes(lang) && /\d(?: | )?%/u.test(probe) && !/\d %/u.test(probe) && !/\d %/u.test(probe)) add('pourcentage', 'error', key, `pourcentage${where} : espace insécable (U+00A0) entre le nombre et « % » en ${lang}`);
     if (['it', 'pt'].includes(lang) && /\d[   ]%/u.test(probe)) add('pourcentage', 'error', key, `pourcentage${where} : pas d'espace entre le nombre et « % » en ${lang} (« 30% »)`);
-    if (/\d (?:h|min|m|km|s|Min\.|Std\.)(?![\p{L}])/u.test(probe)) add('unite-espace', 'warning', key, `espace ordinaire entre un nombre et son unité${where} : utiliser une espace insécable (U+00A0)`);
+    if (!invariable && /\d (?:h|min|m|km|s|Min\.|Std\.)(?![\p{L}])/u.test(probe)) add('unite-espace', 'warning', key, `espace ordinaire entre un nombre et son unité${where} : utiliser une espace insécable (U+00A0)`);
     if (lang === 'es') {
       const count = (c) => [...value].filter((x) => x === c).length;
       if (count('¿') !== count('?') || count('¡') !== count('!')) add('es-ponctuation', 'warning', key, `« ¿ ? » ou « ¡ ! » non appariés${where}`);
@@ -731,6 +740,11 @@ function exchangeExtraChecks({ lang, key, model, registry, add }) {
  * @param {boolean} [p.complete]  vrai : une clé attendue mais absente est une erreur
  * @param {string[]} [p.expected]  clés attendues (défaut : toutes les clés d'échange)
  */
+/** Texte déclaré invariable (config.json -> invariables) pour cette langue. */
+export function isDeclaredInvariable(config, key, lang) {
+  return config.invariables.cles.includes(key) || (config.invariables.parLangue?.[lang] ?? []).includes(key);
+}
+
 export function checkTranslations({ registry, config: rawConfig, byKey, lang, translations, complete = false, expected }) {
   const config = normalizeConfig(rawConfig);
   const language = registry.languages.find((l) => l.code === lang);
@@ -791,14 +805,15 @@ export function checkTranslations({ registry, config: rawConfig, byKey, lang, tr
       const { entry } = table.get(f.key);
       let { level } = f;
       if (f.check === 'identical-to-source') {
-        const tolerated = entry.motif || entry.invariableProbable || config.invariables.cles.includes(f.key) || (config.invariables.parLangue?.[lang] ?? []).includes(f.key);
-        level = tolerated ? 'warning' : 'error';
+        // Texte déclaré invariable (config.json -> invariables) ou motif de format : aucun constat.
+        if (entry.motif || entry.interne || isDeclaredInvariable(config, f.key, lang)) continue;
+        level = entry.invariableProbable ? 'warning' : 'error';
       } else if (f.check === 'high-punctuation' || f.check === 'plural-recommended') level = 'error';
       else if (f.check === 'length' || f.check === 'short-label-budget') level = 'warning';
       findings.push({ lang, platform, key: f.key, check: f.check, level, message: f.message });
     }
     for (const [key, { model }] of table) {
-      exchangeExtraChecks({ lang, key, model, registry, add: addFinding(platform) });
+      exchangeExtraChecks({ lang, key, model, registry, add: addFinding(platform), invariable: isDeclaredInvariable(config, key, lang) });
     }
   }
 
@@ -811,7 +826,8 @@ export function checkTranslations({ registry, config: rawConfig, byKey, lang, tr
     }
   }
 
-  const expectedKeys = expected ?? [...byKey.keys()];
+  // Les textes « internes » (écran de diagnostic) restent en français et en anglais : leurs clés ne sont pas attendues.
+  const expectedKeys = expected ?? [...byKey.values()].filter((e) => !e.interne).map((e) => e.cle);
   const missing = expectedKeys.filter((key) => !(key in translations)).sort();
   if (complete) for (const key of missing) findings.push({ lang, platform: byKey.get(key)?.plateformes[0] ?? 'android', key, check: 'missing-key', level: 'error', message: 'clé absente du fichier de traductions' });
   for (const key of unknown) findings.push({ lang, platform: 'android', key, check: 'unknown-key', level: 'warning', message: 'clé inconnue du fichier d\'échange (ignorée à la réinjection)' });

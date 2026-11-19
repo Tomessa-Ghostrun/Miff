@@ -7,7 +7,12 @@
   "shortLabelKeyPatterns": ["_button$", "_action$", "_cta$", "_tab$", "_tab_[a-z0-9]+$", "_chip$", "_label$"],
   "lengthRatio": { "maxVsSource": 1.5, "minSourceLength": 10, "shortLabelExtra": 0.4 },
   "lengthBudgets": {},
-  "exceptions": [],
+  "exceptions": [
+    { "lang": "es", "keyPattern": "^(?:ios_|android_)?diag_", "check": "missing-key" },
+    { "lang": "it", "keyPattern": "^(?:ios_|android_)?diag_", "check": "missing-key" },
+    { "lang": "pt", "keyPattern": "^(?:ios_|android_)?diag_", "check": "missing-key" },
+    { "lang": "de", "keyPattern": "^(?:ios_|android_)?diag_", "check": "missing-key" }
+  ],
   "consistency": {
     "sources": [
       { "id": "android-enum", "platform": "android", "role": "declaration", "kind": "kotlin-enum-tags", "file": "android/app/src/main/java/com/tomessa/miff/domain/settings/AppLanguage.kt" },

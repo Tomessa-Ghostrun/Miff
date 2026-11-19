@@ -9,6 +9,7 @@ import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadWorld, main, parseArgs } from '../i18n-exchange.mjs';
+import { checkLanguageTable } from '../lib/i18n-checks.mjs';
 import { addressRow, extractLanguageKit, languageRows, parseSections, parseTables } from '../lib/i18n-docs.mjs';
 import {
   applyIosCatalog, buildAndroidStrings, buildExchange, canonicalPlaceholders, checkTranslations, diffKeys, encodeAndroidValue, exchangeFiles, explicitPlaceholders,
@@ -688,7 +689,7 @@ test('lots : taille équilibrée, gelés exclus, contexte, glossaire de la langu
     assert.equal(main(['lots', '--langue', 'de', '--taille', '4', '--racine', repo.root], log), 0);
     const dir = 'docs/i18n/echange/lots/de';
     const files = readdirSync(join(repo.root, dir)).sort();
-    assert.deepEqual(files, ['batch-001.json', 'batch-002.json', 'batch-003.json', 'gele-traduction.json']);
+    assert.deepEqual(files, ['batch-001.json', 'batch-002.json', 'batch-003.json', 'gele-traduction.json', 'plan-traducteurs.json']);
     const lots = ['batch-001.json', 'batch-002.json', 'batch-003.json'].map((f) => JSON.parse(repo.read(`${dir}/${f}`)));
     assert.deepEqual(lots.map((l) => l.nombreTextes), [4, 4, 3]);
     const keys = lots.flatMap((l) => l.textes.map((t) => t.cle));
@@ -703,8 +704,8 @@ test('lots : taille équilibrée, gelés exclus, contexte, glossaire de la langu
     assert.equal(first.glossaire.phrasesAssemblees[0].cible, 'Hat {lieu} verlassen');
     assert.match(first.glossaire.guide.langue, /du/);
     assert.ok(first.consignes.length > 5);
-    assert.deepEqual(Object.keys(first.formatSortie), ['langue', 'lot', 'traductions', 'questions']);
-    const tagline = first.textes.find((t) => t.cle === 'home_tagline');
+    assert.deepEqual(Object.keys(first.formatSortie), ['langue', 'lot', 'traductions', 'questions', 'a_corriger_source']);
+    const tagline = lots.flatMap((l) => l.textes).find((t) => t.cle === 'home_tagline');
     assert.deepEqual(tagline.contexte.usages, ['ui/home/HomeScreen.kt', 'Views/HomeView.swift']);
     const members = lots.flatMap((l) => l.textes).find((t) => t.cle === 'profile_tab_miff_members');
     assert.deepEqual(members.formesAttendues, ['one', 'other'], 'de : jamais many');
@@ -727,10 +728,11 @@ test('lots : formes de pluriel attendues par langue, étiquettes courtes, relect
   assert.equal(button.courte, true);
   assert.equal(button.longueurCible, Math.ceil(10 * 1.25));
   const relecture = buildLots({ language: es, entries, config, kit, mode: 'relecture', translations: ES });
-  assert.ok(relecture.files[0].content.textes.every((t) => 'traduction' in t));
-  assert.equal(relecture.files[0].content.textes.find((t) => t.cle === 'home_tagline').traduction, ES.home_tagline);
+  const relectureTextes = relecture.files.flatMap((f) => f.content.textes);
+  assert.ok(relectureTextes.every((t) => 'traduction' in t));
+  assert.equal(relectureTextes.find((t) => t.cle === 'home_tagline').traduction, ES.home_tagline);
   const aveugle = buildLots({ language: es, entries, config, kit, mode: 'aveugle' });
-  assert.ok(aveugle.files[0].content.textes.every((t) => !('traduction' in t)), 'la lecture aveugle ne montre aucune traduction');
+  assert.ok(aveugle.files.flatMap((f) => f.content.textes).every((t) => !('traduction' in t)), 'la lecture aveugle ne montre aucune traduction');
   const retro = buildLots({ language: es, entries, config, kit, mode: 'retro', translations: ES });
   const retroKeys = retro.files.flatMap((f) => f.content.textes.map((t) => t.cle));
   assert.deepEqual(retroKeys.sort(), ['NSCameraUsageDescription', 'feed_age_label', 'feed_greeting', 'feed_try_again_button']);
@@ -738,6 +740,110 @@ test('lots : formes de pluriel attendues par langue, étiquettes courtes, relect
   assert.equal(retro.files[0].content.glossaire, undefined);
   assert.deepEqual(balancedChunks([1, 2, 3, 4, 5, 6, 7], 3).map((c) => c.length), [3, 2, 2]);
   assert.deepEqual(balancedChunks([], 3), []);
+});
+
+test('lots : textes sensibles en tête, jamais mélangés aux courants ; internes et gelés exclus ; plan des traducteurs', () => {
+  const es = registry.languages.find((l) => l.code === 'es');
+  const cfg = {
+    ...config,
+    sensiblesRenforces: { motifs: ['^feed_try_'] },
+    internes: { motifs: ['^home_apostrophe$'] },
+    ordreSensibles: ['^NS', '^feed_age', '^feed_'],
+  };
+  const result = build({ config: cfg });
+  const entries = [...result.communs, ...result.propresAndroid, ...result.propresIos];
+  const kit = extractLanguageKit({ glossaire: GLOSSARY, guide: GUIDE }, 'es');
+  const built = buildLots({ language: es, entries, config: cfg, kit, size: 2, agents: 3 });
+  const contents = built.files.map((f) => f.content);
+  assert.deepEqual(contents.map((c) => c.groupe), ['sensible', 'sensible', 'courant', 'courant', 'courant']);
+  for (const c of contents) {
+    const flags = new Set(c.textes.map((t) => !!t.sensible));
+    assert.equal(flags.size, 1, 'un lot est entièrement sensible ou entièrement courant');
+  }
+  assert.deepEqual(contents[0].textes.map((t) => t.cle), ['NSCameraUsageDescription', 'feed_age_label'], 'ordre des familles sensibles');
+  const all = contents.flatMap((c) => c.textes.map((t) => t.cle));
+  assert.ok(!all.includes('home_apostrophe'), 'interne exclu');
+  assert.ok(!all.includes('feed_place_noun_home'), 'gelé exclu');
+  assert.deepEqual(built.internal, ['home_apostrophe']);
+  assert.equal(contents.flatMap((c) => c.textes).find((t) => t.cle === 'feed_try_again_button').sensibleRenforce, true);
+  // 5 lots pour 3 traducteurs : blocs contigus de 1 à 2 lots, dans l'ordre, tous les lots attribués une fois.
+  const planned = built.plan.agents.map((a) => a.lots);
+  assert.deepEqual(planned.flat(), ['batch-001', 'batch-002', 'batch-003', 'batch-004', 'batch-005']);
+  assert.ok(planned.every((lots) => lots.length >= 1 && lots.length <= 2));
+  assert.deepEqual(built.plan.agents.map((a) => a.agent), ['T1', 'T2', 'T3']);
+  assert.deepEqual(built.plan.agents[0].groupes, ['sensible']);
+  // Rétro-traduction : seuls les sensibles, même regroupement, pas de plan de traducteurs.
+  const retro = buildLots({ language: es, entries, config: cfg, kit, mode: 'retro', translations: ES, size: 2 });
+  assert.equal(retro.plan, null);
+  assert.ok(retro.files.every((f) => f.content.groupe === 'sensible'));
+});
+
+test('lots : consignes (variantesIos, pas de calque, tutoiement, termes proscrits) dans chaque langue', () => {
+  const result = build();
+  const entries = [...result.communs, ...result.propresAndroid, ...result.propresIos];
+  for (const code of ['es', 'it', 'pt', 'de']) {
+    const language = registry.languages.find((l) => l.code === code);
+    const kit = extractLanguageKit({ glossaire: GLOSSARY, guide: GUIDE }, code);
+    const lot = buildLots({ language, entries, config, kit }).files[0].content;
+    const text = lot.consignes.join('\n');
+    assert.match(text, /variantesIos[\s\S]*TOUJOURS[\s\S]*\{"android": …, "ios": …\}/, code);
+    assert.match(text, /même quand les deux variantes ne diffèrent que par peu/, code);
+    assert.match(text, /Pas de calque/, code);
+    assert.match(text, /a_corriger_source/, code);
+    assert.match(text, /Tutoiement : toujours, même si le texte français vouvoie/, code);
+    assert.match(text, /Attention : … » en français ne devient pas/, code);
+    assert.match(text, /obligatoire » ne devient pas/, code);
+    assert.ok('a_corriger_source' in lot.formatSortie);
+  }
+  const de = registry.languages.find((l) => l.code === 'de');
+  const deText = buildLots({ language: de, entries, config, kit: extractLanguageKit({ glossaire: GLOSSARY, guide: GUIDE }, 'de') }).files[0].content.consignes.join('\n');
+  assert.match(deText, /Achtung/);
+  assert.match(deText, /Beachte/);
+});
+
+test('invariables : aucun constat pour un texte déclaré invariable ; internes non attendus', () => {
+  const cfg = { ...config, invariables: { cles: ['home_title'], parLangue: { de: ['home_tagline'] } }, internes: { motifs: ['^feed_greeting$'] } };
+  const result = build({ config: cfg });
+  const byKey = indexExchange(result);
+  const same = checkTranslations({ registry, config: cfg, byKey, lang: 'de', translations: { home_title: 'Miff', home_tagline: 'Savoir que tes proches vont bien, sans les déranger.' } });
+  assert.deepEqual(same.findings.filter((f) => f.check === 'identical-to-source'), []);
+  const other = checkTranslations({ registry, config: cfg, byKey, lang: 'es', translations: { home_tagline: 'Savoir que tes proches vont bien, sans les déranger.' } });
+  assert.ok(other.findings.some((f) => f.check === 'identical-to-source' && f.level === 'error'), 'seul de est exempté pour home_tagline');
+  assert.ok(!same.missing.includes('feed_greeting'), 'texte interne non attendu');
+  assert.ok(same.missing.includes('home_apostrophe'));
+});
+
+test('registre : les clés de l\'écran de diagnostic ne sont pas attendues en es, it, pt, de (repli anglais) ; le reste l\'est', () => {
+  const keys = ['diag_title', 'ios_diag_detection_empty', 'android_diag_appcheck_off_pending', 'home_tagline', 'settings_diag_note'];
+  const frOrEn = (lang, key) => (lang === 'fr' || lang === 'en' ? { kind: 'string', texts: [{ id: '', value: `texte ${key}` }] } : null);
+  for (const code of ['es', 'it', 'pt', 'de']) {
+    const language = registry.languages.find((l) => l.code === code);
+    for (const platform of ['android', 'ios']) {
+      const { findings } = checkLanguageTable({ registry, language, platform, table: platform, referenceKeys: new Set(keys), localization: frOrEn, extraKeys: () => [] });
+      assert.deepEqual(findings.filter((f) => f.check === 'missing-key').map((f) => f.key), ['home_tagline', 'settings_diag_note'], `${code}/${platform}`);
+    }
+  }
+  // Le français et l'anglais ne sont pas concernés : une clé diag_ manquante y reste une erreur.
+  const en = registry.languages.find((l) => l.code === 'en');
+  const { findings } = checkLanguageTable({
+    registry, language: en, platform: 'android', table: 'android', referenceKeys: new Set(['diag_title']),
+    localization: (lang) => (lang === 'fr' ? { kind: 'string', texts: [{ id: '', value: 'x' }] } : null), extraKeys: () => [],
+  });
+  assert.deepEqual(findings.map((f) => f.check), ['missing-key']);
+});
+
+test('fusionner : questions et textes source à corriger sont conservés à part', () => {
+  const repo = makeRepo();
+  try {
+    const log = () => {};
+    repo.put('lots/batch-001.json', JSON.stringify({ langue: 'es', lot: 'batch-001', traductions: { home_tagline: 'Uno' }, questions: { home_tagline: 'ambigu ?', '<cle>': 'modèle' }, a_corriger_source: { home_title: 'vouvoie : « déconnectez-vous »' } }));
+    assert.equal(main(['fusionner', '--langue', 'es', '--dossier', join(repo.root, 'lots'), '--racine', repo.root], log), 0);
+    const notes = JSON.parse(repo.read('docs/i18n/echange/traduction-es.notes.json'));
+    assert.deepEqual(notes.questions, { home_tagline: 'ambigu ?' });
+    assert.deepEqual(notes.a_corriger_source, { home_title: 'vouvoie : « déconnectez-vous »' });
+  } finally {
+    repo.cleanup();
+  }
 });
 
 test('lots --restant : exclut les clés déjà traduites', () => {

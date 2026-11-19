@@ -8,8 +8,8 @@
       "numero": 282,
       "titre": "iOS i18n lot 3 : prérequis de code pour es, it, pt, de (sans traduction)",
       "branche": "ios/i18n-lot3",
-      "sha": "8749ded5ed",
-      "pointDeDepart": "128e165baa",
+      "sha": "688ff87432",
+      "pointDeDepart": "7420a36ee0",
       "ajoutees": [
         "feed_place_arrive_generic",
         "feed_place_arrive_home",
@@ -48,8 +48,8 @@
       "numero": 286,
       "titre": "Traduction es/it/pt/de, lot 3 Android : prerequis de code (I18N-4L)",
       "branche": "android/i18n-lot3",
-      "sha": "7a7492fd3c",
-      "pointDeDepart": "128e165baa",
+      "sha": "2b4b0a62b9",
+      "pointDeDepart": "1715c1ea3a",
       "ajoutees": [
         "feed_place_arrive_generic",
         "feed_place_arrive_home",
@@ -80,7 +80,7 @@
       "numero": 287,
       "titre": "Android : consentement à la localisation v4 (CONS-4-A), carte « Une précision » pour les comptes en v3",
       "branche": "android/consentement-v4",
-      "sha": "a3577eee48",
+      "sha": "4f7f61415b",
       "pointDeDepart": "8a7be2d1b3",
       "ajoutees": [
         "miff_clarify_accept",
@@ -120,7 +120,7 @@
       "numero": 288,
       "titre": "Android : centre de notifications complet (CNC-L logo, CNC-A alertes, avatars, journal du serveur)",
       "branche": "android/notif-centre",
-      "sha": "e65b175ade",
+      "sha": "d41d962d4f",
       "pointDeDepart": "8a7be2d1b3",
       "ajoutees": [
         "notif_center_alert_end_body_unnamed",
@@ -130,6 +130,47 @@
       ],
       "supprimees": [],
       "modifiees": []
+    },
+    {
+      "numero": 290,
+      "titre": "iOS : consentement à la localisation v4 (CONS-4-I), carte « Une précision » pour les comptes en v3",
+      "branche": "ios/consentement-v4",
+      "sha": "ed08ef3ddc",
+      "pointDeDepart": "7420a36ee0",
+      "ajoutees": [
+        "miff_clarify_accept",
+        "miff_clarify_body_many",
+        "miff_clarify_body_one",
+        "miff_clarify_body_unnamed",
+        "miff_clarify_continue",
+        "miff_clarify_error_extra",
+        "miff_clarify_later",
+        "miff_clarify_saving",
+        "miff_clarify_title",
+        "miff_consent3_local_body",
+        "miff_consent3_local_title",
+        "miff_consent3_photo_body",
+        "miff_consent3_photo_title",
+        "permission_location_local_body",
+        "permission_location_local_title",
+        "settings_privacy_clarify_body",
+        "settings_privacy_time_erase_note"
+      ],
+      "supprimees": [],
+      "modifiees": [
+        "NSLocationAlwaysAndWhenInUseUsageDescription",
+        "miff_consent3_create",
+        "miff_consent3_erase_body",
+        "miff_consent3_join",
+        "miff_consent3_kept_body",
+        "miff_consent3_resume",
+        "miff_renewal_intro_many",
+        "miff_renewal_intro_one",
+        "miff_renewal_intro_unnamed",
+        "permission_location_seen_body",
+        "settings_privacy_location_body",
+        "settings_privacy_time_body"
+      ]
     }
   ]
 }

@@ -117,3 +117,4 @@ backend/functions/lib/
 
 # --- Lots de traduction générés (docs/i18n/procedure-lot4.md) : régénérables, jamais versionnés ---
 docs/i18n/echange/lots/
+docs/i18n/echange/sorties/

@@ -10,12 +10,13 @@
       "propresIos": 87,
       "infoPlist": 4,
       "parLangue": 1362,
-      "gelees": 114,
-      "gelees_communs": 112,
+      "gelees": 33,
+      "gelees_communs": 30,
       "divergentes": 13,
       "pluriels": 10,
       "sensibles": 573,
       "internes": 100,
+      "sensiblesRenforces": 82,
       "motifs": 3,
       "invariablesProbables": 41,
       "mots": {
@@ -12028,7 +12029,8 @@
       "courte": false,
       "gele": true,
       "geleRaisons": [
-        "PR #287 ouverte (modifie le texte)"
+        "PR #287 ouverte (modifie le texte)",
+        "PR #290 ouverte (modifie le texte)"
       ],
       "sensible": true
     },
@@ -18007,7 +18009,8 @@
       "courte": false,
       "gele": true,
       "geleRaisons": [
-        "PR #287 ouverte (modifie le texte)"
+        "PR #287 ouverte (modifie le texte)",
+        "PR #290 ouverte (modifie le texte)"
       ],
       "sensible": true
     },
@@ -18370,7 +18373,8 @@
       "gele": true,
       "geleRaisons": [
         "préfixe miff_consent*",
-        "PR #287 ouverte (modifie le texte)"
+        "PR #287 ouverte (modifie le texte)",
+        "PR #290 ouverte (modifie le texte)"
       ],
       "sensible": true
     },
@@ -18401,7 +18405,8 @@
       "gele": true,
       "geleRaisons": [
         "préfixe miff_consent*",
-        "PR #287 ouverte (modifie le texte)"
+        "PR #287 ouverte (modifie le texte)",
+        "PR #290 ouverte (modifie le texte)"
       ],
       "sensible": true
     },
@@ -18432,7 +18437,8 @@
       "gele": true,
       "geleRaisons": [
         "préfixe miff_consent*",
-        "PR #287 ouverte (modifie le texte)"
+        "PR #287 ouverte (modifie le texte)",
+        "PR #290 ouverte (modifie le texte)"
       ],
       "sensible": true
     },
@@ -18493,7 +18499,8 @@
       "gele": true,
       "geleRaisons": [
         "préfixe miff_consent*",
-        "PR #287 ouverte (modifie le texte)"
+        "PR #287 ouverte (modifie le texte)",
+        "PR #290 ouverte (modifie le texte)"
       ],
       "sensible": true
     },
@@ -18674,7 +18681,8 @@
       "gele": true,
       "geleRaisons": [
         "préfixe miff_consent*",
-        "PR #287 ouverte (modifie le texte)"
+        "PR #287 ouverte (modifie le texte)",
+        "PR #290 ouverte (modifie le texte)"
       ],
       "sensible": true
     },
@@ -18883,7 +18891,8 @@
       "courte": false,
       "gele": true,
       "geleRaisons": [
-        "PR #287 ouverte (modifie le texte)"
+        "PR #287 ouverte (modifie le texte)",
+        "PR #290 ouverte (modifie le texte)"
       ],
       "sensible": true
     },
@@ -18913,7 +18922,8 @@
       "courte": false,
       "gele": true,
       "geleRaisons": [
-        "PR #287 ouverte (modifie le texte)"
+        "PR #287 ouverte (modifie le texte)",
+        "PR #290 ouverte (modifie le texte)"
       ],
       "sensible": true
     },
@@ -18943,7 +18953,8 @@
       "courte": false,
       "gele": true,
       "geleRaisons": [
-        "PR #287 ouverte (modifie le texte)"
+        "PR #287 ouverte (modifie le texte)",
+        "PR #290 ouverte (modifie le texte)"
       ],
       "sensible": true
     },
@@ -29784,7 +29795,8 @@
       "courte": false,
       "gele": true,
       "geleRaisons": [
-        "PR #287 ouverte (modifie le texte)"
+        "PR #287 ouverte (modifie le texte)",
+        "PR #290 ouverte (modifie le texte)"
       ]
     },
     {
@@ -30308,11 +30320,9 @@
       },
       "longueurMax": 25,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_hold_hint",
@@ -30338,11 +30348,9 @@
       },
       "longueurMax": 63,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_hold_miff",
@@ -30370,11 +30378,9 @@
       },
       "longueurMax": 36,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_shutter_a11y_action",
@@ -30400,11 +30406,9 @@
       },
       "longueurMax": 27,
       "courte": true,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_already_active",
@@ -30432,11 +30436,9 @@
       },
       "longueurMax": 69,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_hint_tap",
@@ -30462,11 +30464,9 @@
       },
       "longueurMax": 45,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_hint_hold",
@@ -30492,11 +30492,9 @@
       },
       "longueurMax": 51,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_hint_more",
@@ -30522,11 +30520,9 @@
       },
       "longueurMax": 21,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_info_title",
@@ -30552,11 +30548,9 @@
       },
       "longueurMax": 28,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_info_body",
@@ -30582,11 +30576,9 @@
       },
       "longueurMax": 382,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_info_position",
@@ -30612,11 +30604,9 @@
       },
       "longueurMax": 202,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_info_close",
@@ -30642,11 +30632,9 @@
       },
       "longueurMax": 15,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_not_emergency_note",
@@ -30674,11 +30662,9 @@
       },
       "longueurMax": 118,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_delivery_note",
@@ -30704,11 +30690,9 @@
       },
       "longueurMax": 142,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_only_this_miff",
@@ -30734,11 +30718,9 @@
       },
       "longueurMax": 45,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_confirm_start_title",
@@ -30764,11 +30746,9 @@
       },
       "longueurMax": 52,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_confirm_start_body",
@@ -30794,11 +30774,9 @@
       },
       "longueurMax": 46,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_confirm_start_body_miff",
@@ -30826,11 +30804,9 @@
       },
       "longueurMax": 82,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_confirm_start_action",
@@ -30856,11 +30832,9 @@
       },
       "longueurMax": 23,
       "courte": true,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_confirm_cancel",
@@ -30886,11 +30860,9 @@
       },
       "longueurMax": 15,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_confirm_end_title",
@@ -30916,11 +30888,9 @@
       },
       "longueurMax": 28,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_confirm_end_body",
@@ -30948,11 +30918,9 @@
       },
       "longueurMax": 93,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_confirm_end_action",
@@ -30978,11 +30946,9 @@
       },
       "longueurMax": 24,
       "courte": true,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_confirm_end_keep",
@@ -31008,11 +30974,9 @@
       },
       "longueurMax": 22,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_sent_pane_a11y",
@@ -31035,11 +30999,9 @@
       },
       "longueurMax": 21,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_back_a11y",
@@ -31065,11 +31027,9 @@
       },
       "longueurMax": 15,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_sent_title",
@@ -31097,11 +31057,9 @@
       },
       "longueurMax": 76,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_sent_title_no_name",
@@ -31127,11 +31085,9 @@
       },
       "longueurMax": 52,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_sending_title",
@@ -31159,11 +31115,9 @@
       },
       "longueurMax": 49,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_sending_title_no_name",
@@ -31189,11 +31143,9 @@
       },
       "longueurMax": 27,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_waiting_title",
@@ -31219,11 +31171,9 @@
       },
       "longueurMax": 99,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_refused_title",
@@ -31249,11 +31199,9 @@
       },
       "longueurMax": 223,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_quota_title",
@@ -31279,11 +31227,9 @@
       },
       "longueurMax": 148,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_refused_retry",
@@ -31309,11 +31255,9 @@
       },
       "longueurMax": 15,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_cancel_pending",
@@ -31339,11 +31283,9 @@
       },
       "longueurMax": 24,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_stopped_title",
@@ -31371,11 +31313,9 @@
       },
       "longueurMax": 135,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_stopped_title_no_name",
@@ -31401,11 +31341,9 @@
       },
       "longueurMax": 108,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_stopped_resume",
@@ -31431,11 +31369,9 @@
       },
       "longueurMax": 30,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_stale_title",
@@ -31461,11 +31397,9 @@
       },
       "longueurMax": 55,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_stale_body",
@@ -31491,11 +31425,9 @@
       },
       "longueurMax": 118,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_stale_send",
@@ -31521,11 +31453,9 @@
       },
       "longueurMax": 15,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_stale_cancel",
@@ -31551,11 +31481,9 @@
       },
       "longueurMax": 15,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_call_action",
@@ -31581,11 +31509,9 @@
       },
       "longueurMax": 14,
       "courte": true,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_call_a11y",
@@ -31613,11 +31539,9 @@
       },
       "longueurMax": 18,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_call_emergency_link",
@@ -31645,11 +31569,9 @@
       },
       "longueurMax": 28,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_section_people",
@@ -31675,11 +31597,9 @@
       },
       "longueurMax": 16,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_section_emergency",
@@ -31705,11 +31625,9 @@
       },
       "longueurMax": 27,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_picker_a11y",
@@ -31735,11 +31653,9 @@
       },
       "longueurMax": 28,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_contacts_unavailable",
@@ -31765,11 +31681,9 @@
       },
       "longueurMax": 159,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_emergency_line",
@@ -31798,11 +31712,9 @@
       },
       "longueurMax": 16,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_emergency_police",
@@ -31828,11 +31740,9 @@
       },
       "longueurMax": 21,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_emergency_ambulance",
@@ -31858,11 +31768,9 @@
       },
       "longueurMax": 36,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_emergency_fire",
@@ -31888,11 +31796,9 @@
       },
       "longueurMax": 15,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_emergency_european",
@@ -31918,11 +31824,9 @@
       },
       "longueurMax": 27,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_emergency_international",
@@ -31948,11 +31852,9 @@
       },
       "longueurMax": 45,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_banner_title",
@@ -31980,11 +31882,9 @@
       },
       "longueurMax": 61,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_banner_body",
@@ -32010,11 +31910,9 @@
       },
       "longueurMax": 105,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_banner_sending",
@@ -32042,11 +31940,9 @@
       },
       "longueurMax": 52,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_banner_waiting",
@@ -32072,11 +31968,9 @@
       },
       "longueurMax": 27,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_banner_needs_confirmation",
@@ -32102,11 +31996,9 @@
       },
       "longueurMax": 106,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_banner_refused",
@@ -32132,11 +32024,9 @@
       },
       "longueurMax": 100,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_banner_quota",
@@ -32162,11 +32052,9 @@
       },
       "longueurMax": 141,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_banner_end_pending",
@@ -32192,11 +32080,9 @@
       },
       "longueurMax": 58,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_banner_call",
@@ -32222,11 +32108,9 @@
       },
       "longueurMax": 15,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_banner_see_miff",
@@ -32254,11 +32138,9 @@
       },
       "longueurMax": 25,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_banner_end_action",
@@ -32284,11 +32166,9 @@
       },
       "longueurMax": 24,
       "courte": true,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_ended_notice",
@@ -32316,11 +32196,9 @@
       },
       "longueurMax": 93,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_end_not_sent",
@@ -32346,11 +32224,9 @@
       },
       "longueurMax": 93,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "feed_label_alert",
@@ -32488,11 +32364,9 @@
       },
       "longueurMax": 37,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe notif_alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "notif_alert_start_body",
@@ -32517,11 +32391,9 @@
       },
       "longueurMax": 79,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe notif_alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "notif_alert_end_title",
@@ -32546,11 +32418,9 @@
       },
       "longueurMax": 40,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe notif_alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "notif_alert_end_body",
@@ -32575,11 +32445,9 @@
       },
       "longueurMax": 48,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe notif_alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_banner_title_no_name",
@@ -32605,11 +32473,9 @@
       },
       "longueurMax": 54,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_banner_sending_no_name",
@@ -32635,11 +32501,9 @@
       },
       "longueurMax": 30,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_banner_emergency",
@@ -32665,11 +32529,9 @@
       },
       "longueurMax": 25,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_banner_retry",
@@ -32695,11 +32557,9 @@
       },
       "longueurMax": 15,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_banner_decide",
@@ -32725,11 +32585,9 @@
       },
       "longueurMax": 15,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_banner_close_a11y",
@@ -32755,11 +32613,9 @@
       },
       "longueurMax": 60,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_ended_notice_no_name",
@@ -32785,11 +32641,9 @@
       },
       "longueurMax": 69,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_already_active_no_name",
@@ -32815,11 +32669,9 @@
       },
       "longueurMax": 43,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_confirm_end_body_no_name",
@@ -32845,11 +32697,9 @@
       },
       "longueurMax": 69,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "alert_unavailable_title",
@@ -32875,11 +32725,9 @@
       },
       "longueurMax": 168,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe alert_*"
-      ],
-      "sensible": true
+      "gele": false,
+      "sensible": true,
+      "sensibleRenforce": true
     },
     {
       "cle": "miff_alert_removed_warning",

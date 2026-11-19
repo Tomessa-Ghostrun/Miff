@@ -1500,7 +1500,10 @@
       "longueurMax": 678,
       "courte": false,
       "table": "InfoPlist.xcstrings",
-      "gele": false,
+      "gele": true,
+      "geleRaisons": [
+        "PR #290 ouverte (modifie le texte)"
+      ],
       "sensible": true
     },
     {

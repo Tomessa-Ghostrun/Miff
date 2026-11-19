@@ -1,7 +1,7 @@
 # Procédure du lot 4 : traduction en masse (es, it, pt, de) par fichier d'échange
 
 **Statut** : lot 4A (outillage) du ticket `docs/tickets/traduction-es-it-pt-de.md` (I18N-4L). Ce document dit **comment** mener le lot 4B (la traduction elle-même), avec les commandes du script `scripts/i18n-exchange.mjs`. Il complète `docs/i18n/protocole-relecture-croisee.md` (qui dit **quoi** vérifier), `docs/i18n/glossaire.md`, `docs/i18n/guide-de-style.md` et `docs/contracts/i18n-languages.md` (registre).
-**Rédigé le** : 2026-11-19, sur `origin/main` au commit `6545b10f`.
+**Rédigé le** : 2026-11-19, sur `origin/main` ; mis à jour le 2026-11-19 après le pilote es (lots 001 et 002) et les décisions du PM (écran de diagnostic non traduit, alerte dégelée, découpage en agents).
 
 > **Règles du projet qui s'appliquent** : aucune dépense, **aucun service de traduction externe** (D10 du ticket) : les agents du projet traduisent et relisent. Les textes sont publiés sous la responsabilité du PM **sans jamais prétendre à une relecture native ni juridique** (R1 du ticket, décision du 2026-10-23). Jamais de push sur `main` : une PR par plateforme. Le script ne modifie **jamais** les textes français ni anglais.
 
@@ -18,7 +18,9 @@ Les textes **communs** à Android et iOS (même clé des deux côtés) sont trad
 | `config.json` | Réglages : préfixes **gelés**, familles **sensibles** (protocole §5), textes **internes** (diagnostic), **motifs** de format imposés, exceptions d'identité (`invariables`), taille des lots | oui |
 | `gel-prs.json` | Instantané des clés touchées par les PR ouvertes (§3) | oui |
 | `traduction-<langue>.json` | **Le livrable du lot 4B** : `{"langue": "es", "traductions": {"<clé>": …}}` | oui (lot 4B) |
-| `lots/<langue>/…` | Lots donnés aux agents (traduction, relecture aveugle, relecture, rétro-traduction) | **non** (`.gitignore`), régénérables par `lots` |
+| `traduction-<langue>.notes.json` | Questions et textes source à corriger signalés par les agents (`questions`, `a_corriger_source`), écrit par `fusionner` | oui (lot 4B) |
+| `lots/<langue>/…` | Lots donnés aux agents (traduction, relecture aveugle, relecture, rétro-traduction), `plan-traducteurs.json` | **non** (`.gitignore`), régénérables par `lots` |
+| `sorties/…` | Sorties brutes des agents (avant `fusionner`) | **non** (`.gitignore`) |
 
 **Pourquoi les lots ne sont pas versionnés.** 4 langues × 14 lots ≈ 6 Mo (chaque lot recopie le glossaire de la langue pour être lisible seul) ; ils dépendent du gel : ils périmeraient à chaque PR de texte fusionnée ; ils se régénèrent en quelques secondes depuis le fichier d'échange et les documents. Le fichier d'échange, lui, est versionné (critère 7 du ticket) mais **n'est régénéré qu'au gel** du lot 4B : une PR de fonctionnalité n'a pas à le mettre à jour.
 
@@ -45,15 +47,17 @@ Les textes **communs** à Android et iOS (même clé des deux côtés) sont trad
 | Propres à iOS (`ios_*`) | **87** | ≈ 835 |
 | `InfoPlist.xcstrings` (iOS) | **4** | ≈ 216 |
 | **Total par langue** | **1 362** | **≈ 10 490** (anglais ≈ 9 930) |
-| dont gelés (§3) | 114 (112 communs) | ≈ 1 120 |
-| dont sensibles (protocole §5) | 573 (468 hors gelés) | ≈ 5 200 |
-| dont internes (écran de diagnostic) | 100 | ≈ 950 |
-| dont textes qui diffèrent entre Android et iOS (`divergent`) | 13 | |
+| dont gelés (§3) | **33** (30 communs) | ≈ 650 |
+| dont **internes** (écran de diagnostic, **non traduits**, §3 bis) | 100 | ≈ 950 |
+| **À traduire dans les lots** (hors gelés et internes) | **1 229** | **≈ 8 890** |
+| dont sensibles, en tête (protocole §5 ; dont 82 d'alerte, renforcés) | 549 | ≈ 4 610 |
+| dont courants | 680 | ≈ 4 290 |
+| dont textes qui diffèrent entre Android et iOS (`divergent`) | 13 (dont 5 hors diagnostic : traduits **deux fois**, décision du PM) | |
 | dont pluriels | 10 | |
 
-L'estimation du ticket (1 238 par langue, ≈ 9 900 mots) a été faite avant la fusion de l'Alerte danger et de plusieurs tickets : **+ 124 textes** (dont 78 `alert_*`). Le total pour les quatre langues est ≈ **5 450 textes, ≈ 42 000 mots**.
+L'estimation du ticket (1 238 par langue, ≈ 9 900 mots) a été faite avant la fusion de l'Alerte danger et de plusieurs tickets : **+ 124 textes** (dont 78 `alert_*`). Le total à traduire pour les quatre langues est ≈ **4 916 textes, ≈ 35 600 mots** (hors gelés et diagnostic).
 
-**Textes qui ne se traduisent pas à la main** : 3 motifs de format du Feed (`feed_time_pattern_24`, `feed_time_pattern_12`, `feed_date_pattern`) : `config.json` fixe leur valeur par langue d'après le guide §3, le contrôle l'exige ; 41 textes dont le français et l'anglais sont identiques (`invariableProbable` : marque, prénoms d'exemple, « Notifications »...) : le contrôle les accepte en avertissement, le lot 4B tranche (nom invariable = on recopie).
+**Textes qui ne se traduisent pas à la main** : 3 motifs de format du Feed (`feed_time_pattern_24`, `feed_time_pattern_12`, `feed_date_pattern`) : `config.json` fixe leur valeur par langue d'après le guide §3, le contrôle l'exige ; 41 textes dont le français et l'anglais sont identiques (`invariableProbable`) : 22 sont **déclarés invariables** dans `config.json` → `invariables.cles` (marque, prénoms d'exemple, adresse d'exemple, « Zoom », unités « m », « h », « min », noms des magasins...) et 8 le sont pour une ou plusieurs langues seulement (`invariables.parLangue` : « Flash » en es, it, pt ; « Sport » en it et de ; « Orange » et « Version » en de) : **aucun constat** pour ceux-là, y compris les contrôles d'apostrophe et d'espace d'unité ; les autres (« Notifications », « Type », « Photo »...) restent à traduire et leur oubli est une erreur ou, quand le français et l'anglais sont identiques, un avertissement.
 
 ---
 
@@ -61,7 +65,7 @@ L'estimation du ticket (1 238 par langue, ≈ 9 900 mots) a été faite avant la
 
 Une clé est **gelée** (`gele: true`, raison dans `geleRaisons`) si :
 
-1. son nom commence par un préfixe de `config.json` → `gel.prefixes` : `consent3_`, `miff_consent`, `alert_`, `notif_alert_`, `notif_centre`, `feed_place_` ; ou figure dans `gel.cles` ;
+1. son nom commence par un préfixe de `config.json` → `gel.prefixes` : `consent3_`, `miff_consent`, `notif_centre`, `feed_place_` ; ou figure dans `gel.cles` ;
 2. **ou** une PR ouverte l'ajoute, la supprime ou la modifie (français ou anglais, Android ou iOS).
 
 **Méthode du point 2** (`node scripts/i18n-exchange.mjs gel-prs [--branche <ref>]…`, nécessite `gh` et le réseau) :
@@ -71,9 +75,24 @@ Une clé est **gelée** (`gele: true`, raison dans `geleRaisons`) si :
 3. les clés sont comparées entre le point de départ et la tête de la PR, fichier par fichier (valeur brute Android ; localisations `fr` et `en` iOS) : clé **ajoutée**, **supprimée**, **modifiée** ;
 4. le résultat est écrit dans `gel-prs.json` ; `extraire` le lit. `--branche` ajoute une branche sans PR.
 
-État au 2026-11-19 : **#282** (iOS lot 3 : +18, −6, ~3), **#286** (Android lot 3 : +14, −6), **#287** (consentement v4 : +17, ~11), **#288** (centre de notifications : +4). Les 14 nouvelles clés `feed_place_*` et les 6 anciennes (`feed_place_noun_*`) sont gelées par le préfixe et par #282 / #286. Les clés **ajoutées** par une PR n'existent pas encore sur `main` : elles ne sont pas dans le fichier d'échange (`gel-prs.json` les liste ; elles entreront par `extraire` après la fusion).
+**Alerte dégelée (décision du PM, 2026-11-19)** : l'alerte est validée et en service ; les préfixes `alert_` et `notif_alert_` ont été retirés de `gel.prefixes`. Leurs 82 textes sont traduits dans les lots, **marqués `sensible` et `sensibleRenforce`** (`config.json` → `sensiblesRenforces`) : ton calme et factuel (G104 à G107), mention « pas un service d'urgence » et « 112 » gardées exactement ; ils passent par la rétro-traduction et par la phase 5 du protocole.
 
-**Dégeler** (étape 9 du §4) : fusionner les PR, `git fetch`, rebaser, `gel-prs` (les PR fusionnées disparaissent de l'instantané), retirer de `config.json` les préfixes dont la famille est stable (`alert_` : 78 clés, à confirmer avec le PM ; elle est déjà sur `main`), `extraire`, puis `lots --restant` (§4, étape 9).
+État au 2026-11-19 : **#282** (iOS lot 3 : +18, −6, ~3), **#286** (Android lot 3 : +14, −6), **#287** (consentement v4 : +17, ~11), **#288** (centre de notifications : +4). Les 14 nouvelles clés `feed_place_*` et les 6 anciennes (`feed_place_noun_*`) sont gelées par le préfixe et par #282 / #286. **33 textes sont gelés** (≈ 650 mots) : 6 `feed_place_noun_*`, 17 `miff_consent*`, 3 `miff_renewal_*`, `settings_privacy_location_body` et `settings_privacy_time_body`, `permission_location_seen_body`, `notif_c1_arrival`, 2 noms de langue iOS, 1 texte `InfoPlist` (`NSLocationAlwaysAndWhenInUseUsageDescription`). Cette liste **bouge** avec les PR ouvertes : relancer `gel-prs` puis `lots` juste avant de lancer les agents. Les clés **ajoutées** par une PR n'existent pas encore sur `main` : elles ne sont pas dans le fichier d'échange (`gel-prs.json` les liste ; elles entreront par `extraire` après la fusion).
+
+**Dégeler** (étape 9 du §4) : fusionner les PR, `git fetch`, rebaser, `gel-prs` (les PR fusionnées disparaissent de l'instantané), retirer de `config.json` les préfixes dont la famille est stable (les familles `consent3_` / `miff_consent` après #287, `feed_place_` après #282 et #286), `extraire`, puis `lots --restant` (§4, étape 9).
+
+---
+
+## 3 bis. L'écran de diagnostic n'est pas traduit (décision du PM, 2026-11-19)
+
+Les ≈ 100 textes `diag_*`, `ios_diag_*` et `android_diag_*` (écran interne des versions de test) **restent en français et en anglais** ; ils sont marqués `interne` (`config.json` → `internes.motifs`) et **exclus des lots**, du contrôle des clés manquantes et du contrôle d'identité avec le français. Solution retenue, qui ne change **aucune ressource fr ou en et aucun code** :
+
+1. **Registre** (`docs/contracts/i18n-languages.json` → `exceptions`) : une exception par langue (es, it, pt, de), `{"lang": "es", "keyPattern": "^(?:ios_|android_)?diag_", "check": "missing-key"}`, sur les deux plateformes. Le script de parité ne signale donc **jamais** « clé manquante » pour ces clés, y compris quand la langue passe en `required` ; il continue de les exiger en français et en anglais (test : `scripts/tests/i18n-exchange.test.mjs`, « registre : les clés de l'écran de diagnostic… »). Les clés absentes ne comptent pas comme défaut dans le tableau du résumé de la CI.
+2. **Android, à faire dans la PR Android du lot 4B** (le lint est une erreur : `MissingTranslation`, `android/app/build.gradle.kts`) : ignorer ces clés dans `android/app/lint.xml`, un fichier de configuration, pas du code ni une ressource de texte :
+   `<issue id="MissingTranslation"><ignore regexp="&quot;(android_)?diag_" /></issue>`
+   (le message du lint cite le nom de la clé ; [À vérifier] à la première exécution de `./gradlew lint` dans la PR : si le motif ne correspond pas, essayer `regexp="(android_)?diag_"`). Cette PR-ci ne touche pas à Android.
+3. **iOS** : une clé sans localisation « es » retombe sur l'anglais quand la langue du téléphone est l'espagnol (région de développement `en`). Limite connue [À vérifier sur TestFlight] : quand la personne **choisit** l'espagnol dans Réglages > Langue, `L10n` lit le paquet `es.lproj`, et une clé absente de ce paquet s'affiche brute (« diag_title ») : **uniquement** sur l'écran de diagnostic, absent des versions publiées. Pas de changement de code ici ; à noter pour la recette.
+4. Plan B si le point 2 ne passait pas : traduire les 100 textes (`internes.motifs` vidé dans `config.json`, retrait des exceptions du registre). Le coût est ≈ 950 mots par langue.
 
 ---
 
@@ -107,11 +126,13 @@ node scripts/i18n-exchange.mjs lots --langue toutes            # 4 langues
 node scripts/i18n-exchange.mjs lots --langue de --taille 80    # une langue, lots plus petits
 ```
 
-Sortie : `docs/i18n/echange/lots/<langue>/batch-001.json` … et `gele-traduction.json` (clés gelées exclues). Le défaut est **≈ 100 textes** (`config.json` → `tailleLot`) en lots **équilibrés** (14 lots de 97 à 98 pour 1 362 textes, jamais un dernier lot minuscule), **dans l'ordre d'Android** (les textes d'un même écran restent ensemble).
+Sortie : `docs/i18n/echange/lots/<langue>/batch-001.json` …, `plan-traducteurs.json` (attribution des lots) et `gele-traduction.json` (clés gelées exclues). Le défaut est **≈ 100 textes** (`config.json` → `tailleLot`) en lots **équilibrés** (jamais un dernier lot minuscule). **Les lots sensibles sont en tête** et ne sont **jamais mélangés** aux lots courants : localisation (`permission_*`, `InfoPlist`, `settings_privacy_location_*`, `feed_locate_*`), consentement, paywall, connexion (`auth_*`), alerte, notifications, suppression, puis le reste du Feed (ordre : `config.json` → `ordreSensibles`) ; dans chaque famille, l'ordre d'Android est conservé (les textes d'un même écran restent ensemble). Les textes **internes** (diagnostic) et **gelés** n'y figurent pas. Le champ `groupe` d'un lot vaut `sensible` ou `courant`.
 
-Chaque lot est **lisible seul** : `consignes`, `formatSortie`, `glossaire` (voir ci-dessous) et `textes` ; chaque texte porte `cle`, `type`, `fr`, `en`, `placeholders`, `contexte` (`ecran`, `usages`, `prefixe`), `longueurMax`, `longueurCible` (étiquettes courtes : budget du guide §4.1), `formesAttendues` (pluriels de la langue), `sensible`, `interne`, `motif` + `valeurImposee`, `invariableProbable`, `variantesIos`.
+Chaque lot est **lisible seul** : `consignes`, `formatSortie`, `glossaire` (voir ci-dessous) et `textes` ; chaque texte porte `cle`, `type`, `fr`, `en`, `placeholders`, `contexte` (`ecran`, `usages`, `prefixe`), `longueurMax`, `longueurCible` (étiquettes courtes : budget du guide §4.1), `formesAttendues` (pluriels de la langue), `sensible`, `interne`, `motif` + `valeurImposee`, `invariableProbable`, `variantesIos`, `sensibleRenforce`.
 
-`glossaire` est **extrait de `docs/i18n/glossaire.md` et `guide-de-style.md`** pour la langue : les termes figés (G01…, avec le français, l'anglais, le terme de la langue et les notes), la forme d'adresse, les termes **proscrits**, les phrases assemblées et formules d'heure, les noms des réglages du système, les pièges de genre, et, du guide, les principes, la fiche de la langue, les pluriels, les budgets et le ton. Un champ `glossaire.avertissements` non vide signifie qu'une section du document n'a pas été trouvée (document modifié) : corriger avant de lancer les agents.
+**Découpage retenu : 4 agents traducteurs par langue** (`--agents 4`, défaut), **3 à 4 lots chacun**, **blocs contigus dans l'ordre des lots**, découpage choisi pour équilibrer les mots du traducteur le plus chargé (`plan-traducteurs.json`) ; **1 agent relecteur B par langue** (phase 1 aveugle puis phase 2, sur les mêmes lots) ; **1 agent C de rétro-traduction par langue**, qui ne reçoit que les textes sensibles. Soit **6 agents par langue, 24 au total** (16 traducteurs, 4 relecteurs, 4 rétro-traducteurs). Le plan, au 2026-11-19, est donné en §7 bis.
+
+`glossaire` est **extrait de `docs/i18n/glossaire.md` et `guide-de-style.md`** pour la langue : les termes figés (G01…, avec le français, l'anglais, le terme de la langue et les notes), la forme d'adresse, les termes **proscrits**, les phrases assemblées et formules d'heure, les noms des réglages du système, les pièges de genre, et, du guide, les principes, la fiche de la langue, les pluriels, les budgets et le ton. Les `consignes` de chaque lot rappellent, outre le ton et les valeurs insérées : la règle **{"android", "ios"}** pour un texte `variantesIos` (même si seule une unité, un mot ou un type de valeur diffère ; un texte sans `variantesIos` reçoit une seule traduction en notation Android) ; **pas de calque** du français ; **tutoiement** même si un texte (interne) vouvoie, avec le champ de sortie **`a_corriger_source`** pour signaler la phrase fautive ; les **termes proscrits** (« Attention : » ne devient pas « ¡Atención! », « Attenzione! », « Atenção! » ni « Achtung » ; « obligatoire » ne devient pas « obligatorio », « obbligatorio », « obrigatório » ni « Pflicht »). Un champ `glossaire.avertissements` non vide signifie qu'une section du document n'a pas été trouvée (document modifié) : corriger avant de lancer les agents.
 
 ### Étape 4. Traduire (agent traducteur A, un lot à la fois)
 
@@ -119,7 +140,7 @@ Modèle de consigne à donner à l'agent (contexte neuf pour chaque lot) :
 
 > Traduis le lot `docs/i18n/echange/lots/<langue>/batch-NNN.json` selon les `consignes` du fichier. Lis d'abord `CLAUDE.md`, `docs/i18n/guide-de-style.md` et `docs/i18n/chaines-reference.md`. Écris ta sortie dans `docs/i18n/echange/lots/<langue>/sortie/batch-NNN.json` au format `formatSortie` : une clé `traductions` qui contient **toutes** les clés du lot, une seule fois. N'invente aucune décision produit : pose une `questions` si un texte est ambigu.
 
-Un agent traducteur par langue peut enchaîner les lots ; **les quatre langues se traitent en parallèle** une fois le glossaire figé. Aucun lot n'est traduit par un service externe.
+Chaque agent traducteur (T1 à T4) enchaîne **ses** lots dans l'ordre du `plan-traducteurs.json` ; **les quatre langues se traitent en parallèle**. Le glossaire §2.8 (G108 à G119) contient les termes relevés par le pilote es. Aucun lot n'est traduit par un service externe.
 
 ### Étape 5. Fusionner et contrôler la forme
 
@@ -128,14 +149,14 @@ node scripts/i18n-exchange.mjs fusionner --langue es --dossier docs/i18n/echange
 node scripts/i18n-exchange.mjs controler --langue es --complet
 ```
 
-`fusionner` assemble les sorties dans `docs/i18n/echange/traduction-es.json` (clés triées ; **refuse** une clé présente deux fois avec des valeurs différentes ; plusieurs passes successives complètent le fichier). `controler` (option `--tout` pour tous les constats, `--json` pour une machine) applique, **par langue**, les contrôles du script de parité **et** des contrôles propres à l'échange :
+`fusionner` conserve aussi les champs `questions` et `a_corriger_source` des agents dans `traduction-<langue>.notes.json` (à lire avant la relecture). Il assemble les sorties dans `docs/i18n/echange/traduction-es.json` (clés triées ; **refuse** une clé présente deux fois avec des valeurs différentes ; plusieurs passes successives complètent le fichier). `controler` (option `--tout` pour tous les constats, `--json` pour une machine) applique, **par langue**, les contrôles du script de parité **et** des contrôles propres à l'échange :
 
 | Contrôle | Gravité | Détail |
 |---|---|---|
 | `placeholders` | **erreur** | mêmes valeurs insérées que le français (type et position ; ordre libre), dans chaque forme de pluriel |
 | `plural-forms`, `plural-recommended` | **erreur** | formes obligatoires du registre (`one`, `other`) ; `many` **exigée** en es, it, pt quand le français l'écrit ; formes inconnues refusées (de : jamais `many`) ; mauvaise structure (texte pour un pluriel) refusée (`forme`) |
 | `empty`, `todo` | erreur | texte vide ou marqueur à traduire |
-| `identical-to-source` | **erreur** (avertissement si le français et l'anglais sont identiques, ou motif de format, ou exception de `config.json` / du registre) | texte identique au français hors marque et valeurs insérées |
+| `identical-to-source` | **erreur** ; avertissement si le français et l'anglais sont identiques ; **aucun constat** pour un texte déclaré invariable (`config.json` → `invariables`), un motif de format, un texte interne ou une exception du registre | texte identique au français hors marque et valeurs insérées |
 | `gender-mark`, `formal-address`, `forbidden-term` | erreur | marque de genre, vouvoiement, terme proscrit du registre |
 | `high-punctuation` | **erreur** | espace insécable avant `? ! : ;` (aucune en es, it, pt, de) |
 | `nbsp-lost` | erreur pour les durées, avertissement ailleurs | espace insécable du français perdue |
@@ -161,6 +182,8 @@ Le protocole `protocole-relecture-croisee.md` s'applique tel quel ; les lots son
 | 3. Rétro-traduction (C) | `lots --langue es --mode retro` | **uniquement** la traduction des textes sensibles (ni français, ni anglais, ni glossaire) | `retro` : le texte en français, `doutes` |
 | 4. Réponse de A | (à la main) | remarques | « appliquée », « refusée, motif », « escaladée » ; mise à jour du fichier de traductions, nouvelle passe de `controler` |
 | 5. Revue du ton (localisation, consentement) | (agent de revue) | familles `permission_*`, `miff_consent3_*`, `miff_renewal_*`, `settings_privacy_*`, `ios_permission_*`, `InfoPlist`, `alert_*` | liste de contrôle (a à g) de `chaines-reference.md` |
+
+Le relecteur B reçoit les lots `aveugle-NNN` puis `relecture-NNN` : **mêmes regroupements** que la traduction (sensibles en tête). L'agent C reçoit `retro-NNN` (seuls les textes sensibles, ni français ni anglais).
 
 Comptes rendus : modèle du protocole §6, un fichier `docs/i18n/relectures/<lot>-<langue>.md` par langue **dans la PR**. Une remarque de gravité A ou B ouverte **bloque** le passage en `required`. Zéro remarque sur un lot entier déclenche une seconde lecture par un autre agent (protocole §7).
 
@@ -250,17 +273,32 @@ Le contrôle exige `many` en es, it, pt quand le français l'écrit (9 des 10 pl
 
 ---
 
+## 7 bis. Plan des lots et des agents (état du 2026-11-19, hors gelés et diagnostic)
+
+Même découpage pour les quatre langues : **13 lots** (6 sensibles, 7 courants), 1 229 textes, ≈ 8 890 mots français, attribués dans l'ordre :
+
+| Agent | Lots | Contenu | Textes | Mots fr |
+|---|---|---|---|---|
+| **T1** | `batch-001`, `batch-002`, `batch-003` | sensibles : localisation et InfoPlist, consentement, paywall, connexion, début de l'alerte | 276 | ≈ 2 560 |
+| **T2** | `batch-004`, `batch-005`, `batch-006` | sensibles : fin de l'alerte, notifications, suppression et départ d'une Miff, Feed, compte à rebours | 273 | ≈ 2 050 |
+| **T3** | `batch-007`, `batch-008`, `batch-009`, `batch-010` | courants : accueil, connexion, onboarding, profil, Miff, lieux | 389 | ≈ 2 030 |
+| **T4** | `batch-011`, `batch-012`, `batch-013` | courants : lieux, nouvelles (update), voyage, profil, textes propres à Android et à iOS | 291 | ≈ 2 250 |
+
+Le plan exact est régénéré par `lots` (il change quand le gel ou les ressources changent) : **toujours donner aux agents le `plan-traducteurs.json` du jour**. Pour l'espagnol, les 192 textes du pilote (lots 001 et 002 de l'ancien découpage) sont déjà traduits : copier `traduction-pilote-es.json` en `docs/i18n/echange/traduction-es.json` puis `lots --langue es --restant` donne **12 lots** (6 sensibles, 6 courants, 1 117 textes, ≈ 8 100 mots) au lieu de 13.
+
+---
+
 ## 8. Estimation du travail
 
-| Passe | Lots par langue | Lots pour 4 langues | Mots français par lot |
+| Passe | Lots par langue | Lots pour 4 langues | Agents |
 |---|---|---|---|
-| Traduction (A) | 14 (≈ 97 textes) | 56 | ≈ 750 |
-| Lecture aveugle (B, phase 1) | 14 | 56 | ≈ 750 |
-| Relecture (B, phase 2) | 14 | 56 | ≈ 750 |
-| Rétro-traduction (C, phase 3, textes sensibles seulement) | 6 (≈ 95 textes) | 24 | ≈ 900 |
-| **Total** | **48** | **192 passes d'agent** | |
+| Traduction (A) | 13 (≈ 95 textes, ≈ 690 mots) | 52 | **16** (4 par langue, 3 à 4 lots chacun) |
+| Lecture aveugle (B, phase 1) | 13 | 52 | 4 (1 par langue) |
+| Relecture (B, phase 2) | 13 | 52 | les mêmes 4 |
+| Rétro-traduction (C, phase 3, textes sensibles seulement) | 6 (≈ 92 textes) | 24 | 4 (1 par langue) |
+| **Total** | **45** | **180 passes** | **24 agents** |
 
-Taille d'un lot de traduction : ≈ 115 Ko (dont ≈ 50 Ko de glossaire recopié) ; c'est le seul « coût » : du temps de contexte, jamais d'argent. Le nombre de textes sensibles (573) est supérieur à l'estimation du protocole (≈ 250) parce que `config.json` → `sensibles.motifs` reprend **toutes** les familles du protocole §5, y compris `alert_*` (78, gelés) ; resserrer la liste réduit les passes de rétro-traduction.
+Taille d'un lot de traduction : ≈ 120 Ko (dont ≈ 55 Ko de glossaire recopié) ; c'est le seul « coût » : du temps de contexte, jamais d'argent. Les 549 textes sensibles (≈ 4 610 mots) dépassent l'estimation du protocole (≈ 250) parce que `config.json` → `sensibles.motifs` reprend **toutes** les familles du protocole §5 (dont l'alerte, 82 textes) ; resserrer la liste réduit les passes de rétro-traduction.
 
 ---
 
@@ -276,8 +314,11 @@ Taille d'un lot de traduction : ≈ 115 Ko (dont ≈ 50 Ko de glossaire recopié
 
 ---
 
-## 10. Questions ouvertes pour le lot 4B
+## 10. Décisions du PM et questions restantes (2026-11-19)
 
-1. **Écran de diagnostic (100 textes, ≈ 950 mots par langue)** : le ticket dit « reste en français et anglais seulement » (§2.2), mais le lint Android (`MissingTranslation`) et le script de parité exigent la clé dans chaque langue `required`. Options : (a) les traduire simplement (marqués `interne: true` dans les lots, relecture allégée), (b) les marquer non traduisibles (`translatable="false"` / `shouldTranslate: false`), ce qui est un changement de ressources du français et d'iOS. Défaut de l'outillage : (a).
-2. **Famille `alert_*` (78 textes)** : déjà sur `main` ; la laisser gelée ou la dégeler ? Défaut : gelée jusqu'à décision (config), parce que l'instruction du lot 4A la cite parmi les familles en mouvement.
-3. **Textes `divergent`** : traduction par plateforme (défaut) ou alignement du texte source.
+**Décidé** : (1) l'écran de diagnostic **n'est pas traduit** (§3 bis) ; (2) l'alerte (`alert_*`, `notif_alert_*`) est **dégelée**, marquée sensible renforcée ; (3) les 13 textes qui diffèrent entre Android et iOS **restent traduits deux fois** ; (4) découpage : 4 traducteurs, 1 relecteur B et 1 rétro-traducteur C par langue ; (5) glossaire complété (§2.8, G108 à G119).
+
+**Restantes** :
+1. **Lint Android** (§3 bis, point 2) : la valeur exacte du motif de `lint.xml` se confirme à la première exécution de `./gradlew lint` dans la PR Android du lot 4B.
+2. **Clés gelées** (33 textes, ≈ 650 mots) : à traduire après la fusion de #282, #286, #287 et #288 (étape 9).
+3. **`forbiddenTerms` du registre** est encore vide : le contrôle automatique des termes proscrits (glossaire §4) n'est pas alimenté ; les consignes des lots les citent et la relecture les contrôle. Les ajouter au registre est une PR séparée (risque de faux positifs).

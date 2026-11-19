@@ -9,7 +9,7 @@
 //   controler       --langue <code> [--fichier <f>] [--complet] [--json] [--tout]   contrôle de forme d'un fichier de traductions
 //   injecter        --langue <code> [--fichier <f>] [--plateforme android|ios|tout] [--dry-run] [--json]   réinjection dans les apps
 //   lots            --langue <code|toutes> [--mode traduction|aveugle|relecture|retro] [--taille 100] [--sortie <dossier>]   lots pour les agents
-//                   [--restant : exclut les clés déjà présentes dans traduction-<langue>.json]
+//                   [--restant : exclut les clés déjà présentes dans traduction-<langue>.json] [--agents 4 : traducteurs par langue]
 //   fusionner       --langue <code> (--dossier <d> | <fichiers...>) [--sortie <f>]   assemble les sorties des lots en traduction-<langue>.json
 //
 // Codes de sortie : 0 = OK, 1 = erreur(s) de traduction ou fichier d'échange périmé, 2 = usage incorrect ou fichier illisible.
@@ -24,7 +24,7 @@ import {
   applyIosCatalog, buildAndroidStrings, buildExchange, buildUsageIndex, checkTranslations, computeOpenPrKeyChanges, exchangeFiles, indexExchange, longestVersusEnglish,
   normalizeConfig, prepareModels,
 } from './lib/i18n-exchange.mjs';
-import { DEFAULT_BATCH_SIZE, buildLots } from './lib/i18n-lots.mjs';
+import { DEFAULT_BATCH_SIZE, DEFAULT_TRANSLATORS, buildLots } from './lib/i18n-lots.mjs';
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -271,13 +271,17 @@ export function commandLots(options, log = console.log) {
       const existing = join(root, EXCHANGE_DIR, `traduction-${language.code}.json`);
       excludeKeys = new Set(existsSync(existing) ? Object.keys(readJson(existing).traductions ?? {}) : []);
     }
-    const built = buildLots({ language, entries, config: world.config, kit, mode, size, translations, excludeKeys });
+    const agents = Number(options.agents ?? DEFAULT_TRANSLATORS);
+    if (!Number.isInteger(agents) || agents < 1) throw new UsageError('--agents : entier positif attendu');
+    const built = buildLots({ language, entries, config: world.config, kit, mode, size, translations, excludeKeys, agents });
     const dir = join(outRoot, language.code);
     for (const file of built.files) writeFile(join(dir, file.name), json(file.content));
+    if (built.plan) writeFile(join(dir, 'plan-traducteurs.json'), json({ langue: language.code, note: 'Attribution des lots aux agents traducteurs, dans l’ordre : les lots sensibles sont en tête.', ...built.plan }));
     writeFile(join(dir, `gele-${mode}.json`), json({ langue: language.code, note: 'Clés gelées : à traiter après la fusion des PR concernées (docs/i18n/procedure-lot4.md §3).', cles: built.frozen }));
     for (const w of kit.avertissements) log(`avertissement (${language.code}) : ${w}`);
     summary.push(built.stats);
-    log(`${language.code} : ${built.stats.lots} lot(s) de ${size} au plus, ${built.stats.textes} textes, ≈ ${built.stats.motsFr} mots (fr) ; ${built.stats.gelees} gelé(s) exclus -> ${dir}`);
+    log(`${language.code} : ${built.stats.lots} lot(s) de ${size} au plus (${built.stats.lotsSensibles} sensibles, ${built.stats.lotsCourants} courants), ${built.stats.textes} textes, ≈ ${built.stats.motsFr} mots (fr) ; ${built.stats.gelees} gelé(s) et ${built.stats.internes} interne(s) exclus -> ${dir}`);
+    for (const a of built.plan?.agents ?? []) log(`    ${a.agent} : ${a.lots.join(', ')} (${a.textes} textes, ≈ ${a.mots} mots ; ${a.groupes.join(' + ')})`);
   }
   if (options.json) log(JSON.stringify(summary, null, 2));
   return 0;
@@ -297,6 +301,10 @@ export function commandMerge(options, log = console.log) {
   const merged = existsSync(target) ? (readJson(target).traductions ?? {}) : {};
   const conflicts = [];
   const lots = [];
+  const notesPath = target.replace(/.json$/, '.notes.json');
+  const previous = existsSync(notesPath) ? readJson(notesPath) : {};
+  const questions = { ...(previous.questions ?? {}) };
+  const toFix = { ...(previous.a_corriger_source ?? {}) };
   for (const file of files) {
     const content = readJson(file);
     if (content.langue !== code) throw new UsageError(`${file} : langue « ${content.langue} », « ${code} » attendu`);
@@ -306,6 +314,9 @@ export function commandMerge(options, log = console.log) {
       merged[key] = value;
     }
     lots.push(content.lot ?? file);
+    for (const [field, target] of [['questions', questions], ['a_corriger_source', toFix]]) {
+      for (const [key, note] of Object.entries(content[field] ?? {})) if (typeof note === 'string' && !key.startsWith('<')) target[key] = note;
+    }
   }
   if (conflicts.length > 0) {
     for (const c of conflicts) log(`conflit : ${c}`);
@@ -315,6 +326,10 @@ export function commandMerge(options, log = console.log) {
   const sorted = Object.fromEntries(Object.keys(merged).sort().map((k) => [k, merged[k]]));
   writeFile(target, json({ langue: code, traductions: sorted }));
   log(`écrit : ${target} (${Object.keys(sorted).length} clés, ${lots.length} lot(s) : ${lots.join(', ')})`);
+  if (Object.keys(questions).length + Object.keys(toFix).length > 0) {
+    writeFile(notesPath, json({ langue: code, questions, a_corriger_source: toFix }));
+    log(`notes des agents : ${notesPath} (${Object.keys(questions).length} question(s), ${Object.keys(toFix).length} texte(s) source à corriger)`);
+  }
   return 0;
 }
 

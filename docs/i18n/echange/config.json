@@ -2,31 +2,137 @@
   "version": 1,
   "tailleLot": 100,
   "gel": {
-    "prefixes": ["consent3_", "miff_consent", "alert_", "notif_alert_", "notif_centre", "feed_place_"],
+    "prefixes": [
+      "consent3_",
+      "miff_consent",
+      "notif_centre",
+      "feed_place_"
+    ],
     "cles": []
   },
   "sensibles": {
     "motifs": [
-      "^permission_", "^ios_permission_", "^settings_privacy_location_", "^update_notice_location_off$", "^feed_refresh_position_unavailable$",
-      "^consent3_", "^miff_consent", "^miff_renewal_", "^miff_waiting_", "^auth_consent_notice$", "^auth_panel_notice$", "^settings_privacy_analytics_", "^miff_sharing_",
+      "^permission_",
+      "^ios_permission_",
+      "^settings_privacy_location_",
+      "^update_notice_location_off$",
+      "^feed_refresh_position_unavailable$",
+      "^consent3_",
+      "^miff_consent",
+      "^miff_renewal_",
+      "^miff_waiting_",
+      "^auth_consent_notice$",
+      "^auth_panel_notice$",
+      "^settings_privacy_analytics_",
+      "^miff_sharing_",
       "^notif_",
-      "^auth_error_", "^miff_message_", "_error", "_unavailable$", "^feed_offline_", "^settings_delete_failed",
-      "^feed_bubble_", "^feed_label_", "^feed_colors_", "^countdown_", "^feed_time_", "^feed_locate_",
-      "^paywall_", "^place_paywall_", "^settings_subscription_",
-      "^settings_delete_", "^miff_delete_", "^miff_leave_", "^miff_remove_",
+      "^auth_error_",
+      "^miff_message_",
+      "_error",
+      "_unavailable$",
+      "^feed_offline_",
+      "^settings_delete_failed",
+      "^feed_bubble_",
+      "^feed_label_",
+      "^feed_colors_",
+      "^countdown_",
+      "^feed_time_",
+      "^feed_locate_",
+      "^paywall_",
+      "^place_paywall_",
+      "^settings_subscription_",
+      "^settings_delete_",
+      "^miff_delete_",
+      "^miff_leave_",
+      "^miff_remove_",
       "^alert_"
     ]
   },
+  "sensiblesRenforces": {
+    "motifs": [
+      "^alert_",
+      "^notif_alert_"
+    ]
+  },
+  "ordreSensibles": [
+    "^(?:ios_|android_)?permission_|^NS|^settings_privacy_location_|^update_notice_location_off$|^feed_refresh_position_unavailable$|^feed_locate_",
+    "^(?:miff_)?consent|^miff_renewal_|^miff_waiting_|^miff_sharing_|^auth_consent_notice$|^auth_panel_notice$|^settings_privacy_analytics_",
+    "^(?:ios_|android_)?paywall_|^place_paywall_|^settings_subscription_",
+    "^auth_",
+    "^alert_|^notif_alert_",
+    "^notif_",
+    "^miff_(?:delete|leave|remove)_|^settings_delete_",
+    "^feed_|^countdown_"
+  ],
   "internes": {
-    "motifs": ["^diag_", "^ios_diag_", "^android_diag_"]
+    "motifs": [
+      "^diag_",
+      "^ios_diag_",
+      "^android_diag_"
+    ]
   },
   "motifs": {
-    "feed_time_pattern_24": { "es": "HH:mm", "it": "HH:mm", "pt": "HH:mm", "de": "HH:mm" },
-    "feed_time_pattern_12": { "es": "h:mm a", "it": "h:mm a", "pt": "h:mm a", "de": "h:mm a" },
-    "feed_date_pattern": { "es": "d MMM", "it": "d MMM", "pt": "d MMM", "de": "d. MMM" }
+    "feed_time_pattern_24": {
+      "es": "HH:mm",
+      "it": "HH:mm",
+      "pt": "HH:mm",
+      "de": "HH:mm"
+    },
+    "feed_time_pattern_12": {
+      "es": "h:mm a",
+      "it": "h:mm a",
+      "pt": "h:mm a",
+      "de": "h:mm a"
+    },
+    "feed_date_pattern": {
+      "es": "d MMM",
+      "it": "d MMM",
+      "pt": "d MMM",
+      "de": "d. MMM"
+    }
   },
   "invariables": {
-    "cles": [],
-    "parLangue": {}
+    "cles": [
+      "home_title",
+      "onboarding_sample_name_1",
+      "onboarding_sample_name_2",
+      "onboarding_sample_place_address_value",
+      "profile_crop_zoom_a11y",
+      "miff_join_code_hint",
+      "place_miff_title",
+      "place_miffs_title",
+      "place_premium_pill",
+      "place_map_attribution",
+      "place_radius_value",
+      "android_onboarding_radius_value",
+      "ios_onboarding_radius_value",
+      "countdown_duration_hours_minutes",
+      "countdown_duration_hours",
+      "countdown_duration_minutes",
+      "android_paywall_store_name",
+      "ios_paywall_store_name",
+      "ios_phone_keyboard_done",
+      "ios_splash_a11y",
+      "ios_settings_language_english",
+      "ios_settings_language_french"
+    ],
+    "parLangue": {
+      "es": [
+        "update_flash_a11y"
+      ],
+      "it": [
+        "update_flash_a11y",
+        "place_category_sport"
+      ],
+      "pt": [
+        "update_flash_a11y"
+      ],
+      "de": [
+        "about_version_label",
+        "place_category_sport",
+        "feed_colors_person_orange_title",
+        "feed_colors_miff_orange_title"
+      ]
+    }
   }
 }
