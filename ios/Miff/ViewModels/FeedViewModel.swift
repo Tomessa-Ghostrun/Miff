@@ -6,7 +6,8 @@ import Foundation
 //   « Localiser » est vidée dès que le Feed quitte l'écran), jamais dans un journal, un événement Analytics (le Feed n'en envoie
 //   aucun) ni un rapport de plantage ; chaque type qui en porte un cache son contenu dans `description` ;
 // - le Feed n'écrit JAMAIS (0 écriture, 0 suppression) : il écoute la Miff (membres, lieux, comme l'écran de la Miff) et ses statuts,
-//   et lit UNE position par toucher sur « Localiser » ;
+//   et lit UNE position par toucher sur « Localiser ». Au geste « tirer pour actualiser » il DEMANDE au suivi des lieux de revérifier MA
+//   présence (`onPullOwnPresence`), sans mesurer, écrire ni recevoir de position : c'est le moteur du suivi qui le fait, avec ses gardes ;
 // - les écoutes n'existent QUE pendant que le Feed est à l'écran : l'écran appelle `observe(miffId:)` dans une tâche qui s'arrête
 //   quand l'app passe en arrière-plan ou que l'onglet change ; rien n'écoute une Miff que personne ne regarde, et une seule Miff (la
 //   Miff active) est écoutée ;
@@ -72,10 +73,13 @@ struct FeedTimings {
     /// En ligne, ce que dit le cache n'est pas montré comme le présent : le Feed attend ce délai que le serveur le confirme (une copie
     /// d'hier peut dire « orange » pour quelqu'un qui vient de rentrer : une fausse alerte). Après, la copie est montrée AVEC sa date.
     var cacheGraceMillis = 5_000
-    /// « Actualiser » ne lit le serveur qu'une fois par ce délai (15 s) : un geste plus rapproché se termine aussitôt, sans lecture.
+    /// « Actualiser » ne lit le serveur qu'une fois par ce délai (15 s) : un geste plus rapproché ne lit rien (l'indicateur reste le temps minimum ci-dessous).
     var minRefreshIntervalMillis = 15_000
     /// L'indicateur d'« Actualiser » se termine au plus tard après ce délai (8 s), avec la mention honnête « Dernières informations de… ».
     var refreshTimeoutSeconds: TimeInterval = 8
+    /// L'indicateur d'« Actualiser » reste visible au moins ce temps depuis le geste (0,8 s ; retour du PM sur le TestFlight 38 : il ne se voyait
+    /// pas). Un minimum d'AFFICHAGE : rien n'est relu de plus, la position n'est jamais attendue.
+    var minRefreshDisplayMillis = 800
     /// La pop-in « Pas de connexion » : un essai automatique toutes les 10 s, et le délai sans aucune donnée avant qu'elle vienne
     /// quand le système dit pourtant « en ligne » (8 s).
     var offlinePopin = OfflinePopinTimings()
@@ -106,6 +110,10 @@ struct FeedDependencies {
     /// Les lieux de la Miff affichée, DÉJÀ lus par l'écoute : la liste des lieux du Profil les réutilise (zéro lecture de plus). Seulement
     /// quand le serveur les a confirmés : une copie du téléphone encore vide n'est jamais donnée (le Profil lit alors la Miff une fois).
     var onPlaces: (String, [Place]) -> Void = { _, _ in }
+    /// « Tirer pour actualiser » : demande au suivi des lieux de revérifier MA présence (`TrackingRuntime.feedPulled`). Rend la main tout de
+    /// suite, ne donne ni ne reçoit aucune position, et ne bloque jamais l'actualisation. La limite de fréquence (30 s) et toutes les gardes
+    /// (autorisation « Toujours » + position exacte, partage, mode voyage) sont celles du suivi.
+    var onPullOwnPresence: @MainActor () -> Void = {}
 }
 
 @MainActor
@@ -134,6 +142,8 @@ final class FeedViewModel: ObservableObject {
     var waiting: Set<String> = [] { didSet { recompute() } }
     var cacheGraceOver = false { didSet { recompute() } }
     var staleAfterRefresh = false { didSet { recompute() } }
+    /// ALERTE : les alertes de la Miff affichée, telles que l'écouteur les entend (vide sans la fonction). `FeedBuilder` garde celles en cours.
+    var alertDocs: [DangerAlertDoc] = [] { didSet { recompute() } }
 
     /// La Miff que l'observation en cours écoute, et son numéro (une réponse attendue à travers un changement n'est jamais appliquée).
     var observedMiffId: String?
@@ -330,7 +340,8 @@ final class FeedViewModel: ObservableObject {
                 statuses: statusView,
                 waitingAgreement: waiting.contains(activeId),
                 // Pas de réseau, OU un « Actualiser » que le serveur n'a pas répondu : ce qui est montré est daté, jamais présenté comme le présent.
-                offline: offline || staleAfterRefresh
+                offline: offline || staleAfterRefresh,
+                alerts: alertDocs
             ),
             nowMillis: nowMillis,
             zone: dependencies.zone()
@@ -356,6 +367,8 @@ final class FeedViewModel: ObservableObject {
             statusView = .waiting
             cacheGraceOver = false
             staleAfterRefresh = false
+            // Ce qui a été dit des alertes d'une autre Miff n'est jamais dessiné sur celle-ci.
+            alertDocs = []
         } else {
             piece = nil
         }
@@ -364,6 +377,9 @@ final class FeedViewModel: ObservableObject {
             group.addTask { await self.tickEachMinute() }
             if let miffId {
                 group.addTask { await self.watchMiff(miffId, generation: mine) }
+                #if ALERT_DANGER
+                group.addTask { await self.watchAlerts(miffId, generation: mine) }
+                #endif
             }
         }
         if generation == mine {

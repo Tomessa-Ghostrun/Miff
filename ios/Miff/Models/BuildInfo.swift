@@ -51,6 +51,17 @@ enum BuildFlavor {
 
     /// La fenêtre d'avis (docs/tickets/pop-ins-avis.md) : présente seulement quand la condition de compilation `REVIEW_PROMPT` existe
     /// (project.yml : Debug et Internal oui, Release non). Même drapeau que `BuildConfig.REVIEW_PROMPT` d'Android.
+    /// ALERTE « Je suis en danger » (docs/tickets/alerte-danger.md) : présente seulement quand la condition de compilation `ALERT_DANGER` existe
+    /// (project.yml : Debug et Internal oui, Release non). Même drapeau que `BuildConfig.ALERT_DANGER` d'Android. Éteint, aucun type de la fonction
+    /// n'est compilé et les lots d'arrêt du partage, de départ, de retrait et de suppression ne portent rien de plus (contrôle : ci/check-binaries.sh).
+    static var includesAlertDanger: Bool {
+        #if ALERT_DANGER
+        return true
+        #else
+        return false
+        #endif
+    }
+
     static var includesReviewPrompt: Bool {
         #if REVIEW_PROMPT
         return true

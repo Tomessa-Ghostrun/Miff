@@ -1,7 +1,9 @@
 import Foundation
 
 // « Actualiser » (tirer pour actualiser, décision du PM du 2026-11-06) et « Localiser » : les deux seules lectures que fait le Feed à
-// la demande de la personne. Aucune ne CRÉE ni n'ÉCRIT rien.
+// la demande de la personne. Aucune ne CRÉE ni n'ÉCRIT rien : le Feed ne lit ni n'écrit lui-même aucune position. Depuis le 2026-11-17
+// (demande du PM), « Actualiser » demande en plus au SUIVI des lieux de revérifier MA présence (`onPullOwnPresence`) ; c'est le moteur
+// du suivi, avec toutes ses gardes, qui mesure et écrit si besoin (voir `docs/tickets/feed-refresh-position.md`).
 
 extension FeedViewModel {
     // MARK: - Actualiser
@@ -11,13 +13,20 @@ extension FeedViewModel {
     /// toutes les 15 s (un geste plus rapproché se termine aussitôt, sans lire), jamais une boucle, aucune écriture ; hors connexion
     /// elle se termine tout de suite (la mention « Dernières informations de… » est déjà là) ; l'indicateur se termine au plus tard
     /// après 8 s, et si le serveur n'a pas répondu le Feed le dit avec sa mention honnête, jamais avec une phrase alarmante. Coût
-    /// d'une actualisation : 9 + 2 x membres + lieux lectures.
+    /// d'une actualisation : 9 + 2 x membres + lieux lectures (le suivi ajoute au plus une mesure ponctuelle de position par 30 s, et ses
+    /// lectures et écritures habituelles seulement quand elles sont dues).
     func pullToRefresh() async {
         guard !refreshing, case .data(let miffId, _)? = piece else {
             return
         }
         let now = dependencies.clock()
         if let last = lastRefreshAtMillis, now - last >= 0, now - last < dependencies.timings.minRefreshIntervalMillis {
+            // Trop tôt pour relire : rien n'est lu, mais le geste n'a pas l'air de ne rien faire : l'indicateur reste visible un instant.
+            refreshing = true
+            defer {
+                refreshing = false
+            }
+            await holdIndicator(since: now)
             return
         }
         guard dependencies.network.isOnline() else {
@@ -28,6 +37,10 @@ extension FeedViewModel {
         defer {
             refreshing = false
         }
+        // MA présence aussi : le suivi la revérifie en parallèle (mesure ponctuelle, limitée à une fois par 30 s, rien d'envoyé si rien
+        // ne change). On ne l'attend PAS : l'indicateur ne dépend que de la lecture des proches ci-dessous, et mon propre statut revient
+        // par l'écoute des statuts, comme n'importe quel autre. Hors connexion on n'arrive jamais ici (garde ci-dessus).
+        dependencies.onPullOwnPresence()
         let readStatuses = statusView != .off
         let refresher = dependencies.services.refresher
         let answer: ServerRead
@@ -39,6 +52,18 @@ extension FeedViewModel {
             answer = .unreachable
         }
         applyRefresh(miffId: miffId, answer: answer, askedForStatuses: readStatuses)
+        await holdIndicator(since: now)
+    }
+
+    /// L'indicateur d'« Actualiser » reste affiché AU MOINS `minRefreshDisplayMillis` depuis le début du geste (retour du PM, TestFlight 38 : il
+    /// se terminait presque aussitôt et ne se voyait pas). Ce que la lecture a déjà rendu est déjà montré ; on ne fait qu'attendre le reste du
+    /// délai, sans attendre la position (le suivi tourne à part). Un délai écoulé n'ajoute rien.
+    private func holdIndicator(since start: Int) async {
+        let elapsed = max(dependencies.clock() - start, 0)
+        let remaining = dependencies.timings.minRefreshDisplayMillis - elapsed
+        if remaining > 0 {
+            await dependencies.sleep(remaining)
+        }
     }
 
     private func applyRefresh(miffId: String, answer: ServerRead, askedForStatuses: Bool) {

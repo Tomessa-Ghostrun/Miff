@@ -12,7 +12,12 @@
 	     docs/dev/apns-etapes-pm.md). Valeur "development" ECRITE ICI : a la signature, Xcode la remplace par celle du profil utilise (un profil de
 	     developpement donne "development", le profil de distribution de TestFlight et de l'App Store donne "production" ; une app TestFlight utilise
 	     donc l'environnement PRODUCTION d'APNs). Le SDK Firebase Messaging detecte seul l'environnement du jeton. Voir docs/dev/fcm-ios.md.
-	     Aucune autre entitlement : pas de localisation, pas de trousseau partage. -->
+	     Notifications Time Sensitive (alerte de danger, ticket alerte-danger D18) : la capacite "Time Sensitive Notifications" est activee sur l'identifiant
+	     d'app com.tomessa.miff (par le PM, 2026-11-19). La signature est AUTOMATIQUE (cle d'API App Store Connect, -allowProvisioningUpdates) : le profil
+	     gere par Apple integre la capacite tout seul. Ce fichier ne s'applique qu'aux configurations Internal (TestFlight) et Release (voir project.yml) ;
+	     Debug et le simulateur n'ont aucune entitlement, donc ne sont pas touches. Le droit est inoffensif en Release (la fonction y est absente, le droit
+	     seul ne change rien). Si Apple refuse le profil, l'archive ECHOUE avec un message clair de xcodebuild (voir docs/dev/time-sensitive-etapes-pm.md).
+	     Aucune autre entitlement : pas de localisation, pas de trousseau partage, pas d'alertes critiques. -->
 	<key>aps-environment</key>
 	<string>development</string>
 	<key>com.apple.developer.devicecheck.appattest-environment</key>
@@ -21,5 +26,7 @@
 	<array>
 		<string>Default</string>
 	</array>
+	<key>com.apple.developer.usernotifications.time-sensitive</key>
+	<true/>
 </dict>
 </plist>

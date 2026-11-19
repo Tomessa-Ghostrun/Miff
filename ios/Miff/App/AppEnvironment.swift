@@ -1,101 +1,5 @@
 import Foundation
 
-/// Les services des Miffs (MIFF-3), construits d'un seul tenant. Rien ici n'ouvre Firestore : tout passe par des fonctions
-/// appelées à la première requête, depuis des écrans affichés APRÈS le routage de la session (démarrage à froid : aucun accès
-/// Firestore avant la session).
-@MainActor
-struct MiffServices {
-    /// Tout ce que font les écrans « Créer », « Rejoindre » et « Miff » avec Firestore.
-    let repository: MiffRepository
-    /// Les Miffs en mémoire pour la session, vidées à la déconnexion (elles font partie des arrêts de la session).
-    let directory: MiffDirectory
-    /// Le limiteur d'essais du code (aide de l'interface, critère J5) : gardé pour la durée du processus, pour que quitter
-    /// l'écran puis y revenir ne remette pas le compte à zéro.
-    let limiter: JoinAttemptLimiter
-    /// La suppression d'une Miff, sans écran (MIFF-4) : utilisée par l'écran de la Miff, reprise au lancement, et plus tard par
-    /// AUTH-5 (suppression d'un compte) et le ticket Premium (fin d'un abonnement).
-    let deletions: MiffDeletionCoordinator
-    /// Le renouvellement du consentement des membres qui partagent sous un texte plus ancien (LOC-4a, règle R-LIEU-3).
-    let renewals: ConsentRenewals
-    /// FEED-5 : les Miffs qui attendent l'accord de la personne (« Pas maintenant » au renouvellement), dites par le Feed.
-    let awaiting = AwaitingAgreement()
-
-    static func make(
-        gateway: AuthGateway,
-        cache: CachePurger,
-        network: NetworkMonitor,
-        device: DeviceSession,
-        onSharingChanged: @escaping () -> Void,
-        onSharingResumed: ((String) -> Void)? = nil,
-        beforeLeave: @escaping (_ uid: String, _ miffId: String) async -> Void = { _, _ in }
-    ) -> MiffServices {
-        let store = FirestoreMiffStore()
-        // SESS-3 : un statut n'est écrit qu'avec l'identifiant de la session CONFIRMÉE de cet appareil ; après un refus, la session
-        // est relue auprès du serveur.
-        var rules = MiffRepositoryRules.live(
-            deviceId: { device.currentDeviceId },
-            recheckSession: {
-                if let uid = gateway.currentUid {
-                    _ = await device.checkAfterRefusal(uid: uid)
-                }
-            }
-        )
-        // LOC-4b : un partage qui change (entrer, arrêter, reprendre, quitter, perdre l'accès) fait relire les Miffs au suivi des lieux.
-        rules.onSharingChanged = onSharingChanged
-        rules.onSharingResumed = onSharingResumed
-        // Sans réseau, l'annuaire des Miffs se lit dans le cache du téléphone tout de suite (pas de délais de 20 s mis bout à bout).
-        rules.isOnline = { network.isOnline() }
-        // LIEU-REQ (critère L1) : « Quitter » reprend d'abord les demandes d'ajout d'un lieu de la personne dans cette Miff.
-        rules.beforeLeave = beforeLeave
-        let repository = FirestoreMiffRepository(
-            store: store,
-            observer: FirestoreMiffObserver(),
-            location: SystemLocationAccessProbe(),
-            cache: cache,
-            rules: rules
-        )
-        let directory = MiffDirectory(
-            repository: repository,
-            currentUid: { gateway.currentUid },
-            activeStore: UserDefaultsActiveMiffStore(),
-            cache: cache
-        )
-        // Avant la première écriture, la suppression prévient l'annuaire (jamais de « tu n'as plus accès » pour la Miff qu'on
-        // supprime) ; une fois la Miff disparue, purge du cache et liste relue.
-        let hooks = DeletionHooks(
-            onStarted: { miffId in directory.expectDeparture(miffId: miffId) },
-            onDeleted: { miffId in
-                await directory.afterOwnDeparture(miffId: miffId)
-                onSharingChanged()
-            }
-        )
-        let deletions = MiffDeletionCoordinator(
-            deletion: MiffDeletion(store: store, repository: repository),
-            pending: PendingDeletionFileStore(),
-            network: network,
-            currentUid: { gateway.currentUid },
-            hooks: hooks
-        )
-        deletions.background = UIKitBackgroundExecution()
-        return MiffServices(
-            repository: repository,
-            directory: directory,
-            limiter: JoinAttemptLimiter(nowMillis: AppClock.live.nowMillis),
-            deletions: deletions,
-            renewals: FirestoreConsentRenewals(store: store, onRenewed: onSharingChanged)
-        )
-    }
-}
-
-extension MiffServices {
-    /// Fin de session : l'annuaire oublie les Miffs, la suppression en cours est arrêtée, plus personne n'attend d'accord.
-    func stop() async {
-        await directory.stop()
-        await deletions.stop()
-        await awaiting.stop()
-    }
-}
-
 /// Les services des lieux de confiance (LOC-3), construits d'un seul tenant. Rien ici n'ouvre Firestore ni MapKit (MapKit n'est créé qu'au premier usage d'un champ d'adresse) : tout passe par
 /// des fonctions appelées par les écrans des lieux, affichés APRÈS le routage de la session. AUCUNE permission de localisation :
 /// la recherche d'adresse et la carte de MapKit n'en ont pas besoin.
@@ -206,6 +110,8 @@ final class AppEnvironment {
     let update: UpdateServices
     /// Les notifications push entre proches (SRV-2I, SRV-4I) : le registre des appareils, l'interrupteur, la réception.
     let push: PushServices
+    /// ALERTE « Je suis en danger » : ce que la coquille reçoit de l'alerte (vide dans un build sans la fonction, voir `DangerAlertShell`).
+    let dangerShell: DangerAlertShell
     /// La suppression du compte (AUTH-5c) : procédure, contrôleur et retrait de l'autorisation Apple. Construite à la première demande (les
     /// écrans de la suppression), à partir de ce que la session détient déjà ; seul le marqueur local est donné à la session dès le départ.
     lazy var accountDeletion: AccountDeletionServices = AccountDeletionServices.make(self)
@@ -264,12 +170,29 @@ final class AppEnvironment {
             notifications: TrackingNotificationHooks(onPresence: notifs.presenceChanged, onTravel: notifs.travelChanged)
         )
         let places = PlaceServices.make(network: networkMonitor, onChanged: trackingServices.sharingChanged)
+        #if ALERT_DANGER
+        // ALERTE « Je suis en danger » : seulement dans les builds qui contiennent la fonction (Debug et Internal).
+        let dangerServices = DangerAlertServices.make(
+            gateway: gateway, device: device, network: networkMonitor, tracking: trackingServices
+        )
+        let dangerTeardowns = dangerServices.teardowns
+        let dangerErasers = dangerServices.erasers
+        let dangerController = dangerServices.controller
+        let dangerOnGone: (String) -> Void = { miffId in
+            Task { @MainActor in dangerController.onAlertRemoved(miffId: miffId) }
+        }
+        #else
+        let dangerTeardowns: [SessionTeardown] = []
+        let dangerErasers: [LocalDataEraser] = []
+        let dangerOnGone: (String) -> Void = { _ in }
+        #endif
         // Un partage ou un lieu qui change : le suivi relit les Miffs et les lieux (depuis n'importe quel fil).
         let miff = MiffServices.make(
             gateway: gateway, cache: cache, network: networkMonitor, device: device,
             onSharingChanged: trackingServices.sharingChanged,
             onSharingResumed: trackingServices.sharingResumed,
-            beforeLeave: places.beforeLeave
+            beforeLeave: places.beforeLeave,
+            onAlertGone: dangerOnGone
         )
         notifs.connect(directory: miff.directory, awaiting: miff.awaiting)
         let updateServices = UpdateServices.make(
@@ -280,6 +203,15 @@ final class AppEnvironment {
         )
         // La fenêtre d'avis : son état est effacé avec la session (déconnexion, suppression du compte), comme sur Android.
         let review = ReviewPromptServices.make()
+        // SRV-2I : la sortie invalide d'abord le jeton de notification (avant tout le reste), puis arrête le reste. Assemblé pas à pas : une longue chaîne de `+`
+        // ralentit le compilateur.
+        var allTeardowns: [SessionTeardown] = [pushServices.teardown]
+        allTeardowns += Self.teardowns(drafts, miff, places, trackingServices, updateServices)
+        allTeardowns += [notifs.teardown]
+        allTeardowns += review.teardowns
+        allTeardowns += dangerTeardowns
+        var allErasers: [LocalDataEraser] = pushServices.erasers
+        allErasers += dangerErasers
         let manager = SessionManager(
             SessionDependencies(
                 gateway: gateway, accounts: FirestoreAccountRepository(), pending: pending, flags: flagStore,
@@ -287,16 +219,14 @@ final class AppEnvironment {
                 // Le brouillon (noms, photo, numéro) et les Miffs en mémoire partent avec la session. Le suivi des lieux et
                 // les notifications ont leur propre arrêt ici, pour qu'une déconnexion les arrête (ticket §7.6).
                 // SRV-2I : la sortie invalide d'abord le jeton de notification (avant tout le reste), puis arrête le reste.
-                teardown: [pushServices.teardown]
-                    + Self.teardowns(drafts, miff, places, trackingServices, updateServices) + [notifs.teardown]
-                    + review.teardowns,
+                teardown: allTeardowns,
                 device: device,
                 network: networkMonitor,
                 drafts: drafts, generationCounter: trackingServices.generation,
                 deletionMarker: AccountDeletionFileMarker(),
                 localData: AccountDeletionServices.localData(
                     updateLedger: updateServices.ledger, presenceHistory: trackingServices.history,
-                    extra: pushServices.erasers
+                    extra: allErasers
                 )
             )
         )
@@ -304,6 +234,20 @@ final class AppEnvironment {
         // Un SEUL delegue sur le centre de notifications : celui des messages du serveur ; les rappels locaux (NOTIF-P0) lui sont chaines.
         pushServices.delegate.next = notifs.responseDelegate
         pushServices.sessionProbe.isEnding = { [weak manager] in manager?.ending ?? false }
+        #if ALERT_DANGER
+        let directory = miff.directory
+        // Un refus du serveur sur mon alerte : l'annuaire est relu (une perte confirmée retire l'alerte, voir `DangerAlertController.onAccessDoubt`).
+        dangerServices.controller.onAccessDoubt = {
+            Task { await directory.refresh() }
+        }
+        dangerShell = DangerAlertShell(
+            signal: dangerServices.signal,
+            model: dangerServices.model,
+            onSelectMiff: { miffId in directory.select(miffId: miffId) }
+        )
+        #else
+        dangerShell = DangerAlertShell(signal: DangerAlertSignal())
+        #endif
         privacySettings = privacy
         analyticsTracker = tracker
         session = manager

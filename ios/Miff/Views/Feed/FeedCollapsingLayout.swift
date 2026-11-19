@@ -16,6 +16,8 @@ struct FeedLayoutContext {
     let onScrolled: (CGFloat) -> Void
     /// L'origine du contenu de la vue de défilement, dans la fenêtre (lue par `ScrollDistanceReader`).
     let onOrigin: (CGFloat) -> Void
+    /// La distance tirée, un doigt tire-t-il, la roue d'UIKit tourne-t-elle (lues par `ScrollDistanceReader`) : l'indicateur de « tirer pour actualiser ».
+    let onPull: (CGFloat, Bool, Bool) -> Void
 }
 
 /// La durée du retour animé de l'en-tête (un toucher sur le logo, un verrouillage) : courte.
@@ -46,11 +48,15 @@ struct FeedCollapsingLayout<Content: View>: View {
     /// La liste est celle des cartes (sinon : squelette, erreur, état vide).
     let isList: Bool
     let refreshing: Bool
+    /// Les captures de la CI forcent l'état de l'indicateur de « tirer pour actualiser » (nil : l'état réel).
+    var pullPreview: FeedPullIndicatorState?
     /// Construit l'en-tête ; reçoit l'action du logo (remonter en haut et montrer l'en-tête).
     let header: (@escaping () -> Void) -> FeedHeaderContent
     @ViewBuilder let content: (FeedLayoutContext) -> Content
 
     @State private var headerModel = FeedHeaderModel()
+    /// `@State` et non `@StateObject` : seule la pastille l'observe, la mise en page (donc tout le Feed) n'est pas redessinée à chaque étape du tirage.
+    @State private var pullModel = FeedPullIndicatorModel()
     @State private var headerHeight: CGFloat = 0
     @State private var headerRestBottom: CGFloat?
     @State private var contentOrigin: CGFloat?
@@ -71,9 +77,13 @@ struct FeedCollapsingLayout<Content: View>: View {
                     onContentMoved: { headerModel.contentMoved(to: $0) },
                     onScrolled: { headerModel.scrolled(to: $0) },
                     onOrigin: { origin in
-                        if FeedTopInset.isNewMeasure(origin, old: contentOrigin) {
+                        // Pas pendant l'actualisation : la marge de la roue d'UIKit ferait sauter la liste (`RefreshInsetGuard`).
+                        if !refreshing, FeedTopInset.isNewMeasure(origin, old: contentOrigin) {
                             contentOrigin = origin
                         }
+                    },
+                    onPull: { distance, dragging, uikit in
+                        pullModel.pulled(distance: distance, dragging: dragging, uikitRefreshing: uikit)
                     }
                 )
             )
@@ -81,13 +91,12 @@ struct FeedCollapsingLayout<Content: View>: View {
             // l'en-tête est caché (comme Android, qui coupe le contenu à la zone sûre).
             colorBgCanvas.color.ignoresSafeArea(edges: .top).frame(height: 0)
             headerView
-            if refreshing {
-                // Le geste est en haut de la liste, sous l'en-tête : l'indicateur de l'actualisation se montre sous lui.
-                ProgressView()
-                    .tint(colorActionPrimary.color)
-                    .padding(.top, headerHeight + Spacing.sm)
-                    .accessibilityHidden(true)
-            }
+            FeedPullIndicator(
+                model: pullModel,
+                refreshing: refreshing,
+                forced: pullPreview,
+                headerBottom: headerRestBottom ?? headerHeight
+            )
         }
         .background(colorBgCanvas.color.ignoresSafeArea())
         .onPreferenceChange(HeaderHeightKey.self) { height in
@@ -103,6 +112,7 @@ struct FeedCollapsingLayout<Content: View>: View {
         // Verrouillé : l'en-tête revient avec une courte animation, immédiate avec « Réduire les animations ».
         .onChange(of: locked) { value in withHeaderAnimation { headerModel.lock(value) } }
         .onChange(of: isList) { _ in headerModel.resetBaseline() }
+        .onChange(of: refreshing) { value in pullModel.feedRefreshingChanged(value) }
     }
 
     /// L'animation courte du retour de l'en-tête ; aucune avec « Réduire les animations ».

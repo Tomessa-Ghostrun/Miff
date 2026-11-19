@@ -24,17 +24,23 @@ final class TrackingRuntime: TrackingEventSink {
     private var lastActiveMillis: Int?
     /// Quand le dernier échec de la surveillance de régions a fait tout réenregistrer (millisecondes depuis 1970).
     private var lastRearmMillis: Int?
+    /// Quand MA présence a été revérifiée pour la dernière fois à l'ouverture de l'app ou par « tirer pour actualiser » (millisecondes
+    /// depuis 1970) : la limite de fréquence du geste (`TrackingLimits.pullMinIntervalMillis`).
+    private var lastPresenceCheckMillis: Int?
+    private let clock: () -> Int
 
     init(
         engine: TrackingEngine,
         background: BackgroundExecution,
         journal: DetectionJournal,
-        beforeWork: @escaping () async -> Void
+        beforeWork: @escaping () async -> Void,
+        clock: @escaping () -> Int = { Int(Date().timeIntervalSince1970 * 1000) }
     ) {
         self.engine = engine
         self.background = background
         self.journal = journal
         self.beforeWork = beforeWork
+        self.clock = clock
     }
 
     /// Suit le réseau pour la vie du processus : au retour du réseau, ce qui attend d'être écrit l'est (si le processus tourne ; une app
@@ -78,13 +84,32 @@ final class TrackingRuntime: TrackingEventSink {
 
     func appBecameActive() {
         // Le démarrage à froid signale deux fois le premier plan : la seconde demande, dans les secondes qui suivent, est ignorée.
-        let now = Int(Date().timeIntervalSince1970 * 1000)
+        let now = clock()
         if let last = lastActiveMillis, now - last < TrackingLimits.duplicateOpenMillis {
             return
         }
         lastActiveMillis = now
+        lastPresenceCheckMillis = now
         let engine = self.engine
         run { await engine.refresh(.opened) }
+    }
+
+    /// La personne a tiré le Feed vers le bas : MA présence est revérifiée par le moteur habituel (`TrackingEngine.refresh(.pulled)` :
+    /// une mesure ponctuelle et fraîche, les zones de mes Miffs, un statut écrit SEULEMENT si la présence change, la dernière position
+    /// seulement si le garde-fou de fréquence la laisse passer). Rend la main tout de suite : l'appelant (le Feed) n'attend jamais la
+    /// position, et le travail, comme tous les autres, est ordonné, borné et rend son temps d'arrière-plan.
+    /// Au plus une fois par `TrackingLimits.pullMinIntervalMillis`, ouverture de l'app comprise (elle vient de mesurer) : un geste plus
+    /// rapproché ne fait rien ici, sans bruit. Ne lit rien et n'écrit rien lui-même ; le moteur revérifie accord, « Toujours » et position
+    /// exacte, partage et consentement de version 3 : sans eux, rien n'est mesuré ni envoyé.
+    func feedPulled() {
+        let now = clock()
+        if let last = lastPresenceCheckMillis, now - last >= 0, now - last < TrackingLimits.pullMinIntervalMillis {
+            return
+        }
+        lastPresenceCheckMillis = now
+        journal.record(.wakePull)
+        let engine = self.engine
+        run { await engine.refresh(.pulled) }
     }
 
     func appWentToBackground() {

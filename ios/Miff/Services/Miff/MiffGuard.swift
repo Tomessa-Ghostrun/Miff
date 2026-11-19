@@ -52,4 +52,12 @@ struct MiffRepositoryRules {
     /// personne a faites dans cette Miff sont reprises (elles portent une adresse et des coordonnées : elles ne restent pas orphelines). Ne
     /// bloque JAMAIS le départ : un échec est son affaire.
     var beforeLeave: (_ uid: String, _ miffId: String) async -> Void = { _, _ in }
+
+    /// ALERTE « Je suis en danger » (`BuildFlavor.includesAlertDanger`) : vrai, les lots qui arrêtent le partage, quittent, retirent un membre ou
+    /// suppriment la Miff suppriment AUSSI l'alerte de cette Miff (les règles l'exigent). Faux (par défaut, et dans tout build sans la fonction) :
+    /// rien n'est ajouté, les règles en production ne connaissent pas encore ce chemin.
+    var alertsEnabled = false
+    /// Dit, avec l'identifiant de la Miff, que mon partage s'y est arrêté ou que je l'ai quittée : une alerte de moi dans cette Miff est partie avec
+    /// (le même lot l'a supprimée).
+    var onAlertGone: (_ miffId: String) -> Void = { _ in }
 }

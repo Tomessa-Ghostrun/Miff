@@ -99,7 +99,11 @@ final class NotificationPrivacyTests: XCTestCase {
             .joined(separator: "\n")
 
         // SRV-2I : la clé `aps-environment` est désormais déclarée (notifications push, voir PushPrivacyTests) ; rien d'autre.
-        XCTAssertFalse(entitlements.contains("com.apple.developer.usernotifications"))
+        // Seule la clé Time Sensitive de l'alerte de danger (décision D18) est permise ; jamais les alertes critiques ni une autre clé `usernotifications`.
+        let withoutTimeSensitive = entitlements.replacingOccurrences(
+            of: "com.apple.developer.usernotifications.time-sensitive", with: ""
+        )
+        XCTAssertFalse(withoutTimeSensitive.contains("com.apple.developer.usernotifications"))
         XCTAssertFalse(project.contains("remote-notification"))
         XCTAssertFalse(project.contains("aps-environment"))
     }

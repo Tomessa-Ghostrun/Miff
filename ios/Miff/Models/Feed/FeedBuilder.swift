@@ -39,6 +39,9 @@ struct FeedInput: CustomStringConvertible {
     /// Le renouvellement de mon accord est attendu : rien n'est partagé, les statuts des autres ne sont pas lus.
     let waitingAgreement: Bool
     let offline: Bool
+    /// ALERTE : les alertes de CETTE Miff telles que l'écouteur les entend (toutes : `FeedBuilder` garde celles en cours à l'instant du calcul, et seulement celles
+    /// des membres de la Miff). Vide quand la fonction est éteinte.
+    var alerts: [DangerAlertDoc] = []
 
     /// Pas de réseau, OU des données que seul le cache garantit : les deux se disent « informations de 16 h 02 ».
     var effectivelyOffline: Bool {
@@ -100,12 +103,22 @@ enum FeedBuilder {
         )
         // L'ordre d'ARRIVÉE (les autres, puis moi) nourrit la bulle et les alertes, qui ne dépendent pas du tri du Feed (ticket FEED-ORDRE,
         // A10) ; les cartes montrées sont triées par la date de la dernière update (`sortedByLastUpdate`).
-        let arrival = orderMembers(input.members, myUid: input.myUid).map { card($0, context) }
-        let cards = sortedByLastUpdate(input.members, cards: arrival, statuses: statuses)
+        // ALERTE : les alertes en cours, de membres de cette Miff seulement, la plus ancienne d'abord (stable). Une alerte l'emporte sur la couleur et
+        // l'étiquette de sa carte, et sa carte passe PREMIÈRE.
+        let memberUids = Set(input.members.map { $0.uid })
+        let liveAlerts = input.alerts.filter { memberUids.contains($0.uid) }.live(at: nowMillis)
+        let alertByUid = Dictionary(liveAlerts.map { ($0.uid, $0) }, uniquingKeysWith: { first, _ in first })
+        let arrival = orderMembers(input.members, myUid: input.myUid).map { member -> FeedMemberCard in
+            let base = card(member, context)
+            return alertByUid[member.uid].map { withAlert(base, $0, context) } ?? base
+        }
+        let cards = alertsFirst(sortedByLastUpdate(input.members, cards: arrival, statuses: statuses), live: liveAlerts)
         let mine = cards.first { $0.isMe }
         let miffColor = miffLevel(arrival.map { $0.level })
         let latestUpdate = statuses.values.compactMap { $0.updatedAtMillis }.max()
-        let shownBubble = bubble(context, cards: arrival, latestUpdate: latestUpdate, miffLevel: miffColor)
+        let shownBubble = bubble(
+            context, cards: arrival, latestUpdate: latestUpdate, miffLevel: miffColor, declared: liveAlerts
+        )
         return FeedContent(
             miffId: input.miffId,
             miffName: input.miffName,

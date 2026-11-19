@@ -67,7 +67,8 @@ extension MiffWrites {
         name: String,
         oldCode: String,
         newCode: String,
-        oldCodeExists: Bool = true
+        oldCodeExists: Bool = true,
+        withAlert: Bool = false
     ) -> [DocWrite] {
         let change = codeChange(
             miffId: miffId,
@@ -85,7 +86,8 @@ extension MiffWrites {
             DocWrite(path: "miffs/\(miffId)/photos/\(targetUid)", kind: .delete),
             DocWrite(path: "miffs/\(miffId)/positions/\(targetUid)", kind: .delete)
         ]
-        return person + change
+        // ALERTE : le lot de retrait supprime AUSSI l'alerte du membre (le créateur ne peut la supprimer que dans ce lot : contrat du 2026-11-19).
+        return person + DangerAlertWrites.deletion(miffId: miffId, uid: targetUid, enabled: withAlert) + change
     }
 
     /// Supprimer des lieux (étape 2 de la suppression d'une Miff) : de 1 à `placesPerLot` par lot.
@@ -108,7 +110,8 @@ extension MiffWrites {
         uid: String,
         code: String,
         codeExists: Bool,
-        membershipKey: String?
+        membershipKey: String?,
+        withAlert: Bool = false
     ) -> [DocWrite] {
         guard JoinCode.isValid(code), isPathPart(uid) else {
             return []
@@ -123,6 +126,7 @@ extension MiffWrites {
         writes.append(DocWrite(path: "miffs/\(miffId)/status/\(uid)", kind: .delete))
         writes.append(DocWrite(path: "miffs/\(miffId)/photos/\(uid)", kind: .delete))
         writes.append(DocWrite(path: "miffs/\(miffId)/positions/\(uid)", kind: .delete))
+        writes += DangerAlertWrites.deletion(miffId: miffId, uid: uid, enabled: withAlert)
         writes.append(DocWrite(path: "miffs/\(miffId)/members/\(uid)", kind: .delete))
         if let membershipKey {
             writes.append(DocWrite(path: "users/\(uid)/memberships/\(membershipKey)", kind: .delete))

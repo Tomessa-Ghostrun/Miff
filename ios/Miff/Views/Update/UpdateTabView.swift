@@ -14,6 +14,21 @@ struct UpdateTabView: View {
 
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    #if ALERT_DANGER
+    @Environment(\.dangerUpdateHooks) private var dangerHooks
+    #endif
+
+    /// ALERTE : le lien « Appeler les secours » des écrans de l'Update sans viseur (donc sans geste) ; nil sans la fonction.
+    private func emergency(stopped: Bool = false) -> (() -> Void)? {
+        #if ALERT_DANGER
+        guard let hooks = dangerHooks else {
+            return nil
+        }
+        return { hooks.onOpenEmergency(stopped) }
+        #else
+        return nil
+        #endif
+    }
 
     var body: some View {
         stage
@@ -44,7 +59,8 @@ struct UpdateTabView: View {
                 titleKey: "update_permission_title",
                 bodyKey: "update_permission_body",
                 primary: UpdatePopIn.Action(titleKey: "update_permission_continue", run: model.onExplanationAccepted),
-                dismiss: UpdatePopIn.Action(titleKey: "update_permission_not_now", run: actions.onClose)
+                dismiss: UpdatePopIn.Action(titleKey: "update_permission_not_now", run: actions.onClose),
+                emergency: emergency()
             )
         case .permissionDisabled:
             // iPhone : aucune alternative (D31), les Réglages sont la seule sortie ; la photo est obligatoire (D16).
@@ -53,7 +69,8 @@ struct UpdateTabView: View {
                 titleKey: "update_disabled_title",
                 bodyKey: "update_disabled_body",
                 primary: UpdatePopIn.Action(titleKey: "update_action_open_settings", run: model.openSettings),
-                dismiss: UpdatePopIn.Action(titleKey: "update_action_close", run: actions.onClose)
+                dismiss: UpdatePopIn.Action(titleKey: "update_action_close", run: actions.onClose),
+                emergency: emergency()
             )
         case .cameraRestricted:
             // Le contrôle parental ou l'appareil la restreint : la personne ne peut pas le changer, donc pas de bouton « Réglages ».
@@ -61,7 +78,8 @@ struct UpdateTabView: View {
                 systemImage: "lock",
                 titleKey: "ios_update_restricted_title",
                 bodyKey: "ios_update_restricted_body",
-                dismiss: UpdatePopIn.Action(titleKey: "update_action_close", run: actions.onClose)
+                dismiss: UpdatePopIn.Action(titleKey: "update_action_close", run: actions.onClose),
+                emergency: emergency()
             )
         case .cameraUnavailable:
             UpdatePopIn(
@@ -69,7 +87,8 @@ struct UpdateTabView: View {
                 titleKey: "update_unavailable_title",
                 bodyKey: "update_unavailable_body",
                 primary: UpdatePopIn.Action(titleKey: "update_action_retry", run: model.onRetryCamera),
-                dismiss: UpdatePopIn.Action(titleKey: "update_action_close", run: actions.onClose)
+                dismiss: UpdatePopIn.Action(titleKey: "update_action_close", run: actions.onClose),
+                emergency: emergency()
             )
         case .sharingStopped:
             UpdatePopIn(
@@ -77,7 +96,8 @@ struct UpdateTabView: View {
                 titleKey: "update_stopped_title",
                 bodyKey: "update_stopped_body",
                 primary: UpdatePopIn.Action(titleKey: "update_action_resume_sharing", run: actions.onResumeSharing),
-                dismiss: UpdatePopIn.Action(titleKey: "update_action_close", run: actions.onClose)
+                dismiss: UpdatePopIn.Action(titleKey: "update_action_close", run: actions.onClose),
+                emergency: emergency(stopped: true)
             )
         case .viewfinder(let showTip, let prepareFailed):
             ViewfinderView(
