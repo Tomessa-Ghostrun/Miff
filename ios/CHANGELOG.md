@@ -2,6 +2,13 @@
 
 ## Non publié
 
+### Build 40 TestFlight : contenu de la branche d'intégration `ios/recette-groupee-16` (jamais fusionnée dans `main`)
+
+Le numéro de build est celui du workflow `ios-testflight` (`github.run_number`), pas une valeur du dépôt : « 40 » est le libellé du build visé. Contenu :
+- **Déjà dans `main`** (bc2dc335) : graphique « Répartition du temps » (#259, données de test `TIMESHAREDEMO` en Debug et TestFlight seulement), demande de zone de danger sans Miff+ (#264), zoom de la carte du lieu (#261), À propos et aide, Langue, description de photo, compte à rebours, caméra plein écran, ordre du Feed ; côté Android, l'alerte (#275).
+- **Fusionné ici (merges simples)** : #263 (`ios/feed-refresh-position`, 7f5cb1cd : tirer pour actualiser revérifie ma présence, indicateur visible au moins 0,8 s, Feed qui ne sautille plus) ; #279 (`ios/graphique-suivi-revue`, 7a1b6e57 : anneau gris vide supprimé avant 7 jours, départage des égalités, faits « dehors » sans lieu, historique non raccourci par l'oubli d'un lieu, en-tête empilé en grande police, une seule description VoiceOver, journal assaini).
+- Conflit unique : `ios/CHANGELOG.md` (les deux côtés gardés ; ancien titre « Répartition de ton temps » remplacé par le nouveau titre de #279).
+
 ### « Tirer pour actualiser » : indicateur visible et Feed qui ne sautille plus (retour du PM, TestFlight 38, PR #263)
 
 Ce que le PM doit voir : en tirant le Feed, **une pastille claire avec une roue apparaît sous l'en-tête pendant au moins 0,8 s** (jamais cachée par l'en-tête ni la bulle), et **la bulle et les cartes ne sautent plus**. Recette : `docs/qa/checklists/feed-refresh-position-ios-recette-pm.md` (§1, §4, §18 à §20). **Rien n'est compilé en local** (la CI fait foi).
@@ -29,6 +36,7 @@ Ajouté :
 Choix économiques : 0 lecture de plus tant que la copie locale a moins d'une heure, 0 écriture si rien ne change, au plus une mesure `requestLocation` (100 m) par 30 s ; 0 €. **Signal de bascule** : une batterie qui chute avec l'usage du geste, ou beaucoup de lignes `wakePull` dans le journal d'un build Internal : monter la limite de 30 s.
 
 À décider par le PM (ticket §3) : message quand l'autorisation manque, geste en mode voyage, heure de la dernière position rafraîchie à chaque geste. **Politique de confidentialité** : préciser « ou quand tu actualises le Feed » (rien modifié ici).
+
 ### Répartition du temps : suite de la revue indépendante et anneau vide retiré (PR de suivi de #259)
 
 - **Pas assez de données : plus d'anneau gris vide** (décision du PM, alignée sur Android et le ticket §7) : seulement le texte « Ton graphique arrive dans X jours, nous analysons tes habitudes ». Jeton `colorChartEmpty` supprimé ; test de garde.
