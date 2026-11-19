@@ -201,7 +201,8 @@ struct FeedScreen: View {
             bubble: BubbleActions(
                 onMessage: actions.onMessage,
                 onResumeSharing: { resumeSharing() },
-                onOpenColors: actions.onOpenColors
+                onOpenColors: actions.onOpenColors,
+                onCall: actions.onCall
             ),
             onRetry: { model.retry() },
             onReviewAgreement: { awaiting.requestReview() },

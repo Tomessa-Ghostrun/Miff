@@ -60,7 +60,10 @@ final class SessionWriteSitesTests: XCTestCase {
             "Services/Firebase/FirestoreUserProfileRepository.swift",
             // SRV-2I : le registre des appareils (jeton de notification). Ni statut ni position : le document porte l'identifiant de la session
             // dans son CHEMIN (les règles le comparent à la session active), pas dans un champ.
-            "Services/Firebase/FirestoreDeviceTokenRegistry.swift"
+            "Services/Firebase/FirestoreDeviceTokenRegistry.swift",
+            // ALERTE : l'alerte de danger (`miffs/{miffId}/alerts/{uid}`) et son compteur d'envois, écrits par TRANSACTION (jamais par lot) ;
+            // ni statut ni position : le document porte `deviceId` (les règles le comparent à la session active).
+            "Services/Firebase/FirestoreDangerAlertStore.swift"
         ]
         let writers = all.filter { _, lines in
             lines.contains { $0.contains("setData(") || $0.contains("updateData(") || $0.contains(".deleteDocument(") }

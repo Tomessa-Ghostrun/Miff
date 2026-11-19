@@ -9,9 +9,23 @@ import Foundation
 extension FirestoreMiffRepository {
     func cleanUpLost(uid: String, lost: LostMiff) async -> Bool {
         let store = self.store
+        // `LostMiff` n'est construit que par `MiffStateReader`, quand le serveur lui-même refuse la Miff (hors cache, serveur joignable) : le nettoyage n'a donc pas besoin de
+        // son propre drapeau « perte confirmée ». L'appelant (l'annuaire) ne le demande qu'une fois la perte CONFIRMÉE par le serveur : retiré par le créateur, ou Miff supprimée par un autre
+        // membre. Mon alerte de cette Miff est partie avec elle (le lot ci-dessous, ou la fiche déjà disparue, quelle que soit l'issue du nettoyage) : le contrôleur
+        // est prévenu EN PREMIER, pour que la bannière parte et qu'une nouvelle alerte soit possible ailleurs, même si le nettoyage échoue ou ne retire que l'index.
+        if rules.alertsEnabled {
+            rules.onAlertGone(lost.ref.miffId)
+        }
         // Le nettoyage demande le serveur : sans lui rien n'est touché (le prochain démarrage le fera).
-        let leaveWrites = MiffWrites.leave(miffId: lost.ref.miffId, uid: uid, membershipKey: lost.ref.key)
-        let leave = await write { try await store.commit(leaveWrites) }
+        let leaveWrites = MiffWrites.leave(
+            miffId: lost.ref.miffId, uid: uid, membershipKey: lost.ref.key, withAlert: rules.alertsEnabled
+        )
+        var leave = await write { try await store.commit(leaveWrites) }
+        // ALERTE : les règles en production peuvent ne pas connaître l'alerte : un lot refusé AVEC sa suppression est réessayé SANS.
+        if rules.alertsEnabled, leave == .failed(.refused) {
+            let plain = MiffWrites.leave(miffId: lost.ref.miffId, uid: uid, membershipKey: lost.ref.key)
+            leave = await write { try await store.commit(plain) }
+        }
         if leave == .done {
             rules.onSharingChanged()
             return true
@@ -44,14 +58,25 @@ extension FirestoreMiffRepository {
         guard MiffId.isValid(miffId) else {
             return .failed(.unknown)
         }
-        return await changeCode(miffId: miffId) { view, newCode in
+        // ALERTE : avec la fonction allumée, le lot de retrait supprime AUSSI l'alerte du membre (les règles refusent le retrait tant qu'elle existe ;
+        // le créateur ne peut la supprimer que dans ce lot). Les règles en production peuvent ne pas la connaître : un refus est réessayé SANS.
+        let first = await removeMemberLot(miffId: miffId, targetUid: targetUid, withAlert: rules.alertsEnabled)
+        if rules.alertsEnabled, case .failed(.refused) = first {
+            return await removeMemberLot(miffId: miffId, targetUid: targetUid, withAlert: false)
+        }
+        return first
+    }
+
+    private func removeMemberLot(miffId: String, targetUid: String, withAlert: Bool) async -> CodeChangeResult {
+        await changeCode(miffId: miffId) { view, newCode in
             MiffWrites.removeMember(
                 miffId: miffId,
                 targetUid: targetUid,
                 name: view.details.name,
                 oldCode: view.details.joinCode,
                 newCode: newCode,
-                oldCodeExists: view.codeDocumentExists
+                oldCodeExists: view.codeDocumentExists,
+                withAlert: withAlert
             )
         }
     }
@@ -114,13 +139,25 @@ extension FirestoreMiffRepository {
         case .failed(let failure, _):
             return .failed(failure)
         }
-        let writes = MiffWrites.leave(miffId: miffId, uid: uid, membershipKey: key)
-        let result = await write { try await store.commit(writes) }
+        let writes = MiffWrites.leave(miffId: miffId, uid: uid, membershipKey: key, withAlert: rules.alertsEnabled)
+        var result = await write { try await store.commit(writes) }
+        // ALERTE : même tolérance que l'arrêt du partage (les règles en production peuvent ne pas connaître l'alerte).
+        if rules.alertsEnabled, result == .failed(.refused) {
+            let plain = MiffWrites.leave(miffId: miffId, uid: uid, membershipKey: key)
+            result = await write { try await store.commit(plain) }
+        }
         if result == .done {
+            if rules.alertsEnabled {
+                rules.onAlertGone(miffId)
+            }
             rules.onSharingChanged()
         }
         if case .failed(let failure) = result, failure.mayHaveLanded {
             if await leftAfterLostAnswer(uid: uid, miffId: miffId) {
+                // Le lot est bien parti alors que sa réponse s'est perdue : l'alerte de cette Miff est partie avec lui.
+                if rules.alertsEnabled {
+                    rules.onAlertGone(miffId)
+                }
                 rules.onSharingChanged()
                 return .done
             }

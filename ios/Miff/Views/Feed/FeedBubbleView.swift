@@ -42,6 +42,8 @@ struct BubbleActions {
     let onResumeSharing: () -> Void
     /// Le petit bouton « i » au bas de la bulle : ouvre l'écran « Les couleurs de ta Miff ».
     let onOpenColors: () -> Void
+    /// ALERTE : « Appeler » sur la page d'une alerte déclarée (le composeur du système, jamais un appel passé par Miff).
+    var onCall: (String) -> Void = { _ in }
 }
 
 struct BubbleView: View {
@@ -75,7 +77,7 @@ struct BubbleView: View {
             VStack(spacing: Spacing.sm) {
                 AlertCarousel(
                     pages: pages, texts: texts, motion: motion,
-                    onMessage: actions.onMessage, onInfo: actions.onOpenColors
+                    onMessage: actions.onMessage, onInfo: actions.onOpenColors, onCall: actions.onCall
                 )
                 // MODE VOYAGE : les autres membres en voyage, sous les alertes.
                 if let travelNote {
@@ -199,6 +201,7 @@ private struct AlertCarousel: View {
     let motion: Bool
     let onMessage: (String) -> Void
     let onInfo: () -> Void
+    var onCall: (String) -> Void = { _ in }
     @State private var selectedUid: String?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -210,7 +213,7 @@ private struct AlertCarousel: View {
         let current = pages[min(index, pages.count - 1)]
         VStack(spacing: Spacing.sm) {
             BubbleBlob(level: current.level, motion: motion, onInfo: onInfo) {
-                AlertLines(page: current, texts: texts, onMessage: onMessage)
+                AlertLines(page: current, texts: texts, onMessage: onMessage, onCall: onCall)
             }
             .id(current.member.uid)
             if pages.count > 1 {
@@ -250,6 +253,7 @@ private struct AlertLines: View {
     let page: AlertPage
     let texts: FeedTexts
     let onMessage: (String) -> Void
+    var onCall: (String) -> Void = { _ in }
 
     var body: some View {
         Headline(text: texts.alertTitle(page))
@@ -261,6 +265,13 @@ private struct AlertLines: View {
         }
         if let offline = texts.offlineAlert(page) {
             Caption(text: offline)
+        }
+        // ALERTE : sur la page d'une alerte déclarée, « Appeler » vient d'abord (le composeur du système), puis « Contacter ».
+        if page.canCall, let phone = page.member.phone {
+            BubbleButton(
+                key: "feed_bubble_call_action",
+                spokenLabel: texts.callA11y(page.member.callName)
+            ) { onCall(phone) }
         }
         if page.canMessage, let phone = page.member.phone {
             BubbleButton(
