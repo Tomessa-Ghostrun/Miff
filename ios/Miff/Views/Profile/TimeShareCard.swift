@@ -25,9 +25,15 @@ struct TimeShareCard: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var showsDanger = false
 
-    /// Aux grandes tailles de texte (accessibilité), l'anneau passe au-dessus de la légende et le sélecteur sous le titre.
+    /// Aux tailles d'accessibilité, la pastille de l'en-tête disparaît.
     private var stacked: Bool {
         typeSize.isAccessibilitySize
+    }
+
+    /// Dès 130 % de taille de texte environ (« très grand » de Réglages, 135 %), l'anneau passe AU-DESSUS de la légende (ticket E7, comme
+    /// Android) : les écrans iOS pris en charge font au moins 375 pt de large, donc il n'y a pas de seuil de largeur à part.
+    private var ringAbove: Bool {
+        typeSize >= .xxxLarge
     }
 
     /// Le texte du centre tient dans le trou de l'anneau jusqu'à cette taille ; au-delà il passe sous l'anneau.
@@ -67,16 +73,20 @@ struct TimeShareCard: View {
         return false
     }
 
+    /// Dès « très grand » (même seuil que l'anneau, comme Android dès 1,3) le sélecteur passe SOUS le titre ; la pastille n'est cachée qu'aux
+    /// tailles d'accessibilité.
     private var header: some View {
-        let layout = stacked ? AnyLayout(VStackLayout(alignment: .leading, spacing: Spacing.sm))
+        let layout = ringAbove ? AnyLayout(VStackLayout(alignment: .leading, spacing: Spacing.sm))
             : AnyLayout(HStackLayout(alignment: .center, spacing: Spacing.sm))
         return layout {
-            if !stacked {
-                headerIcon
-            }
-            titles
-            if !stacked {
-                Spacer(minLength: Spacing.xs)
+            HStack(alignment: .center, spacing: Spacing.sm) {
+                if !stacked {
+                    headerIcon
+                }
+                titles
+                if !ringAbove {
+                    Spacer(minLength: Spacing.xs)
+                }
             }
             if showsPeriod {
                 periodMenu
@@ -102,7 +112,7 @@ struct TimeShareCard: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
         }
-        .frame(maxWidth: stacked ? .infinity : nil, alignment: .leading)
+        .frame(maxWidth: ringAbove ? .infinity : nil, alignment: .leading)
     }
 
     /// « 7 jours ⌄ » : un menu à trois choix, le choix actuel coché. 44 pt au moins ; annoncé « Période, 7 jours, bouton ».
@@ -185,18 +195,13 @@ struct TimeShareCard: View {
         .buttonStyle(.miffSecondaryFullWidth)
     }
 
-    /// Moins de 7 jours d'historique, suivi actif : PAS de graphique, l'anneau vide et neutre (décor) et le texte figé par le PM.
+    /// Moins de 7 jours d'historique, suivi actif : PAS de graphique et PAS d'anneau vide, seulement le texte figé par le PM (ticket §7).
     private func notEnough(_ daysLeft: Int) -> some View {
-        let layout = stacked ? AnyLayout(VStackLayout(alignment: .leading, spacing: Spacing.md))
-            : AnyLayout(HStackLayout(alignment: .center, spacing: Spacing.md))
-        return layout {
-            Text(verbatim: TimeShareTexts.notEnough(daysLeft: daysLeft))
-                .miffTextStyle(textBodyRegular14)
-                .foregroundColor(colorTextDescription.color)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
-            TimeShareDonut(slices: [], size: 88)
-        }
+        Text(verbatim: TimeShareTexts.notEnough(daysLeft: daysLeft))
+            .miffTextStyle(textBodyRegular14)
+            .foregroundColor(colorTextDescription.color)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     // MARK: - L'état nominal
@@ -217,21 +222,24 @@ struct TimeShareCard: View {
     /// lecteur d'écran : l'anneau (caché, décoratif) est remplacé par UNE description qui liste TOUTES les parts ; les lignes de la légende ne
     /// sont pas relues (pas de doublon), sauf celle de la zone de danger, un bouton qui ouvre le détail.
     private func chart(_ result: TimeShareResult) -> some View {
-        let layout = stacked ? AnyLayout(VStackLayout(alignment: .center, spacing: Spacing.md))
+        let layout = ringAbove ? AnyLayout(VStackLayout(alignment: .center, spacing: Spacing.md))
             : AnyLayout(HStackLayout(alignment: .center, spacing: Spacing.md))
         let styles = TimeShareDonutLayout.styles(for: result.rows)
         return layout {
-            if stacked {
-                donutColumn(result)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(Text(verbatim: TimeShareTexts.spokenSummary(result)))
-                legend(result, styles: styles)
-            } else {
-                donutColumn(result)
-                    .accessibilityElement(children: .ignore)
-                    .accessibilityLabel(Text(verbatim: TimeShareTexts.spokenSummary(result)))
-                legend(result, styles: styles)
-            }
+            described(donutColumn(result), result)
+            legend(result, styles: styles)
+        }
+    }
+
+    /// L'anneau est remplacé, pour le lecteur d'écran, par sa description unique ; sans rien à dire, il est simplement caché.
+    @ViewBuilder
+    private func described<Ring: View>(_ ring: Ring, _ result: TimeShareResult) -> some View {
+        if let spoken = TimeShareTexts.spokenSummary(result) {
+            ring
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(verbatim: spoken))
+        } else {
+            ring.accessibilityHidden(true)
         }
     }
 
@@ -265,7 +273,7 @@ struct TimeShareCard: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .frame(maxWidth: stacked ? .infinity : Self.donutSize + Spacing.xs)
+        .frame(maxWidth: ringAbove ? .infinity : Self.donutSize + Spacing.xs)
     }
 
     private func legend(_ result: TimeShareResult, styles: [TimeShareSliceStyle]) -> some View {
