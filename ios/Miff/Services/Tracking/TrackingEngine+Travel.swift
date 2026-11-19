@@ -257,7 +257,10 @@ extension TrackingEngine {
     func pauseStatuses(_ start: LocalState) async -> LocalState {
         await deps.geofences.disarmAll()
         var state = start
+        let now = env.nowMillis()
         for miffId in start.miffs.keys {
+            // TIME-3 : le voyage commence (ou est adopté) : sa durée est non mesurée.
+            noteUnknown(miffId, at: now)
             state.update(miffId) {
                 $0.derived = nil
                 $0.pending = nil
