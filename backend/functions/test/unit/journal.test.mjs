@@ -59,8 +59,8 @@ test("journaliser : un nom d'événement qui ressemble à une donnée est rempla
 
 test('SRV-4B : compteurs numériques et motif fermé acceptés ; un motif libre, un prénom ou un nombre dans un champ de texte sont omis', () => {
   assert.deepEqual(
-    assainir({ resultat: 'ok', examines: 3, envoyes: 2, ecartes: 1, purges: 1, lectures: 8, ecritures: 1, dureeMs: 40 }),
-    { resultat: 'ok', examines: 3, envoyes: 2, ecartes: 1, purges: 1, lectures: 8, ecritures: 1, dureeMs: 40 },
+    assainir({ resultat: 'ok', examines: 3, envoyes: 2, ecartes: 1, purges: 1, journalisees: 3, lectures: 8, ecritures: 1, dureeMs: 40 }),
+    { resultat: 'ok', examines: 3, envoyes: 2, ecartes: 1, purges: 1, journalisees: 3, lectures: 8, ecritures: 1, dureeMs: 40 },
   );
   assert.deepEqual(assainir({ resultat: 'refuse', motif: 'plafond' }), { resultat: 'refuse', motif: 'plafond' });
   assert.equal(assainir({ motif: 'Tomessa' }).motif, '[omis]');

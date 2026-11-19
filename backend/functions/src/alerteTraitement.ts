@@ -16,12 +16,14 @@
 //   4. fiches de membres (40 au plus) -> auteur (prenom), destinataires (39 au plus)                         1 lecture par fiche
 //   5. SESSION ACTIVE de chaque destinataire, puis get DIRECT de devices/{session.deviceId}                 2 lectures par destinataire (1 sans session)
 //   6. reservation transactionnelle (verification finale, meme verdict)                                     1 lecture, 1 ecriture SEULEMENT si on envoie
+//      + JOURNAL (CNC-B) : une ligne users/{destinataire}/notifications/{entryId} par destinataire dont un push va partir, DANS LA MEME transaction (+1 ecriture par destinataire, 0 lecture)
 //   7. envoi FCM par appareil (2 nouvelles tentatives au plus), purge des jetons que FCM dit inconnus
-// Budget (Miff de 4 membres, 3 destinataires, 1 appareil chacun) : 1 + 1 + 4 + 3 x 2 + 1 = 13 lectures, 1 ecriture. Evenement ecarte : 1 lecture, 0 ecriture.
+// Budget (Miff de 4 membres, 3 destinataires, 1 appareil chacun) : 1 + 1 + 4 + 3 x 2 + 1 = 13 lectures, 1 + 3 = 4 ecritures (l'etat + 3 lignes de journal). Evenement ecarte : 1 lecture, 0 ecriture, AUCUNE ligne.
 // "Au plus une fois" : la reservation (etape 6) PRECEDE l'envoi ; un plantage entre les deux perd la notification (l'alerte reste visible dans le Feed) et ne
 // la double jamais. Journaux : uniquement des nombres et des mots fixes (journal.ts), jamais d'identifiant, de prenom ni de jeton.
 import { FieldPath, Timestamp } from "firebase-admin/firestore";
 import { journaliser, type ChampsJournal } from "./journal.js";
+import { cheminEntree, construireEntree, identifiantEntree, type KindJournal } from "./journalNotif.js";
 import {
   ecarter,
   enTimestamp,
@@ -117,7 +119,7 @@ const verdictDe = (phase: Phase, etat: Etat, auteurUid: string, startedAt: Times
 
 export async function traiterAlerte(dep: Dependances, evenement: EvenementAlerte): Promise<BilanAlerte> {
   const debut = dep.maintenant().getTime();
-  const bilan: BilanAlerte = { phase: evenement.phase, examines: 0, envoyes: 0, ecartes: {}, purges: 0, erreursFcm: {}, lectures: 0, ecritures: 0 };
+  const bilan: BilanAlerte = { phase: evenement.phase, examines: 0, envoyes: 0, ecartes: {}, purges: 0, erreursFcm: {}, lectures: 0, ecritures: 0, journalisees: 0 };
   try {
     await executer(dep, evenement, bilan);
   } catch {
@@ -213,6 +215,11 @@ async function executer(dep: Dependances, evenement: EvenementAlerte, bilan: Bil
   if (cibles.length === 0) return arreter("aucun_destinataire");
 
   // --- 6. Reservation : verification finale dans une transaction sur l'etat (deux executions simultanees : une seule passe) ---------------------
+  // JOURNAL (CNC-B) : dans la MEME transaction, une ligne par destinataire dont un push va partir (alerte : tous ceux qui ont une session et un jeton valide).
+  // Identifiant deterministe : as- / ae- + startedAt de l'alerte (une seule fin par debut) ; aussi dans le message FCM. `set` et non `create` : jamais de blocage du push.
+  const kind: KindJournal = phase === "debut" ? "alert_start" : "alert_end";
+  const entryId = identifiantEntree(kind, miffId, auteurUid, startedAt.toMillis());
+  const instantJournal = maintenant();
   const issue = await db.runTransaction(async (tx) => {
     const etat = await tx.get(refEtat);
     const verdict = verdictDe(phase, etat, auteurUid, startedAt);
@@ -225,11 +232,13 @@ async function executer(dep: Dependances, evenement: EvenementAlerte, bilan: Bil
       // La fin ne rallonge JAMAIS la duree de vie de l'etat (fixee a la reservation du debut) : elle note seulement qu'une fin a ete notifiee pour ce debut.
       tx.set(refEtat, { alerts: { [auteurUid]: { lastEndedStartedAt: startedAt } } }, { merge: true });
     }
+    for (const cible of cibles) tx.set(db.doc(cheminEntree(cible.uid, entryId)), construireEntree(kind, miffId, auteurUid, instantJournal));
     return verdict;
   });
   bilan.lectures += 1;
   if (issue !== "reserve") return arreter(issue);
-  bilan.ecritures += 1;
+  bilan.ecritures += 1 + cibles.length;
+  bilan.journalisees = cibles.length;
   if (phase === "fin" && enTimestamp(evenement.endedAt)) bilan.dureeAlerteMin = Math.max(0, Math.round((instantEvenement.toMillis() - startedAt.toMillis()) / 60_000));
 
   // --- 7. Envoi : un message par appareil ---------------------------------------------------------------------------------------
@@ -244,6 +253,7 @@ async function executer(dep: Dependances, evenement: EvenementAlerte, bilan: Bil
         prenom,
         phase,
         maintenant: instant,
+        entryId,
       });
       await envoyerAvecReprises(dep, cible, message, bilan);
     }),
@@ -266,6 +276,7 @@ function journaliserBilan(bilan: BilanAlerte, dureeMs: number): void {
       envoyes: bilan.envoyes,
       ecartes: Object.values(bilan.ecartes).reduce((a, b) => a + b, 0),
       purges: bilan.purges,
+      journalisees: bilan.journalisees,
       lectures: bilan.lectures,
       ecritures: bilan.ecritures,
       dureeMs,

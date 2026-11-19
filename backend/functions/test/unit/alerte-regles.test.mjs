@@ -66,18 +66,18 @@ test('garde de la fonction : 1 debut par minute ; PLUS de plafond journalier pro
 
 // --- Forme exacte des messages --------------------------------------------------------------------------------------------------------
 
-const base = { token: 'jeton-1', miffId: 'MIFF123', auteurUid: 'AUTEUR1', prenom: 'Tomessa', maintenant: new Date('2026-11-12T12:00:00Z') };
+const base = { token: 'jeton-1', miffId: 'MIFF123', auteurUid: 'AUTEUR1', prenom: 'Tomessa', maintenant: new Date('2026-11-12T12:00:00Z'), entryId: 'as-MIFF123-AUTEUR1-1762948800000' };
 const expiration = String(Math.floor(new Date('2026-11-12T14:00:00Z').getTime() / 1000));
 
 test('Android debut / fin : message "data" seulement, haute priorite, duree de vie 2 h, AUCUN indicateur d\'heures calmes', () => {
   assert.deepEqual(A.construireMessageAlerte({ ...base, plateforme: 'android', phase: 'debut' }), {
     token: 'jeton-1',
-    data: { type: 'circle_alert', event: 'start', miffId: 'MIFF123', authorUid: 'AUTEUR1', firstName: 'Tomessa' },
+    data: { type: 'circle_alert', event: 'start', miffId: 'MIFF123', authorUid: 'AUTEUR1', firstName: 'Tomessa', entryId: 'as-MIFF123-AUTEUR1-1762948800000' },
     android: { priority: 'high', ttl: 7_200_000 },
   });
   assert.deepEqual(A.construireMessageAlerte({ ...base, plateforme: 'android', phase: 'fin' }), {
     token: 'jeton-1',
-    data: { type: 'circle_alert', event: 'end', miffId: 'MIFF123', authorUid: 'AUTEUR1', firstName: 'Tomessa' },
+    data: { type: 'circle_alert', event: 'end', miffId: 'MIFF123', authorUid: 'AUTEUR1', firstName: 'Tomessa', entryId: 'as-MIFF123-AUTEUR1-1762948800000' },
     android: { priority: 'high', ttl: 7_200_000 },
   });
 });
@@ -85,7 +85,7 @@ test('Android debut / fin : message "data" seulement, haute priorite, duree de v
 test('iOS debut : alerte Time Sensitive (jamais critical), priorite 10, expiration 2 h, collapse-id « alert-{uid} » distinct de celui des updates, fil par Miff, textes par cles + prenom', () => {
   assert.deepEqual(A.construireMessageAlerte({ ...base, plateforme: 'ios', phase: 'debut' }), {
     token: 'jeton-1',
-    data: { type: 'circle_alert', event: 'start', miffId: 'MIFF123', authorUid: 'AUTEUR1' },
+    data: { type: 'circle_alert', event: 'start', miffId: 'MIFF123', authorUid: 'AUTEUR1', entryId: 'as-MIFF123-AUTEUR1-1762948800000' },
     apns: {
       headers: { 'apns-push-type': 'alert', 'apns-priority': '10', 'apns-expiration': expiration, 'apns-collapse-id': 'alert-AUTEUR1' },
       payload: {

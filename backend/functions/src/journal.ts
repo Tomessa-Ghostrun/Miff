@@ -32,11 +32,13 @@ export interface ChampsJournal {
   envoyes?: number;
   ecartes?: number;
   purges?: number;
+  /** Lignes ecrites dans le journal de notifications (CNC-B) : un nombre seul. */
+  journalisees?: number;
   lectures?: number;
   ecritures?: number;
 }
 
-const CHAMPS_NOMBRES = ["code", "nombre", "dureeMs", "examines", "envoyes", "ecartes", "purges", "lectures", "ecritures"];
+const CHAMPS_NOMBRES = ["code", "nombre", "dureeMs", "examines", "envoyes", "ecartes", "purges", "journalisees", "lectures", "ecritures"];
 const CHAMPS_AUTORISES = ["resultat", "motif", ...CHAMPS_NOMBRES];
 /** Nom d'evenement : un code fixe ecrit dans le source (ex. "notif.update.bilan"), jamais une donnee d'utilisateur. */
 const MOTIF_EVENEMENT = /^[a-z][a-z0-9_.-]{0,39}$/;
