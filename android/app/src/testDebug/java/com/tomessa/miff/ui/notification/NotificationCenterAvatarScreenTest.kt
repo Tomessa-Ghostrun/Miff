@@ -358,7 +358,9 @@ class NotificationCenterAvatarScreenTest {
         val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
         node.config[androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult].action?.invoke(results)
         val layout = results.single()
-        assertTrue("the two letters are not cut by the round", !layout.didOverflowWidth && !layout.didOverflowHeight)
-        assertTrue("and they fit in 40 dp (80 px)", layout.size.width <= 80)
+        val w = layout.size.width
+        val h = layout.size.height
+        // centred in a round of 40 dp = 80 px wide at this density (radius 40 px): the corners of the text box must lie inside the circle
+        assertTrue("the two letters fit in the round: ${w}x$h px", Math.hypot(w / 2.0, h / 2.0) <= 40.0)
     }
 }
