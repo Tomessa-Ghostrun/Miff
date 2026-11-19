@@ -28,6 +28,8 @@ struct ProfilePlacesShell {
     /// Les demandes d'ajout d'un lieu (LIEU-REQ), sous la même liste.
     let requests: ProfileRequestsViewModel
     let context: ProfilePlacesContext
+    /// La carte « Répartition de ton temps » (TIME-4), sous le carrousel.
+    let timeShare: TimeShareViewModel
 }
 
 /// Ce que la coquille a besoin de l'Update (UPDATE-3) : le view model de l'écran, et MON statut dans la Miff affichée (la couleur du bouton
@@ -35,6 +37,8 @@ struct ProfilePlacesShell {
 struct UpdateShell {
     let model: UpdateViewModel
     let status: MyStatusStore
+    /// L'écoute de MON seul statut pour les onglets où le Feed n'écoute pas (compte à rebours du Profil). nil : aucune (aperçus, tests).
+    var ownStatus: OwnStatusWatcher?
     /// « Revoir et accepter » : l'écran de renouvellement de l'accord (la porte des autorisations l'écoute).
     var onReviewAgreement: () -> Void = {}
 }
@@ -43,6 +47,17 @@ struct UpdateShell {
 private struct CleanupKey: Equatable {
     let ready: Bool
     let facts: MyStatusFacts?
+}
+
+/// Ce qui relance l'écoute de MON seul statut : la Miff affichée, et le fait qu'elle soit nécessaire (un autre onglet que le Feed est
+/// en usage et l'app n'est pas en arrière-plan). Le Feed écoute lui-même quand il est l'onglet en usage : jamais les deux à la fois.
+struct OwnStatusKey: Equatable {
+    let miffId: String?
+    let listening: Bool
+
+    static func make(miffId: String?, tab: MainTab, inBackground: Bool) -> OwnStatusKey {
+        OwnStatusKey(miffId: miffId, listening: tab != .feed && !inBackground)
+    }
 }
 
 /// Ce que la coquille dit au Feed : est-il l'onglet en usage (sinon rien n'est écouté), et comment ouvrir l'onglet Profil (l'avatar de
@@ -55,7 +70,7 @@ struct FeedShellContext {
 /// La COQUILLE de l'app une fois l'onboarding fini (ticket Profil / Réglages, ONB-7) : les trois onglets et leur barre en verre.
 ///
 /// Points d'accroche des chantiers suivants :
-/// - le Feed iOS (FEED-5 à 8) est le contenu de l'onglet Feed (`feed`) ; il est l'UNIQUE écouteur de MON statut (D19) et le donne à
+/// - le Feed iOS (FEED-5 à 8) est le contenu de l'onglet Feed (`feed`) ; il est l'écouteur de MON statut (D19) tant qu'il est l'onglet en usage (sur les autres, `OwnStatusWatcher`) et le donne à
 ///   `UpdateShell.status` (`MyStatusStore.update`) : couleur du bouton central, bulle, état « partage arrêté », nettoyage de la photo ;
 /// - la suppression de compte est faite (AUTH-5c, `DeleteAccountFlowView`) : atteinte par Mon compte.
 ///
@@ -85,6 +100,8 @@ struct MainShellView<Feed: View>: View {
     private let onOpenMiff: (String) -> Void
     private let onCreateMiff: () -> Void
     private let onOpenSettings: (SettingsRoute) -> Void
+    /// Monte chaque fois qu'on demande le Feed (toucher sur la notification « un proche a donné des nouvelles ») : l'onglet Feed est alors montré.
+    private let openFeedToken: Int
     private let feed: (FeedShellContext) -> Feed
     /// NOTIF-6I : un toucher sur une ligne du centre de notifications demande un onglet (le Feed, ou l'écran Update).
     @ObservedObject private var tabRequests: TabRequests
@@ -109,6 +126,7 @@ struct MainShellView<Feed: View>: View {
         onCreateMiff: @escaping () -> Void,
         onOpenSettings: @escaping (SettingsRoute) -> Void,
         tabRequests: TabRequests,
+        openFeedToken: Int = 0,
         @ViewBuilder feed: @escaping (FeedShellContext) -> Feed
     ) {
         self.miffs = miffs
@@ -124,6 +142,7 @@ struct MainShellView<Feed: View>: View {
         self.onCreateMiff = onCreateMiff
         self.onOpenSettings = onOpenSettings
         _tabRequests = ObservedObject(wrappedValue: tabRequests)
+        self.openFeedToken = openFeedToken
         self.feed = feed
     }
 
@@ -175,6 +194,14 @@ struct MainShellView<Feed: View>: View {
         MainShellRules.bubbleVisible(prompt: prompt, selected: shownTab, barVisible: barVisible)
     }
 
+    private var countdownContext: CountdownContext {
+        CountdownContext(status: myStatus, clock: countdownSystemClock, openUpdate: { selected = .update })
+    }
+
+    private var ownStatusKey: OwnStatusKey {
+        OwnStatusKey.make(miffId: activeMiffId, tab: shownTab, inBackground: scenePhase == .background)
+    }
+
     private var cleanupKey: CleanupKey {
         CleanupKey(ready: activeMiffId != nil, facts: myStatus.facts)
     }
@@ -211,6 +238,7 @@ struct MainShellView<Feed: View>: View {
                         travel: travel,
                         offlineRetry: profile.offlineRetry,
                         placesModel: places.model,
+                        timeShare: places.timeShare,
                         placeNotices: places.notices,
                         requestsModel: places.requests,
                         placesContext: places.context,
@@ -236,6 +264,8 @@ struct MainShellView<Feed: View>: View {
                         .environment(\.tabBarTopY, barVisible ? barTopY : nil)
                 }
             }
+            // Le compte à rebours (Feed et Profil) lit MON statut et ouvre l'écran Update par le point d'entrée existant (le bouton central).
+            .environment(\.countdownContext, countdownContext)
             .background(
                 // L'écouteur du créateur sur UNE Miff, branché seulement pendant que l'app est devant (LIEU-REQ-C).
                 ProfileRequestsWatcher(model: places.requests, miffs: miffs, myUid: places.context.myUid)
@@ -247,7 +277,16 @@ struct MainShellView<Feed: View>: View {
                 }
             }
         }
+        // Changer la langue (Réglages > Langue) refait le contenu des onglets dans la nouvelle langue ; l'onglet choisi, lui, ne bouge pas.
+        .followsAppLanguage()
         .onPreferenceChange(TabBarTopPreference.self) { barTopY = $0 }
+        // Un toucher sur une notification du serveur : l'onglet Feed.
+        .onChange(of: openFeedToken) { _ in
+            selected = .feed
+        }
+        // La fenêtre d'avis ne recouvre jamais l'Update ni la pop-in « Pas de connexion » du Profil (docs/tickets/pop-ins-avis.md). Sans effet
+        // dans un build sans le drapeau REVIEW_PROMPT (Release).
+        .reviewReportsShell(updateOpen: shownTab == .update, profilePopIn: profile.offlineRetry)
         // La dernière Miff a disparu : on repart du Feed.
         .onChange(of: hasNoMiff) { noMiff in
             if noMiff {
@@ -279,6 +318,13 @@ struct MainShellView<Feed: View>: View {
         }
         .task(id: cleanupKey) {
             cleanUp()
+        }
+        // COMPTE À REBOURS : sur le Profil et l'Update, le Feed n'écoute plus ; MON seul statut (un document) l'est ici, pour que l'encart du
+        // Profil reparte d'un repère juste après une update (CD-24) et cède la place dès l'arrivée dans un lieu de confiance (CD-22).
+        .task(id: ownStatusKey) {
+            if ownStatusKey.listening {
+                await update.ownStatus?.watch(miffId: ownStatusKey.miffId)
+            }
         }
         .onChange(of: scenePhase) { phase in
             if phase == .active {
@@ -321,6 +367,9 @@ struct MainShellView<Feed: View>: View {
                 onSelect: { selected = $0 }
             )
             .background(TabBarTopReader())
+            // La barre garde son apparence d'avant : le viseur demande une barre d'état claire à la racine (`AppAppearance`), ce qui bascule le
+            // schéma de couleurs de tout l'écran ; la barre, elle, reste en schéma clair (sa variante « sur photo » gère déjà ses couleurs).
+            .environment(\.colorScheme, .light)
         }
     }
 

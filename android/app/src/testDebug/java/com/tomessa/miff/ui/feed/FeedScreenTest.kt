@@ -9,7 +9,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.SemanticsActions
@@ -19,7 +23,9 @@ import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertWidthIsAtLeast
+import androidx.compose.ui.test.cancel
 import androidx.compose.ui.test.captureToImage
+import androidx.compose.ui.test.down
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -30,6 +36,8 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.up
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
@@ -553,20 +561,107 @@ class FeedScreenTest {
         assertFalse("block of my card: $mine", mine.contains("Toi"))
     }
 
-    @Test
-    fun cards_myCardIsTheLastOne_afterTheOthers() {
-        feed(ready(nominal))
+    /** The top of the card whose first text is [first] (the card is the block that holds more than its name). */
+    private fun cardTop(first: String): Float =
+        composeRule
+            .onAllNodes(
+                androidx.compose.ui.test
+                    .hasText(first),
+            ).fetchSemanticsNodes()
+            .first { it.config[SemanticsProperties.Text].size > 1 }
+            .boundsInRoot.top
 
-        fun top(first: String): Float =
-            composeRule
-                .onAllNodes(
-                    androidx.compose.ui.test
-                        .hasText(first),
-                ).fetchSemanticsNodes()
-                .first { it.config[SemanticsProperties.Text].size > 1 }
-                .boundsInRoot.top
-        assertTrue(top("Thomas") < top("Amandine"))
-        assertTrue(top("Amandine") < top("Camille"))
+    @Test
+    fun cards_areByLatestNews_meLikeTheOthers() {
+        feed(ready(nominal))
+        // FEED-ORDRE: Thomas (12 min), me (3 h), Amandine (6 h): I am no longer the last one by right.
+        assertTrue(cardTop("Thomas") < cardTop("Camille"))
+        assertTrue(cardTop("Camille") < cardTop("Amandine"))
+    }
+
+    @Test
+    fun cards_theContentIsUpdatedAtOnce_butTheOrderWaitsForTheEndOfTheTouch() {
+        var current by mutableStateOf(ready(nominal))
+        show {
+            FeedScreen(
+                state = directory,
+                scrollToTopSignal = 0,
+                onRetry = {},
+                onSelect = {},
+                onCreate = {},
+                onJoin = {},
+                feed = current,
+                me = FeedMe("CM"),
+            )
+        }
+        assertTrue(cardTop("Thomas") < cardTop("Amandine"))
+        // A finger is down (no release: a cancel at the end, so that nothing is tapped).
+        composeRule.onRoot().performTouchInput { down(Offset(10f, 10f)) }
+        // Amandine gives news while the finger is down: she is now the most recent one.
+        current =
+            ready(
+                content(
+                    trio,
+                    mapOf(me to status(ago = 3 * hour), "t" to status(), "a" to status(ago = minute, placeId = "p2")),
+                ),
+            )
+        composeRule.waitForIdle()
+        // Her card is up to date at once (the time of her news says "1 min"...), but no card moved.
+        assertTrue("held while the finger is down", cardTop("Thomas") < cardTop("Amandine"))
+        assertTrue(cardTop("Thomas") < cardTop("Camille"))
+        // The finger leaves: ONE reordering, Amandine first.
+        composeRule.onRoot().performTouchInput { cancel() }
+        composeRule.waitForIdle()
+        assertTrue(cardTop("Amandine") < cardTop("Thomas"))
+        assertTrue(cardTop("Thomas") < cardTop("Camille"))
+    }
+
+    @Test
+    fun cards_aPressOnAButton_duringAHeldReorder_stillReachesTheRightPerson() {
+        val calls = mutableListOf<String>()
+        val people =
+            listOf(
+                member(me, "Camille"),
+                member("t", "Thomas", phone = "+33611111111"),
+                member("a", "Amandine", phone = "+33622222222"),
+            )
+
+        fun news(amandineAgo: Long) =
+            ready(
+                content(
+                    people,
+                    mapOf(
+                        me to status(ago = 3 * hour),
+                        "t" to status(),
+                        "a" to status(ago = amandineAgo, placeId = "p2"),
+                    ),
+                ),
+            )
+        var current by mutableStateOf(news(6 * hour))
+        show {
+            FeedScreen(
+                state = directory,
+                scrollToTopSignal = 0,
+                onRetry = {},
+                onSelect = {},
+                onCreate = {},
+                onJoin = {},
+                feed = current,
+                me = FeedMe("CM"),
+                actions = FeedActions(onCall = { calls += it }),
+            )
+        }
+        val call = composeRule.onNodeWithContentDescription("Appeler Thomas")
+        // The finger is on "Appeler" of Thomas when Amandine gives news: nothing moves under it.
+        call.performTouchInput { down(center) }
+        current = news(minute)
+        composeRule.waitForIdle()
+        assertTrue("held while the finger is down", cardTop("Thomas") < cardTop("Amandine"))
+        // The finger leaves: the tap reaches THOMAS, then the order is applied.
+        call.performTouchInput { up() }
+        composeRule.waitForIdle()
+        assertEquals(listOf("+33611111111"), calls)
+        assertTrue(cardTop("Amandine") < cardTop("Thomas"))
     }
 
     @Test

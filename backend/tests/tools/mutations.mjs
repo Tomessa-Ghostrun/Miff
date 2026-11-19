@@ -15,6 +15,7 @@ import { SESSION_MUTATIONS } from './mutations-session.mjs';
 import { STATUS_TIME_MUTATIONS } from './mutations-statut.mjs';
 import { VOYAGE_MUTATIONS } from './mutations-voyage.mjs';
 import { DEVICE_MUTATIONS } from './mutations-jetons.mjs';
+import { ALERT_MUTATIONS } from './mutations-alerte.mjs';
 
 const DB = '/databases/$(database)/documents';
 const edit = (find, replace, nth = 1, of = 1) => ({ find, replace, nth, of });
@@ -158,13 +159,13 @@ export const MUTATIONS = [
   {
     id: 'M17-retrait-par-membre',
     why: "n'importe quel membre peut retirer un autre membre (ni contrôle du propriétaire, ni code renouvelé exigé)",
-    edits: [edit('|| (!isSelf(uid) && isOwner(miffId) && codeRenewed(miffId))', '|| (!isSelf(uid))')],
+    edits: [edit('|| (!isSelf(uid) && isOwnerOneRead(miffId) && codeRenewed(miffId))', '|| (!isSelf(uid))')],
     tests: ['M17'],
   },
   {
     id: 'M17-retrait-controle-proprietaire-seul',
     why: 'le contrôle isOwner de la branche « retrait » est retiré (codeRenewed reste exigé)',
-    edits: [edit('|| (!isSelf(uid) && isOwner(miffId) && codeRenewed(miffId))', '|| (!isSelf(uid) && codeRenewed(miffId))')],
+    edits: [edit('|| (!isSelf(uid) && isOwnerOneRead(miffId) && codeRenewed(miffId))', '|| (!isSelf(uid) && codeRenewed(miffId))')],
     tests: ['M17'],
     equivalent: 'défense en profondeur : seul le propriétaire peut modifier miffs.joinCode (isOwner dans la règle de mise à jour de la Miff), donc un non-propriétaire ne peut jamais satisfaire codeRenewed dans son lot',
   },
@@ -172,7 +173,7 @@ export const MUTATIONS = [
   {
     id: 'H4a-retrait-sans-nouveau-code',
     why: 'le retrait d\'un membre par la créatrice n\'exige plus que le code change dans le lot',
-    edits: [edit('|| (!isSelf(uid) && isOwner(miffId) && codeRenewed(miffId))', '|| (!isSelf(uid) && isOwner(miffId))')],
+    edits: [edit('|| (!isSelf(uid) && isOwnerOneRead(miffId) && codeRenewed(miffId))', '|| (!isSelf(uid) && isOwnerOneRead(miffId))')],
     tests: ['H4a'],
   },
   {
@@ -716,4 +717,6 @@ export const MUTATIONS = [
   ...REQUEST_MUTATIONS,
   // --- Jetons d'appareil (SRV-2R, devices et notifState) : voir mutations-jetons.mjs ---
   ...DEVICE_MUTATIONS,
+  // --- Alerte « Je suis en danger » (AD-B1, miffs/{miffId}/alerts/{uid}) : voir mutations-alerte.mjs ---
+  ...ALERT_MUTATIONS,
 ];

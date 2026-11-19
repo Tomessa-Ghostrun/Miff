@@ -17,3 +17,6 @@ spotless {
         ktlint(libs.versions.ktlint.get())
     }
 }
+
+// Guard of the licences screen (ticket reglages-a-propos.md, AP15): a library shipped without a licence entry fails the build.
+apply(from = "gradle/licenses-guard.gradle.kts")

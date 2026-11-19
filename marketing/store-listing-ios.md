@@ -78,7 +78,7 @@ TU GARDES LA MAIN
 
 - Miff a besoin de la localisation « Toujours » (y compris quand l'app est fermée) pour repérer tes arrivées et tes départs : sans elle, l'app ne peut pas fonctionner. Miff t'explique à quoi elle sert avant que ton iPhone te demande l'autorisation.
 - Le partage avec chaque Miff est ton choix : il ne démarre qu'avec ton accord, et tu peux l'arrêter à tout moment, sans te justifier. Ton statut, ta photo et ta dernière position sont alors effacés.
-- Ce que voit ton cercle : ton statut, ta dernière position connue avec l'heure de sa mesure, et ta photo avec l'endroit où elle a été prise. Ce n'est pas un suivi en direct, et Miff ne garde aucun historique de tes trajets.
+- Ce que voit ton cercle : ton statut, ta dernière position connue avec l'heure de sa mesure, et ta photo avec l'endroit où elle a été prise. Ce n'est pas un suivi en direct, et Miff ne garde aucun historique de tes trajets sur ses serveurs.
 - Seuls les membres de ta Miff qui partagent aussi leur position voient la tienne et ta photo. On ne rejoint une Miff qu'avec son code secret.
 - Les photos ne sont plus visibles après 24 heures dans Miff. Un proche peut toutefois en garder une copie : par capture d'écran, ou en touchant « Enregistrer cette photo », seulement s'il choisit de l'enregistrer.
 - Aucune publicité, aucune revente de données.
@@ -158,7 +158,7 @@ YOU STAY IN CONTROL
 
 - Miff needs the "Always" location permission (including when the app is closed) to notice your arrivals and departures: without it, the app cannot work. Miff explains what it is for before your iPhone asks for permission.
 - Sharing with each Miff is your choice: it only starts with your agreement, and you can stop at any time, without having to explain yourself. Your status, your photo and your last known location are then erased.
-- What your circle sees: your status, your last known location with the time it was measured, and your photo with the place where it was taken. This is not live tracking, and Miff keeps no history of your trips.
+- What your circle sees: your status, your last known location with the time it was measured, and your photo with the place where it was taken. This is not live tracking, and Miff keeps no history of your trips on its servers.
 - Only the members of your Miff who also share their location see yours and your photo. A Miff can only be joined with its secret code.
 - Photos are no longer visible in Miff after 24 hours. A loved one can still keep a copy: by taking a screenshot, or by tapping "Save this photo", only if they choose to save it.
 - No ads, no data resale.
@@ -324,3 +324,21 @@ Apple propose maintenant les niveaux 4+, 9+, 13+, 16+ et 18+. Le questionnaire c
 - [ ] Aucune mention de Miff+, d'essai, de prix, de « Économisez 30 % » ni de « presque 30 % d'économie » (décidé le 2026-11-07), de notifications.
 - [ ] Classification d'âge décidée (section 6) et réponses identiques à celles de la fiche Google Play.
 - [ ] Nom « Miff » : **une app nommée « MIFF » existe déjà dans l'App Store** (Moscow International Film Festival, développeur MEDIAFEST, catégorie Divertissement ; fiche canadienne lue le 2026-11-07, disponibilité en France non constatée). Le nom complet « Miff - Cercle de confiance » est différent et d'un autre domaine, mais la vérification d'antériorité de marque (risque J18, INPI) reste à faire par le PM. Voir `decisions-stores-avant-soumission.md`, point 9.
+
+
+## Annexe A. Mention de l'alerte « Je suis en danger » (préparée le 2026-11-19, **NON PUBLIÉE**)
+
+**Statut : préparation seulement. Rien n'est soumis ni collé dans une console.** Ce bloc ne doit entrer dans la fiche **que le jour où l'alerte est livrée** (fonction `notifierAlerte` déployée, clients iOS publiés, textes légaux 1.1 en ligne) : avant, la fiche dirait une chose fausse. À relire par le PM et par `aso-marketing` avant de le coller. Décision du PM du 2026-11-18 : **mention sobre, avec « Miff n'est pas un service d'urgence », jamais en titre, jamais dans le sous-titre ni la description courte, jamais en capture principale** (une capture secondaire au plus). Source des règles : `docs/release/alerte-danger-declarations-stores.md` §8.
+
+**Phrase de description (FR), à placer en fin de description longue, sans mise en avant** :
+> Quand tu en as besoin, un geste volontaire (un maintien de 5 secondes) prévient les proches de ta Miff : c'est l'alerte « Je suis en danger », gratuite. Miff n'est pas un service d'urgence : il prévient tes proches, pas les secours. En cas de danger immédiat, appelle d'abord le 112.
+
+**Description sentence (EN)**:
+> When you need it, a deliberate gesture (a 5-second hold) lets the people of your Miff know: the "I'm in danger" alert, free of charge. Miff is not an emergency service: it lets your loved ones know, not the emergency services. If you are in immediate danger, call 112 first.
+
+**Nouveautés (FR)** : « Nouveau : l'alerte « Je suis en danger », un geste volontaire pour prévenir les proches de ta Miff. Miff n'est pas un service d'urgence. »
+**What's new (EN)**: "New: the "I'm in danger" alert, a deliberate gesture to let the people of your Miff know. Miff is not an emergency service."
+
+**Interdits** (Google *Misleading Claims*, Apple 2.3 et 5.1.5) : « sécurité garantie », « sauve des vies », « alerte les secours », « SOS », « bouton d'urgence », « appelle les secours pour toi », toute promesse de livraison, de lecture ou de délai, « en direct ». Aucune capture ne montre l'alerte en vedette ; si une capture secondaire la montre, elle montre aussi la phrase « Miff n'est pas un service d'urgence ».
+
+**Journal du temps (Profil)** : ne pas le citer dans la fiche (inutile, et le mot « historique » y est à éviter). Les formules « Miff ne garde aucun historique de tes trajets » ont été précisées « sur ses serveurs » le 2026-11-19 (voir `docs/release/journal-local-temps-declarations.md` §5).

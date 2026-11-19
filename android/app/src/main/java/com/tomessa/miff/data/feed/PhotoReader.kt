@@ -324,6 +324,7 @@ class FirestorePhotoSource(
                         lng = snapshot.get("lng") as? Number,
                         measuredAtMillis = (snapshot.get("measuredAt") as? Timestamp)?.toDate()?.time,
                         nowMillis = nowMillis(),
+                        description = snapshot.get("description"),
                     )?.let { PhotoFetch.Valid(it) } ?: PhotoFetch.Invalid
             }
         } catch (e: CancellationException) {

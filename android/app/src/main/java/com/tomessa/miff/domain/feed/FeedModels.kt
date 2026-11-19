@@ -2,6 +2,7 @@ package com.tomessa.miff.domain.feed
 
 import com.tomessa.miff.domain.miff.MiffMember
 import com.tomessa.miff.domain.place.PlaceCategory
+import com.tomessa.miff.domain.tracking.CountdownAnchor
 import com.tomessa.miff.domain.tracking.StatusLevel
 import com.tomessa.miff.domain.travel.TravelDay
 import com.tomessa.miff.domain.update.PromptLevel
@@ -79,6 +80,12 @@ sealed interface StateLabel {
 
     /** MODE VOYAGE: the end of the trip has passed and the person has not given news since: "Voyage terminé" (grey), never a false "en voyage". */
     data object TravelEnded : StateLabel
+
+    /**
+     * ALERTE « Je suis en danger » (docs/tickets/alerte-danger.md 7.6): the person declared an alert in THIS Miff and it is in progress: "Alerte en cours" (red). The alert wins over every
+     * other label, the trip included (ticket 12.1). The state is carried by the words AND the colour, never by the colour alone.
+     */
+    data object AlertActive : StateLabel
 }
 
 /** The line under the label. ONE time reference per card (ticket A7). */
@@ -141,7 +148,7 @@ data class MyPhotoFacts(
     val lastUpdateAtMillis: Long?,
 )
 
-/** One card: a member, me included. MY card is the LAST of the list (no Localiser, no Message, no Appeler on it). */
+/** One card: a member, me included. MY card is sorted like the others (FEED-ORDRE) and has no Localiser, no Message, no Appeler. */
 data class MemberCard(
     val member: MiffMember,
     val isMe: Boolean,
@@ -158,6 +165,8 @@ data class MemberCard(
     val photo: PhotoSlot = PhotoSlot.None,
     /** MODE VOYAGE: the trip of this person is on (not over): the card is out of the count "n sur m" and of the colour of the Miff. */
     val traveling: Boolean = false,
+    /** ALERTE: this person has an alert in progress in this Miff: the card is red, FIRST in the list (the only exception to the order of the cards), with "Alerte en cours". */
+    val alertActive: Boolean = false,
 ) {
     override fun toString(): String = "MemberCard(redacted)"
 }
@@ -180,6 +189,11 @@ sealed interface AlertKind {
         val place: PlaceRef,
         val since: Moment,
     ) : AlertKind
+
+    /** ALERTE: "{Prénom} a déclaré une alerte à 15 h 02" (red). Always the FIRST page of the carousel, before the automatic reds. */
+    data class Declared(
+        val at: Moment,
+    ) : AlertKind
 }
 
 /** One page of the carousel of alerts: one member who is orange or red. */
@@ -192,6 +206,8 @@ data class AlertPage(
     val canMessage: Boolean,
     /** Offline: the time of the last information, said under the alert ("reconnecte-toi pour les mettre à jour"). */
     val offlineSince: Moment?,
+    /** "Appeler": another member with a number, on the page of a declared alert only (the quickest way to reach the person). */
+    val canCall: Boolean = false,
 ) {
     override fun toString(): String = "AlertPage(redacted)"
 }
@@ -299,6 +315,11 @@ data class FeedContent(
     val myPhoto: MyPhotoFacts? = null,
     /** MODE VOYAGE: the line added to the usual bubble when other members are on a trip (null: none, or the bubble already says it). */
     val travelNote: TravelNote? = null,
+    /**
+     * COUNTDOWN-A: the anchor of the countdown before MY status turns orange (null: nothing to show). It is MY status only, never somebody else's (the
+     * countdown is for the person concerned, on her own phone); the clock decides, on the screen, whether it is still shown.
+     */
+    val myCountdown: CountdownAnchor? = null,
 ) {
     override fun toString(): String = "FeedContent(redacted)"
 }

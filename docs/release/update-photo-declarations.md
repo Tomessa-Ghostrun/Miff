@@ -69,7 +69,7 @@ Décisions D24 à D26 du 2026-11-06 (viseur plein écran, aperçu un peu plus pe
 | Ce que le serveur ne vérifie pas | Que la position ou l'heure soient vraies (client modifié), que la photo corresponde au lieu | `data-model.md` « Limites connues » |
 | Analytics, plantages, journaux | Aucun événement, aucune coordonnée, aucun contenu de photo (D12) | ticket D12 |
 | Analyse du contenu | **Aucune** (pas de détection de visage, pas d'IA) | ticket §5.6 |
-| Texte libre avec la photo | **Aucun en v1** (`updateText = null`) | ticket C4 |
+| Texte libre avec la photo | **Aucun en v1** (`updateText = null`). **Depuis le 2026-11-17 (DESC) : une description facultative de 140 caractères, dans le document de la photo** (clé `description`) ; `updateText` reste `null` (voir §17) | ticket C4 ; ticket `description-update.md` |
 | Notification | **Aucune** | ticket D10 |
 | Limite assumée | Un proche peut faire une capture d'écran **ou enregistrer la photo avec « Enregistrer cette photo » (seulement s'il le choisit, §16)** : « illisible après 24 h » vaut pour l'app, pas pour une capture ni pour une photo enregistrée | ticket R5, CGU art. 8 |
 
@@ -143,7 +143,7 @@ Définitions lues le 2026-11-06 (aide Google, 10787469) : « collecter » = tran
 |---|---|---|---|
 | Photos et vidéos | **Photos** | **Collecté : oui** (octets envoyés à Firestore). **Partagé : voir O9** (recommandation prudente inchangée : déclarer le partage avec d'autres utilisateurs plutôt que rien). **Obligatoire ? Facultatif** (la personne choisit de publier ; elle peut ne jamais utiliser l'Update). **Finalité : App functionality.** **Traitée de façon éphémère : non** (stockée jusqu'à 24 h sur le serveur). Chiffrée en transit : oui. Suppression : oui | Ligne existante « photo de profil facultative ; photo de mise à jour facultative » : **conservée**, mais préciser « prise avec la caméra de l'app ». La photo de mise à jour devient **obligatoire pour publier** (D16) sans devenir obligatoire pour l'app : « facultatif » reste exact |
 | Localisation | **Localisation précise** | Déjà **collectée, obligatoire** (« Toujours »). Le lieu de la photo est **la même catégorie** ; aucune ligne de plus. Mentionner dans les notes : « jointe aussi à la photo (24 h) » | Notes de la ligne existante à compléter |
-| Messages | « Autres messages dans l'app » (petit texte de 140 caractères) | **À retirer** si l'Update est livrée sans texte (ticket C4 : `updateText = null`). Garder la ligne **uniquement** si un texte est effectivement livré | **La ligne actuelle est inexacte avec le ticket Update** : une sous- ou sur-déclaration est un écart avec l'app |
+| Activité dans l'app | **Autre contenu généré par les utilisateurs** (description facultative de la photo, 140 caractères) | **Depuis DESC (2026-11-17)** : à déclarer **quand les clients de la description sont livrés**, sous cette catégorie et non sous « Messages > Autres messages dans l'app » (voir §17). Sans la description, retirer la ligne | **Ancienne ligne « Messages » remplacée** (`google-play-data-safety.md`) : une sous- ou sur-déclaration est un écart avec l'app |
 | Audio | — | **Non collecté** (aucun micro, pas de `RECORD_AUDIO`) | à confirmer par `android-dev` |
 | Fichiers et documents | — | **Non** : aucune lecture de fichiers ; l'écriture d'une photo reçue dans la galerie n'a lieu que sur le geste « Enregistrer cette photo » (local, rien n'est envoyé : pas une collecte, §16) ; le repli système utilise un fichier du cache privé, supprimé aussitôt | à confirmer |
 | Activité dans l'app, plantages | Analytics, Crashlytics | Inchangé. **Vérifier** que ni la photo ni les coordonnées ne figurent dans un événement, un journal ou un rapport (D12, critère U6) | contrôle V1 élargi |
@@ -160,7 +160,7 @@ Définitions lues le 2026-11-06 (« App privacy details ») : « Photos or Video
 |---|---|---|
 | **Photos or Videos** | Collecté : oui ; lié à l'utilisateur : oui ; suivi : non ; finalité : **App Functionality** | Ligne existante (« photo de profil ; photo de mise à jour (24 h) ») : **inchangée**, à confirmer au moment du remplissage |
 | **Precise Location** | Déjà déclaré (5 décimales > seuil de 3). Le lieu de la photo est **la même donnée** | Aucune ligne de plus ; compléter la note de revue (§4) |
-| **Other User Content** | **À retirer** si aucun texte n'est livré (ticket C4) ; Apple n'oblige pas à déclarer ce que l'utilisateur pourrait saisir, mais ici le champ n'existe pas | **Ligne actuelle inexacte** si l'Update est livrée sans texte |
+| **Other User Content** | **Depuis DESC (2026-11-17)** : la description facultative (texte libre de 140 caractères) en fait partie ; collectée, liée à l'utilisateur, suivi non, finalité App Functionality (voir §17). Sans la description, la ligne ne porterait que le nom des lieux (LOC-3) | Ligne **réécrite** dans `app-store-confidentialite-et-revue.md` §2 |
 | Autres lignes (Name, Email, Phone, User ID, Device ID, Product Interaction, Crash Data, Purchases) | Inchangées par l'Update | — |
 | Suivi (tracking) | **Non** | inchangé. Apple 5.1.2(vi) interdit d'utiliser les données de caméra pour du marketing ou de l'exploration de données : l'app n'en fait rien (aucune analyse) |
 
@@ -207,7 +207,7 @@ Le texte ne prévoit **aucune exception** pour les groupes fermés ou privés (j
 
 ### 7.5 Paragraphe de note de revue Apple pour l'UGC (anglais)
 
-> **User-generated content (guideline 1.2).** The only user-generated content is a single live-camera photo per user (no gallery upload, no text, no comments, no messaging), published with the place where it was taken and visible for 24 hours only to the members of the user's private circle ("Miff"), which can be joined only with a secret code. There is no public feed or discovery. The terms (accepted at sign-up) forbid illegal, violent, hateful or sexually explicit content, intimate photos without consent, and photos of people without their consent. Reports are handled by e-mail at tomessa.mfouka@gmail.com, which we check at least once a week; we can remove content and suspend accounts. Any member can leave a circle, the circle's creator can remove a member, and users can delete their account in the app. We do not run automatic image filtering (photos are not analysed), and the app has no in-app report or block button at this time. Contact: tomessa.mfouka@gmail.com [et URL de support].
+> **User-generated content (guideline 1.2).** The only user-generated content is a single live-camera photo per user, with an optional short free-text description of at most 140 characters (no gallery upload, no comments, no messaging), published with the place where it was taken and visible for 24 hours only to the members of the user's private circle ("Miff"), which can be joined only with a secret code. There is no public feed or discovery. The terms (accepted at sign-up) forbid illegal, violent, hateful or sexually explicit content, threats or content that harms another person (including in descriptions), intimate photos without consent, and photos of people without their consent. Reports are handled by e-mail at tomessa.mfouka@gmail.com, which we check at least once a week; we can remove content and suspend accounts. Any member can leave a circle, the circle's creator can remove a member, and users can delete their account in the app. We do not run automatic filtering of photos or descriptions (nothing is analysed), and the app has no in-app report or block button at this time. Contact: tomessa.mfouka@gmail.com [et URL de support].
 
 La dernière proposition de ce paragraphe est **volontairement honnête** : ne jamais la remplacer par une affirmation contraire. Le PM peut décider de la retirer, jamais de la contredire.
 
@@ -363,7 +363,7 @@ Principe : on ne livre **rien** de plus tant qu'un store n'a pas refusé (décis
 | V13 | La caméra ne démarre que si l'écran Update est visible et s'arrête en arrière-plan ; aucun déclenchement à distance | devs |
 | V14 | Aucune photo n'est écrite dans la galerie ni sur disque avec le viseur intégré ; le repli système utilise un fichier du cache privé supprimé aussitôt | devs |
 | V15 | Le lieu de la photo (`lat`, `lng`, `measuredAt`, **toujours ensemble**) est écrit sur **toute** photo publiée (P7) ; si la mesure est impossible ou trop ancienne, comportement décidé à l'alignement du ticket (§1.2 bis) ; aucune coordonnée dans un journal, Analytics, Crashlytics ou l'état sauvegardé | devs + `backend-data` |
-| V16 | `updateText` vaut toujours `null` ; aucun champ de texte n'est livré avec la photo (sinon rétablir les lignes « Autres messages » / « Other User Content » des déclarations) | devs |
+| V16 | `updateText` (statut) vaut toujours `null` ; **depuis DESC (2026-11-17), la seule saisie de texte livrée avec la photo est la description facultative** (clé `description` du document de la photo, 140 caractères au plus) : les lignes « Autre contenu généré par les utilisateurs » / « Other User Content » des déclarations ne valent que si elle est livrée (voir §17) | devs |
 | V17 | **Aucun** bouton ni écran de signalement ou de blocage n'est livré (P1, P2) ; aucun texte d'écran, capture ni fiche n'en suggère un ; si le plan de repli du §11 bis est déclenché, vérifier alors le fonctionnement hors ligne sans plantage | devs |
 | V18 | La suppression de compte efface `photos` (avec lieu) **et** `positions` dans toutes les Miffs, y compris celles créées | devs + `backend-data` |
 | V19 | Sur iPhone, comportement exact du repli « appareil photo du système » quand la caméra est refusée (§3.4, P8) ; ajuster les états C et D du ticket si le repli n'existe pas | `ios-dev` |
@@ -515,3 +515,38 @@ Politique de confidentialité FR/EN (résumé point 7 ; art. 3 « Caméra et pho
 ### 16.5 Contrôle ajouté
 
 **V22** (voir `README.md`) : le bouton n'existe qu'au plein écran de la photo d'un proche ; l'écriture part d'un toucher (jamais d'un effet automatique) ; Android : aucune permission de stockage ; iOS : seule la clé d'ajout est déclarée, jamais la clé de lecture ; le fichier enregistré n'a ni métadonnée ni lieu.
+
+---
+
+## 17. Description facultative de la photo (DESC-L, 2026-11-17)
+
+Source : `docs/tickets/description-update.md` (PR #247). Décisions du PM (2026-11-17) : textes légaux mis à jour sans nouvelle acceptation ; absence de signalement et de blocage dans l'app maintenue (D28 et D30 de `update.md`, étendues à la description). **Rien n'est rempli ni soumis. Les déclarations ci-dessous ne valent que lorsque les clients Android et iOS de la description sont livrés** : un formulaire de store doit décrire l'app publiée (§5). Ordre de mise en ligne : règles Firestore, clients, puis site avec les textes en version 1.1 (`docs/legal/README.md` §11.1).
+
+### 17.1 Ce que ça change dans les déclarations
+
+| Formulaire | Réponse | Précision |
+|---|---|---|
+| **Google Play, Data safety** | Activité dans l'app > **Autre contenu généré par les utilisateurs** : collecté oui ; partagé : O9 ; facultatif ; finalité fonctionnalités ; chiffré en transit ; suppression possible (avec la photo, ou compte) | Catégorie relue le 2026-11-17 (aide Google 10787469 : « Other user-generated content … user bios, notes, or open-ended responses »). Ligne dans `google-play-data-safety.md` §2 |
+| **App Store, App Privacy** | User Content > **Other User Content** : collecté oui ; lié à l'utilisateur oui (le document de la photo porte l'identifiant du compte) ; suivi non ; finalité App Functionality | Définition relue le 2026-11-17 (« Any other user-generated content » ; texte libre : « Mark Other User Content to represent generic free form text fields »). Ligne dans `app-store-confidentialite-et-revue.md` §2 |
+| Permissions | **Aucune** de plus | Un champ de saisie ne demande aucune autorisation |
+| Analytics | **Aucun événement** (D12 de `update.md` ; `docs/contracts/analytics-events.md` inchangé) | La description n'est jamais envoyée à Analytics ni à Crashlytics |
+| Classification (IARC, Apple) et public cible | **Réponses inchangées** : « contenu généré par les utilisateurs » et « échange de contenu entre utilisateurs » étaient déjà à **oui** (photo) ; ne pas minimiser. À relire devant les questions du jour | Public cible : inchangé (O7) |
+| Suppression des données | « Oui » inchangé | La description disparaît avec la photo (illisible après 24 h ; suppression physique non garantie à la 24e heure, J8) |
+
+### 17.2 La ligne « contenu généré par les utilisateurs », à compléter honnêtement
+
+À répondre pareillement partout (formulaires, note de revue Apple §7.5, fiches) :
+
+| Point | Réponse honnête (décisions D28 et D30 du PM) | Ne jamais écrire |
+|---|---|---|
+| Contenu | Une photo en direct, avec une **description facultative en texte libre** (140 caractères au plus), visible 24 h des seuls membres de la Miff (cercle fermé par code), sans galerie, sans commentaire, sans messagerie | « sans texte » (devenu faux à la livraison) |
+| Filtrage | **Aucun** : ni les photos ni les descriptions ne sont analysées | « modéré », « filtré », « vérifié » |
+| Signalement | **Par e-mail seulement**, boîte consultée **au moins une fois par semaine** ; **aucun bouton de signalement dans l'app** | Un signalement dans l'app, un délai plus court |
+| Blocage | **Aucune fonction de blocage dans l'app** ; quitter la Miff, retrait d'un membre par le créateur, suspension de compte à la main | Un blocage dans l'app |
+| Règles | CGU art. 7 et 8 (version 1.1) : contenu illicite, haineux, menaçant ou qui porte atteinte à autrui, y compris dans une description ; retrait et suspension possibles | « relu par un juriste » |
+
+**Risque** (J44, `docs/legal/README.md` §4) : Apple 1.2 (filtrage, signalement, blocage, contact publié) et Google Play UGC (signalement et blocage dans l'app ; pour un ensemble d'utilisateurs spécifié, au moins signaler le contenu et les utilisateurs) **ne prévoient aucune exemption pour un groupe fermé** dans les textes relus le 2026-11-17. **Assumé par le PM**, jamais écrit « à valider ». Un texte est plus facile à écrire qu'une photo (insultes, harcèlement, propos sur un tiers) : la probabilité de rejet est au moins celle de R2 et R3 du §11. **Repli** : §11 bis (bouton qui ouvre un e-mail pré-rempli, masquage local), qui couvre la photo **et** la description (même document) ; à ne livrer qu'en cas de rejet.
+
+### 17.3 Fiches des stores : à changer le jour de la livraison
+
+Les lignes « sans texte » de `marketing/store-listing-*.md`, `positioning.md` et `launch-plan.md` restent vraies jusqu'à la livraison et ne sont **pas** modifiées ici (liste : `alignement-decisions-2026-11-11.md` A13).

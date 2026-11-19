@@ -5,11 +5,15 @@ import UIKit
 @main
 @MainActor
 struct MiffApp: App {
+    /// SRV-2I : seulement pour recevoir le jeton d'APNs (SwiftUI n'a pas d'autre porte). Voir `MiffAppDelegate`.
+    @UIApplicationDelegateAdaptor(MiffAppDelegate.self) private var appDelegate
     private let environment: AppEnvironment
     /// Lu une fois par lancement : le choix « réduire les animations » donne un logo fixe à la place de l'animation.
     private let reduceMotion: Bool
 
     init() {
+        // La langue choisie dans Réglages > Langue est lue AVANT tout le reste : aucun texte n'est calculé dans la mauvaise langue.
+        _ = AppLanguageController.shared
         FirebaseBootstrap.configureIfPossible()
         let environment = AppEnvironment.live()
         // Analytics et Crashlytics démarrent éteints (Info.plist) et le choix gardé sur l'appareil n'est PAS réappliqué :
@@ -18,6 +22,8 @@ struct MiffApp: App {
         // faite ici, avant tout autre accès à Firestore.
         environment.privacySettings.pauseCollection()
         environment.session.start()
+        // SRV-2I : branche les récepteurs des notifications push (n'allume aucun service : l'accord de la personne vient d'abord).
+        environment.push.start()
         self.environment = environment
         reduceMotion = UIAccessibility.isReduceMotionEnabled
     }
@@ -33,11 +39,14 @@ struct MiffApp: App {
 
     var body: some Scene {
         WindowGroup {
-            SplashHost(reduceMotion: reduceMotion, isEnabled: Self.splashEnabled) {
-                RootView(environment: environment)
+            AppLanguageHost {
+                SplashHost(reduceMotion: reduceMotion, isEnabled: Self.splashEnabled) {
+                    RootView(environment: environment)
+                }
             }
-            // Apparence claire imposée (les maquettes n'ont pas de mode sombre), en plus de UIUserInterfaceStyle.
-            .preferredColorScheme(.light)
+            // Apparence claire imposée (les maquettes n'ont pas de mode sombre), en plus de UIUserInterfaceStyle ; seule exception : la barre
+            // d'état en clair sur le viseur et l'aperçu de l'Update (voir `AppAppearance`).
+            .modifier(AppColorSchemeModifier())
             // Retour de la fenêtre de connexion Google.
             .onOpenURL { url in
                 _ = GIDSignIn.sharedInstance.handle(url)
@@ -46,6 +55,8 @@ struct MiffApp: App {
             .trackingLifecycle(environment.tracking)
             // NOTIF-P0 : au retour au premier plan, à un changement d'heure ou de langue, les rappels sont réconciliés avec le système.
             .notificationLifecycle(environment.notifications.reconciler)
+            // SRV-2I : au premier plan et à chaque changement de la session, le registre des appareils est regardé (rien d'écrit si rien n'a changé).
+            .pushLifecycle(environment.push, session: environment.sessionState)
             // NOTIF-P1I : « Depuis ta dernière visite » compare au retour après 30 minutes ou plus loin de l'app (aucune lecture de plus).
             .lastVisitLifecycle(environment.notifications.lastVisit)
         }

@@ -1,6 +1,10 @@
 package com.tomessa.miff.ui.feed
 
+import android.os.SystemClock
 import android.widget.Toast
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -39,6 +43,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.PointerEventPass
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -55,13 +61,20 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.traversalIndex
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.tomessa.miff.R
 import com.tomessa.miff.data.feed.PhotoReader
 import com.tomessa.miff.data.miff.DirectoryState
+import com.tomessa.miff.domain.feed.CardOrderGate
 import com.tomessa.miff.domain.feed.FeedBanner
 import com.tomessa.miff.domain.feed.FeedContent
+import com.tomessa.miff.domain.feed.MemberCard
+import com.tomessa.miff.domain.feed.OrderAnnouncement
 import com.tomessa.miff.domain.feed.PositionFix
+import com.tomessa.miff.domain.feed.inOrder
 import com.tomessa.miff.domain.tracking.StatusLevel
 import com.tomessa.miff.ui.components.ConnectionHost
 import com.tomessa.miff.ui.components.ConnectionInline
@@ -118,6 +131,8 @@ class FeedActions(
     val onRefresh: () -> Unit = {},
     /** COULEURS-1: a touch on the bubble of the Miff opens the page "Les couleurs de ta Miff" (static: no reading, nothing is kept). */
     val onOpenColors: () -> Unit = {},
+    /** COUNTDOWN-A: a touch on the countdown before orange opens the Update, by the same way as the central button of the bar (nothing new: the tab). */
+    val onOpenUpdate: () -> Unit = {},
 )
 
 /**
@@ -135,6 +150,8 @@ class FeedHost(
     val refreshing: Boolean = false,
     val onRefresh: () -> Unit = {},
     val observe: suspend () -> Unit = {},
+    /** COUNTDOWN-A: what the Profile tab runs while it is the tab in use, so that the encart of the countdown it carries stays true (see [FeedViewModel.observeForProfile]). */
+    val observeForProfile: suspend () -> Unit = {},
     /** FEED-4: where the photos are read (null: no photo is drawn). */
     val photos: PhotoReader? = null,
     /** The pop-in "Pas de connexion" (state and buttons): shown only while the Feed has nothing to show. */
@@ -164,12 +181,13 @@ fun rememberSystemFeedActions(base: FeedActions): FeedActions {
             onRetryFeed = base.onRetryFeed,
             onRefresh = base.onRefresh,
             onOpenColors = base.onOpenColors,
+            onOpenUpdate = base.onOpenUpdate,
         )
     }
 }
 
 /**
- * The Feed tab (tickets FEED-1 to FEED-3): the fixed header, then the bubble of the Miff, the cards of the members (me last), and
+ * The Feed tab (tickets FEED-1 to FEED-3): the fixed header, then the bubble of the Miff, the cards of the members (the latest news first, me like the others: FEED-ORDRE), and
  * "Ajouter un proche". [feed] is what the view model computed; [locate] the sheet "Localiser". The photo of the last update is FEED-4.
  * [scrollToTopSignal] goes up each time the person taps the tab they are already on.
  *
@@ -212,6 +230,45 @@ fun FeedScreen(
     val content = (feed as? FeedUiState.Ready)?.content
     val density = LocalDensity.current
 
+    // FEED-ORDRE: the cards are sorted by the Feed (the latest news first), but the ORDER the person sees only changes when nothing is under their finger:
+    // the content of a card is updated at once, its place waits for the end of the scroll or of the touch. Coming back to the Feed (tab, foreground) or
+    // refreshing shows the up-to-date order directly (no glide, no announcement): the gate is new on each arrival on the tab.
+    val orderGate =
+        remember {
+            CardOrderGate().also {
+                it.applyDirectlyUntil(
+                    SystemClock.elapsedRealtime() + CardOrderGate.DIRECT_WINDOW_MILLIS,
+                )
+            }
+        }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) {
+        orderGate.applyDirectlyUntil(SystemClock.elapsedRealtime() + CardOrderGate.DIRECT_WINDOW_MILLIS)
+    }
+    var fingerDown by remember { mutableStateOf(false) }
+    // A touch cut short by the system (the app goes to the background with a finger down) never leaves the order held back for good.
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { fingerDown = false }
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { fingerDown = false }
+    val orderView =
+        if (content == null) {
+            orderGate.reset()
+            null
+        } else {
+            orderGate.resolve(
+                miffId = content.miffId,
+                myUid =
+                    content.cards
+                        .firstOrNull { it.isMe }
+                        ?.member
+                        ?.uid,
+                live = content.cards.map { it.member.uid },
+                hold = fingerDown || listState.isScrollInProgress,
+                refreshing = refreshing,
+                nowMillis = SystemClock.elapsedRealtime(),
+            )
+        }
+    val shownCards = content?.cards.orEmpty().inOrder(orderView?.order.orEmpty())
+    val glide = orderView?.animate == true && !reduceMotion
+
     // The header hides while the person scrolls down and is back AT ONCE when they scroll up (decision of the PM, 2026-11-06).
     // The last measured height is kept (rotation, font size): the first image already has the right room, no jump while it is measured again.
     val header = rememberSaveable(saver = CollapsingHeaderState.Saver) { CollapsingHeaderState() }
@@ -219,13 +276,13 @@ fun FeedScreen(
     val focus = notifications.focusMember
     val focusSecondChance = notifications.secondChanceVisible
     val focusAwaiting = agreement.isWaiting((state as? DirectoryState.Ready)?.activeId)
-    LaunchedEffect(focus, content, focusSecondChance, focusAwaiting) {
+    LaunchedEffect(focus, content, orderView?.order, focusSecondChance, focusAwaiting) {
         if (focus == null) return@LaunchedEffect
         val index =
             if (content?.miffId ==
                 focus.miffId
             ) {
-                content.cards.indexOfFirst { it.member.uid == focus.uid }
+                shownCards.indexOfFirst { it.member.uid == focus.uid }
             } else {
                 -1
             }
@@ -275,7 +332,15 @@ fun FeedScreen(
                 .miffTopInsets()
                 .clipToBounds()
                 .nestedScroll(connection)
-                .semantics {
+                // FEED-ORDRE: "a finger is down" (anywhere, a button included), seen BEFORE the children and never consumed: it only holds the order back.
+                .pointerInput(Unit) {
+                    awaitPointerEventScope {
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            fingerDown = event.changes.any { it.pressed }
+                        }
+                    }
+                }.semantics {
                     paneTitle = paneName
                     // The header is drawn after the list (it floats above it): a screen reader reads it FIRST all the same (see FeedHeader below).
                     isTraversalGroup = true
@@ -327,6 +392,8 @@ fun FeedScreen(
                         refreshing = refreshing,
                         popIn = popIn,
                         notifications = notifications,
+                        cards = shownCards,
+                        glide = glide,
                     )
                 }
             }
@@ -378,6 +445,8 @@ fun FeedScreen(
         )
         // Polite announcement of "Actualiser" (a node of one dp INSIDE the safe area, drawn nowhere).
         RefreshAnnouncement(refreshing, offline)
+        // FEED-ORDRE: polite announcement when the order really changes (never moves the focus of the screen reader).
+        OrderAnnouncementNode(orderView?.announcement, shownCards)
     }
     // Nothing to show and no network (or no answer for a while): the calm pop-in, with "Réessayer" and the countdown of the next automatic attempt.
     // Never two windows at once (ticket pop-ins-avis C5): the pop-in waits while the sheet "Localiser" is open or the Miff waits for the person's agreement.
@@ -421,6 +490,9 @@ private fun FeedBody(
     refreshing: Boolean,
     popIn: ConnectionHost,
     notifications: FeedNotifications,
+    /** FEED-ORDRE: the cards in the order the person SEES (held back during a gesture), and whether they glide to a new place. */
+    cards: List<MemberCard>,
+    glide: Boolean,
 ) {
     val content = (feed as? FeedUiState.Ready)?.content
     val pullState = rememberPullToRefreshState()
@@ -509,7 +581,7 @@ private fun FeedBody(
                 }
 
                 is FeedUiState.Ready -> {
-                    readyItems(feed.content, locate, texts, actions, onOpenPhoto)
+                    readyItems(feed.content, cards, glide, locate, texts, actions, onOpenPhoto)
                 }
             }
         }
@@ -518,6 +590,8 @@ private fun FeedBody(
 
 private fun androidx.compose.foundation.lazy.LazyListScope.readyItems(
     content: FeedContent,
+    cards: List<MemberCard>,
+    glide: Boolean,
     locate: LocateUiState,
     texts: FeedTexts,
     actions: FeedActions,
@@ -525,18 +599,34 @@ private fun androidx.compose.foundation.lazy.LazyListScope.readyItems(
 ) {
     items(content.banners, key = { it::class.simpleName.orEmpty() }) { banner -> BannerView(banner, texts) }
     item(key = "bubble") {
-        BubbleView(
-            bubble = content.bubble,
-            announceKey = content.announceKey,
-            texts = texts,
-            onMessage = actions.onMessage,
-            onResumeSharing = { actions.onResumeSharing(content.miffId) },
-            travelNote = content.travelNote,
-            onOpenColors = actions.onOpenColors,
-        )
+        Column {
+            BubbleView(
+                bubble = content.bubble,
+                announceKey = content.announceKey,
+                texts = texts,
+                onMessage = actions.onMessage,
+                onCall = actions.onCall,
+                onResumeSharing = { actions.onResumeSharing(content.miffId) },
+                travelNote = content.travelNote,
+                onOpenColors = actions.onOpenColors,
+            )
+            // COUNTDOWN-A: JUST UNDER the bubble of the Miff (this big coloured blob with the "i"), before the cards; the air above it (14 dp, the spacing of the list) is
+            // inside the animated block, so that nothing jumps when it comes or goes, and nothing is left when it is absent. Mine only: the anchor is MY status.
+            OrangeCountdownSlot(
+                anchor = content.myCountdown,
+                onOpenUpdate = actions.onOpenUpdate,
+                padding = PaddingValues(top = 14.dp),
+            )
+        }
     }
-    items(content.cards, key = { it.member.uid }) { card ->
+    items(cards, key = { it.member.uid }) { card ->
         MemberCardView(
+            modifier =
+                Modifier.animateItem(
+                    fadeInSpec = null,
+                    fadeOutSpec = null,
+                    placementSpec = if (glide) CARD_GLIDE else null,
+                ),
             card = card,
             texts = texts,
             locating = (locate as? LocateUiState.Loading)?.uid == card.member.uid,
@@ -783,3 +873,45 @@ private const val REFRESH_DONE_ANNOUNCEMENT_MILLIS = 3_000L
 
 /** NOTIF-P1A: how long the Feed waits for the Miff of a tapped line to be the one shown before it forgets the request. */
 private const val FOCUS_WAIT_MILLIS = 10_000L
+
+/** FEED-ORDRE: the soft glide of a card to its new place (a spring, no bounce). Null placement (reduced motion, direct order) means no animation at all. */
+private val CARD_GLIDE =
+    spring(stiffness = Spring.StiffnessMediumLow, visibilityThreshold = IntOffset.VisibilityThreshold)
+
+private const val ORDER_ANNOUNCEMENT_MILLIS = 3_000L
+
+/**
+ * Polite announcement (TalkBack) of a change of the order of the cards: "{Prénom} a donné des nouvelles", or "Le Feed a été mis à jour" when several cards
+ * moved. A node apart of one dp, drawn nowhere: it never takes the focus of the screen reader and never interrupts what is being read. Said once per
+ * announcement ([OrderAnnouncement.id]); the gate gives none for my own card, nor when coming back to the Feed.
+ */
+@Composable
+private fun OrderAnnouncementNode(
+    announcement: OrderAnnouncement?,
+    cards: List<MemberCard>,
+) {
+    val many = stringResource(R.string.feed_order_updated_many_a11y)
+    val name =
+        announcement
+            ?.mover
+            ?.let { uid ->
+                cards.firstOrNull { it.member.uid == uid }?.member?.callName
+            }?.takeIf { it.isNotBlank() }
+    val one = name?.let { stringResource(R.string.feed_order_updated_one_a11y, it) }
+    var text by remember { mutableStateOf("") }
+    LaunchedEffect(announcement?.id) {
+        if (announcement == null) {
+            text = ""
+            return@LaunchedEffect
+        }
+        text = one ?: many
+        delay(ORDER_ANNOUNCEMENT_MILLIS)
+        text = ""
+    }
+    Box(
+        Modifier.size(1.dp).semantics {
+            liveRegion = LiveRegionMode.Polite
+            contentDescription = text
+        },
+    )
+}

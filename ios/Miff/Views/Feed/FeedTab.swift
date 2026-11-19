@@ -18,6 +18,8 @@ struct FeedTabActions {
     let onOpenSettings: () -> Void
     /// La cloche de l'en-tête : le centre de notifications (NOTIF-6I).
     let onOpenNotifications: () -> Void
+    /// Le bouton « i » de la bulle : l'écran « Les couleurs de ta Miff ».
+    let onOpenColors: () -> Void
 }
 
 /// Ce qui relance l'observation : la Miff affichée, l'onglet en usage / l'app au premier plan, « Réessayer ».
@@ -77,7 +79,7 @@ struct FeedTab: View {
                 Task { await reconciler.feedStatusesLoaded(event) }
             }
         )
-        // L'Update ne lit pas ma fiche : le Feed la lui donne (UN seul écouteur, D19).
+        // L'Update ne lit pas ma fiche : le Feed la lui donne tant qu'il écoute (D19) ; sur le Profil et l'Update, `OwnStatusWatcher` prend le relais.
         dependencies.onMyStatus = { facts, stopped in myStatus.update(facts, sharingStopped: stopped) }
         // « Depuis ta dernière visite » : l'image fraîche des proches est comparée à la dernière vue (aucune lecture de plus).
         dependencies.onFreshPicture = environment.notifications.freshPicture
@@ -156,6 +158,9 @@ struct FeedTab: View {
             }
             // Le sélecteur d'applications d'iOS garde une vignette de l'écran : ni positions ni photos ne doivent y rester.
             .hidesInAppSwitcher()
+            // La fenêtre d'avis lit ce que le Feed montre (statut d'un proche vu, ma carte, feuille « Localiser », pop-in « Pas de connexion »)
+            // au moment de décider : rien n'est envoyé ni gardé. Sans effet dans un build sans le drapeau REVIEW_PROMPT (Release).
+            .reviewReportsFeed(model: model)
     }
 
     private var screenActions: FeedScreenActions {
@@ -176,7 +181,8 @@ struct FeedTab: View {
             },
             onSignOut: actions.onSignOut,
             onOpenSettings: actions.onOpenSettings,
-            onOpenNotifications: actions.onOpenNotifications
+            onOpenNotifications: actions.onOpenNotifications,
+            onOpenColors: actions.onOpenColors
         )
     }
 

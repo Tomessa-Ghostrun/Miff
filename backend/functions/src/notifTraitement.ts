@@ -74,7 +74,7 @@ export interface Bilan {
 
 const IDENTIFIANT = /^[A-Za-z0-9_-]{1,128}$/;
 
-interface Cible {
+export interface Cible {
   uid: string;
   token: string;
   plateforme: Plateforme;
@@ -83,9 +83,9 @@ interface Cible {
   version: Timestamp;
 }
 
-const nanos = (t: Timestamp): bigint => BigInt(t.seconds) * 1_000_000_000n + BigInt(t.nanoseconds);
+export const nanos = (t: Timestamp): bigint => BigInt(t.seconds) * 1_000_000_000n + BigInt(t.nanoseconds);
 
-function enTimestamp(valeur: unknown): Timestamp | null {
+export function enTimestamp(valeur: unknown): Timestamp | null {
   if (valeur instanceof Timestamp) return valeur;
   const v = valeur as { seconds?: unknown; nanoseconds?: unknown } | null;
   if (v && typeof v.seconds === "number" && typeof v.nanoseconds === "number") return new Timestamp(v.seconds, v.nanoseconds);
@@ -109,7 +109,10 @@ function verdictEtat(etat: { get(chemin: FieldPath): unknown }, auteurUid: strin
   return "reserve";
 }
 
-function ecarter(bilan: Bilan, raison: string, n = 1): void {
+/** Part du bilan que l'envoi FCM met a jour (partagee avec la fonction d'alerte, alerteTraitement.ts). */
+export type BilanEnvoi = Pick<Bilan, "envoyes" | "purges" | "erreursFcm" | "ecritures">;
+
+export function ecarter(bilan: { ecartes: Record<string, number> }, raison: string, n = 1): void {
   bilan.ecartes[raison] = (bilan.ecartes[raison] ?? 0) + n;
 }
 
@@ -251,7 +254,7 @@ async function executer(dep: Dependances, evenement: Evenement, bilan: Bilan): P
   );
 }
 
-async function envoyerAvecReprises(dep: Dependances, cible: Cible, message: Message, bilan: Bilan): Promise<void> {
+export async function envoyerAvecReprises(dep: Dependances, cible: Cible, message: Message, bilan: BilanEnvoi): Promise<void> {
   for (let tentative = 0; ; tentative++) {
     try {
       await dep.fcm.envoyer(message);
@@ -273,7 +276,7 @@ async function envoyerAvecReprises(dep: Dependances, cible: Cible, message: Mess
 }
 
 /** Supprime le document de l'appareil SEULEMENT s'il n'a pas change depuis la lecture (un jeton renouvele entre-temps est conserve). */
-async function purger(cible: Cible, bilan: Bilan): Promise<void> {
+async function purger(cible: Cible, bilan: BilanEnvoi): Promise<void> {
   try {
     await cible.ref.delete({ lastUpdateTime: cible.version });
     bilan.purges += 1;

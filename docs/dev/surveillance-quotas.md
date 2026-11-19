@@ -396,6 +396,38 @@ Les alertes de budget **ne plafonnent pas** la dépense ; le plafond de dépense
 
 ---
 
+## 5 octies. Cloud Functions : la fonction `notifierAlerte` (AD-B2, alerte « Je suis en danger », NON DÉPLOYÉE)
+
+**Ce qu'elle consomme** (comptes faits par la fonction et vérifiés à l'émulateur ; `backend/data-model.md` §2.18 et §2.19, `docs/dev/deploiement-alerte-danger.md`) :
+
+| Cas | Lectures | Écritures |
+|---|---|---|
+| Début d'alerte dans une Miff de 4 membres (3 destinataires, 1 téléphone chacun) | **13** (contrôle préalable 1, Miff 1, fiches 4, sessions 3, téléphones 3, vérification finale 1) | **1** |
+| Fin manuelle (même Miff) | 13 | 1 |
+| Miff de 15 membres | 46 | 1 |
+| Miff de 40 membres (bornée : 40 fiches, 39 destinataires) | 121 (122 si l'auteur est hors des 40 premières fiches) | 1 |
+| Début rejoué, à moins d'une minute du précédent ou fin sans début notifié | **1** | **0** |
+| Écriture sans événement utile (suppression, TTL, fin après l'échéance) | **0** | **0** |
+| Jeton rejeté par Google (appli désinstallée) | n/a | +1 (suppression) |
+
+Côté règles, une alerte coûte **3 lectures de règles à la création**, **1 à la fin**, **0** quand personne n'en a (la collection `alerts` est vide), et **+1 lecture de règles** pour l'arrêt du partage, le départ et la suppression de la Miff (§2.18).
+
+**Effet sur le ratio de la section 1** : **négligeable**. Hypothèse : **1 alerte pour 1 000 utilisateurs actifs et par jour**, soit 2 invocations et ≈ 26 lectures par jour pour 1 000 utilisateurs actifs. Le Feed ajoute **un écouteur de collection** sur la Miff affichée (**0 lecture** tant qu'aucune alerte n'existe, 1 lecture par document créé ou modifié) et **1 `get` par Miff à la connexion** d'un nouvel appareil (une seule fois).
+
+**Quoi regarder (1 minute, chaque semaine pendant la bêta)**
+
+| Quoi | Où | Normal | À examiner |
+|---|---|---|---|
+| Invocations par jour | Functions > `notifierAlerte` > Tableau de bord | Quasi nul (**2 par alerte**, plus quelques suppressions : chaque arrêt de partage ou départ avec alerte ; **les suppressions déclenchent la fonction, qui ne fait rien**) | Plus de **100 par jour** : boucle ou abus (regarder les lignes `ignore` ci-dessous) |
+| Notifications envoyées | Journaux (`npx firebase functions:log --only notifierAlerte -n 50 --project miff-3d283`) : lignes `notif.alerte.debut.bilan` et `notif.alerte.fin.bilan` (`envoyes`, `ecartes`, `purges`, `lectures`, `ecritures`) | Une ligne par alerte | `envoyes` à 0 alors que la Miff a des proches : voir `ecart` (`sans-session`, `sans-appareil`) |
+| **Garde « 1 début par minute » atteinte** | Lignes `notif.alerte.debut.ignore` avec `motif: plafond` | Quasi aucune (les règles imposent déjà ≥ 60 s entre deux ré-armements) | **Plus de 5 par jour** : un client qui contourne le ré-armement en supprimant et recréant (le quota de 3 par jour le borne) ; **le quota de 3 débuts par 24 h est appliqué par les règles : ses refus (`permission-denied`) ne laissent aucune ligne de la fonction** (non observables ici ; compteur de refus des règles dans Cloud Monitoring, métrique non vérifiée par l'agent) |
+| **Taux de fausses alertes** (sans donnée personnelle) | Lignes `notif.alerte.fin.duree` (`nombre` = durée de l'alerte en **minutes**) | La grande majorité des durées **dépasse 2 minutes** | **Plus de 5 % des alertes terminées en moins de 2 minutes** (signal du ticket §10.3) : revoir la durée du maintien (aujourd'hui 5 s), pas le serveur |
+| Erreurs d'envoi | Lignes `notif.alerte.fcm-erreur` (`code` : 1 jeton inconnu, 8 clé APNs refusée, 3 ou 4 panne passagère de Google, 9 message refusé) | Aucune, ou quelques `code 1` isolés | **`code 8` ou `9`** : la notification iOS ne part pas (clé APNs, ou message refusé) ; **`code 3` ou `4` répétés** : panne Google |
+| Appels refusés par Cloud Run | Journaux : « The request was not authenticated… lacks {run.routes.invoke} permission » | **Aucun** | Le droit `run.invoker` du compte `notify-update@…` sur le service `notifieralerte` manque (`docs/dev/deploiement-alerte-danger.md`) |
+| Dépense | Google Cloud > Facturation > Rapports, filtre projet `miff-3d283` | 0 € à quelques centimes | Une ligne qui monte, ou un e-mail de l'alerte de budget |
+
+**Signaux de bascule ou de revue** : (1) facture Blaze > **5 $ par mois** (alerte de budget déjà posée) ; (2) plus de **100 invocations par jour** de `notifierAlerte` sans alerte réelle, ou plus de **5 lignes « plafond » (1 par minute) par jour** : revoir App Check et le quota ; (3) **plus de 5 % d'alertes de moins de 2 minutes** ; (4) erreurs FCM > **5 %** des envois ; (5) invocations > **1 million par mois** (jamais atteint : les règles limitent chaque compte à 3 débuts par 24 h).
+
 ## 6. Ce que les agents font de leur côté
 
 - `backend-data` garde ces seuils et la procédure à jour (`backend/data-model.md` §12) et prépare, si le signal se confirme, la condition d'e-mail vérifié (gratuite) ou le plan de fonction « rejoindre » (Blaze).

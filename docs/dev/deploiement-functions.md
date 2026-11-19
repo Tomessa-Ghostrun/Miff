@@ -18,6 +18,10 @@
 
 ---
 
+> **Deuxième fonction, `notifierAlerte` (AD-B2, alerte « Je suis en danger », NON DÉPLOYÉE)** : sa procédure complète (règle TTL, ordre règles puis fonction, droit `run.invoker` du compte `notify-update` sur le service `notifieralerte`, contrôles, arrêt rapide ; **aucun nouveau compte de service**) est dans [`deploiement-alerte-danger.md`](deploiement-alerte-danger.md). Le reste de ce document (interdits, checklist, journaux, retour arrière) s'applique aux deux fonctions.
+
+---
+
 ## 0. Les interdits
 
 1. **Jamais depuis la CI GitHub.** Déployer depuis GitHub obligerait à y stocker une clé de compte de service Google (un secret très puissant). `docs/dev/secrets.md` interdit d'en créer. Les tests du dépôt vérifient qu'aucun workflow ne contient de déploiement ni de jeton.

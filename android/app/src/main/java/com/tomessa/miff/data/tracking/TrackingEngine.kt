@@ -9,6 +9,8 @@ import com.tomessa.miff.domain.miff.DocWrite
 import com.tomessa.miff.domain.miff.LocationAccess
 import com.tomessa.miff.domain.miff.MiffFailure
 import com.tomessa.miff.domain.miff.MiffSharingConsent
+import com.tomessa.miff.domain.timeshare.NoPresenceLog
+import com.tomessa.miff.domain.timeshare.PresenceLog
 import com.tomessa.miff.domain.tracking.BatteryRefresh
 import com.tomessa.miff.domain.tracking.DerivedPresence
 import com.tomessa.miff.domain.tracking.DetectionJournal
@@ -20,6 +22,7 @@ import com.tomessa.miff.domain.tracking.NoDetectionJournal
 import com.tomessa.miff.domain.tracking.PositionThrottle
 import com.tomessa.miff.domain.tracking.PresenceMachine
 import com.tomessa.miff.domain.tracking.PresenceValue
+import com.tomessa.miff.domain.tracking.PullLimit
 import com.tomessa.miff.domain.tracking.StatusFact
 import com.tomessa.miff.domain.tracking.TrackedZone
 import com.tomessa.miff.domain.tracking.TrackingLimits
@@ -59,6 +62,9 @@ import kotlinx.coroutines.withTimeoutOrNull
  *   position or a battery level; the only writes are the ones that TELL the loved ones about the trip (and its end). The trip is written to the server FIRST and the tracking
  *   is paused AFTER, so that a refusal of the server never leaves the tracking stopped without a trip. The last position kept on the server and the copy kept on the phone are
  *   erased when the trip begins.
+ * - PULL TO REFRESH (docs/tickets/feed-refresh-position.md, [refreshFromFeed]): ONE position at the gesture of the person, through the SAME [PositionSource] and the SAME pass as an opening, under
+ *   every gate above (access "Toujours" + precise, consent of version 3, session, trip, breakers). At most one reading per 30 s, never queued behind another pass, nothing when offline; no new
+ *   storage (the position and the presence go through the usual local copy), no new kind of write (a status only when a presence CHANGES, the position under the usual guard of frequency).
  * No log, no analytics event: only the local journal of the debug build, which cannot hold a coordinate.
  */
 class TrackingEngine(
@@ -84,12 +90,31 @@ class TrackingEngine(
     private val presenceListener: PresenceListener = PresenceListener.None,
     /** MODE VOYAGE: the alarm that ends a trip while the app is closed (none by default: tests). */
     private val travelAlarm: TravelAlarm = NoTravelAlarm,
+    /**
+     * TIME-1 (docs/tickets/profil-repartition-temps.md): the LOCAL journal of the presence that feeds "Répartition de ton temps". Every change of the presence worked out here for a
+     * Miff is told to it with the SAME instant as the status ([logPresence]); it never leaves the phone and is erased by [stop]. None by default (tests).
+     */
+    private val presenceLog: PresenceLog = NoPresenceLog,
 ) : SessionTeardown {
     /**
      * Why the engine is asked to look again (ticket 6.5: opening, going to the background, a move of more than 250 m, an entry in a zone).
      * [TRAVEL_ENDED]: the alarm of the end of a trip rang, or the clock / the time zone changed; nothing happens when no trip is on.
+     * [FEED_PULLED]: the person pulled the Feed to refresh it (see [refreshFromFeed], never given to [refresh] directly): the presence is checked against ONE fresh position.
      */
-    enum class Reason { OPENED, BACKGROUNDED, MOVED, ZONE_ENTERED, REARM, SHARING_CHANGED, NETWORK_BACK, TRAVEL_ENDED }
+    enum class Reason {
+        OPENED,
+        BACKGROUNDED,
+        MOVED,
+        ZONE_ENTERED,
+        REARM,
+        SHARING_CHANGED,
+        NETWORK_BACK,
+        TRAVEL_ENDED,
+        FEED_PULLED,
+    }
+
+    /** When the last pull to refresh read a position (in memory only: a restart of the process may read once more, never in a loop). Read and written under [mutex]. */
+    private var lastPullAtMillis: Long? = null
 
     private val mutex = Mutex()
 
@@ -166,6 +191,43 @@ class TrackingEngine(
         suppliedFix: Fix? = null,
     ) {
         mutex.withLock { if (!sessionEnded()) doRefresh(reason, suppliedFix) }
+    }
+
+    /**
+     * FEED-REFRESH-POSITION: the person pulled the Feed to refresh it, so MY presence is checked again (docs/tickets/feed-refresh-position.md). It is the usual pass ([doRefresh]) with
+     * [Reason.FEED_PULLED]: ONE position (a single reading, no continuous tracking, the balanced-power precision of every other pass, [TrackingLimits.POSITION_WAIT_MILLIS] to wait for it),
+     * the presence of every Miff worked out again from it by the same machine, a status written ONLY when a presence really changes (never to confirm what is already there), and the
+     * position published under the usual guard of frequency. It never holds a pull back: the Feed does not wait for it.
+     *
+     * Nothing is read, and nothing is written, when: a pass of the engine is already under way (it is not queued: one pass at a time), I share in no Miff, the access to the
+     * location is not complete (or the location of the phone is off: the answer [PullOutcome.NO_ACCESS] lets the Feed say it calmly), the phone is offline (the next opening or return of the network
+     * looks again), or a position was already read less than [TrackingLimits.PULL_MIN_INTERVAL_MILLIS] ago. The position is FRESH (at most [TrackingLimits.PULL_FIX_MAX_AGE_MILLIS] old, see
+     * [PositionSource.currentFresh]): the person asks for "now".
+     *
+     * MODE VOYAGE: while a trip is on no presence is worked out and no status of presence is written (the trip pass of [doRefresh] decides); the position, which stays shared during a trip
+     * (decision of the PM, 2026-11-10), is refreshed as an opening does, with the same guards (same behaviour as iOS).
+     */
+    suspend fun refreshFromFeed(): PullOutcome {
+        if (!mutex.tryLock()) return PullOutcome.BUSY
+        try {
+            return if (sessionEnded()) PullOutcome.UNAVAILABLE else doPull()
+        } finally {
+            mutex.unlock()
+        }
+    }
+
+    private suspend fun doPull(): PullOutcome {
+        val uid = env.uid() ?: return PullOutcome.UNAVAILABLE
+        // No local copy yet: the Miffs where I share are not known (the first look of the opening has not happened); the pull reads nothing of the server for it.
+        val state = stateFor(uid) ?: return PullOutcome.NOT_SHARING
+        if (state.miffs.isEmpty()) return PullOutcome.NOT_SHARING
+        if (!env.permissions().locationComplete || !env.locationServicesOn()) return PullOutcome.NO_ACCESS
+        if (!env.isOnline()) return PullOutcome.OFFLINE
+        val now = env.nowMillis()
+        if (!PullLimit.allowed(lastPullAtMillis, now)) return PullOutcome.THROTTLED
+        lastPullAtMillis = now
+        doRefresh(Reason.FEED_PULLED, null)
+        return PullOutcome.DONE
     }
 
     /**
@@ -252,7 +314,47 @@ class TrackingEngine(
         local.clear()
         publishTravel(null)
         journal.clear()
+        // TIME-1: the journal of the presence goes with the session (sign-out, deletion of the account, session lost).
+        try {
+            presenceLog.clear()
+        } catch (e: Exception) {
+            // Whatever the journal does, the rest of the end of the session has been done above.
+        }
     }
+
+    /**
+     * TIME-1: the presence worked out for [miffId] became ([presence], [placeId]) at [atMillis], the instant the status carries (the Feed and the chart can never disagree).
+     * Whatever the journal does (a full disk, a refused write), it never reaches the detection, and nothing is logged.
+     */
+    private fun logPresence(
+        miffId: String,
+        presence: PresenceValue,
+        placeId: String?,
+        atMillis: Long,
+    ) {
+        try {
+            presenceLog.record(miffId, presence, placeId, atMillis)
+        } catch (e: Exception) {
+            // The chart is a convenience: it must never stop the detection of the arrivals and departures.
+        }
+    }
+
+    private fun forgetPlaceInLog(
+        miffId: String,
+        placeId: String,
+    ) {
+        try {
+            presenceLog.forgetPlace(miffId, placeId)
+        } catch (e: Exception) {
+            // Same as [logPresence].
+        }
+    }
+
+    /** TIME-1: the presence of these Miffs can no longer be confirmed from [atMillis] (tracking stopped, trip, Miff no longer shared): "unknown", not measured. */
+    private fun logUnknown(
+        miffIds: Collection<String>,
+        atMillis: Long,
+    ) = miffIds.forEach { logPresence(it, PresenceValue.UNKNOWN, null, atMillis) }
 
     /**
      * Nothing is watched any more (the access or the consent is gone): zones and reports removed, and everything that depends on the position or on the
@@ -262,6 +364,7 @@ class TrackingEngine(
         runCatchingCancellable { geofences.removeAll() }
         runCatchingCancellable { movement.stop() }
         journal.record(JournalKind.DISARMED)
+        logUnknown(state.miffs.keys, env.nowMillis())
         return state.copyWith(
             miffs =
                 state.miffs.mapValues { (_, miff) ->
@@ -394,7 +497,7 @@ class TrackingEngine(
         local.save(state.copyWith(resumedMiffs = flagsBeforeTake))
 
         // 2. The position (bounded wait), only if it is recent (review I2).
-        val fix = chooseFix(state, suppliedFix, now)
+        val fix = chooseFix(state, suppliedFix, now, recent = reason == Reason.FEED_PULLED)
         state = fix?.let { state.copyWith(fix = it) } ?: state
         if (fix != null) journal.record(JournalKind.POSITION_READ, batteryPct = env.batteryPct())
 
@@ -418,6 +521,14 @@ class TrackingEngine(
         now - fix.measuredAtMillis <= TrackingLimits.FIX_MAX_AGE_MILLIS &&
             fix.measuredAtMillis - now <= TrackingLimits.CLOCK_SKEW_MILLIS
 
+    /** FEED-REFRESH-POSITION: is this position recent enough to MOVE a presence at a pull (see [TrackingLimits.PULL_FIX_MAX_AGE_MILLIS])? */
+    private fun freshForPull(
+        fix: Fix,
+        now: Long,
+    ): Boolean =
+        now - fix.measuredAtMillis <= TrackingLimits.PULL_FIX_MAX_AGE_MILLIS &&
+            fix.measuredAtMillis - now <= TrackingLimits.CLOCK_SKEW_MILLIS
+
     /**
      * A position for this occasion: the one the provider reported, else a fresh one (a few seconds at most), else the last one kept. NONE older than
      * [TrackingLimits.FIX_MAX_AGE_MILLIS] is used, for any reason (review I2): an old position would write a false arrival or a false position.
@@ -426,11 +537,15 @@ class TrackingEngine(
         state: LocalState,
         supplied: Fix?,
         now: Long,
+        /** FEED-REFRESH-POSITION: the person asked for "now" (a pull): the provider is asked for a position at most [TrackingLimits.PULL_FIX_MAX_AGE_MILLIS] old. */
+        recent: Boolean = false,
     ): Fix? {
         supplied?.takeIf { usable(it, now) }?.let { return it }
         val fresh =
             try {
-                withTimeoutOrNull(TrackingLimits.POSITION_WAIT_MILLIS) { position.current() }
+                withTimeoutOrNull(TrackingLimits.POSITION_WAIT_MILLIS) {
+                    if (recent) position.currentFresh() else position.current()
+                }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (e: Exception) {
@@ -520,7 +635,11 @@ class TrackingEngine(
             }
         }
         val dropped = state.miffs.keys - miffs.keys
-        if (dropped.isNotEmpty()) journal.record(JournalKind.NOT_ELIGIBLE)
+        if (dropped.isNotEmpty()) {
+            journal.record(JournalKind.NOT_ELIGIBLE)
+            // TIME-1: the sharing with that Miff stopped (or the access was lost): from now on its presence is not measured. Its journal is kept (D16) until the Miff is left.
+            logUnknown(dropped, now)
+        }
         val next = state.copyWith(miffs = miffs, checkedAtMillis = if (complete) now else state.checkedAtMillis)
         return Synced(next, verified = complete)
     }
@@ -553,8 +672,12 @@ class TrackingEngine(
                         }.map { it.id }
                 val named = base.derived()?.placeId
                 val updated = base.copyWith(places = fresh, readAtMillis = now)
+                // TIME-1: a place that is not in the server's list any more is forgotten by the journal (its facts become "not measured", never "Ailleurs", criterion T11).
+                // Only a COMPLETE reading says so; a failed one (below) concludes nothing.
+                (old.keys - fresh.map { it.id }.toSet()).forEach { gone -> forgetPlaceInLog(miffId, gone) }
                 if (named != null && named in moved) {
                     journal.record(JournalKind.PRESENCE_UNKNOWN, named)
+                    logPresence(miffId, PresenceValue.UNKNOWN, null, now)
                     updated.copyWith(
                         derived = DerivedPresence(PresenceValue.UNKNOWN, null),
                         pending = PendingStatus.of(PresenceMachine.unknown(now)),
@@ -617,18 +740,28 @@ class TrackingEngine(
                     emptyMap()
                 }
         }
+        // FEED-REFRESH-POSITION: a pull to refresh works the zones out from ONE position, and only from a position that is recent enough to say where the person is NOW.
+        val reading = if (reason == Reason.FEED_PULLED && fix != null && freshForPull(fix, now)) fix else null
+        if (reading != null) inside = PresenceMachine.insideAfterReading(zones, inside, reading.lat, reading.lng, now)
         val miffs = state.miffs.toMutableMap()
         for ((miffId, miff) in state.miffs) {
-            val last = miff.derived() ?: continue
+            // A Miff with no presence yet is only looked at by a pull that has a position (a missed arrival); everywhere else it waits for its first event, as before.
+            val last = miff.derived() ?: if (reading != null) null else continue
             val miffZones = zonesOf(state, miffId)
             val derived = PresenceMachine.derive(miffZones, inside)
-            val named = last.placeId
+            val named = last?.placeId
             val zoneGone = named != null && miffZones.none { it.placeId == named }
             val fact: StatusFact? =
                 when {
                     // The place was deleted or changed.
-                    last.presence != PresenceValue.OUT && last.presence != PresenceValue.UNKNOWN && zoneGone -> {
+                    last != null && last.presence != PresenceValue.OUT && last.presence != PresenceValue.UNKNOWN &&
+                        zoneGone -> {
                         PresenceMachine.unknown(now)
+                    }
+
+                    // FEED-REFRESH-POSITION: an arrival or a departure the geofencing did not report (a phone that stops apps in the background...), noticed at a pull.
+                    reading != null -> {
+                        PresenceMachine.afterReading(last, derived, now)?.second
                     }
 
                     reason == Reason.REARM && fix != null && derived != last &&
@@ -637,7 +770,7 @@ class TrackingEngine(
                     }
 
                     reason == Reason.REARM && fix != null && derived.presence == PresenceValue.OUT &&
-                        (last.presence == PresenceValue.IN_TRUSTED || last.presence == PresenceValue.IN_RISK) -> {
+                        (last?.presence == PresenceValue.IN_TRUSTED || last?.presence == PresenceValue.IN_RISK) -> {
                         PresenceMachine.unknown(now)
                     }
 
@@ -647,6 +780,7 @@ class TrackingEngine(
                 }
             if (fact != null) {
                 tellPresence(miffId, fact.presence, fact.presenceAtMillis, fact.setLastUpdate)
+                logPresence(miffId, fact.presence, fact.placeId, fact.presenceAtMillis)
                 // "Already inside at the arming" (DET3): an arrival is what "already there" means; a presence that was already in_risk gives no fact, so no second N6.
                 tellDanger(state.uid, miffId, last, DerivedPresence(fact.presence, fact.placeId), fact.presenceAtMillis)
                 journal.record(
@@ -767,6 +901,7 @@ class TrackingEngine(
                     }
                 }
             tellPresence(miffId, fact.presence, fact.presenceAtMillis, fact.setLastUpdate)
+            logPresence(miffId, fact.presence, fact.placeId, fact.presenceAtMillis)
             journal.record(JournalKind.STATUS_AFTER_RESUME, derived.placeId)
             state =
                 state.copyWith(inside = inside).withMiff(miffId) {
@@ -939,6 +1074,8 @@ class TrackingEngine(
                     ?: continue
             val (derived, fact) = result
             tellPresence(miffId, derived.presence, at ?: now, fact.setLastUpdate)
+            // TIME-1: the same change and the same instant as the status (an event too old for the rules to accept is the present moment here: it is not counted from a date the Feed would not show).
+            logPresence(miffId, derived.presence, derived.placeId, at ?: now)
             // I ENTERED a danger zone (the previous presence of this Miff was not already in_risk): N6, once, before the status is even written. Entering a danger zone
             // while in a trusted one gives no result here (the trusted zone wins); leaving the trusted one while staying in the danger one does.
             // An event too old for the rules (no time to write) is not told: it is no longer the present.
@@ -1561,6 +1698,8 @@ class TrackingEngine(
      */
     private suspend fun pauseStatuses(state: LocalState): LocalState {
         runCatchingCancellable { geofences.removeAll() }
+        // TIME-1: the length of the trip is not measured (T23): "unknown" from now until the trip ends.
+        logUnknown(state.miffs.keys, env.nowMillis())
         return state.copyWith(
             miffs = state.miffs.mapValues { (_, miff) -> miff.copyWith(derived = null, pending = null) },
             inside = emptyMap(),
@@ -1662,6 +1801,8 @@ class TrackingEngine(
         // Told BEFORE the writes: N7 waits for 08:00 after a natural end (even if the network is down), and is cancelled after an early one.
         tellTravelEnded(uid, early = !ended.period().isOver(now))
         val fact = PresenceMachine.unknown(now)
+        // TIME-1: what the trip left unmeasured stays so until the next presence is worked out (the end of a trip never invents an "out").
+        logUnknown(start.miffs.keys, now)
         var state =
             start.copyWith(
                 miffs =
@@ -1729,6 +1870,30 @@ class TrackingEngine(
         /** A person who shares nowhere is looked at again at most this often at the opening of the app (2 reads of the server per Miff). */
         const val RETRY_WHEN_EMPTY_MILLIS = 2L * 60L * 1000L
     }
+}
+
+/** What [TrackingEngine.refreshFromFeed] answers (the Feed only acts on [NO_ACCESS]: everything else is silent, the state of the Feed already says it). */
+enum class PullOutcome {
+    /** The pass was made (a position was asked for; whatever it found, a status was written only if a presence changed; during a trip no status of presence at all). */
+    DONE,
+
+    /** Another pass of the engine was under way: nothing was started. */
+    BUSY,
+
+    /** A position was read less than 30 s ago: nothing was read. */
+    THROTTLED,
+
+    /** The access to the location is not "Toujours" + precise, or the location of the phone is off: nothing was read. */
+    NO_ACCESS,
+
+    /** The phone is offline: nothing was read (the next opening, move or return of the network looks again). */
+    OFFLINE,
+
+    /** The person shares in no Miff (sharing stopped, agreement awaited, nothing known yet): nothing was read. */
+    NOT_SHARING,
+
+    /** Nobody is signed in, or the session ended. */
+    UNAVAILABLE,
 }
 
 /** What [TrackingEngine.setTravel] answers. */

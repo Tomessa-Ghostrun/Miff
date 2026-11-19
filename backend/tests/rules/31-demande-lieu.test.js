@@ -1,5 +1,5 @@
 // Plan de test, section 25 : DEMANDE D'AJOUT D'UN LIEU (LIEU-REQ-A, ticket docs/tickets/demande-ajout-lieu.md, décisions du PM D1 à D9 du 2026-11-11), cas RQ1 à RQ24.
-// Règles NON DÉPLOYÉES. Chemins : miffs/{id}/placeRequests/{uid}_{1..3} et le compteur miffs/{id}/meta/placeRequests (plafond de 10 par Miff).
+// Règles NON DÉPLOYÉES (RQ13 réécrit le 2026-11-17 : la zone de danger se demande sans Miff+, voir 34-lieu-danger-demande.test.js). Chemins : miffs/{id}/placeRequests/{uid}_{1..3} et le compteur miffs/{id}/meta/placeRequests (plafond de 10 par Miff).
 // Comptes du jeu de départ : alice (créatrice gratuite de M1), bob et carol (membres gratuits), dave (Miff+ actif, ajouté comme MEMBRE de M1 quand il faut),
 // frank (Miff+ EXPIRÉ), eve (étrangère), zoe (créatrice de M2). Les lots sont ceux d'un client (tests/helpers/requests.js) : `set` avec fusion et
 // `increment(±1)` pour le compteur.
@@ -205,22 +205,21 @@ s.tc('RQ12', 'S3 : lecture et écriture directe du compteur par un membre : get 
   await assertFails(commit(h.db('zoe'), [setMerge(counterPath(), counterOwner(0))]));
 });
 
-s.tc('RQ13', 'S4 : `risk` : un membre gratuit est refusé, un Miff+ actif est accepté, un Miff+ EXPIRÉ ou désactivé est refusé ; `trusted` accepté pour tous', async (h) => {
+s.tc('RQ13', 'S4 : `risk` : DEMANDABLE par tout membre, gratuit ou Miff+, actif, expiré, désactivé ou sans document d\'abonnement (LIEU-DANGER-REQ) ; la liste des types reste fermée ; `trusted` accepté pour tous', async (h) => {
   await addMember(h, 'dave');
   await addMember(h, 'frank');
-  await assertFails(create(h, 'bob', 1, { type: 'risk' }));
-  await assertFails(create(h, 'carol', 1, { type: 'risk' }));
-  await assertFails(create(h, 'frank', 1, { type: 'risk' })); // expiré hier
+  await assertSucceeds(create(h, 'bob', 1, { type: 'risk' })); // gratuit, sans document d'abonnement
+  await assertSucceeds(create(h, 'carol', 1, { type: 'risk' }));
+  await assertSucceeds(create(h, 'frank', 1, { type: 'risk' })); // expiré hier
   await assertSucceeds(create(h, 'dave', 1, { type: 'risk' }));
   for (const type of ['danger', 'Risk', 'RISK', null, 1, ['risk']]) await assertFails(create(h, 'dave', 2, { type })); // un Miff+ ne contourne pas la liste des types
-  await assertSucceeds(create(h, 'frank', 1)); // trusted : aucun premium requis
-  await assertSucceeds(create(h, 'bob', 1)); // trusted
+  await assertSucceeds(create(h, 'frank', 2)); // trusted
+  await assertSucceeds(create(h, 'bob', 2)); // trusted
   await h.admin((f) => f.doc('entitlements/dave').update({ active: false }));
-  await assertFails(create(h, 'dave', 2, { type: 'risk' }));
-  await assertSucceeds(create(h, 'dave', 2)); // trusted
+  await assertSucceeds(create(h, 'dave', 2, { type: 'risk' })); // abonnement désactivé : sans importance pour demander
   await h.admin((f) => f.doc('entitlements/dave').delete());
-  await assertFails(create(h, 'dave', 3, { type: 'risk' }));
-  if ((await pending(h)) !== 4) throw new Error('compteur attendu à 4');
+  await assertSucceeds(create(h, 'dave', 3, { type: 'risk' })); // plus de document : idem
+  if ((await pending(h)) !== 8) throw new Error('compteur attendu à 8');
 });
 
 s.tc('RQ14', 'S5 : lecture : le créateur lit toutes les demandes (liste et get) ; le demandeur les siennes seulement, par requête filtrée ; les autres membres, les non-membres, un visiteur rien', async (h) => {

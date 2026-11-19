@@ -192,8 +192,8 @@ final class AccountLocalDataTests: XCTestCase {
                 notificationAsks: UserDefaultsNotificationAskStore(defaults: suite()),
                 pendingMiffDeletions: MemoryPendingDeletions(), activeMiff: MemoryActiveMiffStore(),
                 notifications: RecordingCleaner(), trackingLocal: RecordingTrackingStore(),
-                detectionJournal: RecordingJournal(), notificationData: NotificationMemory().localData,
-                updateLedger: ledger
+                detectionJournal: RecordingJournal(), presenceHistory: MemoryPresenceHistory(),
+                notificationData: NotificationMemory().localData, updateLedger: ledger
             )
         )
 
@@ -227,6 +227,7 @@ final class AccountLocalDataTests: XCTestCase {
         let cleaner = RecordingCleaner()
         let tracking = RecordingTrackingStore()
         let journal = RecordingJournal()
+        let history = MemoryPresenceHistory()
         let notifications = NotificationMemory()
         notifications.preferences.save(NotificationPreferences(), uid: "uid-1")
         notifications.center.seed([NotificationFixtures.item("n1|a", at: 1_000)], uid: "uid-1")
@@ -235,8 +236,8 @@ final class AccountLocalDataTests: XCTestCase {
         let erasers = AccountLocalData.erasers(
             AccountLocalStores(
                 notificationAsks: asks, pendingMiffDeletions: pending, activeMiff: active, notifications: cleaner,
-                trackingLocal: tracking, detectionJournal: journal, notificationData: notifications.localData,
-                updateLedger: MemoryPublishLedger()
+                trackingLocal: tracking, detectionJournal: journal, presenceHistory: history,
+                notificationData: notifications.localData, updateLedger: MemoryPublishLedger()
             )
         )
 
@@ -252,6 +253,7 @@ final class AccountLocalDataTests: XCTestCase {
         XCTAssertEqual(cleaner.removals, 1)
         XCTAssertEqual(tracking.clears, 1, "la copie locale du suivi est effacée directement")
         XCTAssertEqual(journal.clears, 1, "le journal de détection aussi")
+        XCTAssertEqual(history.clearAllCalls, 1, "et le journal des changements de présence (répartition du temps)")
         XCTAssertEqual(notifications.center.clearCalls, 1, "le centre de notifications aussi")
         XCTAssertTrue(notifications.center.items.isEmpty)
         XCTAssertEqual(notifications.preferences.forgetCalls, 1, "et les choix de Réglages > Notifications")
