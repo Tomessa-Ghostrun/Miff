@@ -145,6 +145,8 @@ fun UpdateBottomLayer(
     maxBodyHeight: Dp,
     onBubbleHeight: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    /** ALERTE: the banner of an alert in progress, the LAST thing of the column: just above the tab bar, under the calm message (never two messages that contradict each other: the bubble is off then). */
+    banner: (@Composable () -> Unit)? = null,
 ) {
     val bubbleShown = prompt != PromptLevel.NONE
     Column(
@@ -169,5 +171,6 @@ fun UpdateBottomLayer(
                         ).onSizeChanged { onBubbleHeight(it.height) },
             )
         }
+        banner?.invoke()
     }
 }

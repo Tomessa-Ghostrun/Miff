@@ -35,6 +35,22 @@ object FeedIntents {
         return start(context, Intent(Intent.ACTION_DIAL, Uri.parse("tel:$number")))
     }
 
+    /**
+     * ALERTE (ticket 8.4): an emergency service of the catalogue ([com.tomessa.miff.domain.alert.EmergencyCatalog]) in the DIALLER, never a call placed by Miff (ACTION_DIAL, no
+     * CALL_PHONE permission). Only a short number of two to four digits goes through (checked again here).
+     */
+    fun callEmergency(
+        context: Context,
+        number: String,
+    ): Boolean {
+        if (!com.tomessa.miff.domain.alert.EmergencyCatalog
+                .isDialable(number)
+        ) {
+            return false
+        }
+        return start(context, Intent(Intent.ACTION_DIAL, Uri.parse("tel:$number")))
+    }
+
     /** The `geo:` address first; if no maps application answers, the page of Google Maps in the browser. */
     fun openMap(
         context: Context,

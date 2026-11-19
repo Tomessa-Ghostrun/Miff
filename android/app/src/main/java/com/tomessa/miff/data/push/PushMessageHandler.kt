@@ -1,5 +1,7 @@
 package com.tomessa.miff.data.push
 
+import com.tomessa.miff.domain.notification.CircleAlertParser
+import com.tomessa.miff.domain.notification.CircleAlertPayload
 import com.tomessa.miff.domain.notification.CircleNewsParser
 import com.tomessa.miff.domain.notification.CircleNewsPayload
 
@@ -17,6 +19,11 @@ class PushMessageHandler(
     private val onCircleNews: (uid: String, news: CircleNewsPayload) -> Unit,
     /** The time of reception: the server sends no time. */
     private val nowMillis: () -> Long = System::currentTimeMillis,
+    /**
+     * ALERTE « Je suis en danger »: hands a valid alert message (start or end) to the notifications. Null while the function is switched off (BuildConfig.ALERT_DANGER): such a message is
+     * then not understood and ignored without a trace.
+     */
+    private val onCircleAlert: ((uid: String, alert: CircleAlertPayload) -> Unit)? = null,
 ) {
     /** Returns true when the message was understood and handed on (it may still show nothing: the notifications decide). */
     fun handle(
@@ -25,7 +32,16 @@ class PushMessageHandler(
     ): Boolean {
         // A message with many keys is not ours (the real one has five, FCM adds a few of its own); no need to look at it.
         if (data.isEmpty() || data.size > MAX_KEYS) return false
-        val news = CircleNewsParser.parse(data, receivedAtMillis = nowMillis(), messageId = messageId) ?: return false
+        val news = CircleNewsParser.parse(data, receivedAtMillis = nowMillis(), messageId = messageId)
+        if (news == null) {
+            // ALERTE: the other type of message of the circle, understood only when the function is on.
+            val handOver = onCircleAlert ?: return false
+            val alert =
+                CircleAlertParser.parse(data, receivedAtMillis = nowMillis(), messageId = messageId) ?: return false
+            val uid = currentUid() ?: return false
+            handOver(uid, alert)
+            return true
+        }
         val uid = currentUid() ?: return false
         onCircleNews(uid, news)
         return true

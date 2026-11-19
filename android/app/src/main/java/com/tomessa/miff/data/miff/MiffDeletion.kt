@@ -45,6 +45,8 @@ class MiffDeletion(
     private val store: MiffStore,
     private val repository: MiffRepository,
     private val timeoutMillis: Long = FirestoreMiffRepository.TIMEOUT_MS,
+    /** ALERTE « Je suis en danger » (BuildConfig.ALERT_DANGER): the last lot also deletes the creator's own alert of that Miff (the rules demand it). False: nothing added. */
+    private val alertsEnabled: Boolean = false,
 ) : MiffDeleter {
     override suspend fun run(
         uid: String,
@@ -146,7 +148,25 @@ class MiffDeletion(
         val last =
             guardedCall(timeoutMillis) {
                 store.commitWithMiff(miffId) { view ->
-                    MiffWrites.finalDelete(miffId, uid, view.details.joinCode, view.codeDocumentExists, key)
+                    MiffWrites.finalDelete(
+                        miffId,
+                        uid,
+                        view.details.joinCode,
+                        view.codeDocumentExists,
+                        key,
+                        withAlert = alertsEnabled,
+                    )
+                }
+            }.let { first ->
+                // The rules in production may not know the alert yet (function not live): once more without its deletion, so that the deletion of a Miff never breaks because of it.
+                if (alertsEnabled && first is Guarded.Failed && first.failure == MiffFailure.REFUSED) {
+                    guardedCall(timeoutMillis) {
+                        store.commitWithMiff(miffId) { view ->
+                            MiffWrites.finalDelete(miffId, uid, view.details.joinCode, view.codeDocumentExists, key)
+                        }
+                    }
+                } else {
+                    first
                 }
             }
         return when (last) {

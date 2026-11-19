@@ -11,6 +11,9 @@ struct TrackingServices {
     let runtime: TrackingRuntime
     /// Le journal local de la détection : un fichier dans les builds Debug et Internal, rien en publication (critère VIE2).
     let journal: DetectionJournal
+    /// TIME-3 : le journal LOCAL des changements de présence (répartition du temps du Profil). Actif en publication, jamais envoyé, effacé
+    /// avec la session. La MÊME instance sert le moteur (qui écrit) et l'écran (qui lit).
+    let history: PresenceHistory
     /// Copie de `SessionManager.generation` pour le moteur (un arrêt reste arrêté jusqu'à ce que la session change).
     let generation: GenerationCounter
     /// Gardé ici pour que le gestionnaire de localisation vive aussi longtemps que l'app.
@@ -59,6 +62,7 @@ struct TrackingServices {
         UIDevice.current.isBatteryMonitoringEnabled = true
         let generation = GenerationCounter()
         let journal = DetectionJournals.make()
+        let history = PresenceHistoryFileStore()
         let miffStore = FirestoreMiffStore()
         let permissions = SystemDevicePermissions()
         let location = LocationTracking(manager: SystemLocationManager())
@@ -80,6 +84,7 @@ struct TrackingServices {
             movement: location,
             device: device,
             journal: journal,
+            history: history,
             generation: { generation.current }
         )
         let runtime = TrackingRuntime(
@@ -91,6 +96,8 @@ struct TrackingServices {
         )
         location.attach(runtime)
         runtime.start(network: network)
-        return TrackingServices(runtime: runtime, journal: journal, generation: generation, location: location)
+        return TrackingServices(
+            runtime: runtime, journal: journal, history: history, generation: generation, location: location
+        )
     }
 }

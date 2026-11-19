@@ -4,6 +4,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
 import androidx.core.app.NotificationManagerCompat
+import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.R
 import com.tomessa.miff.data.permission.DevicePermissions
 import com.tomessa.miff.data.permission.NotificationAskStore
@@ -59,7 +60,17 @@ object NotificationChannels {
     const val UPDATES = "miff_updates"
     const val UPDATES_QUIET = "miff_updates_quiet"
 
-    val all = listOf(REMINDERS, REMINDERS_QUIET, CIRCLE, CIRCLE_QUIET, UPDATES, UPDATES_QUIET)
+    /**
+     * ALERTE « Je suis en danger »: "Alertes d'un proche", HIGH importance from the very first version (the importance of a channel can never be raised by the app afterwards). NO quiet
+     * version: the quiet hours do not apply to an alert (decision of the PM, D18). The app cannot bypass "Do not disturb" by itself: the person allows it in the settings of this channel
+     * (the help says how). No full screen intent (USE_FULL_SCREEN_INTENT is not declared).
+     */
+    const val ALERTS = "miff_alerts"
+
+    /** Every channel THIS build creates: the alert channel only exists while the function is switched on (a distributed build without the function must not show an alert channel in the settings of the phone, and its importance can never be changed afterwards: review of #275, m4). */
+    val all =
+        listOf(REMINDERS, REMINDERS_QUIET, CIRCLE, CIRCLE_QUIET, UPDATES, UPDATES_QUIET) +
+            if (BuildConfig.ALERT_DANGER) listOf(ALERTS) else emptyList()
 
     fun idOf(
         family: NotificationFamily,
@@ -88,7 +99,7 @@ object NotificationChannels {
             enableVibration(vibration)
         }
         manager.createNotificationChannels(
-            listOf(
+            listOfNotNull(
                 channel(
                     REMINDERS,
                     R.string.android_notif_channel_reminders,
@@ -127,6 +138,18 @@ object NotificationChannels {
                     R.string.android_notif_channel_quiet_desc,
                     NotificationManager.IMPORTANCE_LOW,
                 ),
+                // ALERTE (decision of the PM, 2026-11-18, D18): high importance, sound and vibration as the phone is set; never a quiet version. Only with the function on.
+                if (BuildConfig.ALERT_DANGER) {
+                    channel(
+                        ALERTS,
+                        R.string.android_notif_channel_alerts,
+                        R.string.android_notif_channel_alerts_desc,
+                        NotificationManager.IMPORTANCE_HIGH,
+                        vibration = true,
+                    )
+                } else {
+                    null
+                },
             ),
         )
     }

@@ -124,7 +124,7 @@ class NotificationPlatformTest {
     // --- Channels --------------------------------------------------------------------------------------------------------------------------
 
     @Test
-    fun sixChannels_threeFamiliesInTwoVersions_withTheLevelsOfTheDecision_andNoBadge() {
+    fun sevenChannels_threeFamiliesInTwoVersions_plusTheAlertOne_withTheLevelsOfTheDecision_andNoBadge() {
         NotificationChannels.ensure(context)
         val channels = notificationManager.notificationChannels.associateBy { it.id }
         assertEquals(NotificationChannels.all.toSet(), channels.keys)
@@ -146,7 +146,11 @@ class NotificationPlatformTest {
         assertEquals("Nouvelles de ta Miff", channels.getValue(NotificationChannels.CIRCLE).name.toString())
         // Idempotent: asking again changes nothing.
         NotificationChannels.ensure(context)
-        assertEquals(6, notificationManager.notificationChannels.size)
+        assertEquals(7, notificationManager.notificationChannels.size)
+        // ALERTE: high importance from the first version, vibration, and NO quiet version (decision of the PM, D18).
+        assertEquals(NotificationManager.IMPORTANCE_HIGH, channels.getValue(NotificationChannels.ALERTS).importance)
+        assertTrue(channels.getValue(NotificationChannels.ALERTS).shouldVibrate())
+        assertEquals("Alertes d'un proche", channels.getValue(NotificationChannels.ALERTS).name.toString())
     }
 
     @Test
