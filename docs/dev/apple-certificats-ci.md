@@ -1,5 +1,7 @@
 # Certificats Apple et signature de la CI iOS : solution durable et gratuite
 
+> **Non retenu (2026-11-19) : la CI utilise la signature automatique** (`CODE_SIGN_STYLE: Automatic`, `-allowProvisioningUpdates`, clé d'API App Store Connect `ASC_KEY_*`). Il n'existe ni profil manuel « Miff CI App Store » ni secrets `APPSTORE_PROFILE_B64` / `DIST_CERT_*` : une nouvelle capacité (par exemple Time Sensitive) se coche sur l'identifiant d'app et le profil géré par Apple la reprend tout seul, sans régénération. Ce qui suit est conservé tel quel comme proposition historique.
+
 **Rédigé le** 2026-11-08 par `ios-dev`. **Statut : proposition, rien n'est modifié** (ni `ios-testflight.yml`, ni `project.yml`, ni secrets). Décision du PM attendue.
 **Contexte** : le run `42429656978` (build 20, `archive_mode=signed`) échoue à l'archive avec `Choose a certificate to revoke. Your account has reached the maximum number of certificates` puis `No profiles for 'com.tomessa.miff' were found: ... iOS App Development provisioning profiles`. `archive_mode=unsigned` échoue à l'export (`Frameworks/*.framework is not properly signed`, 4 runs le 2026-11-06). Le compte Apple est **partagé avec Ghostrun**.
 **Convention** : [Constaté] = lu dans les journaux de la CI ; [Connu] = connaissance générale d'Apple/Xcode, **non revérifiée aujourd'hui** (l'outil de recherche web n'était pas disponible pour cette analyse) ; [À vérifier] = à constater sur developer.apple.com ou au premier run.

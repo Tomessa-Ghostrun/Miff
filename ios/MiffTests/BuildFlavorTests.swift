@@ -21,6 +21,15 @@ final class BuildFlavorTests: XCTestCase {
         XCTAssertEqual(BuildFlavor.includesReviewPrompt, expected, "Configuration : \(configuration)")
     }
 
+    /// L'alerte « Je suis en danger » (`docs/tickets/alerte-danger.md`) : même drapeau qu'Android (`ALERT_DANGER`), allumé en Debug et Internal, ÉTEINT en Release. La preuve
+    /// sur le binaire Release est faite par la CI (`check-binaries.sh release`).
+    func testTheAlertIsPresentExactlyInDebugAndInternalBuilds() {
+        let configuration = BuildInfo.current.configuration
+        let expected = configuration == "Debug" || configuration == "Internal"
+
+        XCTAssertEqual(BuildFlavor.includesAlertDanger, expected, "Configuration : \(configuration)")
+    }
+
     func testDiagnosticEventIsAllowedOnlyWhenTheDiagnosticIsPresent() {
         XCTAssertEqual(
             AnalyticsContract.allowedEvents["analytics_diagnostic_test"] != nil,

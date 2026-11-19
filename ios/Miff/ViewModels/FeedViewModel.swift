@@ -142,6 +142,8 @@ final class FeedViewModel: ObservableObject {
     var waiting: Set<String> = [] { didSet { recompute() } }
     var cacheGraceOver = false { didSet { recompute() } }
     var staleAfterRefresh = false { didSet { recompute() } }
+    /// ALERTE : les alertes de la Miff affichée, telles que l'écouteur les entend (vide sans la fonction). `FeedBuilder` garde celles en cours.
+    var alertDocs: [DangerAlertDoc] = [] { didSet { recompute() } }
 
     /// La Miff que l'observation en cours écoute, et son numéro (une réponse attendue à travers un changement n'est jamais appliquée).
     var observedMiffId: String?
@@ -338,7 +340,8 @@ final class FeedViewModel: ObservableObject {
                 statuses: statusView,
                 waitingAgreement: waiting.contains(activeId),
                 // Pas de réseau, OU un « Actualiser » que le serveur n'a pas répondu : ce qui est montré est daté, jamais présenté comme le présent.
-                offline: offline || staleAfterRefresh
+                offline: offline || staleAfterRefresh,
+                alerts: alertDocs
             ),
             nowMillis: nowMillis,
             zone: dependencies.zone()
@@ -364,6 +367,8 @@ final class FeedViewModel: ObservableObject {
             statusView = .waiting
             cacheGraceOver = false
             staleAfterRefresh = false
+            // Ce qui a été dit des alertes d'une autre Miff n'est jamais dessiné sur celle-ci.
+            alertDocs = []
         } else {
             piece = nil
         }
@@ -372,6 +377,9 @@ final class FeedViewModel: ObservableObject {
             group.addTask { await self.tickEachMinute() }
             if let miffId {
                 group.addTask { await self.watchMiff(miffId, generation: mine) }
+                #if ALERT_DANGER
+                group.addTask { await self.watchAlerts(miffId, generation: mine) }
+                #endif
             }
         }
         if generation == mine {

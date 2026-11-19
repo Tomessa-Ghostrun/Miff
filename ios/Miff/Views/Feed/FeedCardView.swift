@@ -49,7 +49,9 @@ struct MemberCardView: View {
         }
         .background(
             RoundedRectangle(cornerRadius: radiusSm, style: .continuous)
-                .fill(colorBgSurface.color)
+                // ALERTE : la carte d'une personne dont l'alerte est en cours est rouge (la teinte à 30 % du niveau, maquette 04) ; les mots « Alerte en cours »
+                // le disent aussi, jamais la couleur seule.
+                .fill(card.alertActive ? card.level.tint : colorBgSurface.color)
                 .miffShadow(shadowSubtle)
         )
         .clipShape(RoundedRectangle(cornerRadius: radiusSm, style: .continuous))
