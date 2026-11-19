@@ -92,7 +92,10 @@ struct FeedCollapsingLayout<Content: View>: View {
             colorBgCanvas.color.ignoresSafeArea(edges: .top).frame(height: 0)
             headerView
             FeedPullIndicator(
-                model: pullModel, refreshing: refreshing, forced: pullPreview, headerBottom: headerRestBottom ?? headerHeight
+                model: pullModel,
+                refreshing: refreshing,
+                forced: pullPreview,
+                headerBottom: headerRestBottom ?? headerHeight
             )
         }
         .background(colorBgCanvas.color.ignoresSafeArea())
