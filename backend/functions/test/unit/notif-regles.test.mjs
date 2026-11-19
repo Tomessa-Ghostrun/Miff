@@ -67,13 +67,13 @@ test("nuit : deux fuseaux, deux reponses ; heure d'ete respectee ; fuseau inconn
 
 // --- Forme exacte des messages --------------------------------------------------------------------------------------------------------
 
-const base = { token: 'jeton-1', miffId: 'MIFF123', auteurUid: 'AUTEUR1', prenom: 'Tomessa', maintenant: new Date('2026-11-12T12:00:00Z') };
+const base = { token: 'jeton-1', miffId: 'MIFF123', auteurUid: 'AUTEUR1', prenom: 'Tomessa', maintenant: new Date('2026-11-12T12:00:00Z'), entryId: 'u-MIFF123-AUTEUR1-1762948800000' };
 const expiration = String(Math.floor(new Date('2026-11-12T14:00:00Z').getTime() / 1000));
 
 test('Android : message "data" seulement, haute priorite, duree de vie 2 h, rien d\'autre que type / Miff / auteur / prenom / nuit', () => {
   assert.deepEqual(R.construireMessage({ ...base, plateforme: 'android', nuit: false }), {
     token: 'jeton-1',
-    data: { type: 'circle_update', miffId: 'MIFF123', authorUid: 'AUTEUR1', firstName: 'Tomessa', quiet: '0' },
+    data: { type: 'circle_update', miffId: 'MIFF123', authorUid: 'AUTEUR1', firstName: 'Tomessa', quiet: '0', entryId: 'u-MIFF123-AUTEUR1-1762948800000' },
     android: { priority: 'high', ttl: 7_200_000 },
   });
   assert.equal(R.construireMessage({ ...base, plateforme: 'android', nuit: true }).data.quiet, '1');
@@ -82,7 +82,7 @@ test('Android : message "data" seulement, haute priorite, duree de vie 2 h, rien
 test('iOS jour : notification alerte avec cles de texte + prenom, fil et remplacement par auteur, son du telephone, expiration 2 h', () => {
   assert.deepEqual(R.construireMessage({ ...base, plateforme: 'ios', nuit: false }), {
     token: 'jeton-1',
-    data: { type: 'circle_update', miffId: 'MIFF123', authorUid: 'AUTEUR1' },
+    data: { type: 'circle_update', miffId: 'MIFF123', authorUid: 'AUTEUR1', entryId: 'u-MIFF123-AUTEUR1-1762948800000' },
     apns: {
       headers: { 'apns-push-type': 'alert', 'apns-priority': '10', 'apns-expiration': expiration, 'apns-collapse-id': 'AUTEUR1' },
       payload: { aps: { alert: { titleLocKey: 'notif_circle_update_title', titleLocArgs: ['Tomessa'], locKey: 'notif_circle_update_body' }, threadId: 'AUTEUR1', sound: 'default' } },

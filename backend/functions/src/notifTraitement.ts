@@ -10,14 +10,17 @@
 //   4. SESSION ACTIVE de chaque destinataire, puis get DIRECT de devices/{session.deviceId}                2 lectures par destinataire (1 sans session)
 //      -> envoi UNIQUEMENT a l'appareil de la session ; pas de session ou pas de document = pas d'envoi
 //   5. reservation transactionnelle dans notifState/{miffId} (verification finale, meme verdict)        1 lecture, 1 ecriture SEULEMENT si on envoie
+//      + JOURNAL (CNC-B) : une ligne users/{destinataire}/notifications/{entryId} par destinataire dont un push va partir, DANS LA MEME transaction : +1 ecriture par destinataire, 0 lecture
 //   6. envoi FCM par appareil (2 nouvelles tentatives au plus), purge des jetons que FCM dit inconnus
-// Budget (Miff de 4 membres, 3 destinataires, 1 appareil chacun) : 1 + 1 + 4 + 3 x 2 + 1 = 13 lectures, 1 ecriture. Update plafonnee ou rejouee : 1 lecture, 0 ecriture.
+// Budget (Miff de 4 membres, 3 destinataires, 1 appareil chacun) : 1 + 1 + 4 + 3 x 2 + 1 = 13 lectures, 1 + 3 = 4 ecritures (l'etat + 3 lignes de journal). Update plafonnee ou rejouee : 1 lecture, 0 ecriture, AUCUNE ligne.
 // "Au plus une fois" : la reservation (etape 5) PRECEDE l'envoi ; un plantage entre les deux, ou une panne de FCM apres la reservation, perd la notification
-// et consomme le plafond de l'heure pour cet auteur (le Feed la montre quand meme) ; la fonction n'en double jamais.
+// et consomme le plafond de l'heure pour cet auteur (le Feed la montre quand meme) ; la fonction n'en double jamais. Le journal est ecrit AVEC la reservation (tout ou rien) :
+// une ligne existe donc toujours pour un envoi tente, meme si FCM echoue ensuite (c'est le but : le telephone la relit), et jamais pour un envoi non reserve.
 // Journaux : uniquement des nombres et des mots fixes (journal.ts), jamais d'identifiant, de prenom ni de jeton.
 import { FieldPath, Timestamp, type DocumentReference, type Firestore } from "firebase-admin/firestore";
 import type { Message } from "firebase-admin/messaging";
 import { journaliser, type ChampsJournal } from "./journal.js";
+import { cheminEntree, construireEntree, identifiantEntree } from "./journalNotif.js";
 import {
   AGE_MAX_EVENEMENT_MS,
   DELAIS_REPRISE_MS,
@@ -68,6 +71,8 @@ export interface Bilan {
   erreursFcm: Record<number, number>;
   lectures: number;
   ecritures: number;
+  /** Lignes de journal ecrites (users/{uid}/notifications) : un nombre seul, jamais un identifiant. Incluses dans `ecritures`. */
+  journalisees: number;
   /** Une exception non prevue a interrompu le traitement (details volontairement non conserves). */
   erreur?: boolean;
 }
@@ -118,7 +123,7 @@ export function ecarter(bilan: { ecartes: Record<string, number> }, raison: stri
 
 export async function traiterPhotoPubliee(dep: Dependances, evenement: Evenement): Promise<Bilan> {
   const debut = dep.maintenant().getTime();
-  const bilan: Bilan = { examines: 0, envoyes: 0, ecartes: {}, purges: 0, erreursFcm: {}, lectures: 0, ecritures: 0 };
+  const bilan: Bilan = { examines: 0, envoyes: 0, ecartes: {}, purges: 0, erreursFcm: {}, lectures: 0, ecritures: 0, journalisees: 0 };
   try {
     await executer(dep, evenement, bilan);
   } catch {
@@ -222,6 +227,11 @@ async function executer(dep: Dependances, evenement: Evenement, bilan: Bilan): P
   if (cibles.length === 0) return arreter("aucun_destinataire");
 
   // --- 6. Reservation : verification finale dans une transaction sur notifState/{miffId} (deux executions simultanees : une seule passe) -------
+  // JOURNAL (CNC-B) : dans la MEME transaction, une ligne par destinataire dont un push va partir (meme cible que l'envoi : memes interrupteurs, memes plafonds, meme
+  // session active). Identifiant deterministe (cle de dedoublonnage de l'app, aussi dans le message FCM) : un evenement rejoue est arrete AVANT, par le verdict. `set` et
+  // non `create` : une ligne deja la (cas impossible en pratique) ne doit jamais bloquer le push. 0 lecture de plus.
+  const entryId = identifiantEntree("update", miffId, auteurUid, createdAt.toMillis());
+  const instantJournal = maintenant();
   const issue = await db.runTransaction(async (tx) => {
     const verdict = verdictEtat(await tx.get(refEtat), auteurUid, createdAt);
     if (verdict !== "reserve") return verdict;
@@ -230,11 +240,13 @@ async function executer(dep: Dependances, evenement: Evenement, bilan: Bilan): P
       { authors: { [auteurUid]: { lastSeenCreatedAt: createdAt, lastNotifiedAt: createdAt } }, expireAt: Timestamp.fromMillis(maintenantMs + DUREE_ETAT_MS) },
       { merge: true },
     );
+    for (const cible of cibles) tx.set(db.doc(cheminEntree(cible.uid, entryId)), construireEntree("update", miffId, auteurUid, instantJournal));
     return verdict;
   });
   bilan.lectures += 1;
   if (issue !== "reserve") return arreter(issue);
-  bilan.ecritures += 1;
+  bilan.ecritures += 1 + cibles.length;
+  bilan.journalisees = cibles.length;
 
   // --- 7. Envoi : un message par appareil ---------------------------------------------------------------------------------------
   const instant = maintenant();
@@ -248,6 +260,7 @@ async function executer(dep: Dependances, evenement: Evenement, bilan: Bilan): P
         prenom,
         nuit: estNuit(cible.fuseau, instant),
         maintenant: instant,
+        entryId,
       });
       await envoyerAvecReprises(dep, cible, message, bilan);
     }),
@@ -301,6 +314,7 @@ function journaliserBilan(bilan: Bilan, dureeMs: number): void {
       envoyes: bilan.envoyes,
       ecartes: Object.values(bilan.ecartes).reduce((a, b) => a + b, 0),
       purges: bilan.purges,
+      journalisees: bilan.journalisees,
       lectures: bilan.lectures,
       ecritures: bilan.ecritures,
       dureeMs,
