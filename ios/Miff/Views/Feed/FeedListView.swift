@@ -48,6 +48,8 @@ struct FeedListView: View {
     let onScrolled: (CGFloat) -> Void
     /// L'origine du contenu de la vue de défilement dans la fenêtre (voir `FeedTopInset`).
     let onOrigin: (CGFloat) -> Void
+    /// La distance tirée, un doigt tire-t-il, la roue d'UIKit tourne-t-elle : pour l'indicateur de « tirer pour actualiser ».
+    var onPull: (CGFloat, Bool, Bool) -> Void = { _, _, _ in }
     /// NOTIF-P1I : la carte de ce proche est amenée à l'écran (un toucher sur une ligne « Depuis ta dernière visite »).
     var focus: FeedFocus?
     var onFocusHandled: (FeedFocus) -> Void = { _ in }
@@ -121,7 +123,7 @@ struct FeedListView: View {
                     .padding(.horizontal, Spacing.md)
                     .padding(.bottom, Spacing.md)
                 }
-                .background(ScrollDistanceReader(onChange: onScrolled, onOrigin: onOrigin))
+                .background(ScrollDistanceReader(onChange: onScrolled, onOrigin: onOrigin, onPull: onPull))
                 // FEED-ORDRE : tant qu'un doigt est posé ou que la liste défile, aucune carte ne change de place.
                 .background(FeedGestureWatcher { busy in order.setGestureActive(busy, animated: !reduceMotion) })
             }

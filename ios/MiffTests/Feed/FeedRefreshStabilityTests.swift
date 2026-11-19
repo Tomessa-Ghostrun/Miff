@@ -96,13 +96,28 @@ final class FeedRefreshSourcesTests: XCTestCase {
 
     func testTheIndicatorIsOnTopOfEverythingBelowTheHeaderAndReadableOverAnything() throws {
         let layout = try code("Views/Feed/FeedCollapsingLayout.swift")
-        let header = try XCTUnwrap(layout.range(of: "headerView\n            refreshIndicator"))
-        XCTAssertGreaterThan(header.lowerBound, layout.startIndex, "dernier enfant du ZStack : au-dessus du contenu ET de l'en-tête")
-        XCTAssertTrue(layout.contains(".padding(.top, headerHeight + Spacing.sm)"), "juste SOUS l'en-tête, jamais masqué par lui")
-        XCTAssertTrue(layout.contains("Circle().fill(colorBgSurface.color)"), "une pastille lisible sur n'importe quel fond")
-        XCTAssertTrue(layout.contains(".animation(reduceMotion ? nil"), "« Réduire les animations » est lu")
-        XCTAssertGreaterThanOrEqual(FeedRefreshIndicator.size, 28)
-        XCTAssertLessThanOrEqual(FeedRefreshIndicator.fadeSeconds, 0.3)
+        let indicator = try code("Views/Feed/FeedPullIndicator.swift")
+        XCTAssertTrue(layout.contains("headerView\n            FeedPullIndicator("), "dernier enfant du ZStack : au-dessus du contenu ET de l'en-tête")
+        XCTAssertTrue(layout.contains("@State private var pullModel"), "@State : la mise en page n'est pas redessinée à chaque étape du tirage")
+        XCTAssertFalse(layout.contains("@StateObject private var pullModel"))
+        XCTAssertTrue(indicator.contains(".zIndex(100)"), "z élevé")
+        XCTAssertTrue(indicator.contains(".allowsHitTesting(false)"), "jamais un obstacle pour le doigt")
+        XCTAssertTrue(indicator.contains("headerHeight + Spacing.sm"), "juste SOUS l'en-tête, jamais masqué par lui")
+        XCTAssertTrue(indicator.contains("Circle().fill(colorBgSurface.color)"), "une pastille lisible sur n'importe quel fond")
+        XCTAssertTrue(indicator.contains("Circle().stroke(colorBorderStrong.color"), "un contour : lisible aussi sur un fond clair")
+        XCTAssertTrue(indicator.contains("reduceMotion ? nil"), "« Réduire les animations » est lu")
+        XCTAssertTrue(indicator.contains("refreshing ? .loading"), "l'état du Feed suffit à lui seul à montrer la roue")
+        XCTAssertGreaterThanOrEqual(FeedPullIndicatorMetrics.size, 36)
+        XCTAssertLessThanOrEqual(FeedPullIndicatorMetrics.fadeSeconds, 0.3)
+    }
+
+    func testTheScrollViewTellsTheIndicatorTheDistanceTheFingerAndTheUIKitWheel() throws {
+        let reader = try code("Views/Feed/ScrollDistanceReader.swift")
+        let list = try code("Views/Feed/FeedListView.swift")
+        let screen = try code("Views/Feed/FeedScreen.swift")
+        XCTAssertTrue(reader.contains("onPull?(max(-scrolled, 0), scroll.isDragging, scroll.refreshControl?.isRefreshing == true)"))
+        XCTAssertTrue(list.contains("ScrollDistanceReader(onChange: onScrolled, onOrigin: onOrigin, onPull: onPull)"))
+        XCTAssertTrue(screen.contains("onPull: layout.onPull"), "le vrai Feed branche l'indicateur, pas seulement l'aperçu")
     }
 
     func testTheMinimumDisplayIsAtLeastSixTenthsOfASecondAndWaitsNothingElse() throws {

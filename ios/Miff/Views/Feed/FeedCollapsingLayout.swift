@@ -16,17 +16,13 @@ struct FeedLayoutContext {
     let onScrolled: (CGFloat) -> Void
     /// L'origine du contenu de la vue de défilement, dans la fenêtre (lue par `ScrollDistanceReader`).
     let onOrigin: (CGFloat) -> Void
+    /// La distance tirée, un doigt tire-t-il, la roue d'UIKit tourne-t-elle (lues par `ScrollDistanceReader`) : l'indicateur de « tirer pour actualiser ».
+    let onPull: (CGFloat, Bool, Bool) -> Void
 }
 
 /// La durée du retour animé de l'en-tête (un toucher sur le logo, un verrouillage) : courte.
 enum FeedHeaderMotion {
     static let showSeconds: Double = 0.2
-}
-
-/// L'indicateur d'« Actualiser » : la taille de sa pastille et la durée de son fondu.
-enum FeedRefreshIndicator {
-    static let size: CGFloat = 36
-    static let fadeSeconds: Double = 0.15
 }
 
 /// Le bas de l'en-tête AU REPOS (sans son déplacement), dans la fenêtre.
@@ -52,11 +48,15 @@ struct FeedCollapsingLayout<Content: View>: View {
     /// La liste est celle des cartes (sinon : squelette, erreur, état vide).
     let isList: Bool
     let refreshing: Bool
+    /// Les captures de la CI forcent l'état de l'indicateur de « tirer pour actualiser » (nil : l'état réel).
+    var pullPreview: FeedPullIndicatorState?
     /// Construit l'en-tête ; reçoit l'action du logo (remonter en haut et montrer l'en-tête).
     let header: (@escaping () -> Void) -> FeedHeaderContent
     @ViewBuilder let content: (FeedLayoutContext) -> Content
 
     @State private var headerModel = FeedHeaderModel()
+    /// `@State` et non `@StateObject` : seule la pastille l'observe, la mise en page (donc tout le Feed) n'est pas redessinée à chaque étape du tirage.
+    @State private var pullModel = FeedPullIndicatorModel()
     @State private var headerHeight: CGFloat = 0
     @State private var headerRestBottom: CGFloat?
     @State private var contentOrigin: CGFloat?
@@ -81,6 +81,9 @@ struct FeedCollapsingLayout<Content: View>: View {
                         if !refreshing, FeedTopInset.isNewMeasure(origin, old: contentOrigin) {
                             contentOrigin = origin
                         }
+                    },
+                    onPull: { distance, dragging, uikit in
+                        pullModel.pulled(distance: distance, dragging: dragging, uikitRefreshing: uikit)
                     }
                 )
             )
@@ -88,7 +91,7 @@ struct FeedCollapsingLayout<Content: View>: View {
             // l'en-tête est caché (comme Android, qui coupe le contenu à la zone sûre).
             colorBgCanvas.color.ignoresSafeArea(edges: .top).frame(height: 0)
             headerView
-            refreshIndicator
+            FeedPullIndicator(model: pullModel, refreshing: refreshing, forced: pullPreview, headerHeight: headerHeight)
         }
         .background(colorBgCanvas.color.ignoresSafeArea())
         .onPreferenceChange(HeaderHeightKey.self) { height in
@@ -104,25 +107,7 @@ struct FeedCollapsingLayout<Content: View>: View {
         // Verrouillé : l'en-tête revient avec une courte animation, immédiate avec « Réduire les animations ».
         .onChange(of: locked) { value in withHeaderAnimation { headerModel.lock(value) } }
         .onChange(of: isList) { _ in headerModel.resetBaseline() }
-    }
-
-    /// L'indicateur de l'actualisation. La roue d'UIKit est cachée par l'en-tête (la liste passe dessous) : celui-ci est posé SOUS l'en-tête, par-dessus
-    /// tout le reste, dans une pastille de la couleur des cartes avec une ombre légère, pour rester lisible quel que soit ce qu'il y a derrière (bulle,
-    /// carte). Il apparaît et disparaît en fondu (sans animation avec « Réduire les animations »).
-    private var refreshIndicator: some View {
-        Group {
-            if refreshing {
-                ProgressView()
-                    .tint(colorActionPrimary.color)
-                    .frame(width: FeedRefreshIndicator.size, height: FeedRefreshIndicator.size)
-                    .background(Circle().fill(colorBgSurface.color))
-                    .miffShadow(shadowSubtle)
-                    .padding(.top, headerHeight + Spacing.sm)
-                    .transition(.opacity)
-                    .accessibilityHidden(true)
-            }
-        }
-        .animation(reduceMotion ? nil : .easeInOut(duration: FeedRefreshIndicator.fadeSeconds), value: refreshing)
+        .onChange(of: refreshing) { value in pullModel.feedRefreshingChanged(value) }
     }
 
     /// L'animation courte du retour de l'en-tête ; aucune avec « Réduire les animations ».

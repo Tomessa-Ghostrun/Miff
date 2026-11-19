@@ -123,8 +123,25 @@ struct FeedScreenPreview: View {
         )
     }
 
+    /// L'indicateur de « tirer pour actualiser » forcé pour les captures : `feed-pull` (en cours de tirage), `feed-pull-ready` (assez tiré),
+    /// `feed-loading` (la roue tourne). Les autres aperçus ne le montrent pas.
+    private static func pullPreview(_ name: String) -> FeedPullIndicatorState? {
+        switch name {
+        case "feed-pull":
+            return .pulling(progress: 0.6)
+        case "feed-pull-ready":
+            return .pulling(progress: 1)
+        case "feed-loading":
+            return .loading
+        default:
+            return nil
+        }
+    }
+
     var body: some View {
-        FeedCollapsingLayout(locked: false, isList: true, refreshing: false, header: header) { layout in
+        FeedCollapsingLayout(
+            locked: false, isList: true, refreshing: false, pullPreview: Self.pullPreview(name), header: header
+        ) { layout in
             FeedListView(
                 feed: .ready(content),
                 ready: ready,
@@ -139,7 +156,8 @@ struct FeedScreenPreview: View {
                 actions: listActions,
                 onContentMoved: layout.onContentMoved,
                 onScrolled: layout.onScrolled,
-                onOrigin: layout.onOrigin
+                onOrigin: layout.onOrigin,
+                onPull: layout.onPull
             )
             .overlay(alignment: .top) {
                 Rectangle().fill(Color.pink).frame(height: 1).padding(.top, layout.listInset)

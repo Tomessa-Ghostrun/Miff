@@ -2,6 +2,16 @@
 
 ## Non publié
 
+### « Tirer pour actualiser » : indicateur piloté par le tirage, visible sur iPhone (retour du PM, build contenant #263, PR #263)
+
+Ce que le PM doit voir : **dès qu'on tire le Feed, une pastille ronde apparaît sous l'en-tête et se remplit avec la distance (une flèche vers le bas, qui se retourne quand c'est assez tiré), puis une roue qui tourne au relâchement, au moins 0,8 s**. Recette : `docs/qa/checklists/feed-refresh-position-ios-recette-pm.md` (§1, §18 à §21). **Rien n'est compilé en local** (la CI fait foi, avec 3 captures forcées : `90b-fr-feed-tirage`, `90c-fr-feed-tirage-pret`, `90d-fr-feed-roue`).
+
+Corrigé :
+- Le correctif précédent (pastille sous l'en-tête, pilotée par le seul état du Feed) n'était pas visible sur l'iPhone 11 Pro. Cause exacte non établissable sans l'appareil ; le nouvel indicateur ne dépend plus d'un seul signal. Il est piloté par le **décalage de la vue de défilement** (visible PENDANT le tirage) et passe à la roue dès que l'UN de ces signaux est vrai : l'état « actualisation » du Feed, la roue d'UIKit (`refreshControl.isRefreshing`, lue sur la vue de défilement), un tirage assez long **relâché** (doigt levé, la liste redescend), avec un minimum d'affichage de 0,8 s après le déclenchement (`FeedPullIndicatorLogic`, logique pure).
+- Rendu : dernier enfant de la mise en page du Feed, `zIndex` 100, sans interception des touchers, pastille de 44 pt de la couleur des cartes avec contour et ombre, flèche et roue de la couleur d'action ; fondu court, aucun avec « Réduire les animations ». Le modèle est un `@State` : la mise en page n'est pas redessinée à chaque étape du tirage.
+- `RefreshInsetGuard` conservé (la mesure de l'origine du contenu reste ignorée pendant l'actualisation : pas de sautillement) ; le minimum d'affichage de 0,8 s côté Feed (`holdIndicator`) aussi.
+- Tests : `FeedPullIndicatorLogicTests`, `FeedPullIndicatorModelTests`, `FeedRefreshSourcesTests` (indicateur au-dessus de tout, branché dans le vrai Feed), tests existants conservés.
+
 ### « Tirer pour actualiser » : indicateur visible et Feed qui ne sautille plus (retour du PM, TestFlight 38, PR #263)
 
 Ce que le PM doit voir : en tirant le Feed, **une pastille claire avec une roue apparaît sous l'en-tête pendant au moins 0,8 s** (jamais cachée par l'en-tête ni la bulle), et **la bulle et les cartes ne sautent plus**. Recette : `docs/qa/checklists/feed-refresh-position-ios-recette-pm.md` (§1, §4, §18 à §20). **Rien n'est compilé en local** (la CI fait foi).

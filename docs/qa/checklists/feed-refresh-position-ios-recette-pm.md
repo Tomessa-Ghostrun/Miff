@@ -48,6 +48,8 @@
 19. [ ] Filmez l'écran (enregistrement d'écran d'iOS) et rejouez-le au ralenti : **aucune image où la bulle ou une carte disparaît, remonte puis redescend**. Si un sautillement reste, envoyez-moi la vidéo et l'étape où il apparaît (début du geste, relâchement ou fin de la roue).
 20. [ ] **Réglages iOS > Accessibilité > Mouvement > Réduire les animations** activé : la pastille apparaît et disparaît **sans fondu**, le Feed ne saute pas non plus.
 
+21. [ ] **Indicateur piloté par le tirage.** Tirez le Feed LENTEMENT et sans relâcher : une pastille ronde apparaît sous l'en-tête dès les premiers points et **se remplit** (flèche vers le bas) ; quand c'est assez tiré (environ 70 points) la flèche se **retourne**. Relâchez : une **roue qui tourne** pendant **au moins 0,8 s**. Tirez un peu et relâchez avant la fin : la pastille disparaît sans roue. Si vous ne voyez toujours rien : dites-moi si c'est pendant le tirage, au relâchement, ou jamais.
+
 ## Ce que je vous demande de trancher (voir `docs/tickets/feed-refresh-position.md`, §3)
 
 - **D2** : un message calme quand l'autorisation manque (aujourd'hui : aucun, l'écran de la localisation prend déjà toute la place) ?

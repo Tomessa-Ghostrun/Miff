@@ -10,6 +10,8 @@ import UIKit
 struct ScrollDistanceReader: UIViewRepresentable {
     let onChange: (CGFloat) -> Void
     var onOrigin: (CGFloat) -> Void = { _ in }
+    /// L'indicateur de « tirer pour actualiser » : la distance tirée (0 au repos), un doigt tire-t-il, la roue d'UIKit tourne-t-elle.
+    var onPull: (CGFloat, Bool, Bool) -> Void = { _, _, _ in }
 
     func makeUIView(context: Context) -> ProbeView {
         ProbeView()
@@ -18,12 +20,14 @@ struct ScrollDistanceReader: UIViewRepresentable {
     func updateUIView(_ view: ProbeView, context: Context) {
         view.onChange = onChange
         view.onOrigin = onOrigin
+        view.onPull = onPull
     }
 
     /// Une vue invisible, posée dans le contenu de la liste : elle retrouve la vue de défilement qui la contient et en observe le décalage.
     final class ProbeView: UIView {
         var onChange: ((CGFloat) -> Void)?
         var onOrigin: ((CGFloat) -> Void)?
+        var onPull: ((CGFloat, Bool, Bool) -> Void)?
         private var observation: NSKeyValueObservation?
         private var insetGuard = RefreshInsetGuard()
         private var recheckScheduled = false
@@ -70,7 +74,9 @@ struct ScrollDistanceReader: UIViewRepresentable {
         }
 
         private func report(_ scroll: UIScrollView) {
-            onChange?(scroll.contentOffset.y + scroll.adjustedContentInset.top)
+            let scrolled = scroll.contentOffset.y + scroll.adjustedContentInset.top
+            onChange?(scrolled)
+            onPull?(max(-scrolled, 0), scroll.isDragging, scroll.refreshControl?.isRefreshing == true)
             reportOrigin(scroll)
         }
 
