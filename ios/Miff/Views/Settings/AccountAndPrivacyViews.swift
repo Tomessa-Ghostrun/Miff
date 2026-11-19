@@ -103,8 +103,8 @@ struct AccountView: View {
 }
 
 /// Réglages > Confidentialité (ticket Profil / Réglages, critère B5) : ce que Miff fait de la localisation, l'état des autorisations du
-/// téléphone (lu ici, jamais demandé) avec un accès aux réglages de l'iPhone, l'état des notifications, l'aide à la détection,
-/// les textes légaux et le contact. L'état est relu à chaque retour dans l'app : la personne change une autorisation dans les
+/// téléphone (lu ici, jamais demandé) avec un accès aux réglages de l'iPhone, l'état des notifications, l'aide à la détection
+/// et les textes légaux. « Nous contacter » n'est plus ici : il est dans « À propos et aide » (décision du PM du 2026-11-13). L'état est relu à chaque retour dans l'app : la personne change une autorisation dans les
 /// réglages de l'iPhone puis revient.
 ///
 /// PAS ENCORE ICI (écart au ticket, listé dans la PR) : l'interrupteur « statistiques et rapports de plantage », qui demande son propre
@@ -114,14 +114,19 @@ struct PrivacyView: View {
     let permissions: DevicePermissions
     let onBack: () -> Void
     let onOpenDetectionHelp: () -> Void
+    /// Efface le journal local des changements de présence (la répartition du temps du Profil repart de zéro). Local : rien n'est envoyé.
+    var onEraseTimeHistory: () -> Void = {}
 
     @State private var permission: PrivacyPermissionState?
+    @State private var confirmsErase = false
+    @State private var erased = false
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         MiffFrame(title: L10n.string("settings_privacy_title"), onBack: onBack, usesCanvas: true) {
             location
             notifications
+            timeHistory
             texts
         }
         .task {
@@ -170,6 +175,35 @@ struct PrivacyView: View {
         }
     }
 
+    /// D15 : l'historique de temps gardé sur le téléphone, et le moyen de l'effacer (confirmation calme, puis un message). Ne change rien pour les
+    /// proches : le journal ne leur est jamais envoyé.
+    @ViewBuilder
+    private var timeHistory: some View {
+        SettingsSectionTitle(key: "settings_privacy_time_title")
+        SettingsBody(text: L10n.string("settings_privacy_time_body"))
+        Button {
+            confirmsErase = true
+        } label: {
+            Text("settings_privacy_time_erase")
+        }
+        .buttonStyle(.miffSecondaryFullWidth)
+        .alert(
+            Text("settings_privacy_time_confirm_title"),
+            isPresented: $confirmsErase,
+            actions: {
+                Button("settings_privacy_time_confirm_action", role: .destructive) {
+                    onEraseTimeHistory()
+                    erased = true
+                }
+                Button("common_cancel", role: .cancel) {}
+            },
+            message: { Text("settings_privacy_time_confirm_body") }
+        )
+        if erased {
+            MiffNotice(text: L10n.string("settings_privacy_time_done"))
+        }
+    }
+
     @ViewBuilder
     private var texts: some View {
         SettingsSectionTitle(key: "settings_privacy_texts_title")
@@ -182,11 +216,6 @@ struct PrivacyView: View {
             title: L10n.string("auth_consent_privacy_link"),
             spokenHint: L10n.string("settings_privacy_open_browser_a11y"),
             action: { ExternalOpener.open(AppLinks.privacyURL()) }
-        )
-        SettingsLinkRow(
-            title: L10n.string("settings_privacy_contact"),
-            spokenHint: L10n.string("settings_privacy_open_mail_a11y"),
-            action: { ExternalOpener.open(ContactLinks.supportMailURL()) }
         )
     }
 }

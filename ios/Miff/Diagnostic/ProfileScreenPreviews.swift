@@ -15,6 +15,10 @@ struct ProfileScreenPreview: View {
 
     /// Les lieux de la Miff regardée (démonstration, sans lecture) : Miff A = créatrice (« Ajouter un lieu »), Miff B = membre (lecture seule).
     @StateObject private var places: ProfilePlacesViewModel
+    /// La carte « Répartition de ton temps » (journal vide : « pas assez de données ») ; les autres états sont dans `TimeShareScreenPreview`.
+    @StateObject private var timeShare = TimeShareViewModel(
+        history: NoPresenceHistory(), context: FixedTimeShareContext()
+    )
     @StateObject private var placeNotices = PlaceNotices()
     /// Les demandes d'ajout d'un lieu (démonstration) : la Miff B (membre) montre une demande en attente de la personne.
     @StateObject private var requests: ProfileRequestsViewModel
@@ -59,11 +63,12 @@ struct ProfileScreenPreview: View {
             state: profile,
             miffs: directory,
             previews: previews,
-            isActive: false,
+            isActive: CountdownPreviewSupport.remainingMillis(for: name) != nil,
             initialCarouselPage: initialPage,
             travel: travel,
             offlineRetry: offlineRetry,
             placesModel: places,
+            timeShare: timeShare,
             placeNotices: placeNotices,
             requestsModel: requests,
             placesContext: ProfilePlacesContext(myUid: Self.me),
@@ -75,6 +80,7 @@ struct ProfileScreenPreview: View {
                 onCreateMiff: {}
             )
         )
+        .environment(\.countdownContext, CountdownPreviewSupport.context(for: name))
     }
 
     /// La Miff dont la liste est montrée : celle de la carte de départ (la dernière carte, « Créer une Miff », garde la dernière Miff).

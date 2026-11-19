@@ -332,7 +332,7 @@ extension MyInfoEditor {
     // MARK: - Téléphone
 
     private func phoneBlock(_ state: MyInfoUiState) -> some View {
-        let country = tools.country(region: state.regionCode, locale: .current)
+        let country = tools.country(region: state.regionCode, locale: AppLanguage.locale)
         return VStack(alignment: .leading, spacing: Spacing.sm) {
             CountryField(country: country, isEnabled: !state.isSaving) {
                 countriesPresented = true

@@ -157,8 +157,8 @@ test('code : serviceAccount accepté seulement avec un nom de compte dédié exp
   for (const { f, texte } of sources) assert.deepEqual(problemesServiceAccount(code(texte)), [], f);
 });
 
-test('fonctions exportées = la liste décidée par les tickets : `notifierUpdate` (SRV-4B) seule ; en ajouter une exige de modifier ce test, en PR (`ping`, retirée, ne doit pas revenir)', () => {
-  assert.deepEqual(Object.keys(exportees).sort(), ['notifierUpdate']);
+test('fonctions exportées = la liste décidée par les tickets : `notifierAlerte` (AD-B2) et `notifierUpdate` (SRV-4B) ; en ajouter une exige de modifier ce test, en PR (`ping`, retirée, ne doit pas revenir)', () => {
+  assert.deepEqual(Object.keys(exportees).sort(), ['notifierAlerte', 'notifierUpdate']);
 });
 
 test('identité : AUCUNE fonction ne peut tourner avec l\'identité par défaut du projet (compte Compute) ; toutes exigent un compte dédié DU PROJET Miff', () => {
@@ -188,12 +188,58 @@ test('notifierUpdate (SRV-4B) : déclenchée par Firestore sur photos/{uid} uniq
   assert.ok(!e.callableTrigger && !e.httpsTrigger, 'aucun point d\'entrée appelable depuis Internet');
 });
 
-test('notifierUpdate : le compte de service du code est écrit en littéral dans notifierUpdate.ts et nulle part ailleurs', () => {
+test('comptes de service : le compte de service est écrit en littéral dans le fichier de chaque déclencheur et nulle part ailleurs (décision du PM : notifierAlerte réutilise notify-update)', () => {
+  const attendu = {
+    'notifierUpdate.ts': 'serviceAccount: "notify-update@miff-3d283.iam.gserviceaccount.com"',
+    'notifierAlerte.ts': 'serviceAccount: "notify-update@miff-3d283.iam.gserviceaccount.com"',
+  };
   for (const { f, texte } of sources) {
     const m = code(texte).match(/\bserviceAccount\s*:\s*"([^"]+)"/g) ?? [];
-    if (nomDe(f) === 'notifierUpdate.ts') assert.deepEqual(m, ['serviceAccount: "notify-update@miff-3d283.iam.gserviceaccount.com"']);
-    else assert.deepEqual(m, [], `${f} : serviceAccount interdit hors notifierUpdate.ts`);
+    if (attendu[nomDe(f)]) assert.deepEqual(m, [attendu[nomDe(f)]], f);
+    else assert.deepEqual(m, [], `${f} : serviceAccount interdit hors des déclencheurs`);
   }
+  assert.equal(attendu['notifierUpdate.ts'], attendu['notifierAlerte.ts'], 'même compte dédié, mêmes 4 rôles, aucun rôle de plus');
+});
+
+test("notifierAlerte (AD-B2) : déclenchée par Firestore sur alerts/{uid} uniquement, europe-west9, 5 instances au plus, 256 Mio, 30 s, sans reprise, compte dédié, aucun point d'entrée HTTP", () => {
+  const e = exportees.notifierAlerte.__endpoint;
+  assert.deepEqual(problemesDeGardeFous('notifierAlerte', e), []);
+  assert.equal(e.eventTrigger?.eventType, 'google.cloud.firestore.document.v1.written');
+  assert.equal(e.eventTrigger?.eventFilterPathPatterns?.document, 'miffs/{miffId}/alerts/{uid}');
+  assert.ok(!e.eventTrigger?.retry, 'pas de nouvelle tentative automatique');
+  assert.equal(e.maxInstances, LIMITES.maxInstancesPlafond);
+  assert.equal(e.availableMemoryMb, 256);
+  assert.equal(e.timeoutSeconds, 30);
+  assert.ok(!e.minInstances);
+  assert.equal(e.serviceAccountEmail, 'notify-update@miff-3d283.iam.gserviceaccount.com');
+  assert.equal(e.serviceAccountEmail, exportees.notifierUpdate.__endpoint.serviceAccountEmail, 'décision du PM : même compte dédié que notifierUpdate');
+  assert.ok(!e.callableTrigger && !e.httpsTrigger, "aucun point d'entrée appelable depuis Internet");
+  assert.notDeepEqual(problemesDeGardeFous('notifierAlerte', { ...e, serviceAccountEmail: undefined }), [], 'identité par défaut refusée');
+  assert.notDeepEqual(problemesDeGardeFous('notifierAlerte', { ...e, serviceAccountEmail: 'notify-update@ghostrun-app.iam.gserviceaccount.com' }), [], 'compte de Ghostrun refusé');
+  assert.notDeepEqual(problemesDeGardeFous('notifierAlerte', { ...e, maxInstances: 6 }), [], 'maxInstances au-delà du plafond refusé');
+});
+
+test("notifierAlerte : ne lit que status, startedAt, expiresAt et endedAt du document d'alerte, n'y écrit jamais, et ne transmet au traitement que l'identifiant de Miff, celui de l'auteur, la phase et deux dates", () => {
+  const declencheur = code(sources.find((s) => nomDe(s.f) === 'notifierAlerte.ts').texte);
+  assert.deepEqual(
+    [...declencheur.matchAll(/\.get\("([^"]*)"\)/g)].map((m) => m[1]).sort(),
+    ['endedAt', 'expiresAt', 'startedAt', 'status'],
+    "seuls ces quatre champs sont lus : jamais deviceId, seq ni purgeAt (ni, bien sûr, une position : le document n'en contient aucune)",
+  );
+  assert.doesNotMatch(declencheur, /\.data\(\)|\.set\(|\.update\(|\.delete\(/);
+  assert.ok(declencheur.includes('phase: decision.action'));
+  assert.ok(declencheur.includes('startedAt: apres?.startedAt') && declencheur.includes('endedAt: apres?.endedAt'));
+  // Aucune lecture ni écriture du dossier alerts/ par le traitement : la fonction ne boucle jamais sur elle-même.
+  const traitement = code(sources.find((s) => nomDe(s.f) === 'alerteTraitement.ts').texte);
+  assert.doesNotMatch(traitement, /\/alerts|alerts\//, "alerteTraitement.ts ne touche pas à miffs/{id}/alerts/");
+});
+
+test("notifierAlerte : AUCUNE fonction planifiée ni minuteur : l'expiration à 7 jours n'envoie rien (aucun déclencheur « schedule »), et jamais de notification de fin à l'expiration", () => {
+  for (const { f, texte } of sources) {
+    assert.doesNotMatch(code(texte), /onSchedule|scheduleTrigger|pubsub\.schedule/, `${f} : aucune fonction planifiée (SRV-6 n'est pas décidée)`);
+  }
+  const exportsSchedule = Object.values(exportees).filter((fn) => fn.__endpoint?.scheduleTrigger);
+  assert.deepEqual(exportsSchedule, []);
 });
 
 test('notifierUpdate : n\'écrit jamais dans photos/ (pas de boucle sur elle-même) et ne lit que createdAt de la photo', () => {
@@ -204,30 +250,52 @@ test('notifierUpdate : n\'écrit jamais dans photos/ (pas de boucle sur elle-mê
   assert.doesNotMatch(declencheur, /\.data\(\)|\.set\(|\.update\(|\.delete\(/);
 });
 
+test("DESC-R : la description facultative d'une photo n'entre jamais dans la fonction (ni lue, ni copiée dans un message, une charge FCM, un journal ou notifState)", () => {
+  for (const { f, texte } of sources) {
+    // Code seulement (les commentaires qui expliquent l'absence de lecture restent permis) : aucun accès, clé ou nom de champ « description ».
+    assert.doesNotMatch(code(texte), /description/i, `${f} : la description d'une photo ne doit jamais apparaître dans le code de la fonction`);
+  }
+  // Le déclencheur ne transmet au traitement que l'identifiant de la Miff, celui de l'auteur et createdAt (jamais le document, jamais .data()).
+  const declencheur = code(sources.find((x) => nomDe(x.f) === 'notifierUpdate.ts').texte);
+  assert.ok(declencheur.includes('{ miffId: evenement.params.miffId, auteurUid: evenement.params.uid, createdAt: apres.get("createdAt") }'), "le déclencheur ne transmet que miffId, auteurUid et createdAt");
+});
+
 test('notifierUpdate : jamais de sujet FCM (topic) ni d\'envoi multiple : un message par appareil', () => {
   for (const { f, texte } of sources) {
     assert.doesNotMatch(code(texte), /\btopic\b|subscribeToTopic|sendEachForMulticast|sendMulticast|sendAll\b/, `${f} : sujets et envois multiples interdits`);
   }
 });
 
-test('M8 : chemins Firestore touchés par la fonction = liste fermée ; écriture SEULEMENT dans notifState (transaction) et suppression d\'un document devices avec précondition', () => {
+test('M8 : chemins Firestore touchés par les fonctions = liste fermée ; écriture SEULEMENT dans notifState (transaction) et suppression d\'un document devices avec précondition', () => {
   const traitement = code(sources.find((s) => nomDe(s.f) === 'notifTraitement.ts').texte);
-  // Lectures : chemins passés à doc() / collection() dans tout src/.
+  // Lectures : chemins passés à doc() / collection() dans tout src/ (notifTraitement.ts, puis alerteTraitement.ts : mêmes chemins + l'état d'alerte, sans fiche de partage).
   const chemins = sources.flatMap(({ texte }) => [...code(texte).matchAll(/\b(?:doc|collection)\(\s*`([^`]+)`/g)].map((m) => m[1])).sort();
   assert.deepEqual(chemins, [
     'miffs/${miffId}',
+    'miffs/${miffId}',
     'miffs/${miffId}/members',
+    'miffs/${miffId}/members',
+    'miffs/${miffId}/members/${auteurUid}',
     'miffs/${miffId}/members/${auteurUid}',
     'notifState/${miffId}',
     'users/${d.uid}/devices/${deviceId}',
+    'users/${d.uid}/devices/${deviceId}',
+    'users/${d.uid}/session/active',
     'users/${d.uid}/session/active',
   ]);
-  // Écritures : une seule écriture de document (tx.set sur refEtat = notifState) et une seule suppression (devices, avec précondition sur la version lue).
+  // L'état de la fonction d'alerte est un document SÉPARÉ de celui des updates (durée de vie de 9 jours, pas 2) : chemin construit par une seule fonction.
+  const traitementAlerte = code(sources.find((s) => nomDe(s.f) === 'alerteTraitement.ts').texte);
+  assert.match(traitementAlerte, /cheminEtatAlerte = \(miffId: string\): string => `notifState\/\$\{miffId\}_alertes`;/);
+  assert.match(traitementAlerte, /const refEtat = db\.doc\(cheminEtatAlerte\(miffId\)\);/);
+  // Écritures : une seule écriture de document par traitement (tx.set sur refEtat = état de la fonction) ; une seule suppression (devices, avec précondition sur la version lue).
   for (const { f, texte } of sources) {
     const ecritures = code(texte).match(/\.(set|update|create|add|delete|batch|bulkWriter|recursiveDelete)\(/g) ?? [];
     if (nomDe(f) === 'notifTraitement.ts') assert.deepEqual(ecritures, ['.set(', '.delete('], f);
-    else assert.deepEqual(ecritures, [], `${f} : aucune écriture Firestore hors notifTraitement.ts`);
+    else if (nomDe(f) === 'alerteTraitement.ts') assert.deepEqual(ecritures, ['.set(', '.set('], `${f} : deux tx.set (début : horodatages et compteur ; fin : une horodatage), aucune suppression`);
+    else assert.deepEqual(ecritures, [], `${f} : aucune écriture Firestore hors notifTraitement.ts et alerteTraitement.ts`);
   }
+  assert.equal((traitementAlerte.match(/\.runTransaction\(/g) ?? []).length, 1);
+  assert.match(traitementAlerte, /tx\.set\(refEtat,/);
   assert.match(traitement, /const refEtat = db\.doc\(`notifState\/\$\{miffId\}`\);/);
   assert.match(traitement, /tx\.set\(\s*refEtat,/);
   assert.equal((traitement.match(/\.runTransaction\(/g) ?? []).length, 1);

@@ -33,19 +33,26 @@ struct PhotoScreenPreview: View {
         Int(Date().timeIntervalSince1970 * 1000)
     }
 
-    /// « photo-tall » : le format du viseur de l'Update (9:19,5) ; sinon un 3:4, comme la photo de la capture du PM.
+    /// « photo-tall » : le format du viseur de l'Update (9:19,5) ; « photo-description » : le même format avec une description de 140 caractères
+    /// (DESC-I) ; sinon un 3:4, comme la photo de la capture du PM.
     private var sample: OpenedPhoto {
-        let size = name == "photo-tall" ? CGSize(width: 576, height: 1_248) : CGSize(width: 900, height: 1_200)
+        let tall = name == "photo-tall" || name == "photo-description"
+        let size = tall ? CGSize(width: 576, height: 1_248) : CGSize(width: 900, height: 1_200)
         let image = Self.image(size: size)
         let now = Self.now
         let photo = SharedPhoto(
             jpeg: image.jpegData(compressionQuality: 0.8) ?? Data(),
             createdAtMillis: now - 60_000,
             expiresAtMillis: now + 22 * 3_600_000,
-            place: PhotoPlace(lat: 48.85661, lng: 2.35222, measuredAtMillis: now - 180_000)
+            place: PhotoPlace(lat: 48.85661, lng: 2.35222, measuredAtMillis: now - 180_000),
+            descriptionText: name == "photo-description" ? Self.sampleDescription : nil
         )
         return OpenedPhoto(firstName: "Tomessa", photo: photo, image: image)
     }
+
+    /// Une description d'environ 140 unités (le cas le plus long du pied) : un texte de démonstration, Debug seulement.
+    private static let sampleDescription = "Bien arrivée à la maison ! On se retrouve ce soir pour dîner ensemble, "
+        + "je te raconte tout. Ne t'inquiète pas, tout va bien. Bisous !"
 
     private static func image(size: CGSize) -> UIImage {
         let format = UIGraphicsImageRendererFormat()

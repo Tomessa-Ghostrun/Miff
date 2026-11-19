@@ -2,6 +2,8 @@ package com.tomessa.miff.data.notification
 
 import com.tomessa.miff.data.feed.CircleRead
 import com.tomessa.miff.data.feed.CircleStatusReader
+import com.tomessa.miff.domain.notification.CircleAlertKeys
+import com.tomessa.miff.domain.notification.CircleAlertPayload
 import com.tomessa.miff.domain.notification.CircleNewsKeys
 import com.tomessa.miff.domain.notification.CircleNewsPayload
 import com.tomessa.miff.domain.notification.Delivery
@@ -322,8 +324,8 @@ class NotificationScheduler(
                 }
             }
 
-            // N6 is shown at once, N8 is only a line of the centre, N9 comes from the server: none of them waits for an hour.
-            NotificationType.N6, NotificationType.N8, NotificationType.N9 -> {
+            // N6 is shown at once, N8 and C1 are only lines of the centre, N9 comes from the server: none of them waits for an hour.
+            NotificationType.N6, NotificationType.N8, NotificationType.N9, NotificationType.C1 -> {
                 Unit
             }
 
@@ -474,6 +476,33 @@ class NotificationScheduler(
                     ledger.saveCounters(counters.afterShown(NotificationType.N9))
                 }
             }
+        }
+    }
+
+    // --- ALERTE « Je suis en danger » (push of the server, ticket docs/tickets/alerte-danger.md 11) -----------------------------------------------------------
+
+    /**
+     * The server told this phone that a member of a Miff declared an alert, or ended it by hand ([alert], already validated by the parser). It reads and writes NOTHING on the server.
+     * Dropped when: nobody is signed in with a valid session, the phone does not let Miff notify, the general switch of Settings is off, the Miff is not one of this account's, the author
+     * is the person herself, or the same message already came. NOT cut by: the quiet hours of "Nuit calme", the daily cap, the switch "Quand un proche donne des nouvelles", the app being
+     * in front, a trip of the person (decision of the PM, D12 and D18: an alert must reach the person; only the settings of the phone's own channel can silence it).
+     */
+    fun onCircleAlert(
+        myUid: String,
+        alert: CircleAlertPayload,
+    ) {
+        synchronized(lock) {
+            if (!permissionAllowed() || !sessionValid(myUid)) return
+            if (!settings.current().enabled) return
+            // Contract 2.19: nothing at all (no notification, no navigation) for a Miff that is not one of this account.
+            if (!isMyMiff(myUid, alert.miffId)) return
+            if (alert.authorUid == myUid) return
+            val now = nowMillis()
+            val key = CircleAlertKeys.centerId(alert)
+            val keys = ledger.keys(now)
+            if (NotifiedKeys.contains(keys, key, now)) return
+            presenter.showCircleAlert(alert, key)
+            ledger.remember(key, now)
         }
     }
 

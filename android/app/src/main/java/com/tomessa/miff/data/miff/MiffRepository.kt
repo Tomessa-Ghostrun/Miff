@@ -153,6 +153,8 @@ class LostMiff(
     val ref: MembershipRef,
     /** The name, if the phone still knew it (it keeps the message human: "Tu n'as plus accès à la Miff « X »"). */
     val name: String?,
+    /** The SERVER said so. False when the Miff was found missing in the cache of the phone (offline): a doubt, the alert of that Miff is not touched until a write proves it. */
+    val confirmed: Boolean = true,
 ) {
     override fun toString(): String = "LostMiff(redacted)"
 }
@@ -270,6 +272,13 @@ class FirestoreMiffRepository(
      * this Miff are taken back. It never blocks the departure (a failure is its own business).
      */
     private val beforeLeave: suspend (uid: String, miffId: String) -> Unit = { _, _ -> },
+    /**
+     * ALERTE « Je suis en danger » (BuildConfig.ALERT_DANGER): when true, the lots that stop the sharing, leave and remove a member also delete the alert of that Miff (the rules of the alert
+     * demand it, backend/data-model.md 2.18). False (the default, and every build without the function): nothing is added, the rules in production do not know the path.
+     */
+    private val alertsEnabled: Boolean = false,
+    /** Told, with the identifier of the Miff, when my sharing there stopped or I left it: an alert of mine in that Miff went with it (the same lot deleted it). */
+    private val onAlertGone: (miffId: String) -> Unit = {},
 ) : MiffRepository {
     // --- Create ---------------------------------------------------------------------------------------------
 
@@ -499,9 +508,15 @@ class FirestoreMiffRepository(
                     }
                 MiffWrites.resumeSharing(miffId, uid, location.current(), deviceId)
             } else {
-                MiffWrites.stopSharing(miffId, uid)
+                MiffWrites.stopSharing(miffId, uid, withAlert = alertsEnabled)
             }
-        val result = write { store.commit(writes) }
+        var result = write { store.commit(writes) }
+        // The rules in production may not know the alert yet (not deployed): a refusal of the lot WITH the deletion of the alert is tried once more without it, so that stopping the
+        // sharing never breaks because of a function that is not live. If an alert really exists, the rules refuse this second lot too (it is the same result as before).
+        if (!enabled && alertsEnabled && result is MiffWriteResult.Failed && result.failure == MiffFailure.REFUSED) {
+            result = write { store.commit(MiffWrites.stopSharing(miffId, uid)) }
+        }
+        if (result == MiffWriteResult.Done && !enabled && alertsEnabled) onAlertGone(miffId)
         if (result == MiffWriteResult.Done) sharingChanged(miffId, resumed = enabled)
         // A refusal can also mean "already in the state asked for": the dialog asks for the opposite of what the card said when it
         // was opened, and the card may have changed since (another phone), in which case the rules refuse a no-op write
@@ -511,6 +526,9 @@ class FirestoreMiffRepository(
         ) {
             val sharing = (guarded { store.readSharing(miffId, uid) } as? Guarded.Value)?.value
             if (sharing == enabled) {
+                // The lot did arrive although its answer was lost (or the card already says it): when sharing is STOPPED, the same lot deleted the alert of that Miff, so the
+                // controller must hear it too, or the banner would stay and its end would claim "les proches ont été prévenus" for an alert that is gone.
+                if (!enabled && alertsEnabled) onAlertGone(miffId)
                 sharingChanged(miffId, resumed = enabled)
                 return MiffWriteResult.Done
             }
@@ -537,6 +555,20 @@ class FirestoreMiffRepository(
     override suspend fun removeMember(
         miffId: String,
         targetUid: String,
+    ): CodeChangeResult {
+        // With the function on, the lot of removal ALSO deletes the alert of the member (the rules refuse the removal while it exists; the creator may delete it ONLY in this lot, backend
+        // data-model.md 2.18). The rules in production may not know the alert yet: a refusal is tried once more without it, so that removing a member never breaks because of the function.
+        val first = removeMemberLot(miffId, targetUid, withAlert = alertsEnabled)
+        if (alertsEnabled && first is CodeChangeResult.Failed && first.failure == MiffFailure.REFUSED) {
+            return removeMemberLot(miffId, targetUid, withAlert = false)
+        }
+        return first
+    }
+
+    private suspend fun removeMemberLot(
+        miffId: String,
+        targetUid: String,
+        withAlert: Boolean,
     ): CodeChangeResult =
         changeCode(miffId) { view, newCode ->
             MiffWrites.removeMember(
@@ -546,6 +578,7 @@ class FirestoreMiffRepository(
                 oldCode = view.details.joinCode,
                 newCode = newCode,
                 oldCodeExists = view.codeDocumentExists,
+                withAlert = withAlert,
             )
         }
 
@@ -600,12 +633,19 @@ class FirestoreMiffRepository(
                 is Guarded.Value -> read.value.firstOrNull { it.miffId == miffId }?.key
                 is Guarded.Failed -> return MiffWriteResult.Failed(read.failure)
             }
-        val result = write { store.commit(MiffWrites.leave(miffId, uid, key)) }
+        var result = write { store.commit(MiffWrites.leave(miffId, uid, key, withAlert = alertsEnabled)) }
+        // Same tolerance as the stop of the sharing: the rules in production may not know the alert yet.
+        if (alertsEnabled && result is MiffWriteResult.Failed && result.failure == MiffFailure.REFUSED) {
+            result = write { store.commit(MiffWrites.leave(miffId, uid, key)) }
+        }
+        if (result == MiffWriteResult.Done && alertsEnabled) onAlertGone(miffId)
         if (result == MiffWriteResult.Done) onSharingChanged()
         if (result is MiffWriteResult.Failed && result.failure.mayHaveLanded()) {
             // The answer was lost: if the server now refuses the Miff to this person, the lot did leave.
             val check = guarded { store.readMiff(miffId, fromServer = true) }
             if (check is Guarded.Failed && check.lostAccess && store.reachable(uid)) {
+                // The lot did leave although its answer was lost: the alert of that Miff went with it.
+                if (alertsEnabled) onAlertGone(miffId)
                 onSharingChanged()
                 return MiffWriteResult.Done
             }
@@ -634,15 +674,32 @@ class FirestoreMiffRepository(
         uid: String,
         lost: LostMiff,
     ): Boolean {
+        // The loss is PROVEN by the server (removed by the creator, or the Miff deleted by another member): an alert of mine in that Miff is gone with it, whichever way the clean-up ends
+        // (the lot below, or the card that is already gone), so the controller is told FIRST: the banner goes and a new alert is possible elsewhere, even when the clean-up itself fails or only
+        // drops the index (review of #275 v3). A Miff found missing only in the CACHE of the phone (offline) is a doubt: nothing is said until a write goes through (below).
+        var told = false
+        if (alertsEnabled && lost.confirmed) {
+            onAlertGone(lost.ref.miffId)
+            told = true
+        }
         // Clean-up needs the server: without it nothing is touched (the next start will do it).
-        val leave = write { store.commit(MiffWrites.leave(lost.ref.miffId, uid, lost.ref.key)) }
+        var leave =
+            write { store.commit(MiffWrites.leave(lost.ref.miffId, uid, lost.ref.key, withAlert = alertsEnabled)) }
+        if (alertsEnabled && leave is MiffWriteResult.Failed && leave.failure == MiffFailure.REFUSED) {
+            leave = write { store.commit(MiffWrites.leave(lost.ref.miffId, uid, lost.ref.key)) }
+        }
         if (leave == MiffWriteResult.Done) {
+            if (alertsEnabled && !told) onAlertGone(lost.ref.miffId)
             onSharingChanged()
             return true
         }
         // Removed: the card is already gone, the lot is refused. Only the index is left, and the rules allow deleting it now.
         val indexOnly = write { store.commit(MiffWrites.dropIndex(lost.ref.miffId, uid, lost.ref.key)) }
-        if (indexOnly == MiffWriteResult.Done) onSharingChanged()
+        if (indexOnly == MiffWriteResult.Done) {
+            // The write went through, so the server answered: the card is really gone.
+            if (alertsEnabled && !told) onAlertGone(lost.ref.miffId)
+            onSharingChanged()
+        }
         return indexOnly == MiffWriteResult.Done
     }
 
@@ -713,7 +770,7 @@ class FirestoreMiffRepository(
                         }
 
                         MiffRead.Missing -> {
-                            lost += LostMiff(ref, cachedName(ref.miffId))
+                            lost += LostMiff(ref, cachedName(ref.miffId), confirmed = !fromCache)
                         }
                     }
                 }

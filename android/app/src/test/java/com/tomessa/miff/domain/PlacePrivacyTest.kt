@@ -136,9 +136,16 @@ class PlacePrivacyTest {
     }
 
     @Test
-    fun theMapShowsNoPositionOfAPerson_noGesture_noLayerOfMyPosition() {
+    fun theMapShowsNoPositionOfAPerson_noLayerOfMyPosition_andOnlyTheZoomGesturesExist() {
         val map = File("src/main/java/com/tomessa/miff/ui/place/PlaceMap.kt").readText()
+        // Everything is switched off first; only the zoom (pinch) and the double tap are switched on again: no drag (the place cannot be
+        // moved by accident), no rotation, no tilt, no "double tap then slide" (it fights the scrolling of the page).
         assertTrue(map.contains("setAllGesturesEnabled(false)"))
+        val switchedOn =
+            Regex(
+                """\.\s*is(\w+)GesturesEnabled\s*=\s*true""",
+            ).findAll(map).map { it.groupValues[1] }.toSet()
+        assertEquals(setOf("Zoom", "DoubleTap"), switchedOn)
         assertFalse(map.contains("LocationComponent"))
         assertFalse(map.contains("locationComponent"))
     }

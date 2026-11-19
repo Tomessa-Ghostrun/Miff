@@ -12,6 +12,15 @@ final class BuildFlavorTests: XCTestCase {
         XCTAssertEqual(BuildFlavor.includesDiagnostic, expected, "Configuration : \(configuration)")
     }
 
+    /// La fenêtre d'avis (`docs/tickets/pop-ins-avis.md`, critère AV2) : même drapeau qu'Android (`REVIEW_PROMPT`), allumé en Debug et Internal,
+    /// ÉTEINT en Release. La preuve sur le binaire Release est faite par la CI (`check-binaries.sh release`).
+    func testTheReviewPromptIsPresentExactlyInDebugAndInternalBuilds() {
+        let configuration = BuildInfo.current.configuration
+        let expected = configuration == "Debug" || configuration == "Internal"
+
+        XCTAssertEqual(BuildFlavor.includesReviewPrompt, expected, "Configuration : \(configuration)")
+    }
+
     func testDiagnosticEventIsAllowedOnlyWhenTheDiagnosticIsPresent() {
         XCTAssertEqual(
             AnalyticsContract.allowedEvents["analytics_diagnostic_test"] != nil,

@@ -3,6 +3,9 @@
 **Statut** : brouillon, décisions du PM intégrées (2026-11-11) ; relecture par `backend-data` (règles, compteur) et `android-dev` à faire avant « Backlog dev IA »
 **Origine** : demande directe du PM (2026-11-11), sans ticket Notion ni maquettes. Android d'abord, iOS ensuite.
 **Plateformes** : Android (PR en premier), iOS (suite). Les règles Firestore sont communes.
+
+> **Mis à jour le 2026-11-17 (LIEU-DANGER-REQ, `docs/tickets/lieu-danger-demande-gratuite.md`)** : la zone de danger se DEMANDE sans Miff+ ; la décision D5 et les lignes concernées ci-dessous sont remplacées par ce ticket. Accepter et déclarer directement restent réservés au créateur Miff+.
+
 **Dépend de** : lieux de la Miff (création par le créateur, gratuit = 3 lieux de confiance `p1`/`p2`/`p3`, zone de danger = Miff+), Profil, centre de notifications local (`docs/tickets/notifications.md` §20), paywall.
 
 > **Note sur les sources (à lire par le relecteur).** Cette rédaction a été faite sans accès au shell ni à `origin/main` : j'ai lu le dépôt tel qu'il est dans `C:\dev\miff` (branche `main` locale `e8cdde6`, en retard sur `origin/main`). Dans ce checkout, `backend/firestore.rules` n'autorise que `p1` en gratuit et `docs/tickets/notifications.md` n'existe pas. J'ai donc suivi l'énoncé du PM (gratuit = `p1`, `p2`, `p3` ; centre de notifications local 30 jours / 100 éléments, cloche du Feed, planificateur). **À re-vérifier contre `origin/main`** : `validPlaceCreate` (lieux gratuits), le §20 du ticket Notifications et le nom exact des types (`trusted` / `risk`, libellé produit « zone de danger »).
@@ -27,7 +30,7 @@ Principes de ton (CLAUDE.md) : on ne culpabilise ni celui qui demande, ni celui 
 | D2 | Qui peut demander, plafonds | Tout membre **non créateur**. **3 demandes en attente par membre, 10 par Miff** (plafonds durs, §6). |
 | D3 | Refus et expiration | **Refuser = supprimer la demande.** Le demandeur ne reçoit **rien** (ni notification, ni message). Il peut redemander (même lieu compris). **Une demande non traitée expire à 30 jours.** |
 | D4 | Visibilité | Seulement le **créateur** et le **demandeur**. Les autres membres ne voient rien. |
-| D5 | Type de lieu | **Zone de confiance** (`trusted`) ; **zone de danger** (`risk`) **uniquement si le demandeur est Miff+**. Pour l'**accepter**, le créateur doit être Miff+ (sinon paywall ; refuser reste possible). Les règles refusent toute demande `risk` d'un non Miff+. |
+| D5 | Type de lieu | **Zone de confiance** (`trusted`) ; **zone de danger** (`risk`) **demandable par tout membre, même non Miff+** (décision du PM du 2026-11-17, ticket `lieu-danger-demande-gratuite.md` ; remplace « uniquement si le demandeur est Miff+ »). Pour l'**accepter**, le créateur doit être Miff+ (sinon paywall ; refuser reste possible). |
 | D6 | Miffs concernées | Une demande = **une seule Miff** (la Miff sélectionnée sur le Profil). |
 | D7 | Modification avant acceptation | Non : le créateur **accepte tel quel**, puis modifie le lieu avec l'écran de modification existant. |
 | D8 | Statut côté demandeur | Il voit « En attente » dans sa liste. **Rien** sur l'acceptation, sauf que le lieu apparaît dans la liste de la Miff. |
@@ -79,7 +82,7 @@ Pas de maquette : on **réutilise** les composants de la liste des lieux, du dé
 
 ### 4.3 Formulaire (membre)
 - Même écran que la création, CTA « Soumettre la demande », titre « Proposer un lieu ».
-- Type : « Zone de confiance » par défaut. « Zone de danger » : **même comportement que le formulaire de création pour un compte non Miff+** (option marquée Miff+, ouvrant le paywall) ; un demandeur Miff+ peut la choisir. À confirmer en recette (§14, Q-R4).
+- Type : « Zone de confiance » par défaut. « Zone de danger » : **sélectionnable par tout demandeur, sans cadenas ni paywall** (décision du PM du 2026-11-17 ; remplace l'ancien comportement « comme la création pour un compte non Miff+ »).
 - Sous le bouton, une ligne d'information : « Le créateur de la Miff verra ta demande et décidera de l'ajouter ou non. »
 - Avant l'envoi, l'app lit les demandes en attente du membre (1 requête) pour : connaître l'emplacement libre (§5) et afficher le plafond de 3.
 - Erreurs : limite de 3, limite de la Miff (10), hors connexion, générique : toujours en phrases douces (§13).
@@ -335,8 +338,8 @@ Impact sur le ratio lectures ÷ utilisateurs actifs (~75) : de l'ordre de +1 à 
 - **M4** Soumettre crée la demande (lot de 2) ; elle apparaît en tête de sa liste, « En attente ».
 - **M5** Au maximum 3 demandes en attente ; à la 4e, message doux, aucune écriture tentée.
 - **M6** « Retirer ma demande » supprime la demande ; l'emplacement est de nouveau libre.
-- **M7** Un membre non Miff+ ne peut pas soumettre une zone de danger (UI) ; une écriture directe `risk` est refusée par les règles (test).
-- **M8** Un membre Miff+ peut soumettre une zone de danger.
+- **M7** (modifié le 2026-11-17) Un membre non Miff+ **peut** soumettre une zone de danger (UI et règles).
+- **M8** Un membre Miff+ peut soumettre une zone de danger (inchangé).
 - **M9** Les demandes d'un membre ne sont visibles ni des autres membres, ni dans leur liste, ni via une requête directe (règles).
 - **M10** Aucun message, notification ou ligne n'est jamais reçu à l'acceptation, au refus ou à l'expiration.
 - **M11** Hors connexion : message « partira dès que tu seras connecté » ; à la reconnexion, la demande part.
@@ -363,7 +366,7 @@ Impact sur le ratio lectures ÷ utilisateurs actifs (~75) : de l'ordre de +1 à 
 - **S1** Membre : crée `{uid}_1..3` valide, compteur +1 : accepté. `{uid}_4`, `{autreUid}_1`, clé en trop, `type` invalide, `createdAt` du client, `lat` hors bornes : refusés.
 - **S2** Le créateur ne peut pas créer de demande ; un non-membre non plus ; un ex-membre non plus.
 - **S3** 11e demande : refusée (compteur à 10). Décrément sans suppression : refusé. Incrément sans création : refusé.
-- **S4** `risk` d'un non Miff+ : refusé ; d'un Miff+ : accepté.
+- **S4** (modifié le 2026-11-17) `risk` demandé par un membre gratuit ou Miff+ : accepté ; accepté par un créateur gratuit : refusé, par un créateur Miff+ : accepté (tests `LD1` à `LD8`).
 - **S5** Lecture : créateur oui ; demandeur ses demandes oui (requête filtrée) ; autre membre non ; non-membre non ; Miff supprimée non.
 - **S6** Update : refusé pour tous.
 - **S7** Delete : demandeur sa demande (avec compteur −1) oui ; autre membre non ; créateur oui.
@@ -440,7 +443,7 @@ Les 9 questions initiales sont **tranchées** (§2). Restent des détails mineur
 | Q-R1 | Point non lu **aussi sur l'onglet Profil** (utile si le créateur est sur le Profil ou le Feed) en plus de la cloche ? | Oui, jusqu'à l'ouverture de la liste de la Miff concernée. |
 | Q-R2 | Offrir au demandeur, après l'envoi, un lien **facultatif** « Prévenir {créateur} » (feuille de partage du téléphone, texte doux, une seule fois, jamais répété) pour compenser l'absence de push ? | **Non** dans cette version (reste discret, comme voulu) ; à reconsidérer avec Blaze. |
 | Q-R3 | Vérification **opportuniste** en arrière-plan pour le créateur (une requête, au plus toutes les 6 h, quand l'app se réveille déjà pour un géofence), avec notification système locale ? | **Non** dans cette version (coût : ≤ 4 lectures/jour/créateur, permission de notification à demander) ; candidat naturel avant Blaze. |
-| Q-R4 | Un demandeur non Miff+ qui touche « Zone de danger » dans le formulaire : paywall (comme à la création) ou option simplement grisée ? | Paywall, comme pour la création. |
+| Q-R4 | Un demandeur non Miff+ qui touche « Zone de danger » dans le formulaire : paywall (comme à la création) ou option simplement grisée ? | **Tranché le 2026-11-17 : ni l'un ni l'autre, l'option est libre** (`lieu-danger-demande-gratuite.md`). |
 | Q-R5 | Ordre si plusieurs demandes en attente : | Plus ancienne d'abord ; celles du demandeur dans l'ordre inverse (plus récente en haut). |
 | Q-R6 | Plafond de 10 par Miff : **compteur strict** (règles plus complexes, risque de dérive, §5.2) ou **repli** (plafond dur de 3 par membre seulement, soit ≤ 42 demandes, et 10 affiché au créateur) ? | Compteur strict, **sous réserve** de l'avis de `backend-data` après les tests ; bascule vers le repli sans nouvelle question si le compteur s'avère fragile. |
 | Q-R7 | Refuser : confirmation ou annulation possible (« Annuler » pendant 5 s) ? | Ni l'une ni l'autre (refus sans conséquence pour le demandeur, qui peut redemander). |

@@ -9,7 +9,7 @@ rules_version = '2';
 // connue R-LIEU-POS ; renouvellement d'un consentement actif R-LIEU-3), puis le 2026-11-05 (SESS-1 temps 1) et le 2026-11-06
 // (R-PHOTO-LOC), puis le 2026-11-10 (fichier de `main` de ce jour : 3 lieux gratuits p1/p2/p3, mode voyage, R-LIEU-1 au plus tard
 // à cette date ; informations du PM, non vérifiables par l'agent, à confirmer dans la console : Firestore > Règles). NON DÉPLOYÉ :
-// SESS-1 temps 2 (deviceIdRequired() = true) et, depuis la PR backend/lieu-demande, la demande d'ajout d'un lieu (LIEU-REQ-A, point 13). Et, depuis la PR backend/jetons-appareil, les jetons d'appareil (SRV-2R, point 14). Tout déploiement suit la procédure
+// SESS-1 temps 2 (deviceIdRequired() = true) et, depuis la PR backend/lieu-demande, la demande d'ajout d'un lieu (LIEU-REQ-A, point 13). Et, depuis la PR backend/jetons-appareil, les jetons d'appareil (SRV-2R, point 14). Et, depuis la PR backend/description-update, la description facultative d'une photo d'update (DESC-R, clé « description » de validPhoto). **Mise à jour du 2026-11-19 : les règles de l'alerte « Je suis en danger » (point 16) et du quota d'alertes (point 17) ont été déployées par le PM le 2026-11-18 au commit 13ec6177 ; la fonction `notifierAlerte` reste NON DÉPLOYÉE.** Tout déploiement suit la procédure
 // docs/dev/deploiement-regles.md et l'accord explicite du PM.
 //
 // Principes :
@@ -79,7 +79,7 @@ rules_version = '2';
 // 13. Demande d'ajout d'un lieu par un membre (LIEU-REQ-A, ticket docs/tickets/demande-ajout-lieu.md, décisions du PM D1 à D9 du 2026-11-11) — NON DÉPLOYÉ
 //     (le fichier déployé est celui du 2026-11-10 : en production, `placeRequests` et `meta` sont refusés par défaut). Un membre NON créateur dépose
 //     une demande miffs/{id}/placeRequests/{uid}_{1..3} (trois emplacements fixes par membre ; 9 clés exactes dont la catégorie ; `requestedBy` = soi ; `createdAt` =
-//     heure serveur ; `risk` = demandeur Miff+) ; un compteur miffs/{id}/meta/placeRequests tient le plafond de 10 par Miff, écrit DANS LE MÊME LOT
+//     heure serveur ; `type` = `trusted` ou `risk` : la zone de danger se DEMANDE sans Miff+, voir point 15) ; un compteur miffs/{id}/meta/placeRequests tient le plafond de 10 par Miff, écrit DANS LE MÊME LOT
 //     (la règle de la demande exige `lastReqId` = cette demande et `updatedAt` = request.time ; la règle du compteur contrôle +1 / -1 et la borne).
 //     Lecture : le créateur lit toutes les demandes, le demandeur les siennes (requête filtrée), les autres membres rien. Aucune modification.
 //     Suppression : le créateur (sans contrainte) ou le demandeur (compteur -1 dans le lot). Accepter = lot de 3 : lieu (règles de `places` INCHANGÉES)
@@ -98,6 +98,35 @@ rules_version = '2';
 //     compté (les règles ne savent pas compter) : un seul identifiant est écrivable à la fois (celui de la session) ; le nouvel appareil supprime les autres au
 //     lot de connexion. `notifState/{miffId}` (état du serveur : idempotence, plafond horaire) n'a AUCUNE règle : refusé par défaut, lu et écrit avec les droits
 //     Admin seulement. Remplace l'ancien bloc `devices` (seule règle existante modifiée : voir data-model.md §2.10).
+//
+// 15. Zone de danger DEMANDÉE sans Miff+ (LIEU-DANGER-REQ, ticket docs/tickets/lieu-danger-demande-gratuite.md, décision du PM du 2026-11-17) — NON DÉPLOYÉ.
+//     Une demande `placeRequests` de type `risk` n'exige PLUS que le demandeur soit Miff+ (une seule condition retirée de la création de la demande :
+//     `isPremiumOneRead(demandeur)`). Les deux autres contraintes restent APPLIQUÉES PAR LES RÈGLES, inchangées : (a) ACCEPTER = créer le lieu `risk`
+//     dans `places` : Miff+ du CRÉATEUR (validPlaceCreate, isPremiumOneRead du créateur) ; la demande n'est supprimée que dans le même lot : lot refusé en
+//     entier si le créateur n'est pas Miff+ ; (b) DÉCLARER directement un lieu `risk` ou passer un lieu à `risk` : même fonction (validPlaceCreate /
+//     validPlaceUpdate), Miff+ du créateur. Aucune règle de `places` n'est modifiée. Une demande `risk` coûte 5 lectures de règles au lieu de 6.
+//
+// 16. Alerte « Je suis en danger » (AD-B1, ticket docs/tickets/alerte-danger.md §6, §10, décisions du PM du 2026-11-18) — DÉPLOYÉ le 2026-11-18 (commit 13ec6177, par le PM). Document
+//     miffs/{miffId}/alerts/{uid} : la clé de l'alerte EST le chemin (Miff d'origine + auteur), aucun champ miffId ni uid ; AU PLUS une alerte par
+//     auteur et par Miff ; 7 clés exactes (status, startedAt, expiresAt, endedAt, seq, deviceId, purgeAt) ; AUCUNE position, aucun texte libre.
+//     Création : l'auteur seul, Miff existante, partage actif DANS CETTE MIFF après le lot, deviceId = session, status = active, startedAt = heure
+//     serveur, endedAt nul, seq = 1, durée de 7 jours AU PLUS imposée côté serveur (voir alertExpiryWindow : le client ne peut pas écrire « heure du
+//     serveur + 7 j », la règle impose donc une FENÊTRE (6 j, 7 j] et jamais plus de 7 jours), purgeAt = expiresAt + 2 j (règle TTL à poser par le PM).
+//     Ré-armement (même document, après fin ou expiration) : seq + 1, au moins 60 s depuis l'ancien startedAt, mêmes conditions que la création ;
+//     refusé tant que l'alerte est active et non expirée. Fin manuelle : l'auteur seul, active -> ended, endedAt = heure serveur, purgeAt <= 3 j, et deviceId =
+//     session (un autre appareil qui adopte l'alerte réécrit son identifiant dans le même geste). Lecture (get et list) : tout membre de la Miff existante,
+//     SANS réciprocité de partage (décision D16 : tout membre est prévenu, le document ne contient aucune position). Suppression : l'auteur ou le créateur, à
+//     tout moment, et les lots d'arrêt du partage, de départ et de retrait EXIGENT la suppression de l'alerte de cette Miff (comme le statut, la photo et la
+//     position). Aucune règle de position, de statut ni de photo n'est modifiée par l'alerte.
+//     Limites assumées : (a) les règles ne comptent pas entre Miffs : « une alerte à la fois » est tenue par l'application ; (b) le ré-armement de 60 s est
+//     contournable par suppression puis recréation (la vraie barrière est le QUOTA de 3 débuts par 24 h, qui compte aussi la recréation : point 17) ;
+//     (c) le créateur ne peut supprimer l'alerte d'un membre QUE dans le lot qui retire ce membre (existsAfter de sa fiche) ; il ne peut pas l'effacer seul. Ce lot coûte 20 lectures de règles sur 20
+//     SANS CACHE quand il supprime aussi l'alerte (18 sans alerte) : exactement la limite, sans marge ; le créateur ne peut pas la supprimer dans un lot séparé avant.
+//
+// 17. Quota d'alertes (décision du PM du 2026-11-18) — DÉPLOYÉ le 2026-11-18 (commit 13ec6177, par le PM) : au plus 3 DÉBUTS d'alerte par utilisateur sur une fenêtre glissante de 24 h, toutes Miffs confondues, appliqués PAR LES
+//     RÈGLES (refus permission-denied du 4e : l'utilisateur sait qu'il est refusé, aucun refus silencieux). Document users/{uid}/quota/alerts (cases s0 s1 s2 + lastMiffId + updatedAt + expireAt) écrit
+//     dans le MÊME lot que le début ou le ré-armement de l'alerte (alertQuotaOk) ; voir le bloc de commentaires « Quota d'alertes » plus bas. Terminer ne rend pas le crédit. Le plafond de
+//     10 débuts par 24 h de la fonction notifierAlerte disparaît (la fonction ne notifie que des débuts déjà acceptés par les règles) ; le 1 par minute de la fonction reste.
 //
 // Coût : chaque get()/exists()/getAfter()/existsAfter() dans une règle est
 // facturé comme une lecture (même si la requête est refusée) et est limité à
@@ -362,7 +391,9 @@ service cloud.firestore {
             && n.consentVersion == o.consentVersion
             && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/status/$(uid))
             && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/photos/$(uid))
-            && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/positions/$(uid)))
+            && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/positions/$(uid))
+            // Alerte (AD-B1) : arrêter le partage retire aussi l'alerte de cette Miff (une alerte ne vit que tant que la personne partage ici).
+            && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/alerts/$(uid)))
           ||
           // Renouveler un consentement ACTIF (R-LIEU-3, accepté puis confirmé par le PM le 2026-11-01) : le partage reste actif,
           // un nouveau texte est accepté. Heure serveur, revokedAt vide, version de LARGEUR FIXE (isConsentVersion : AAAA-MM-vNN,
@@ -452,13 +483,16 @@ service cloud.firestore {
         );
     }
 
-    // Quitter / être retiré : le statut, la photo et la dernière position doivent disparaître dans le
-    // même batch (sinon une trace de position resterait visible d'un ex-membre).
+    // Quitter / être retiré : le statut, la photo, la dernière position et l'ALERTE (AD-B1) doivent disparaître dans le
+    // même batch (sinon une trace de position resterait visible d'un ex-membre, ou une alerte d'une personne qui n'est plus membre).
+    // Budget (AD-B1) : l'alerte ajoute 1 lecture à ce contrôle ; la branche « retrait » lit le créateur en UNE lecture (isOwnerOneRead, même verdict
+    // qu'isOwner : une Miff absente fait échouer get(), donc refuse) pour que le lot de retrait reste à 18 lectures sur 20 sans alerte, 19 avec elle.
     function memberDeleteOk(miffId, uid) {
       return isSignedIn()
         && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/status/$(uid))
         && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/photos/$(uid))
         && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/positions/$(uid))
+        && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/alerts/$(uid))
         && (
           (isSelf(uid) && resource.data.role == 'member')
           // Le créateur ne peut partir qu'en supprimant la Miff dans le même batch.
@@ -466,7 +500,7 @@ service cloud.firestore {
               && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)))
           // Seul le créateur retire un autre membre, ET le code de la Miff est renouvelé dans le même
           // lot (décision PM du 2026-10-22). Le départ volontaire (ci-dessus) n'impose rien.
-          || (!isSelf(uid) && isOwner(miffId) && codeRenewed(miffId))
+          || (!isSelf(uid) && isOwnerOneRead(miffId) && codeRenewed(miffId))
         );
     }
 
@@ -804,11 +838,19 @@ service cloud.firestore {
 
     // Photo de la dernière update (au plus une par membre et par Miff).
     // Clés : jpeg, createdAt, expiresAt, lat, lng, measuredAt, TOUTES obligatoires (R-PHOTO-LOC : une photo est toujours localisée). PAS de deviceId (SESS-1).
+    // + description (DESC-R, ticket docs/tickets/description-update.md) : texte libre FACULTATIF de 1 à 140 unités UTF-16 (même comptage que les noms,
+    // isStr), « absente plutôt que vide » : jamais null, jamais "" (le client n'écrit la clé que si le texte nettoyé n'est pas vide). La règle ne peut pas
+    // juger les espaces seuls, les retours à la ligne ni les caractères de contrôle : le nettoyage (trim, retours à la ligne remplacés) est un contrat du
+    // client. Donnée saisie librement, pouvant contenir des données personnelles : même durée de vie, même lecture et mêmes suppressions que la photo
+    // (aucune règle de lecture ni de suppression ne change). Contrôle pur sur les données : aucune lecture de règles de plus.
+    // Republication : « set » sans fusion = le document est ÉCRASÉ, description comprise (une republication sans description l'efface) ; une mise à jour
+    // PARTIELLE (update / merge) qui ne touche pas la clé GARDE l'ancienne description (document fusionné jugé) : le contrat du client impose « set ».
     function validPhoto(miffId, uid) {
       let d = request.resource.data;
       let s = getAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)).data.sharing;
-      return d.keys().hasOnly(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt'])
+      return d.keys().hasOnly(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt', 'description'])
         && d.keys().hasAll(['jpeg', 'createdAt', 'expiresAt', 'lat', 'lng', 'measuredAt'])
+        && (!('description' in d) || isStr(d.description, 1, 140))
         && d.jpeg is bytes && d.jpeg.size() > 0 && d.jpeg.size() <= 150000
         && d.createdAt == request.time
         && d.expiresAt is timestamp
@@ -907,6 +949,142 @@ service cloud.firestore {
         );
     }
 
+    // -------------------------------------------------------------------------
+    // Quota d'alertes : 3 DÉBUTS d'alerte au plus par utilisateur et par fenêtre glissante de 24 h, toutes Miffs confondues (décision du PM du 2026-11-18). DÉPLOYÉ le 2026-11-18 (commit 13ec6177, par le PM).
+    // Document users/{uid}/quota/alerts : trois cases s0, s1, s2 (heure serveur du début qui l'a remplie, ou null), lastMiffId (Miff du dernier début), updatedAt, expireAt.
+    // MÉCANISME : une règle ne sait pas compter, elle valide une transition. Un début d'alerte (création OU ré-armement) n'est accepté que si le MÊME lot écrit ce document
+    // en REMPLAÇANT une case libre (null) ou périmée (début d'il y a 24 h ou plus) par request.time : au plus 3 cases pleines dans toute fenêtre de 24 h, donc 3 débuts. Le 4e est
+    // refusé (permission-denied) tant qu'aucune case n'a 24 h. Terminer une alerte ne rend aucun crédit ; supprimer et recréer l'alerte en consomme un de plus ; l'heure est celle du SERVEUR
+    // (request.time), jamais celle de l'appareil ; le compteur ne s'écrit qu'à l'identique d'un début (une seule case à la fois, valeur = request.time) : on ne peut ni le remettre à zéro, ni
+    // reculer une case. Il est lié à UNE Miff par lot (lastMiffId = Miff de l'alerte) : un lot ne peut pas démarrer des alertes dans deux Miffs avec un seul crédit. 0 lecture de règles pour écrire
+    // ce document ; +1 lecture (getAfter) pour l'alerte qui le revendique.
+    // SUPPRESSION (revue de #274, M1 du delta) : le compteur ne se supprime que si le profil n'existe plus après l'opération (effacement RGPD) ET si les trois cases sont vides ou vieilles de 24 h ou
+    // plus (quotaAllFree) : sinon « supprimer le profil, supprimer le compteur, recréer le profil » le remettrait à zéro (le profil se supprime seul : sa règle n'est pas modifiée). CONSÉQUENCE : une
+    // suppression de compte dans les 24 h qui suivent un début d'alerte NE PEUT PAS effacer le compteur (refus) ; il reste orphelin jusqu'à la règle TTL `expireAt` (3 jours au plus) ; le client tolère ce refus.
+    // LIMITES : (1) un utilisateur qui crée un AUTRE compte Auth (autre uid) repart à zéro : aucune règle ne relie les comptes d'une même personne ; (2) la règle TTL `expireAt` (à poser par le PM AVANT le
+    // déploiement des règles) l'efface au plus tard ~3 jours après le dernier début (toutes les cases ont alors plus de 24 h : aucun contournement).
+    // -------------------------------------------------------------------------
+    // Forme : 6 clés exactes (s0, s1, s2, lastMiffId, updatedAt, expireAt) ; cases = horodatage serveur ou null ; Miff = identifiant bien formé ; expireAt = fenêtre de 1 à 3 jours (contrat du client : appareil + 2 jours).
+    function quotaShape(d) {
+      return d.keys().hasOnly(['s0', 's1', 's2', 'lastMiffId', 'updatedAt', 'expireAt'])
+        && d.keys().hasAll(['s0', 's1', 's2', 'lastMiffId', 'updatedAt', 'expireAt'])
+        && (d.s0 == null || d.s0 is timestamp)
+        && (d.s1 == null || d.s1 is timestamp)
+        && (d.s2 == null || d.s2 is timestamp)
+        && isMiffId(d.lastMiffId)
+        && d.updatedAt == request.time
+        && d.expireAt is timestamp
+        && d.expireAt > request.time + duration.value(1, 'd')
+        && d.expireAt <= request.time + duration.value(3, 'd');
+    }
+
+    // Les trois cases sont vides ou ont 24 h ou plus (aucun crédit en cours) : seule condition pour supprimer le compteur. Aucune lecture de règles (resource.data).
+    function quotaAllFree(d) {
+      return (d.s0 == null || d.s0 <= request.time - duration.value(24, 'h'))
+        && (d.s1 == null || d.s1 <= request.time - duration.value(24, 'h'))
+        && (d.s2 == null || d.s2 <= request.time - duration.value(24, 'h'));
+    }
+
+    // Création du compteur (premier début) : la case s0 vaut l'heure du serveur, les deux autres sont vides.
+    function quotaFirstStart(d) {
+      return d.s0 == request.time && d.s1 == null && d.s2 == null;
+    }
+
+    // Mise à jour : UNE case (slot) change, elle vaut l'heure du serveur, elle était vide ou avait 24 h ou plus ; seuls cette case, lastMiffId, updatedAt et expireAt bougent.
+    function quotaSlotUsed(slot) {
+      let d = request.resource.data;
+      return affected().hasAll([slot, 'updatedAt'])
+        && affected().hasOnly([slot, 'lastMiffId', 'updatedAt', 'expireAt'])
+        && d[slot] == request.time
+        && (resource.data[slot] == null || resource.data[slot] <= request.time - duration.value(24, 'h'));
+    }
+
+    // L'alerte de cette Miff revendique le crédit écrit DANS CE LOT : le compteur (après le lot) porte l'heure du serveur et la Miff de l'alerte. UNE lecture de règles (getAfter).
+    // Si le compteur n'existe pas après le lot, getAfter échoue : refus (aucun début d'alerte sans crédit).
+    function alertQuotaOk(miffId, uid) {
+      let q = getAfter(/databases/$(database)/documents/users/$(uid)/quota/alerts).data;
+      return q.updatedAt == request.time && q.lastMiffId == miffId;
+    }
+
+    // -------------------------------------------------------------------------
+    // Alerte « Je suis en danger » (AD-B1, ticket docs/tickets/alerte-danger.md §10) — DÉPLOYÉ le 2026-11-18 (commit 13ec6177, par le PM). Document miffs/{miffId}/alerts/{uid}.
+    // SENSIBLE par nature (une personne se déclare en danger) mais SANS position, SANS texte libre, SANS photo.
+    // -------------------------------------------------------------------------
+    // Durée de l'alerte : 7 jours AU PLUS, imposés par la règle. Un client ne peut pas écrire « heure du serveur + 7 jours » (la seule valeur serveur est
+    // request.time, utilisable pour startedAt), donc expiresAt est calculé par l'appareil et la règle impose une FENÊTRE autour de la valeur exacte :
+    // strictement plus de 6 jours et jamais plus de 7 jours après l'heure du serveur. Contrat du client : expiresAt = (heure de l'appareil) + 7 jours - 2 heures
+    // (marge pour une horloge en avance de 2 h au plus ; en retard, jusqu'à 22 h). Aucune lecture de règles.
+    function alertExpiryWindow(d) {
+      return d.expiresAt is timestamp
+        && d.expiresAt > request.time + duration.value(6, 'd')
+        && d.expiresAt <= request.time + duration.value(7, 'd');
+    }
+
+    // Partage de position ACTIF dans cette Miff après le lot (comme la position et la photo) : on ne déclare pas d'alerte dans une Miff où l'on ne partage
+    // pas (la fiche doit exister : getAfter échoue sinon, donc refus). UNE lecture de règles.
+    function alertSharingAfter(miffId, uid) {
+      return getAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)).data.sharing.enabled == true;
+    }
+
+    // Un compte, un seul appareil (SESS-1) : la clé deviceId est OBLIGATOIRE (nouvelle donnée, aucune application existante à ménager : indépendant du temps 1 /
+    // temps 2 de deviceIdRequired) et égale à celle de la session du compte. UNE lecture de règles (si la session n'existe pas, get() échoue : refus).
+    // Mesure de COHÉRENCE, pas de sécurité : un client modifié peut recopier l'identifiant lu dans sa propre session.
+    function alertDeviceOk(d, uid) {
+      return isDeviceId(d.deviceId)
+        && get(/databases/$(database)/documents/users/$(uid)/session/active).data.deviceId == d.deviceId;
+    }
+
+    // Forme : 7 clés EXACTES, aucune autre ; types ; cohérence état / date de fin (active : endedAt nul ; ended : endedAt présent). Aucune lecture.
+    function alertShape(d) {
+      return d.keys().hasOnly(['status', 'startedAt', 'expiresAt', 'endedAt', 'seq', 'deviceId', 'purgeAt'])
+        && d.keys().hasAll(['status', 'startedAt', 'expiresAt', 'endedAt', 'seq', 'deviceId', 'purgeAt'])
+        && d.startedAt is timestamp
+        && d.expiresAt is timestamp
+        && d.purgeAt is timestamp
+        && d.seq is int && d.seq >= 1
+        && ((d.status == 'active' && d.endedAt == null) || (d.status == 'ended' && d.endedAt is timestamp));
+    }
+
+    // Début d'une alerte (création ou ré-armement) : active, démarrée à l'heure du serveur, durée de 7 jours au plus, pas de fin, suppression automatique 2 jours
+    // après l'échéance, appareil de la session. Le numéro de démarrage (seq) est jugé à part par chaque règle. UNE lecture de règles (la session).
+    function alertStart(d, uid) {
+      return d.status == 'active'
+        && d.startedAt == request.time
+        && alertExpiryWindow(d)
+        && d.endedAt == null
+        && d.purgeAt == d.expiresAt + duration.value(2, 'd')
+        && alertDeviceOk(d, uid);
+    }
+
+    // Ré-armement : le document existe déjà (fin manuelle OU échéance dépassée) ; jamais tant que l'alerte est active et non expirée. seq + 1, au moins 60 s
+    // depuis l'ancien startedAt (D20, silencieux : contournable par suppression puis recréation, la fonction reste la vraie barrière), mêmes conditions qu'un
+    // début, et crédit du quota d'alertes écrit dans le même lot (3 par 24 h et par utilisateur). 4 lectures de règles : session, Miff, partage, quota.
+    function alertRearm(miffId, uid) {
+      let d = request.resource.data;
+      return (resource.data.status == 'ended' || resource.data.expiresAt <= request.time)
+        && request.time >= resource.data.startedAt + duration.value(60, 's')
+        && d.seq == resource.data.seq + 1
+        && alertQuotaOk(miffId, uid)
+        && alertStart(d, uid)
+        && miffAlive(miffId)
+        && alertSharingAfter(miffId, uid);
+    }
+
+    // Fin manuelle : depuis « active » seulement, l'heure de fin est celle du serveur, suppression automatique dans 1 à 3 jours (purgeAt est calculé par
+    // l'appareil : fenêtre, comme expiresAt), SEULS status, endedAt, purgeAt et deviceId changent (un autre appareil qui a adopté l'alerte écrit son propre
+    // identifiant de session dans le même geste ; un appareil remplacé ne peut plus terminer l'alerte). Une alerte active mais expirée peut aussi être
+    // terminée (la fonction ne notifie pas une fin postérieure à l'échéance). UNE lecture de règles (la session).
+    function alertEnd(uid) {
+      let d = request.resource.data;
+      return resource.data.status == 'active'
+        && affected().hasOnly(['status', 'endedAt', 'purgeAt', 'deviceId'])
+        && d.status == 'ended'
+        && d.endedAt == request.time
+        && d.purgeAt > request.time + duration.value(1, 'd')
+        && d.purgeAt <= request.time + duration.value(3, 'd')
+        && alertDeviceOk(d, uid);
+    }
+
     // =========================================================================
     // users/{uid} — profil privé (lisible uniquement par son propriétaire)
     // Les autres membres voient une COPIE du profil dans miffs/*/members/*.
@@ -980,6 +1158,18 @@ service cloud.firestore {
         // Libérer le slot n'est possible que si on n'est plus membre (sinon : 2 Miffs gratuites).
         allow delete: if isSelf(uid)
           && !existsAfter(/databases/$(database)/documents/miffs/$(resource.data.miffId)/members/$(uid));
+      }
+
+      // ---- Quota d'alertes (3 débuts par 24 h et par utilisateur, décision du PM du 2026-11-18) — DÉPLOYÉ le 2026-11-18 (commit 13ec6177, par le PM) ----------------------------------------
+      // Lisible de son propriétaire seul (l'app peut annoncer le refus AVANT d'écrire). Création : premier début (case s0 = heure du serveur). Mise à jour : une case libre ou périmée
+      // (24 h ou plus) devient l'heure du serveur, rien d'autre ; voir quotaSlotUsed. Suppression : seulement si le profil n'existe plus après l'opération (effacement RGPD) ET si les trois cases
+      // sont vides ou vieilles de 24 h ou plus (sinon supprimer le profil puis le compteur puis recréer le profil remettrait le compteur à zéro). 0 lecture de règles pour écrire, 1 pour supprimer. Aucune règle de liste.
+      match /quota/alerts {
+        allow get: if request.auth != null && request.auth.uid == uid;
+        allow create: if isSelf(uid) && quotaShape(request.resource.data) && quotaFirstStart(request.resource.data);
+        allow update: if isSelf(uid) && quotaShape(request.resource.data)
+          && (quotaSlotUsed('s0') || quotaSlotUsed('s1') || quotaSlotUsed('s2'));
+        allow delete: if isSelf(uid) && !existsAfter(/databases/$(database)/documents/users/$(uid)) && quotaAllFree(resource.data);
       }
 
       // ---- Jetons de notification (SRV-2R) — NON DÉPLOYÉ ---------------------------------------------------------------------
@@ -1126,6 +1316,30 @@ service cloud.firestore {
           || (isMember(miffId) && resource.data.expiresAt <= request.time);
       }
 
+      // ---- Alerte « Je suis en danger » (SENSIBLE, AD-B1) — DÉPLOYÉ le 2026-11-18 (commit 13ec6177, par le PM) --------------------------------------------------------
+      // Lecture (get ET liste : l'écouteur du Feed lit la sous-collection) : tout membre d'une Miff qui existe, SANS réciprocité de partage (D16 : tout membre
+      // est prévenu ; le document ne contient aucune position). Un ex-membre, un étranger, un visiteur : refusés. 2 lectures de règles.
+      // Création / ré-armement / fin : l'auteur seul (voir alertShape, alertStart, alertRearm, alertEnd). Aucune autre modification. Le créateur ne peut ni
+      // créer, ni terminer, ni modifier l'alerte d'un membre.
+      // Suppression : l'auteur (à tout moment : lots d'arrêt du partage, de départ, de suppression de compte ; nettoyage de son alerte terminée) ou le créateur,
+      // MAIS SEULEMENT dans le lot qui retire ce membre (la fiche du membre n'existe plus après le lot : existsAfter) : le créateur ne peut pas effacer seul, en silence,
+      // l'alerte d'un membre (revue de #274, M1). Coût : +1 lecture de règles pour le créateur (2 au lieu de 1) ; le lot de retrait qui supprime aussi l'alerte atteint 20 sur 20.
+      match /alerts/{uid} {
+        allow get, list: if miffAlive(miffId) && isMember(miffId);
+        allow create: if isSelf(uid)
+          && miffAlive(miffId)
+          && alertShape(request.resource.data)
+          && request.resource.data.seq == 1
+          && alertQuotaOk(miffId, uid)
+          && alertStart(request.resource.data, uid)
+          && alertSharingAfter(miffId, uid);
+        allow update: if isSelf(uid)
+          && alertShape(request.resource.data)
+          && (alertRearm(miffId, uid) || alertEnd(uid));
+        allow delete: if isSelf(uid)
+          || (isOwnerOneRead(miffId) && !existsAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)));
+      }
+
       // ---- Lieux (zone de confiance / zone de danger), définis par le créateur
       match /places/{placeId} {
         allow get, list: if isMember(miffId) && miffAlive(miffId);
@@ -1138,7 +1352,7 @@ service cloud.firestore {
       // Un membre NON créateur dépose une demande ; seul le créateur la transforme en lieu (règles de `places` INCHANGÉES : limite gratuite et zone
       // de danger Miff+ s'appliquent à l'acceptation comme à une création directe). Lecture : le créateur lit TOUTES les demandes de sa Miff ; le demandeur
       // lit les SIENNES (requête filtrée sur requestedBy, encore membre, Miff existante) ; les autres membres : rien. Création : emplacement
-      // {uid}_{1..3} du demandeur, forme exacte (9 clés), requestedBy = soi, createdAt = heure serveur, `risk` = demandeur Miff+, créateur et non-membre exclus,
+      // {uid}_{1..3} du demandeur, forme exacte (9 clés), requestedBy = soi, createdAt = heure serveur, `type` = `trusted` ou `risk` SANS condition d'abonnement du demandeur (LIEU-DANGER-REQ, point 15), créateur et non-membre exclus,
       // compteur +1 dans le même lot. Aucune modification (update interdit : on retire et on redemande). Suppression : le créateur (refuser, accepter,
       // nettoyer les demandes expirées ou d'un ex-membre : aucune contrainte sur le compteur, il est maître de sa Miff) ou le demandeur (retrait, compteur -1
       // dans le même lot ; sans condition d'appartenance : un ex-membre peut effacer sa propre demande). L'expiration à 30 jours n'est PAS contrôlée par
@@ -1152,7 +1366,6 @@ service cloud.firestore {
           && validRequestShape(request.resource.data)
           && request.resource.data.requestedBy == request.auth.uid
           && request.time == request.resource.data.createdAt
-          && (request.resource.data.type == 'trusted' || isPremiumOneRead(request.auth.uid))
           && isPlainMember(miffId)
           && miffAlive(miffId)
           && requestCounterMoved(miffId, reqId);

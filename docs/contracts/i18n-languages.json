@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "sourceLanguage": "fr",
+  "fallbackLanguage": "en",
+  "brandTerms": ["Miff+", "Miff"],
+  "nbspRequiredKeyPatterns": ["^countdown_duration_"],
+  "shortLabelKeyPatterns": ["_button$", "_action$", "_cta$", "_tab$", "_tab_[a-z0-9]+$", "_chip$", "_label$"],
+  "lengthRatio": { "maxVsSource": 1.5, "minSourceLength": 10, "shortLabelExtra": 0.4 },
+  "lengthBudgets": {},
+  "exceptions": [],
+  "consistency": {
+    "sources": [
+      { "id": "android-enum", "platform": "android", "role": "declaration", "kind": "kotlin-enum-tags", "file": "android/app/src/main/java/com/tomessa/miff/domain/settings/AppLanguage.kt" },
+      { "id": "ios-enum", "platform": "ios", "role": "declaration", "kind": "swift-enum-raw-values", "file": "ios/Miff/Models/Main/AppLanguage.swift" },
+      { "id": "android-locale-filters", "platform": "android", "role": "declaration", "kind": "gradle-locale-filters", "file": "android/app/build.gradle.kts" },
+      { "id": "android-res-dirs", "platform": "android", "role": "resources", "kind": "android-res-dirs", "file": "android/app/src/main/res" },
+      { "id": "ios-bundle-localizations", "platform": "ios", "role": "declaration", "kind": "project-yml-localizations", "file": "ios/project.yml" },
+      { "id": "ios-catalog-languages", "platform": "ios", "role": "resources", "kind": "ios-catalog-languages", "file": "ios/Miff/Resources/Localizable.xcstrings" }
+    ]
+  },
+  "languages": [
+    {
+      "code": "fr",
+      "nativeName": "Français",
+      "plurals": { "required": ["one", "other"], "allowed": ["one", "many", "other"], "recommended": ["one", "many", "other"] },
+      "style": { "spaceBeforeHighPunctuation": "nbsp", "forbidGenderMarks": false, "formalForms": [], "forbiddenTerms": [] },
+      "platforms": {
+        "android": { "status": "required", "resDir": "values-fr" },
+        "ios": { "status": "required", "code": "fr" }
+      }
+    },
+    {
+      "code": "en",
+      "nativeName": "English",
+      "plurals": { "required": ["one", "other"], "allowed": ["one", "other"], "recommended": ["one", "other"] },
+      "style": { "spaceBeforeHighPunctuation": "none", "forbidGenderMarks": false, "formalForms": [], "forbiddenTerms": [] },
+      "platforms": {
+        "android": { "status": "required", "resDir": "values" },
+        "ios": { "status": "required", "code": "en" }
+      }
+    },
+    {
+      "code": "es",
+      "nativeName": "Español",
+      "plurals": { "required": ["one", "other"], "allowed": ["one", "many", "other"], "recommended": ["one", "many", "other"] },
+      "style": {
+        "spaceBeforeHighPunctuation": "none",
+        "forbidGenderMarks": true,
+        "formalForms": [
+          { "pattern": "\\busted(es)?\\b", "flags": "iu" },
+          { "pattern": "\\bvosotros\\b", "flags": "iu" }
+        ],
+        "forbiddenTerms": []
+      },
+      "platforms": {
+        "android": { "status": "planned", "resDir": "values-es" },
+        "ios": { "status": "planned", "code": "es" }
+      }
+    },
+    {
+      "code": "it",
+      "nativeName": "Italiano",
+      "plurals": { "required": ["one", "other"], "allowed": ["one", "many", "other"], "recommended": ["one", "many", "other"] },
+      "style": {
+        "spaceBeforeHighPunctuation": "none",
+        "forbidGenderMarks": true,
+        "formalForms": [
+          { "pattern": "\\bLei\\b", "flags": "u" }
+        ],
+        "forbiddenTerms": []
+      },
+      "platforms": {
+        "android": { "status": "planned", "resDir": "values-it" },
+        "ios": { "status": "planned", "code": "it" }
+      }
+    },
+    {
+      "code": "pt",
+      "nativeName": "Português",
+      "plurals": { "required": ["one", "other"], "allowed": ["one", "many", "other"], "recommended": ["one", "many", "other"] },
+      "style": {
+        "spaceBeforeHighPunctuation": "none",
+        "forbidGenderMarks": true,
+        "formalForms": [
+          { "pattern": "\\bvocês?\\b", "flags": "iu" },
+          { "pattern": "\\bvoces?\\b", "flags": "iu" }
+        ],
+        "forbiddenTerms": []
+      },
+      "platforms": {
+        "android": { "status": "planned", "resDir": "values-pt" },
+        "ios": { "status": "planned", "code": "pt" }
+      }
+    },
+    {
+      "code": "de",
+      "nativeName": "Deutsch",
+      "plurals": { "required": ["one", "other"], "allowed": ["one", "other"], "recommended": ["one", "other"] },
+      "style": {
+        "spaceBeforeHighPunctuation": "none",
+        "forbidGenderMarks": true,
+        "formalForms": [
+          { "pattern": "\\b(Sie|Ihr|Ihre|Ihren|Ihrem|Ihres|Ihnen|Ihrer)\\b", "flags": "u" }
+        ],
+        "forbiddenTerms": []
+      },
+      "platforms": {
+        "android": { "status": "planned", "resDir": "values-de" },
+        "ios": { "status": "planned", "code": "de" }
+      }
+    }
+  ]
+}

@@ -93,6 +93,39 @@ object TrackingLimits {
 
     /** A whole battery pass (all the Miffs) never goes on longer than this; what is not reached waits for the next opening. */
     const val BATTERY_PASS_MAX_MILLIS = 8_000L
+
+    /**
+     * FEED-REFRESH-POSITION (pull to refresh on the Feed, docs/tickets/feed-refresh-position.md): the position is read at most once per this time, however often the person pulls
+     * (anti-abuse and battery: a pull is a gesture, not a tracking). The wait for the position itself is [POSITION_WAIT_MILLIS] (3 s), the one of every other pass.
+     */
+    const val PULL_MIN_INTERVAL_MILLIS = 30_000L
+
+    /**
+     * A position that is going to MOVE my presence (an arrival or a departure noticed at a pull) must be this recent: the person asked for "now" (as on iOS, which never reuses a position
+     * at a pull). The provider is asked for a location at most 15 s old ([com.tomessa.miff.data.tracking.FusedPositionSource.currentFresh]); the rest is the time the wait took. The
+     * copy kept on the phone for the choice of the zones (up to [FIX_MAX_AGE_MILLIS]) is too old to say where the person is NOW.
+     */
+    const val PULL_FIX_MAX_AGE_MILLIS = 30L * 1000L
+
+    /**
+     * Hysteresis of a departure noticed from a position (not from the geofencing): the person is taken as having LEFT a zone only when the position is farther than its radius plus
+     * this many metres. The balanced-power position is good to some tens of metres: without a margin, somebody at the edge of the place would be told "has left" for nothing
+     * (a false alert is worse than a late departure, which the geofencing still reports by itself). An ARRIVAL needs no margin (the position is inside the radius).
+     */
+    const val PULL_EXIT_MARGIN_M = 100.0
+}
+
+/** The rate limit of the position read by a pull to refresh, with no I/O. */
+object PullLimit {
+    /** May a position be read now? [lastAtMillis] is when the last pull read one (null: none since the process started). A clock that went back never blocks for good. */
+    fun allowed(
+        lastAtMillis: Long?,
+        nowMillis: Long,
+    ): Boolean {
+        if (lastAtMillis == null) return true
+        val elapsed = nowMillis - lastAtMillis
+        return elapsed < 0 || elapsed >= TrackingLimits.PULL_MIN_INTERVAL_MILLIS
+    }
 }
 
 /** What the battery refresh decides, with no I/O (PM decision, 2026-11-07: the battery is updated when the app is opened and when it is left). */

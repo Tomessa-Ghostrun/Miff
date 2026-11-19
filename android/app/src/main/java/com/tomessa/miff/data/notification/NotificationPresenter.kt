@@ -13,6 +13,9 @@ import androidx.core.content.ContextCompat
 import com.tomessa.miff.MainActivity
 import com.tomessa.miff.R
 import com.tomessa.miff.data.settings.AndroidLanguageStore
+import com.tomessa.miff.domain.notification.CircleAlertEvent
+import com.tomessa.miff.domain.notification.CircleAlertKeys
+import com.tomessa.miff.domain.notification.CircleAlertPayload
 import com.tomessa.miff.domain.notification.CircleNewsKeys
 import com.tomessa.miff.domain.notification.CircleNewsPayload
 import com.tomessa.miff.domain.notification.MiffIdShape
@@ -41,6 +44,15 @@ interface NotificationPresenter {
         news: CircleNewsPayload,
         centerId: String,
         quiet: Boolean,
+    ) = Unit
+
+    /**
+     * ALERTE « Je suis en danger »: "{Prénom} a déclaré une alerte" / "{Prénom} a mis fin à son alerte", pushed by the server. The tray holds ONE notification per author (the end replaces the
+     * start). HIGH importance channel, no quiet version. Never a position, a place or the name of the Miff.
+     */
+    fun showCircleAlert(
+        alert: CircleAlertPayload,
+        centerId: String,
     ) = Unit
 }
 
@@ -197,7 +209,81 @@ class AndroidNotificationPresenter(
         manager.notify(tag, AndroidNotificationTray.TAG_ID, notification)
     }
 
+    /**
+     * ALERTE. Text composed HERE, in the language of the app: the title holds the first name of the author (already cleaned and cut by the parser), the body is fixed. No position, no Miff name,
+     * no hour, no family name. The tap opens the Feed of the Miff concerned (the identifier was validated by the parser and is validated again when the tap comes back). The importance, the
+     * sound and the vibration come from the channel [NotificationChannels.ALERTS] (HIGH, no quiet hours); before Android 8 the priority is HIGH too. A tag per author: the end of an alert
+     * replaces its start.
+     */
+    override fun showCircleAlert(
+        alert: CircleAlertPayload,
+        centerId: String,
+    ) {
+        val context = AndroidLanguageStore.wrap(appContext)
+        val manager = NotificationManagerCompat.from(context)
+        // The check stays INSIDE this method (Android Lint only accepts a permission check it can see next to the call to notify).
+        if (!manager.areNotificationsEnabled()) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) !=
+            PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
+        NotificationChannels.ensure(context)
+        val tag = CircleAlertKeys.trayTag(alert)
+        val open =
+            Intent(context, MainActivity::class.java)
+                .setAction(NotificationIntents.ACTION_OPEN)
+                .putExtra(NotificationIntents.EXTRA_DESTINATION, NotificationDestination.FEED.name)
+                .putExtra(NotificationIntents.EXTRA_KEY, centerId)
+                .putExtra(NotificationIntents.EXTRA_MIFF_ID, alert.miffId)
+                .setData(
+                    Uri
+                        .Builder()
+                        .scheme("miff-notification")
+                        .authority("alert")
+                        .appendPath(tag)
+                        .build(),
+                ).addFlags(
+                    Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP,
+                )
+        val tap =
+            PendingIntent.getActivity(
+                context,
+                CIRCLE_ALERT_REQUEST,
+                open,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+        val started = alert.event == CircleAlertEvent.START
+        val notification =
+            NotificationCompat
+                .Builder(context, NotificationChannels.ALERTS)
+                .setSmallIcon(R.drawable.ic_stat_miff)
+                .setColor(ACTION_BLUE)
+                .setContentTitle(
+                    context.getString(
+                        if (started) R.string.notif_alert_start_title else R.string.notif_alert_end_title,
+                        alert.authorFirstName,
+                    ),
+                ).setContentText(
+                    context.getString(
+                        if (started) R.string.notif_alert_start_body else R.string.notif_alert_end_body,
+                        alert.authorFirstName,
+                    ),
+                ).setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_STATUS)
+                .setAutoCancel(true)
+                .setShowWhen(false)
+                .setContentIntent(tap)
+                .build()
+        // Tag = one per author: the end of an alert replaces its start.
+        manager.notify(tag, AndroidNotificationTray.TAG_ID, notification)
+    }
+
     private companion object {
+        /** Request code of the taps of the alert, above the ones of N9; the data of the intent tells the authors apart. */
+        const val CIRCLE_ALERT_REQUEST = 1001
+
         /** Request code of the taps of N9, above the ones of the other types (their ordinal); the data of the intent tells the authors apart. */
         const val CIRCLE_NEWS_REQUEST = 1000
 

@@ -14,6 +14,8 @@ export const RESULTATS = ["ok", "refuse", "erreur"] as const;
 export const MOTIFS = [
   "suppression", "date_absente", "trop_ancien", "identifiant_invalide", "auteur_absent", "auteur_sans_partage", "prenom_vide",
   "aucun_destinataire", "deja_vu", "plafond", "miff_absente",
+  // Alerte (AD-B2) : ecriture sans changement d'etat, fin posterieure a l'echeance (jamais de notification), fin dont le debut n'a pas ete notifie.
+  "sans_changement", "expiration", "debut_non_notifie",
 ] as const;
 
 export interface ChampsJournal {
