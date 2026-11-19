@@ -33,7 +33,6 @@ extension PlaceFormViewModel {
             let blocked = loaded.mine.count >= PlaceRequestLimits.perMember
             update {
                 $0.loading = false
-                $0.premium = loaded.premium
                 // La Miff est fixe : UNE pastille, pas de sélecteur (le même composant qu'un créateur d'une seule Miff).
                 $0.owned = [OwnedMiff(id: target, name: loaded.miffName, joinedAtMillis: 0)]
                 $0.selectedMiffIds = [target]
@@ -96,21 +95,16 @@ extension PlaceFormViewModel {
                 $0.saving = false
                 $0.end = .saved
             }
-        case .needsPremium(let reason):
-            update {
-                $0.saving = false
-                $0.paywall = reason
-            }
         case .memberLimit:
             update {
                 $0.saving = false
                 $0.requestBlocked = true
                 $0.message = .requestLimitMember
             }
-        case .miffLimit:
+        case .refused:
             update {
                 $0.saving = false
-                $0.message = .requestLimitMiff
+                $0.message = .generic
             }
         case .requestsUnavailable:
             update {

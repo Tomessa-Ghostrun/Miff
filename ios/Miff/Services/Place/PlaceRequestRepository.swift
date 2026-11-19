@@ -82,15 +82,6 @@ final class FirestorePlaceRequestRepository: PlaceRequestRepository {
     func prepare(uid: String, miffId: String) async -> RequestContextLoad {
         let places = self.places
         let store = self.store
-        // Un abonnement inconnu n'est PAS « gratuit » pour la zone de danger : une lecture qui échoue dit « réessaie » au lieu de
-        // fermer ou d'ouvrir sur une supposition.
-        let premium: Bool
-        switch await guarded({ try await places.readEntitlement(uid: uid) }) {
-        case .value(let read):
-            premium = isActive(read)
-        case .failed(let failure, _):
-            return .failed(failure)
-        }
         let details: MiffDetails
         switch await guarded({ try await places.readMiff(miffId: miffId) }) {
         case .value(.exists(let found)):
@@ -128,7 +119,7 @@ final class FirestorePlaceRequestRepository: PlaceRequestRepository {
                 kept.append(request)
             }
         }
-        return .loaded(RequestContext(miffName: details.name, premium: premium, mine: kept))
+        return .loaded(RequestContext(miffName: details.name, mine: kept))
     }
 
     func readMine(uid: String, miffId: String) async -> MineRead {
@@ -140,14 +131,6 @@ final class FirestorePlaceRequestRepository: PlaceRequestRepository {
         case .failed(let failure, _):
             return .failed(failure)
         }
-    }
-
-    /// Miff+ = un abonnement actif qui n'a pas expiré. Aucun document = pas Miff+.
-    func isActive(_ read: EntitlementRead?) -> Bool {
-        guard let read, let expires = read.expiresAtMillis else {
-            return false
-        }
-        return read.active && expires > nowMillis()
     }
 
     // MARK: - Envoyer
@@ -163,10 +146,8 @@ final class FirestorePlaceRequestRepository: PlaceRequestRepository {
         if draft.problem != nil {
             return .failed(.unknown)
         }
-        // La zone de danger est Miff+ pour la personne qui demande (D5) : décidé AVANT d'envoyer, les règles ne font que le répéter.
-        if draft.type == .risk && !context.premium {
-            return .needsPremium(.danger)
-        }
+        // Demander une zone de danger ne demande PAS Miff+ (décision du PM du 2026-11-17, qui remplace D5) : seul le créateur a besoin de
+        // Miff+ pour l'ACCEPTER (`accept`), jamais le demandeur. Aucune lecture d'abonnement ici.
         // 3 demandes en attente au plus (M5) : aucune écriture n'est tentée à la 4e. Les emplacements dans la file du téléphone comptent.
         let waiting = queued.ids(miffId: miffId, uid: uid, nowMillis: nowMillis())
         let taken = Set(context.mine.map { $0.id }).union(waiting)
@@ -242,32 +223,27 @@ final class FirestorePlaceRequestRepository: PlaceRequestRepository {
         return await afterRefusedSubmit(uid: uid, sent: sent, draft: draft)
     }
 
-    /// Un refus sur une Miff qui est toujours là (contrat du backend, section 4) : trois causes se distinguent, la dernière est la limite
-    /// de la Miff.
+    /// Un refus sur une Miff qui est toujours là (contrat du backend, section 4) : une seule cause se distingue (la course sur l'emplacement).
+    /// Pour tout autre refus RIEN n'est affirmé : le plafond de 10 par Miff n'est lisible que par le créateur (compteur réservé), le téléphone
+    /// d'un membre ne peut donc pas le prouver (v2, retour du PM sur Android) ; le résultat est `.refused`, dit par la phrase générique.
     private func afterRefusedSubmit(
         uid: String,
         sent: PlaceRequest,
         draft: PlaceRequestDraft
     ) async -> RequestSubmitResult {
         let store = self.store
-        let places = self.places
         let miffId = sent.miffId
-        // (a) une zone de danger alors que la formule a pris fin depuis l'ouverture du formulaire : l'offre, rien d'autre à faire.
-        if draft.type == .risk,
-           case .value(let read) = await guarded({ try await places.readEntitlement(uid: uid) }),
-           !isActive(read) {
-            return .needsPremium(.danger)
-        }
-        // (b) une course sur l'emplacement (un autre téléphone l'a pris) : les demandes sont relues et, s'il en reste un de libre, le
+        // (a) une course sur l'emplacement (un autre téléphone l'a pris) : les demandes sont relues et, s'il en reste un de libre, le
         // lot repart une fois.
         let fresh: [PlaceRequest]
         switch await guarded({ try await store.readMine(miffId: miffId, uid: uid, fromServer: true) }) {
         case .value(let found):
             fresh = found
         case .failed(let failure, _):
-            // Même la lecture des demandes de la personne est refusée : ce n'est pas la limite de la Miff, les demandes ne sont
-            // simplement pas encore disponibles.
-            return failure == .refused ? .requestsUnavailable : .miffLimit
+            // Même la lecture des demandes de la personne est refusée : les demandes ne sont simplement pas encore disponibles. Une
+            // lecture qui échoue autrement (réseau coupé, inconnu) garde SA phrase (« pas de connexion » ou la générique) : rien n'est
+            // affirmé sur la Miff.
+            return failure == .refused ? .requestsUnavailable : .failed(failure)
         }
         if fresh.contains(where: { $0.id == sent.id }) {
             guard let slot = PlaceRequestSlots.firstFree(uid: uid, existing: fresh) else {
@@ -275,13 +251,17 @@ final class FirestorePlaceRequestRepository: PlaceRequestRepository {
             }
             let again = sentRequest(uid: uid, miffId: miffId, slot: slot, draft: draft)
             let lot = PlaceRequestWrites.create(uid: uid, miffId: miffId, slot: slot, draft: draft)
-            if case .value = await guarded({ try await store.commit(lot) }) {
+            switch await guarded({ try await store.commit(lot) }) {
+            case .value:
                 return .done(again)
+            case .failed(let failure, _):
+                // Le second lot échoue aussi : réseau coupé = sa phrase ; sinon le refus reste sans cause connue.
+                return failure == .offline ? .failed(.offline) : .refused
             }
-            return .miffLimit
         }
-        // (c) tous les emplacements étaient libres : la Miff porte toutes les demandes qu'elle prend (10), ou le compteur a dérivé trop haut.
-        return .miffLimit
+        // (b) tous les emplacements étaient libres : la cause ne peut pas être connue d'un membre (une règle, ou le compteur de la Miff que
+        // seul le créateur lit) : rien n'est affirmé.
+        return .refused
     }
 
     // MARK: - Reprendre

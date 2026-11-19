@@ -2,8 +2,6 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
-## [0.44.0] - 2026-11-17 : zoom sur l'aperçu de carte d'un lieu (LIEU-ZOOM)
-
 ## [0.50.0] - 2026-11-18 : la ligne « Zone de danger » est toujours dans la légende du graphique (décision du PM)
 
 Décision du PM après la recette de « Répartition du temps » : la ligne **« Zone de danger »** de la légende s'affiche **toujours quand sa part arrondie est de 1 % ou plus**, quitte à remplacer le 4e lieu. Branche `android/legende-danger`, PR de suivi. Numéro : #224 (À propos) a pris 0.49.0, celle-ci prend 0.50.0 (à renuméroter au merge si l'ordre change).49.0) puis celle-ci (0.50.0) puis #275 (0.51.0) ; à renuméroter au merge si l'ordre change. Android seulement. **Aucune nouvelle clé de texte, aucune lecture ni écriture serveur, aucune permission, aucune dépendance.**

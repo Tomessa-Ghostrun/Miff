@@ -91,7 +91,7 @@ final class PlaceRequestsTests: XCTestCase {
         XCTAssertFalse("\(request)".contains("judo"))
         XCTAssertFalse("\(testRequestDraft())".contains("judo"))
         XCTAssertFalse("\(RequestsView.ready([request]))".contains("judo"))
-        XCTAssertFalse("\(RequestContext(miffName: "Famille", premium: false, mine: [request]))".contains("judo"))
+        XCTAssertFalse("\(RequestContext(miffName: "Famille", mine: [request]))".contains("judo"))
     }
 
     // MARK: - Expiration à 30 jours
