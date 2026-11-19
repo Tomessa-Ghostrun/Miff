@@ -160,6 +160,12 @@ private fun TimeHistoryBlock(
             onClick = { confirming = true },
             modifier = Modifier.fillMaxWidth(),
         )
+        // CONS-4-A: says what the button erases and that it changes nothing for the loved ones.
+        Text(
+            text = stringResource(R.string.settings_privacy_time_erase_note),
+            style = textBodyRegular14,
+            color = colorTextDescription,
+        )
         if (erased) {
             Text(
                 text = stringResource(R.string.settings_privacy_time_done),

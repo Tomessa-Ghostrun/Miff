@@ -50,6 +50,7 @@ import com.tomessa.miff.data.feed.PresenceRefresh
 import com.tomessa.miff.data.feed.StatusObserver
 import com.tomessa.miff.data.miff.AndroidLocationAccessProbe
 import com.tomessa.miff.data.miff.AwaitingAgreement
+import com.tomessa.miff.data.miff.ClarifyAskStore
 import com.tomessa.miff.data.miff.ConsentRenewals
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.data.miff.FirestoreConsentRenewals
@@ -67,6 +68,7 @@ import com.tomessa.miff.data.miff.MiffStore
 import com.tomessa.miff.data.miff.PendingDeletionStore
 import com.tomessa.miff.data.miff.PlacesReader
 import com.tomessa.miff.data.miff.SharedPreferencesActiveMiffStore
+import com.tomessa.miff.data.miff.SharedPreferencesClarifyAskStore
 import com.tomessa.miff.data.miff.SharedPreferencesPendingDeletionStore
 import com.tomessa.miff.data.notification.AndroidNotificationAlarms
 import com.tomessa.miff.data.notification.AndroidNotificationPresenter
@@ -637,6 +639,9 @@ class AppContainer(
     /** LOC-2b (design 23): the Miffs that wait for the agreement of the person, in memory for the session. */
     val awaitingAgreement: AwaitingAgreement by lazy { AwaitingAgreement() }
 
+    /** CONS-4-A: how many times the calm card "Une précision" was shown to each account on this phone (a counter, no personal data; erased with the account). */
+    val clarifyAsks: ClarifyAskStore by lazy { SharedPreferencesClarifyAskStore(context) }
+
     val consentRenewals: ConsentRenewals by lazy {
         FirestoreConsentRenewals(miffStore, onRenewed = { trackingLooksAgain(TrackingEngine.Reason.SHARING_CHANGED) })
     }
@@ -1114,6 +1119,7 @@ class AppContainer(
             presenceLog,
             timeShareWindow,
             alertLocal = if (BuildConfig.ALERT_DANGER) alertLocal else null,
+            clarifyAsks = clarifyAsks,
         )
     }
 

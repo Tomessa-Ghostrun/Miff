@@ -25,12 +25,24 @@ class AwaitingAgreement : SessionTeardown {
     /** Goes up each time the person asks to see the renewal screen again. */
     val reviewRequests: StateFlow<Int> = mutableReviews.asStateFlow()
 
+    /**
+     * CONS-4-A: the Miffs where the person shares under the version 3 text (still valid for the location and the photo) and has not read the calm card
+     * "Une précision" yet. NOTHING is paused for them: they are NOT in [waiting], so no screen says "En attente" (criterion CA-10). Settings >
+     * Confidentialité offers "Revoir et accepter" for them.
+     */
+    private val mutableClarifying = MutableStateFlow<Set<String>>(emptySet())
+    val clarifying: StateFlow<Set<String>> = mutableClarifying.asStateFlow()
+
     fun replace(miffIds: Set<String>) {
         mutableWaiting.value = miffIds
     }
 
     fun remove(miffId: String) {
         mutableWaiting.value = mutableWaiting.value - miffId
+    }
+
+    fun replaceClarifying(miffIds: Set<String>) {
+        mutableClarifying.value = miffIds
     }
 
     fun requestReview() {
@@ -40,5 +52,6 @@ class AwaitingAgreement : SessionTeardown {
     /** End of the session: nobody is waiting for anything any more. */
     override suspend fun stop() {
         mutableWaiting.value = emptySet()
+        mutableClarifying.value = emptySet()
     }
 }
