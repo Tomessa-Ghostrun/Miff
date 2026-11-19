@@ -812,3 +812,11 @@ Mode d'emploi complet pour le PM : `docs/release/checklist-android.md`. Côté c
 ## Documentation liée
 
 `CHANGELOG.md` (historique), `docs/release/checklist-android.md` (soumission Google Play), `docs/tickets/initialisation-technique.md` (ticket et critères A1 à A14), `design/design-system.md`, `backend/data-model.md`.
+
+## Alerte « Je suis en danger » (tickets AD-A1 et AD-A2, `docs/tickets/alerte-danger.md`)
+
+- **Interrupteur** : `BuildConfig.ALERT_DANGER` (vrai en debug, faux en release et releaseLike ; `-Pmiff.alertDanger=true|false` ; une release refuse « true » sans `-Pmiff.allowAlertDangerInRelease=true`). À allumer pour la distribution seulement après le déploiement des règles et de la fonction `notifierAlerte` par le PM.
+- **Écriture** : une transaction (jamais la file hors ligne de Firestore) écrit le compteur `users/{uid}/quota/alerts` et `miffs/{miffId}/alerts/{uid}` ; l'ordre des vérifications est dans `domain/alert/AlertStartPlan.kt`. L'état de MY alerte et sa reprise sont dans `data/alert/AlertController.kt`.
+- **Numéros d'urgence** : table par région de la **locale système** (`domain/alert/EmergencyCatalog.kt`) ; en France avec un téléphone en en-US, seul le 112 est proposé. Les appels passent toujours par le composeur (`ACTION_DIAL`), aucune permission d'appel.
+- **Données locales** : le pointeur de l'alerte est en SharedPreferences non chiffrées (identifiant de Miff, phase, trois dates), exclu des sauvegardes, effacé à la déconnexion.
+- Recette : `docs/qa/checklists/alerte-danger-android-recette-pm.md`.

@@ -14,6 +14,12 @@ import com.tomessa.miff.data.account.AccountSession
 import com.tomessa.miff.data.account.FirestoreAccountDataStore
 import com.tomessa.miff.data.account.SharedPreferencesAccountDeletionMarker
 import com.tomessa.miff.data.account.StoreAccountMiffs
+import com.tomessa.miff.data.alert.AlertController
+import com.tomessa.miff.data.alert.AlertGoneRelay
+import com.tomessa.miff.data.alert.AlertLocalStore
+import com.tomessa.miff.data.alert.AlertStore
+import com.tomessa.miff.data.alert.FirestoreAlertStore
+import com.tomessa.miff.data.alert.SharedPreferencesAlertLocalStore
 import com.tomessa.miff.data.auth.AccountRepository
 import com.tomessa.miff.data.auth.AndroidNetworkMonitor
 import com.tomessa.miff.data.auth.AuthGateway
@@ -349,6 +355,9 @@ class AppContainer(
             online = { networkMonitor.isOnline() },
             // LIEU-REQ: leaving a Miff takes back the pending requests to add a place that the person made there (before the lot, never blocking it).
             beforeLeave = { uid, miffId -> placeRequestRepository.withdrawAllMine(uid, miffId) },
+            // ALERTE « Je suis en danger »: the lots that stop the sharing, leave and remove also delete the alert of that Miff (only while the function is switched on).
+            alertsEnabled = BuildConfig.ALERT_DANGER,
+            onAlertGone = { miffId -> alertGoneRelay.miffGone(miffId) },
             // An automatic id of Firestore (20 characters), drawn on the phone: no network needed to draw it.
             newMiffId = {
                 FirebaseFirestore
@@ -465,6 +474,18 @@ class AppContainer(
         PushMessageHandler(
             currentUid = { authGateway.currentUid },
             onCircleNews = { uid, news -> notificationScheduler.onCircleNews(uid, news) },
+            // ALERTE « Je suis en danger »: only while the function is switched on (BuildConfig.ALERT_DANGER).
+            onCircleAlert =
+                if (BuildConfig.ALERT_DANGER) {
+                    {
+                        uid,
+                        alert,
+                        ->
+                        notificationScheduler.onCircleAlert(uid, alert)
+                    }
+                } else {
+                    null
+                },
         )
     }
 
@@ -889,8 +910,40 @@ class AppContainer(
         }
     }
 
+    // ---- ALERTE « Je suis en danger » (docs/tickets/alerte-danger.md; BuildConfig.ALERT_DANGER switches the whole function) -------------------------------------------------
+
+    /** The alerts of the Miffs (the documents `miffs/{id}/alerts/{uid}`, no position, no text). Built on first use; nothing reaches Firestore before a screen asks. */
+    val alertStore: AlertStore by lazy { FirestoreAlertStore() }
+
+    /** The pointer to MY alert (Miff of origin, phase, three moments) and the indicator of the blue bubble: local, erased with the account (the indicator stays with the installation). */
+    val alertLocal: AlertLocalStore by lazy { SharedPreferencesAlertLocalStore(context) }
+
+    /** Every "this Miff is gone for me" reaches the alert controller on the MAIN thread, whichever thread the news comes from (the deletion of a Miff runs on a background one). */
+    val alertGoneRelay: AlertGoneRelay by lazy {
+        AlertGoneRelay(
+            CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+        ) { miffId -> alertController.onAlertRemoved(miffId) }
+    }
+
+    /** MY alert, from the author's side. ONE measure of the position is asked when it starts, through the detection (its own gates and limit), never awaited. */
+    val alertController: AlertController by lazy {
+        AlertController(
+            store = alertStore,
+            device = deviceSession,
+            network = networkMonitor,
+            local = alertLocal,
+            currentUid = { authGateway.currentUid },
+            scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
+            onSending = { notificationScope.launch { presenceRefresh.refreshMyPresence() } },
+            // A refusal about the Miff of my alert (reading, end): the list of my Miffs is checked again; a loss proven by the server cleans the alert up (repository, relay).
+            onAccessDoubt = { CoroutineScope(Dispatchers.Default).launch { miffDirectory.refresh() } },
+        )
+    }
+
     /** After a voluntary "Quitter" the server confirmed: no message of lost access for it, purge of the cache, fresh list of Miffs. */
     suspend fun onMiffLeft(miffId: String) {
+        // ALERTE: leaving or DELETING a Miff (the creator's own deletion included) removes my alert of that Miff in the same lot: the banner goes, a new alert is possible elsewhere.
+        if (BuildConfig.ALERT_DANGER) alertGoneRelay.miffGone(miffId)
         miffDirectory.expectDeparture(miffId)
         knownMiffsKeeper.onLeft(miffId)
         notificationScope.launch { notificationScheduler.onMiffGone(miffId) }
@@ -914,7 +967,12 @@ class AppContainer(
 
     val miffDeletions: MiffDeletionCoordinator by lazy {
         MiffDeletionCoordinator(
-            deletion = MiffDeletion(store = miffStore, repository = miffRepository),
+            deletion =
+                MiffDeletion(
+                    store = miffStore,
+                    repository = miffRepository,
+                    alertsEnabled = BuildConfig.ALERT_DANGER,
+                ),
             pending = pendingMiffDeletions,
             network = networkMonitor,
             currentUid = { authGateway.currentUid },
@@ -994,7 +1052,9 @@ class AppContainer(
     /** The marker "the deletion of the account is under way" (AUTH-5): the id of the account, nothing else; it prevails over the routing. */
     val accountDeletionMarker: AccountDeletionMarker by lazy { SharedPreferencesAccountDeletionMarker(context) }
 
-    private val accountDataStore: AccountDataStore by lazy { FirestoreAccountDataStore() }
+    private val accountDataStore: AccountDataStore by lazy {
+        FirestoreAccountDataStore(alertsEnabled = BuildConfig.ALERT_DANGER)
+    }
 
     /**
      * The Miffs of the account for its deletion (AUTH-5b): the inventory read on the server, the lots "Quitter" for the Miffs joined, and the existing
@@ -1004,9 +1064,15 @@ class AppContainer(
     private val accountMiffs: AccountMiffs by lazy {
         StoreAccountMiffs(
             store = miffStore,
-            deleter = MiffDeletion(store = miffStore, repository = miffRepository),
+            deleter =
+                MiffDeletion(
+                    store = miffStore,
+                    repository = miffRepository,
+                    alertsEnabled = BuildConfig.ALERT_DANGER,
+                ),
             // RGPD (contract of the backend 2.7.3): the pending requests of the account (address, coordinates) are taken back BEFORE each "Quitter", best effort.
             beforeLeave = { uid, miffId -> placeRequestRepository.withdrawAllMine(uid, miffId) },
+            alertsEnabled = BuildConfig.ALERT_DANGER,
         )
     }
 
@@ -1047,6 +1113,7 @@ class AppContainer(
             reviewStateStore,
             presenceLog,
             timeShareWindow,
+            alertLocal = if (BuildConfig.ALERT_DANGER) alertLocal else null,
         )
     }
 
@@ -1060,6 +1127,16 @@ class AppContainer(
         SessionTeardown {
             presenceLog.clear()
             timeShareWindow.clear()
+        }
+    }
+
+    /** ALERTE: nothing of my alert stays in memory or on the phone for the next account (the blue bubble, about the installation, stays). Nothing is built while the function is off. */
+    private val alertTeardown: SessionTeardown by lazy {
+        SessionTeardown {
+            if (BuildConfig.ALERT_DANGER) {
+                alertController.onSessionEnded()
+                alertLocal.clearAccount()
+            }
         }
     }
 
@@ -1095,6 +1172,7 @@ class AppContainer(
                         requesterDirectory,
                         addressSearch,
                         mapTileCache,
+                        alertTeardown,
                     ),
                 scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
                 device = deviceSession,

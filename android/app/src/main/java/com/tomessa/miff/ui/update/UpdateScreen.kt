@@ -16,6 +16,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -69,6 +71,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
@@ -88,6 +91,13 @@ import com.tomessa.miff.data.update.AndroidPhotoEncoder
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.update.UpdatePhoto
 import com.tomessa.miff.domain.update.UpdatePhotoFormat
+import com.tomessa.miff.ui.alert.AlertArmedOverlay
+import com.tomessa.miff.ui.alert.AlertHintBubble
+import com.tomessa.miff.ui.alert.AlertHoldState
+import com.tomessa.miff.ui.alert.AlertInfoDialog
+import com.tomessa.miff.ui.alert.AlertStartConfirmDialog
+import com.tomessa.miff.ui.alert.AlertUpdateHooks
+import com.tomessa.miff.ui.alert.alertHoldGesture
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
@@ -100,6 +110,7 @@ import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.StrokeAccent
 import com.tomessa.miff.ui.theme.colorActionPrimary
 import com.tomessa.miff.ui.theme.colorActionPrimaryTint30
+import com.tomessa.miff.ui.theme.colorAlertFill
 import com.tomessa.miff.ui.theme.colorBgCanvas
 import com.tomessa.miff.ui.theme.colorBgSurface
 import com.tomessa.miff.ui.theme.colorBorderAction
@@ -146,6 +157,8 @@ fun UpdateTab(
     miffCount: Int,
     actions: UpdateActions,
     modifier: Modifier = Modifier,
+    /** ALERTE « Je suis en danger »: the hold of 5 seconds on the shutter, the blue bubble, the accessible way. Null while the function is switched off (BuildConfig.ALERT_DANGER). */
+    alert: AlertUpdateHooks? = null,
 ) {
     RecentsPrivacy()
     LightStatusBarIconsOff()
@@ -221,6 +234,7 @@ fun UpdateTab(
                             permissionLauncher.launch(Manifest.permission.CAMERA)
                         },
                     tertiary = stringResource(R.string.update_permission_not_now) to actions.onClose,
+                    emergency = alert?.let { hooks -> { hooks.onOpenEmergency(false) } },
                 )
             }
 
@@ -233,6 +247,7 @@ fun UpdateTab(
                         stringResource(R.string.update_action_retry) to
                             { permissionLauncher.launch(Manifest.permission.CAMERA) },
                     tertiary = stringResource(R.string.update_permission_not_now) to actions.onClose,
+                    emergency = alert?.let { hooks -> { hooks.onOpenEmergency(false) } },
                 )
             }
 
@@ -244,6 +259,7 @@ fun UpdateTab(
                     primary = stringResource(R.string.update_action_open_settings) to openSettings,
                     // No "camera application of the phone" here: Android refuses to start it from an app that declares CAMERA and was not granted it.
                     tertiary = stringResource(R.string.update_action_close) to actions.onClose,
+                    emergency = alert?.let { hooks -> { hooks.onOpenEmergency(false) } },
                 )
             }
 
@@ -265,6 +281,7 @@ fun UpdateTab(
                             null
                         },
                     tertiary = stringResource(R.string.update_action_close) to actions.onClose,
+                    emergency = alert?.let { hooks -> { hooks.onOpenEmergency(false) } },
                 )
             }
 
@@ -275,6 +292,7 @@ fun UpdateTab(
                     body = stringResource(R.string.update_stopped_body),
                     primary = stringResource(R.string.update_action_resume_sharing) to actions.onResumeSharing,
                     tertiary = stringResource(R.string.update_action_close) to actions.onClose,
+                    emergency = alert?.let { hooks -> { hooks.onOpenEmergency(true) } },
                 )
             }
 
@@ -287,6 +305,7 @@ fun UpdateTab(
                     onPhoto = viewModel::onPhotoReady,
                     onPhotoFailed = viewModel::onPhotoFailed,
                     onUnavailable = viewModel::onCameraUnavailable,
+                    alert = alert,
                 )
             }
 
@@ -316,6 +335,8 @@ private fun PopInStage(
     primary: Pair<String, () -> Unit>,
     tertiary: Pair<String, () -> Unit>,
     secondary: Pair<String, () -> Unit>? = null,
+    /** ALERTE: a way to the emergency numbers from a screen where the viewfinder (so the gesture) is not there (review of #275, M3b). Null while the function is off. */
+    emergency: (() -> Unit)? = null,
 ) {
     Box(
         modifier =
@@ -378,6 +399,15 @@ private fun PopInStage(
                 TextButton(onClick = tertiary.second, modifier = Modifier.heightIn(min = Spacing.minTouchTarget)) {
                     Text(text = tertiary.first, style = textBodyBold14, color = colorActionPrimary)
                 }
+                emergency?.let {
+                    TextButton(onClick = it, modifier = Modifier.heightIn(min = Spacing.minTouchTarget)) {
+                        Text(
+                            text = stringResource(R.string.alert_call_emergency_link),
+                            style = textBodyBold14,
+                            color = colorActionPrimary,
+                        )
+                    }
+                }
             }
         }
     }
@@ -398,11 +428,20 @@ private fun ViewfinderStage(
     onPhoto: (UpdatePhoto) -> Unit,
     onPhotoFailed: () -> Unit,
     onUnavailable: () -> Unit,
+    alert: AlertUpdateHooks? = null,
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     // A new handle at each opening: the selfie camera is the one the screen starts with, every time.
     val handle = remember { CameraHandle() }
+    // ALERTE: the hold of 5 seconds on the shutter. Everything below is inert when [alert] is null.
+    val hold = remember { AlertHoldState() }
+    var hintShown by remember { mutableStateOf(true) }
+    var infoOpen by remember { mutableStateOf(false) }
+    var confirmOpen by remember { mutableStateOf(false) }
+    // An alert is already in progress (in ANY Miff): a hold never starts a second one (D14); the person is told calmly, once per hold.
+    val alreadyActive = alert?.activeAlertMiffName
+    val redMode = alert != null && alreadyActive == null && hold.armed
     // The flash is never kept: out of the screen (background, lock) it is off again on return, until it is switched on again.
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { handle.resetFlash() }
     BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black)) {
@@ -417,11 +456,26 @@ private fun ViewfinderStage(
         // The zone saved is the zone seen: when the screen is outside 9:21 to 9:16 (tablet, split screen) the viewfinder is limited to the bounded zone, centred.
         val (boxWidth, boxHeight) = boundedBox(maxWidth, maxHeight, aspect)
         val switchName = stringResource(R.string.update_flip_a11y)
+        if (alert != null) {
+            AlertWindows(alert, infoOpen, confirmOpen, onInfoClose = { infoOpen = false }, onConfirmClose = {
+                confirmOpen =
+                    false
+            })
+        }
         Box(
             modifier =
                 Modifier
                     .align(Alignment.Center)
                     .size(boxWidth, boxHeight)
+                    // ALERTE: a touch anywhere on the viewfinder puts the blue bubble away (it is not consumed: the buttons and the double tap keep it).
+                    .pointerInput(alert != null) {
+                        if (alert != null) {
+                            awaitEachGesture {
+                                awaitFirstDown(requireUnconsumed = false)
+                                hintShown = false
+                            }
+                        }
+                    }
                     // Two quick taps OUTSIDE the buttons switch the camera, and back. The buttons keep their own taps (they sit above this).
                     .pointerInput(handle) {
                         detectTapGestures(
@@ -447,6 +501,13 @@ private fun ViewfinderStage(
                     .height(110.dp)
                     .background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.45f), Color.Transparent))),
             )
+            // ALERTE: the red mode while the finger holds (maquette 02): a veil that fills like a bar, "Je suis en danger", and (several Miffs) the Miff the alert will go to.
+            if (redMode) {
+                AlertArmedOverlay(
+                    progress = hold.progress,
+                    miffName = alert?.targetMiffName?.takeIf { alert.several },
+                )
+            }
             // Flash: top left, mirror of the switch button (same row, same disc). Only when the active camera has a flash (the front one usually has none).
             if (handle.flash.visible) {
                 FlashButton(
@@ -486,11 +547,20 @@ private fun ViewfinderStage(
                         .align(Alignment.BottomCenter)
                         .padding(
                             bottom =
-                                LocalTabBarInset.current + ShutterAboveBar,
+                                LocalTabBarInset.current + ShutterAboveBar + (alert?.bannerInset ?: 0.dp),
                         ).fillMaxWidth(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(Spacing.m),
             ) {
+                // ALERTE (maquette 01): the blue bubble of the onboarding, until the person has discovered the gesture (indicator local to the phone). It hides itself after about 6 seconds
+                // and at the first touch; it never covers the shutter and keeps no one from taking a photo.
+                if (alert != null && alert.hintVisible && hintShown && !hold.armed) {
+                    AlertHintBubble(
+                        onMore = { infoOpen = true },
+                        onGone = { hintShown = false },
+                        modifier = Modifier.padding(horizontal = Spacing.l),
+                    )
+                }
                 Text(
                     text =
                         stringResource(
@@ -507,7 +577,31 @@ private fun ViewfinderStage(
                             }
                         },
                 )
-                Shutter {
+                Shutter(
+                    hold =
+                        alert?.let { hooks ->
+                            ShutterHold(
+                                state = hold,
+                                onArmed = {
+                                    // The gesture is discovered: the bubble is done for good. If an alert is already in progress, the person is told calmly (no red mode, nothing starts).
+                                    hooks.onHintDone()
+                                    hintShown = false
+                                    alreadyActive?.let { name -> hooks.onAlreadyActive(name) }
+                                },
+                                onDone = { if (alreadyActive == null) hooks.onTrigger() },
+                                onTap = { hintShown = false },
+                                onDeclareAccessible = {
+                                    if (alreadyActive !=
+                                        null
+                                    ) {
+                                        hooks.onAlreadyActive(alreadyActive)
+                                    } else {
+                                        confirmOpen = true
+                                    }
+                                },
+                            )
+                        },
+                ) {
                     // The front camera: the photo is the reflection of the scene, as the viewfinder shows it; the back camera is left as it is.
                     val front = handle.lens == CameraLens.FRONT
                     handle.takePhoto(context) { bitmap, rotation ->
@@ -531,6 +625,28 @@ private fun ViewfinderStage(
     }
 }
 
+/** The windows of the alert on the viewfinder: the sheet "En savoir plus" and the two-step confirmation of the accessible way. */
+@Composable
+private fun AlertWindows(
+    alert: AlertUpdateHooks,
+    infoOpen: Boolean,
+    confirmOpen: Boolean,
+    onInfoClose: () -> Unit,
+    onConfirmClose: () -> Unit,
+) {
+    if (infoOpen) AlertInfoDialog(onClose = onInfoClose)
+    if (confirmOpen) {
+        AlertStartConfirmDialog(
+            miffName = alert.targetMiffName,
+            onConfirm = {
+                onConfirmClose()
+                alert.onTrigger()
+            },
+            onCancel = onConfirmClose,
+        )
+    }
+}
+
 /** The ratio-bounded box of the viewfinder inside the room that the screen leaves: as large as possible at ratio [aspect] (width / height). */
 private fun boundedBox(
     maxWidth: Dp,
@@ -545,23 +661,69 @@ private fun boundedBox(
         maxWidth to (maxWidth / aspect)
     }
 
-/** The round shutter: 80 dp, a white ring and a blue ring inside (the blue alone vanishes on a dark background), transparent centre. */
+/**
+ * The round shutter: 80 dp, a white ring and a blue ring inside (the blue alone vanishes on a dark background), transparent centre. With [hold] (the alert is switched on) a touch
+ * shorter than 400 ms is still the photo; a longer one arms the alert (the ring and the disc turn red), and 5 seconds send it. A screen reader gets the action "Déclarer une alerte".
+ */
 @Composable
-private fun Shutter(onClick: () -> Unit) {
+private fun Shutter(
+    hold: ShutterHold? = null,
+    onPhoto: () -> Unit,
+) {
     val name = stringResource(R.string.update_shutter_a11y)
+    val declare = stringResource(R.string.alert_shutter_a11y_action)
+    val armed = hold?.state?.armed == true
+    val touch =
+        if (hold == null) {
+            Modifier.clickable(role = Role.Button, onClick = onPhoto)
+        } else {
+            Modifier
+                .alertHoldGesture(
+                    state = hold.state,
+                    onTap = {
+                        hold.onTap()
+                        onPhoto()
+                    },
+                    onArmed = hold.onArmed,
+                    onDone = hold.onDone,
+                ).semantics {
+                    role = Role.Button
+                    onClick(label = null) {
+                        onPhoto()
+                        true
+                    }
+                    customActions =
+                        listOf(CustomAccessibilityAction(declare) { hold.onDeclareAccessible().let { true } })
+                }
+        }
     Box(
         modifier =
             Modifier
                 .size(ShutterSize)
                 .clip(CircleShape)
-                .clickable(role = Role.Button, onClick = onClick)
-                .border(4.dp, Color.White, CircleShape)
+                .then(touch)
+                .border(4.dp, if (armed) colorAlertFill else Color.White, CircleShape)
                 .semantics { contentDescription = name },
         contentAlignment = Alignment.Center,
     ) {
-        Box(Modifier.size(ShutterSize - 14.dp).border(3.dp, colorActionPrimary, CircleShape))
+        Box(
+            Modifier
+                .size(ShutterSize - 14.dp)
+                .clip(CircleShape)
+                .background(if (armed) colorAlertFill.copy(alpha = 0.7f) else Color.Transparent)
+                .border(3.dp, if (armed) colorAlertFill else colorActionPrimary, CircleShape),
+        )
     }
 }
+
+/** What the shutter needs for the alert (see [Shutter]). */
+private class ShutterHold(
+    val state: AlertHoldState,
+    val onArmed: () -> Unit,
+    val onDone: () -> Unit,
+    val onTap: () -> Unit,
+    val onDeclareAccessible: () -> Unit,
+)
 
 /**
  * The flash button: the same 48 dp round button as the camera switch. The state is shown by the icon (filled bolt = on, struck-through bolt = off) AND by the
