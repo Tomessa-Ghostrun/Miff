@@ -23,6 +23,12 @@ enum FeedHeaderMotion {
     static let showSeconds: Double = 0.2
 }
 
+/// L'indicateur d'« Actualiser » : la taille de sa pastille et la durée de son fondu.
+enum FeedRefreshIndicator {
+    static let size: CGFloat = 36
+    static let fadeSeconds: Double = 0.15
+}
+
 /// Le bas de l'en-tête AU REPOS (sans son déplacement), dans la fenêtre.
 struct HeaderRestBottomKey: PreferenceKey {
     static var defaultValue: CGFloat?
@@ -71,7 +77,8 @@ struct FeedCollapsingLayout<Content: View>: View {
                     onContentMoved: { headerModel.contentMoved(to: $0) },
                     onScrolled: { headerModel.scrolled(to: $0) },
                     onOrigin: { origin in
-                        if FeedTopInset.isNewMeasure(origin, old: contentOrigin) {
+                        // Pas pendant l'actualisation : la marge de la roue d'UIKit ferait sauter la liste (`RefreshInsetGuard`).
+                        if !refreshing, FeedTopInset.isNewMeasure(origin, old: contentOrigin) {
                             contentOrigin = origin
                         }
                     }
@@ -81,13 +88,7 @@ struct FeedCollapsingLayout<Content: View>: View {
             // l'en-tête est caché (comme Android, qui coupe le contenu à la zone sûre).
             colorBgCanvas.color.ignoresSafeArea(edges: .top).frame(height: 0)
             headerView
-            if refreshing {
-                // Le geste est en haut de la liste, sous l'en-tête : l'indicateur de l'actualisation se montre sous lui.
-                ProgressView()
-                    .tint(colorActionPrimary.color)
-                    .padding(.top, headerHeight + Spacing.sm)
-                    .accessibilityHidden(true)
-            }
+            refreshIndicator
         }
         .background(colorBgCanvas.color.ignoresSafeArea())
         .onPreferenceChange(HeaderHeightKey.self) { height in
@@ -103,6 +104,25 @@ struct FeedCollapsingLayout<Content: View>: View {
         // Verrouillé : l'en-tête revient avec une courte animation, immédiate avec « Réduire les animations ».
         .onChange(of: locked) { value in withHeaderAnimation { headerModel.lock(value) } }
         .onChange(of: isList) { _ in headerModel.resetBaseline() }
+    }
+
+    /// L'indicateur de l'actualisation. La roue d'UIKit est cachée par l'en-tête (la liste passe dessous) : celui-ci est posé SOUS l'en-tête, par-dessus
+    /// tout le reste, dans une pastille de la couleur des cartes avec une ombre légère, pour rester lisible quel que soit ce qu'il y a derrière (bulle,
+    /// carte). Il apparaît et disparaît en fondu (sans animation avec « Réduire les animations »).
+    private var refreshIndicator: some View {
+        Group {
+            if refreshing {
+                ProgressView()
+                    .tint(colorActionPrimary.color)
+                    .frame(width: FeedRefreshIndicator.size, height: FeedRefreshIndicator.size)
+                    .background(Circle().fill(colorBgSurface.color))
+                    .miffShadow(shadowSubtle)
+                    .padding(.top, headerHeight + Spacing.sm)
+                    .transition(.opacity)
+                    .accessibilityHidden(true)
+            }
+        }
+        .animation(reduceMotion ? nil : .easeInOut(duration: FeedRefreshIndicator.fadeSeconds), value: refreshing)
     }
 
     /// L'animation courte du retour de l'en-tête ; aucune avec « Réduire les animations ».

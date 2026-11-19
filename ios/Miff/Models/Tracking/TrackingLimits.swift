@@ -93,6 +93,12 @@ enum TrackingLimits {
     /// Deux passages au premier plan à moins de ceci l'un de l'autre n'en font qu'un (démarrage à froid).
     static let duplicateOpenMillis = 3 * 1000
 
+    /// « Tirer pour actualiser » (Feed) revérifie MA présence au plus une fois par ceci, ouverture de l'app comprise : une ouverture vient
+    /// déjà de mesurer, et une série de gestes ne doit ni vider la batterie ni multiplier les lectures. Un geste plus rapproché
+    /// n'actualise que les proches. Signal pour le changer : un testeur qui trouve que sa présence « tarde » après un geste (baisser),
+    /// ou une batterie qui chute avec l'usage du geste (monter).
+    static let pullMinIntervalMillis = 30 * 1000
+
     /// Au plus un réenregistrement complet des régions par échec de la surveillance toutes les cinq minutes (pas de boucle).
     static let rearmMinIntervalMillis = 5 * 60 * 1000
 

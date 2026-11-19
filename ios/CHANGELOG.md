@@ -2,6 +2,33 @@
 
 ## Non publié
 
+### « Tirer pour actualiser » : indicateur visible et Feed qui ne sautille plus (retour du PM, TestFlight 38, PR #263)
+
+Ce que le PM doit voir : en tirant le Feed, **une pastille claire avec une roue apparaît sous l'en-tête pendant au moins 0,8 s** (jamais cachée par l'en-tête ni la bulle), et **la bulle et les cartes ne sautent plus**. Recette : `docs/qa/checklists/feed-refresh-position-ios-recette-pm.md` (§1, §4, §18 à §20). **Rien n'est compilé en local** (la CI fait foi).
+
+Corrigé :
+- **Indicateur** : la roue d'UIKit passe derrière l'en-tête et l'indicateur propre du Feed ne durait que le temps de la lecture (presque rien, la position n'étant pas attendue). Il reste maintenant au moins `FeedTimings.minRefreshDisplayMillis` = 800 ms depuis le geste (un minimum d'AFFICHAGE : aucune lecture de plus, la position n'est toujours pas attendue), aussi pour un geste trop rapproché qui ne relit rien ; hors connexion, fin immédiate comme avant. Pastille de la couleur des cartes, ombre légère, fondu de 0,15 s (aucun avec « Réduire les animations »).
+- **Sautillement** : cause trouvée dans le code (à confirmer sur l'iPhone) : pendant le geste, UIKit ajoute la hauteur de la roue à la marge haute de la vue de défilement ; `ScrollDistanceReader` la lisait comme une nouvelle origine du contenu et la marge haute de la liste se réduisait d'autant (SwiftUI, aussitôt) pendant qu'UIKit déplaçait le contenu (animé), puis l'inverse à la fin : deux sauts. `RefreshInsetGuard` ignore la mesure de l'origine pendant l'actualisation et 0,6 s après (reprise automatique ensuite) ; `FeedCollapsingLayout` l'ignore aussi tant que `refreshing` est vrai.
+- Inchangés : l'ordre du Feed (dernière update), les identifiants des cartes (un membre = une carte), les règles du geste (15 s pour les proches, 30 s pour la position, une seule mesure, aucune écriture si rien ne change), VoiceOver.
+- Tests : `RefreshInsetGuardTests`, `FeedRefreshIndicatorTests` (minimum d'affichage, reste du délai, rien de plus si la lecture a été lente, geste trop rapproché, hors connexion), `FeedRefreshSourcesTests` (garde avant toute mesure, identités des cartes, aucune animation ni identité instable dans la liste, indicateur au-dessus de tout).
+
+### « Tirer pour actualiser » revérifie aussi MA présence (REFRESH-POS-I, demande du PM du 2026-11-17, miroir d'Android)
+
+Branche `ios/feed-refresh-position`, PR brouillon. Ticket `docs/tickets/feed-refresh-position.md`, recette `docs/qa/checklists/feed-refresh-position-ios-recette-pm.md`, détail : `ios/README.md`. **Rien n'est compilé en local** (la CI fait foi). Aucune dépendance, aucune permission, aucun service payant, aucun texte nouveau.
+
+Constat : le geste ne relisait **que les proches** ; il ne revérifiait pas ma présence et ne mesurait aucune position.
+
+Ajouté :
+- Au geste, le Feed **demande** au suivi de revérifier MA présence, **sans l'attendre** (l'indicateur ne dépend pas de la position). Le moteur fait le reste avec sa machinerie habituelle (nouvelle raison de passage `pulled`, sans batterie) : **une mesure de position ponctuelle et fraîche** (jamais la position réutilisée), recalcul de la présence par rapport aux lieux de mes Miffs, **un statut écrit seulement si la présence change**, la dernière position republiée seulement si le garde-fou habituel (15 min, 250 m, 2 min) le permet, journalisation par le journal local du graphique de temps comme toute présence (rien de dupliqué).
+- **Limite de fréquence : une revérification par 30 s au plus, ouverture de l'app comprise** (`TrackingLimits.pullMinIntervalMillis`, `TrackingRuntime.feedPulled`). Hors connexion, le geste se termine tout de suite comme avant et ne demande rien.
+- **Sans « Toujours » + position exacte, ou sans partage** : rien n'est mesuré ni envoyé ; aucun message ajouté (l'écran de la localisation prend déjà la place du Feed quand l'autorisation manque). **En mode voyage** : aucun statut de présence, la position reste rafraîchie comme à l'ouverture de l'app (décision du PM du 2026-11-10).
+- **Instant du statut** : celui où le système répond « dedans / dehors » (heure de détection), jamais une heure inventée ; comme pour une ouverture de l'app.
+- Journal local des builds de test : ligne `wakePull`. Aucune coordonnée, aucun événement Analytics, aucune donnée stockée en plus. Annonce VoiceOver inchangée.
+- Tests : `PullRefreshEngineTests`, `PullRefreshRuntimeTests`, `FeedPullOwnPresenceTests`, `PullRefreshSourcesTests` (déclenchement, limite de 30 s, autorisation absente, hors connexion, délai, aucune écriture si inchangé, mode voyage, sources).
+
+Choix économiques : 0 lecture de plus tant que la copie locale a moins d'une heure, 0 écriture si rien ne change, au plus une mesure `requestLocation` (100 m) par 30 s ; 0 €. **Signal de bascule** : une batterie qui chute avec l'usage du geste, ou beaucoup de lignes `wakePull` dans le journal d'un build Internal : monter la limite de 30 s.
+
+À décider par le PM (ticket §3) : message quand l'autorisation manque, geste en mode voyage, heure de la dernière position rafraîchie à chaque geste. **Politique de confidentialité** : préciser « ou quand tu actualises le Feed » (rien modifié ici).
 ### Profil : « Répartition de ton temps » (TIME-3 et TIME-4 ; miroir d'Android TIME-1 et TIME-2, ticket `docs/tickets/profil-repartition-temps.md`)
 
 Recette : `docs/qa/checklists/profil-repartition-temps-ios-recette-pm.md` (iPhone 11 Pro). Détail et écarts : `ios/README.md` (« Répartition du temps »). **Rien n'est compilé en local** (poste Windows) : la CI fait foi. **Ne pas publier sur l'App Store avant la mise à jour de la politique de confidentialité** (le journal local de 35 jours contredit « pas d'historique » : ticket §8).

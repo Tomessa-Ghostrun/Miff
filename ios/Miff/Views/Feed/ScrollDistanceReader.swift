@@ -25,6 +25,8 @@ struct ScrollDistanceReader: UIViewRepresentable {
         var onChange: ((CGFloat) -> Void)?
         var onOrigin: ((CGFloat) -> Void)?
         private var observation: NSKeyValueObservation?
+        private var insetGuard = RefreshInsetGuard()
+        private var recheckScheduled = false
 
         override init(frame: CGRect) {
             super.init(frame: frame)
@@ -72,10 +74,34 @@ struct ScrollDistanceReader: UIViewRepresentable {
             reportOrigin(scroll)
         }
 
-        /// Où le contenu commence AU REPOS, dans la fenêtre : le haut de la vue de défilement + sa marge haute automatique.
+        /// Où le contenu commence AU REPOS, dans la fenêtre : le haut de la vue de défilement + sa marge haute automatique. Pas pendant
+        /// « tirer pour actualiser » ni juste après : UIKit y ajoute la hauteur de la roue à la marge, ce qui ferait SAUTER le contenu
+        /// (`RefreshInsetGuard`). La mesure ignorée est reprise quand la roue s'est retirée.
         private func reportOrigin(_ scroll: UIScrollView) {
+            let now = ProcessInfo.processInfo.systemUptime
+            let refreshing = scroll.refreshControl?.isRefreshing == true
+            guard insetGuard.allowsMeasure(refreshing: refreshing, now: now) else {
+                scheduleOriginRecheck(now: now)
+                return
+            }
             let frame = scroll.convert(scroll.bounds, to: nil)
             onOrigin?(frame.minY + scroll.adjustedContentInset.top)
+        }
+
+        private func scheduleOriginRecheck(now: TimeInterval) {
+            guard !recheckScheduled, let wait = insetGuard.secondsUntilMeasure(now: now) else {
+                return
+            }
+            recheckScheduled = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + wait + 0.05) { [weak self] in
+                guard let self else {
+                    return
+                }
+                self.recheckScheduled = false
+                if let scroll = self.enclosingScrollView {
+                    self.reportOrigin(scroll)
+                }
+            }
         }
     }
 }
