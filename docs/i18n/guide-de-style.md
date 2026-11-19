@@ -37,8 +37,8 @@
 | Tirets | « - » dans les listes | pas de tiret long ; « - » en liste | idem | idem | « – » (demi-cadratin, avec espaces) pour une incise, jamais « — » |
 | Décimal, milliers | 1 234,5 (espace fine insécable) | 1234,5 / 12 345 (NBSP) | 1.234,5 | 1234,5 / 12 345 (NBSP) | 1.234,5 |
 | Pourcentage (écrit à la main) | « 30 % » (NBSP) | « 30 % » (**NBSP**) | **« 30% »** | **« 30% »** | « 30 % » (**NBSP**) |
-| Unités | « 100 m », « 1 h 12 min » (NBSP) | NBSP avant l'unité | NBSP | NBSP | NBSP |
-| Heure à la main | 16 h 02 | **16:02** | **16:02** | **16:02** | **16:02 Uhr** |
+| Unités | « 100 m », « 1 h 12 min » (NBSP) | NBSP avant l'unité, y compris écrite en toutes lettres (« 24 horas ») | NBSP | NBSP | NBSP, **y compris l'unité écrite en toutes lettres** (« 24 Stunden », « 5 Sekunden », « 7 Tage ») |
+| Heure à la main | 16 h 02 | **16:02** | **16:02** | **16:02** | **16:02** (sans « Uhr » : « um 16:02 », « seit 16:02 ») |
 | Date courte | 15 nov. | 15 nov | 15 nov | 15 nov. | 15. Nov. |
 | Majuscules | début de phrase seulement | début de phrase ; **mois et jours en minuscule** | début de phrase ; **« È »** avec accent (jamais « E' ») ; mois et jours en minuscule | début de phrase ; mois et jours en minuscule | **tous les noms** (« Benachrichtigungen ») ; début de phrase ; « du / dein » en minuscule |
 | Boutons | infinitif (« Continuer ») | **infinitif** (« Continuar ») | **impératif tu** (« Continua ») | **infinitif** (« Continuar ») | **infinitif ou mot court** (« Weiter », « Speichern ») |
@@ -54,6 +54,8 @@
 - **Hors-genre** : « Te damos la bienvenida » (pas « Bienvenido/a »), « Se ha cerrado tu sesión » (pas « Has sido desconectado/a »). Verbes avec « haber » (« ha salido ») : sans accord.
 - **Heures** : jamais « a las / a la » : « hoy, 16:02 », « ayer, 16:02 », « el lunes, 9:30 » (glossaire §5.3).
 - **Pluriel** : `one` = exactement 1 ; **0 est `other`** (« 0 miembros », « 0 días »). `many` est écrit **identique à `other`**.
+- **Deux personnes, sans genre** : jamais « ambos / ambas / los dos » pour désigner deux personnes (marque de genre), ni « comparten » qui se lit « ustedes » : « Se comparte en ambos sentidos » (glossaire G168). « Sin molestar » et non « molestarlos » (G164).
+- **Maintenir appuyé** : « Mantén pulsado » (forme d'Espagne, glossaire G112) ; « presionado » (Amérique latine) reste un choix de langue ouvert (glossaire §8 bis.3).
 - **Mots à proscrire pour cause de régionalisme** : « móvil », « celular », « ordenador », « computadora », « vosotros », « vuestro », « os », « guay », « genial » (registre trop familier), « chévere ».
 
 ### 2.3 Italien (`it`)
@@ -64,6 +66,8 @@
 - **Heures** : « alle ore 16:02 », « dalle ore 16:02 », « delle ore 16:02 » : « ore » est invariable, aucun article ne varie (glossaire §5.3). Dates : « il giorno 15 nov. ».
 - **Pluriel** : 0 est `other` (« 0 membri »). Prénoms et « Miff » invariables.
 - **Mots proscrits pour cause de ton** : « allarme », « sorvegliare », « tracciare » (hors négation), « devi » (voir glossaire §4).
+- **« On » + impossibilité** : « Non è stato possibile + infinitif » (« Non è stato possibile salvare la foto »), ou le présent « Non riusciamo a… », « Non troviamo… ». **Jamais « Non siamo riusciti/e »** (participe accordé : marque de genre). « Non abbiamo potuto » est correct (glossaire G161).
+- **Titres sans impératif de politesse** : « Il tuo stato è arancione » et non « Passi all'arancione » (se lit comme « Passi ! »), glossaire G130. « i cari » seul est proscrit : « i tuoi cari » avec un possessif ou un verbe d'adresse (G122). « attorno » et non « intorno » (G178).
 - **Mots à éviter** : « cellulare » (écrire « telefono »), « smartphone ».
 
 ### 2.4 Portugais du Portugal (`pt`)
@@ -75,15 +79,18 @@
 - **Heures** : « hoje, 16:02 », « ontem, 16:02 », « segunda-feira, 9:30 », « dia 15 nov. » ; jamais « às / à » (glossaire §5.3).
 - **Pluriel** : 0 est `other` (« 0 membros »).
 - **Genre** : passé simple (« saiu », « chegou », « deste notícias »), « Agradecemos » à la place de « obrigado/a ».
+- **Rejoindre / s'inscrire** : le bouton d'inscription est « Aderir » (exception à « entrar », réservé à la connexion et à « entrar numa Miff »), alternative « Registar » à confirmer à l'écran (glossaire G120). **« em espera »** et non « pendente » (G128).
 
 ### 2.5 Allemand (`de`)
 
 - **« du »** (jamais « Sie »), **minuscule** pour « du, dich, dir, dein ». **Tous les noms prennent une majuscule** (« Benachrichtigungen », « Einstellungen », « Standort »).
 - **Guillemets** : „…“ (jamais « » ni "…").
-- **Ordre des mots** : le verbe est en fin de proposition subordonnée ; la traduction réordonne les `%1$s` (« Thomas hat die Schule heute um 16:02 Uhr verlassen »). Le prénom n'est **jamais décliné** : « Orte von Thomas », jamais « Thomas' Orte ».
+- **Ordre des mots** : le verbe est en fin de proposition subordonnée ; la traduction réordonne les `%1$s` (« Thomas hat die Schule heute um 16:02 verlassen »). Le prénom n'est **jamais décliné** : « Orte von Thomas », jamais « Thomas' Orte ».
 - **Boutons** : infinitif ou mot court (« Weiter », « Speichern », « Abbrechen », « Erneut versuchen »).
 - **Composés** : au-delà de 20 caractères, reformuler (« Benachrichtigungseinstellungen » devient « Benachrichtigungen ») ou insérer un trait d'union naturel (« E-Mail-Adresse »). **Pas de trait d'union conditionnel (U+00AD) écrit à la main** : il fuite dans le lecteur d'écran ; la césure automatique est faite par la plateforme (lot 3).
-- **Heures** : toujours « Uhr » (« um 16:02 Uhr »), mois abrégés avec point (« 15. Nov. »).
+- **Heures** : **jamais « Uhr »** dans les formules d'heure (« um 16:02 », « gestern um 16:02 », « seit 16:02 », « von heute, 16:02 »), parce que le code suit le réglage 12 h ou 24 h du téléphone : « um 4:02 PM » est correct, « um 4:02 PM Uhr » ne l'est pas (décision du 2026-11-19, glossaire §5.3). Mois abrégés avec point (« 15. Nov. »). Les idiomes (« rund um die Uhr ») n'ont rien à voir avec une heure.
+- **Services d'urgence** : « Notdienste » pour « les secours » (jamais « Rettungsdienste », qui exclut la police) ; « Notrufnummer(n) » pour les numéros ; « Weitergabe » pour l'envoi des statistiques (glossaire G125, G158).
+- **Quand le menu est celui de l'iPhone** : « Mitteilungen » (le texte commun dit « Benachrichtigungen », juste sur Android seulement ; clé iOS dédiée à créer).
 - **Pluriel** : `one` = 1, **0 est `other`** (« 0 Mitglieder »).
 - **Mots à éviter pour la surveillance** : « überwachen », « Überwachung », « tracken », « orten » (glossaire §4). « Standort » est le mot neutre.
 - **Orthographe** : l'orthographe est celle de l'Allemagne (« Straße ») ; la Suisse sans « ß » n'est pas visée.
@@ -125,7 +132,7 @@ Exemples pour les deux pluriels les plus sensibles :
 | **Étiquette courte** (≤ 24 caractères en anglais : boutons, onglets, titres de section, pastilles) | es, it, pt : français **+ 25 %** ; **de : français + 35 %** | forme courte du tableau 4.2 |
 | Onglets visibles de la barre | **12 caractères au plus**, une seule ligne | « Feed », « Profil / Perfil / Profilo » |
 | Boutons du bas d'écran, un par ligne | 28 caractères sur une ligne, **ou deux lignes entières** | forme courte, jamais « … » |
-| Bulle du Feed (phrase principale, 24 pt) | **2 lignes**, ≈ 70 caractères avec le prénom | reformulation (« hat sich um 16:02 Uhr gemeldet ») |
+| Bulle du Feed (phrase principale, 24 pt) | **2 lignes**, ≈ 70 caractères avec le prénom | reformulation (« hat sich um 16:02 gemeldet ») |
 | Paywall : bouton d'essai, trois offres | une ligne par offre | « 7 Tage kostenlos testen » (24) est le modèle |
 
 Ces budgets sont des **points de départ** à ajuster par clé dans le registre du lot 1 ; la mesure réelle sur captures (allemand, polices 1,3 et 2,0 ; iOS `accessibility3`, critère 21) tranche.
@@ -141,6 +148,15 @@ Ces budgets sont des **points de départ** à ajuster par clé dans le registre 
 | Partager le code | Compartir código | Condividi codice | Partilhar código | Code teilen |
 | Créer et partager | Crear y compartir | Crea e condividi | Criar e partilhar | Erstellen und teilen |
 | Répartition du temps | Reparto del tiempo | Ripartizione | Distribuição | Zeitverteilung |
+| Lieu à éviter (G50) | Lugar a evitar | Luogo da evitare | Local a evitar | Zu meidender Ort (forme **figée** en allemand) |
+| À valider (G56) | Por revisar | Da valutare | Para validar | Zu prüfen |
+| Hors-zone (G51) | Fuera de zona | Fuori zona | Fora das zonas | Außerhalb |
+| Un proche, sans nom (G08, G121) | esta persona | una persona | esta pessoa | Ein Mitglied |
+| Chez un proche (G55) | Casa de un ser querido | Da una persona cara | Casa de um ente querido | Bei Nahestehenden |
+| Tu es passé orange (G130) | Has pasado a naranja | Il tuo stato è arancione | Passaste a laranja | Dein Status ist Orange |
+| Créateur de la Miff (badge, G10) | Creó la Miff | Ha creato (repli de « Ha creato la Miff ») | Criou a Miff | Miff erstellt |
+
+**Règle d'emploi (lot 4C)** : une forme courte de ce tableau n'est employée **que si le budget ne peut pas être relevé** ; sinon on garde la forme figée du glossaire et on liste le dépassement (comptes rendus `docs/i18n/relectures/lot4c-<langue>.md`). Les formes figées ne sont jamais raccourcies à l'insu du glossaire.
 
 ### 4.3 Ce qu'on ne fait jamais pour gagner de la place
 
@@ -203,7 +219,7 @@ Ces budgets sont des **points de départ** à ajuster par clé dans le registre 
 | Situation | À écrire | À éviter |
 |---|---|---|
 | Pas de connexion | « Gerade keine Verbindung. Versuch es noch einmal, sobald du wieder Netz hast. » | « Netzwerkfehler. Vorgang fehlgeschlagen. » |
-| Silence | « Seit 16:02 Uhr keine Neuigkeiten von Thomas » | « Achtung: Thomas hat sich seit 16:02 Uhr nicht gemeldet! » |
+| Silence | « Seit 16:02 keine Neuigkeiten von Thomas » | « Achtung: Thomas hat sich seit 16:02 nicht gemeldet! » |
 | Localisation | « Miff erkennt, wann du an deinen Orten ankommst oder sie verlässt, ohne dass du die App öffnen musst. » | « Miff überwacht deinen Standort rund um die Uhr. » |
 | Consentement | « Du kannst das Teilen mit einer Miff jederzeit beenden. Dein Standort wird dann gelöscht. » | « Du musst dem Teilen zustimmen, um Miff zu nutzen. » |
 | Rappel | « Sag deiner Miff, dass alles gut ist. » | « Du hast dich nicht gemeldet! Deine Liebsten machen sich Sorgen. » |
@@ -229,7 +245,7 @@ Ces budgets sont des **points de départ** à ajuster par clé dans le registre 
 Voir le **glossaire §5** (compléments de lieu, formules d'heure, inventaire des phrases assemblées, test des 24 heures). Les trois choix à retenir :
 
 1. **Compléments de lieu complets** par verbe (`feed_place_leave_*`, `feed_place_arrive_*`), en six langues, en une PR (lot 3).
-2. **Aucun article variable devant l'heure** : « hoy, 16:02 », « alle ore 16:02 », « hoje, 16:02 », « um 16:02 Uhr ».
+2. **Aucun article variable devant l'heure** : « hoy, 16:02 », « alle ore 16:02 », « hoje, 16:02 », « um 16:02 » (sans « Uhr »).
 3. **Verbes sans accord de genre** : « ha salido », « ha lasciato », « saiu », « hat … verlassen ».
 
 ---
