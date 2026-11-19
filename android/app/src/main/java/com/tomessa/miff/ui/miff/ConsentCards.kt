@@ -39,9 +39,11 @@ import com.tomessa.miff.ui.theme.textBodyCaption
 import com.tomessa.miff.ui.theme.textBodyRegular14
 
 /*
- * The text of the consent, version "2026-11-v03" (MiffSharingConsent.VERSION; design screens 21 and 24, docs/legal/consentement-localisation-v3.md).
- * ONE text for the entry (create, join), the resume of the sharing and the renewal screen: a line changed here is changed for all of them
- * (and in the catalog of iOS, key `miff_consent3_*`). Nothing in this file reads or writes anything.
+ * The text of the consent, version "2026-11-v04" (MiffSharingConsent.VERSION; design screens 21 and 24 + the two lines of CONS-4-A: the place of the
+ * photo and "Sur ton téléphone seulement"; docs/tickets/consentement-localisation-historique.md section 7; the version 3 text is archived in
+ * docs/legal/consentement-localisation-v3.md). ONE text for the entry (create, join), the resume of the sharing and the renewal screen: a line
+ * changed here is changed for all of them (and in the catalog of iOS, key `miff_consent3_*`: the prefix is historical, it does not name the
+ * version). Nothing in this file reads or writes anything.
  */
 
 /** One line of the consent: a blue icon, a bold heading, the sentence of the text. Read as ONE element, heading first, then the sentence. */
@@ -96,8 +98,9 @@ private fun ConsentFrame(
 
 /**
  * The consent shown before "Créer et partager", "Rejoindre et partager" and in the dialog "Reprendre le partage" (screen 24): the title, the
- * sentence that counts as the agreement ([sentence]), the six lines of the text, and the note about the phone's own permission (option A of
- * the PM: no "you can refuse", Miff needs "Always"). Replaces the card of the version `2026-10-v2`.
+ * sentence that counts as the agreement ([sentence]), the eight lines of the text, and the note about the phone's own permission (option A of
+ * the PM: no "you can refuse", Miff needs "Always"). Replaces the card of the version `2026-10-v2`. The screen scrolls (the host of the card):
+ * with a large font nothing is cut and the buttons stay reachable.
  */
 @Composable
 fun SharingConsentCard(
@@ -123,12 +126,20 @@ fun SharingConsentCard(
     }
 }
 
-/** The lines shared by the entry card and the renewal screen (the "kept" line is the introduction of the renewal). */
+/**
+ * The lines shared by the entry card and the renewal screen (the "kept" line is the introduction of the renewal): the place of the photo, who
+ * sees, the phone's location, what stays on the phone only (CONS-4-A: this line is never removed, it is what closes the gap J65), the erasure,
+ * what the members also see, the places.
+ */
 @Composable
 private fun ConsentWhoSeesLines() {
+    ConsentLine(R.drawable.ic_update_pin, R.string.miff_consent3_photo_title, R.string.miff_consent3_photo_body)
+    ConsentDivider()
     ConsentLine(R.drawable.ic_visibility, R.string.miff_consent3_who_title, R.string.miff_consent3_who_body)
     ConsentDivider()
     ConsentLine(R.drawable.ic_perm_phone, R.string.miff_consent3_closed_title, R.string.miff_consent3_closed_body)
+    ConsentDivider()
+    ConsentLine(R.drawable.ic_lock, R.string.miff_consent3_local_title, R.string.miff_consent3_local_body)
     ConsentDivider()
     ConsentLine(R.drawable.ic_perm_trash, R.string.miff_consent3_erase_title, R.string.miff_consent3_erase_body)
     ConsentDivider()

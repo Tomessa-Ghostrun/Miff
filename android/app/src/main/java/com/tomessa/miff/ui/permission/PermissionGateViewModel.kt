@@ -3,8 +3,11 @@ package com.tomessa.miff.ui.permission
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.tomessa.miff.data.miff.AwaitingAgreement
+import com.tomessa.miff.data.miff.ClarifyAskStore
+import com.tomessa.miff.data.miff.ClarifyPolicy
 import com.tomessa.miff.data.miff.ConsentRenewalCheck
 import com.tomessa.miff.data.miff.ConsentRenewals
+import com.tomessa.miff.data.miff.InMemoryClarifyAskStore
 import com.tomessa.miff.data.miff.MiffWriteResult
 import com.tomessa.miff.data.miff.RenewalMiff
 import com.tomessa.miff.data.permission.DevicePermissions
@@ -24,7 +27,6 @@ import com.tomessa.miff.ui.miff.messageFor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
 
@@ -48,10 +50,25 @@ class RenewalUiState(
     override fun toString(): String = "RenewalUiState(redacted)"
 }
 
+/**
+ * The calm card "Une précision sur ce que tu partages" (CONS-4-A, option D of the PM) for the Miffs where the person shares under the version 3 text.
+ * NOTHING is paused for them: no position, status or photo stops, whatever the person answers.
+ */
+class ClarifyUiState(
+    val miffs: List<RenewalMiff>,
+    /** Writing: the button says so and nothing else can be tapped (one tap = one operation). */
+    val busy: Boolean = false,
+    val message: ActionMessage? = null,
+) {
+    override fun toString(): String = "ClarifyUiState(redacted)"
+}
+
 class GateUiState(
     val screen: GateScreen,
     val location: LocationScreenModel,
     val renewal: RenewalUiState?,
+    /** The calm card, when [screen] is [GateScreen.CLARIFY]. */
+    val clarify: ClarifyUiState? = null,
     /** Where the "Toujours" screen is relaxed by the build switch: a "Plus tard" link is shown. */
     val canPutOffLocation: Boolean,
 )
@@ -74,6 +91,8 @@ class PermissionGateViewModel(
     private val consentBeforeLocation: Boolean = com.tomessa.miff.domain.permission.GatePolicy.CONSENT_BEFORE_LOCATION,
     /** LOC-2b (design 23): which Miffs wait for the agreement, for the Feed, the Miff screen and Settings; and "Revoir et accepter". */
     private val awaiting: AwaitingAgreement = AwaitingAgreement(),
+    /** CONS-4-A: how many times the calm card was shown to this account (at most [ClarifyPolicy.MAX_SHOWS], then only Settings offers it). */
+    private val clarifyAsks: ClarifyAskStore = InMemoryClarifyAskStore(),
 ) : ViewModel() {
     private var snapshot: PermissionSnapshot = permissions.snapshot()
     private var attempt = LocationAttempt()
@@ -86,6 +105,16 @@ class PermissionGateViewModel(
     private var renewalBusy = false
     private var renewalMessage: ActionMessage? = null
     private var leaveAsked = false
+
+    // The calm card (CONS-4-A). [clarifyDue] = the Miffs under the version 3 text; it is shown when it is offered by itself (the count is under the
+    // maximum) or asked for from Settings, and not put off in this launch.
+    private var clarifyDue: List<RenewalMiff> = emptyList()
+    private var clarifyOffered = false
+    private var clarifyAsked = false
+    private var clarifyDeferred = false
+    private var clarifyCounted = false
+    private var clarifyBusy = false
+    private var clarifyMessage: ActionMessage? = null
     private var notificationsHandled = currentUid()?.let(asked::wasShown) ?: true
 
     private val mutableState = MutableStateFlow(build())
@@ -98,9 +127,17 @@ class PermissionGateViewModel(
             awaiting.reviewRequests.collect { count ->
                 if (count != reviews) {
                     reviews = count
-                    if (renewalState == RenewalState.DUE && !renewalBusy) {
-                        renewalDeferred = false
-                        renewalMessage = null
+                    if (renewalState == RenewalState.DUE) {
+                        if (!renewalBusy) {
+                            renewalDeferred = false
+                            renewalMessage = null
+                            publish()
+                        }
+                    } else if (clarifyDue.isNotEmpty() && !clarifyBusy) {
+                        // "Revoir et accepter" of Settings > Confidentialité for the calm card: shown again, whatever the count (never counted).
+                        clarifyAsked = true
+                        clarifyDeferred = false
+                        clarifyMessage = null
                         publish()
                     }
                 }
@@ -113,14 +150,21 @@ class PermissionGateViewModel(
                 val check = withTimeoutOrNull(CHECK_TIMEOUT_MS) { renewals.check(uid) } ?: ConsentRenewalCheck.Unknown
                 when (check) {
                     is ConsentRenewalCheck.Due -> {
+                        // Two lists, two meanings (CONS-4-A, criterion CA-10): only the Miffs whose text does NOT cover the location are
+                        // PAUSED ("En attente"); those under the version 3 text are only clarified, nothing is paused for them.
                         due = check.miffs
-                        renewalState = RenewalState.DUE
+                        renewalState = if (check.miffs.isEmpty()) RenewalState.NOTHING_DUE else RenewalState.DUE
                         awaiting.replace(check.miffs.map { it.miffId }.toSet())
+                        clarifyDue = check.clarify
+                        awaiting.replaceClarifying(check.clarify.map { it.miffId }.toSet())
+                        clarifyOffered = check.clarify.isNotEmpty() && mayOfferClarify(uid)
                     }
 
                     ConsentRenewalCheck.NothingToRenew -> {
                         renewalState = RenewalState.NOTHING_DUE
                         awaiting.replace(emptySet())
+                        clarifyDue = emptyList()
+                        awaiting.replaceClarifying(emptySet())
                     }
 
                     // Not known: nothing is claimed and nothing is blocked any more; the next launch asks again.
@@ -200,6 +244,8 @@ class PermissionGateViewModel(
         if (renewalBusy) return
         renewalDeferred = true
         renewalMessage = null
+        // A person who just said "Pas maintenant" does not get the calm card right behind it in the same launch (it can come back at the next one).
+        clarifyDeferred = true
         publish()
     }
 
@@ -222,6 +268,41 @@ class PermissionGateViewModel(
                 }
             }
             renewalBusy = false
+            publish()
+        }
+    }
+
+    private fun mayOfferClarify(uid: String): Boolean = ClarifyPolicy.mayShowByItself(clarifyAsks.shownCount(uid))
+
+    /** "Plus tard" on the calm card: nothing is written, nothing is paused; it may come back at the next launch (3 times at most), or from Settings. */
+    fun onClarifyPutOff() {
+        if (clarifyBusy) return
+        clarifyDeferred = true
+        clarifyAsked = false
+        clarifyMessage = null
+        publish()
+    }
+
+    /** "J'ai compris": the SAME renewal write as the blocking screen (rule R-LIEU-3), for the Miffs under the version 3 text only. */
+    fun onClarifyAccepted() {
+        val uid = currentUid() ?: return
+        if (clarifyBusy || clarifyDue.isEmpty()) return
+        clarifyBusy = true
+        clarifyMessage = null
+        publish()
+        viewModelScope.launch {
+            when (val result = renewals.renew(uid, clarifyDue.map { it.miffId })) {
+                MiffWriteResult.Done -> {
+                    clarifyDue = emptyList()
+                    clarifyAsked = false
+                    awaiting.replaceClarifying(emptySet())
+                }
+
+                is MiffWriteResult.Failed -> {
+                    clarifyMessage = messageFor(result.failure)
+                }
+            }
+            clarifyBusy = false
             publish()
         }
     }
@@ -267,8 +348,18 @@ class PermissionGateViewModel(
     }
 
     private fun publish() {
-        mutableState.update { build() }
+        val built = build()
+        mutableState.value = built
+        // The card counts as "shown" the moment it really is on the screen, once per launch, and only when it came by itself (not from Settings).
+        if (built.screen == GateScreen.CLARIFY && !clarifyAsked && !clarifyCounted) {
+            clarifyCounted = true
+            currentUid()?.let(clarifyAsks::markShown)
+        }
     }
+
+    /** The calm card is on the way: Miffs to clarify, offered by itself or asked for from Settings, and not put off in this launch. */
+    private val clarifyShown: Boolean
+        get() = clarifyDue.isNotEmpty() && (clarifyOffered || clarifyAsked) && !clarifyDeferred
 
     private fun build(): GateUiState {
         val screen =
@@ -281,11 +372,13 @@ class PermissionGateViewModel(
                     renewal = renewalState,
                     renewalDeferred = renewalDeferred,
                     consentBeforeLocation = consentBeforeLocation,
+                    clarify = clarifyShown,
                 ),
             )
         return GateUiState(
             screen = screen,
             location = LocationFlow.model(snapshot, attempt),
+            clarify = if (clarifyDue.isNotEmpty()) ClarifyUiState(clarifyDue, clarifyBusy, clarifyMessage) else null,
             renewal =
                 if (renewalState ==
                     RenewalState.DUE
