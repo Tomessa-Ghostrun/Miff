@@ -64,11 +64,11 @@ enum TimeShareTexts {
 
     // MARK: - Pour le lecteur d'écran
 
-    /// La description unique de l'anneau (qui est caché : décoratif) : « Répartition du temps : Maison 48 %,
-    /// Sport 24 %, Hors-zone 20 %. en zone de confiance, 72 %. » (la zone de danger, quand la légende la montre, a sa propre ligne). Le NOM de la catégorie est dit, jamais l'emoji.
-    static func spokenSummary(_ result: TimeShareResult, locale: Locale = .current) -> String {
-        // Une zone de danger montrée dans la légende y a sa propre ligne (un bouton qui se lit seule) : elle n'est pas citée une seconde fois ici ;
-        // une zone de danger sous 1 % n'a pas de ligne et est citée ici (« Zone de danger < 1 % »).
+    /// La description unique de l'anneau (qui est caché : décoratif) : « Répartition du temps : Maison 48 %, Sport 24 %, Hors-zone 20 % ». Le
+    /// pourcentage du centre n'y est PAS répété : l'encart « Tu as passé 72 % de ton temps… » le dit. La zone de danger, quand la légende la
+    /// montre, a sa propre ligne (un bouton) ; sous 1 % elle est citée ici. Le NOM de la catégorie est dit, jamais l'emoji. nil : rien à dire
+    /// (seulement une zone de danger, déjà dite par sa ligne) : l'anneau est alors simplement caché.
+    static func spokenSummary(_ result: TimeShareResult, locale: Locale = .current) -> String? {
         let legend = Set(result.legendIndices)
         let parts = result.rows.enumerated().filter { index, row in
             if case .danger = row.kind {
@@ -76,16 +76,10 @@ enum TimeShareTexts {
             }
             return true
         }.map { "\(name(of: $0.element)) \(percent(of: $0.element, locale: locale))" }
-        let center = L10n.format(
-            "profile_timeshare_a11y_row",
-            L10n.string("profile_timeshare_center_caption"),
-            percent(result.trustedPercent, locale: locale)
-        )
         guard !parts.isEmpty else {
-            return "\(center)."
+            return nil
         }
-        let card = L10n.format("profile_timeshare_a11y_card", parts.joined(separator: ", "))
-        return "\(card) \(center)."
+        return L10n.format("profile_timeshare_a11y_card", parts.joined(separator: ", "))
     }
 
     /// La ligne de la zone de danger, dite seule : « Zone de danger, 12 %, afficher le détail ».

@@ -162,4 +162,14 @@ final class TimeShareSourcesTests: XCTestCase {
 
         XCTAssertEqual(found, [])
     }
+
+    func testTheNotEnoughDataStateDrawsNoRing() throws {
+        let card = try codeLines("Miff/Views/Profile/TimeShareCard.swift").joined(separator: "\n")
+        let donut = try codeLines("Miff/Views/Profile/TimeShareDonut.swift").joined(separator: "\n")
+        let tokens = try codeLines("Miff/DesignSystem/ChartTokens.swift").joined(separator: "\n")
+
+        XCTAssertFalse(card.contains("TimeShareDonut(slices: [],"), "ticket §7 : pas d'anneau vide, seulement le texte")
+        XCTAssertFalse(donut.contains("slices.isEmpty"))
+        XCTAssertFalse(tokens.contains("colorChartEmpty"))
+    }
 }

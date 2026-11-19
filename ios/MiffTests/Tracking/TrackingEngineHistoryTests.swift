@@ -30,8 +30,9 @@ final class TrackingEngineHistoryTests: XCTestCase {
                   case .timestamp(let at)? = write.data["presenceAt"] else {
                 return nil
             }
+            // Le journal ne garde le lieu que pour une présence « dans un lieu » : « dehors » n'en a pas (le statut, lui, nomme le lieu quitté).
             var place = "-"
-            if case .string(let id)? = write.data["placeId"] {
+            if presence.hasPrefix("in_"), case .string(let id)? = write.data["placeId"] {
                 place = id
             }
             return "\(presence)|\(place)|\(at)"
@@ -64,7 +65,7 @@ final class TrackingEngineHistoryTests: XCTestCase {
         await rig.engine.onTransition(.enter, zoneKey: rig.homeKey, atMillis: arrival)
         await rig.engine.onTransition(.exit, zoneKey: rig.homeKey, atMillis: departure)
 
-        XCTAssertEqual(journalTriples(), ["in_trusted|p1|\(arrival)", "out|p1|\(departure)"])
+        XCTAssertEqual(journalTriples(), ["in_trusted|p1|\(arrival)", "out|-|\(departure)"])
         XCTAssertEqual(journalTriples(), writtenTriples())
     }
 
