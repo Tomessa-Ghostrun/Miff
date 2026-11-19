@@ -57,6 +57,11 @@ enum I18nRegistry {
         try languages().map { $0.code }
     }
 
+    /// Les codes iOS des langues `required` du registre : celles dont le catalogue a les textes (fr et en aujourd'hui).
+    static func requiredCodes() throws -> [String] {
+        try languages().filter { $0.status == "required" }.map { $0.code }
+    }
+
     /// Les langues dont l'app A les textes : leur `xx.lproj` est dans l'app (un catalogue sans aucun texte pour une langue n'en produit pas).
     /// C'est sur elles que les tests de contenu bouclent : fr et en aujourd'hui, les autres dès que leurs textes arrivent.
     static func shipped() throws -> [String] {

@@ -93,6 +93,21 @@ final class AppLanguageRegistryTests: XCTestCase {
     func testALanguageWithoutTextsYetIsNotSpokenByTheApp() {
         XCTAssertEqual(systemCode(phone(["es-ES", "de-DE"])), "en")
         XCTAssertEqual(systemCode(phone(["pt-BR", "fr-FR"])), "fr")
+        // Un iPhone en espagnol puis français : l'app prend sa 2e langue (français), jamais l'anglais.
+        XCTAssertEqual(systemCode(phone(["es-ES", "fr-FR", "en-US"])), "fr")
+    }
+
+    /// Dans l'APP RÉELLE (paquet principal) : toute langue du registre sans dossier `xx.lproj` n'est pas « parlée » (état intermédiaire du lot 3,
+    /// « de déclaré sans texte »), et un téléphone qui la met en premier prend sa langue suivante. Une langue qui a son dossier l'est.
+    func testInTheRealAppALanguageWithoutItsLprojIsNeverTheLanguageOfTheApp() throws {
+        let live = AppLanguageEnvironment.live.available()
+        for code in try I18nRegistry.codes() {
+            let hasTexts = Bundle.main.path(forResource: code, ofType: "lproj") != nil
+            XCTAssertEqual(live.contains(code), hasTexts, code)
+            let resolved = AppLanguageName.code(preferred: [code, "fr-FR"], available: live)
+            XCTAssertEqual(resolved, hasTexts ? code : "fr", code)
+        }
+        XCTAssertTrue(live.contains("fr") && live.contains("en"))
     }
 
     func testEveryLanguageOfTheRegistryCanBeChosenAndAppliesAtOnce() throws {
