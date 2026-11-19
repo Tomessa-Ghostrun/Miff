@@ -234,7 +234,7 @@
 | es | Sin noticias de %1$s desde %2$s (« Sin noticias de Thomas desde 16:02 ») | Pas de nouvelles de Thomas depuis 16:02 |
 | it | Nessuna notizia di %1$s dalle %2$s (« Nessuna notizia di Thomas dalle ore 16:02 ») | Aucune nouvelle de Thomas depuis 16:02 |
 | pt-PT | Sem notícias de %1$s desde %2$s (« Sem notícias de Thomas desde 16:02 ») | Sans nouvelles de Thomas depuis 16:02 |
-| de | Seit %2$s keine Neuigkeiten von %1$s (« Seit 16:02 Uhr keine Neuigkeiten von Thomas ») | Depuis 16:02 pas de nouveautés de Thomas |
+| de | Seit %2$s keine Neuigkeiten von %1$s (« Seit 16:02 keine Neuigkeiten von Thomas ») | Depuis 16:02 pas de nouveautés de Thomas |
 
 *Note* : `%2$s` est la formule « since » du glossaire §5.3 (it : « ore 16:02 », « ore 16:02 di ieri », …). Texte **informatif**, aucun point d'exclamation, aucun « sans réponse ».
 
