@@ -34,7 +34,7 @@
 ## Partie C : accessibilité, langues
 
 16. [ ] **VoiceOver** : le focus sur l'anneau lit **une description unique** (« Répartition du temps : Maison 48 %, Sport 24 %, Hors-zone 20 % ») **sans répéter le pourcentage du centre** (l'encart vert « Tu as passé 72 % de ton temps… » le dit une fois) sans lire les emoji ; la **zone de danger n'est dite qu'une fois** : par sa ligne (« Zone de danger, 12 %, afficher le détail ») quand la légende la montre, sinon dans la description ; le sélecteur est annoncé **« Période, 7 jours »** et le choix actuel **« choisi »** ; cibles de 44 pt au moins.
-17. [ ] **Plus grand texte** (Réglages > Accessibilité > Affichage et taille du texte > Texte plus grand, tailles d'accessibilité, au maximum) : l'**anneau passe au-dessus de la légende dès « très grand » (environ 130 % ; et aux tailles d'accessibilité le sélecteur passe sous le titre)**, rien n'est coupé ni superposé, le sélecteur passe sous le titre.
+17. [ ] **Plus grand texte** (Réglages > Accessibilité > Affichage et taille du texte > Texte plus grand, tailles d'accessibilité, au maximum) : l'**anneau passe au-dessus de la légende dès « très grand » (environ 130 % ; et le sélecteur de période passe sous le titre au même seuil)**, rien n'est coupé ni superposé, le sélecteur passe sous le titre.
 18. [ ] **Anglais** : « Time breakdown », « in trusted zones », « Outside zones », « Danger zone », « You spent 72% of your time in your trusted zones », « Your chart arrives in 3 days, we're analysing your habits » (« in 1 day »), pourcentage au format « 72% ».
 
 ## Partie D : effacement et vie privée

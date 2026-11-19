@@ -204,7 +204,12 @@ final class PresenceHistoryFileStore: PresenceHistory {
         }
         // Lecture tolérante : une ligne abîmée est ignorée ; un journal écrit avant la règle « dehors sans lieu » est assaini (le lieu d'un fait
         // « dehors » est oublié, les répétitions qui en résultent sont fusionnées).
+        let onDisk = file
         file.facts = Self.collapsed(file.facts.filter { Self.fact($0) != nil }.map(Self.sanitized))
+        if file != onDisk {
+            // Assaini : réécrit UNE fois, pour qu'un identifiant de lieu supprimé ne reste pas sur le disque jusqu'au prochain changement.
+            persist(&file)
+        }
         cache = file
         return .file(file)
     }

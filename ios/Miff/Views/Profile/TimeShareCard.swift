@@ -25,7 +25,7 @@ struct TimeShareCard: View {
     @Environment(\.dynamicTypeSize) private var typeSize
     @State private var showsDanger = false
 
-    /// Aux tailles d'accessibilité, le sélecteur passe sous le titre.
+    /// Aux tailles d'accessibilité, la pastille de l'en-tête disparaît.
     private var stacked: Bool {
         typeSize.isAccessibilitySize
     }
@@ -73,16 +73,20 @@ struct TimeShareCard: View {
         return false
     }
 
+    /// Dès « très grand » (même seuil que l'anneau, comme Android dès 1,3) le sélecteur passe SOUS le titre ; la pastille n'est cachée qu'aux
+    /// tailles d'accessibilité.
     private var header: some View {
-        let layout = stacked ? AnyLayout(VStackLayout(alignment: .leading, spacing: Spacing.sm))
+        let layout = ringAbove ? AnyLayout(VStackLayout(alignment: .leading, spacing: Spacing.sm))
             : AnyLayout(HStackLayout(alignment: .center, spacing: Spacing.sm))
         return layout {
-            if !stacked {
-                headerIcon
-            }
-            titles
-            if !stacked {
-                Spacer(minLength: Spacing.xs)
+            HStack(alignment: .center, spacing: Spacing.sm) {
+                if !stacked {
+                    headerIcon
+                }
+                titles
+                if !ringAbove {
+                    Spacer(minLength: Spacing.xs)
+                }
             }
             if showsPeriod {
                 periodMenu
@@ -108,7 +112,7 @@ struct TimeShareCard: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
         }
-        .frame(maxWidth: stacked ? .infinity : nil, alignment: .leading)
+        .frame(maxWidth: ringAbove ? .infinity : nil, alignment: .leading)
     }
 
     /// « 7 jours ⌄ » : un menu à trois choix, le choix actuel coché. 44 pt au moins ; annoncé « Période, 7 jours, bouton ».

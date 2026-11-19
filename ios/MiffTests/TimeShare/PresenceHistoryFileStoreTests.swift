@@ -281,6 +281,22 @@ final class PresenceHistoryFileStoreTests: XCTestCase {
         XCTAssertEqual(read[1].atMillis, clockNow - 8 * hour, "le premier est gardé")
     }
 
+    func testAnOldJournalIsCleanedOnTheDiskAtTheFirstReadNotOnlyInMemory() throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let old = """
+        {"version":1,"facts":[
+        {"miff":"miffA","state":"trusted","place":"p1","at":\(clockNow - 10 * hour)},
+        {"miff":"miffA","state":"out","place":"goneAfter","at":\(clockNow - 8 * hour)}]}
+        """
+        try Data(old.utf8).write(to: fileURL)
+
+        _ = facts(store())
+
+        let text = try String(contentsOf: fileURL, encoding: .utf8)
+        XCTAssertFalse(text.contains("goneAfter"), "le lieu d'un ancien fait « dehors » ne reste pas sur le disque")
+        XCTAssertTrue(text.contains("p1"))
+    }
+
     func testForgettingThePlaceOfTheFirstFactKeepsTheHistoryLengthWithAnUnknownFirstFact() {
         let history = store()
         let first = clockNow - 6 * day
