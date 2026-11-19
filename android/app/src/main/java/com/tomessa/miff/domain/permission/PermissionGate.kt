@@ -37,7 +37,7 @@ enum class RenewalState {
 }
 
 /** The screen the gate puts in front of the Feed (NONE: the Feed itself). */
-enum class GateScreen { NONE, NOTIFICATIONS, CHECKING, LOCATION, RENEWAL }
+enum class GateScreen { NONE, NOTIFICATIONS, CHECKING, LOCATION, RENEWAL, CLARIFY }
 
 data class GateInput(
     val snapshot: PermissionSnapshot,
@@ -51,6 +51,11 @@ data class GateInput(
     /** "Pas maintenant" was tapped in this launch of the app. */
     val renewalDeferred: Boolean,
     val consentBeforeLocation: Boolean = GatePolicy.CONSENT_BEFORE_LOCATION,
+    /**
+     * CONS-4-A: the calm card "Une précision sur ce que tu partages" is to be shown (a version 3 account, the card not exhausted or asked for from
+     * Settings, and not put off in this launch). It never pauses anything and never goes before another screen: see [resolveGate].
+     */
+    val clarify: Boolean = false,
 )
 
 /**
@@ -75,6 +80,9 @@ fun resolveGate(input: GateInput): GateScreen {
         locationAsked && !(input.consentBeforeLocation && renewalPending) -> GateScreen.LOCATION
 
         renewalAsked -> GateScreen.RENEWAL
+
+        // The calm card comes LAST: after the notifications, the blocking agreement and the location, never before. It pauses nothing.
+        input.clarify -> GateScreen.CLARIFY
 
         else -> GateScreen.NONE
     }

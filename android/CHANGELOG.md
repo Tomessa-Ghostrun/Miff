@@ -2,6 +2,40 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.52.0] - 2026-11-19 : consentement à la localisation, version 4 (« historique ») : textes corrigés, carte « Une précision » (CONS-4-A) [numéro provisoire]
+
+**Numéro de version provisoire** : `main` est à 0.51.0 ; un autre lot prépare aussi 0.52.0 (centre de notifications). Le coordinateur renumérote au merge.
+
+Ticket `docs/tickets/consentement-localisation-historique.md` (PR #280), décisions du PM du 2026-11-19 (option D, section 0 : elles priment). Branche `android/consentement-v4`, PR brouillon. **Coût ajouté : 0 €** (aucun service, aucune bibliothèque, aucune écriture serveur de plus). **`backend/` n'est pas touché : aucune règle ne change, aucun déploiement** : les règles acceptent toujours « 03 ou plus » (position et photo). Les builds en version 3 continuent de fonctionner.
+
+### Pourquoi
+Le texte de consentement v3 disait « pas d'historique de trajets » alors que le téléphone tient un journal local de présence (35 jours, jamais envoyé) ; il ne citait pas non plus l'endroit de la photo. Une phrase de consentement modifiée = un numéro de version de plus (sinon la preuve de ce que la personne a vu est perdue) : constante `2026-11-v04`.
+
+### Ajouté et modifié
+- **Constante `MiffSharingConsent.VERSION = "2026-11-v04"`** (comptes **neufs** : la carte v4 est écrite dans le lot d'entrée, comme avant, avec l'heure du serveur). Le seuil de ce que les règles acceptent ne bouge pas (`coversPosition` = numéro 03 à 99).
+- **Textes corrigés (FR + EN, mêmes clés que sur iOS)** : « Aucun historique de trajets **sur nos serveurs** » (`miff_consent3_kept_body`, `miff_renewal_intro_*`, `permission_location_seen_body`, `settings_privacy_location_body`) ; la phrase d'accord (`miff_consent3_create` / `_join` / `_resume`) et l'effacement (`miff_consent3_erase_body`) citent l'endroit de la photo ; `settings_privacy_time_body` ajoute « Arrêter de partager ne l'efface pas : c'est ici que tu peux le faire. ». **La phrase obligatoire de divulgation Google (`permission_location_disclosure`) n'a pas d'écart et n'est pas modifiée** (test de non-régression sur le texte exact).
+- **Deux lignes de plus sur la carte de consentement** (nouvelles clés `miff_consent3_photo_*` « L'endroit de ta photo » et `miff_consent3_local_*` « Sur ton téléphone seulement ») et **une ligne sur la divulgation de la localisation** (`permission_location_local_*` « Pour toi seul(e) »). La ligne du journal local ne se retire pas. Ces deux lignes sont aussi dans le détail du re-consentement bloquant (comptes en v1 ou v2), pour que « v04 accepté » veuille dire la même chose partout.
+- **Comptes déjà en v3 : carte calme « Une précision sur ce que tu partages »** (`ClarifyScreen`, clés `miff_clarify_*`) : **aucune pause** de la position, du statut ni de la photo, quelle que soit la réponse. « J'ai compris » = le même renouvellement R-LIEU-3 vers `2026-11-v04` (une écriture par Miff, aucune lecture de règles de plus) ; « Plus tard » n'écrit rien. Elle revient **au plus 3 fois, une fois par lancement** (compteur local par compte, jamais envoyé, effacé avec le compte, `ClarifyAskStore`), puis **seul** « Revoir et accepter » dans Réglages > Confidentialité la rouvre (sans compter). Elle passe **après** tout ce qui est demandé (notifications, accord bloquant, autorisation « Toujours »).
+- **Comptes en v1 ou v2** : re-consentement bloquant **inchangé**, avec le texte v4.
+- **Réglages > Confidentialité** : ligne « Une précision » + « Revoir et accepter » pour les comptes en v3 (sans pastille, sans pause) ; sous « Effacer mon historique de temps » une phrase dit ce que le bouton efface et que cela ne change rien pour les proches. Le titre « Historique de temps » est conservé.
+
+### Corrigé : la pastille « En attente » ne dit plus à tort qu'un compte v3 est en attente
+Le suivi se base sur « numéro 03 ou plus », pas sur « version courante ». `isRenewalDue` ne veut donc plus dire « en pause » : nouvelles fonctions `MiffSharingConsent.pausesSharing` (ancienne version **qui ne couvre pas** la position) et `isClarificationDue` (ancienne version qui la couvre). `ConsentRenewalCheck.Due` porte deux listes (`miffs` = en pause, `clarify` = à préciser) ; **seuls les Miffs en pause** entrent dans `AwaitingAgreement.waiting` (pastille, carte « En attente de ton accord », bulle du Feed, journal du temps). Test de cohérence : pour toute version V connue, « l'interface dit en pause » ⇔ « le suivi est réellement arrêté ».
+
+### Choix « économique » et limite
+Aucun. Le compteur de la carte est un entier par compte dans des préférences privées du téléphone (exclues des sauvegardes) : si le PM veut le même nombre de rappels d'un téléphone à l'autre, il faudrait le mettre sur le serveur (une écriture de plus) : non décidé, non fait.
+
+### Écarts avec le ticket (voir la PR)
+- Carte « Une précision » = **écran plein** bâti sur l'écran de re-consentement (pas de maquette), avec « Plus tard » aussi visible que le bouton principal : elle ne retient le Feed que le temps d'un geste et ne met rien en pause.
+- Cité dans les textes : « répartition du temps » (le vrai titre de la carte du Profil dans l'app), pas « Répartition de ton temps ».
+- Le détail du re-consentement bloquant (v1/v2) inclut les lignes « photo » et « sur ton téléphone seulement » (le ticket dit que le re-consentement « ne parle pas du journal »).
+- Clés additionnelles non listées par le ticket : `miff_clarify_body_unnamed` / `_many` / `_continue` / `_saving` / `_error_extra`, `settings_privacy_clarify_body`, `settings_privacy_time_erase_note`.
+- iOS : le catalogue `Localizable.xcstrings` reçoit les mêmes textes (pour la parité) et un test (`PermissionPrivacyTests`) est adapté ; **la constante, les écrans et le texte « Toujours » iOS restent à faire (CONS-4-I)**.
+
+### Tests
+`PermissionDomainTest` (constante, `isRenewalDue`, `coversPosition` 02/03/04/99, trois populations, cohérence « pause » ⇔ suivi arrêté, ordre des écrans), `ConsentRenewalsTest` (v1/v2, v3, neuf, mélange, écriture), `PermissionGateClarifyTest` (trois populations au portail, aucune pause, 3 fois au plus puis Réglages, jamais comptée depuis Réglages), `ConsentV4TextsTest` (textes FR/EN : aucun « historique » sans « nos serveurs », quatre précisions, aucun « suivi » hors négation, journal jamais dit effacé à l'arrêt, phrase Google inchangée, photo et position toujours gardées par `coversPosition`, compteur sans réseau), `PermissionScreensTest` / `PrivacyScreensTest` / `MiffScreensTest` (écrans, grande police, boutons atteignables, pastille absente pour v3).
+- Recette : `docs/qa/checklists/consentement-v4-android-recette-pm.md`.
+
 ## [0.51.0] - 2026-11-19 : alerte « Je suis en danger » : déclencher, envoyer, bannière, carte rouge des proches, notification (AD-A1 et AD-A2)
 
 Ticket `docs/tickets/alerte-danger.md` (sur `main`, décisions du PM du 2026-11-18 et du 2026-11-19), maquettes `design/exports/alerte-danger/` (6 PNG). Branche `android/alerte-danger`, PR brouillon. Numéro de version : 0.51.0 (`main` est à 0.50.0 depuis la PR #268). **Coût ajouté : 0 €** (une écriture de plus par alerte, aucune bibliothèque, FCM gratuit). **À savoir : la fonction est derrière un drapeau de build (`BuildConfig.ALERT_DANGER`), allumé dans l'APK de debug et ÉTEINT dans release et releaseLike ; elle ne marche de bout en bout qu'une fois les règles (PR #274) et la fonction `notifierAlerte` déployées par le PM (sur « oui » explicite).**
