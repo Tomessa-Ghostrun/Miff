@@ -233,8 +233,11 @@ final class TimeShareCalculatorTests: XCTestCase {
     }
 
     func testT14NeverInAPlaceIsZeroInTheCentreAndMostlyElsewhere() throws {
-        // « Dehors » de 100 h : deux faits « dehors » de lieux différents ne se confondent pas, chacun est plafonné à 48 h.
-        let facts = Scn.timeline([(.out, "p1", 40), (.out, "p2", 40), (.out, nil, 20)])
+        // « Dehors » de 100 h en trois séjours séparés par un temps « inconnue » (deux faits « dehors » de suite n'en font qu'un, plafonné à 48 h).
+        let segments: [TimeShareFixtures.Segment] = [
+            (.out, nil, 40), (.unknown, nil, 1), (.out, nil, 40), (.unknown, nil, 1), (.out, nil, 20)
+        ]
+        let facts = Scn.timeline(segments)
 
         let result = try XCTUnwrap(Scn.ready(Scn.compute(facts, places: [Scn.home, Scn.sport])))
 
@@ -362,5 +365,22 @@ final class TimeShareCalculatorTests: XCTestCase {
 
         XCTAssertTrue(text.contains("60%"), text)
         XCTAssertFalse(text.localizedCaseInsensitiveContains("danger"))
+    }
+
+    func testAnOutFactNeverKeepsAPlaceIdentifier() {
+        let fact = PresenceFact(miffId: "m1", state: .out, placeId: "p1", atMillis: 1)
+        let unknown = PresenceFact(miffId: "m1", state: .unknown, placeId: "p1", atMillis: 1)
+        let inPlace = PresenceFact(miffId: "m1", state: .trusted, placeId: "p1", atMillis: 1)
+
+        XCTAssertNil(fact.placeId)
+        XCTAssertNil(unknown.placeId)
+        XCTAssertEqual(inPlace.placeId, "p1")
+    }
+
+    func testTwoOutFactsWhateverTheirQuitPlaceAreOneInTheCalculation() {
+        // Un journal écrit avant la règle : « dehors » du lieu p1, puis « dehors » du lieu p2 : même état, un seul fait (plafonné à 48 h).
+        let facts = [Scn.fact(.out, "p1", hoursAgo: 100), Scn.fact(.out, "p2", hoursAgo: 60)]
+
+        XCTAssertEqual(totals(facts, places: [Scn.home]).elsewhere, 48 * hour)
     }
 }

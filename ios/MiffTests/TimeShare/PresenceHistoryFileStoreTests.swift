@@ -247,4 +247,64 @@ final class PresenceHistoryFileStoreTests: XCTestCase {
 
         XCTAssertEqual(store().windowDays(), 30)
     }
+
+    // MARK: - Un fait « dehors » sans lieu ; oublier un lieu ne raccourcit pas l'historique
+
+    func testAnOutFactIsWrittenWithoutAnyPlaceIdentifier() throws {
+        let history = store()
+        history.record(fact(.trusted, "p1", at: clockNow - 5 * hour))
+        history.record(fact(.out, "p1", at: clockNow - 3 * hour))
+
+        let text = try String(contentsOf: fileURL, encoding: .utf8)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(text.utf8)) as? [String: Any])
+        let stored = try XCTUnwrap(object["facts"] as? [[String: Any]])
+
+        XCTAssertEqual(stored.count, 2)
+        XCTAssertNil(stored[1]["place"], "le lieu qu'on vient de quitter n'est pas gardé")
+        XCTAssertNotNil(stored[0]["place"])
+    }
+
+    func testAJournalWrittenBeforeTheRuleIsReadWithoutThePlaceOfItsOutFactsAndTheRepetitionsAreMerged() throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let old = """
+        {"version":1,"facts":[
+        {"miff":"miffA","state":"trusted","place":"p1","at":\(clockNow - 10 * hour)},
+        {"miff":"miffA","state":"out","place":"p1","at":\(clockNow - 8 * hour)},
+        {"miff":"miffA","state":"out","place":"p2","at":\(clockNow - 6 * hour)}]}
+        """
+        try Data(old.utf8).write(to: fileURL)
+
+        let read = facts(store())
+
+        XCTAssertEqual(read.map { $0.state }, [.trusted, .out], "deux « dehors » de suite : un seul")
+        XCTAssertNil(read[1].placeId)
+        XCTAssertEqual(read[1].atMillis, clockNow - 8 * hour, "le premier est gardé")
+    }
+
+    func testForgettingThePlaceOfTheFirstFactKeepsTheHistoryLengthWithAnUnknownFirstFact() {
+        let history = store()
+        let first = clockNow - 6 * day
+        history.record(fact(.trusted, "gone", at: first))
+        history.record(fact(.out, nil, at: clockNow - 5 * day))
+
+        history.forgetPlaces(miffId: "miffA", keeping: ["p1"])
+
+        let kept = facts(history)
+        XCTAssertEqual(kept.map { $0.state }, [.unknown, .out])
+        XCTAssertEqual(kept.first?.atMillis, first, "le décompte ne recule pas")
+        XCTAssertNil(kept.first?.placeId)
+    }
+
+    func testForgettingEveryPlaceLeavesNoPlaceIdentifierInTheFile() throws {
+        let history = store()
+        history.record(fact(.trusted, "gone", at: clockNow - 5 * hour))
+        history.record(fact(.out, "gone", at: clockNow - 4 * hour))
+        history.record(fact(.danger, "alsoGone", at: clockNow - 3 * hour))
+
+        history.forgetPlaces(miffId: "miffA", keeping: [])
+
+        let text = try String(contentsOf: fileURL, encoding: .utf8)
+        XCTAssertFalse(text.contains("gone"), "aucun identifiant de lieu supprimé ne reste")
+        XCTAssertFalse(text.contains("Gone"))
+    }
 }
