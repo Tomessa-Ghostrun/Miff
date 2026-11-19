@@ -448,12 +448,21 @@
     <string name="feed_label_sharing_stopped">Partage arrêté</string>
     <string name="feed_label_news_hidden">Nouvelles masquées</string>
     <string name="feed_label_limited_location">Localisation limitée</string>
-    <string name="feed_place_noun_home">la maison</string>
-    <string name="feed_place_noun_work">le travail</string>
-    <string name="feed_place_noun_school">l\'école</string>
-    <string name="feed_place_noun_sport">le sport</string>
-    <string name="feed_place_noun_relative">le domicile d\'un proche</string>
-    <string name="feed_place_noun_generic">un lieu de confiance</string>
+    <!-- Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition comprise (le français les écrit pareil). -->
+    <string name="feed_place_leave_home">la maison</string>
+    <string name="feed_place_leave_work">le travail</string>
+    <string name="feed_place_leave_school">l\'école</string>
+    <string name="feed_place_leave_sport">le sport</string>
+    <string name="feed_place_leave_relative">le domicile d\'un proche</string>
+    <string name="feed_place_leave_generic">un lieu de confiance</string>
+    <string name="feed_place_leave_named">%1$s</string>
+    <string name="feed_place_arrive_home">la maison</string>
+    <string name="feed_place_arrive_work">le travail</string>
+    <string name="feed_place_arrive_school">l\'école</string>
+    <string name="feed_place_arrive_sport">le sport</string>
+    <string name="feed_place_arrive_relative">le domicile d\'un proche</string>
+    <string name="feed_place_arrive_generic">un lieu de confiance</string>
+    <string name="feed_place_arrive_named">%1$s</string>
     <string name="feed_time_since_minutes">Depuis %1$d min</string>
     <string name="feed_time_since_hours">Depuis %1$d h</string>
     <string name="feed_time_since">Depuis %1$s</string>

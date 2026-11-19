@@ -298,8 +298,12 @@
     <string name="settings_language_title">Language</string>
     <string name="settings_language_subtitle">Change the language of the app</string>
     <!-- Each language is written in its own language, so that it can be found whatever language the app is in. -->
-    <string name="settings_language_french" translatable="false">Français</string>
+    <string name="settings_language_german" translatable="false">Deutsch</string>
     <string name="settings_language_english" translatable="false">English</string>
+    <string name="settings_language_spanish" translatable="false">Español</string>
+    <string name="settings_language_french" translatable="false">Français</string>
+    <string name="settings_language_italian" translatable="false">Italiano</string>
+    <string name="settings_language_portuguese" translatable="false">Português</string>
     <string name="settings_language_system">Phone language</string>
     <string name="settings_my_info_phone_label">Phone</string>
     <string name="settings_my_info_save_action">Save</string>
@@ -472,12 +476,22 @@
     <string name="feed_label_sharing_stopped">Sharing stopped</string>
     <string name="feed_label_news_hidden">News hidden</string>
     <string name="feed_label_limited_location">Limited location</string>
-    <string name="feed_place_noun_home">home</string>
-    <string name="feed_place_noun_work">work</string>
-    <string name="feed_place_noun_school">school</string>
-    <string name="feed_place_noun_sport">the gym</string>
-    <string name="feed_place_noun_relative">a loved one\'s place</string>
-    <string name="feed_place_noun_generic">a trusted place</string>
+    <!-- What follows "left" (leave) and "arrived at" (arrive): a COMPLETE complement per verb, preposition included, so that a language whose
+         preposition changes with the place (es "del trabajo" / "al trabajo", pt "do trabalho" / "ao trabalho") needs no variable article. -->
+    <string name="feed_place_leave_home">home</string>
+    <string name="feed_place_leave_work">work</string>
+    <string name="feed_place_leave_school">school</string>
+    <string name="feed_place_leave_sport">the gym</string>
+    <string name="feed_place_leave_relative">a loved one\'s place</string>
+    <string name="feed_place_leave_generic">a trusted place</string>
+    <string name="feed_place_leave_named">%1$s</string>
+    <string name="feed_place_arrive_home">home</string>
+    <string name="feed_place_arrive_work">work</string>
+    <string name="feed_place_arrive_school">school</string>
+    <string name="feed_place_arrive_sport">the gym</string>
+    <string name="feed_place_arrive_relative">a loved one\'s place</string>
+    <string name="feed_place_arrive_generic">a trusted place</string>
+    <string name="feed_place_arrive_named">%1$s</string>
     <string name="feed_time_since_minutes">For %1$d min</string>
     <string name="feed_time_since_hours">For %1$d h</string>
     <string name="feed_time_since">Since %1$s</string>

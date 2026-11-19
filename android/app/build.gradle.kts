@@ -259,10 +259,13 @@ android {
 
 // Release keeps only the supported languages from libraries (smaller APK; any other device language falls back to
 // English). Debug keeps everything so that the en-XA / ar-XB pseudo-locales work.
+// THE LIST OF THE LANGUAGES: it is the registry docs/contracts/i18n-languages.json (ticket I18N-4L). A language missing here is REMOVED from the release APK
+// even when its values-xx folder exists (it would work in debug and be absent from the store build): AppLanguageRegistryTest and
+// scripts/check-i18n-parity.mjs fail when this list and the registry differ. "pt" is the Portuguese of Portugal and serves every region of Portuguese.
 androidComponents {
     for (buildType in listOf("release", "releaseLike")) {
         onVariants(selector().withBuildType(buildType)) { variant ->
-            variant.androidResources.localeFilters.addAll("en", "fr")
+            variant.androidResources.localeFilters.addAll("de", "en", "es", "fr", "it", "pt")
         }
     }
 }

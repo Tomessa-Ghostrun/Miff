@@ -2,6 +2,7 @@ package com.tomessa.miff.ui.timeshare
 
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import com.tomessa.miff.testsupport.I18nResources
 import com.tomessa.miff.ui.theme.chartPlaceColors
 import com.tomessa.miff.ui.theme.colorActionPrimary
 import com.tomessa.miff.ui.theme.colorBgSurface
@@ -276,9 +277,17 @@ class TimeShareRulesTest {
     fun frenchAndEnglish_haveTheSameKeys_andTheStatesUseTheWordingFixedByThePm() {
         val fr = strings("src/main/res/values-fr/strings.xml")
         val en = strings("src/main/res/values/strings.xml")
+        // Every language of the registry that has its file (es, it, pt, de once merged), not only English: same keys, same plurals as French.
+        I18nResources.present.forEach { language ->
+            assertEquals(language.code, fr.keys, strings(language.stringsFile.path).keys)
+            assertEquals(
+                language.code,
+                plurals("src/main/res/values-fr/strings.xml"),
+                plurals(language.stringsFile.path),
+            )
+        }
         assertEquals(fr.keys, en.keys)
         assertTrue(fr.size >= 28)
-        assertEquals(plurals("src/main/res/values-fr/strings.xml"), plurals("src/main/res/values/strings.xml"))
         assertEquals("Effacer l\\'historique ?", fr["settings_privacy_time_confirm_title"])
         assertEquals(
             "Ta répartition repartira de zéro. Cela ne change rien pour tes proches.",
@@ -302,7 +311,7 @@ class TimeShareRulesTest {
 
     @Test
     fun noExclamationMarkAndNoFormulaOfCongratulationOrBlame_inAnyLanguage() {
-        listOf("src/main/res/values-fr/strings.xml", "src/main/res/values/strings.xml").forEach { path ->
+        I18nResources.present.map { it.stringsFile.path }.forEach { path ->
             strings(path).forEach { (key, value) ->
                 assertFalse("$key has an exclamation mark", value.contains("!"))
                 assertFalse(
@@ -319,7 +328,7 @@ class TimeShareRulesTest {
     fun theSentenceOfTheBand_neverNamesTheDangerZone_andTheWordingOfTheStatesIsTheOneFixedByThePm() {
         val fr = strings("src/main/res/values-fr/strings.xml")
         val en = strings("src/main/res/values/strings.xml")
-        listOf(fr, en).forEach { language ->
+        I18nResources.present.map { strings(it.stringsFile.path) }.forEach { language ->
             val sentence = language.getValue("profile_timeshare_summary")
             assertFalse("the band names the danger zone", Regex("(?i)danger|risk").containsMatchIn(sentence))
             assertTrue("the band has the figure", sentence.contains("%1\$s"))

@@ -1,5 +1,6 @@
 package com.tomessa.miff.ui
 
+import com.tomessa.miff.testsupport.I18nResources
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -88,8 +89,7 @@ class FeedPrivacyRuleTest {
 
     @Test
     fun theWordingZoneARisqueDoesNotExist() {
-        val resources =
-            listOf("src/main/res/values/strings.xml", "src/main/res/values-fr/strings.xml").map { File(it) }
+        val resources = I18nResources.present.map { it.stringsFile }
         // The texts are read whole; the code without its comments (a comment may say what is forbidden).
         val inTexts =
             resources.filter { file ->

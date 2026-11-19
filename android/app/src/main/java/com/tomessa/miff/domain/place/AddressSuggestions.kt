@@ -47,7 +47,10 @@ sealed interface AddressSearchResult {
 
 /** The search itself, behind an interface: Photon today, Geoapify as a prepared fallback, a fake in the tests. */
 fun interface AddressSearch {
-    /** [language] is "fr" or "en": the language of the labels asked of the service. Cancellation of the caller is honoured. */
+    /**
+     * [language] is the language of the app ("fr", "pt"...): each service maps it to a language it accepts, English when it has none ([AddressSearchLanguage]).
+     * Cancellation of the caller is honoured.
+     */
     suspend fun search(
         query: String,
         language: String,

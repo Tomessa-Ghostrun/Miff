@@ -1,5 +1,6 @@
 package com.tomessa.miff.domain
 
+import com.tomessa.miff.testsupport.I18nResources
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -236,7 +237,10 @@ class PermissionPrivacyTest {
         val vouvoiement = Regex("""(?i)\b(vous|votre|vos|autorisez|acceptez|nous avons besoin de votre)\b""")
         keys.forEach { key ->
             assertFalse("$key is not in tutoiement", vouvoiement.containsMatchIn(fr.getValue(key)))
-            assertTrue("$key has no English text", en.containsKey(key))
+            // Every language of the registry that has its file today (fr, en; es, it, pt, de once merged), not only French and English.
+            I18nResources.present.forEach {
+                assertTrue("$key has no text in ${it.code}", I18nResources.strings(it).containsKey(key))
+            }
         }
         // "zone de danger" (never "zone à risque") is the wording of the product; none of these texts needs either.
         keys.forEach { assertFalse(it, fr.getValue(it).contains("zone à risque")) }

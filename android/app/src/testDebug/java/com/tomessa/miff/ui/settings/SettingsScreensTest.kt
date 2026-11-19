@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertHeightIsAtLeast
@@ -34,7 +35,10 @@ import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isSelectable
+import androidx.compose.ui.test.isSelected
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodes
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -449,27 +453,81 @@ class SettingsScreensTest {
     // --- Language (criterion A9) -----------------------------------------------------------------------------------------------------
 
     @Test
-    fun language_offersFrenchEnglishAndThePhone_eachNamedInItsOwnLanguage_noSaveButton() {
+    fun language_offersTheSixLanguagesAndThePhone_eachNamedInItsOwnLanguage_noSaveButton() {
         val chosen = mutableListOf<AppLanguage>()
         show { LanguageScreen(selected = AppLanguage.FRENCH, onBack = {}, onSelect = { chosen += it }) }
         shoot("language")
+        // Exactly one row is selected; the names are the ones of the registry (ticket I18N-4L, criterion 10), written in their own language.
         composeRule.onNodeWithText("Français").assertIsSelected()
-        composeRule.onNodeWithText("English").assertIsNotSelected()
-        composeRule.onNodeWithText(text(R.string.settings_language_system)).assertIsNotSelected()
-        // Neither Spanish, German, Portuguese nor Italian (decision Q4), and no "Enregistrer" button: a tap applies.
-        listOf("Español", "Spanish", "German", "Deutsch", "Portuguese", "Italian").forEach {
+        listOf(
+            "Deutsch",
+            "English",
+            "Español",
+            "Italiano",
+            "Português",
+            text(R.string.settings_language_system),
+        ).forEach {
+            composeRule.onNodeWithText(it).assertIsNotSelected()
+        }
+        composeRule.onAllNodes(isSelectable()).assertCountEquals(7)
+        composeRule.onAllNodes(isSelectable() and isSelected()).assertCountEquals(1)
+        // The names are never translated ("Spanish", "German"...), and no "Enregistrer" button: a tap applies.
+        listOf("Spanish", "German", "Portuguese", "Italian", "Dutch", "Nederlands").forEach {
             composeRule.onAllNodesWithText(it).assertCountEquals(0)
         }
         composeRule.onAllNodesWithText("Save").assertCountEquals(0)
         composeRule.onNodeWithText("English").performClick()
+        composeRule.onNodeWithText("Español").performClick()
+        composeRule.onNodeWithText("Português").performClick()
+        composeRule.onNodeWithText("Deutsch").performClick()
+        composeRule.onNodeWithText("Italiano").performClick()
         composeRule.onNodeWithText(text(R.string.settings_language_system)).performClick()
-        assertEquals(listOf(AppLanguage.ENGLISH, AppLanguage.SYSTEM), chosen)
+        assertEquals(
+            listOf(
+                AppLanguage.ENGLISH,
+                AppLanguage.SPANISH,
+                AppLanguage.PORTUGUESE,
+                AppLanguage.GERMAN,
+                AppLanguage.ITALIAN,
+                AppLanguage.SYSTEM,
+            ),
+            chosen,
+        )
+    }
+
+    @Test
+    fun language_theRowsFollowTheOrderOfTheNames_andEachOneIsReadAsItsNameAndItsState() {
+        show { LanguageScreen(AppLanguage.SPANISH, {}, {}) }
+        val rows = composeRule.onAllNodes(isSelectable())
+        val names =
+            listOf(
+                "Deutsch",
+                "English",
+                "Español",
+                "Français",
+                "Italiano",
+                "Português",
+                text(R.string.settings_language_system),
+            )
+        names.forEachIndexed { index, name ->
+            // TalkBack reads the text of the row and its state ("Español, selected"): one element per row, the radio button only draws the state.
+            rows[index].assert(hasText(name))
+            if (index == 2) rows[index].assertIsSelected() else rows[index].assertIsNotSelected()
+        }
     }
 
     @Test
     fun language_theRowsAreRadioButtonsOfAtLeast48dp() {
         show { LanguageScreen(AppLanguage.SYSTEM, {}, {}) }
-        listOf("Français", "English", text(R.string.settings_language_system)).forEach {
+        listOf(
+            "Deutsch",
+            "English",
+            "Español",
+            "Français",
+            "Italiano",
+            "Português",
+            text(R.string.settings_language_system),
+        ).forEach {
             val node = composeRule.onNodeWithText(it).assertHeightIsAtLeast(48.dp).fetchSemanticsNode()
             assertEquals(androidx.compose.ui.semantics.Role.RadioButton, node.config[SemanticsProperties.Role])
         }

@@ -31,6 +31,7 @@ import com.tomessa.miff.R
 import com.tomessa.miff.domain.tracking.ColorsInfoDurations
 import com.tomessa.miff.domain.tracking.StatusThresholds
 import com.tomessa.miff.domain.tracking.WholeDuration
+import com.tomessa.miff.testsupport.I18nResources
 import com.tomessa.miff.ui.theme.MiffTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -329,18 +330,30 @@ class ColorsInfoScreenTest {
         assertEquals(39, fr.size)
         assertEquals(fr.keys, en.keys)
         val placeholders = placeholderPattern
-        fr.forEach { (key, value) ->
-            assertEquals(
-                "$key: same placeholders in French and in English",
-                placeholders.findAll(value).map { it.value }.toList(),
-                placeholders.findAll(en.getValue(key)).map { it.value }.toList(),
-            )
+        // Every language of the registry that has its file (es, it, pt, de once merged); the ORDER of the values is free in a translation (positional values).
+        I18nResources.present.map { it.code to catalogue(it.resDir) }.forEach { (code, other) ->
+            assertEquals("$code: same keys as French", fr.keys, other.keys)
+            fr.forEach { (key, value) ->
+                assertEquals(
+                    "$key: same placeholders in French and in $code",
+                    placeholders
+                        .findAll(value)
+                        .map { it.value }
+                        .sorted()
+                        .toList(),
+                    placeholders
+                        .findAll(other.getValue(key))
+                        .map { it.value }
+                        .sorted()
+                        .toList(),
+                )
+            }
         }
     }
 
     @Test
     fun noCatalogue_writesAnHourCount_onlyPlaceholders() {
-        listOf("values-fr", "values").forEach { folder ->
+        I18nResources.present.map { it.resDir }.forEach { folder ->
             catalogue(folder).forEach { (key, value) ->
                 val withoutPlaceholders = value.replace(placeholderPattern, "")
                 assertFalse("$folder/$key has a digit written in it", withoutPlaceholders.any { it.isDigit() })
@@ -353,7 +366,7 @@ class ColorsInfoScreenTest {
 
     @Test
     fun theTone_isCalm_noExclamation_noSafetyPromise_noAlarmWord() {
-        listOf("values-fr", "values").forEach { folder ->
+        I18nResources.present.map { it.resDir }.forEach { folder ->
             catalogue(folder).forEach { (key, value) ->
                 assertFalse("$folder/$key has an exclamation mark", value.contains('!'))
                 assertFalse(

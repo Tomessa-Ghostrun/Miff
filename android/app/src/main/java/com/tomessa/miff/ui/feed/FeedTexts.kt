@@ -105,27 +105,55 @@ class FeedTexts(
             else -> momentOf(age)?.let { at(it) }.orEmpty()
         }
 
-    /** The place in the middle of a sentence ("A quitté la maison", "Thomas a quitté le travail à 16 h 40"). */
-    fun placeNoun(place: PlaceRef): String =
+    /**
+     * What follows "a quitté" ("A quitté la maison", "Thomas a quitté le travail à 16 h 40"): a COMPLETE complement, preposition included, written by the
+     * language (`feed_place_leave_*`). Nothing is assembled from an article and a noun: in Spanish, Italian, Portuguese and German the preposition and the
+     * article merge or change with the place ("del trabajo", "do trabalho"), so each language writes the complement of the verb as a whole.
+     */
+    fun placeLeft(place: PlaceRef): String =
         when (place) {
             is PlaceRef.Category -> {
                 s(
                     when (place.kind) {
-                        PlaceKind.HOME -> R.string.feed_place_noun_home
-                        PlaceKind.WORK -> R.string.feed_place_noun_work
-                        PlaceKind.SCHOOL -> R.string.feed_place_noun_school
-                        PlaceKind.SPORT -> R.string.feed_place_noun_sport
-                        PlaceKind.RELATIVE -> R.string.feed_place_noun_relative
+                        PlaceKind.HOME -> R.string.feed_place_leave_home
+                        PlaceKind.WORK -> R.string.feed_place_leave_work
+                        PlaceKind.SCHOOL -> R.string.feed_place_leave_school
+                        PlaceKind.SPORT -> R.string.feed_place_leave_sport
+                        PlaceKind.RELATIVE -> R.string.feed_place_leave_relative
                     },
                 )
             }
 
             is PlaceRef.Named -> {
-                place.name
+                s(R.string.feed_place_leave_named, place.name)
             }
 
             PlaceRef.Unknown -> {
-                s(R.string.feed_place_noun_generic)
+                s(R.string.feed_place_leave_generic)
+            }
+        }
+
+    /** What follows "a rejoint" ("Thomas a rejoint l'école à 8 h 05"): same principle as [placeLeft], texts `feed_place_arrive_*`. */
+    fun placeArrived(place: PlaceRef): String =
+        when (place) {
+            is PlaceRef.Category -> {
+                s(
+                    when (place.kind) {
+                        PlaceKind.HOME -> R.string.feed_place_arrive_home
+                        PlaceKind.WORK -> R.string.feed_place_arrive_work
+                        PlaceKind.SCHOOL -> R.string.feed_place_arrive_school
+                        PlaceKind.SPORT -> R.string.feed_place_arrive_sport
+                        PlaceKind.RELATIVE -> R.string.feed_place_arrive_relative
+                    },
+                )
+            }
+
+            is PlaceRef.Named -> {
+                s(R.string.feed_place_arrive_named, place.name)
+            }
+
+            PlaceRef.Unknown -> {
+                s(R.string.feed_place_arrive_generic)
             }
         }
 
@@ -157,7 +185,7 @@ class FeedTexts(
             }
 
             is StateLabel.Left -> {
-                s(R.string.feed_label_left, placeNoun(label.place))
+                s(R.string.feed_label_left, placeLeft(label.place))
             }
 
             StateLabel.Danger -> {
@@ -264,9 +292,9 @@ class FeedTexts(
         return when (val kind = page.kind) {
             is AlertKind.Left -> {
                 if (page.isMe) {
-                    s(R.string.feed_bubble_me_orange, placeNoun(kind.place), at(kind.at))
+                    s(R.string.feed_bubble_me_orange, placeLeft(kind.place), at(kind.at))
                 } else {
-                    s(R.string.feed_bubble_orange, name, placeNoun(kind.place), at(kind.at))
+                    s(R.string.feed_bubble_orange, name, placeLeft(kind.place), at(kind.at))
                 }
             }
 

@@ -285,9 +285,9 @@ fun SettingsScreen(
 }
 
 /**
- * Settings > Langue (mockup "reglages -5", ticket ONB-3a, criterion A9). Three choices, each name written in its own
- * language so that it can be found whatever language the app is in. A tap applies the choice at once: there is no
- * "Enregistrer" button (decision Q4).
+ * Settings > Langue (mockup "reglages -5", ticket ONB-3a, criterion A9; the six languages of ticket I18N-4L, criterion 10). One row per language of
+ * [AppLanguage] (the registry), then "Langue du téléphone"; each name is written in its own language so that it can be found whatever language
+ * the app is in. A tap applies the choice at once: there is no "Enregistrer" button (decision Q4).
  */
 @Composable
 fun LanguageScreen(
@@ -298,13 +298,20 @@ fun LanguageScreen(
     SettingsScaffold(title = stringResource(R.string.settings_language_title), onBack = onBack) {
         Column(modifier = Modifier.selectableGroup()) {
             AppLanguage.entries.forEach { language ->
+                // Each name is written in its own language and never translated (`translatable="false"`).
                 LanguageRow(
                     label =
-                        when (language) {
-                            AppLanguage.FRENCH -> stringResource(R.string.settings_language_french)
-                            AppLanguage.ENGLISH -> stringResource(R.string.settings_language_english)
-                            AppLanguage.SYSTEM -> stringResource(R.string.settings_language_system)
-                        },
+                        stringResource(
+                            when (language) {
+                                AppLanguage.GERMAN -> R.string.settings_language_german
+                                AppLanguage.ENGLISH -> R.string.settings_language_english
+                                AppLanguage.SPANISH -> R.string.settings_language_spanish
+                                AppLanguage.FRENCH -> R.string.settings_language_french
+                                AppLanguage.ITALIAN -> R.string.settings_language_italian
+                                AppLanguage.PORTUGUESE -> R.string.settings_language_portuguese
+                                AppLanguage.SYSTEM -> R.string.settings_language_system
+                            },
+                        ),
                     selected = language == selected,
                     onClick = { onSelect(language) },
                 )
