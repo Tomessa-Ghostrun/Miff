@@ -1044,6 +1044,11 @@
     <string name="notif_circle_update_title">%1$s a donné des nouvelles</string>
     <string name="notif_circle_update_body">Retrouve-les dans ta Miff.</string>
     <string name="notif_center_circle_update_title">Un proche a donné des nouvelles</string>
+    <!-- CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche illisible) : une phrase entière par clé, jamais « appelle Un proche ». -->
+    <string name="notif_center_alert_start_title_unnamed">Un proche a déclaré une alerte</string>
+    <string name="notif_center_alert_start_body_unnamed">Prends de ses nouvelles : contacte ce proche ou ouvre Miff.</string>
+    <string name="notif_center_alert_end_title_unnamed">Un proche a mis fin à son alerte</string>
+    <string name="notif_center_alert_end_body_unnamed">Cette personne a indiqué que tout va bien.</string>
     <string name="notif_settings_section_loved_ones">Pour tes proches</string>
     <string name="notif_settings_circle_update">Quand un proche donne des nouvelles</string>
     <string name="notif_settings_circle_update_hint">Une notification quand un proche de ta Miff publie une update.</string>

@@ -74,16 +74,22 @@ import com.tomessa.miff.data.notification.AndroidNotificationTray
 import com.tomessa.miff.data.notification.AppVisibility
 import com.tomessa.miff.data.notification.FeedNotificationLink
 import com.tomessa.miff.data.notification.FeedVisitLink
+import com.tomessa.miff.data.journal.FirestoreJournalGateway
+import com.tomessa.miff.data.journal.FirestoreMemberFaceReader
+import com.tomessa.miff.data.notification.JournalSyncReason
 import com.tomessa.miff.data.notification.KnownMiffs
 import com.tomessa.miff.data.notification.KnownMiffsKeeper
 import com.tomessa.miff.data.notification.LastVisitTracker
+import com.tomessa.miff.data.notification.MemberFaceDirectory
 import com.tomessa.miff.data.notification.NotificationAuthorization
 import com.tomessa.miff.data.notification.NotificationCenter
 import com.tomessa.miff.data.notification.NotificationChannels
+import com.tomessa.miff.data.notification.NotificationJournalSync
 import com.tomessa.miff.data.notification.NotificationScheduler
 import com.tomessa.miff.data.notification.NotificationSettings
 import com.tomessa.miff.data.notification.NotificationTeardownSteps
 import com.tomessa.miff.data.notification.NotificationTray
+import com.tomessa.miff.data.notification.SharedPreferencesJournalCursorStore
 import com.tomessa.miff.data.notification.SharedPreferencesKnownMiffs
 import com.tomessa.miff.data.notification.SharedPreferencesLastVisitStore
 import com.tomessa.miff.data.notification.SharedPreferencesNotificationCenterStore
@@ -182,6 +188,7 @@ import com.tomessa.miff.domain.analytics.AnalyticsTracker
 import com.tomessa.miff.domain.auth.ResendCooldown
 import com.tomessa.miff.domain.auth.SignInProvider
 import com.tomessa.miff.domain.miff.JoinAttemptLimiter
+import com.tomessa.miff.domain.notification.CircleAlertKeys
 import com.tomessa.miff.domain.notification.CircleNewsKeys
 import com.tomessa.miff.domain.notification.SnapshotMember
 import com.tomessa.miff.domain.notification.VisitState
@@ -394,9 +401,42 @@ class AppContainer(
     val notificationCenter: NotificationCenter by lazy {
         NotificationCenter(
             store = SharedPreferencesNotificationCenterStore(context),
-            // A line of N9 (a loved one gave news) goes with the notification of its author: the tag of the tray is not the key of the line.
-            onRead = { key -> notificationTray.cancel(CircleNewsKeys.trayTagOf(key)) },
+            // A line of N9 (a loved one gave news) goes with the notification of its author, a line of an alert (N10, N11) with the one of its author: the tag of the tray is not the key of the line.
+            onRead = { key -> notificationTray.cancel(CircleAlertKeys.trayTagOf(CircleNewsKeys.trayTagOf(key))) },
+            // CNC-15: deleting a line that came from the journal deletes its entry on the server too (nothing when the journal is switched off).
+            onDeleted = { keys -> notificationJournalSync.deleteOnServer(keys) },
+            onClearedAll = { notificationScope.launch { notificationJournalSync.deleteAllOnServer() } },
         )
+    }
+
+    /**
+     * CNC-A (ticket docs/tickets/centre-notifications-complet.md): reads the journal of the server from a cursor and brings its lines into the centre; deletes an entry with its line. Everything
+     * behind `BuildConfig.NOTIF_JOURNAL` (false in a release until the PM has deployed the rules and the functions): switched off, nothing is read and nothing is deleted.
+     */
+    val notificationJournalSync: NotificationJournalSync by lazy {
+        NotificationJournalSync(
+            enabled = BuildConfig.NOTIF_JOURNAL,
+            gateway = FirestoreJournalGateway(),
+            cursors = SharedPreferencesJournalCursorStore(context),
+            center = notificationCenter,
+            currentUid = { authGateway.currentUid },
+            sessionValid = ::notificationSessionValid,
+        )
+    }
+
+    /** The faces (photo or initials, first name) the centre draws, in memory for the session; the Feed hands over the members of the Miff it shows. */
+    val memberFaces: MemberFaceDirectory by lazy { MemberFaceDirectory(FirestoreMemberFaceReader()) }
+
+    /**
+     * One synchronization of the journal, off the main thread, in the order of the other notification work (the one thread of [notificationScope]). Calm: never throws, never shows. The purge of a
+     * Firestore cache left by a failed sign-out comes before any other access (like the registration of a token does).
+     */
+    fun journalSyncSoon(reason: JournalSyncReason) {
+        if (!BuildConfig.NOTIF_JOURNAL) return
+        notificationScope.launch {
+            cachePurger.purgeIfPending()
+            notificationJournalSync.sync(reason)
+        }
     }
 
     val notificationAuthorization: NotificationAuthorization by lazy {
@@ -473,7 +513,11 @@ class AppContainer(
     val pushMessageHandler: PushMessageHandler by lazy {
         PushMessageHandler(
             currentUid = { authGateway.currentUid },
-            onCircleNews = { uid, news -> notificationScheduler.onCircleNews(uid, news) },
+            onCircleNews = { uid, news ->
+                notificationScheduler.onCircleNews(uid, news)
+                // CNC-A: a push may fill the gaps before it (a message that never came): one request of the journal, spaced.
+                journalSyncSoon(JournalSyncReason.PUSH_RECEIVED)
+            },
             // ALERTE « Je suis en danger »: only while the function is switched on (BuildConfig.ALERT_DANGER).
             onCircleAlert =
                 if (BuildConfig.ALERT_DANGER) {
@@ -482,6 +526,7 @@ class AppContainer(
                         alert,
                         ->
                         notificationScheduler.onCircleAlert(uid, alert)
+                        journalSyncSoon(JournalSyncReason.PUSH_RECEIVED)
                     }
                 } else {
                     null
@@ -601,6 +646,12 @@ class AppContainer(
                             if (!state.fromCache) lastVisitTracker.onMiffsKnown(state.miffs.map { it.id }.toSet())
                             // TIME-1: the same for the local journal of the presence ("Répartition de ton temps"): a Miff that is gone takes its history with it.
                             if (!state.fromCache) presenceLog.retainOnly(state.miffs.map { it.id }.toSet())
+                            // CNC-A: the faces of a Miff that is gone go with it (memory only), and so do the lines about its loved ones (the dot of the bell never counts what is not drawn).
+                            if (!state.fromCache) {
+                                val mine = state.miffs.map { it.id }.toSet()
+                                memberFaces.retainOnly(mine)
+                                notificationCenter.removeLovedOneLines { it.miffId != null && it.miffId !in mine }
+                            }
                         }
                     }
                 }
@@ -608,6 +659,8 @@ class AppContainer(
             notificationScheduler.reconcile()
             // SRV-2: the permission may have changed, the time zone too, a day may have gone by: the registry is looked at again (a write only if something changed).
             pushRegistrar.sync()
+            // CNC-A: back in front: what the journal of the server holds (a push that never came, an alert received while the app was stopped) joins the centre.
+            journalSyncSoon(JournalSyncReason.FOREGROUND)
         }
     }
 
@@ -621,6 +674,7 @@ class AppContainer(
                     knownMiffsKeeper::onSessionEnded,
                     notificationScheduler::clearAll,
                     notificationCenter::purge,
+                    notificationJournalSync::purge,
                     lastVisitTracker::purge,
                     notificationSettings::reset,
                     notificationTray::cancelAll,
@@ -1053,7 +1107,11 @@ class AppContainer(
     val accountDeletionMarker: AccountDeletionMarker by lazy { SharedPreferencesAccountDeletionMarker(context) }
 
     private val accountDataStore: AccountDataStore by lazy {
-        FirestoreAccountDataStore(alertsEnabled = BuildConfig.ALERT_DANGER)
+        FirestoreAccountDataStore(
+            alertsEnabled = BuildConfig.ALERT_DANGER,
+            // CNC-A (contract 2.21, point 4): the journal of the notifications is emptied BEFORE the profile; a failure is tolerated (the TTL removes what is left). Nothing when the journal is off.
+            journal = if (BuildConfig.NOTIF_JOURNAL) FirestoreJournalGateway() else null,
+        )
     }
 
     /**
@@ -1170,6 +1228,7 @@ class AppContainer(
                         timeShareTeardown,
                         placeNotices,
                         requesterDirectory,
+                        memberFaces,
                         addressSearch,
                         mapTileCache,
                         alertTeardown,

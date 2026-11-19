@@ -26,6 +26,8 @@ class CircleAlertPayload(
     val receivedAtMillis: Long,
     /** The identifier FCM gave the message, cleaned: the same message delivered twice makes one notification. Null when there is none. */
     val messageId: String? = null,
+    /** CNC-A: the identifier of the entry of the journal of the server for this message (key `entryId`), so that the line of the centre and the journal's entry are one. Null from a server without journal. */
+    val entryId: String? = null,
 ) {
     /** Redacted: a name and identifiers are not for a log. */
     override fun toString(): String = "CircleAlertPayload(redacted)"
@@ -40,6 +42,7 @@ object CircleAlertParser {
     const val KEY_MIFF_ID = "miffId"
     const val KEY_AUTHOR_UID = "authorUid"
     const val KEY_FIRST_NAME = "firstName"
+    const val KEY_ENTRY_ID = "entryId"
 
     private const val MAX_RAW_FIRST_NAME_CHARS = 512
     private val identifier = Regex("^[A-Za-z0-9_-]{1,128}$")
@@ -64,6 +67,14 @@ object CircleAlertParser {
         if (rawName.length > MAX_RAW_FIRST_NAME_CHARS) return null
         val name = CircleNewsParser.cleanFirstName(rawName) ?: return null
         if (receivedAtMillis <= 0L) return null
+        // Absent or empty: a server without journal. Present but malformed: the whole message is ignored (STRICT, like the other fields).
+        val entryRaw = data[KEY_ENTRY_ID]
+        val entryId =
+            if (entryRaw.isNullOrEmpty()) {
+                null
+            } else {
+                entryRaw.takeIf { identifier.matches(it) } ?: return null
+            }
         return CircleAlertPayload(
             event,
             miffId,
@@ -73,6 +84,7 @@ object CircleAlertParser {
             messageId?.takeIf {
                 messageIdShape.matches(it)
             },
+            entryId,
         )
     }
 }
@@ -84,9 +96,32 @@ object CircleAlertKeys {
     /** The tag of the notification in the tray: per author, so that the end of an alert replaces its start (the server uses the same collapse key). */
     fun trayTag(alert: CircleAlertPayload): String = "${PREFIX}u|${alert.authorUid}"
 
-    /** The key of deduplication: a message delivered twice makes one notification. */
+    /**
+     * The key of deduplication and of the line of the centre: a message delivered twice makes one notification. CNC-A: it ends with the identifier of the entry of the journal when
+     * the server gave one (the line the journal brings is then the same), else with the identifier of the message, else the time of reception.
+     */
     fun centerId(alert: CircleAlertPayload): String =
-        "${trayTag(alert)}|${alert.event.name.lowercase()}|${alert.messageId ?: alert.receivedAtMillis}"
+        "${trayTag(alert)}|${alert.event.name.lowercase()}|${alert.entryId ?: alert.messageId ?: alert.receivedAtMillis}"
+
+    /** CNC-A: the key of the line the journal brings for the entry [entryId] of [actorUid] (the same as [centerId] of the push that carried that entry). */
+    fun journalId(
+        actorUid: String,
+        event: CircleAlertEvent,
+        entryId: String,
+    ): String = "${PREFIX}u|$actorUid|${event.name.lowercase()}|$entryId"
 
     fun isCircleAlert(key: String): Boolean = key.startsWith(PREFIX)
+
+    /** The tag of the tray that goes with a line of the alert (`al|u|{uid}`): reading the line takes the notification out of the tray. */
+    fun trayTagOf(centerId: String): String =
+        if (isCircleAlert(centerId)) centerId.split('|', limit = 4).take(3).joinToString("|") else centerId
+
+    /** CNC-A: the loved one an alert line is about, read in its key (`al|u|{uid}|…`); null for a key of another shape. */
+    fun actorOf(centerId: String): String? {
+        val pieces = centerId.split('|', limit = 4)
+        if (pieces.size < 4 || pieces[0] != "al" || pieces[1] != "u") return null
+        return pieces[2].takeIf { identifierShape.matches(it) }
+    }
+
+    private val identifierShape = Regex("^[A-Za-z0-9_-]{1,128}$")
 }

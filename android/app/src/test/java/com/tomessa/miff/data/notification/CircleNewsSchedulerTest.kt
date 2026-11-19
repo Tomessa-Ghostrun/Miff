@@ -2,6 +2,9 @@ package com.tomessa.miff.data.notification
 
 import com.tomessa.miff.data.feed.CircleRead
 import com.tomessa.miff.data.feed.CircleStatusReader
+import com.tomessa.miff.domain.notification.CircleAlertEvent
+import com.tomessa.miff.domain.notification.CircleAlertKeys
+import com.tomessa.miff.domain.notification.CircleAlertPayload
 import com.tomessa.miff.domain.notification.CircleNewsKeys
 import com.tomessa.miff.domain.notification.CircleNewsPayload
 import com.tomessa.miff.domain.notification.DailyCounters
@@ -102,6 +105,14 @@ class CircleNewsSchedulerTest {
     private class Presenter : NotificationPresenter {
         val shown = mutableListOf<Shown>()
         val others = mutableListOf<NotificationType>()
+        val alerts = mutableListOf<String>()
+
+        override fun showCircleAlert(
+            alert: CircleAlertPayload,
+            centerId: String,
+        ) {
+            alerts += centerId
+        }
 
         override fun show(
             type: NotificationType,
@@ -277,15 +288,147 @@ class CircleNewsSchedulerTest {
     }
 
     @Test
-    fun withoutThePermissionOrAValidSession_nothingAtAll() {
-        permission = false
-        scheduler.onCircleNews("me", news())
-        permission = true
+    fun withoutAValidSession_nothingAtAll() {
         session = false
         scheduler.onCircleNews("me", news(sentAt = now + 1))
         scheduler.onCircleNews("someoneElse", news(sentAt = now + 2))
         assertTrue(presenter.shown.isEmpty())
         assertTrue(lines().isEmpty())
+    }
+
+    @Test
+    fun withoutThePermissionOfThePhone_nothingIsShown_butTheCentreStillTellsWhatHappened() {
+        // CNC-A (cause C4): a push arrives although the person withdrew the permission a moment ago: the system shows nothing, the line is not lost.
+        permission = false
+        scheduler.onCircleNews("me", news())
+        assertTrue(presenter.shown.isEmpty())
+        val line = lines().single()
+        assertEquals(NotificationType.N9, line.type)
+        assertEquals(ItemState.SILENT, line.state)
+        assertEquals("Amandine", line.who)
+        assertEquals("the daily cap of the tray is not used up by a notification that was never shown", 0, ledger.counters("2026-11-12").count(NotificationType.N9))
+    }
+
+    @Test
+    fun theSwitchesStillDropTheLine_evenWithoutThePermission() {
+        permission = false
+        settings.setType(NotificationType.N9, false)
+        scheduler.onCircleNews("me", news())
+        assertTrue(lines().isEmpty())
+    }
+
+    @Test
+    fun aNewsCarryingTheEntryOfTheJournal_isTheSameLineAsTheOneTheJournalBrings() {
+        // CNC-5: the push and the entry of the journal for one message are ONE line, in either order.
+        val entryId = "u-miffAAAA-author1-1700000000000"
+        scheduler.onCircleNews("me", CircleNewsPayload("miffAAAA", "author1", "Amandine", now, entryId = entryId))
+        val line = lines().single()
+        assertEquals(CircleNewsKeys.journalId("author1", entryId), line.id)
+        val brought = center.addAll(listOf(NotificationItem(CircleNewsKeys.journalId("author1", entryId), NotificationType.N9, "miffAAAA", now, state = ItemState.SILENT)))
+        assertEquals(0, brought)
+        assertEquals(1, lines().size)
+    }
+
+    @Test
+    fun theJournalFirst_thenThePush_stillShowsTheNotificationAndKeepsOneLine() {
+        val entryId = "u-miffAAAA-author1-1700000000000"
+        center.addAll(listOf(NotificationItem(CircleNewsKeys.journalId("author1", entryId), NotificationType.N9, "miffAAAA", now, state = ItemState.SILENT)))
+        scheduler.onCircleNews("me", CircleNewsPayload("miffAAAA", "author1", "Amandine", now, entryId = entryId))
+        assertEquals("the person is still told", 1, presenter.shown.size)
+        assertEquals(1, lines().size)
+    }
+
+    // ---- ALERT (CNC-A, cause C2): the alert is a line of the centre, with the key of the journal ----------------------------------------
+
+    private fun alert(
+        event: CircleAlertEvent = CircleAlertEvent.START,
+        author: String = "author1",
+        entryId: String? = null,
+        miff: String = "miffAAAA",
+    ) = CircleAlertPayload(event, miff, author, "Amandine", now, entryId = entryId)
+
+    @Test
+    fun theStartOfAnAlert_writesALine_N10_withTheNotification() {
+        scheduler.onCircleAlert("me", alert())
+        assertEquals(1, presenter.alerts.size)
+        val line = lines().single()
+        assertEquals(NotificationType.N10, line.type)
+        assertEquals(ItemState.SHOWN, line.state)
+        assertEquals("miffAAAA", line.miffId)
+        assertEquals("Amandine", line.who)
+        assertEquals(presenter.alerts.single(), line.id)
+    }
+
+    @Test
+    fun theEndOfAnAlert_writesALine_N11() {
+        scheduler.onCircleAlert("me", alert(event = CircleAlertEvent.END))
+        assertEquals(NotificationType.N11, lines().single().type)
+    }
+
+    @Test
+    fun anAlertInFront_stillShowsItsNotification_andWritesItsLine() {
+        foreground = true
+        scheduler.onCircleAlert("me", alert())
+        assertEquals(1, presenter.alerts.size)
+        assertEquals(1, lines().size)
+    }
+
+    @Test
+    fun anAlertWithoutThePermission_writesASilentLine_andShowsNothing() {
+        permission = false
+        scheduler.onCircleAlert("me", alert())
+        assertTrue(presenter.alerts.isEmpty())
+        val line = lines().single()
+        assertEquals(NotificationType.N10, line.type)
+        assertEquals(ItemState.SILENT, line.state)
+    }
+
+    @Test
+    fun anAlertIsNeverCutByTheQuietHoursTheCapOrTheSwitchOfTheNews() {
+        now = at(23)
+        settings.setType(NotificationType.N9, false)
+        repeat(8) { scheduler.onCircleAlert("me", alert(author = "author$it")) }
+        assertEquals(8, presenter.alerts.size)
+        assertEquals(8, lines().size)
+    }
+
+    @Test
+    fun theSameAlertDeliveredTwiceMakesOneLine_andAnAlertForAnotherMiffOrMyselfNone() {
+        val message = alert(entryId = "as-miffAAAA-author1-1700000000000")
+        scheduler.onCircleAlert("me", message)
+        scheduler.onCircleAlert("me", message)
+        assertEquals(1, lines().size)
+        scheduler.onCircleAlert("me", alert(miff = "miffZZZZ", author = "author2"))
+        scheduler.onCircleAlert("me", alert(author = "me"))
+        assertEquals(1, lines().size)
+        assertEquals(1, presenter.alerts.size)
+    }
+
+    @Test
+    fun theLineOfAnAlertIsTheSameAsTheOneTheJournalBringsForThatEntry() {
+        val entryId = "as-miffAAAA-author1-1700000000000"
+        scheduler.onCircleAlert("me", alert(entryId = entryId))
+        val journalKey = CircleAlertKeys.journalId("author1", CircleAlertEvent.START, entryId)
+        assertEquals(journalKey, lines().single().id)
+        assertEquals(0, center.addAll(listOf(NotificationItem(journalKey, NotificationType.N10, "miffAAAA", now, state = ItemState.SILENT))))
+    }
+
+    @Test
+    fun anAlertWithAnInvalidSessionOrWithTheGeneralSwitchOff_isDropped() {
+        session = false
+        scheduler.onCircleAlert("me", alert())
+        session = true
+        settings.setEnabled(false)
+        scheduler.onCircleAlert("me", alert(author = "author2"))
+        assertTrue(presenter.alerts.isEmpty())
+        assertTrue(lines().isEmpty())
+    }
+
+    @Test
+    fun readingAnAlertLineTakesItsNotificationOutOfTheTray() {
+        val message = alert(entryId = "as-miffAAAA-author1-1700000000000")
+        val key = CircleAlertKeys.centerId(message)
+        assertEquals(CircleAlertKeys.trayTag(message), CircleAlertKeys.trayTagOf(key))
     }
 
     @Test
