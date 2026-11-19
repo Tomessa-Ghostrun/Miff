@@ -7,6 +7,7 @@ import android.os.SystemClock
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -31,6 +32,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.tomessa.miff.AppContainer
 import com.tomessa.miff.BuildConfig
+import com.tomessa.miff.data.alert.MyAlert
 import com.tomessa.miff.data.auth.CredentialManagerClient
 import com.tomessa.miff.data.auth.CredentialManagerGoogleSource
 import com.tomessa.miff.data.auth.GoogleIdTokenSource
@@ -49,6 +51,7 @@ import com.tomessa.miff.ui.auth.SignInViewModel
 import com.tomessa.miff.ui.auth.SignUpScreen
 import com.tomessa.miff.ui.auth.SignUpViewModel
 import com.tomessa.miff.ui.main.MainShell
+import com.tomessa.miff.ui.miff.LocalAlertMiffId
 import com.tomessa.miff.ui.miff.MiffOnboardingHost
 import com.tomessa.miff.ui.onboarding.WelcomeCarouselScreen
 import com.tomessa.miff.ui.permission.PermissionGate
@@ -59,6 +62,7 @@ import com.tomessa.miff.ui.settings.AccountDeletedBanner
 import com.tomessa.miff.ui.settings.AccountDeletionHost
 import com.tomessa.miff.ui.settings.DeletionBlockedNotice
 import com.tomessa.miff.ui.startup.StartupSlot
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import java.util.Locale
@@ -177,11 +181,21 @@ fun AppRoot(container: AppContainer) {
 
                 AppDestination.FEED -> {
                     // LOC-2a: the notification screen, the renewal of the consent and the blocking location screen come BEFORE the Feed.
-                    PermissionGate(container) {
-                        MainShell(
-                            container = container,
-                            tabBar = TabBarConfig.forBuild(isInternalBuild = BuildConfig.DEBUG),
-                        )
+                    // ALERTE: the Miff of my alert, for the dialogs that ask to leave a Miff (null while the function is off).
+                    val myAlert by (
+                        if (BuildConfig.ALERT_DANGER) {
+                            container.alertController.state
+                        } else {
+                            remember { MutableStateFlow<MyAlert>(MyAlert.None) }
+                        }
+                    ).collectAsStateWithLifecycle()
+                    CompositionLocalProvider(LocalAlertMiffId provides myAlert.miffId) {
+                        PermissionGate(container) {
+                            MainShell(
+                                container = container,
+                                tabBar = TabBarConfig.forBuild(isInternalBuild = BuildConfig.DEBUG),
+                            )
+                        }
                     }
                 }
             }

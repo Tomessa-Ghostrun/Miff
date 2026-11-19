@@ -1384,7 +1384,6 @@
     <string name="alert_confirm_end_body_no_name">Tes proches seront informés que tu y mets fin.</string>
     <string name="alert_unavailable_title">L\'alerte à tes proches n\'est pas disponible pour le moment. Si tu es en danger, appelle directement les secours.</string>
     <string name="miff_alert_removed_warning">Tu as une alerte en cours dans cette Miff : elle sera retirée, et tes proches ne seront pas prévenus de sa fin.</string>
-
     <!-- ABOUT-1A : textes propres a Android de Reglages > A propos et aide (lignes de cartes et d'adresses, detail d'une licence, indice de la version) -->
     <string name="android_about_copy_hint">Touche pour copier</string>
     <string name="android_about_contact_subtitle">Une question, un souci, une idée : écris-nous.</string>

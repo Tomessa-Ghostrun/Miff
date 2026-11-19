@@ -2,6 +2,7 @@ package com.tomessa.miff.ui.feed
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.tomessa.miff.data.alert.AlertFeed
 import com.tomessa.miff.data.auth.NetworkMonitor
 import com.tomessa.miff.data.feed.FeedRefresher
 import com.tomessa.miff.data.feed.PositionReader
@@ -15,6 +16,7 @@ import com.tomessa.miff.data.miff.MiffRepository
 import com.tomessa.miff.data.notification.FeedNotificationLink
 import com.tomessa.miff.data.notification.FeedVisitLink
 import com.tomessa.miff.data.tracking.PullOutcome
+import com.tomessa.miff.domain.alert.AlertDoc
 import com.tomessa.miff.domain.feed.FeedBuilder
 import com.tomessa.miff.domain.feed.FeedContent
 import com.tomessa.miff.domain.feed.FeedInput
@@ -181,11 +183,19 @@ class FeedViewModel(
     private val presence: PresenceRefresh = PresenceRefresh.None,
     /** How long the answer of [presence] is waited for to say its calm note: a late one is dropped, never told after the fact. */
     private val presenceNoteWaitMillis: Long = PRESENCE_NOTE_WAIT_MILLIS,
+    /**
+     * ALERTE « Je suis en danger » (docs/tickets/alerte-danger.md 7.6): the alerts of the Miff shown, ONE listener on `miffs/{id}/alerts` while the Feed is on screen (0 read when there is
+     * none). Nothing is written. [AlertFeed.None] while the function is switched off (BuildConfig.ALERT_DANGER): nothing is read.
+     */
+    private val alerts: AlertFeed = AlertFeed.None,
 ) : ViewModel() {
     val directoryState: StateFlow<DirectoryState> = directory.state
 
     private val piece = MutableStateFlow<MiffPiece?>(null)
     private val statusView = MutableStateFlow<StatusesView>(StatusesView.Waiting)
+
+    /** ALERTE: the alerts of the Miff shown, as the listener heard them (the ones in progress are picked by [FeedBuilder] at the time of the build). */
+    private val alertView = MutableStateFlow<List<AlertDoc>>(emptyList())
     private val offline = MutableStateFlow(false)
     private val now = MutableStateFlow(nowMillis())
     private val restarts = MutableStateFlow(0)
@@ -246,6 +256,7 @@ class FeedViewModel(
             waitingAgreement,
             cacheGraceOver,
             staleAfterRefresh,
+            alertView,
         ) { values ->
             @Suppress("UNCHECKED_CAST")
             compute(
@@ -257,6 +268,7 @@ class FeedViewModel(
                 values[4] as Long,
                 values[5] as Set<String>,
                 values[6] as Boolean,
+                values[8] as List<AlertDoc>,
             )
         }.stateIn(viewModelScope, SharingStarted.Eagerly, FeedUiState.Loading)
 
@@ -394,6 +406,7 @@ class FeedViewModel(
         now: Long,
         waiting: Set<String>,
         cacheGraceOver: Boolean,
+        alertDocs: List<AlertDoc> = emptyList(),
     ): FeedUiState {
         val ready = dir as? DirectoryState.Ready ?: return FeedUiState.Loading
         val activeId = ready.activeId ?: return FeedUiState.Loading
@@ -418,6 +431,7 @@ class FeedViewModel(
                             statuses = statuses,
                             waitingAgreement = activeId in waiting,
                             offline = offline,
+                            alerts = alertDocs,
                         ),
                         nowMillis = now,
                         zone = zone(),
@@ -552,13 +566,31 @@ class FeedViewModel(
             cacheGraceOver.value = false
             staleAfterRefresh.value = false
             serverConfirmed.value = false
+            // What was said about another Miff's alerts is never drawn on this one.
+            alertView.value = emptyList()
         }
         coroutineScope {
             launch {
                 repository.observe(miffId).collect { observation -> handle(miffId, observation) }
             }
             launch { watchStatuses(miffId) }
+            launch { watchAlerts(miffId) }
         }
+    }
+
+    /**
+     * ALERTE: the alerts of the Miff shown. A listener that ends (a refusal: the rules are not up to date, access lost) means "no alert", never an error on the Feed. An alert is held as
+     * present until the listener says otherwise, even from the cache: a doubt about an alert is never settled by hiding it.
+     */
+    private suspend fun watchAlerts(miffId: String) {
+        try {
+            alerts.observe(miffId).collect { heard -> alertView.value = heard.docs }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // No alert shown; nothing logged (it could quote a path).
+        }
+        alertView.value = emptyList()
     }
 
     private suspend fun handle(

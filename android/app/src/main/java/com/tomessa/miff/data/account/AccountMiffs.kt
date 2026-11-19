@@ -103,6 +103,8 @@ class StoreAccountMiffs(
     private val timeoutMillis: Long = com.tomessa.miff.data.miff.FirestoreMiffRepository.TIMEOUT_MS,
     /** Called before the lot "Quitter" of a Miff the account only joined (never blocking): the requests to add a place that the account made there are taken back. */
     private val beforeLeave: suspend (uid: String, miffId: String) -> Unit = { _, _ -> },
+    /** ALERTE « Je suis en danger » (BuildConfig.ALERT_DANGER): the lot "Quitter" also deletes the alert of that Miff (the rules demand it). False: nothing added. */
+    private val alertsEnabled: Boolean = false,
 ) : AccountMiffs {
     override suspend fun inventory(uid: String): MiffsRead {
         val refs =
@@ -192,7 +194,14 @@ class StoreAccountMiffs(
         uid: String,
         ref: MembershipRef,
     ): MiffStep {
-        val leave = guardedCall(timeoutMillis) { store.commit(MiffWrites.leave(ref.miffId, uid, ref.key)) }
+        var leave =
+            guardedCall(
+                timeoutMillis,
+            ) { store.commit(MiffWrites.leave(ref.miffId, uid, ref.key, withAlert = alertsEnabled)) }
+        // The rules in production may not know the alert yet (function not live): once more without its deletion.
+        if (alertsEnabled && leave is Guarded.Failed && leave.failure == MiffFailure.REFUSED) {
+            leave = guardedCall(timeoutMillis) { store.commit(MiffWrites.leave(ref.miffId, uid, ref.key)) }
+        }
         if (leave is Guarded.Value) return MiffStep.Done
         if (leave is Guarded.Failed && leave.failure == MiffFailure.OFFLINE) return MiffStep.Failed(MiffFailure.OFFLINE)
         val index = guardedCall(timeoutMillis) { store.commit(MiffWrites.dropIndex(ref.miffId, uid, ref.key)) }

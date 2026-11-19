@@ -1,5 +1,6 @@
 package com.tomessa.miff.ui.main
 
+import android.content.res.Resources
 import android.os.SystemClock
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -48,6 +49,11 @@ import androidx.navigation.toRoute
 import com.tomessa.miff.AppContainer
 import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.R
+import com.tomessa.miff.data.alert.AlertEvent
+import com.tomessa.miff.data.alert.AlertFeed
+import com.tomessa.miff.data.alert.MyAlert
+import com.tomessa.miff.data.alert.SendStep
+import com.tomessa.miff.data.alert.TriggerResult
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.domain.auth.SignInProvider
 import com.tomessa.miff.domain.feed.StateLabel
@@ -61,6 +67,14 @@ import com.tomessa.miff.domain.review.ReviewSituation
 import com.tomessa.miff.domain.subscription.SubscriptionInfo
 import com.tomessa.miff.domain.tracking.StatusLevel
 import com.tomessa.miff.domain.update.PromptLevel
+import com.tomessa.miff.ui.alert.AlertBanner
+import com.tomessa.miff.ui.alert.AlertEndConfirmDialog
+import com.tomessa.miff.ui.alert.AlertHost
+import com.tomessa.miff.ui.alert.AlertLifecycle
+import com.tomessa.miff.ui.alert.AlertSentHost
+import com.tomessa.miff.ui.alert.AlertSentRoute
+import com.tomessa.miff.ui.alert.AlertUpdateHooks
+import com.tomessa.miff.ui.alert.AlertViewModel
 import com.tomessa.miff.ui.components.ConnectionGate
 import com.tomessa.miff.ui.components.ConnectionHost
 import com.tomessa.miff.ui.components.LocalBottomOverlayPadding
@@ -283,6 +297,34 @@ private fun MainNavigation(
     val session = container.sessionManager
     // One view model per account and per session: the next person never meets what the previous one saw.
     val scopeKey = "${session.currentUid}-${session.generation}"
+    // ALERTE « Je suis en danger »: ONE view model for the tabs (the banner, the hold) and the screen of the call, which are two destinations; null while the function is switched off.
+    val alertViewModel: AlertViewModel? =
+        if (BuildConfig.ALERT_DANGER) {
+            viewModel(
+                key = "alert-$scopeKey",
+                factory =
+                    viewModelFactory {
+                        initializer {
+                            AlertViewModel(
+                                controller = container.alertController,
+                                local = container.alertLocal,
+                                faces = container.memberFacesReader,
+                                myUid = { container.authGateway.currentUid },
+                                // The region of the locale of the PHONE (never the position): the emergency numbers of the country.
+                                region = {
+                                    Resources
+                                        .getSystem()
+                                        .configuration.locales[0]
+                                        ?.country
+                                        ?.takeIf { it.isNotBlank() }
+                                },
+                            )
+                        }
+                    },
+            )
+        } else {
+            null
+        }
 
     NavHost(navController = navController, startDestination = TabsRoute) {
         composable<TabsRoute> {
@@ -337,6 +379,8 @@ private fun MainNavigation(
                                     notifications = container.feedNotificationLink,
                                     visits = container.feedVisitLink,
                                     presence = container.presenceRefresh,
+                                    // ALERTE: the alerts of the Miff shown, one listener (nothing is read while the function is off).
+                                    alerts = if (BuildConfig.ALERT_DANGER) container.alertStore else AlertFeed.None,
                                 )
                             }
                         },
@@ -519,6 +563,16 @@ private fun MainNavigation(
                             ),
                     ),
                 tabRequests = container.tabRequests,
+                alert =
+                    alertViewModel?.let { vm ->
+                        AlertHost(vm, onOpenSent = {
+                            miffId,
+                            stopped,
+                            unavailable,
+                            ->
+                            navController.open(AlertSentRoute(miffId, stopped, unavailable))
+                        })
+                    },
                 update =
                     UpdateHost(
                         viewModel = updateViewModel,
@@ -605,6 +659,28 @@ private fun MainNavigation(
                     ),
                 onProfileMiffOpened = profileMiffsViewModel::onMiffOpened,
             )
+        }
+        composable<AlertSentRoute> { entry ->
+            // ALERTE: the screen "Tes proches de la Miff {nom} viennent d'être avertis" (maquettes 03 and 06), without the tab bar. Only reachable with the function on.
+            val route = entry.toRoute<AlertSentRoute>()
+            if (alertViewModel != null) {
+                val directory by container.miffDirectory.state.collectAsStateWithLifecycle()
+                val ready = directory as? DirectoryState.Ready
+                AlertSentHost(
+                    viewModel = alertViewModel,
+                    route = route,
+                    miffName =
+                        ready
+                            ?.miffs
+                            ?.firstOrNull { it.id == route.miffId }
+                            ?.name
+                            ?.takeIf { it.isNotBlank() },
+                    several = (ready?.miffs?.size ?: 1) > 1,
+                    onBack = { navController.popBackStackIfSafe() },
+                    // The screen of the Miff holds the dialog and the consent of "Reprendre le partage" (nothing is written from here).
+                    onResumeSharing = { miffId -> navController.open(MiffRoute(miffId)) },
+                )
+            }
         }
         composable<ColorsInfoRoute> {
             // COULEURS-1: static page (no view model, no reading, nothing kept): the Feed is found again as it was.
@@ -852,6 +928,8 @@ fun MainTabs(
     timeShareContent: @Composable () -> Unit = {},
     travelContent: @Composable () -> Unit = {},
     update: UpdateHost? = null,
+    /** ALERTE « Je suis en danger »: the banner above the bar, the hold on the Update, the screen of the call. Null while the function is switched off (BuildConfig.ALERT_DANGER). */
+    alert: AlertHost? = null,
     /** A tap on a line of the centre of notifications asks for the Feed or the Update from outside (NOTIF-6A). */
     tabRequests: TabRequests? = null,
     /** The carousel of Miffs of the Profile tab (decision of the PM, 2026-11-10). */
@@ -893,8 +971,36 @@ fun MainTabs(
     val feedContent = (feed.state as? FeedUiState.Ready)?.content
     // D19: the dot of the central button, the ring of my photo and the bubble follow the Miff shown by the Feed (one listener, no reading more).
     val myLevel = feedContent?.myLevel ?: StatusLevel.NEUTRAL
-    val prompt = feedContent?.myPrompt ?: PromptLevel.NONE
     val ready = miffs as? DirectoryState.Ready
+    // ALERTE: my alert (in ANY Miff) as the controller holds it. While it is in progress the bubble of encouragement, the countdown and the reminders say nothing (never two messages that contradict each other).
+    val alertVm = alert?.viewModel
+    val alertState by (
+        alertVm?.alert ?: remember {
+            MutableStateFlow<MyAlert>(
+                MyAlert.None,
+            )
+        }
+    ).collectAsStateWithLifecycle()
+    val alertHintDone by (alertVm?.hintDone ?: remember { MutableStateFlow(true) }).collectAsStateWithLifecycle()
+    val alertActive = alertState !is MyAlert.None
+    val prompt = if (alertActive) PromptLevel.NONE else (feedContent?.myPrompt ?: PromptLevel.NONE)
+
+    // The name of a Miff, or null while it is not known (the directory is not read yet after a relaunch): the screens then say "ta Miff", never an empty space (review of #275, m9).
+    fun miffNameOf(id: String?): String? =
+        ready
+            ?.miffs
+            ?.firstOrNull { it.id == id }
+            ?.name
+            ?.takeIf { it.isNotBlank() }
+    val alertResources = LocalResources.current
+
+    fun alreadyActiveText(name: String?): String =
+        if (name != null) {
+            alertResources.getString(R.string.alert_already_active, name)
+        } else {
+            alertResources.getString(R.string.alert_already_active_no_name)
+        }
+    var endConfirmOpen by remember { mutableStateOf(false) }
     // Sharing stopped: the Update shows no viewfinder (and asks no permission). Known for sure with ONE Miff; with several (Premium) the publication says it.
     val sharingStopped = feedContent?.myLabel == StateLabel.SharingStopped && (ready?.miffs?.size ?: 0) == 1
 
@@ -932,6 +1038,8 @@ fun MainTabs(
                 // Back to the Feed, where my card now shows the photo; a calm message without sound or vibration, gone after 3 s.
                 selected = MainTab.FEED
                 confirmation = publishedText
+                // ALERTE: a first publication after the delivery ends the blue bubble of the onboarding (ticket 7.1, AD8).
+                alertVm?.onHintDone()
             }
         }
     }
@@ -943,7 +1051,50 @@ fun MainTabs(
     }
     var bubbleHeightPx by remember { mutableIntStateOf(0) }
     val bubbleShown = prompt != PromptLevel.NONE && selected != MainTab.UPDATE && !keyboardOpen
-    val overlayPadding = if (bubbleShown) with(density) { bubbleHeightPx.toDp() } + Spacing.s else 0.dp
+    // ALERTE: the banner is on EVERY tab (the viewfinder of the Update included), above the bar, except over the preview of a photo being published (ticket 7.4) and while the keyboard is open.
+    val bannerShown =
+        alertVm != null && alertActive && !keyboardOpen &&
+            !(selected == MainTab.UPDATE && updateStage is UpdateStage.Preview)
+    var bannerHeightPx by remember { mutableIntStateOf(0) }
+    val bannerInset = if (bannerShown) with(density) { bannerHeightPx.toDp() } + Spacing.s else 0.dp
+    val overlayPadding = (if (bubbleShown) with(density) { bubbleHeightPx.toDp() } + Spacing.s else 0.dp) + bannerInset
+    if (alertVm != null) {
+        // The pointer of the phone, the clock of 7 days, the check at each return to the front, the Miffs that are still mine.
+        // Only a list the server confirmed may end an alert whose Miff is missing from it (a list from the cache, or a transient one, never does: review of #275, m8).
+        AlertLifecycle(alertVm, ready?.miffs?.map { it.id }.orEmpty())
+        LaunchedEffect(alertVm) {
+            alertVm.events.collect { event ->
+                when (event) {
+                    is AlertEvent.Ended -> {
+                        val name = miffNameOf(event.miffId)
+                        confirmation =
+                            if (name != null) {
+                                alertResources.getString(R.string.alert_ended_notice, name)
+                            } else {
+                                alertResources.getString(R.string.alert_ended_notice_no_name)
+                            }
+                    }
+
+                    AlertEvent.EndNotSent -> {
+                        confirmation = alertResources.getString(R.string.alert_end_not_sent)
+                    }
+
+                    is AlertEvent.NotSent -> {}
+                }
+            }
+        }
+        val originId = alertState.miffId
+        if (endConfirmOpen && alertState is MyAlert.Active && originId != null) {
+            AlertEndConfirmDialog(
+                miffName = miffNameOf(originId),
+                onConfirm = {
+                    endConfirmOpen = false
+                    alertVm.onEndRequested()
+                },
+                onCancel = { endConfirmOpen = false },
+            )
+        }
+    }
     // TABBAR-GLASS: the tabs fill the screen and pass UNDER the glass bar (GlassTabBar.kt); each tab keeps a bottom margin (LocalTabBarInset).
     GlassTabHost(
         variant = glassVariantFor(selected == MainTab.UPDATE, updateStage),
@@ -972,6 +1123,36 @@ fun MainTabs(
                 maxBodyHeight = (LocalConfiguration.current.screenHeightDp * BUBBLE_MAX_SCREEN_SHARE).dp,
                 onBubbleHeight = { bubbleHeightPx = it },
                 modifier = Modifier.align(Alignment.BottomCenter),
+                banner =
+                    if (bannerShown && alertVm != null) {
+                        {
+                            val originId = alertState.miffId.orEmpty()
+                            val originName = miffNameOf(originId)
+                            AlertBanner(
+                                alert = alertState,
+                                miffName = originName,
+                                onRetry = alertVm::onRetry,
+                                // The cross: the sending that is waiting or refused is given up (the server is asked before the pointer is erased).
+                                onClose = alertVm::onCancelPending,
+                                // The Feed shows ANOTHER Miff than the one of the alert: "Voir la Miff {nom}" brings the Feed back to it (ticket 7.4).
+                                showSeeMiff = ready?.activeId?.let { it != originId } == true,
+                                onCall = { alert?.let { it.onOpenSent(originId, false, false) } },
+                                onSeeMiff = {
+                                    onSelectMiff(originId)
+                                    select(MainTab.FEED)
+                                },
+                                onEndRequested = { alertVm.onEndRequested() },
+                                onEndAccessible = { endConfirmOpen = true },
+                                modifier =
+                                    Modifier
+                                        .padding(horizontal = Spacing.m)
+                                        .padding(bottom = Spacing.s)
+                                        .onSizeChanged { bannerHeightPx = it.height },
+                            )
+                        }
+                    } else {
+                        null
+                    },
             )
         },
     ) {
@@ -1063,7 +1244,7 @@ fun MainTabs(
                                     travelContent = travelContent,
                                     countdownContent = {
                                         OrangeCountdownSlot(
-                                            anchor = feedContent?.myCountdown,
+                                            anchor = if (alertActive) null else feedContent?.myCountdown,
                                             onOpenUpdate = { if (update != null) select(MainTab.UPDATE) },
                                             padding = PaddingValues(bottom = Spacing.l),
                                         )
@@ -1078,6 +1259,66 @@ fun MainTabs(
                                         avatarCodec = update.avatarCodec,
                                         sharingStopped = sharingStopped,
                                         miffCount = ready?.miffs?.size ?: 1,
+                                        alert =
+                                            if (alert != null && alertVm != null) {
+                                                AlertUpdateHooks(
+                                                    hintVisible = !alertHintDone,
+                                                    onHintDone = alertVm::onHintDone,
+                                                    targetMiffName = ready?.activeId?.let(::miffNameOf),
+                                                    several = (ready?.miffs?.size ?: 1) > 1,
+                                                    // A name that is not known yet is "" (the sentence then says "Une alerte est déjà en cours.").
+                                                    // Only an alert that is REALLY on its way or sent forbids a second hold: a refused one, the daily limit, a question to answer do not
+                                                    // (the person may start again; review of #275 v2, 7).
+                                                    activeAlertMiffName =
+                                                        alertState.miffId
+                                                            ?.takeIf {
+                                                                val sending = alertState as? MyAlert.Sending
+                                                                sending == null ||
+                                                                    sending.step == SendStep.SENDING ||
+                                                                    sending.step == SendStep.WAITING_NETWORK
+                                                            }?.let { miffNameOf(it).orEmpty() },
+                                                    bannerInset = bannerInset,
+                                                    onTrigger = {
+                                                        val origin = ready?.activeId
+                                                        if (origin == null) {
+                                                            // The Miffs are not known (yet): nothing can be sent, but the 5 seconds were held in the stress: the emergency numbers
+                                                            // and a calm sentence, never nothing (review of #275, M3a).
+                                                            alert.onOpenSent("", false, true)
+                                                        } else if (feedContent?.myLabel == StateLabel.SharingStopped) {
+                                                            // I do not share with that Miff: nothing leaves, the calm screen offers to resume and the emergency numbers (ticket 12.2).
+                                                            alert.onOpenSent(origin, true, false)
+                                                        } else {
+                                                            when (val result = alertVm.onTriggered(origin)) {
+                                                                TriggerResult.Started -> {
+                                                                    alert.onOpenSent(origin, false, false)
+                                                                }
+
+                                                                is TriggerResult.AlreadyActive -> {
+                                                                    confirmation =
+                                                                        alreadyActiveText(miffNameOf(result.miffId))
+                                                                }
+
+                                                                TriggerResult.NotSignedIn -> {}
+                                                            }
+                                                        }
+                                                    },
+                                                    onAlreadyActive = { name ->
+                                                        confirmation =
+                                                            alreadyActiveText(name.takeIf { it.isNotBlank() })
+                                                    },
+                                                    // From the screens where the viewfinder (so the gesture) is not there: the emergency numbers (review of #275, M3b).
+                                                    onOpenEmergency = { stopped ->
+                                                        val origin = ready?.activeId
+                                                        if (stopped && origin != null) {
+                                                            alert.onOpenSent(origin, true, false)
+                                                        } else {
+                                                            alert.onOpenSent("", false, true)
+                                                        }
+                                                    },
+                                                )
+                                            } else {
+                                                null
+                                            },
                                         actions =
                                             UpdateActions(
                                                 onClose = { selected = MainTab.FEED },

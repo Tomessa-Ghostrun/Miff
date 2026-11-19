@@ -69,6 +69,7 @@ extension TrackingEngine {
             // Plus de 24 h : les règles le refuseraient. Les proches ne doivent pas garder un état périmé : à la place on écrit
             // `unknown` à l'heure du moment (jamais une supposition).
             journal.record(.statusGivenUp, placeId: pending.placeId)
+            noteUnknown(miffId, at: now)
             pending = PendingStatus(fact: PresenceMachine.unknown(atMillis: now))
             state.update(miffId) {
                 $0.derived = DerivedPresence(presence: .unknown, placeId: nil)

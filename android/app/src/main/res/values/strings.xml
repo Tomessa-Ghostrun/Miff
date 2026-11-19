@@ -1401,7 +1401,6 @@
     <string name="alert_confirm_end_body_no_name">Your people will be told you\'re ending it.</string>
     <string name="alert_unavailable_title">The alert to your people isn\'t available right now. If you\'re in danger, call the emergency services directly.</string>
     <string name="miff_alert_removed_warning">You have an alert in progress in this Miff: it will be removed, and your people won\'t be told it ended.</string>
-
     <!-- ABOUT-1A : textes propres a Android de Reglages > A propos et aide (lignes de cartes et d'adresses, detail d'une licence, indice de la version) -->
     <string name="android_about_copy_hint">Tap to copy</string>
     <string name="android_about_contact_subtitle">A question, a problem, an idea: write to us.</string>
