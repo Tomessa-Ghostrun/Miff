@@ -187,3 +187,15 @@ Les **10 bibliothèques natives 64 bits** du bundle ont leurs segments alignés 
 - Le workflow ne se lance que par `workflow_dispatch`, depuis `main`, jamais par une PR (jamais de `pull_request_target`).
 - Les empreintes publiées dans le résumé de l'exécution sont celles du **certificat** (publiques par nature), pas de la clé privée.
 - Un artefact d'un dépôt public peut être téléchargé par tout compte GitHub connecté : le bundle n'a aucun secret ; durée 14 jours.
+
+## Ajouts du 2026-11-19 : alerte « Je suis en danger », journal du temps, textes légaux 1.1 (à cocher avant la soumission Android)
+
+Préparation seulement : rien n'est soumis. Détail : `alerte-danger-declarations-stores.md` §7 et `journal-local-temps-declarations.md`.
+
+- [ ] **QA passée** (`docs/qa/release-checklist.md`, à créer par `qa-tester` : absente aujourd'hui) **et** recette PM.
+- [ ] Textes légaux **en ligne en version 1.1** (`docs/dev/publication-textes-legaux-v1-1.md`) **avant** la mise en service de l'alerte ; l'URL de la politique de confidentialité de la fiche est `https://miff-3d283.web.app/fr/confidentialite` (et `/en/privacy`).
+- [ ] Alerte : fonction `notifierAlerte` déployée **en dernier** (`docs/dev/deploiement-alerte-danger.md`) ; manifeste Android **sans** `USE_FULL_SCREEN_INTENT`, `CALL_PHONE`, contacts (V33).
+- [ ] **Data safety** : ligne « Autre contenu généré par les utilisateurs » étendue (description de la photo, état de l'alerte) ; le journal du temps **n'est pas déclaré** (non collecté : ses limites sont dans `journal-local-temps-declarations.md` §2).
+- [ ] **Localisation en arrière-plan** : justification complétée d'une phrase sur le journal local (`journal-local-temps-declarations.md` §3), **une seule fonctionnalité déclarée**, l'alerte n'est pas décrite dans ce formulaire.
+- [ ] Fiche de l'app : **Annexe A** de `marketing/store-listing-android.md` collée **seulement** le jour où l'alerte est livrée.
+- [ ] Règles de Google relues **le jour de la soumission**.
