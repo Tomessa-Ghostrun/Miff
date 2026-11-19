@@ -33,14 +33,15 @@ enum PresenceState: String, Equatable, CaseIterable {
 struct PresenceFact: Equatable, CustomStringConvertible {
     let miffId: String
     let state: PresenceState
-    /// Le lieu de la Miff (arrivée, séjour) ; pour « dehors », le lieu qu'on vient de quitter, quand le moteur le dit (ignoré par le calcul).
+    /// Le lieu de la Miff, SEULEMENT pour « dans un lieu de confiance » et « dans une zone de danger » ; nil pour « dehors » et « inconnue » (le
+    /// lieu qu'on vient de quitter n'est jamais gardé : le moteur le dit au statut, pas le journal).
     let placeId: String?
     let atMillis: Int
 
     init(miffId: String, state: PresenceState, placeId: String?, atMillis: Int) {
         self.miffId = miffId
         self.state = state
-        self.placeId = placeId
+        self.placeId = state == .trusted || state == .danger ? placeId : nil
         self.atMillis = atMillis
     }
 

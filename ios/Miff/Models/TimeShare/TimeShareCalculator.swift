@@ -105,7 +105,6 @@ enum TimeShareCalculator {
     }
 
     private struct Ranked {
-        let order: Int
         let place: TimeSharePlace
         let millis: Int
     }
@@ -140,17 +139,18 @@ enum TimeShareCalculator {
         )
     }
 
-    /// Les lieux d'un type où du temps a été passé, du plus long au plus court (égalité : l'ordre de la liste des lieux).
+    /// Les lieux d'un type où du temps a été passé, du plus long au plus court ; à durée EXACTEMENT égale, par identifiant du lieu (le même
+    /// ordre qu'Android, indépendant de l'ordre de la liste des lieux).
     private static func ranked(_ type: PlaceType, in times: [String: Int], places: [TimeSharePlace]) -> [Ranked] {
-        places.enumerated()
-            .compactMap { order, place -> Ranked? in
+        places
+            .compactMap { place -> Ranked? in
                 guard place.type == type, let millis = times[place.id], millis > 0 else {
                     return nil
                 }
-                return Ranked(order: order, place: place, millis: millis)
+                return Ranked(place: place, millis: millis)
             }
             .sorted { left, right in
-                left.millis != right.millis ? left.millis > right.millis : left.order < right.order
+                left.millis != right.millis ? left.millis > right.millis : left.place.id < right.place.id
             }
     }
 
