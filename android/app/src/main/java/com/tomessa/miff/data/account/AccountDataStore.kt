@@ -38,6 +38,8 @@ interface AccountDataStore {
 
 class FirestoreAccountDataStore(
     private val firestore: () -> FirebaseFirestore = { FirebaseFirestore.getInstance() },
+    /** ALERTE (BuildConfig.ALERT_DANGER): the daily counter `users/{uid}/quota/alerts` goes with the profile, in the same transaction (backend/data-model.md 2.20). False: nothing added. */
+    private val alertsEnabled: Boolean = false,
 ) : AccountDataStore {
     // The instance is resolved at each use: it is replaced after a cache purge.
     private fun user(uid: String) = firestore().collection("users").document(uid)
@@ -74,6 +76,46 @@ class FirestoreAccountDataStore(
     override suspend fun deleteProfile(uid: String) {
         val db = firestore()
         val ref = db.collection("users").document(uid)
-        db.runTransaction { transaction -> transaction.delete(ref) }.await()
+        val quota = ref.collection("quota").document("alerts")
+        deleteProfileTolerantly(
+            withQuota = alertsEnabled,
+            deleteWithQuota = {
+                db
+                    .runTransaction { transaction ->
+                        transaction.delete(quota)
+                        transaction.delete(ref)
+                    }.await()
+            },
+            deleteProfileOnly = { db.runTransaction { transaction -> transaction.delete(ref) }.await() },
+            refused = {
+                it is com.google.firebase.firestore.FirebaseFirestoreException &&
+                    it.code == com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED
+            },
+        )
     }
+}
+
+/**
+ * ALERTE (backend/data-model.md 2.20): the daily counter of the alerts goes with the profile, in the same transaction, when the function is on. The rules may REFUSE that deletion
+ * (the counter can only be deleted when its three slots are empty or 24 h old, so a person who started an alert in the last 24 hours cannot delete it; or the rules are not
+ * deployed yet): it is then TOLERATED. The orphan counter is purged by the TTL rule on `expireAt`, it holds only dates and a Miff identifier, and the deletion of the account goes on
+ * with the profile alone, with no visible error. Any other failure is the caller's, as before.
+ */
+internal suspend fun deleteProfileTolerantly(
+    withQuota: Boolean,
+    deleteWithQuota: suspend () -> Unit,
+    deleteProfileOnly: suspend () -> Unit,
+    refused: (Throwable) -> Boolean,
+) {
+    if (withQuota) {
+        try {
+            deleteWithQuota()
+            return
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            if (!refused(e)) throw e
+        }
+    }
+    deleteProfileOnly()
 }

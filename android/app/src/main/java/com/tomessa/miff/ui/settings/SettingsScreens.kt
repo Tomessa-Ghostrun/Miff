@@ -202,11 +202,11 @@ private val RowMinHeight = Spacing.minTouchTarget + Spacing.l
 
 /**
  * Settings list (mockup "reglages", ticket ONB-3a, criterion A4): My information, My account, Language, Notifications (NOTIF-2A: it revises decision
- * Q6, because reminders now exist), Privacy (ONB-3b). Nothing else: no subscription or Premium banner (nothing can be bought yet), no "Supprimer mon
+ * Q6, because reminders now exist), Privacy (ONB-3b), and "À propos et aide" LAST (decision of the PM, 2026-11-13). Nothing else: no subscription or Premium banner (nothing can be bought yet), no "Supprimer mon
  * compte" line (it lives INSIDE "Mon compte").
  *
  * RESTRICTED list (decision of the PM, 2026-11-07, for a person with no Miff yet): [onOpenMyInfo] and [onOpenLanguage] are null and their
- * rows are not drawn; only "Mon compte" and "Confidentialité" remain. [onOpenSubscription] is never given there.
+ * rows are not drawn; only "Mon compte", "Confidentialité" and "À propos et aide" remain. [onOpenSubscription] is never given there.
  *
  * The "Abonnement" line (ticket ABO-1, mockup "reglages -2") is drawn ONLY when [onOpenSubscription] is given, that is for an ACTIVE
  * Miff+ account whose status was read when the screen opened; for everyone else, and in the restricted list, it is null: no line,
@@ -219,6 +219,8 @@ fun SettingsScreen(
     onOpenAccount: () -> Unit,
     onOpenLanguage: (() -> Unit)?,
     onOpenPrivacy: () -> Unit,
+    /** "À propos et aide" (decision Q1 of the PM, 2026-11-13): the LAST line of the list, in the full Settings AND in the restricted ones. */
+    onOpenAbout: () -> Unit,
     /** NOTIF-2A: Settings > Notifications. Null in the RESTRICTED list of a person with no Miff (nothing to notify without a Miff): the row is not drawn. */
     onOpenNotifications: (() -> Unit)? = null,
     onOpenSubscription: (() -> Unit)? = null,
@@ -272,6 +274,13 @@ fun SettingsScreen(
         InternalDestinations.SettingsEntry { title, subtitle, onClick ->
             SettingsRow(icon = R.drawable.ic_settings, title = title, subtitle = subtitle, onClick = onClick)
         }
+        // The LAST line, even in the test builds that have the diagnostic line above (ticket reglages-a-propos.md, criterion AP1).
+        SettingsRow(
+            icon = R.drawable.ic_loc_info,
+            title = stringResource(R.string.about_title),
+            subtitle = stringResource(R.string.about_row_subtitle),
+            onClick = onOpenAbout,
+        )
     }
 }
 

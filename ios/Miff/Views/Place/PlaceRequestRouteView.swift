@@ -4,7 +4,8 @@ import SwiftUI
 struct PlaceRequestRouteActions {
     let onBack: () -> Void
     let onFormEnd: (PlaceFormEnd) -> Void
-    /// Une zone de danger sans Miff+ : l'offre s'ouvre (rien n'a été envoyé, la demande n'est pas écrite).
+    /// L'offre doit s'ouvrir. Le formulaire d'une DEMANDE ne la demande jamais (demander une zone de danger est permis à tout membre, décision du
+    /// PM du 2026-11-17) : l'hôte garde ce chemin commun avec le formulaire d'un lieu.
     let onPaywall: (PaywallReason) -> Void
 }
 

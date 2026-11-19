@@ -1,7 +1,8 @@
 #if DEBUG
 import SwiftUI
 
-/// Le Feed montré SEUL avec un état fixe, pour les captures d'écran de la CI (`-MiffPreview feed-green`, `feed-orange`, `feed-red`). Aucun
+/// Le Feed montré SEUL avec un état fixe, pour les captures d'écran de la CI (`-MiffPreview feed-green`, `feed-orange`, `feed-red`, `feed-gray` : pas encore de nouvelles, `feed-stopped` : partage arrêté,
+/// `feed-carousel` : deux alertes ; chaque bulle montre le bouton « i » hors de la tache, en bas à droite). Aucun
 /// réseau, aucune session, aucune écriture : c'est la VRAIE mise en page (`FeedCollapsingLayout`, `FeedListView`, `FeedHeaderContent`, la
 /// vraie bulle et les vraies cartes) nourrie par des données de démonstration (jamais de vraies personnes). Une ligne ROSE fine marque où la
 /// liste croit que l'en-tête s'arrête : la bulle doit commencer sous elle, jamais coupée. Compilé en configuration Debug SEULEMENT.
@@ -10,7 +11,7 @@ struct FeedScreenPreview: View {
     @StateObject private var offlineRetry = OfflineRetryModel(network: AlwaysOnlineMonitor())
 
     private static let miffId = "AbCdEfGhIjKlMnOpQrSt"
-    private static let now = 1_794_063_600_000
+    private static let now = CountdownPreviewSupport.now
 
     private var summary: MiffSummary {
         MiffSummary(id: Self.miffId, name: "Les Mfouka")
@@ -20,10 +21,10 @@ struct FeedScreenPreview: View {
         DirectoryReady(miffs: [summary], activeId: Self.miffId, premium: false, fromCache: false)
     }
 
-    private func member(_ uid: String, _ first: String) -> MiffMember {
+    private func member(_ uid: String, _ first: String, sharing: Bool = true) -> MiffMember {
         MiffMember(
             uid: uid, firstName: first, lastName: "Demo", avatarJpeg: nil,
-            role: .member, sharingEnabled: true, phone: "+33612345678"
+            role: .member, sharingEnabled: sharing, phone: "+33612345678"
         )
     }
 
@@ -35,18 +36,45 @@ struct FeedScreenPreview: View {
         case "feed-orange":
             presence = .out
             ago = 3 * 60 * 60 * 1000
-        case "feed-red":
+        case "feed-red", "feed-carousel":
             presence = .out
             ago = 6 * 60 * 60 * 1000
         default:
             presence = .inTrusted
             ago = 12 * 60 * 1000
         }
+        guard name != "feed-gray" else {
+            return [:]
+        }
         let lea = MemberStatus(
             presence: presence, placeId: nil, presenceAtMillis: Self.now - ago, lastUpdateAtMillis: nil,
             hasPhoto: false, batteryPct: 80, locationAccess: nil, updatedAtMillis: Self.now
         )
-        return ["lea": lea]
+        // COMPTE À REBOURS : MA carte est verte, dehors d'un lieu (le décompte est dans le contexte, voir `body`).
+        let mine = CountdownPreviewSupport.myFacts(for: name).map { facts in
+            MemberStatus(
+                presence: facts.presence, placeId: nil, presenceAtMillis: facts.presenceAtMillis,
+                lastUpdateAtMillis: nil, hasPhoto: false, batteryPct: 80, locationAccess: nil, updatedAtMillis: Self.now
+            )
+        }
+        guard name == "feed-carousel" else {
+            return ["me": mine, "lea": lea].compactMapValues { $0 }
+        }
+        // Deux alertes : Léa rouge (sortie depuis 6 h) et Sam orange (sortie depuis 3 h).
+        let sam = MemberStatus(
+            presence: .out, placeId: nil, presenceAtMillis: Self.now - 3 * 60 * 60 * 1000, lastUpdateAtMillis: nil,
+            hasPhoto: false, batteryPct: 60, locationAccess: nil, updatedAtMillis: Self.now
+        )
+        return ["lea": lea, "sam": sam]
+    }
+
+    private var members: [MiffMember] {
+        var all = [member("lea", "Léa")]
+        if name == "feed-carousel" {
+            all.append(member("sam", "Sam"))
+        }
+        all.append(member("me", "Moi", sharing: name != "feed-stopped"))
+        return all
     }
 
     private var content: FeedContent {
@@ -54,7 +82,7 @@ struct FeedScreenPreview: View {
             miffId: Self.miffId,
             miffName: summary.name,
             joinCode: "XTZRSP367988",
-            members: [member("lea", "Léa"), member("me", "Moi")],
+            members: members,
             places: [],
             myUid: "me",
             statuses: .loaded(byUid: statuses, fromCache: false),
@@ -68,7 +96,7 @@ struct FeedScreenPreview: View {
     private var listActions: FeedListActions {
         FeedListActions(
             card: MemberCardActions(onLocate: { _ in }, onMessage: { _ in }, onCall: { _ in }),
-            bubble: BubbleActions(onMessage: { _ in }, onResumeSharing: {}),
+            bubble: BubbleActions(onMessage: { _ in }, onResumeSharing: {}, onOpenColors: {}),
             onRetry: {},
             onReviewAgreement: {},
             onRefresh: {},
@@ -104,7 +132,7 @@ struct FeedScreenPreview: View {
                 locate: .idle,
                 texts: FeedTexts(),
                 topInset: layout.listInset,
-                isActive: false,
+                isActive: CountdownPreviewSupport.remainingMillis(for: name) != nil,
                 agreementWaiting: false,
                 secondChanceDue: false,
                 scrollToTop: layout.scrollToTop,
@@ -117,6 +145,7 @@ struct FeedScreenPreview: View {
                 Rectangle().fill(Color.pink).frame(height: 1).padding(.top, layout.listInset)
             }
         }
+        .environment(\.countdownContext, CountdownPreviewSupport.context(for: name))
     }
 }
 #endif

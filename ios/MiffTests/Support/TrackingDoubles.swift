@@ -312,6 +312,8 @@ final class TrackingRig {
     let movement = FakeMovement()
     let device = FakeActiveDevice()
     let journal = RecordingJournal()
+    /// TIME-3 : le journal des changements de présence (répartition du temps).
+    let history = MemoryPresenceHistory()
     var generation = 0
 
     private(set) lazy var engine: TrackingEngine = {
@@ -325,6 +327,7 @@ final class TrackingRig {
                 movement: movement,
                 device: device,
                 journal: journal,
+                history: history,
                 timeoutSeconds: 2,
                 generation: { [unowned self] in self.generation }
             )

@@ -45,50 +45,86 @@ final class PhotoFullScreenLayoutTests: XCTestCase {
         XCTAssertLessThan(PhotoFullScreenLayout.whiteTextContrast(overScrimAlpha: 0.3), PhotoFullScreenLayout.minimumContrast, "un voile trop léger ne suffirait pas")
     }
 
-    // MARK: - La photo remplit tout l'écran
+    // MARK: - La photo remplit tout l'écran, sans aucune marge (exigence ferme du PM)
 
-    func testThePhotoOfTheScreenShapeFillsTheWholeScreen() {
-        // Le JPEG publié est au format du viseur (9:21 à 9:16) : sur un 11 Pro (375 x 812 points, zones sûres comprises) il occupe tout l'écran.
+    /// Des écrans (points, zones sûres comprises) : iPhone SE, 11 Pro, 16, 16 Pro Max, et un format carré / paysage absurde.
+    private let fullScreens: [(String, CGSize)] = [
+        ("SE", CGSize(width: 375, height: 667)), ("11 Pro", CGSize(width: 375, height: 812)), ("16", CGSize(width: 393, height: 852)),
+        ("16 Pro Max", CGSize(width: 440, height: 956)), ("paysage", CGSize(width: 852, height: 393)), ("carré", CGSize(width: 500, height: 500))
+    ]
+
+    /// Des photos (pixels) : le viseur (9:19,5), un 3:4, un 9:16, un carré, un paysage 4:3, un panorama, une très haute et une toute petite.
+    private let photos: [CGSize] = [
+        CGSize(width: 576, height: 1_248), CGSize(width: 900, height: 1_200), CGSize(width: 1_080, height: 1_920), CGSize(width: 800, height: 800),
+        CGSize(width: 1_200, height: 900), CGSize(width: 4_000, height: 1_000), CGSize(width: 300, height: 3_000), CGSize(width: 20, height: 30)
+    ]
+
+    func testThePhotoOfTheScreenShapeFillsTheWholeScreenWithNothingCut() {
+        // Le JPEG publié est au format du viseur : sur un écran du même rapport il occupe tout l'écran, rien n'est coupé.
         let screen = CGSize(width: 375, height: 812)
-        let photo = CGSize(width: 375, height: 812)
-
-        let shown = PhotoFullScreenLayout.fittedSize(imageSize: photo, in: screen)
+        let shown = PhotoFullScreenLayout.filledSize(imageSize: CGSize(width: 375, height: 812), in: screen)
 
         XCTAssertEqual(shown.width, screen.width, accuracy: 0.001)
         XCTAssertEqual(shown.height, screen.height, accuracy: 0.001)
+        XCTAssertEqual(PhotoFullScreenLayout.croppedShare(imageSize: CGSize(width: 375, height: 812), in: screen), 0, accuracy: 0.0001)
+    }
+
+    func testThePhotoNeverLeavesAFreeSpaceWhateverThePhotoAndTheScreen() {
+        for (name, screen) in fullScreens {
+            for photo in photos {
+                let shown = PhotoFullScreenLayout.filledSize(imageSize: photo, in: screen)
+                let label = "\(name) \(Int(photo.width))x\(Int(photo.height))"
+
+                XCTAssertGreaterThanOrEqual(shown.width, screen.width - 0.001, "aucune bande à gauche ou à droite : \(label)")
+                XCTAssertGreaterThanOrEqual(shown.height, screen.height - 0.001, "aucune bande en haut ou en bas : \(label)")
+                XCTAssertEqual(shown.width / shown.height, photo.width / photo.height, accuracy: 0.0001, "jamais déformée : \(label)")
+                // Elle touche l'écran SUR UN CÔTÉ EXACTEMENT (le plus petit des dépassements est nul) : pas plus grande que nécessaire.
+                XCTAssertEqual(min(shown.width / screen.width, shown.height / screen.height), 1, accuracy: 0.0001, label)
+            }
+        }
     }
 
     func testASmallImageIsEnlargedToFillTheScreenItIsNeverLimitedByItsOwnSize() {
-        // ~461 x 1 024 px : bien plus petit que l'écran en points.
-        let image = CGSize(width: 200, height: 440)
-        let screen = CGSize(width: 375, height: 812)
+        let shown = PhotoFullScreenLayout.filledSize(imageSize: CGSize(width: 200, height: 440), in: CGSize(width: 375, height: 812))
 
-        let shown = PhotoFullScreenLayout.fittedSize(imageSize: image, in: screen)
-
-        XCTAssertGreaterThan(shown.width, image.width, "agrandie au-delà de sa taille propre")
-        XCTAssertLessThanOrEqual(shown.width, screen.width + 0.001)
-        XCTAssertLessThanOrEqual(shown.height, screen.height + 0.001)
-        XCTAssertEqual(max(shown.width / screen.width, shown.height / screen.height), 1, accuracy: 0.0001, "elle touche l'écran sur un côté au moins")
-        XCTAssertEqual(shown.width / shown.height, image.width / image.height, accuracy: 0.0001, "jamais déformée")
+        XCTAssertGreaterThan(shown.width, 200, "agrandie au-delà de sa taille propre")
+        XCTAssertGreaterThanOrEqual(shown.width, 375 - 0.001)
+        XCTAssertGreaterThanOrEqual(shown.height, 812 - 0.001)
     }
 
-    func testAWideImageFillsTheWidthAndATallOneTheHeightNeverBeyondTheScreen() {
+    func testAWideImageIsCutOnTheSidesAndATallOneAtTheTopAndBottom() {
         let screen = CGSize(width: 375, height: 812)
 
-        let wide = PhotoFullScreenLayout.fittedSize(imageSize: CGSize(width: 1_000, height: 500), in: screen)
-        let tall = PhotoFullScreenLayout.fittedSize(imageSize: CGSize(width: 400, height: 1_000), in: screen)
+        let wide = PhotoFullScreenLayout.filledSize(imageSize: CGSize(width: 1_000, height: 500), in: screen)
+        let tall = PhotoFullScreenLayout.filledSize(imageSize: CGSize(width: 400, height: 1_000), in: screen)
 
-        XCTAssertEqual(wide.width, screen.width, accuracy: 0.001)
-        XCTAssertEqual(tall.height, screen.height, accuracy: 0.001)
-        for shown in [wide, tall] {
-            XCTAssertLessThanOrEqual(shown.width, screen.width + 0.001)
-            XCTAssertLessThanOrEqual(shown.height, screen.height + 0.001)
+        XCTAssertEqual(wide.height, screen.height, accuracy: 0.001, "le paysage remplit la hauteur : il dépasse en largeur")
+        XCTAssertGreaterThan(wide.width, screen.width)
+        XCTAssertEqual(tall.width, screen.width, accuracy: 0.001, "la haute remplit la largeur : elle dépasse en hauteur")
+        XCTAssertGreaterThan(tall.height, screen.height)
+    }
+
+    /// Les effets de bord de la recette : la part de la photo coupée sur un écran plus allongé que la photo (recadrage centré).
+    func testTheCroppedShareOfTheUsualPhotosOnTheUsualScreens() {
+        // Un 3:4 (900 x 1 200) sur un 11 Pro (375 x 812, rapport 0,462) : il remplit la hauteur, 0,462 / 0,75 de la largeur reste, 38 % est coupé.
+        XCTAssertEqual(PhotoFullScreenLayout.croppedShare(imageSize: CGSize(width: 900, height: 1_200), in: CGSize(width: 375, height: 812)), 0.384, accuracy: 0.001)
+        // Le viseur (9:19,5, rapport 0,4615) sur l'iPhone 16 (393 x 852, rapport 0,4613) : presque rien n'est coupé.
+        XCTAssertLessThan(PhotoFullScreenLayout.croppedShare(imageSize: CGSize(width: 576, height: 1_248), in: CGSize(width: 393, height: 852)), 0.001)
+        // Le même sur un iPhone SE (375 x 667, rapport 0,562) : environ 18 % coupé en haut et en bas.
+        XCTAssertEqual(PhotoFullScreenLayout.croppedShare(imageSize: CGSize(width: 576, height: 1_248), in: CGSize(width: 375, height: 667)), 0.179, accuracy: 0.002)
+        for (name, screen) in fullScreens {
+            for photo in photos {
+                let share = PhotoFullScreenLayout.croppedShare(imageSize: photo, in: screen)
+                XCTAssertGreaterThanOrEqual(share, 0, name)
+                XCTAssertLessThan(share, 1, name)
+            }
         }
     }
 
     func testUnusableSizesGiveNoPhoto() {
-        XCTAssertEqual(PhotoFullScreenLayout.fittedSize(imageSize: .zero, in: CGSize(width: 100, height: 100)), .zero)
-        XCTAssertEqual(PhotoFullScreenLayout.fittedSize(imageSize: CGSize(width: 10, height: 10), in: .zero), .zero)
+        XCTAssertEqual(PhotoFullScreenLayout.filledSize(imageSize: .zero, in: CGSize(width: 100, height: 100)), .zero)
+        XCTAssertEqual(PhotoFullScreenLayout.filledSize(imageSize: CGSize(width: 10, height: 10), in: .zero), .zero)
+        XCTAssertEqual(PhotoFullScreenLayout.croppedShare(imageSize: .zero, in: CGSize(width: 100, height: 100)), 0)
     }
 
     // MARK: - Par lecture de la vue
@@ -106,8 +142,11 @@ final class PhotoFullScreenLayoutTests: XCTestCase {
         XCTAssertFalse(code.contains("ViewThatFits"), "plus de choix implicite : la légende défile selon un calcul testé (`footerScrolls`)")
         XCTAssertEqual(code.components(separatedBy: "GeometryReader").count - 1, 1, "UN seul GeometryReader, à la racine : aucun imbriqué")
         XCTAssertTrue(code.contains("proxy.safeAreaInsets"), "les vraies zones sûres, lues une fois")
-        XCTAssertTrue(code.contains(".scaledToFit()"), "la photo entière, jamais recadrée")
-        XCTAssertFalse(code.contains(".scaledToFill()"))
+        XCTAssertTrue(code.contains(".scaledToFill()"), "la photo REMPLIT l'écran : aucune marge visible (exigence du PM)")
+        XCTAssertFalse(code.contains(".scaledToFit()"), "jamais « entière dans les marges » : cela laissait des bandes noires")
+        XCTAssertTrue(code.contains(".clipped()"), "le dépassement du recadrage est coupé aux bords de l'écran")
+        XCTAssertTrue(code.contains("topScrim(height: insets.top)") && code.contains(".allowsHitTesting(false)"), "un voile léger sous la barre d'état, sans toucher")
+        XCTAssertTrue(code.contains(".preferredColorScheme(.dark)"), "barre d'état en clair sur ce plein écran")
         XCTAssertTrue(code.contains(".frame(width: size.width, height: size.height)"), "la photo (et son conteneur) prennent l'écran ENTIER : la photo est centrée")
         XCTAssertTrue(code.contains("            .ignoresSafeArea()\n"), "le CONTENU occupe l'écran entier, zones sûres comprises")
         XCTAssertFalse(code.contains("        }\n        .ignoresSafeArea()\n"), "jamais sur le GeometryReader lui-même : il rendrait des zones sûres à zéro")

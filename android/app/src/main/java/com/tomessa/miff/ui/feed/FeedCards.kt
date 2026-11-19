@@ -88,7 +88,8 @@ fun MemberCardView(
                 .height(IntrinsicSize.Min)
                 .miffShadow(ShadowSubtle, ShapeSm)
                 .clip(ShapeSm)
-                .background(colorBgSurface)
+                // ALERTE: the card of a person with an alert in progress is red (the 30 % tint of the level, maquette 04); the words "Alerte en cours" say it too, never the colour alone.
+                .background(if (card.alertActive) card.level.tint() else colorBgSurface)
                 .border(StrokeHairline, colorBorderDefault, ShapeSm),
     ) {
         Box(Modifier.width(5.dp).fillMaxHeight().background(card.level.ring()))

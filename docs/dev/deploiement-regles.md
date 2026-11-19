@@ -8,6 +8,8 @@
 
 **Coût** : 0 €. Un déploiement de règles ne consomme aucun quota facturé.
 
+**État au 2026-11-19** : les règles de l'alerte « Je suis en danger » et du quota d'alertes (3 débuts par 24 h) ont été déployées par le PM le 2026-11-18 au commit `13ec6177` (sortie « released rules » collée ; règles TTL `alerts.purgeAt`, `quota.expireAt` et `notifState.expireAt` constatées actives). La fonction `notifierAlerte` n'est **pas** déployée (guide : `docs/dev/deploiement-alerte-danger.md`).
+
 ---
 
 ## 0. Les trois interdits

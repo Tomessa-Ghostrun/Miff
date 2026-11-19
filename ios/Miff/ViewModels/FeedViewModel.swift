@@ -96,6 +96,9 @@ struct FeedDependencies {
     /// NOTIF-P0 : appelé à chaque réponse DU SERVEUR sur les statuts de la Miff affichée (la carte « deuxième chance » des notifications
     /// en vit ; le planificateur de rappels s'y branchera).
     var onStatusesLoaded: @MainActor (FeedStatusesEvent) -> Void = { _ in }
+    /// NOTIF-P1I, « Depuis ta dernière visite » : l'image de la Miff affichée, SEULEMENT quand elle est fraîche (confirmée par le serveur).
+    /// Local : rien n'est lu ni écrit à cause de cet appel.
+    var onFreshPicture: FreshPictureHandler = { _, _, _ in }
     /// MON statut et « mon partage est arrêté » à chaque calcul : l'Update en tire la couleur du bouton central et la bulle (D19).
     var onMyStatus: (MyStatusFacts?, Bool) -> Void = { _, _ in }
     /// Les membres de la Miff affichée, DÉJÀ lus par l'écoute : le Profil les réutilise pour les photos de sa carte (zéro lecture de plus).
@@ -246,7 +249,12 @@ final class FeedViewModel: ObservableObject {
         }
         offlineRetry.setNeed(offlineNeed)
         if case .ready(let content) = next {
-            dependencies.onMyStatus(content.myFacts, content.myLabel == .sharingStopped)
+            // MON statut n'est donné qu'AU COURS d'une observation : quand le Feed n'est plus l'onglet en usage, c'est `OwnStatusWatcher` qui le
+            // tient à jour, et un calcul tardif du Feed (annuaire, accord) ne doit jamais le remplacer par une copie périmée.
+            if observedMiffId != nil {
+                dependencies.onMyStatus(content.myFacts, content.myLabel == .sharingStopped)
+            }
+            tellVisit(content)
         }
     }
 

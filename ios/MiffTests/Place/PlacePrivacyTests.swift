@@ -140,7 +140,7 @@ final class PlacePrivacyTests: XCTestCase {
         )
     }
 
-    func testTheMapShowsNoPositionOfAPersonAndHasNoGesture() throws {
+    func testTheMapShowsNoPositionOfAPersonAndNeverMovesOrZoomsByItself() throws {
         let map = try read("Miff/Views/Place/PlaceMapView.swift")
 
         XCTAssertTrue(map.contains("showsUserLocation = false"))

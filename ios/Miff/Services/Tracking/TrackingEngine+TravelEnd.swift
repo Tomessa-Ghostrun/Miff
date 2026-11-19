@@ -24,6 +24,8 @@ extension TrackingEngine {
         let fact = PresenceMachine.unknown(atMillis: now)
         var state = start
         for miffId in start.miffs.keys {
+            // TIME-3 : la fin d'un voyage écrit « inconnue » (neutre) : le voyage reste non mesuré, la présence repart ensuite du recalcul.
+            noteHistory(miffId, fact)
             state.update(miffId) {
                 $0.derived = DerivedPresence(presence: fact.presence, placeId: fact.placeId)
                 $0.pending = PendingStatus(fact: fact)

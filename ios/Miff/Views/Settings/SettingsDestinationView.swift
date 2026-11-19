@@ -31,10 +31,11 @@ struct SettingsDestinationView: View {
                     onBack: onBack,
                     onOpenMyInfo: { navigate(.myInfo) },
                     onOpenAccount: { navigate(.account) },
+                    onOpenLanguage: { navigate(.language) },
                     onOpenPrivacy: { navigate(.privacy) },
-                    onOpenNotifications: { navigate(.notifications) }
+                    onOpenNotifications: { navigate(.notifications) },
+                    onOpenAbout: { navigate(.about) }
                 ),
-                build: .current,
                 restricted: restricted
             )
         case .myInfo:
@@ -47,14 +48,31 @@ struct SettingsDestinationView: View {
             // AUTH-5c : le vrai parcours (information, confirmation, ré-authentification). Une fois confirmé, la suppression prend tout
             // l'écran (destination `accountDeletion`) et cette pile disparaît avec le reste de l'app connectée.
             DeleteAccountFlowView(environment: environment, onClose: onBack)
+        case .language:
+            LanguageView(controller: .shared, onBack: onBack)
         case .privacy:
             PrivacyView(
                 permissions: environment.devicePermissions,
                 onBack: onBack,
-                onOpenDetectionHelp: { navigate(.detectionHelp) }
+                onOpenDetectionHelp: { navigate(.detectionHelp) },
+                // TIME-3 (D15) : « Effacer mon historique de temps » : le journal local des changements de présence part ; aucune écriture serveur.
+                onEraseTimeHistory: { environment.presenceHistory.eraseFacts() }
             )
         case .detectionHelp:
             DetectionHelpView(onBack: onBack)
+        case .about:
+            AboutView(
+                actions: AboutActions(
+                    onBack: onBack,
+                    onOpenDetectionHelp: { navigate(.detectionHelp) },
+                    onOpenNotificationsHelp: { navigate(.notificationsHelp) },
+                    onOpenLicenses: { navigate(.licenses) }
+                ),
+                build: .current,
+                restricted: restricted
+            )
+        case .licenses:
+            LicensesView(onBack: onBack)
         case .notifications, .notificationCenter, .notificationsHelp:
             notificationScreen
         }

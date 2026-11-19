@@ -54,12 +54,16 @@ struct GateInput {
     /// « Pas maintenant » a été touché pendant ce lancement de l'app.
     let renewalDeferred: Bool
     var consentBeforeLocation = GatePolicy.consentBeforeLocation
+    /// SRV-2I : les notifications sont autorisées dans le système, mais la personne n'a jamais répondu à l'écran qui dit que Miff enregistre un
+    /// identifiant technique de son téléphone (elle avait autorisé AVANT cette version, avec l'ancien texte) : l'écran revient UNE fois. Sans
+    /// cette réponse, aucun jeton n'est enregistré.
+    var pushExplanationDue = false
 }
 
 extension GateInput {
     /// L'écran des notifications est dû : la fenêtre du système peut encore s'afficher et l'écran n'a pas déjà été montré.
     fileprivate var notificationsAsked: Bool {
-        snapshot.notificationsAskable && !notificationsHandled
+        (snapshot.notificationsAskable && !notificationsHandled) || pushExplanationDue
     }
 
     /// Le renouvellement est dû et la personne ne l'a pas remis à plus tard pendant ce lancement.
