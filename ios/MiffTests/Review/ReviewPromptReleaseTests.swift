@@ -39,8 +39,8 @@ final class ReviewPromptReleaseTests: XCTestCase {
         XCTAssertEqual(
             withFlag,
             [
-                "SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG REVIEW_PROMPT",
-                "SWIFT_ACTIVE_COMPILATION_CONDITIONS: INTERNAL REVIEW_PROMPT"
+                "SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG REVIEW_PROMPT ALERT_DANGER",
+                "SWIFT_ACTIVE_COMPILATION_CONDITIONS: INTERNAL REVIEW_PROMPT ALERT_DANGER"
             ],
             "Le drapeau REVIEW_PROMPT ne doit être que dans Debug et Internal (jamais Release, sauf décision du PM)."
         )

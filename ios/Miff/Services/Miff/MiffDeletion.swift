@@ -21,11 +21,19 @@ final class MiffDeletion: MiffDeleter {
     private let store: MiffStore
     private let repository: MiffRepository
     private let timeoutSeconds: TimeInterval
+    /// ALERTE (`BuildFlavor.includesAlertDanger`) : le dernier lot supprime AUSSI l'alerte du créateur dans cette Miff (les règles l'exigent). Faux : rien n'est ajouté.
+    private let alertsEnabled: Bool
 
-    init(store: MiffStore, repository: MiffRepository, timeoutSeconds: TimeInterval = 20) {
+    init(
+        store: MiffStore,
+        repository: MiffRepository,
+        timeoutSeconds: TimeInterval = 20,
+        alertsEnabled: Bool = false
+    ) {
         self.store = store
         self.repository = repository
         self.timeoutSeconds = timeoutSeconds
+        self.alertsEnabled = alertsEnabled
     }
 
     func run(uid: String, miffId: String) async -> MiffDeletionResult {
@@ -212,16 +220,11 @@ final class MiffDeletion: MiffDeleter {
         case .failed(let failure, _):
             return .paused(failure)
         }
-        let last = await guardedCall(timeoutSeconds: timeoutSeconds) {
-            try await store.commitWithMiff(miffId: miffId) { view in
-                MiffWrites.finalDelete(
-                    miffId: miffId,
-                    uid: uid,
-                    code: view.details.joinCode,
-                    codeExists: view.codeDocumentExists,
-                    membershipKey: key
-                )
-            }
+        var last = await finalLot(miffId: miffId, uid: uid, key: key, withAlert: alertsEnabled)
+        // ALERTE : les règles en production peuvent ne pas connaître l'alerte : un lot refusé AVEC sa suppression est réessayé SANS, pour que la
+        // suppression d'une Miff ne casse jamais à cause de la fonction.
+        if alertsEnabled, case .failed(.refused, _) = last {
+            last = await finalLot(miffId: miffId, uid: uid, key: key, withAlert: false)
         }
         switch last {
         case .value:
@@ -232,6 +235,22 @@ final class MiffDeletion: MiffDeleter {
                 return .deleted
             }
             return .paused(failure)
+        }
+    }
+
+    private func finalLot(miffId: String, uid: String, key: String?, withAlert: Bool) async -> Guarded<Void> {
+        let store = self.store
+        return await guardedCall(timeoutSeconds: timeoutSeconds) {
+            try await store.commitWithMiff(miffId: miffId) { view in
+                MiffWrites.finalDelete(
+                    miffId: miffId,
+                    uid: uid,
+                    code: view.details.joinCode,
+                    codeExists: view.codeDocumentExists,
+                    membershipKey: key,
+                    withAlert: withAlert
+                )
+            }
         }
     }
 

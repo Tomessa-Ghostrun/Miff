@@ -50,6 +50,9 @@ enum StateLabel: Equatable {
     /// MODE VOYAGE : la fin du voyage est passée et la personne n'a pas donné de nouvelles depuis : « Voyage terminé » (grise), jamais un
     /// faux « en voyage ».
     case travelEnded
+    /// ALERTE « Je suis en danger » (docs/tickets/alerte-danger.md 7.6) : la personne a déclaré une alerte dans CETTE Miff et elle est en cours : « Alerte en cours »
+    /// (rouge). L'alerte l'emporte sur toute autre étiquette, le voyage compris (ticket 12.1). Les mots la disent aussi : jamais la couleur seule.
+    case alertActive
 }
 
 /// La ligne sous l'étiquette. UN seul repère de temps par carte.
@@ -78,9 +81,9 @@ struct Battery: Equatable {
 struct FeedMemberCard: Equatable, CustomStringConvertible {
     let member: MiffMember
     let isMe: Bool
-    let level: StatusLevel
-    let label: StateLabel
-    let time: TimeLine
+    var level: StatusLevel
+    var label: StateLabel
+    var time: TimeLine
     let battery: Battery?
     /// « Localisation limitée » : un badge doux, sans effet sur la bulle.
     let limitedLocation: Bool
@@ -96,6 +99,8 @@ struct FeedMemberCard: Equatable, CustomStringConvertible {
     var labelCategory: PlaceCategory?
     /// MODE VOYAGE : le voyage de cette personne est en cours (pas fini) : la carte est hors de la couleur de la Miff et du décompte « n sur m ».
     var traveling = false
+    /// ALERTE : cette personne a une alerte en cours dans cette Miff : sa carte est rouge, PREMIÈRE de la liste (la seule exception à l'ordre des cartes).
+    var alertActive = false
 
     var description: String {
         "FeedMemberCard(redacted)"
@@ -110,6 +115,8 @@ enum AlertKind: Equatable, CustomStringConvertible {
     case noNewsSince(Moment)
     /// Rouge, zone de danger : « {Prénom} est à {lieu} » pour les proches, « Tu es dans une zone de danger de ta Miff » pour la personne.
     case danger(place: PlaceRef, since: Moment)
+    /// ALERTE : « {Prénom} a déclaré une alerte à 15 h 02 » (rouge). TOUJOURS la première page du carrousel, avant les rouges automatiques.
+    case declared(at: Moment)
 
     var description: String {
         "AlertKind(redacted)"
@@ -126,6 +133,8 @@ struct AlertPage: Equatable, CustomStringConvertible {
     let canMessage: Bool
     /// Hors connexion : l'heure de la dernière information, dite sous l'alerte (« reconnecte-toi pour les mettre à jour »).
     let offlineSince: Moment?
+    /// « Appeler » : un autre membre avec un numéro, sur la page d'une alerte déclarée seulement (le moyen le plus rapide de joindre la personne).
+    var canCall = false
 
     var description: String {
         "AlertPage(redacted)"

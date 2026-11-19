@@ -13,9 +13,13 @@ import Foundation
 /// le profil.
 final class FirestoreAccountDataStore: AccountDataStore {
     private let writer: MiffStore
+    /// ALERTE (`BuildFlavor.includesAlertDanger`) : le compteur du jour `users/{uid}/quota/alerts` part avec le profil, dans la MÊME transaction
+    /// (backend/data-model.md §2.20).
+    private let alertsEnabled: Bool
 
-    init(writer: MiffStore = FirestoreMiffStore()) {
+    init(writer: MiffStore = FirestoreMiffStore(), alertsEnabled: Bool = false) {
         self.writer = writer
+        self.alertsEnabled = alertsEnabled
     }
 
     func membershipCount(uid: String) async throws -> Int {
@@ -38,6 +42,20 @@ final class FirestoreAccountDataStore: AccountDataStore {
 
     func deleteProfile(uid: String) async throws {
         try Self.check(uid)
+        if alertsEnabled {
+            let withCounter = [
+                DocWrite(path: DangerAlertWrites.quotaPath(uid: uid), kind: .delete),
+                DocWrite(path: "users/\(uid)", kind: .delete)
+            ]
+            do {
+                try await writer.commit(withCounter)
+                return
+            } catch let error as NSError where error.domain == FirestoreErrorNumber.domain
+                && error.code == FirestoreErrorNumber.permissionDenied {
+                // Les règles en production peuvent ne pas connaître le compteur (pas déployées), ou le refuser : le profil part SEUL, comme
+                // avant. Le compteur est effacé par sa règle d'expiration (TTL) : la suppression du compte ne casse jamais à cause de la fonction.
+            }
+        }
         try await writer.commit([DocWrite(path: "users/\(uid)", kind: .delete)])
     }
 

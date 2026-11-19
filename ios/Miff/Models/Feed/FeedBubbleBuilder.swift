@@ -10,8 +10,18 @@ extension FeedBuilder {
         _ context: Context,
         cards: [FeedMemberCard],
         latestUpdate: Int?,
-        miffLevel: StatusLevel
+        miffLevel: StatusLevel,
+        declared: [DangerAlertDoc] = []
     ) -> Bubble {
+        // ALERTE : une alerte déclarée est montrée quoi que dise le reste, même quand MON partage est arrêté (une alerte est une déclaration volontaire à toute la
+        // Miff), et elle est TOUJOURS la première page, avant les rouges automatiques. La bulle ne dit jamais « Tout le monde est en sécurité » pendant une alerte.
+        let declaredList = declaredPages(context, cards: cards, live: declared)
+        if !declaredList.isEmpty {
+            let automatic = context.input.waitingAgreement || !context.mySharing
+                ? []
+                : alertPages(context, cards: cards, latestUpdate: latestUpdate)
+            return .alerts(pages: declaredList + automatic, level: .red)
+        }
         if context.input.waitingAgreement {
             return .awaitingAgreement
         }
@@ -100,7 +110,12 @@ extension FeedBuilder {
     private static func alertPages(_ context: Context, cards: [FeedMemberCard], latestUpdate: Int?) -> [AlertPage] {
         let offlineSince = context.input.effectivelyOffline ? latestUpdate.map { context.moment($0) } : nil
         var alerts: [SortableAlert] = []
-        for (index, card) in cards.enumerated() where card.level == .red || card.level == .orange {
+        // Une personne dont l'alerte est en cours a SA page (`declaredPages`) : jamais une seconde pour la même personne.
+        let eligible = cards.enumerated().filter { entry in
+            let card = entry.element
+            return !card.alertActive && (card.level == .red || card.level == .orange)
+        }
+        for (index, card) in eligible {
             guard let status = context.statuses[card.member.uid], let reference = status.referenceMillis else {
                 continue
             }
@@ -173,6 +188,8 @@ extension FeedBuilder {
             return "noNewsSince"
         case .danger:
             return "danger"
+        case .declared:
+            return "declared"
         }
     }
 }

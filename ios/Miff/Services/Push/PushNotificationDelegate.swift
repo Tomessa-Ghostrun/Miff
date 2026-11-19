@@ -21,6 +21,9 @@ import UserNotifications
 enum PushPresentationRoute: Equatable {
     /// Un message du serveur : aucune bannière, aucun son.
     case suppress
+    /// ALERTE « Je suis en danger » (`ALERT_DANGER`) : une alerte d'un proche est affichée MÊME app ouverte, bannière et son (une alerte ne doit pas passer
+    /// inaperçue ; seuls les réglages du téléphone peuvent la taire).
+    case present
     /// Autre chose (un rappel local) : à passer au délégué suivant, ou à ne pas afficher s'il n'y en a pas.
     case forward
 }
@@ -47,6 +50,11 @@ final class PushNotificationDelegate: NSObject, UNUserNotificationCenterDelegate
 
     func routeWillPresent(userInfo: [AnyHashable: Any]) -> PushPresentationRoute {
         guard let target = CircleNewsParser.parse(userInfo) else {
+            #if ALERT_DANGER
+            if CircleAlertParser.parse(userInfo) != nil {
+                return .present
+            }
+            #endif
             return .forward
         }
         onForeground?(target)
@@ -55,6 +63,17 @@ final class PushNotificationDelegate: NSObject, UNUserNotificationCenterDelegate
 
     func routeResponse(userInfo: [AnyHashable: Any], actionIdentifier: String) -> PushResponseRoute {
         guard let target = CircleNewsParser.parse(userInfo) else {
+            #if ALERT_DANGER
+            // ALERTE : un toucher sur « {Prénom} a déclaré une alerte » ouvre la Miff d'origine (la même demande d'ouverture que « a donné des nouvelles »,
+            // comparée aux Miffs du compte avant d'ouvrir quoi que ce soit).
+            if let alert = CircleAlertParser.parse(userInfo) {
+                guard actionIdentifier == UNNotificationDefaultActionIdentifier else {
+                    return .ignore
+                }
+                onTap?(alert.openTarget)
+                return .open
+            }
+            #endif
             return .forward
         }
         // Seulement le toucher « normal » de la notification : un geste de rejet ne rouvre rien.
@@ -74,6 +93,8 @@ final class PushNotificationDelegate: NSObject, UNUserNotificationCenterDelegate
         case .suppress:
             // App ouverte : aucune bannière, aucun son (la carte du Feed et la cloche parlent déjà).
             completionHandler([])
+        case .present:
+            completionHandler([.banner, .list, .sound])
         case .forward:
             if let next {
                 next.userNotificationCenter?(
