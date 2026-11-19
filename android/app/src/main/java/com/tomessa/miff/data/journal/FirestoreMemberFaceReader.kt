@@ -55,4 +55,3 @@ class FirestoreMemberFaceReader(
         const val TIMEOUT_MILLIS = 15_000L
     }
 }
-

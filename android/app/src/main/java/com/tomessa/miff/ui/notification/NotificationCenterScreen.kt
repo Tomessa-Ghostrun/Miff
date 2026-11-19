@@ -511,10 +511,27 @@ private fun CenterRowView(
     // The sentence of a line of "Depuis ta dernière visite" carries its hour: no second line of body, no second line of time.
     val body =
         when {
-            row.visit != null -> null
-            row.type == NotificationType.N10 && row.who != null -> stringResource(R.string.notif_alert_start_body, row.who)
-            row.type == NotificationType.N11 && row.who != null -> stringResource(R.string.notif_alert_end_body, row.who)
-            else -> stringResource(NotificationTexts.body(row.type))
+            row.visit != null -> {
+                null
+            }
+
+            row.type == NotificationType.N10 && row.who != null -> {
+                stringResource(
+                    R.string.notif_alert_start_body,
+                    row.who,
+                )
+            }
+
+            row.type == NotificationType.N11 && row.who != null -> {
+                stringResource(
+                    R.string.notif_alert_end_body,
+                    row.who,
+                )
+            }
+
+            else -> {
+                stringResource(NotificationTexts.body(row.type))
+            }
         }
     val time =
         remember(row.createdAtMillis, older) {

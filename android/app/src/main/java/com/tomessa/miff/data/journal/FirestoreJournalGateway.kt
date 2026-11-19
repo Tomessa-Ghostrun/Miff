@@ -25,7 +25,8 @@ import java.util.Date
 class FirestoreJournalGateway(
     private val firestore: () -> FirebaseFirestore = { FirebaseFirestore.getInstance() },
 ) : JournalGateway {
-    private fun collection(uid: String) = firestore().collection("users").document(uid).collection(NotificationJournal.COLLECTION)
+    private fun collection(uid: String) =
+        firestore().collection("users").document(uid).collection(NotificationJournal.COLLECTION)
 
     override suspend fun read(
         uid: String,
@@ -38,7 +39,11 @@ class FirestoreJournalGateway(
                 // FIRST synchronization (no cursor) DESCENDING, the 100 most recent (ascending would read the oldest first). The `limit` is mandatory: the rules refuse a list without one.
                 val ordered: Query =
                     if (sinceMillis != null) {
-                        base.whereGreaterThan("createdAt", Timestamp(Date(sinceMillis))).orderBy("createdAt", Query.Direction.ASCENDING)
+                        base
+                            .whereGreaterThan(
+                                "createdAt",
+                                Timestamp(Date(sinceMillis)),
+                            ).orderBy("createdAt", Query.Direction.ASCENDING)
                     } else {
                         base.orderBy("createdAt", Query.Direction.DESCENDING)
                     }
@@ -94,7 +99,10 @@ class FirestoreJournalGateway(
             withTimeout(DELETE_ALL_TIMEOUT_MILLIS) {
                 // "Tout effacer" (contract 2.21, point 3, and the deletion of the account, point 4): a list of 100, one batch of deletions, again, until the list is empty. Bounded.
                 repeat(MAX_DELETE_ROUNDS) {
-                    val snapshot = collection(uid).limit(NotificationJournal.PAGE_SIZE.toLong()).get(Source.SERVER).await()
+                    val snapshot =
+                        collection(
+                            uid,
+                        ).limit(NotificationJournal.PAGE_SIZE.toLong()).get(Source.SERVER).await()
                     if (snapshot.isEmpty) return@withTimeout
                     val batch = firestore().batch()
                     snapshot.documents.forEach { batch.delete(it.reference) }

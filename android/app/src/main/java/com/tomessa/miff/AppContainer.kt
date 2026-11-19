@@ -48,6 +48,8 @@ import com.tomessa.miff.data.feed.PhotoReader
 import com.tomessa.miff.data.feed.PositionReader
 import com.tomessa.miff.data.feed.PresenceRefresh
 import com.tomessa.miff.data.feed.StatusObserver
+import com.tomessa.miff.data.journal.FirestoreJournalGateway
+import com.tomessa.miff.data.journal.FirestoreMemberFaceReader
 import com.tomessa.miff.data.miff.AndroidLocationAccessProbe
 import com.tomessa.miff.data.miff.AwaitingAgreement
 import com.tomessa.miff.data.miff.ConsentRenewals
@@ -74,8 +76,6 @@ import com.tomessa.miff.data.notification.AndroidNotificationTray
 import com.tomessa.miff.data.notification.AppVisibility
 import com.tomessa.miff.data.notification.FeedNotificationLink
 import com.tomessa.miff.data.notification.FeedVisitLink
-import com.tomessa.miff.data.journal.FirestoreJournalGateway
-import com.tomessa.miff.data.journal.FirestoreMemberFaceReader
 import com.tomessa.miff.data.notification.JournalSyncReason
 import com.tomessa.miff.data.notification.KnownMiffs
 import com.tomessa.miff.data.notification.KnownMiffsKeeper

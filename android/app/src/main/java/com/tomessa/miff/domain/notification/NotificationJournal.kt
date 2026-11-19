@@ -71,7 +71,11 @@ object NotificationJournal {
         val kind = JournalKind.fromCode(data["kind"] as? String) ?: return null
         val miffId = (data["miffId"] as? String)?.takeIf { identifier.matches(it) } ?: return null
         val actorUid = (data["actorUid"] as? String)?.takeIf { identifier.matches(it) } ?: return null
-        if (createdAtMillis == null || createdAtMillis <= 0L || expireAtMillis == null || expireAtMillis <= 0L) return null
+        if (createdAtMillis == null || createdAtMillis <= 0L || expireAtMillis == null ||
+            expireAtMillis <= 0L
+        ) {
+            return null
+        }
         return JournalEntry(docId, kind, miffId, actorUid, createdAtMillis, expireAtMillis)
     }
 

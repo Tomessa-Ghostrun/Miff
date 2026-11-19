@@ -101,7 +101,9 @@ object CircleAlertKeys {
      * the server gave one (the line the journal brings is then the same), else with the identifier of the message, else the time of reception.
      */
     fun centerId(alert: CircleAlertPayload): String =
-        "${trayTag(alert)}|${alert.event.name.lowercase()}|${alert.entryId ?: alert.messageId ?: alert.receivedAtMillis}"
+        "${trayTag(
+            alert,
+        )}|${alert.event.name.lowercase()}|${alert.entryId ?: alert.messageId ?: alert.receivedAtMillis}"
 
     /** CNC-A: the key of the line the journal brings for the entry [entryId] of [actorUid] (the same as [centerId] of the push that carried that entry). */
     fun journalId(

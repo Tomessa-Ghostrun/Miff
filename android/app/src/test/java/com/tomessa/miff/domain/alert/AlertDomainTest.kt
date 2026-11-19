@@ -364,7 +364,10 @@ class AlertDomainTest {
         val start = CircleAlertParser.parse(push("start") + ("entryId" to "as-m1-u1-1700"), now)!!
         assertEquals("as-m1-u1-1700", start.entryId)
         assertEquals("al|u|u1|start|as-m1-u1-1700", CircleAlertKeys.centerId(start))
-        assertEquals(CircleAlertKeys.journalId("u1", CircleAlertEvent.START, "as-m1-u1-1700"), CircleAlertKeys.centerId(start))
+        assertEquals(
+            CircleAlertKeys.journalId("u1", CircleAlertEvent.START, "as-m1-u1-1700"),
+            CircleAlertKeys.centerId(start),
+        )
         val end = CircleAlertParser.parse(push("end") + ("entryId" to "ae-m1-u1-1800"), now)!!
         assertEquals("al|u|u1|end|ae-m1-u1-1800", CircleAlertKeys.centerId(end))
         // a server without journal: the key is the one of today

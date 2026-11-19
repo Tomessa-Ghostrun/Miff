@@ -133,9 +133,19 @@ internal fun NavGraphBuilder.notificationRoutes(
                                 myProfile = container.currentProfile.profile,
                                 ensureFaces = container.memberFaces::ensure,
                                 loadMyProfile = { container.currentProfile.refresh() },
-                                syncJournal = { container.notificationJournalSync.sync(JournalSyncReason.CENTER_OPENED) },
+                                syncJournal = {
+                                    container.notificationJournalSync.sync(
+                                        JournalSyncReason.CENTER_OPENED,
+                                    )
+                                },
                                 isMyMiff = { miffId ->
-                                    container.authGateway.currentUid?.let { container.knownMiffs.contains(it, miffId) } == true
+                                    container.authGateway.currentUid?.let {
+                                        container.knownMiffs.contains(
+                                            it,
+                                            miffId,
+                                        )
+                                    } ==
+                                        true
                                 },
                             )
                         }
@@ -161,7 +171,9 @@ internal fun NavGraphBuilder.notificationRoutes(
                         viewModel.onOpen(row)
                         // N9, N10, N11: the Feed of the Miff concerned (ignored if the person does not belong to it).
                         row.miffId?.let(container.miffDirectory::preselect)
-                        if (row.type in NotificationType.ABOUT_A_LOVED_ONE && row.miffId != null && row.actorUid != null) {
+                        if (row.type in NotificationType.ABOUT_A_LOVED_ONE && row.miffId != null &&
+                            row.actorUid != null
+                        ) {
                             // CNC-A: on the card of the person the line is about, when she is known (a person who left: the Feed opens as it is, never an error).
                             container.tabRequests.requestFocus(FeedFocus(row.miffId, row.actorUid))
                             container.tabRequests.request(MainTab.FEED)

@@ -67,10 +67,20 @@ interface JournalCursorStore {
 class SharedPreferencesJournalCursorStore(
     context: Context,
 ) : JournalCursorStore {
-    private val prefs = context.applicationContext.getSharedPreferences("miff_notification_journal", Context.MODE_PRIVATE)
+    private val prefs =
+        context.applicationContext.getSharedPreferences(
+            "miff_notification_journal",
+            Context.MODE_PRIVATE,
+        )
 
     override fun get(uid: String): Long? =
-        if (prefs.getString(KEY_UID, null) == uid && prefs.contains(KEY_CURSOR)) prefs.getLong(KEY_CURSOR, 0L).takeIf { it > 0L } else null
+        if (prefs.getString(KEY_UID, null) == uid &&
+            prefs.contains(KEY_CURSOR)
+        ) {
+            prefs.getLong(KEY_CURSOR, 0L).takeIf { it > 0L }
+        } else {
+            null
+        }
 
     override fun set(
         uid: String,
@@ -149,7 +159,8 @@ class NotificationJournalSync(
                 }
 
                 is JournalRead.Loaded -> {
-                    nextAllowedAtMillis = startedAt + (if (reason == JournalSyncReason.PUSH_RECEIVED) PUSH_GAP_MILLIS else MIN_GAP_MILLIS)
+                    nextAllowedAtMillis =
+                        startedAt + (if (reason == JournalSyncReason.PUSH_RECEIVED) PUSH_GAP_MILLIS else MIN_GAP_MILLIS)
                     // The person may have signed out, or another one in, while the server was read: nothing is written for her.
                     if (currentUid() != uid || !sessionValid(uid)) return false
                     val now = nowMillis()

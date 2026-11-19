@@ -90,7 +90,17 @@ class NotificationCenterAvatarScreenTest {
         who: String? = null,
         ago: Long = 60_000L,
         unread: Boolean = true,
-    ) = CenterRow(id, type, null, now - ago, unread, who = who, avatar = avatar, miffId = "miffAAAA", actorUid = "actor1")
+    ) = CenterRow(
+        id,
+        type,
+        null,
+        now - ago,
+        unread,
+        who = who,
+        avatar = avatar,
+        miffId = "miffAAAA",
+        actorUid = "actor1",
+    )
 
     private fun screen(
         rows: List<CenterRow>,
@@ -109,14 +119,40 @@ class NotificationCenterAvatarScreenTest {
     private val allKinds
         get() =
             listOf(
-                row("1", NotificationType.N9, CenterAvatar.Photo(jpeg(Color.rgb(200, 120, 60)), "LD"), who = "Léa", ago = 1 * 60_000L),
+                row(
+                    "1",
+                    NotificationType.N9,
+                    CenterAvatar.Photo(jpeg(Color.rgb(200, 120, 60)), "LD"),
+                    who = "Léa",
+                    ago =
+                        1 * 60_000L,
+                ),
                 row("2", NotificationType.N9, CenterAvatar.Initials("MP"), who = "Max", ago = 2 * 60_000L),
-                row("3", NotificationType.N10, CenterAvatar.Photo(jpeg(Color.rgb(60, 120, 200)), "LD"), who = "Léa", ago = 3 * 60_000L),
-                row("4", NotificationType.N11, CenterAvatar.Initials("MP"), who = "Max", ago = 4 * 60_000L, unread = false),
+                row(
+                    "3",
+                    NotificationType.N10,
+                    CenterAvatar.Photo(jpeg(Color.rgb(60, 120, 200)), "LD"),
+                    who = "Léa",
+                    ago =
+                        3 * 60_000L,
+                ),
+                row(
+                    "4",
+                    NotificationType.N11,
+                    CenterAvatar.Initials("MP"),
+                    who = "Max",
+                    ago = 4 * 60_000L,
+                    unread = false,
+                ),
                 row("5", NotificationType.N9, CenterAvatar.Logo, who = null, ago = 5 * 60_000L),
                 row("6", NotificationType.N10, CenterAvatar.Logo, who = null, ago = 6 * 60_000L),
                 row("7", NotificationType.N3, CenterAvatar.Logo, ago = 7 * 60_000L),
-                row("8", NotificationType.N1, CenterAvatar.Photo(jpeg(Color.rgb(90, 160, 90)), "MM"), ago = 8 * 60_000L),
+                row(
+                    "8",
+                    NotificationType.N1,
+                    CenterAvatar.Photo(jpeg(Color.rgb(90, 160, 90)), "MM"),
+                    ago = 8 * 60_000L,
+                ),
                 row("9", NotificationType.N9, CenterAvatar.Placeholder, who = "Zoé", ago = 9 * 60_000L),
             )
 
@@ -147,7 +183,13 @@ class NotificationCenterAvatarScreenTest {
     @Test
     fun theRoundPictureIsFortyDp_andTheLineIsOneElementForTheScreenReader_thePictureSaysNothing() {
         show(screen(allKinds.take(2)))
-        composeRule.onAllNodesWithTag(CENTER_AVATAR_TAG, useUnmergedTree = true)[0].assertWidthIsEqualTo(40.dp).assertHeightIsEqualTo(40.dp)
+        composeRule
+            .onAllNodesWithTag(
+                CENTER_AVATAR_TAG,
+                useUnmergedTree = true,
+            )[0]
+            .assertWidthIsEqualTo(40.dp)
+            .assertHeightIsEqualTo(40.dp)
         // no description anywhere but the menu of the bar: the picture is decorative
         val described = SemanticsMatcher.keyIsDefined(SemanticsProperties.ContentDescription)
         composeRule.onAllNodes(described, useUnmergedTree = true).assertCountEquals(1)
@@ -155,7 +197,12 @@ class NotificationCenterAvatarScreenTest {
         val merged =
             composeRule.onAllNodes(
                 SemanticsMatcher("is the line of Léa") {
-                    it.config.getOrNull(SemanticsProperties.Text)?.joinToString(" ") { t -> t.text }?.startsWith("Léa a donné") == true
+                    it.config
+                        .getOrNull(
+                            SemanticsProperties.Text,
+                        )?.joinToString(" ") { t -> t.text }
+                        ?.startsWith("Léa a donné") ==
+                        true
                 },
             )
         merged.assertCountEquals(1)
@@ -181,7 +228,13 @@ class NotificationCenterAvatarScreenTest {
             }
         }
         shoot("cnc-a-center-font-2x")
-        composeRule.onAllNodesWithTag(CENTER_AVATAR_TAG, useUnmergedTree = true)[0].assertWidthIsEqualTo(40.dp).assertHeightIsEqualTo(40.dp)
+        composeRule
+            .onAllNodesWithTag(
+                CENTER_AVATAR_TAG,
+                useUnmergedTree = true,
+            )[0]
+            .assertWidthIsEqualTo(40.dp)
+            .assertHeightIsEqualTo(40.dp)
         composeRule.onNodeWithText(text(R.string.notif_circle_update_title, "Léa")).assertIsDisplayed()
     }
 
@@ -193,8 +246,20 @@ class NotificationCenterAvatarScreenTest {
             }
         }
         shoot("cnc-a-center-rtl")
-        val avatar = composeRule.onAllNodesWithTag(CENTER_AVATAR_TAG, useUnmergedTree = true)[0].fetchSemanticsNode().boundsInRoot
-        val title = composeRule.onNodeWithText(text(R.string.notif_circle_update_title, "Léa")).fetchSemanticsNode().boundsInRoot
+        val avatar =
+            composeRule
+                .onAllNodesWithTag(
+                    CENTER_AVATAR_TAG,
+                    useUnmergedTree = true,
+                )[0]
+                .fetchSemanticsNode()
+                .boundsInRoot
+        val title =
+            composeRule
+                .onNodeWithText(
+                    text(R.string.notif_circle_update_title, "Léa"),
+                ).fetchSemanticsNode()
+                .boundsInRoot
         assertTrue("the picture is on the right of the text", avatar.left >= title.right - 1f)
     }
 

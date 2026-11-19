@@ -44,12 +44,16 @@ class CenterLogoTest {
 
     private fun isHeartColour(pixel: Int): Boolean {
         // #D1D828 (209, 216, 40), tolerance for the edges of the anti-aliasing
-        return Color.alpha(pixel) > 200 && Color.red(pixel) in 180..235 && Color.green(pixel) in 190..235 && Color.blue(pixel) < 100
+        return Color.alpha(pixel) > 200 && Color.red(pixel) in 180..235 && Color.green(pixel) in 190..235 &&
+            Color.blue(pixel) < 100
     }
 
-    private fun isBlue(pixel: Int) = Color.alpha(pixel) > 200 && Color.red(pixel) < 40 && Color.green(pixel) in 40..80 && Color.blue(pixel) in 190..225
+    private fun isBlue(pixel: Int) =
+        Color.alpha(pixel) > 200 && Color.red(pixel) < 40 && Color.green(pixel) in 40..80 &&
+            Color.blue(pixel) in 190..225
 
-    private fun isWhite(pixel: Int) = Color.alpha(pixel) > 200 && Color.red(pixel) > 235 && Color.green(pixel) > 235 && Color.blue(pixel) > 235
+    private fun isWhite(pixel: Int) =
+        Color.alpha(pixel) > 200 && Color.red(pixel) > 235 && Color.green(pixel) > 235 && Color.blue(pixel) > 235
 
     private fun count(
         bitmap: Bitmap,
@@ -95,7 +99,10 @@ class CenterLogoTest {
             val bitmap = drawable(px)
             save("cnc-l-logo-$px", bitmap)
             val heart = count(bitmap, ::isHeartColour)
-            assertTrue("at $px px the heart must still be drawn: $heart pixels (at least $minHeartPixels)", heart >= minHeartPixels)
+            assertTrue(
+                "at $px px the heart must still be drawn: $heart pixels (at least $minHeartPixels)",
+                heart >= minHeartPixels,
+            )
             assertTrue("the white M and i are there", count(bitmap, ::isWhite) > px)
         }
         // the heart is a blob of its own, above the right-hand end of the M, not smeared on the letters: its centre sits in the upper right of the disc
@@ -141,9 +148,13 @@ class CenterLogoTest {
         // bigger than the icon's glyph (the icon's M is 45 of 108 units wide): here about 58 of 108
         var left = 480
         var right = 0
-        for (x in 0 until 480) for (y in 0 until 480) if (isWhite(bitmap.getPixel(x, y))) {
-            left = minOf(left, x)
-            right = maxOf(right, x)
+        for (x in 0 until 480) {
+            for (y in 0 until 480) {
+                if (isWhite(bitmap.getPixel(x, y))) {
+                    left = minOf(left, x)
+                    right = maxOf(right, x)
+                }
+            }
         }
         val widthShare = (right - left) / 480.0
         assertTrue("the glyph is about 52-58 % of the round: $widthShare", widthShare in 0.50..0.62)

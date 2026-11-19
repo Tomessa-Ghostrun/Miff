@@ -136,7 +136,10 @@ class CenterAvatarsTest {
         val n9 = CenterAvatars.subjectOf(item(NotificationType.N9, "n9|u|actor1|1700")) as CenterSubject.Person
         assertEquals("actor1", n9.uid)
         assertEquals("miffAAAA", n9.miffId)
-        val start = CenterAvatars.subjectOf(item(NotificationType.N10, "al|u|actor1|start|1700")) as CenterSubject.Person
+        val start =
+            CenterAvatars.subjectOf(
+                item(NotificationType.N10, "al|u|actor1|start|1700"),
+            ) as CenterSubject.Person
         assertEquals("actor1", start.uid)
         val end = CenterAvatars.subjectOf(item(NotificationType.N11, "al|u|actor1|end|1700")) as CenterSubject.Person
         assertEquals("actor1", end.uid)
@@ -145,7 +148,10 @@ class CenterAvatarsTest {
     @Test
     fun aLineWithoutAnAuthorOrWithoutAMiff_isNobody_thusTheLogo() {
         assertSame(CenterSubject.Nobody, CenterAvatars.subjectOf(item(NotificationType.N9, "n9|m|miffAAAA|1700")))
-        assertSame(CenterSubject.Nobody, CenterAvatars.subjectOf(item(NotificationType.N9, "n9|u|actor1|1700", miff = null)))
+        assertSame(
+            CenterSubject.Nobody,
+            CenterAvatars.subjectOf(item(NotificationType.N9, "n9|u|actor1|1700", miff = null)),
+        )
         assertSame(CenterSubject.Nobody, CenterAvatars.subjectOf(item(NotificationType.N10, "garbage")))
     }
 
@@ -176,6 +182,9 @@ class CenterAvatarsTest {
         assertTrue(NotificationType.N9 in NotificationType.PERIMETER)
         assertTrue(NotificationPreferences().allows(NotificationType.N10))
         assertEquals(NotificationPreferences(), NotificationPreferences().with(NotificationType.N10, false))
-        assertEquals(setOf(NotificationType.N9, NotificationType.N10, NotificationType.N11), NotificationType.ABOUT_A_LOVED_ONE)
+        assertEquals(
+            setOf(NotificationType.N9, NotificationType.N10, NotificationType.N11),
+            NotificationType.ABOUT_A_LOVED_ONE,
+        )
     }
 }

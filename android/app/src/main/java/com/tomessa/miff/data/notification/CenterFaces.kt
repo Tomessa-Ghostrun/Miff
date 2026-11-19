@@ -136,7 +136,10 @@ class MemberFaceDirectory(
      */
     suspend fun ensure(wanted: Collection<Pair<String, String>>) {
         val startedIn = epoch
-        val todo = synchronized(this) { wanted.distinct().filter { needsReading(it.first, it.second) }.take(MAX_READS_PER_CALL) }
+        val todo =
+            synchronized(
+                this,
+            ) { wanted.distinct().filter { needsReading(it.first, it.second) }.take(MAX_READS_PER_CALL) }
         for ((miffId, uid) in todo) {
             mutex.withLock {
                 if (epoch != startedIn) return
@@ -173,8 +176,14 @@ class MemberFaceDirectory(
         val now = nowMillis()
         val entry =
             when (read) {
-                is FaceRead.Found -> Entry(FaceLookup.Known(read.face), Source.READ, now)
-                FaceRead.Gone -> Entry(FaceLookup.Gone, Source.READ, now)
+                is FaceRead.Found -> {
+                    Entry(FaceLookup.Known(read.face), Source.READ, now)
+                }
+
+                FaceRead.Gone -> {
+                    Entry(FaceLookup.Gone, Source.READ, now)
+                }
+
                 // What was drawn stays drawn when a second reading fails (a photo does not vanish because the network blinked).
                 FaceRead.Failed -> {
                     val previous = entries[key(miffId, uid)]

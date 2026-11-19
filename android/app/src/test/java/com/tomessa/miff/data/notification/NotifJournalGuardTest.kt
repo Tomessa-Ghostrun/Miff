@@ -46,14 +46,21 @@ class NotifJournalGuardTest {
         assertFalse(restOfBuildTypes.contains("""notifJournalProperty ?: "true""""))
         val guard = gradle.substringAfter("val journalOnInRelease")
         assertTrue(guard.contains("miff.allowNotifJournalInRelease"))
-        assertTrue(guard.contains("preReleaseBuild") && guard.contains("preReleaseLikeBuild") && guard.contains("GradleException"))
+        assertTrue(
+            guard.contains("preReleaseBuild") && guard.contains("preReleaseLikeBuild") &&
+                guard.contains("GradleException"),
+        )
     }
 
     @Test
     fun theContainerReachesTheJournalOnlyThroughTheSwitch() {
         val container = normalised(File(main, "AppContainer.kt"))
         assertTrue(container.contains("enabled = BuildConfig.NOTIF_JOURNAL"))
-        assertTrue(container.contains("fun journalSyncSoon(reason: JournalSyncReason) { if (!BuildConfig.NOTIF_JOURNAL) return"))
+        assertTrue(
+            container.contains(
+                "fun journalSyncSoon(reason: JournalSyncReason) { if (!BuildConfig.NOTIF_JOURNAL) return",
+            ),
+        )
         // the only entry points of a synchronization: the foreground and a push (in the container), the opening of the centre (its route, through the same class that checks the switch)
         assertTrue(container.contains("journalSyncSoon(JournalSyncReason.FOREGROUND)"))
         assertTrue(container.contains("journalSyncSoon(JournalSyncReason.PUSH_RECEIVED)"))
@@ -98,11 +105,18 @@ class NotifJournalGuardTest {
 
     @Test
     fun theCentreStoresNoPhotoAndNoNameOfTheJournal_aLineIsAKeyATypeAMiffAndDates() {
-        val store = code(File(main, "data/notification/NotificationCenter.kt")).substringAfter("private class StoredItem").substringBefore(")\n")
+        val store =
+            code(
+                File(main, "data/notification/NotificationCenter.kt"),
+            ).substringAfter("private class StoredItem").substringBefore(")\n")
         assertFalse(Regex("""avatar|photo|jpeg|bitmap""", RegexOption.IGNORE_CASE).containsMatchIn(store))
         // the faces live in memory only: nothing of CenterFaces writes a file or a preference
         val faces = code(File(main, "data/notification/CenterFaces.kt"))
-        assertFalse(Regex("""SharedPreferences|FileOutputStream|openFileOutput|writeBytes|DataStore|Room""").containsMatchIn(faces))
+        assertFalse(
+            Regex(
+                """SharedPreferences|FileOutputStream|openFileOutput|writeBytes|DataStore|Room""",
+            ).containsMatchIn(faces),
+        )
     }
 
     @Test
@@ -122,7 +136,10 @@ class NotifJournalGuardTest {
             "data/journal/FirestoreMemberFaceReader.kt",
         ).forEach {
             val text = code(File(main, it))
-            assertFalse("$it must not use the message of an exception", Regex("""\.message\b|\.localizedMessage""").containsMatchIn(text))
+            assertFalse(
+                "$it must not use the message of an exception",
+                Regex("""\.message\b|\.localizedMessage""").containsMatchIn(text),
+            )
         }
     }
 

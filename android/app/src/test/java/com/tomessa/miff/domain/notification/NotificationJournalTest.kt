@@ -62,7 +62,9 @@ class NotificationJournalTest {
 
     @Test
     fun keysTheEntryDoesNotUseAreIgnored_aLaterVersionOfTheServerMayAddSome() {
-        assertNotNull(NotificationJournal.parse("u-1", doc(extra = mapOf("someday" to true, "firstName" to "Léa")), now))
+        assertNotNull(
+            NotificationJournal.parse("u-1", doc(extra = mapOf("someday" to true, "firstName" to "Léa")), now),
+        )
     }
 
     // ---- the line an entry stands for ----------------------------------------------------------------------------------------------------
@@ -70,15 +72,39 @@ class NotificationJournalTest {
     @Test
     fun anEntryIsALineWithTheSameKeyAsThePushOfThatEntry() {
         val update = entry(JournalKind.UPDATE, id = "u-miffAAAA-actor1-1700")
-        val news = CircleNewsPayload("miffAAAA", "actor1", "Léa", now, entryId = "u-miffAAAA-actor1-1700", messageId = "0:abc%x")
+        val news =
+            CircleNewsPayload(
+                "miffAAAA",
+                "actor1",
+                "Léa",
+                now,
+                entryId = "u-miffAAAA-actor1-1700",
+                messageId = "0:abc%x",
+            )
         assertEquals(CircleNewsKeys.centerId(news), NotificationJournal.keyOf(update))
 
         val start = entry(JournalKind.ALERT_START, id = "as-miffAAAA-actor1-1700")
-        val startPush = CircleAlertPayload(CircleAlertEvent.START, "miffAAAA", "actor1", "Léa", now, entryId = "as-miffAAAA-actor1-1700")
+        val startPush =
+            CircleAlertPayload(
+                CircleAlertEvent.START,
+                "miffAAAA",
+                "actor1",
+                "Léa",
+                now,
+                entryId = "as-miffAAAA-actor1-1700",
+            )
         assertEquals(CircleAlertKeys.centerId(startPush), NotificationJournal.keyOf(start))
 
         val end = entry(JournalKind.ALERT_END, id = "ae-miffAAAA-actor1-1700")
-        val endPush = CircleAlertPayload(CircleAlertEvent.END, "miffAAAA", "actor1", "Léa", now, entryId = "ae-miffAAAA-actor1-1700")
+        val endPush =
+            CircleAlertPayload(
+                CircleAlertEvent.END,
+                "miffAAAA",
+                "actor1",
+                "Léa",
+                now,
+                entryId = "ae-miffAAAA-actor1-1700",
+            )
         assertEquals(CircleAlertKeys.centerId(endPush), NotificationJournal.keyOf(end))
     }
 
@@ -142,8 +168,14 @@ class NotificationJournalTest {
     @Test
     fun theEntryOfALineIsReadInItsKey_andOnlyForTheLinesThatCameFromTheJournal() {
         assertEquals("u-miffAAAA-actor1-1700", NotificationJournal.entryIdOf("n9|u|actor1|u-miffAAAA-actor1-1700"))
-        assertEquals("as-miffAAAA-actor1-1700", NotificationJournal.entryIdOf("al|u|actor1|start|as-miffAAAA-actor1-1700"))
-        assertEquals("ae-miffAAAA-actor1-1700", NotificationJournal.entryIdOf("al|u|actor1|end|ae-miffAAAA-actor1-1700"))
+        assertEquals(
+            "as-miffAAAA-actor1-1700",
+            NotificationJournal.entryIdOf("al|u|actor1|start|as-miffAAAA-actor1-1700"),
+        )
+        assertEquals(
+            "ae-miffAAAA-actor1-1700",
+            NotificationJournal.entryIdOf("al|u|actor1|end|ae-miffAAAA-actor1-1700"),
+        )
         // an old line keyed by an FCM message, a time of reception, a Miff, a reminder, a request, "Depuis ta dernière visite": no entry
         assertNull(NotificationJournal.entryIdOf("n9|u|actor1|0:1700%abc"))
         assertNull(NotificationJournal.entryIdOf("n9|u|actor1|1700000000000"))
@@ -173,8 +205,16 @@ class NotificationJournalTest {
         val start = CircleAlertPayload(CircleAlertEvent.START, "miffAAAA", "actor1", "Léa", now, entryId = "as-1")
         val end = CircleAlertPayload(CircleAlertEvent.END, "miffAAAA", "actor1", "Léa", now, entryId = "ae-1")
         assertEquals(CircleAlertKeys.trayTag(start), CircleAlertKeys.trayTagOf(CircleAlertKeys.centerId(start)))
-        assertEquals("the end replaces the start", CircleAlertKeys.trayTagOf(CircleAlertKeys.centerId(start)), CircleAlertKeys.trayTagOf(CircleAlertKeys.centerId(end)))
-        assertEquals("a key that is not an alert's is left as it is", "n9|u|actor1", CircleAlertKeys.trayTagOf("n9|u|actor1"))
+        assertEquals(
+            "the end replaces the start",
+            CircleAlertKeys.trayTagOf(CircleAlertKeys.centerId(start)),
+            CircleAlertKeys.trayTagOf(CircleAlertKeys.centerId(end)),
+        )
+        assertEquals(
+            "a key that is not an alert's is left as it is",
+            "n9|u|actor1",
+            CircleAlertKeys.trayTagOf("n9|u|actor1"),
+        )
     }
 
     @Test

@@ -224,7 +224,8 @@ object CircleNewsKeys {
      * The key of the line of the centre, also the key of deduplication (a message delivered twice makes one line): the tag and the identifier of the entry of the journal when the
      * server gave one (CNC-A: the same line as the journal's), else the identifier of the message, else the time of reception.
      */
-    fun centerId(news: CircleNewsPayload): String = "${trayTag(news)}|${news.entryId ?: news.messageId ?: news.sentAtMillis}"
+    fun centerId(news: CircleNewsPayload): String =
+        "${trayTag(news)}|${news.entryId ?: news.messageId ?: news.sentAtMillis}"
 
     /** CNC-A: the key of the line the journal brings for the entry [entryId] of [actorUid] (the same as [centerId] of the push that carried that entry). */
     fun journalId(

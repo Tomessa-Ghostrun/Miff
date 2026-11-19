@@ -154,8 +154,13 @@ class NotificationCenterViewModel(
                         }.sortedByDescending { it.createdAtMillis },
                 rows =
                     items
-                        .filter { it.type != NotificationType.N8 && it.type != NotificationType.C1 && isDrawn(it, known) }
-                        .map { it.toRow(names, mine) } +
+                        .filter {
+                            it.type != NotificationType.N8 && it.type != NotificationType.C1 &&
+                                isDrawn(
+                                    it,
+                                    known,
+                                )
+                        }.map { it.toRow(names, mine) } +
                         PlaceRequestLines.entriesOf(items).map { it.toRow(everyName, firstNames, mine) },
                 banner =
                     when {
@@ -210,7 +215,8 @@ class NotificationCenterViewModel(
         item: NotificationItem,
         known: MutableMap<String, Boolean> = HashMap(),
     ): Boolean =
-        item.type !in NotificationType.ABOUT_A_LOVED_ONE || item.miffId == null || known.getOrPut(item.miffId) { isMyMiff(item.miffId) }
+        item.type !in NotificationType.ABOUT_A_LOVED_ONE || item.miffId == null ||
+            known.getOrPut(item.miffId) { isMyMiff(item.miffId) }
 
     /** The (Miff, member) pairs whose face the lines in the centre need. */
     private fun neededFaces(items: List<NotificationItem>): Set<Pair<String, String>> =

@@ -49,7 +49,13 @@ class NotificationCenterAvatarsViewModelTest {
 
     private class Phone : DevicePermissions {
         override fun snapshot() =
-            PermissionSnapshot(34, fineLocation = true, coarseLocation = true, backgroundLocation = true, notifications = true)
+            PermissionSnapshot(
+                34,
+                fineLocation = true,
+                coarseLocation = true,
+                backgroundLocation = true,
+                notifications = true,
+            )
     }
 
     private class Asks : NotificationAskStore {
@@ -288,7 +294,11 @@ class NotificationCenterAvatarsViewModelTest {
             val vm = model()
             advanceUntilIdle()
             assertSame(CenterAvatar.Placeholder, row(vm, "n9|u|a1|u-1").avatar)
-            assertEquals("the name of the push stands in while the card is being read", "Léa", row(vm, "n9|u|a1|u-1").who)
+            assertEquals(
+                "the name of the push stands in while the card is being read",
+                "Léa",
+                row(vm, "n9|u|a1|u-1").who,
+            )
             faces["miffAAAA" to "a1"] = FaceLookup.Known(ActorFace("Léana", "LD", null))
             changed.value++
             advanceUntilIdle()

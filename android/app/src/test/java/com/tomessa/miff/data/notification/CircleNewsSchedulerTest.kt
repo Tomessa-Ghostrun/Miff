@@ -306,7 +306,11 @@ class CircleNewsSchedulerTest {
         assertEquals(NotificationType.N9, line.type)
         assertEquals(ItemState.SILENT, line.state)
         assertEquals("Amandine", line.who)
-        assertEquals("the daily cap of the tray is not used up by a notification that was never shown", 0, ledger.counters("2026-11-12").count(NotificationType.N9))
+        assertEquals(
+            "the daily cap of the tray is not used up by a notification that was never shown",
+            0,
+            ledger.counters("2026-11-12").count(NotificationType.N9),
+        )
     }
 
     @Test
@@ -324,7 +328,18 @@ class CircleNewsSchedulerTest {
         scheduler.onCircleNews("me", CircleNewsPayload("miffAAAA", "author1", "Amandine", now, entryId = entryId))
         val line = lines().single()
         assertEquals(CircleNewsKeys.journalId("author1", entryId), line.id)
-        val brought = center.addAll(listOf(NotificationItem(CircleNewsKeys.journalId("author1", entryId), NotificationType.N9, "miffAAAA", now, state = ItemState.SILENT)))
+        val brought =
+            center.addAll(
+                listOf(
+                    NotificationItem(
+                        CircleNewsKeys.journalId("author1", entryId),
+                        NotificationType.N9,
+                        "miffAAAA",
+                        now,
+                        state = ItemState.SILENT,
+                    ),
+                ),
+            )
         assertEquals(0, brought)
         assertEquals(1, lines().size)
     }
@@ -332,7 +347,17 @@ class CircleNewsSchedulerTest {
     @Test
     fun theJournalFirst_thenThePush_stillShowsTheNotificationAndKeepsOneLine() {
         val entryId = "u-miffAAAA-author1-1700000000000"
-        center.addAll(listOf(NotificationItem(CircleNewsKeys.journalId("author1", entryId), NotificationType.N9, "miffAAAA", now, state = ItemState.SILENT)))
+        center.addAll(
+            listOf(
+                NotificationItem(
+                    CircleNewsKeys.journalId("author1", entryId),
+                    NotificationType.N9,
+                    "miffAAAA",
+                    now,
+                    state = ItemState.SILENT,
+                ),
+            ),
+        )
         scheduler.onCircleNews("me", CircleNewsPayload("miffAAAA", "author1", "Amandine", now, entryId = entryId))
         assertEquals("the person is still told", 1, presenter.shown.size)
         assertEquals(1, lines().size)
@@ -410,7 +435,12 @@ class CircleNewsSchedulerTest {
         scheduler.onCircleAlert("me", alert(entryId = entryId))
         val journalKey = CircleAlertKeys.journalId("author1", CircleAlertEvent.START, entryId)
         assertEquals(journalKey, lines().single().id)
-        assertEquals(0, center.addAll(listOf(NotificationItem(journalKey, NotificationType.N10, "miffAAAA", now, state = ItemState.SILENT))))
+        assertEquals(
+            0,
+            center.addAll(
+                listOf(NotificationItem(journalKey, NotificationType.N10, "miffAAAA", now, state = ItemState.SILENT)),
+            ),
+        )
     }
 
     @Test

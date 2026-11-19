@@ -20890,6 +20890,74 @@
         }
       }
     },
+    "notif_center_alert_end_body_unnamed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "They said they're okay."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette personne a indiqué que tout va bien."
+          }
+        }
+      }
+    },
+    "notif_center_alert_end_title_unnamed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Someone in your circle ended their alert"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un proche a mis fin à son alerte"
+          }
+        }
+      }
+    },
+    "notif_center_alert_start_body_unnamed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check in with them: contact this loved one or open Miff."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prends de ses nouvelles : contacte ce proche ou ouvre Miff."
+          }
+        }
+      }
+    },
+    "notif_center_alert_start_title_unnamed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Someone in your circle declared an alert"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un proche a déclaré une alerte"
+          }
+        }
+      }
+    },
     "notif_center_circle_update_title": {
       "extractionState": "manual",
       "localizations": {

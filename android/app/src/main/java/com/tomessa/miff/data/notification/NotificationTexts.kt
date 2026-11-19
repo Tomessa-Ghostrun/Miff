@@ -72,6 +72,10 @@ object NotificationTexts {
 
             NotificationType.N9 -> R.string.notif_settings_circle_update
 
-            NotificationType.N8, NotificationType.C1, NotificationType.N10, NotificationType.N11 -> R.string.notif_settings_n3
+            NotificationType.N8,
+            NotificationType.C1,
+            NotificationType.N10,
+            NotificationType.N11,
+            -> R.string.notif_settings_n3
         }
 }
