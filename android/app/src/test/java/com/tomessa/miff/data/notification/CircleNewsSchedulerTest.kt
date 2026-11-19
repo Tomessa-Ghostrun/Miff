@@ -444,14 +444,15 @@ class CircleNewsSchedulerTest {
     }
 
     @Test
-    fun anAlertWithAnInvalidSessionOrWithTheGeneralSwitchOff_isDropped() {
+    fun anAlertWithAnInvalidSession_isDropped_withTheGeneralSwitchOff_onlyASilentLineIsWritten() {
         session = false
         scheduler.onCircleAlert("me", alert())
+        assertTrue(presenter.alerts.isEmpty() && lines().isEmpty())
         session = true
         settings.setEnabled(false)
         scheduler.onCircleAlert("me", alert(author = "author2"))
-        assertTrue(presenter.alerts.isEmpty())
-        assertTrue(lines().isEmpty())
+        assertTrue("nothing shown by the system", presenter.alerts.isEmpty())
+        assertEquals("the line is there, as the journal would bring it back", ItemState.SILENT, lines().single().state)
     }
 
     @Test

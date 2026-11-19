@@ -32,7 +32,10 @@ Le **journal du serveur** (`users/{uid}/notifications`) est écrit par les fonct
 | 1.2 | **Le logo** : repérez une ligne « Ta Miff est passée en orange / rouge » (étape 4.1 pour la fabriquer). | Un **rond bleu** avec le **M blanc et le « i »**, et un **cœur jaune-vert** au-dessus du « i ». **Le cœur est bien un cœur** (pas un point) ; le M est plus grand que dans l'icône de l'appli. Pas de carré, pas de coin arrondi. |
 | 1.3 | Passez le téléphone en **mode sombre** (réglages d'affichage) et rouvrez le centre. | Le logo est **identique** (même bleu, même cœur). Le rond neutre des initiales reste lisible. |
 | 1.4 | Réglez la **taille de police** du téléphone au maximum, rouvrez le centre. | Les lignes **grandissent**, l'image ronde **garde sa taille** (40 dp) ; rien n'est coupé. |
+| 1.4 bis | Réglez la taille de police au maximum et repérez une ligne avec des **initiales à deux lettres**. | Les deux lettres restent **lisibles dans le rond**, sans être coupées. |
 | 1.5 | **TalkBack** : passez d'une ligne à l'autre. | Chaque ligne est lue **d'un bloc** : « **{Prénom} a donné des nouvelles**, Retrouve-les dans ta Miff, {heure}, non lu ». **L'image n'est jamais annoncée** (« image », « photo »). Une action « Supprimer cette notification » est proposée. |
+
+**Non testable à la main** : une photo de profil qui annonce des dimensions énormes dans quelques octets (attaque d'un compte malveillant) ne peut pas être fabriquée depuis l'appli ; elle est couverte par les tests automatiques (`NotificationCenterAvatarScreenTest` : le centre et le Feed affichent les initiales, sans plantage).
 
 ## Partie 2 : chaque type de notification, avec son avatar (B, A) (25 min)
 

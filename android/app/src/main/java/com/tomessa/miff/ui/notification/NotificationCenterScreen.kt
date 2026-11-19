@@ -110,7 +110,16 @@ fun NotificationCenterScreen(
                 open = menuOpen,
                 onOpenChange = { menuOpen = it },
                 // The group "Depuis ta dernière visite" is real even when the notifications are off (decision Q4): the gestures of the menu apply to it.
-                hasRows = state.visitRows.isNotEmpty() || (state.rows.isNotEmpty() && !locked),
+                hasRows =
+                    state.visitRows.isNotEmpty() ||
+                        (
+                            if (locked) {
+                                state.rows.any { it.type in NotificationType.ABOUT_A_LOVED_ONE }
+                            } else {
+                                state.rows
+                                    .isNotEmpty()
+                            }
+                        ),
                 onMarkAllRead = actions.onMarkAllRead,
                 onClearAll = { confirmClear = true },
             )

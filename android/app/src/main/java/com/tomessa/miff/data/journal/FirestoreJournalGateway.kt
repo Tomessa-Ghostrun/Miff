@@ -53,11 +53,11 @@ class FirestoreJournalGateway(
                     // The server only: an answer from the cache of the phone would be a copy of what was already seen.
                     val snapshot = query.get(Source.SERVER).await()
                     snapshot.documents.mapNotNullTo(entries) { doc ->
-                        NotificationJournal.parse(
+                        journalEntryOf(
                             doc.id,
-                            doc.data.orEmpty(),
-                            doc.getTimestamp("createdAt")?.toDate()?.time,
-                            doc.getTimestamp("expireAt")?.toDate()?.time,
+                            runCatching {
+                                doc.data
+                            }.getOrNull().orEmpty(),
                         )
                     }
                     if (snapshot.size() < NotificationJournal.PAGE_SIZE) break
@@ -123,3 +123,22 @@ class FirestoreJournalGateway(
         const val BATCH_SIZE = 400
     }
 }
+
+/**
+ * One document of the journal as an entry, or null when it must be ignored. PER DOCUMENT: a field that is not of the expected type (a later version of the server may write something else) makes
+ * THAT document ignored, never the whole reading fail (and be tried again for ever).
+ */
+internal fun journalEntryOf(
+    id: String,
+    data: Map<String, Any?>,
+): JournalEntry? =
+    try {
+        NotificationJournal.parse(
+            id,
+            data,
+            (data["createdAt"] as? Timestamp)?.toDate()?.time,
+            (data["expireAt"] as? Timestamp)?.toDate()?.time,
+        )
+    } catch (e: RuntimeException) {
+        null
+    }

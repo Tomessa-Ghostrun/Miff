@@ -1,6 +1,5 @@
 package com.tomessa.miff.ui.notification
 
-import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -13,15 +12,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.testTag
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.notification.CenterAvatar
+import com.tomessa.miff.ui.profile.decodeFace
 import com.tomessa.miff.ui.theme.colorStatusNeutral
 import com.tomessa.miff.ui.theme.colorTextForm
 import com.tomessa.miff.ui.theme.textBodyBold14
@@ -68,10 +69,12 @@ fun CenterAvatarView(
             }
 
             is CenterAvatar.Photo -> {
-                // Keyed by the CONTENT of the photo: each reading brings a new array of the same photo.
+                // Keyed by the CONTENT of the photo: each reading brings a new array of the same photo. It comes from ANOTHER account: decoded only through the safe decoder
+                // (announced size checked, subsampled, never a crash: the initials are drawn instead).
+                val targetPx = with(LocalDensity.current) { size.roundToPx() }
                 val bitmap =
-                    remember(avatar.jpeg.size, avatar.jpeg.contentHashCode()) {
-                        BitmapFactory.decodeByteArray(avatar.jpeg, 0, avatar.jpeg.size)?.asImageBitmap()
+                    remember(avatar.jpeg.size, avatar.jpeg.contentHashCode(), targetPx) {
+                        decodeFace(avatar.jpeg, targetPx)
                     }
                 if (bitmap != null) {
                     Image(
@@ -90,7 +93,18 @@ fun CenterAvatarView(
 
 @Composable
 private fun Initials(text: String) {
+    // The round keeps its size whatever the text size of the phone (decorative, the line says who it is): the letters are sized in dp, not in sp, so that two of them always fit
+    // in the 40 dp round (at x2 text, 14 sp letters would be cut by the round).
+    val letters = with(LocalDensity.current) { INITIALS_TEXT.toSp() }
     Box(Modifier.fillMaxSize().background(colorStatusNeutral), contentAlignment = Alignment.Center) {
-        Text(text = text, style = textBodyBold14, color = colorTextForm, maxLines = 1)
+        Text(
+            text = text,
+            style = textBodyBold14.merge(TextStyle(fontSize = letters, lineHeight = letters)),
+            color = colorTextForm,
+            maxLines = 1,
+            softWrap = false,
+        )
     }
 }
+
+private val INITIALS_TEXT = 13.dp

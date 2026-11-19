@@ -285,4 +285,80 @@ class NotificationCenterAvatarScreenTest {
         shoot("cnc-a-center-logo-and-photo")
         composeRule.onAllNodesWithTag(CENTER_AVATAR_TAG, useUnmergedTree = true).assertCountEquals(2)
     }
+
+    /** A JPEG header that announces [side] x [side] pixels followed by nothing: a few bytes that claim a gigantic image (a decompression bomb from another account). */
+    private fun announcing(side: Int): ByteArray {
+        val high = (side shr 8).toByte()
+        val low = (side and 0xFF).toByte()
+        return byteArrayOf(
+            0xFF.toByte(),
+            0xD8.toByte(),
+            0xFF.toByte(),
+            0xC0.toByte(),
+            0x00,
+            0x11,
+            0x08,
+            high,
+            low,
+            high,
+            low,
+            0x03,
+            0x01,
+            0x22,
+            0x00,
+            0x02,
+            0x11,
+            0x01,
+            0x03,
+            0x11,
+            0x01,
+            0xFF.toByte(),
+            0xD9.toByte(),
+        )
+    }
+
+    @Test
+    fun aPhotoAnnouncingGiganticDimensions_neverCrashesTheCentre_theInitialsAreDrawn() {
+        show {
+            androidx.compose.foundation.layout.Column {
+                CenterAvatarView(CenterAvatar.Photo(announcing(30_000), "LD"))
+                CenterAvatarView(CenterAvatar.Photo(announcing(65_000), "MP"))
+            }
+        }
+        composeRule.onNodeWithText("LD", useUnmergedTree = true).assertIsDisplayed()
+        composeRule.onNodeWithText("MP", useUnmergedTree = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun aPhotoAnnouncingGiganticDimensions_neverCrashesTheFeed_theInitialsAreDrawn() {
+        show {
+            com.tomessa.miff.ui.feed.FeedAvatar(
+                jpeg = announcing(30_000),
+                initials = "ZZ",
+                level = com.tomessa.miff.domain.tracking.StatusLevel.GREEN,
+            )
+        }
+        composeRule.onNodeWithText("ZZ", useUnmergedTree = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun aPlausiblePhoto_isStillDrawnOnTheRound() {
+        show { CenterAvatarView(CenterAvatar.Photo(jpeg(Color.rgb(10, 200, 10)), "LD")) }
+        composeRule.onAllNodesWithText("LD", useUnmergedTree = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun twoLettersStayReadableInTheRound_evenWithTextAtTwiceTheSize() {
+        composeRule.setContent {
+            CompositionLocalProvider(LocalDensity provides Density(density = 2f, fontScale = 2f)) {
+                MiffTheme { Box(Modifier.fillMaxSize()) { CenterAvatarView(CenterAvatar.Initials("MM")) } }
+            }
+        }
+        val node = composeRule.onNodeWithText("MM", useUnmergedTree = true).fetchSemanticsNode()
+        val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+        node.config[androidx.compose.ui.semantics.SemanticsActions.GetTextLayoutResult].action?.invoke(results)
+        val layout = results.single()
+        assertTrue("the two letters are not cut by the round", !layout.didOverflowWidth && !layout.didOverflowHeight)
+        assertTrue("and they fit in 40 dp (80 px)", layout.size.width <= 80)
+    }
 }

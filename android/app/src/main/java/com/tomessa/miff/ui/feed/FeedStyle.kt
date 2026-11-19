@@ -1,6 +1,5 @@
 package com.tomessa.miff.ui.feed
 
-import android.graphics.BitmapFactory
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -17,14 +16,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.tracking.StatusLevel
+import com.tomessa.miff.ui.profile.decodeFace
 import com.tomessa.miff.ui.theme.StrokeAvatarRing
 import com.tomessa.miff.ui.theme.colorStatusDanger
 import com.tomessa.miff.ui.theme.colorStatusDangerText
@@ -86,10 +86,12 @@ internal fun FeedAvatar(
     modifier: Modifier = Modifier,
     size: Dp = 46.dp,
 ) {
-    // Keyed by the CONTENT of the photo (size and hash), not by the array: each snapshot of the members brings a new array of the same photo.
+    // Keyed by the CONTENT of the photo (size and hash), not by the array: each snapshot of the members brings a new array of the same photo. The photo comes from ANOTHER account:
+    // decoded only through the safe decoder (announced size checked, subsampled, never a crash: the initials are drawn instead).
+    val targetPx = with(LocalDensity.current) { size.roundToPx() }
     val bitmap =
-        remember(jpeg?.size, jpeg?.contentHashCode()) {
-            jpeg?.let { BitmapFactory.decodeByteArray(it, 0, it.size)?.asImageBitmap() }
+        remember(jpeg?.size, jpeg?.contentHashCode(), targetPx) {
+            jpeg?.let { decodeFace(it, targetPx) }
         }
     Box(modifier = modifier.size(size).clearAndSetSemantics {}) {
         Box(
