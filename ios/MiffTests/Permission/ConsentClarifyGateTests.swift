@@ -74,9 +74,10 @@ final class ConsentClarifyGateTests: XCTestCase {
         _ check: ConsentRenewalCheck,
         location: LocationAuthorization = .always,
         asks: InMemoryClarifyAskStore = InMemoryClarifyAskStore(),
-        awaiting: AwaitingAgreement = AwaitingAgreement(),
+        awaiting shared: AwaitingAgreement? = nil,
         uid signedIn: String? = "uid-1"
     ) -> Rig {
+        let awaiting = shared ?? AwaitingAgreement()
         let permissions = ClarifyPermissions(location)
         let renewals = ClarifyRenewals()
         renewals.checkResult = check
