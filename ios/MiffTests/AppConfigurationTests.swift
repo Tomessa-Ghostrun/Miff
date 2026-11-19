@@ -169,8 +169,13 @@ final class AppConfigurationTests: XCTestCase {
 
     // MARK: - Langues
 
-    func testEnglishIsTheFallbackAndFrenchAndEnglishAreDeclared() {
+    /// L'anglais est la langue de repli ; les langues déclarées sont EXACTEMENT celles du registre (`docs/contracts/i18n-languages.json`),
+    /// codes sans région (`pt`, jamais `pt-PT` ni `pt-BR`).
+    func testEnglishIsTheFallbackAndTheDeclaredLanguagesAreTheOnesOfTheRegistry() throws {
         XCTAssertEqual(info["CFBundleDevelopmentRegion"] as? String, "en")
-        XCTAssertEqual(Set(info["CFBundleLocalizations"] as? [String] ?? []), ["fr", "en"])
+        let declared = info["CFBundleLocalizations"] as? [String] ?? []
+        XCTAssertEqual(Set(declared), Set(try I18nRegistry.codes()))
+        XCTAssertEqual(declared.count, Set(declared).count, "une langue déclarée deux fois")
+        XCTAssertFalse(declared.contains { $0.contains("-") }, "aucune région dans les langues déclarées : \(declared)")
     }
 }

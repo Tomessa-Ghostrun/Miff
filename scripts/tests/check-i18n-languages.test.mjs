@@ -621,9 +621,13 @@ test('cohérence des sources : un échec bloque run (code 1) même si toutes les
   }
 });
 
-test('cohérence des sources du vrai dépôt : enum, localeFilters, CFBundleLocalizations, dossiers et catalogue = langues required', () => {
+test('cohérence des sources du vrai dépôt : enum, localeFilters, CFBundleLocalizations, dossiers et catalogue = langues du registre (aucune erreur)', () => {
   const registry = loadRegistry(repoRoot);
-  assert.deepEqual(checkSourcesConsistency(registry, repoRoot), []);
+  const findings = checkSourcesConsistency(registry, repoRoot);
+  assert.deepEqual(findings.filter((f) => f.level === 'error'), []);
+  // Le lot 3 déclare es, it, pt, de (planned) dans les énumérations, localeFilters et CFBundleLocalizations avant leurs textes : seul constat admis,
+  // un avertissement « déjà déclarée » (la passer en required au lot 4). Tout autre avertissement reste une anomalie.
+  for (const f of findings) assert.match(f.message, /\(planned sur (ios|android)\) déjà déclarée/);
 });
 
 // ----- Ligne de commande -----

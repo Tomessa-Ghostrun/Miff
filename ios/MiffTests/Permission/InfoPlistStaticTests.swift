@@ -107,6 +107,31 @@ final class InfoPlistStaticTests: XCTestCase {
         }
     }
 
+    /// Les textes que le système montre (caméra, galerie, localisation) sont prêts pour les langues du registre : toute langue du catalogue
+    /// est une langue du registre, une langue qui a UN de ces textes les a TOUS (jamais une demande d'autorisation à moitié traduite), et
+    /// fr et en les ont tous. Les textes de es, it, pt, de arrivent au lot 4 du ticket I18N-4L.
+    func testTheSystemTextsAreReadyForTheLanguagesOfTheRegistry() throws {
+        let url = iosRoot.appendingPathComponent("Miff/Resources/InfoPlist.xcstrings")
+        let root = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        let strings = try XCTUnwrap(root["strings"] as? [String: [String: Any]])
+        let registry = try I18nRegistry.codes()
+
+        var present = Set<String>()
+        for (_, entry) in strings {
+            present.formUnion((entry["localizations"] as? [String: Any] ?? [:]).keys)
+        }
+        let unknown = present.subtracting(registry)
+        XCTAssertTrue(unknown.isEmpty, "langue hors registre : \(unknown.sorted())")
+        XCTAssertTrue(["fr", "en"].allSatisfy { present.contains($0) })
+        for language in present {
+            for (key, entry) in strings {
+                let localization = (entry["localizations"] as? [String: Any])?[language] as? [String: Any]
+                let value = (localization?["stringUnit"] as? [String: Any])?["value"] as? String ?? ""
+                XCTAssertFalse(value.isEmpty, "\(key) : texte \(language) manquant")
+            }
+        }
+    }
+
     func testThePrivacyManifestDeclaresThePreciseLocationLinkedForTheFunctionOfTheAppWithoutTracking() throws {
         let url = iosRoot.appendingPathComponent("Miff/Resources/PrivacyInfo.xcprivacy")
         let data = try Data(contentsOf: url)

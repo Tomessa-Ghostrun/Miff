@@ -241,7 +241,7 @@ final class PermissionPrivacyTests: XCTestCase {
 
     func testTheConsentTextHasTheOptionANoteAndNoMoreYouCanRefuse() throws {
         let catalog = try catalog()
-        for language in ["fr", "en"] {
+        for language in try I18nRegistry.shipped() {
             let note = try text("miff_consent3_system_note", language, in: catalog)
             XCTAssertFalse(note.contains("refuser"), note)
             XCTAssertFalse(note.lowercased().contains("refuse"), note)

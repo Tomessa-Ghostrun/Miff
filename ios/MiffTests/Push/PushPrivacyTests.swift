@@ -173,7 +173,7 @@ final class PushPrivacyTests: XCTestCase {
         let strings = try XCTUnwrap(root["strings"] as? [String: [String: Any]])
         for key in ["notif_circle_update_title", "notif_circle_update_body"] {
             let localizations = try XCTUnwrap(strings[key]?["localizations"] as? [String: [String: Any]], key)
-            XCTAssertEqual(Set(localizations.keys), ["fr", "en"], key)
+            XCTAssertEqual(Set(localizations.keys), Set(try I18nRegistry.shipped()), key)
         }
         let title = try XCTUnwrap(
             ((strings["notif_circle_update_title"]?["localizations"] as? [String: [String: Any]])?["fr"]?["stringUnit"]

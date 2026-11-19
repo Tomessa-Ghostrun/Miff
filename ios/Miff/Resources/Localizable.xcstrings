@@ -5264,13 +5264,104 @@
         }
       }
     },
-    "feed_place_noun_generic": {
+    "feed_place_arrive_home": {
       "extractionState": "manual",
+      "comment": "Complément de lieu COMPLET qui suit « a rejoint » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5.",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "a trusted place"
+            "value": "at home"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "la maison"
+          }
+        }
+      }
+    },
+    "feed_place_arrive_work": {
+      "extractionState": "manual",
+      "comment": "Complément de lieu COMPLET qui suit « a rejoint » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "at work"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "le travail"
+          }
+        }
+      }
+    },
+    "feed_place_arrive_school": {
+      "extractionState": "manual",
+      "comment": "Complément de lieu COMPLET qui suit « a rejoint » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "at school"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "l'école"
+          }
+        }
+      }
+    },
+    "feed_place_arrive_sport": {
+      "extractionState": "manual",
+      "comment": "Complément de lieu COMPLET qui suit « a rejoint » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "at the gym"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "le sport"
+          }
+        }
+      }
+    },
+    "feed_place_arrive_relative": {
+      "extractionState": "manual",
+      "comment": "Complément de lieu COMPLET qui suit « a rejoint » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "at a loved one's place"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "le domicile d'un proche"
+          }
+        }
+      }
+    },
+    "feed_place_arrive_generic": {
+      "extractionState": "manual",
+      "comment": "Complément de lieu COMPLET qui suit « a rejoint » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "at a trusted place"
           }
         },
         "fr": {
@@ -5281,8 +5372,27 @@
         }
       }
     },
-    "feed_place_noun_home": {
+    "feed_place_arrive_named": {
       "extractionState": "manual",
+      "comment": "Complément de lieu COMPLET après « a rejoint » quand la personne a nommé le lieu (argument : ce nom, jamais traduit ni décliné). Aujourd'hui : le nom seul.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "at %1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@"
+          }
+        }
+      }
+    },
+    "feed_place_leave_home": {
+      "extractionState": "manual",
+      "comment": "Complément de lieu COMPLET qui suit « a quitté » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5.",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -5298,8 +5408,63 @@
         }
       }
     },
-    "feed_place_noun_relative": {
+    "feed_place_leave_work": {
       "extractionState": "manual",
+      "comment": "Complément de lieu COMPLET qui suit « a quitté » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "work"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "le travail"
+          }
+        }
+      }
+    },
+    "feed_place_leave_school": {
+      "extractionState": "manual",
+      "comment": "Complément de lieu COMPLET qui suit « a quitté » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "school"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "l'école"
+          }
+        }
+      }
+    },
+    "feed_place_leave_sport": {
+      "extractionState": "manual",
+      "comment": "Complément de lieu COMPLET qui suit « a quitté » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "the gym"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "le sport"
+          }
+        }
+      }
+    },
+    "feed_place_leave_relative": {
+      "extractionState": "manual",
+      "comment": "Complément de lieu COMPLET qui suit « a quitté » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5.",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -5311,6 +5476,42 @@
           "stringUnit": {
             "state": "translated",
             "value": "le domicile d'un proche"
+          }
+        }
+      }
+    },
+    "feed_place_leave_generic": {
+      "extractionState": "manual",
+      "comment": "Complément de lieu COMPLET qui suit « a quitté » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "a trusted place"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "un lieu de confiance"
+          }
+        }
+      }
+    },
+    "feed_place_leave_named": {
+      "extractionState": "manual",
+      "comment": "Complément de lieu COMPLET après « a quitté » quand la personne a nommé le lieu (argument : ce nom, jamais traduit ni décliné). Aujourd'hui : le nom seul.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@"
           }
         }
       }
@@ -5328,57 +5529,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Recette : %1$lld fausse(s) alerte(s) sur %2$lld rappel(s) « ta Miff est passée » jugé(s). Compté sur ce téléphone, jamais envoyé."
-          }
-        }
-      }
-    },
-    "feed_place_noun_school": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "school"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "l'école"
-          }
-        }
-      }
-    },
-    "feed_place_noun_sport": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "the gym"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "le sport"
-          }
-        }
-      }
-    },
-    "feed_place_noun_work": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "work"
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "le travail"
           }
         }
       }
@@ -14960,6 +15110,8 @@
     },
     "ios_settings_language_english": {
       "extractionState": "manual",
+      "comment": "Nom de la langue écrit dans SA langue, jamais traduit (Réglages > Langue).",
+      "shouldTranslate": false,
       "localizations": {
         "en": {
           "stringUnit": {
@@ -14977,6 +15129,8 @@
     },
     "ios_settings_language_french": {
       "extractionState": "manual",
+      "comment": "Nom de la langue écrit dans SA langue, jamais traduit (Réglages > Langue).",
+      "shouldTranslate": false,
       "localizations": {
         "en": {
           "stringUnit": {
@@ -14988,6 +15142,82 @@
           "stringUnit": {
             "state": "translated",
             "value": "Français"
+          }
+        }
+      }
+    },
+    "ios_settings_language_german": {
+      "extractionState": "manual",
+      "comment": "Nom de la langue écrit dans SA langue, jamais traduit (Réglages > Langue).",
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deutsch"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deutsch"
+          }
+        }
+      }
+    },
+    "ios_settings_language_spanish": {
+      "extractionState": "manual",
+      "comment": "Nom de la langue écrit dans SA langue, jamais traduit (Réglages > Langue).",
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Español"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Español"
+          }
+        }
+      }
+    },
+    "ios_settings_language_italian": {
+      "extractionState": "manual",
+      "comment": "Nom de la langue écrit dans SA langue, jamais traduit (Réglages > Langue).",
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Italiano"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Italiano"
+          }
+        }
+      }
+    },
+    "ios_settings_language_portuguese": {
+      "extractionState": "manual",
+      "comment": "Nom de la langue écrit dans SA langue, jamais traduit (Réglages > Langue).",
+      "shouldTranslate": false,
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Português"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Português"
           }
         }
       }
@@ -20607,7 +20837,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@ arrived at %2$@ %3$@"
+            "value": "%1$@ arrived %2$@ %3$@"
           }
         },
         "fr": {

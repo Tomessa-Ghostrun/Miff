@@ -3,7 +3,7 @@ import Foundation
 // Les phrases du Feed : ce que `FeedBuilder` a décidé (des faits), écrit dans la langue du téléphone avec les clés `feed_*` du
 // catalogue (français et anglais, mêmes clés qu'Android). Les heures suivent la langue ET le choix 12 h / 24 h du téléphone
 // (« 16 h 02 » en français ; « 4:02 PM » ou « 16:02 » en anglais). Une phrase est une clé entière : rien n'est assemblé à partir de
-// morceaux, sauf une heure, un nombre ou un prénom. Rien n'est journalisé ; les prénoms reçus sont montrés, jamais gardés.
+// morceaux, sauf une heure, un nombre, un prénom ou un complément de lieu COMPLET (préposition et article compris, une clé par catégorie et par sens). Rien n'est journalisé ; les prénoms reçus sont montrés, jamais gardés.
 // La recherche du texte, la langue, le fuseau et le format 12 h / 24 h sont injectables : les tests lisent le VRAI catalogue.
 
 struct FeedTexts {
@@ -111,26 +111,50 @@ struct FeedTexts {
         }
     }
 
-    /// Le lieu au milieu d'une phrase (« A quitté la maison », « Thomas a quitté le travail à 16 h 40 »).
-    func placeNoun(_ place: PlaceRef) -> String {
+    /// Le sens dans lequel un lieu est cité : ce qui suit « a quitté » (`leave`) ou « a rejoint » (`arrive`).
+    enum PlaceMovement {
+        case leave
+        case arrive
+    }
+
+    /// Le COMPLÉMENT DE LIEU d'une phrase, préposition et article compris, écrit en entier dans la langue (« la maison » après « A quitté » ; en
+    /// espagnol « de casa » après « salió » et « a casa » après « llegó »). Une clé par catégorie ET par sens : aucun article ni aucune
+    /// préposition n'est jamais collé à un nom de lieu par le code (accords et contractions « del », « al », « do », « na » impossibles à
+    /// deviner). Un lieu nommé par la personne passe dans `feed_place_<sens>_named` (le nom, tel quel : jamais traduit ni décliné).
+    func placeComplement(_ place: PlaceRef, movement: PlaceMovement) -> String {
         switch place {
         case .category(let kind):
-            switch kind {
-            case .home:
-                return text("feed_place_noun_home")
-            case .work:
-                return text("feed_place_noun_work")
-            case .school:
-                return text("feed_place_noun_school")
-            case .sport:
-                return text("feed_place_noun_sport")
-            case .relative:
-                return text("feed_place_noun_relative")
-            }
+            return text(categoryKey(kind, movement))
         case .named(let name):
-            return name
+            return text(movement == .leave ? "feed_place_leave_named" : "feed_place_arrive_named", name)
         case .unknown:
-            return text("feed_place_noun_generic")
+            return text(movement == .leave ? "feed_place_leave_generic" : "feed_place_arrive_generic")
+        }
+    }
+
+    /// Les clés sont écrites en entier (et non bâties par morceaux) : on les retrouve en cherchant le texte, et un test vérifie qu'elles existent.
+    private func categoryKey(_ kind: PlaceKind, _ movement: PlaceMovement) -> String {
+        switch (movement, kind) {
+        case (.leave, .home):
+            return "feed_place_leave_home"
+        case (.leave, .work):
+            return "feed_place_leave_work"
+        case (.leave, .school):
+            return "feed_place_leave_school"
+        case (.leave, .sport):
+            return "feed_place_leave_sport"
+        case (.leave, .relative):
+            return "feed_place_leave_relative"
+        case (.arrive, .home):
+            return "feed_place_arrive_home"
+        case (.arrive, .work):
+            return "feed_place_arrive_work"
+        case (.arrive, .school):
+            return "feed_place_arrive_school"
+        case (.arrive, .sport):
+            return "feed_place_arrive_sport"
+        case (.arrive, .relative):
+            return "feed_place_arrive_relative"
         }
     }
 
@@ -139,7 +163,7 @@ struct FeedTexts {
         case .at(let place):
             return atLabel(place)
         case .left(let place):
-            return text("feed_label_left", placeNoun(place))
+            return text("feed_label_left", placeComplement(place, movement: .leave))
         case .danger:
             return text("feed_label_danger")
         case .noNews:
@@ -229,9 +253,9 @@ struct FeedTexts {
         switch page.kind {
         case .left(let place, let moment):
             if page.isMe {
-                return text("feed_bubble_me_orange", placeNoun(place), at(moment))
+                return text("feed_bubble_me_orange", placeComplement(place, movement: .leave), at(moment))
             }
-            return text("feed_bubble_orange", name, placeNoun(place), at(moment))
+            return text("feed_bubble_orange", name, placeComplement(place, movement: .leave), at(moment))
         case .noNewsSince(let moment):
             if page.isMe {
                 return text("feed_bubble_me_red_stale", since(moment))

@@ -146,9 +146,17 @@ targets:
         # Langue de repli = ANGLAIS : un telephone dans une langue non prise en charge affiche l'anglais.
         # (Le francais reste la langue SOURCE des textes : sourceLanguage du catalogue.)
         CFBundleDevelopmentRegion: en
+        # Les langues du registre docs/contracts/i18n-languages.json (source unique ; un test et le job « Parite des cles de traduction » verifient
+        # l'accord). `pt` = portugais du PORTUGAL (un telephone en pt-BR ou pt-PT affiche `pt`), jamais `pt-PT`. es, it, pt, de sont declarees
+        # AVANT leurs textes (statut `planned`) : tant que le catalogue n'a aucun texte pour elles, l'app ne les parle pas (aucun `xx.lproj`,
+        # `AppLanguageName.code` reste sur l'anglais, Reglages > Langue ne les propose pas).
         CFBundleLocalizations:
           - fr
           - en
+          - es
+          - it
+          - pt
+          - de
         CFBundleShortVersionString: "$(MARKETING_VERSION)"
         CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
         # Nom de la configuration Xcode (Debug, Internal, Release), affiche par le diagnostic.

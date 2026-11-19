@@ -106,7 +106,7 @@ final class TimeShareCardTests: XCTestCase {
                 keys.append("\(base)_\(window)")
             }
         }
-        for language in ["fr", "en"] {
+        for language in try I18nRegistry.shipped() {
             let bundle = try bundle(language)
             for key in keys {
                 XCTAssertNotEqual(L10n.string(key, bundle: bundle), key, "\(key) non traduit en \(language)")

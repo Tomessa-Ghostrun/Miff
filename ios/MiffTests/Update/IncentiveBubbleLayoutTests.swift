@@ -43,7 +43,7 @@ final class IncentiveBubbleLayoutTests: XCTestCase {
 
         for key in ["update_bubble_orange", "update_bubble_red"] {
             let localizations = try XCTUnwrap(strings[key]?["localizations"] as? [String: [String: Any]])
-            for language in ["fr", "en"] {
+            for language in try I18nRegistry.shipped() {
                 let unit = try XCTUnwrap(localizations[language]?["stringUnit"] as? [String: Any])
                 let text = try XCTUnwrap(unit["value"] as? String) as NSString
                 let rect = text.boundingRect(

@@ -58,13 +58,15 @@ struct LastVisitTexts {
     func sentence(_ line: VisitParsed, firstName: String?, nowMillis: Int) -> String {
         let trimmed = firstName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let name = trimmed.isEmpty ? feed.text("notif_c1_someone") : trimmed
-        let place = feed.placeNoun(line.place.map { PlaceRef.category($0) } ?? PlaceRef.unknown)
+        let place = line.place.map { PlaceRef.category($0) } ?? PlaceRef.unknown
         let text: String
         switch line.kind {
         case .arrival:
-            text = feed.text("notif_c1_arrival", name, place, at(line.shownAtMillis, nowMillis: nowMillis))
+            let complement = feed.placeComplement(place, movement: .arrive)
+            text = feed.text("notif_c1_arrival", name, complement, at(line.shownAtMillis, nowMillis: nowMillis))
         case .departure:
-            text = feed.text("notif_c1_departure", name, place, at(line.shownAtMillis, nowMillis: nowMillis))
+            let complement = feed.placeComplement(place, movement: .leave)
+            text = feed.text("notif_c1_departure", name, complement, at(line.shownAtMillis, nowMillis: nowMillis))
         case .update:
             text = feed.text("notif_c1_update", name, at(line.shownAtMillis, nowMillis: nowMillis))
         case .silence:
