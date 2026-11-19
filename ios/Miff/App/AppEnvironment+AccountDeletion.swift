@@ -27,7 +27,8 @@ struct AccountDeletionServices {
                 detectionJournal: DetectionJournals.make(),
                 presenceHistory: presenceHistory,
                 notificationData: NotificationLocalData.live(),
-                updateLedger: updateLedger
+                updateLedger: updateLedger,
+                clarifyAsks: ClarifyAskFileStore()
             )
         ) + extra
     }

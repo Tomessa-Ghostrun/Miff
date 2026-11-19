@@ -28,10 +28,25 @@ struct RenewalUiState: Equatable, CustomStringConvertible {
     }
 }
 
+/// La carte calme « Une précision sur ce que tu partages » (CONS-4-I, option D du PM) pour les Miffs où la personne partage sous le texte
+/// de la version 3. RIEN n'est en pause pour elles : ni la position, ni le statut, ni la photo, quelle que soit la réponse.
+struct ClarifyUiState: Equatable, CustomStringConvertible {
+    let miffs: [RenewalMiff]
+    /// Écriture en cours : le bouton le dit et rien d'autre ne peut être touché (un appui = une opération).
+    var busy = false
+    var message: ActionMessage?
+
+    var description: String {
+        "ClarifyUiState(redacted)"
+    }
+}
+
 struct GateUiState: Equatable {
     let screen: GateScreen
     let location: LocationScreenModel?
     let renewal: RenewalUiState?
+    /// La carte calme, quand `screen` vaut `.clarify`.
+    let clarify: ClarifyUiState?
     /// L'écran « Toujours » est relâché par l'interrupteur de compilation : un lien « Plus tard » est montré.
     let canPutOffLocation: Bool
 }
@@ -48,6 +63,9 @@ struct PermissionGateDependencies {
     let onLeft: (String) async -> Void
     /// Les Miffs qui attendent l'accord (FEED-5 : le Feed le dit pendant que « Pas maintenant » est choisi) ; nil dans les tests qui n'en ont pas besoin.
     var awaiting: AwaitingAgreement?
+    /// CONS-4-I : combien de fois la carte calme a été montrée à ce compte (au plus `ClarifyPolicy.maxShows`, puis seules les Réglages la
+    /// proposent). En mémoire par défaut (les tests) ; l'environnement donne le fichier.
+    var clarifyAsks: ClarifyAskStore = InMemoryClarifyAskStore()
     /// SRV-2I : l'accord à être notifiée (le jeton n'est enregistré qu'avec lui) ; nil là où les notifications push n'existent pas (tests).
     var pushConsent: PushConsentStore?
     /// SRV-2I : appelé dès que l'accord vient d'être enregistré, pour que le registre des appareils se synchronise TOUT DE SUITE.
@@ -68,6 +86,8 @@ struct PermissionGateSettings {
 /// revient au premier plan (AUT5 : une autorisation retirée fait revenir l'écran bloquant), et regarde UNE FOIS par lancement
 /// si le consentement doit être renouvelé (R-LIEU-3).
 @MainActor
+// La porte tient trois écrans qui s'enchaînent (notifications, accord bloquant, carte calme) et leur état : un seul objet, comme Android.
+// swiftlint:disable:next type_body_length
 final class PermissionGateViewModel: ObservableObject {
     @Published private(set) var state: GateUiState
 
@@ -81,6 +101,7 @@ final class PermissionGateViewModel: ObservableObject {
     /// Ce que l'app fait une fois une Miff quittée (purge du cache, liste des Miffs relue).
     private let onLeft: (String) async -> Void
     private let awaiting: AwaitingAgreement?
+    private let clarifyAsks: ClarifyAskStore
     private let pushConsent: PushConsentStore?
     private let onNotificationsAnswered: (() -> Void)?
     private var reviewSubscription: AnyCancellable?
@@ -96,6 +117,15 @@ final class PermissionGateViewModel: ObservableObject {
     private var renewalBusy = false
     private var renewalMessage: ActionMessage?
     private var leaveAsked = false
+    // La carte calme (CONS-4-I). `clarifyDue` = les Miffs sous le texte de la version 3 ; elle est montrée quand elle est proposée d'elle-même
+    // (le compteur est sous le maximum) ou demandée depuis les Réglages, et pas remise à plus tard pendant ce lancement.
+    private var clarifyDue: [RenewalMiff] = []
+    private var clarifyOffered = false
+    private var clarifyAsked = false
+    private var clarifyDeferred = false
+    private var clarifyCounted = false
+    private var clarifyBusy = false
+    private var clarifyMessage: ActionMessage?
     private var notificationsHandled: Bool
     private var notificationsBusy = false
     private var started = false
@@ -108,6 +138,7 @@ final class PermissionGateViewModel: ObservableObject {
         leaver = dependencies.leaver
         onLeft = dependencies.onLeft
         awaiting = dependencies.awaiting
+        clarifyAsks = dependencies.clarifyAsks
         pushConsent = dependencies.pushConsent
         onNotificationsAnswered = dependencies.onNotificationsAnswered
         locationBlocking = settings.locationBlocking
@@ -120,6 +151,7 @@ final class PermissionGateViewModel: ObservableObject {
             screen: .checking,
             location: nil,
             renewal: nil,
+            clarify: nil,
             canPutOffLocation: !settings.locationBlocking
         )
     }
@@ -130,7 +162,7 @@ final class PermissionGateViewModel: ObservableObject {
             return
         }
         started = true
-        // « Revoir et accepter » depuis le Feed : l'écran de renouvellement revient.
+        // « Revoir et accepter » depuis le Feed (ou Réglages > Confidentialité) : l'écran de renouvellement, ou la carte « Une précision », revient.
         reviewSubscription = awaiting?.$reviewRequests.dropFirst().sink { [weak self] _ in
             self?.onReviewRequested()
         }
@@ -174,11 +206,19 @@ final class PermissionGateViewModel: ObservableObject {
             return
         }
         switch check {
-        case .due(let miffs):
+        case .due(let miffs, let clarify):
+            // Deux listes, deux sens (CONS-4-I, critère CA-10) : seules les Miffs dont le texte NE couvre PAS la localisation sont EN
+            // PAUSE (écran bloquant, puis « En attente ») ; celles sous le texte de la version 3 sont seulement précisées, rien n'est en
+            // pause pour elles.
             due = miffs
-            renewalState = .due
+            renewalState = miffs.isEmpty ? .nothingDue : .due
+            clarifyDue = clarify
+            awaiting?.replaceClarifying(Set(clarify.map { $0.miffId }))
+            clarifyOffered = !clarify.isEmpty && mayOfferClarify(uid: uid)
         case .nothingToRenew:
             renewalState = .nothingDue
+            clarifyDue = []
+            awaiting?.replaceClarifying([])
         case .unknown:
             // Pas connu : rien n'est affirmé et plus rien ne bloque ; le prochain lancement demandera de nouveau.
             renewalState = .unknown
@@ -278,10 +318,57 @@ final class PermissionGateViewModel: ObservableObject {
     }
 
     private func onReviewRequested() {
-        guard renewalState == .due, !renewalBusy else {
+        if renewalState == .due {
+            guard !renewalBusy else {
+                return
+            }
+            renewalDeferred = false
+            publish()
+        } else if !clarifyDue.isEmpty, !clarifyBusy {
+            // « Revoir et accepter » de Réglages > Confidentialité pour la carte calme : elle revient, quel que soit le compteur (sans le compter).
+            clarifyAsked = true
+            clarifyDeferred = false
+            clarifyMessage = nil
+            publish()
+        }
+    }
+
+    // MARK: - La carte calme « Une précision sur ce que tu partages » (CONS-4-I)
+
+    private func mayOfferClarify(uid: String) -> Bool {
+        ClarifyPolicy.mayShowByItself(shownCount: clarifyAsks.shownCount(uid: uid))
+    }
+
+    /// « Plus tard » sur la carte calme : rien n'est écrit, rien n'est en pause ; elle peut revenir au lancement suivant (3 fois au plus),
+    /// ou depuis les Réglages.
+    func onClarifyPutOff() {
+        guard !clarifyBusy else {
             return
         }
-        renewalDeferred = false
+        clarifyDeferred = true
+        clarifyAsked = false
+        clarifyMessage = nil
+        publish()
+    }
+
+    /// « J'ai compris » : le MÊME renouvellement (règle R-LIEU-3) que l'écran bloquant, pour les seules Miffs sous le texte de la version 3.
+    func onClarifyAccepted() async {
+        guard let uid = currentUid(), !clarifyBusy, !clarifyDue.isEmpty else {
+            return
+        }
+        clarifyBusy = true
+        clarifyMessage = nil
+        publish()
+        let result = await renewals.renew(uid: uid, miffIds: clarifyDue.map { $0.miffId })
+        switch result {
+        case .done:
+            clarifyDue = []
+            clarifyAsked = false
+            awaiting?.replaceClarifying([])
+        case .failed(let failure):
+            clarifyMessage = ActionMessage(failure: failure)
+        }
+        clarifyBusy = false
         publish()
     }
 
@@ -348,13 +435,32 @@ final class PermissionGateViewModel: ObservableObject {
     // MARK: - État affiché
 
     private func publish() {
-        state = build()
+        let built = build()
+        state = built
+        // La carte compte comme « montrée » au moment où elle est vraiment à l'écran, une fois par lancement, et seulement quand elle est
+        // venue d'elle-même (pas depuis les Réglages). Le compte est sur le disque AVANT l'affichage de la carte.
+        if built.screen == .clarify, !clarifyAsked, !clarifyCounted, let uid = currentUid() {
+            clarifyCounted = true
+            clarifyAsks.markShown(uid: uid)
+        }
+    }
+
+    /// La carte calme est en route : des Miffs à préciser, proposée d'elle-même ou demandée depuis les Réglages, et pas remise à plus tard
+    /// pendant ce lancement.
+    private var clarifyShown: Bool {
+        !clarifyDue.isEmpty && (clarifyOffered || clarifyAsked) && !clarifyDeferred
     }
 
     private func build() -> GateUiState {
         guard let snapshot else {
             // Les autorisations ne sont pas encore lues : attente neutre, jamais l'écran « Toujours » avant la fin des contrôles.
-            return GateUiState(screen: .checking, location: nil, renewal: nil, canPutOffLocation: !locationBlocking)
+            return GateUiState(
+                screen: .checking,
+                location: nil,
+                renewal: nil,
+                clarify: nil,
+                canPutOffLocation: !locationBlocking
+            )
         }
         let screen = resolveGate(
             GateInput(
@@ -365,7 +471,8 @@ final class PermissionGateViewModel: ObservableObject {
                 renewal: renewalState,
                 renewalDeferred: renewalDeferred,
                 consentBeforeLocation: consentBeforeLocation,
-                pushExplanationDue: pushExplanationDue(snapshot)
+                pushExplanationDue: pushExplanationDue(snapshot),
+                clarify: clarifyShown
             )
         )
         let renewal: RenewalUiState?
@@ -379,10 +486,15 @@ final class PermissionGateViewModel: ObservableObject {
         } else {
             renewal = nil
         }
+        var clarify: ClarifyUiState?
+        if !clarifyDue.isEmpty {
+            clarify = ClarifyUiState(miffs: clarifyDue, busy: clarifyBusy, message: clarifyMessage)
+        }
         return GateUiState(
             screen: screen,
             location: LocationFlow.model(for: snapshot),
             renewal: renewal,
+            clarify: clarify,
             canPutOffLocation: !locationBlocking
         )
     }

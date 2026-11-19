@@ -31,7 +31,11 @@ enum ConsentRenewalCheck: Equatable, CustomStringConvertible {
     /// Le serveur n'a pas pu être interrogé (hors ligne, trop lent) : rien n'est affirmé, rien ne bloque, la prochaine
     /// ouverture demandera de nouveau.
     case unknown
-    case due([RenewalMiff])
+    /// Quelque chose de plus ancien que le texte de ce build : `miffs` = les Miffs dont le texte NE couvre PAS la position (versions 1
+    /// et 2 : le partage est vraiment EN PAUSE jusqu'à l'accord, écran bloquant) ; `clarify` = celles dont le texte la couvre encore
+    /// (version 3 : RIEN n'est en pause, seulement la carte calme « Une précision sur ce que tu partages », CONS-4-I). Une Miff n'est
+    /// que dans une liste. `miffs` peut être vide quand seule `clarify` est due.
+    case due([RenewalMiff], clarify: [RenewalMiff] = [])
 
     var description: String {
         switch self {
@@ -45,8 +49,10 @@ enum ConsentRenewalCheck: Equatable, CustomStringConvertible {
     }
 }
 
-/// Le renouvellement du consentement (LOC-4a, règle R-LIEU-3) : les membres qui partagent sous un texte PLUS ANCIEN doivent
-/// accepter le texte en vigueur avant qu'une position puisse être écrite (LOC-4b). La vérification lit, auprès du serveur,
+/// Le renouvellement du consentement (LOC-4a, règle R-LIEU-3) : les membres qui partagent sous un texte qui NE COUVRE PAS la
+/// localisation (versions 1 et 2) doivent accepter le texte en vigueur avant qu'une position puisse être écrite (LOC-4b). Ceux
+/// qui sont en version 3 (qui la couvre) ne se voient proposer qu'une précision calme (CONS-4-I) : rien ne s'arrête pour eux,
+/// et « J'ai compris » est le MÊME lot d'écriture. La vérification lit, auprès du serveur,
 /// l'index de la personne (1 lecture) et la fiche de chaque Miff (1 document chacune, 2 lectures de règles chacune) : une
 /// seule Miff au plus pour un compte gratuit. Le renouvellement est UN lot (0 lecture de règles).
 protocol ConsentRenewals {
@@ -82,6 +88,7 @@ final class FirestoreConsentRenewals: ConsentRenewals {
             return .unknown
         }
         var due: [RenewalMiff] = []
+        var clarify: [RenewalMiff] = []
         var incomplete = false
         var seen = Set<String>()
         for ref in refs {
@@ -94,8 +101,14 @@ final class FirestoreConsentRenewals: ConsentRenewals {
             }
             switch read {
             case .value(let consent):
-                if let consent, consent.enabled, MiffSharingConsent.isRenewalDue(consent.version) {
-                    due.append(await describe(miffId: ref.miffId, uid: uid))
+                // Deux choses différentes (CONS-4-I, critère CA-10) : un texte qui ne couvre pas la localisation met le partage EN
+                // PAUSE (renouvellement bloquant) ; un texte qui la couvre encore (version 3) ne met rien en pause, il est seulement précisé.
+                if let consent, consent.enabled {
+                    if MiffSharingConsent.pausesSharing(consent.version) {
+                        due.append(await describe(miffId: ref.miffId, uid: uid))
+                    } else if MiffSharingConsent.isClarificationDue(consent.version) {
+                        clarify.append(await describe(miffId: ref.miffId, uid: uid))
+                    }
                 }
             case .failed(_, let lostAccess):
                 // Un refus des règles veut dire que la personne n'est plus dans cette Miff (la perte d'accès est traitée
@@ -105,8 +118,8 @@ final class FirestoreConsentRenewals: ConsentRenewals {
                 }
             }
         }
-        if !due.isEmpty {
-            return .due(due)
+        if !due.isEmpty || !clarify.isEmpty {
+            return .due(due, clarify: clarify)
         }
         return incomplete ? .unknown : .nothingToRenew
     }

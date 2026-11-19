@@ -180,6 +180,7 @@ final class PermissionPrivacyTests: XCTestCase {
             return path.hasPrefix("Models/Permission/") || path.hasPrefix("Services/Permission/")
                 || path.hasPrefix("Views/Permission/") || path == "ViewModels/PermissionGateViewModel.swift"
                 || path == "Services/Miff/ConsentRenewals.swift" || path == "Views/Miff/ConsentCards.swift"
+                || path == "Services/Miff/ClarifyAskStore.swift"
         }
         XCTAssertGreaterThanOrEqual(sources.count, 10)
         let forbidden = [
@@ -267,11 +268,16 @@ final class PermissionPrivacyTests: XCTestCase {
         XCTAssertTrue(seen.contains("Aucun historique de trajets sur nos serveurs"))
         XCTAssertTrue(try text("permission_location_control_body", "fr", in: catalog).contains("effacée"))
         XCTAssertTrue(try text("permission_location_closed_title", "en", in: catalog).contains("app is closed"))
+        // CONS-4-I : la 4e ligne de la divulgation, « Pour toi seul(e) » (ce qui reste sur le téléphone seulement, rien n'est envoyé).
+        XCTAssertEqual(try text("permission_location_local_title", "fr", in: catalog), "Pour toi seul(e)")
+        let local = try text("permission_location_local_body", "fr", in: catalog)
+        XCTAssertTrue(local.contains("Sur ton téléphone seulement"))
+        XCTAssertTrue(try text("permission_location_local_body", "en", in: catalog).contains("Nothing is sent"))
     }
 
     func testEveryNewTextIsInTutoiement() throws {
         let catalog = try catalog()
-        let prefixes = ["permission_", "miff_consent3_", "miff_renewal_", "ios_permission_"]
+        let prefixes = ["permission_", "miff_consent3_", "miff_renewal_", "miff_clarify_", "ios_permission_"]
         let keys = catalog.keys.filter { key in prefixes.contains { key.hasPrefix($0) } }
         XCTAssertGreaterThanOrEqual(keys.count, 40)
         for key in keys {
