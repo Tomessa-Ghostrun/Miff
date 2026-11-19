@@ -49,7 +49,7 @@ final class PositionReuseEngineTests: XCTestCase {
         let reasons: [TrackingEngine.Reason: Bool] = [
             .opened: true, .backgrounded: true,
             .moved: false, .zoneEntered: false, .rearm: false,
-            .sharingChanged: false, .networkBack: false, .accessChanged: false,
+            .sharingChanged: false, .networkBack: false, .accessChanged: false, .pulled: false,
         ]
 
         for (reason, expected) in reasons {

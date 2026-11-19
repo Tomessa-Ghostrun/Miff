@@ -179,6 +179,7 @@ struct FeedScreen: View {
             onContentMoved: layout.onContentMoved,
             onScrolled: layout.onScrolled,
             onOrigin: layout.onOrigin,
+            onPull: layout.onPull,
             focus: focus,
             onFocusHandled: onFocusHandled
         )

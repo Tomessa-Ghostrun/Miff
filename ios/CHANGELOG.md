@@ -2,6 +2,44 @@
 
 ## Non publié
 
+### « Tirer pour actualiser » : indicateur piloté par le tirage, visible sur iPhone (retour du PM, build contenant #263, PR #263)
+
+Ce que le PM doit voir : **dès qu'on tire le Feed, une pastille ronde apparaît sous l'en-tête et se remplit avec la distance (une flèche vers le bas, qui se retourne quand c'est assez tiré), puis une roue qui tourne au relâchement, au moins 0,8 s**. Recette : `docs/qa/checklists/feed-refresh-position-ios-recette-pm.md` (§1, §18 à §21). **Rien n'est compilé en local** (la CI fait foi, avec 3 captures forcées : `90b-fr-feed-tirage`, `90c-fr-feed-tirage-pret`, `90d-fr-feed-roue`).
+
+Corrigé :
+- Le correctif précédent (pastille sous l'en-tête, pilotée par le seul état du Feed) n'était pas visible sur l'iPhone 11 Pro. Cause exacte non établissable sans l'appareil ; le nouvel indicateur ne dépend plus d'un seul signal. Il est piloté par le **décalage de la vue de défilement** (visible PENDANT le tirage) et passe à la roue dès que l'UN de ces signaux est vrai : l'état « actualisation » du Feed, la roue d'UIKit (`refreshControl.isRefreshing`, lue sur la vue de défilement), un tirage assez long **relâché** (doigt levé, la liste redescend), avec un minimum d'affichage de 0,8 s après le déclenchement (`FeedPullIndicatorLogic`, logique pure).
+- Rendu : dernier enfant de la mise en page du Feed, `zIndex` 100, sans interception des touchers, pastille de 44 pt de la couleur des cartes avec contour et ombre, flèche et roue de la couleur d'action ; fondu court, aucun avec « Réduire les animations ». Le modèle est un `@State` : la mise en page n'est pas redessinée à chaque étape du tirage.
+- `RefreshInsetGuard` conservé (la mesure de l'origine du contenu reste ignorée pendant l'actualisation : pas de sautillement) ; le minimum d'affichage de 0,8 s côté Feed (`holdIndicator`) aussi.
+- Tests : `FeedPullIndicatorLogicTests`, `FeedPullIndicatorModelTests`, `FeedRefreshSourcesTests` (indicateur au-dessus de tout, branché dans le vrai Feed), tests existants conservés.
+
+### « Tirer pour actualiser » : indicateur visible et Feed qui ne sautille plus (retour du PM, TestFlight 38, PR #263)
+
+Ce que le PM doit voir : en tirant le Feed, **une pastille claire avec une roue apparaît sous l'en-tête pendant au moins 0,8 s** (jamais cachée par l'en-tête ni la bulle), et **la bulle et les cartes ne sautent plus**. Recette : `docs/qa/checklists/feed-refresh-position-ios-recette-pm.md` (§1, §4, §18 à §20). **Rien n'est compilé en local** (la CI fait foi).
+
+Corrigé :
+- **Indicateur** : la roue d'UIKit passe derrière l'en-tête et l'indicateur propre du Feed ne durait que le temps de la lecture (presque rien, la position n'étant pas attendue). Il reste maintenant au moins `FeedTimings.minRefreshDisplayMillis` = 800 ms depuis le geste (un minimum d'AFFICHAGE : aucune lecture de plus, la position n'est toujours pas attendue), aussi pour un geste trop rapproché qui ne relit rien ; hors connexion, fin immédiate comme avant. Pastille de la couleur des cartes, ombre légère, fondu de 0,15 s (aucun avec « Réduire les animations »).
+- **Sautillement** : cause trouvée dans le code (à confirmer sur l'iPhone) : pendant le geste, UIKit ajoute la hauteur de la roue à la marge haute de la vue de défilement ; `ScrollDistanceReader` la lisait comme une nouvelle origine du contenu et la marge haute de la liste se réduisait d'autant (SwiftUI, aussitôt) pendant qu'UIKit déplaçait le contenu (animé), puis l'inverse à la fin : deux sauts. `RefreshInsetGuard` ignore la mesure de l'origine pendant l'actualisation et 0,6 s après (reprise automatique ensuite) ; `FeedCollapsingLayout` l'ignore aussi tant que `refreshing` est vrai.
+- Inchangés : l'ordre du Feed (dernière update), les identifiants des cartes (un membre = une carte), les règles du geste (15 s pour les proches, 30 s pour la position, une seule mesure, aucune écriture si rien ne change), VoiceOver.
+- Tests : `RefreshInsetGuardTests`, `FeedRefreshIndicatorTests` (minimum d'affichage, reste du délai, rien de plus si la lecture a été lente, geste trop rapproché, hors connexion), `FeedRefreshSourcesTests` (garde avant toute mesure, identités des cartes, aucune animation ni identité instable dans la liste, indicateur au-dessus de tout).
+
+### « Tirer pour actualiser » revérifie aussi MA présence (REFRESH-POS-I, demande du PM du 2026-11-17, miroir d'Android)
+
+Branche `ios/feed-refresh-position`, PR brouillon. Ticket `docs/tickets/feed-refresh-position.md`, recette `docs/qa/checklists/feed-refresh-position-ios-recette-pm.md`, détail : `ios/README.md`. **Rien n'est compilé en local** (la CI fait foi). Aucune dépendance, aucune permission, aucun service payant, aucun texte nouveau.
+
+Constat : le geste ne relisait **que les proches** ; il ne revérifiait pas ma présence et ne mesurait aucune position.
+
+Ajouté :
+- Au geste, le Feed **demande** au suivi de revérifier MA présence, **sans l'attendre** (l'indicateur ne dépend pas de la position). Le moteur fait le reste avec sa machinerie habituelle (nouvelle raison de passage `pulled`, sans batterie) : **une mesure de position ponctuelle et fraîche** (jamais la position réutilisée), recalcul de la présence par rapport aux lieux de mes Miffs, **un statut écrit seulement si la présence change**, la dernière position republiée seulement si le garde-fou habituel (15 min, 250 m, 2 min) le permet, journalisation par le journal local du graphique de temps comme toute présence (rien de dupliqué).
+- **Limite de fréquence : une revérification par 30 s au plus, ouverture de l'app comprise** (`TrackingLimits.pullMinIntervalMillis`, `TrackingRuntime.feedPulled`). Hors connexion, le geste se termine tout de suite comme avant et ne demande rien.
+- **Sans « Toujours » + position exacte, ou sans partage** : rien n'est mesuré ni envoyé ; aucun message ajouté (l'écran de la localisation prend déjà la place du Feed quand l'autorisation manque). **En mode voyage** : aucun statut de présence, la position reste rafraîchie comme à l'ouverture de l'app (décision du PM du 2026-11-10).
+- **Instant du statut** : celui où le système répond « dedans / dehors » (heure de détection), jamais une heure inventée ; comme pour une ouverture de l'app.
+- Journal local des builds de test : ligne `wakePull`. Aucune coordonnée, aucun événement Analytics, aucune donnée stockée en plus. Annonce VoiceOver inchangée.
+- Tests : `PullRefreshEngineTests`, `PullRefreshRuntimeTests`, `FeedPullOwnPresenceTests`, `PullRefreshSourcesTests` (déclenchement, limite de 30 s, autorisation absente, hors connexion, délai, aucune écriture si inchangé, mode voyage, sources).
+
+Choix économiques : 0 lecture de plus tant que la copie locale a moins d'une heure, 0 écriture si rien ne change, au plus une mesure `requestLocation` (100 m) par 30 s ; 0 €. **Signal de bascule** : une batterie qui chute avec l'usage du geste, ou beaucoup de lignes `wakePull` dans le journal d'un build Internal : monter la limite de 30 s.
+
+À décider par le PM (ticket §3) : message quand l'autorisation manque, geste en mode voyage, heure de la dernière position rafraîchie à chaque geste. **Politique de confidentialité** : préciser « ou quand tu actualises le Feed » (rien modifié ici).
+### Profil : « Répartition de ton temps » (TIME-3 et TIME-4 ; miroir d'Android TIME-1 et TIME-2, ticket `docs/tickets/profil-repartition-temps.md`)
 ### Alerte « Je suis en danger » : déclencher, envoyer, bannière, carte rouge des proches, notification (AD-I1 et AD-I2 ; miroir d'Android AD-A1 et AD-A2, versions 2 à 4)
 
 Branche `ios/alerte-danger`, PR en brouillon. Ticket `docs/tickets/alerte-danger.md` (décisions du PM du 2026-11-18 et du 2026-11-19), maquettes `design/exports/alerte-danger/` (6 PNG), recette `docs/qa/checklists/alerte-danger-ios-recette-pm.md`, démarche du portail Apple `docs/dev/time-sensitive-etapes-pm.md`. Miroir de la PR Android #275 **en version 2** (revue indépendante et retour du PM sur la recette) : mêmes écrans, mêmes textes (`alert_*`, `notif_alert_*`, `feed_*`, `miff_alert_removed_warning` : **mêmes clés qu'Android**, parité vérifiée), mêmes états d'erreur. **Rien n'est compilé en local (poste Windows) : la CI macOS fait foi.** **Coût ajouté : 0 €** (une écriture de plus par alerte, aucune bibliothèque, APNs gratuit). **À savoir : la fonction est derrière une condition de compilation `ALERT_DANGER` (project.yml : Debug et Internal, PAS Release) ; elle ne marche de bout en bout qu'une fois les règles (PR #274) et la fonction `notifierAlerte` déployées par le PM, sur « oui » explicite.**
