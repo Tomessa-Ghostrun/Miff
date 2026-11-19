@@ -1,5 +1,6 @@
 package com.tomessa.miff.data.session
 
+import com.tomessa.miff.data.alert.AlertLocalStore
 import com.tomessa.miff.data.miff.PendingDeletionStore
 import com.tomessa.miff.data.permission.NotificationAskStore
 import com.tomessa.miff.data.review.ReviewStateStore
@@ -22,6 +23,8 @@ fun accountLocalDataErasers(
     /** TIME-1 / TIME-2: the journal of the presence of "Répartition de ton temps" and the window chosen on the card: nothing of them stays for the next account. */
     presenceLog: PresenceLog = NoPresenceLog,
     timeShareWindow: TimeShareWindowStore? = null,
+    /** ALERTE « Je suis en danger »: the pointer to my alert and the note of its adoption go with the account (the blue bubble, about the installation, stays). Null: the function is off. */
+    alertLocal: AlertLocalStore? = null,
 ): List<LocalDataEraser> =
     listOf(
         LocalDataEraser { uid -> notificationAsks.forget(uid) },
@@ -33,4 +36,5 @@ fun accountLocalDataErasers(
         // The local journal of the presence (changes of place, no coordinate, no name) and the window of the chart: erased with the account.
         LocalDataEraser { _ -> presenceLog.clear() },
         LocalDataEraser { _ -> timeShareWindow?.clear() },
+        LocalDataEraser { _ -> alertLocal?.clearAccount() },
     )

@@ -127,6 +127,8 @@ fun BubbleView(
     onMessage: (phone: String) -> Unit,
     onResumeSharing: () -> Unit,
     modifier: Modifier = Modifier,
+    /** ALERTE: "Appeler" on the page of a declared alert (the dialler, never a call placed by Miff). */
+    onCall: (phone: String) -> Unit = {},
     /** MODE VOYAGE: the line "{Prénom} est en voyage…" under the usual bubble (null: none). */
     travelNote: TravelNote? = null,
     /** COULEURS-1 (v2, 2026-11-13): the small "i" at the bottom right of the bubble opens the page "Les couleurs de ta Miff"; a touch on the bubble does nothing. */
@@ -144,7 +146,7 @@ fun BubbleView(
         CompositionLocalProvider(LocalBubblePhases provides phases, LocalOpenColors provides onOpenColors) {
             when (bubble) {
                 is Bubble.Alerts -> {
-                    AlertCarousel(bubble.pages, texts, onMessage, travelNote)
+                    AlertCarousel(bubble.pages, texts, onMessage, travelNote, onCall)
                 }
 
                 else -> {
@@ -224,6 +226,7 @@ private fun AlertCarousel(
     texts: FeedTexts,
     onMessage: (String) -> Unit,
     travelNote: TravelNote?,
+    onCall: (String) -> Unit = {},
 ) {
     val pager = rememberPagerState(pageCount = { pages.size })
     val scope = rememberCoroutineScope()
@@ -271,7 +274,7 @@ private fun AlertCarousel(
                 key = { index -> pages.getOrNull(index)?.member?.uid ?: index },
             ) { index ->
                 val page = pages[index]
-                AlertPageBubble(page, texts, onMessage)
+                AlertPageBubble(page, texts, onMessage, onCall)
             }
             ColorsInfoButton(level = pages[current].level, modifier = Modifier.align(Alignment.BottomEnd))
         }
@@ -294,6 +297,7 @@ private fun AlertPageBubble(
     page: AlertPage,
     texts: FeedTexts,
     onMessage: (String) -> Unit,
+    onCall: (String) -> Unit = {},
 ) {
     BubbleBlob(level = page.level) {
         Headline(texts.alertTitle(page))
@@ -301,6 +305,14 @@ private fun AlertPageBubble(
         texts.alertNote(page)?.let { Caption(it) }
         texts.offlineAlert(page)?.let { Caption(it) }
         val phone = page.member.phone
+        // ALERTE: on the page of a declared alert, "Appeler" comes first (the dialler of the system), then "Écrire".
+        if (page.canCall && phone != null) {
+            BubbleButton(
+                text = stringResource(R.string.feed_bubble_call_action),
+                onClick = { onCall(phone) },
+                description = stringResource(R.string.feed_card_call_a11y, page.member.callName),
+            )
+        }
         if (page.canMessage && phone != null) {
             BubbleButton(
                 text = stringResource(R.string.feed_bubble_message_action),
