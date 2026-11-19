@@ -389,6 +389,15 @@ jobs:
               echo "- AVERTISSEMENT : entitlement Push Notifications absent (voir docs/dev/apns-etapes-pm.md)" >> "$GITHUB_STEP_SUMMARY"
             fi
           fi
+          # Notifications Time Sensitive (alerte de danger) : le droit DOIT être dans l'archive signée (signature automatique : le profil géré par Apple l'intègre une
+          # fois la capacité cochée sur l'identifiant). Bloquant, comme App Attest : sans lui l'alerte arriverait en notification ordinaire, sans que rien ne le dise.
+          if [ -n "$entitlements" ]; then
+            if echo "$entitlements" | grep -q "com.apple.developer.usernotifications.time-sensitive"; then
+              note "Entitlement Time Sensitive Notifications présent (OK)"
+            else
+              bad "L'entitlement Time Sensitive Notifications est absent de l'archive signée : la capacité n'est pas activée sur com.tomessa.miff, ou Apple n'a pas intégré le droit au profil géré (docs/dev/time-sensitive-etapes-pm.md)"
+            fi
+          fi
           exit "$fail"
 
       - name: Envoyer les symboles de plantage à Crashlytics (étape sans secret)

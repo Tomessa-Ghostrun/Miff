@@ -155,6 +155,8 @@ struct UpdatePopIn: View {
     let bodyKey: String
     var primary: Action?
     let dismiss: Action
+    /// ALERTE : un chemin vers les numéros d'urgence depuis un écran où le viseur (donc le geste) n'est pas là ; nil sans la fonction.
+    var emergency: (() -> Void)?
 
     var body: some View {
         ZStack {
@@ -203,6 +205,15 @@ struct UpdatePopIn: View {
                     .frame(minHeight: Spacing.minTouchTarget)
             }
             .buttonStyle(.plain)
+            if let emergency {
+                Button(action: emergency) {
+                    Text(verbatim: L10n.string("alert_call_emergency_link"))
+                        .miffTextStyle(textBodyBold14)
+                        .foregroundColor(colorActionPrimary.color)
+                        .frame(minHeight: Spacing.minTouchTarget)
+                }
+                .buttonStyle(.plain)
+            }
         }
         .padding(Spacing.md)
         .frame(maxWidth: .infinity)

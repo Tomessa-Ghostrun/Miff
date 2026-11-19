@@ -33,13 +33,18 @@ private struct MiffSharingSheet: View {
     let state: MiffScreenState
     let dialog: SharingDialog
     let actions: MiffScreenActions
+    @Environment(\.dangerAlertSignal) private var dangerSignal
+
+    private var stopBody: String {
+        dangerAlertWarning(L10n.string("miff_sharing_stop_body"), miffId: state.miffId, signal: dangerSignal)
+    }
 
     var body: some View {
         let stopping = dialog == .stop
         MiffConfirmSheet(
             content: MiffConfirmContent(
                 title: L10n.string(stopping ? "miff_sharing_stop_title" : "miff_sharing_resume_title"),
-                message: stopping ? L10n.string("miff_sharing_stop_body") : nil,
+                message: stopping ? stopBody : nil,
                 confirmLabel: L10n.string(stopping ? "miff_sharing_stop_action" : "miff_sharing_resume_action"),
                 isBusy: state.sharingBusy,
                 failure: state.message
@@ -61,6 +66,7 @@ private struct MiffActionSheet: View {
     let state: MiffScreenState
     let action: MiffAction
     let actions: MiffScreenActions
+    @Environment(\.dangerAlertSignal) private var dangerSignal
 
     private var buttons: MiffConfirmActions {
         MiffConfirmActions(onConfirm: actions.onActionConfirmed, onCancel: actions.onActionDismissed)
@@ -108,7 +114,7 @@ private struct MiffActionSheet: View {
     private var leaveContent: MiffConfirmContent {
         MiffConfirmContent(
             title: L10n.format("miff_leave_title", state.name),
-            message: L10n.string("miff_leave_body"),
+            message: dangerAlertWarning(L10n.string("miff_leave_body"), miffId: state.miffId, signal: dangerSignal),
             confirmLabel: L10n.string("miff_leave_action"),
             isBusy: state.actionBusy,
             failure: state.message,
@@ -148,7 +154,8 @@ private struct MiffActionSheet: View {
         )
         return MiffConfirmContent(
             title: L10n.format("miff_delete_title", state.name),
-            message: body,
+            // ALERTE : supprimer la Miff retire aussi l'alerte de la personne (dans le même lot) sans prévenir le cercle : la même ligne calme que pour quitter.
+            message: dangerAlertWarning(body, miffId: state.miffId, signal: dangerSignal),
             confirmLabel: L10n.string("miff_delete_action"),
             isBusy: state.actionBusy,
             failure: state.message,

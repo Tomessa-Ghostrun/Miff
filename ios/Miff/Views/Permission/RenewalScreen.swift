@@ -20,6 +20,8 @@ struct RenewalActions {
 struct RenewalScreen: View {
     let state: RenewalUiState
     let actions: RenewalActions
+    // ALERTE : quitter la Miff d'une alerte en cours la retire sans prévenir le cercle : la même ligne calme que sur l'écran de la Miff.
+    @Environment(\.dangerAlertSignal) private var dangerSignal
 
     private var acceptKey: LocalizedStringKey {
         state.busy ? "miff_renewal_saving" : "miff_renewal_accept"
@@ -164,7 +166,9 @@ struct RenewalScreen: View {
             MiffConfirmSheet(
                 content: MiffConfirmContent(
                     title: L10n.format("miff_leave_title", miff.name),
-                    message: L10n.string("miff_leave_body"),
+                    message: dangerAlertWarning(
+                        L10n.string("miff_leave_body"), miffId: miff.miffId, signal: dangerSignal
+                    ),
                     confirmLabel: L10n.string("miff_leave_action"),
                     isBusy: state.busy,
                     failure: state.message,
