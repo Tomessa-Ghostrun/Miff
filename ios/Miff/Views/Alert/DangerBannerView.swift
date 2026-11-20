@@ -53,8 +53,9 @@ struct DangerBannerView: View {
         sendStep.map { $0 != .sending } ?? false
     }
 
-    /// Le plus haut Dynamic Type que suit le grand titre : au-delà, un titre de 32 pt de départ remplirait l'écran (le texte qui suit, lui, continue de grandir).
-    static let titleMaxDynamicType = DynamicTypeSize.accessibility1
+    /// Le plus haut Dynamic Type que suit TOUT le bandeau (titre, consigne, boutons) : au-delà, un titre de 32 pt de départ, une consigne de plus de cent
+    /// caractères et un lien « Voir la Miff {nom} » à nom long remplissent l'écran, et le geste de fin (maintien sur le bandeau) devient impraticable.
+    static let maxDynamicType = DynamicTypeSize.accessibility1
 
     /// Le grand titre (« Mettre fin à l'alerte ? ») est celui de l'alerte EN COURS ; l'envoi, lui, garde le titre de taille normale.
     private var hasBigTitle: Bool {
@@ -69,7 +70,8 @@ struct DangerBannerView: View {
             let fallback = L10n.string("alert_banner_sending_no_name")
             return miffName.map { L10n.format("alert_banner_sending", $0) } ?? fallback
         }
-        // Retour du PM : la question « Mettre fin à l'alerte ? » ne nomme plus la Miff (le lien « Voir la Miff {nom} » le fait quand le Feed en montre une autre).
+        // Retour du PM : la question « Mettre fin à l'alerte ? » ne nomme plus la Miff : c'est le lien « Voir la Miff {nom} » qui la nomme (affiché dès que la
+        // personne a plusieurs Miffs, `DangerBannerRules.showsSeeMiff`).
         return L10n.string("alert_banner_title")
     }
 
@@ -131,21 +133,37 @@ struct DangerBannerView: View {
                     closeButton
                 }
             }
-            HStack(spacing: Spacing.md) {
-                if sendStep == .refused {
-                    action("alert_banner_retry", actions.onRetry)
-                }
-                // « Appeler » est pour les proches de la Miff une fois l'alerte active ; avant, l'écran offre les numéros d'urgence (et, pour la
-                // question des 15 minutes, la décision). Aucun bouton ne renvoie quoi que ce soit en disant « Appeler ».
-                action(secondActionKey, actions.onCall)
-                if showSeeMiff, let miffName {
-                    action(L10n.format("alert_banner_see_miff", miffName), actions.onSeeMiff, verbatim: true)
-                }
-            }
+            actionRow
         }
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, Spacing.sm + Spacing.xs)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .dynamicTypeSize(...Self.maxDynamicType)
+    }
+
+    /// Les actions côte à côte quand elles tiennent ; sinon l'une sous l'autre (grand texte ou nom de Miff long : le lien passe à la ligne, jamais coupé).
+    private var actionRow: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: Spacing.md) {
+                actionItems
+            }
+            VStack(alignment: .leading, spacing: 0) {
+                actionItems
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var actionItems: some View {
+        if sendStep == .refused {
+            action("alert_banner_retry", actions.onRetry)
+        }
+        // « Appeler » est pour les proches de la Miff une fois l'alerte active ; avant, l'écran offre les numéros d'urgence (et, pour la
+        // question des 15 minutes, la décision). Aucun bouton ne renvoie quoi que ce soit en disant « Appeler ».
+        action(secondActionKey, actions.onCall)
+        if showSeeMiff, let miffName {
+            action(L10n.format("alert_banner_see_miff", miffName), actions.onSeeMiff, verbatim: true)
+        }
     }
 
     /// Le texte, lu d'un bloc ; l'action « Terminer l'alerte » du lecteur d'écran y est posée.
@@ -164,13 +182,12 @@ struct DangerBannerView: View {
     }
 
     /// Le titre : DEUX FOIS plus grand qu'avant pendant l'alerte en cours (retour du PM : la question d'abord, la consigne ensuite). Il passe à la ligne
-    /// (jamais tronqué : `fixedSize` vertical) et suit Dynamic Type jusqu'à `titleMaxDynamicType`.
+    /// (jamais tronqué : `fixedSize` vertical) et suit Dynamic Type jusqu'à `maxDynamicType` (posé sur tout le bandeau).
     @ViewBuilder
     private var titleText: some View {
         if hasBigTitle {
             Text(verbatim: title)
                 .miffTextStyle(textAlertBannerTitle)
-                .dynamicTypeSize(...Self.titleMaxDynamicType)
                 .foregroundColor(colorOnAlert.color)
                 .fixedSize(horizontal: false, vertical: true)
                 .accessibilityAddTraits(.isHeader)
@@ -211,6 +228,7 @@ struct DangerBannerView: View {
                 .underline()
                 .miffTextStyle(textBodyBold14)
                 .foregroundColor(colorOnAlert.color)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(minHeight: Spacing.minTouchTarget, alignment: .leading)
                 .contentShape(Rectangle())
         }

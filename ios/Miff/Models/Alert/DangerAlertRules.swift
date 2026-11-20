@@ -52,6 +52,8 @@ enum DangerAlertRules {
     /// Le téléphone ne juge une case périmée que passé 24 h PLUS cette marge (son horloge n'est pas celle du serveur) ; une case que le
     /// serveur juge périmée est toujours honorée.
     static let quotaSafetyMillis = 2 * 60_000
+    /// La bulle bleue de l'onboarding ne prend jamais plus de cette part de l'écran en hauteur : au-delà (grandes tailles de texte), son contenu défile dedans.
+    static let hintMaxScreenShare = 0.45
     /// Entre deux vérifications de l'horloge d'une alerte (une alerte qui a dépassé sa date disparaît d'elle-même).
     static let tickSeconds = 60.0
 

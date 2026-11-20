@@ -64,9 +64,16 @@ final class DangerBannerTitleTests: XCTestCase {
         XCTAssertEqual(textAlertBannerTitle.face, textBodyBold16.face, "même police, même graisse")
     }
 
-    func testTheTitleCapsItsDynamicTypeBelowTheLargestSizes() {
-        XCTAssertLessThan(DangerBannerView.titleMaxDynamicType, .accessibility3)
-        XCTAssertGreaterThan(DangerBannerView.titleMaxDynamicType, .xxxLarge, "il grandit encore aux premières tailles d'accessibilité")
+    func testTheWholeBannerCapsItsDynamicTypeBelowTheLargestSizes() {
+        XCTAssertEqual(DangerBannerView.maxDynamicType, .accessibility1)
+        XCTAssertGreaterThan(DangerBannerView.maxDynamicType, .xxxLarge, "il grandit encore aux premières tailles d'accessibilité")
+    }
+
+    /// Texte aligné sur Android (relecture de la PR jumelle) : la confirmation en deux étapes de VoiceOver dit la même chose que le bandeau.
+    func testTheEndConfirmationTitleSaysTheSameAsTheBanner() throws {
+        XCTAssertEqual(try value("alert_confirm_end_title", "fr"), "Mettre fin à l'alerte ?")
+        XCTAssertEqual(try value("alert_confirm_end_title", "fr"), try value("alert_banner_title", "fr"))
+        XCTAssertEqual(try value("alert_confirm_end_title", "en"), try value("alert_banner_title", "en"))
     }
 
     /// Les VRAIS textes à la taille de texte par défaut, sur le plus petit iPhone courant (320 pt) : le titre tient sur peu de lignes et le bandeau reste

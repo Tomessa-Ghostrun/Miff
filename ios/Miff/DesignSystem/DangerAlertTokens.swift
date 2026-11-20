@@ -21,7 +21,7 @@ let colorAlertOnPhotoScrim = ColorToken(hex: 0x000000, alpha: 0.55)
 // Le TITRE de la bannière d'une alerte en cours (« Mettre fin à l'alerte ? ») : DEUX FOIS la taille d'avant (textBodyBold16 : 16 pt) pour hiérarchiser le message
 // (retour du PM en recette). L'interligne reste serré (40 pt, pas 44) pour que deux lignes ne gonflent pas la bannière. Dynamic Type : la courbe du style
 // système « title » (plus douce que « body » : un titre de 32 pt qui suivrait « body » dépasserait 90 pt aux tailles d'accessibilité), et la bannière
-// plafonne ce titre à `DangerBannerView.titleMaxDynamicType`. Style propre à l'alerte : il n'entre pas dans `TextStyleTokens.all`.
+// plafonne tout le bandeau à `DangerBannerView.maxDynamicType`. Style propre à l'alerte : il n'entre pas dans `TextStyleTokens.all`.
 let textAlertBannerTitle = TextStyleToken(
     name: "textAlertBannerTitle",
     face: .hankenBold,

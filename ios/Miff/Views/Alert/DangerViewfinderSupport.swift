@@ -205,15 +205,21 @@ struct DangerViewfinderLayer: ViewModifier {
 struct DangerHintSlot: View {
     @ObservedObject var state: DangerViewfinderState
     let hooks: DangerUpdateHooks
+    /// La hauteur de l'écran : la bulle n'en prend jamais plus de `DangerAlertRules.hintMaxScreenShare`, son contenu défile dedans au-delà.
+    let screenHeight: CGFloat
 
-    init(state: DangerViewfinderState, hooks: DangerUpdateHooks) {
+    init(state: DangerViewfinderState, hooks: DangerUpdateHooks, screenHeight: CGFloat) {
         self.state = state
         self.hooks = hooks
+        self.screenHeight = screenHeight
     }
 
     var body: some View {
         if hooks.hintVisible && state.hintShown {
-            DangerHintBubble(onMore: { state.infoOpen = true })
+            DangerHintBubble(
+                onMore: { state.infoOpen = true },
+                maxHeight: screenHeight * CGFloat(DangerAlertRules.hintMaxScreenShare)
+            )
                 .padding(.horizontal, Spacing.lg)
         }
     }

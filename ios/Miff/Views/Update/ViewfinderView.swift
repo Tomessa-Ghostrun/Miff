@@ -138,7 +138,7 @@ struct ViewfinderView: View {
                 background(aspect: aspect, topInset: topInset)
                 // Les boutons restent entièrement au-dessus de la barre d'onglets (sa hauteur est mesurée, jamais écrite en dur) et SOUS la
                 // zone sûre du haut (jamais sous l'île dynamique) ; le viseur, lui, reste plein écran, derrière la barre d'état et la barre.
-                controls(aspect: aspect)
+                controls(aspect: aspect, screenHeight: full.height)
                     .topSafeAreaFloor()
                     .aboveTabBar()
             }
@@ -206,7 +206,7 @@ struct ViewfinderView: View {
         }
     }
 
-    private func controls(aspect: Double) -> some View {
+    private func controls(aspect: Double, screenHeight: CGFloat) -> some View {
         VStack(spacing: 0) {
             HStack(alignment: .top, spacing: Spacing.sm) {
                 if showTip {
@@ -250,7 +250,7 @@ struct ViewfinderView: View {
             VStack(spacing: Spacing.md) {
                 #if ALERT_DANGER
                 if let hooks = dangerHooks {
-                    DangerHintSlot(state: dangerState, hooks: hooks)
+                    DangerHintSlot(state: dangerState, hooks: hooks, screenHeight: screenHeight)
                 }
                 #endif
                 helpLine

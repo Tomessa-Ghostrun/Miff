@@ -225,7 +225,12 @@ struct DangerBannerSlot: View {
             DangerBannerView(
                 alert: controller.state,
                 miffName: dangerNamed(model.miffNames[origin]),
-                showSeeMiff: origin != activeMiffId && dangerNamed(model.miffNames[origin]) != nil,
+                showSeeMiff: DangerBannerRules.showsSeeMiff(
+                    originMiffId: origin,
+                    activeMiffId: activeMiffId,
+                    miffCount: model.miffNames.count,
+                    nameKnown: dangerNamed(model.miffNames[origin]) != nil
+                ),
                 actions: DangerBannerActions(
                     onCall: { model.openSent(miffId: origin) },
                     onSeeMiff: { onSeeMiff(origin) },
