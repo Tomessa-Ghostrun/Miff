@@ -13,7 +13,7 @@ export const VOYAGE_MUTATIONS = [
   mut('VY-presence-travel-refusee', "la présence « travel » n'est plus acceptée (liste de valeurs)",
     [edit("'in_risk', 'unknown', 'travel']", "'in_risk', 'unknown']")], ['VY1']),
   mut('VY-cles-de-voyage-refusees', 'les clés travelUntil / travelUntilDay ne sont plus dans le schéma du statut',
-    [edit(", 'deviceId', 'travelUntil', 'travelUntilDay'])\n        && d.keys().hasAll", ", 'deviceId'])\n        && d.keys().hasAll")], ['VY1']),
+    [edit(", 'deviceId', 'travelUntil', 'travelUntilDay', 'photoAt'])\n        && d.keys().hasAll", ", 'deviceId', 'photoAt'])\n        && d.keys().hasAll")], ['VY1']),
   mut('VY-validTravel-non-appelee', "validStatus n'appelle plus validTravel (ni cohérence des clés, ni fenêtre de fin)",
     [edit('&& validTravel(d)\n', '\n')], ['VY4', 'VY5', 'VY7', 'VY8', 'VY9']),
   // --- Fenêtre de fin ----------------------------------------------------------------------------------------------------------------
