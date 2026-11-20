@@ -27,6 +27,9 @@ struct PushArrival: Equatable, CustomStringConvertible {
     let entryId: String?
     /// L'identifiant que le service de messages a donné à ce message, nettoyé : sert de clé quand le serveur n'a pas d'`entryId`.
     let messageId: String?
+    /// L'heure à laquelle le système a LIVRÉ la notification (millisecondes depuis 1970), donnée par le délégué (`notification.date`) : une notification touchée plusieurs
+    /// heures (ou la veille) après sa livraison est datée de sa livraison, pas du toucher. nil : le message n'a pas d'heure (les tests), la ligne est datée de l'arrivée.
+    var deliveredAtMillis: Int?
 
     /// Des identifiants ne se lisent pas dans un journal.
     var description: String {

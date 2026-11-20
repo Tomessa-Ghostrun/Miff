@@ -130,6 +130,50 @@ final class PushArrivalTests: XCTestCase {
         XCTAssertNotEqual(startLine.id, endLine.id, "la fin est une ligne de plus, pas le début remplacé")
     }
 
+    // MARK: - L'heure de la ligne : la livraison, pas le toucher
+
+    private var paris: Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: "Europe/Paris") ?? .current
+        return calendar
+    }
+
+    func testALineIsDatedFromTheDeliveryOfTheNotificationAndFiledInTheRightSection() throws {
+        let now = 1_800_000_000_000
+        var arrival = try XCTUnwrap(PushArrivalParser.parse(update()))
+        arrival.deliveredAtMillis = now - 20 * 3_600_000
+
+        let line = NotificationJournal.item(for: arrival, nowMillis: now, opened: true)
+
+        XCTAssertEqual(line.createdAtMillis, now - 20 * 3_600_000)
+        let sections = NotificationGrouping.groups(of: [line], nowMillis: now, calendar: paris).map { $0.section }
+        XCTAssertEqual(sections, [.yesterday], "touchée le lendemain, la ligne est rangée dans « Hier »")
+    }
+
+    func testADeliveryInTheFutureIsNotBelievedAndNoDeliveryMeansTheArrival() throws {
+        let now = 1_800_000_000_000
+        var arrival = try XCTUnwrap(PushArrivalParser.parse(update(entryId: nil)))
+
+        XCTAssertEqual(NotificationJournal.item(for: arrival, nowMillis: now, opened: false).createdAtMillis, now)
+        arrival.deliveredAtMillis = now + 3_600_000
+        XCTAssertEqual(NotificationJournal.item(for: arrival, nowMillis: now, opened: false).createdAtMillis, now)
+    }
+
+    func testTheDelegateGivesTheTimeTheSystemDeliveredTheNotification() {
+        let delegate = PushNotificationDelegate()
+        var delivered: [Int?] = []
+        delegate.onArrival = { arrival, _ in delivered.append(arrival.deliveredAtMillis) }
+        let date = Date(timeIntervalSince1970: 1_799_000_000)
+
+        _ = delegate.routeWillPresent(userInfo: update(), deliveredAt: date)
+        _ = delegate.routeResponse(
+            userInfo: update(), actionIdentifier: UNNotificationDefaultActionIdentifier, deliveredAt: date
+        )
+        _ = delegate.routeWillPresent(userInfo: update())
+
+        XCTAssertEqual(delivered, [1_799_000_000_000, 1_799_000_000_000, nil])
+    }
+
     // MARK: - Quand garder la ligne
 
     func testALineIsKeptOnlyForSomeoneSignedInAndNeverForYourOwnEvent() throws {

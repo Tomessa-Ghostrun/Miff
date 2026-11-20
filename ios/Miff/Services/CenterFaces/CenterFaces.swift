@@ -74,6 +74,9 @@ final class CenterFaces: ObservableObject, CustomStringConvertible {
     /// Les membres de chaque Miff que le Feed a lue, complets : quelqu'un qui n'est pas dans la liste d'une Miff lue par le Feed n'en fait plus partie.
     private var rosters: [String: Set<String>] = [:]
     private var inFlight: Set<FaceKey> = []
+    /// Les membres dont la lecture a dû attendre la prochaine ouverture (au-delà d'une douzaine) : ils montrent le logo et « Un proche » en attendant, jamais un rond neutre
+    /// qui ne se remplirait pas.
+    private var waiting: Set<FaceKey> = []
     /// Monte à chaque fin de session : une réponse attendue à travers elle appartient à la personne d'avant.
     private var epoch = 0
 
@@ -95,7 +98,7 @@ final class CenterFaces: ObservableObject, CustomStringConvertible {
         if let roster = rosters[miffId], !roster.contains(uid) {
             return .gone
         }
-        return .pending
+        return waiting.contains(FaceKey(miffId: miffId, uid: uid)) ? .failed : .pending
     }
 
     /// Le Feed a lu les membres de `miffId` : leurs visages sont connus, GRATUITEMENT (aucune lecture). Ceux de la dernière visite du Feed (même limite
@@ -127,12 +130,15 @@ final class CenterFaces: ObservableObject, CustomStringConvertible {
     /// à la fois : aucune rafale. Rend la main quand tout ce qui a été demandé est réglé. Ne lève jamais.
     func ensure(_ wanted: [FaceKey]) async {
         let startedIn = epoch
-        var todo: [FaceKey] = []
-        for key in wanted where !todo.contains(key) && needsReading(key) {
-            todo.append(key)
-            if todo.count == Self.maxReadsPerCall {
-                break
-            }
+        var needed: [FaceKey] = []
+        for key in wanted where !needed.contains(key) && needsReading(key) {
+            needed.append(key)
+        }
+        let todo = Array(needed.prefix(Self.maxReadsPerCall))
+        let later = Set(needed.dropFirst(Self.maxReadsPerCall))
+        if later != waiting {
+            waiting = later
+            version += 1
         }
         for key in todo {
             guard epoch == startedIn, !Task.isCancelled else {
@@ -148,6 +154,7 @@ final class CenterFaces: ObservableObject, CustomStringConvertible {
                 return
             }
             inFlight.remove(key)
+            waiting.remove(key)
             record(key, read)
         }
     }
@@ -169,7 +176,10 @@ final class CenterFaces: ObservableObject, CustomStringConvertible {
         entries = [:]
         rosters = [:]
         inFlight = []
+        waiting = []
         mine = nil
+        // Les photos réduites gardées pour dessiner les ronds partent aussi (comme à la fin de session du carrousel du Profil).
+        AvatarDecoding.removeAll()
         version += 1
     }
 

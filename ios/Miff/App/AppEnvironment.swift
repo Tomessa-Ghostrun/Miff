@@ -240,6 +240,14 @@ final class AppEnvironment {
         // CNC-I : pendant la fin de la session, le journal du serveur n'est pas lu ; un message du serveur vu au premier plan ou touché écrit sa ligne du centre.
         notifs.journal.sessionValid = { [weak manager] _ in !(manager?.ending ?? false) }
         pushServices.hook.onArrival = notifs.pushArrived
+        // CNC-I : une entrée du journal pour une Miff que l'annuaire connaît et qui n'est pas celle du compte n'entre pas dans le centre (pas de point fantôme sur la cloche).
+        let knownDirectory = miff.directory
+        notifs.journal.isMyMiff = { miffId in
+            guard case .ready(let ready) = knownDirectory.state else {
+                return true
+            }
+            return ready.miffs.contains { $0.id == miffId }
+        }
         #if ALERT_DANGER
         let directory = miff.directory
         // Un refus du serveur sur mon alerte : l'annuaire est relu (une perte confirmée retire l'alerte, voir `DangerAlertController.onAccessDoubt`).

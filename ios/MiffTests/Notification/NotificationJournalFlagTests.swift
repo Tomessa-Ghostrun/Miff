@@ -104,6 +104,30 @@ final class NotificationJournalFlagTests: XCTestCase {
         )
     }
 
+    /// Le code des visages (photo, prénom) ne garde rien sur le téléphone, ne journalise rien et n'envoie aucun événement : en mémoire seulement.
+    func testTheCodeOfTheFacesStaysInMemoryAndLogsNothing() throws {
+        let app = iosRoot.appendingPathComponent("Miff")
+        let folders = ["Models/CenterFaces", "Services/CenterFaces", "Views/CenterFaces"]
+        var files = ["Services/Firebase/FirestoreMemberFaceReader.swift"]
+        for folder in folders {
+            let found = try FileManager.default.contentsOfDirectory(atPath: app.appendingPathComponent(folder).path)
+            files += found.filter { $0.hasSuffix(".swift") }.map { "(folder)/($0)" }
+        }
+        let forbidden = [
+            "FileManager", "UserDefaults", ".write(to", "print(", "NSLog", "Logger", "Analytics",
+            "Crashlytics", "logEvent", "Keychain", "dump("
+        ]
+
+        XCTAssertGreaterThanOrEqual(files.count, 4)
+        for file in files {
+            for line in try code("Miff/" + file) {
+                for word in forbidden where line.contains(word) {
+                    XCTFail("(file) : « (word) » interdit dans le code des visages ((line))")
+                }
+            }
+        }
+    }
+
     func testTheCodeOfTheJournalNeverMentionsANamePhotoPlaceOrPosition() throws {
         let files = [
             "Miff/Models/Notification/NotificationJournal.swift",

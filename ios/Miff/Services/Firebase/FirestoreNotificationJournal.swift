@@ -9,14 +9,14 @@ import Foundation
 // SÉCURITÉ et CONFIDENTIALITÉ : rien ici n'est journalisé ni gardé dans le message d'une erreur (il peut citer un chemin avec un identifiant) ; chaque
 // document est validé par `NotificationJournal.parse` avant d'être utilisé ; aucun identifiant n'entre dans un chemin sans avoir la forme d'un identifiant.
 // COÛT : jamais d'écouteur ; le serveur seulement (`source: .server` : une réponse du cache du téléphone serait une copie de ce qui a déjà été vu) ; 100
-// entrées par page, 2 pages au plus ; une suppression est un lot envoyé une fois (les suppressions passent par le point d'écriture commun des Miffs, donc
-// le même garde `SessionWriteGuard`).
+// entrées par page, 2 pages au plus ; une suppression est un lot envoyé une fois (par le point d'écriture commun des Miffs ; son garde `SessionWriteGuard` ne
+// contrôle que les statuts et les positions, il ignore les suppressions).
 // Compilé seulement avec la condition `NOTIF_JOURNAL` (project.yml : Debug et Internal oui, Release non, comme `BuildConfig.NOTIF_JOURNAL` d'Android).
 
 final class FirestoreNotificationJournal: NotificationJournalGateway {
     /// Attente maximale d'une lecture : au-delà, rien n'est connu et rien n'est perdu (l'occasion suivante réessaie).
     static let readTimeoutNanos: UInt64 = 20_000_000_000
-    static let deleteAllTimeoutNanos: UInt64 = 30_000_000_000
+    static let deleteAllTimeoutNanos: UInt64 = 15_000_000_000
     private static let maxDeleteRounds = 20
     private static let batchSize = 400
 
@@ -98,9 +98,16 @@ final class FirestoreNotificationJournal: NotificationJournalGateway {
             }
             query = query.limit(to: NotificationJournal.pageSize)
             var entries: [JournalEntry] = []
+            var newest: Int?
             for page in 1...NotificationJournal.maxPages {
                 let snapshot = try await query.getDocuments(source: .server)
                 entries += snapshot.documents.compactMap { entry(of: $0) }
+                // La date de TOUS les documents, même ignorés : le curseur avance au-delà d'une entrée mal formée.
+                for document in snapshot.documents {
+                    if let date = millis(document.data()["createdAt"]) {
+                        newest = max(newest ?? date, date)
+                    }
+                }
                 let documents = snapshot.documents
                 guard documents.count >= NotificationJournal.pageSize, let last = documents.last else {
                     break
@@ -109,7 +116,7 @@ final class FirestoreNotificationJournal: NotificationJournalGateway {
                     query = query.start(afterDocument: last)
                 }
             }
-            return .loaded(entries)
+            return .loaded(entries, newestSeenMillis: newest)
         } catch {
             let nsError = error as NSError
             if nsError.domain == FirestoreErrorNumber.domain && nsError.code == FirestoreErrorNumber.permissionDenied {

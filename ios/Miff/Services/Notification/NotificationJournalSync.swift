@@ -8,15 +8,17 @@ import Foundation
 // dates, jamais un prénom, une photo, un lieu ni une position ; chaque champ venu du réseau est validé par `NotificationJournal.parse` avant d'être
 // utilisé ; rien ici n'est journalisé, envoyé comme événement, ni gardé dans le message d'une erreur.
 // COÛT : AUCUN écouteur permanent, jamais. UNE requête depuis un curseur (2 minutes avant l'entrée la plus récente déjà vue), 100 entrées au plus par
-// page et 2 pages au plus, au premier plan, à l'ouverture du centre et à la réception d'un message ; au plus une par minute hors message (10
-// secondes après un message) ; une réponse vide coûte UNE lecture. Une requête que les règles refusent (le serveur n'est pas encore déployé) n'est
+// page et 2 pages au plus, au premier plan, à l'ouverture du centre, à la réception d'un message et quand la session devient utilisable ; au plus une par
+// minute (une lecture déclenchée par un message n'attend que 10 secondes avant la suivante, mais elle ne passe jamais devant l'attente d'une lecture
+// précédente) ; une réponse vide coûte UNE lecture. Une requête que les règles refusent (le serveur n'est pas encore déployé) n'est
 // pas renouvelée avant 30 minutes.
 // CALME : tout échec (hors ligne, refus, trop lent, entrée qui ne ressemble à rien) ne montre RIEN ; le centre continue avec les lignes qu'il a, et
 // l'occasion suivante réessaie. Sans passerelle (build sans le drapeau `NOTIF_JOURNAL`), rien n'est lu ni supprimé : la classe n'a aucun effet.
 
 /// Ce qu'une requête du journal a donné.
 enum JournalRead: Equatable {
-    case loaded([JournalEntry])
+    /// `newestSeenMillis` : la date la plus récente de TOUS les documents lus, même ignorés (mal formés, version inconnue) : le curseur avance au-delà.
+    case loaded([JournalEntry], newestSeenMillis: Int? = nil)
     /// Hors ligne, trop lent, ou toute autre panne qui n'est pas un refus : rien n'est connu, rien n'est perdu, le curseur ne bouge pas.
     case unavailable
     /// Les règles refusent la requête (le serveur n'est pas encore déployé, ou App Check dit non) : pas de nouvelle tentative avant un moment.
@@ -70,6 +72,11 @@ final class NotificationJournalSync {
     private let nowMillis: () -> Int
     /// Dit si cette session peut encore servir à lire (faux pendant la fin de session). Branché par `AppEnvironment` une fois le gestionnaire de session créé.
     var sessionValid: (String) -> Bool = { _ in true }
+    /// Cette Miff est-elle une de celles du compte ? Une entrée qui parle d'un proche d'une Miff qui n'est plus la sienne (quittée, supprimée, accès perdu) n'entre pas dans
+    /// le centre (sinon un point fantôme sur la cloche pour une ligne que l'écran ne dessine pas). Branché par `AppEnvironment` ; inconnue : oui.
+    var isMyMiff: (String) -> Bool = { _ in true }
+    /// Le curseur de cette session, en mémoire : si le fichier ne peut pas être écrit, la requête suivante repart quand même d'ici (jamais de relecture complète).
+    private var memoryCursors: [String: Int] = [:]
     private var running = false
     private var nextAllowedAtMillis = 0
     /// Les clés des lignes supprimées dans cette session : une entrée que le serveur n'a pas encore supprimée (hors ligne) ne doit pas ramener sa ligne
@@ -109,7 +116,7 @@ final class NotificationJournalSync {
         if startedAt < nextAllowedAtMillis, nextAllowedAtMillis - startedAt <= Self.refusedBackoffMillis {
             return false
         }
-        let cursor = cursors.cursor(uid: uid)
+        let cursor = [cursors.cursor(uid: uid), memoryCursors[uid]].compactMap { $0 }.max()
         let read = await gateway.read(uid: uid, sinceMillis: NotificationJournal.since(cursorMillis: cursor))
         switch read {
         case .refused:
@@ -119,7 +126,7 @@ final class NotificationJournalSync {
             // Hors ligne : réessayer bientôt ne coûte rien (prochain premier plan ou ouverture), mais pas en boucle.
             nextAllowedAtMillis = startedAt + Self.offlineGapMillis
             return false
-        case .loaded(let entries):
+        case .loaded(let entries, let newestSeen):
             nextAllowedAtMillis = startedAt + (reason == .pushReceived ? Self.pushGapMillis : Self.minGapMillis)
             // La personne a pu se déconnecter, ou une autre se connecter, pendant la lecture : rien n'est écrit pour elle.
             guard currentUid() == uid, sessionValid(uid) else {
@@ -128,13 +135,22 @@ final class NotificationJournalSync {
             let now = nowMillis()
             let items = entries
                 .compactMap { NotificationJournal.item(for: $0, myUid: uid, nowMillis: now, firstSync: cursor == nil) }
-                .filter { !deleted.contains($0.id) }
+                .filter { isWanted($0) }
             center.record(contentsOf: items)
-            if let next = NotificationJournal.nextCursor(previous: cursor, entries: entries) {
+            let next = NotificationJournal.nextCursor(
+                previous: cursor, entries: entries, newestSeen: newestSeen, nowMillis: now
+            )
+            if let next {
+                memoryCursors[uid] = next
                 cursors.setCursor(next, uid: uid)
             }
             return true
         }
+    }
+
+    /// Une ligne du journal entre dans le centre sauf si elle vient d'être supprimée (hors ligne) ou parle d'un proche d'une Miff qui n'est plus celle du compte.
+    private func isWanted(_ item: NotificationItem) -> Bool {
+        !deleted.contains(item.id) && (!item.type.aboutALovedOne || isMyMiff(item.miffId))
     }
 
     /// La personne a supprimé des lignes (une, ou « Tout effacer ») : les entrées d'où elles viennent sont supprimées sur le serveur aussi, pour
@@ -168,5 +184,6 @@ final class NotificationJournalSync {
         cursors.clear()
         nextAllowedAtMillis = 0
         deleted = []
+        memoryCursors = [:]
     }
 }

@@ -153,24 +153,26 @@ enum NotificationJournal {
         )
     }
 
-    /// La ligne qu'un message du serveur écrit quand l'app le voit passer. Datée de l'arrivée (le serveur n'envoie aucune heure dans le message).
-    /// `opened` : la personne a touché la notification (le système l'avait affichée) ; sinon l'app était devant, rien n'a été affiché.
+    /// La ligne qu'un message du serveur écrit quand l'app le voit passer. Datée de la LIVRAISON de la notification par le système quand le délégué la donne
+    /// (`deliveredAtMillis` : toucher une notification reçue la veille la range dans « Hier », avec son heure), sinon de l'arrivée ; jamais dans le futur (une
+    /// horloge fausse). `opened` : la personne a touché la notification (le système l'avait affichée) ; sinon l'app était devant, rien n'a été affiché.
     static func item(for arrival: PushArrival, nowMillis: Int, opened: Bool) -> NotificationItem {
+        let created = min(arrival.deliveredAtMillis ?? nowMillis, nowMillis)
         let id: String
         let type: NotificationType
         switch arrival.kind {
         case .update:
-            id = CircleNewsKeys.pushId(arrival, receivedAtMillis: nowMillis)
+            id = CircleNewsKeys.pushId(arrival, receivedAtMillis: created)
             type = .n9
         case .alertStart:
-            id = CircleAlertKeys.pushId(arrival, receivedAtMillis: nowMillis)
+            id = CircleAlertKeys.pushId(arrival, receivedAtMillis: created)
             type = .n10
         case .alertEnd:
-            id = CircleAlertKeys.pushId(arrival, receivedAtMillis: nowMillis)
+            id = CircleAlertKeys.pushId(arrival, receivedAtMillis: created)
             type = .n11
         }
         return NotificationItem(
-            id: id, type: type, miffId: arrival.miffId, createdAtMillis: nowMillis,
+            id: id, type: type, miffId: arrival.miffId, createdAtMillis: created,
             readAtMillis: nil, state: opened ? .shown : .silent
         )
     }
@@ -180,9 +182,22 @@ enum NotificationJournal {
         cursorMillis.map { max($0 - overlapMillis, 1) }
     }
 
-    /// Le nouveau curseur : la date la plus récente vue, qui ne recule jamais.
-    static func nextCursor(previous: Int?, entries: [JournalEntry]) -> Int? {
-        ([previous].compactMap { $0 } + entries.map { $0.createdAtMillis }).max()
+    /// Une date de plus d'un jour dans le futur n'est pas crue pour le curseur (une horloge fausse du serveur ou d'un document forgé le figerait pour toujours).
+    static let futureToleranceMillis = 24 * 60 * 60 * 1000
+
+    /// Le nouveau curseur : la date la plus récente vue, qui ne recule jamais. `newestSeen` est la date la plus récente de TOUS les documents lus, même ceux qui ont
+    /// été ignorés (mal formés, version ou sorte inconnue) : sans elle, la requête suivante les relirait sans fin. Avec `nowMillis`, une date de plus d'un jour dans le
+    /// futur est écartée.
+    static func nextCursor(
+        previous: Int?,
+        entries: [JournalEntry],
+        newestSeen: Int? = nil,
+        nowMillis: Int? = nil
+    ) -> Int? {
+        let candidates = entries.map { $0.createdAtMillis } + [newestSeen].compactMap { $0 }
+        let ceiling = nowMillis.map { $0 + futureToleranceMillis }
+        let believed = candidates.filter { ceiling == nil || $0 <= (ceiling ?? 0) }
+        return ([previous].compactMap { $0 } + believed).max()
     }
 
     /// L'identifiant de l'entrée du journal d'où vient une ligne du centre, lu dans sa clé, pour que supprimer la ligne supprime aussi l'entrée sur

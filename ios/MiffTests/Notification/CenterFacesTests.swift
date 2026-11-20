@@ -161,6 +161,19 @@ final class CenterFacesTests: XCTestCase {
         XCTAssertEqual(reader.reads.count, 15, "les trois restants à l'ouverture suivante")
     }
 
+    func testTheThirteenthPersonShowsTheLogoUntilTheNextOpeningReadsHer() async {
+        let reader = FakeReader()
+        reader.answers["uid13"] = .found(face("Zoé"))
+        let faces = makeFaces(reader)
+        let uids = (1...13).map { "uid($0)" }
+
+        await faces.ensure(keys(uids))
+
+        XCTAssertEqual(faces.lookup(miffId: miff, uid: "uid13"), .failed, "le logo, pas un rond neutre")
+        await faces.ensure(keys(uids))
+        XCTAssertEqual(faces.lookup(miffId: miff, uid: "uid13"), .known(face("Zoé")))
+    }
+
     func testAMemberTheReadingSaysIsGoneShowsTheLogoAndIsNotReadAgainSoon() async {
         let reader = FakeReader()
         reader.answers["uidB"] = .gone

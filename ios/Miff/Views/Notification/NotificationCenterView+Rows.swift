@@ -108,11 +108,19 @@ struct NotificationRowContent: View {
     /// CNC-I : l'image ronde de la ligne.
     let avatar: CenterAvatar
 
+    /// Le titre, et pour une alerte aussi sa phrase (« Prends de ses nouvelles : appelle Léa ou ouvre Miff. » : ce qu'il y a à faire est dit, pas seulement ce qui s'est passé).
+    private var spokenTitle: String {
+        guard item.type == .n10 || item.type == .n11, let body = text.body else {
+            return text.title
+        }
+        return [text.title, body].joined(separator: ". ")
+    }
+
     private var spoken: String {
         guard let time else {
-            return NotificationTimeText.spokenLabel(sentence: text.title, unread: item.isUnread)
+            return NotificationTimeText.spokenLabel(sentence: spokenTitle, unread: item.isUnread)
         }
-        return NotificationTimeText.spokenLabel(title: text.title, time: time, unread: item.isUnread)
+        return NotificationTimeText.spokenLabel(title: spokenTitle, time: time, unread: item.isUnread)
     }
 
     var body: some View {
