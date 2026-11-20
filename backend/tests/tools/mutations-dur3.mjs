@@ -11,7 +11,7 @@ const mut = (id, why, edits, tests, equivalent) => ({ id, why, edits, tests, ...
 
 const PLACE_KEYS = "['name', 'type', 'category', 'address', 'lat', 'lng', 'radiusM', 'priority', 'createdBy', 'createdAt', 'updatedAt']";
 const PLACE_UPDATE_KEYS = "['name', 'type', 'category', 'address', 'lat', 'lng', 'radiusM', 'priority', 'updatedAt']";
-const STATUS_KEYS = "['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt', 'deviceId', 'travelUntil', 'travelUntilDay']";
+const STATUS_KEYS = "['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt', 'deviceId', 'travelUntil', 'travelUntilDay', 'photoAt']";
 const SHARING_KEYS = "['enabled', 'consentedAt', 'consentVersion', 'revokedAt']";
 const MEMBERS_UID_DELETE = `!existsAfter(${DB}/miffs/$(resource.data.miffId)/members/$(uid))`;
 const CODE_MIFF_ID = `get(${DB}/joinCodes/$(d.joinCode)).data.miffId == miffId`;

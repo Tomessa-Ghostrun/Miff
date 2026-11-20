@@ -17,8 +17,8 @@ enum PlaceNotice: Equatable, CustomStringConvertible {
     }
 }
 
-/// « Demande envoyée. Elle est en attente dans la liste. » (critère M4 de LIEU-REQ), ou, sans réseau, « Ta demande partira dès que tu seras
-/// connecté. » (critère M11). Aucun nom : seulement si le téléphone a gardé la demande pour plus tard.
+/// « Demande envoyée. Elle est en attente dans la liste. » (critère M4 de LIEU-REQ), ou, sans réseau, « Ta demande partira dès que tu auras du
+/// réseau. » (critère M11). Aucun nom : seulement si le téléphone a gardé la demande pour plus tard.
 struct RequestNotice: Equatable {
     let queued: Bool
 }

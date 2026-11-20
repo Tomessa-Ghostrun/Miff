@@ -53,7 +53,7 @@ struct PlaceMiffPickerSheet: View {
         if state.selectedMiffIds.isEmpty {
             PlaceInfoLine(text: L10n.string("place_miffs_none_selected"))
         } else if selectedCount >= PlaceLimits.maxMiffs {
-            PlaceInfoLine(text: L10n.string("place_miffs_max_reached"))
+            PlaceInfoLine(text: L10n.format("place_miffs_max_reached", PlaceLimits.maxMiffs))
         } else {
             Text(verbatim: L10n.format("place_miffs_count", selectedCount, PlaceLimits.maxMiffs))
                 .miffTextStyle(textBodyCaption)

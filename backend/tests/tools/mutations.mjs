@@ -17,6 +17,7 @@ import { VOYAGE_MUTATIONS } from './mutations-voyage.mjs';
 import { DEVICE_MUTATIONS } from './mutations-jetons.mjs';
 import { ALERT_MUTATIONS } from './mutations-alerte.mjs';
 import { JOURNAL_MUTATIONS } from './mutations-journal.mjs';
+import { PHOTO_DATE_MUTATIONS } from './mutations-photo-date.mjs';
 
 const DB = '/databases/$(database)/documents';
 const edit = (find, replace, nth = 1, of = 1) => ({ find, replace, nth, of });
@@ -722,4 +723,6 @@ export const MUTATIONS = [
   ...ALERT_MUTATIONS,
   // --- Journal de notifications (CNC-B, users/{uid}/notifications) : voir mutations-journal.mjs ---
   ...JOURNAL_MUTATIONS,
+  // --- Date de la dernière photo du statut (FEED-ORDRE-PHOTO, validPhotoAt) : voir mutations-photo-date.mjs ---
+  ...PHOTO_DATE_MUTATIONS,
 ];

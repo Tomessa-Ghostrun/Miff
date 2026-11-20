@@ -71,7 +71,7 @@ struct DangerBannerView: View {
             case .refused:
                 return L10n.string("alert_banner_refused")
             case .quota:
-                return L10n.string("alert_banner_quota")
+                return L10n.plural("alert_banner_quota", count: DangerAlertRules.maxStartsPerDay)
             case .sending:
                 return nil
             }

@@ -229,7 +229,7 @@ final class DangerAlertPrivacyTests: XCTestCase {
             throw XCTSkip("Fichier des textes d'Android introuvable (\(android.path)).")
         }
         let xml = try String(contentsOf: android, encoding: .utf8)
-        let regex = try NSRegularExpression(pattern: "<string name=\"((?:alert_|notif_alert_)[a-z0-9_]+)\"")
+        let regex = try NSRegularExpression(pattern: "<(?:string|plurals) name=\"((?:alert_|notif_alert_)[a-z0-9_]+)\"")
         let range = NSRange(xml.startIndex..., in: xml)
         let androidKeys = Set(regex.matches(in: xml, range: range).compactMap { match in
             Range(match.range(at: 1), in: xml).map { String(xml[$0]) }

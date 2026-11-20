@@ -194,10 +194,11 @@ final class NotificationHistoryTests: XCTestCase {
     }
 
     func testTheSpokenLabelSaysTheTitleTheTimeAndWhetherItIsUnread() {
-        let unread = NotificationTimeText.spokenLabel(title: "Tu es passé orange", time: "13:40", unread: true)
-        let read = NotificationTimeText.spokenLabel(title: "Tu es passé orange", time: "13:40", unread: false)
+        let title = "Ton statut est passé à l'orange"
+        let unread = NotificationTimeText.spokenLabel(title: title, time: "13:40", unread: true)
+        let read = NotificationTimeText.spokenLabel(title: title, time: "13:40", unread: false)
 
-        XCTAssertTrue(unread.contains("Tu es passé orange"))
+        XCTAssertTrue(unread.contains(title))
         XCTAssertTrue(unread.contains("13:40"))
         XCTAssertNotEqual(unread, read, "l'état n'est jamais porté par la seule pastille")
     }

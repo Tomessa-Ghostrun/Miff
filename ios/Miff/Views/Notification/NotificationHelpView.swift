@@ -12,7 +12,7 @@ struct NotificationHelpView: View {
             SettingsBody(text: L10n.string("notif_help_lead"))
             VStack(alignment: .leading, spacing: Spacing.sm) {
                 HelpStep(number: 1, textKey: "notif_help_step_1")
-                HelpStep(number: 2, textKey: "notif_help_step_2")
+                HelpStep(number: 2, textKey: "ios_notif_help_step_2")
                 HelpStep(number: 3, textKey: "notif_help_step_3")
             }
             Button {
