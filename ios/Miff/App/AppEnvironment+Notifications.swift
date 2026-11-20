@@ -11,10 +11,18 @@ extension AppEnvironment {
         )
     }
 
-    /// Le centre de notifications (NOTIF-6I).
+    /// Le centre de notifications (NOTIF-6I). CNC-I : avec les visages des proches (photo ou initiales), la lecture du journal du serveur (sans effet
+    /// dans un build sans la condition `NOTIF_JOURNAL`) et le filtre des Miffs du compte.
     func makeNotificationCenterViewModel() -> NotificationCenterViewModel {
         NotificationCenterViewModel(
-            service: notifications.center, permissions: devicePermissions, directory: notifications.requesters
+            service: notifications.center,
+            permissions: devicePermissions,
+            directory: notifications.requesters,
+            extras: NotificationCenterExtras(
+                faces: notifications.faces,
+                journal: notifications.journal,
+                isMyMiff: { [self] in isMyMiff($0) }
+            )
         )
     }
 
@@ -25,6 +33,15 @@ extension AppEnvironment {
         }
         return ready.miffs.first { $0.id == miffId }?.name
     }
+
+    /// CNC-I : cette Miff est-elle une de celles du compte ? Tant que l'annuaire n'est pas lu, on ne sait pas : la ligne est dessinée (elle disparaît dès
+    /// que l'annuaire, confirmé par le serveur, dit que la Miff n'est plus la sienne : `LovedOneLinesWatcher`).
+    func isMyMiff(_ miffId: String) -> Bool {
+        guard case .ready(let ready) = miffDirectory.state else {
+            return true
+        }
+        return ready.miffs.contains { $0.id == miffId }
+    }
 }
 
 extension AppEnvironment {
@@ -33,7 +50,8 @@ extension AppEnvironment {
         NotificationCenterNames(
             miff: { [self] in notificationMiffName($0) },
             requestMiff: { [self] in miffName(of: $0) },
-            requesters: notifications.requesters
+            requesters: notifications.requesters,
+            faces: notifications.faces
         )
     }
 

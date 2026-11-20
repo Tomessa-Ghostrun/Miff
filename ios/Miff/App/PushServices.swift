@@ -13,6 +13,9 @@ final class PushSessionProbe {
 @MainActor
 final class PushForegroundHook {
     var onCircleNews: ((CircleNewsTarget) -> Void)?
+    /// CNC-I : un message du serveur est passé (premier plan, ou toucher sur la notification) pour une Miff du compte : la ligne du centre s'écrit
+    /// ici, avec la clé que le journal du serveur apporte pour le même événement. Branché par `AppEnvironment`.
+    var onArrival: (@MainActor (PushArrival, _ opened: Bool) -> Void)?
 }
 
 /// Les services des notifications push (SRV-2I et SRV-4I), construits d'un seul tenant. Rien ici n'ouvre Firestore ni ne demande quoi que ce
@@ -129,6 +132,15 @@ struct PushServices {
                 )
                 if accepted {
                     hook.onCircleNews?(target)
+                }
+            }
+        }
+        // CNC-I : la ligne du centre pour un message du serveur vu au premier plan ou touché (mêmes gardes que l'ouverture du Feed : jamais pour sa propre
+        // update ; une Miff que l'annuaire connaît et qui n'est pas celle du compte ne laisse aucune ligne).
+        delegate.onArrival = { @Sendable arrival, opened in
+            Task { @MainActor in
+                if PushArrivalRules.accepts(arrival, currentUid: currentUid(), miffIds: Self.knownMiffIds(directory)) {
+                    hook.onArrival?(arrival, opened)
                 }
             }
         }

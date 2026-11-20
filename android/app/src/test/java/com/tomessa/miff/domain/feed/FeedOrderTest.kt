@@ -1,5 +1,10 @@
 package com.tomessa.miff.domain.feed
 
+import com.google.firebase.Timestamp
+import com.tomessa.miff.data.feed.photoAtMillisOf
+import com.tomessa.miff.data.miff.OrderedMember
+import com.tomessa.miff.data.miff.inArrivalOrder
+import com.tomessa.miff.domain.alert.AlertDoc
 import com.tomessa.miff.domain.miff.MiffMember
 import com.tomessa.miff.domain.miff.MiffRole
 import com.tomessa.miff.domain.tracking.PresenceValue
@@ -12,8 +17,9 @@ import org.junit.Test
 import java.time.ZoneOffset
 
 /**
- * FEED-ORDRE (ticket docs/tickets/feed-ordre-derniere-update.md, sections 3, 5 and 7): the order of the cards by date of the last news, and the gate that holds
- * the order back during a gesture. The TABLE of cases of [orderTable] is the contract shared with iOS: same arrival order, same dates, same expected order.
+ * FEED-ORDRE-PHOTO (ticket docs/tickets/feed-ordre-photo.md, sections 3, 5 and 9): the order of the cards by date of the LAST PHOTO published (`photoAt`, and nothing else),
+ * and the gate that holds the order back during a gesture (unchanged since FEED-ORDRE). The TABLE of cases of [orderTable] (T1 to T19; T20 is in `PhotoDateWritesTest`) is the
+ * contract shared with iOS: same arrival order `moi, a, b, c, d`, same dates (hours of the day, a greater one is more recent), same expected order.
  */
 class FeedOrderTest {
     private val zone = ZoneOffset.UTC
@@ -21,6 +27,11 @@ class FeedOrderTest {
     private val minute = 60_000L
     private val hour = 60 * minute
     private val me = "me"
+
+    /** The start of "the day" of the table: an hour of the day `h` is `dayStart + h hours` (all before [now]). */
+    private val dayStart = now - 24 * hour
+
+    private fun at(h: Int) = dayStart + h * hour
 
     private fun member(
         uid: String,
@@ -30,22 +41,18 @@ class FeedOrderTest {
         uid.uppercase(),
         "X",
         null,
-        if (uid ==
-            me
-        ) {
-            MiffRole.OWNER
-        } else {
-            MiffRole.MEMBER
-        },
+        if (uid == me) MiffRole.OWNER else MiffRole.MEMBER,
         sharing,
         "+33612345678",
     )
 
+    /** [photoAt] is the date the Feed sorts by; [lastUpdateAgo] (kept for the tests that are not about the order) is the one of the colour. */
     private fun status(
         presence: PresenceValue? = PresenceValue.IN_TRUSTED,
-        lastUpdateAgo: Long?,
+        lastUpdateAgo: Long? = hour,
         hasPhoto: Boolean = false,
         presenceAgo: Long = 20 * hour,
+        photoAt: Long? = null,
     ) = MemberStatus(
         presence = presence,
         placeId = null,
@@ -56,11 +63,14 @@ class FeedOrderTest {
         locationAccess = MemberLocationAccess.BACKGROUND,
         updatedAtMillis = now - minute,
         travelUntilMillis = if (presence == PresenceValue.TRAVEL) now + 24 * hour else null,
+        photoAtMillis = photoAt,
     )
 
     private fun build(
         members: List<MiffMember>,
         statuses: Map<String, MemberStatus>,
+        alerts: List<AlertDoc> = emptyList(),
+        waitingAgreement: Boolean = false,
     ) = FeedBuilder.build(
         FeedInput(
             "m1",
@@ -70,188 +80,313 @@ class FeedOrderTest {
             emptyList(),
             me,
             StatusesView.Loaded(statuses),
+            waitingAgreement,
             false,
-            false,
+            alerts,
         ),
         now,
         zone,
     )
 
-    private fun order(
-        members: List<String>,
-        ages: Map<String, Long?>,
-        presences: Map<String, PresenceValue?> = emptyMap(),
-        sharingOff: Set<String> = emptySet(),
-        manualAfterActivation: Set<String> = emptySet(),
-    ): List<String> {
-        val statuses =
-            ages
-                .mapNotNull { (uid, ago) ->
-                    if (ago ==
-                        null
-                    ) {
-                        null
-                    } else {
-                        val presence = presences[uid] ?: PresenceValue.IN_TRUSTED
-                        val presenceAgo =
-                            if (presence ==
-                                PresenceValue.UNKNOWN
-                            ) {
-                                ago + (
-                                    if (uid in
-                                        manualAfterActivation
-                                    ) {
-                                        10 * hour
-                                    } else {
-                                        0L
-                                    }
-                                )
-                            } else {
-                                20 * hour
-                            }
-                        uid to status(presence, ago, presenceAgo = presenceAgo)
-                    }
-                }.toMap()
-        return build(members.map { member(it, it !in sharingOff) }, statuses).cards.map { it.member.uid }
-    }
+    // --- The table shared with iOS (criteria B1 to B5, B13, B15) -----------------------------------------------------------
 
-    // --- The table shared with iOS (criteria A1 to A4) ---------------------------------------------------------------
+    /**
+     * What the status of one member says, in hours of the day. [photoH] null = no `photoAt`. [lastH] is `lastUpdateAt` (by default the photo's own time, as a real
+     * publication writes both): the table proves it is IGNORED. [presenceH] is `presenceAt`.
+     */
+    private class St(
+        val photoH: Int?,
+        val lastH: Int? = photoH,
+        val presence: PresenceValue = PresenceValue.IN_TRUSTED,
+        val hasPhoto: Boolean = photoH != null,
+        val presenceH: Int = 1,
+    )
+
+    /** "—" of the table: a status that exists (a last update at 09, a place) and holds NO `photoAt`. */
+    private val noDate = St(null, lastH = 9)
 
     private class Case(
         val name: String,
         val arrival: List<String>,
-        /** Hours since the last update; null = no status at all. */
-        val agesHours: Map<String, Long?>,
+        /** A member without an entry has NO document `status`. */
+        val statuses: Map<String, St>,
         val expected: List<String>,
-        val presences: Map<String, PresenceValue?> = emptyMap(),
         val sharingOff: Set<String> = emptySet(),
-        /** Members whose presence is `unknown` and who published an update AFTER the first status (otherwise both times are equal: sharing just activated). */
-        val manualAfterActivation: Set<String> = emptySet(),
+        val alerts: List<String> = emptyList(),
     )
+
+    private val everyone = listOf(me, "a", "b", "c", "d")
+
+    private fun statusesOf(table: Map<String, St>): Map<String, MemberStatus> =
+        table.mapValues { (_, s) ->
+            MemberStatus(
+                presence = s.presence,
+                placeId = null,
+                presenceAtMillis = at(s.presenceH),
+                lastUpdateAtMillis = s.lastH?.let { at(it) },
+                hasPhoto = s.hasPhoto,
+                batteryPct = 80,
+                locationAccess = MemberLocationAccess.BACKGROUND,
+                updatedAtMillis = now - minute,
+                travelUntilMillis = if (s.presence == PresenceValue.TRAVEL) now + 24 * hour else null,
+                photoAtMillis = s.photoH?.let { at(it) },
+            )
+        }
 
     private val orderTable =
         listOf(
             Case(
-                "A1 most recent first",
+                "T1 simple order, me without a date",
+                everyone,
+                mapOf("a" to St(10), "b" to St(12), "c" to St(11), me to noDate, "d" to noDate),
+                listOf("b", "c", "a", me, "d"),
+            ),
+            Case(
+                "T2 me dated, at the top",
+                everyone,
+                mapOf(me to St(13), "a" to St(12), "b" to St(10), "c" to noDate, "d" to noDate),
+                listOf(me, "a", "b", "c", "d"),
+            ),
+            Case(
+                "T3 me in the middle",
+                everyone,
+                mapOf(me to St(11), "a" to St(12), "b" to St(10), "c" to noDate, "d" to noDate),
+                listOf("a", me, "b", "c", "d"),
+            ),
+            Case(
+                "T4 equal dates: order of arrival",
+                everyone,
+                mapOf("a" to St(12), "b" to St(12), me to noDate, "c" to noDate, "d" to noDate),
+                listOf("a", "b", me, "c", "d"),
+            ),
+            Case(
+                "T6 nobody has a date: order of arrival, me not forced",
+                everyone,
+                mapOf(me to noDate, "a" to noDate, "b" to noDate, "c" to noDate, "d" to noDate),
+                listOf(me, "a", "b", "c", "d"),
+            ),
+            Case(
+                "T7 expired photo (hasPhoto false) keeps its rank",
                 listOf("a", "b", "c"),
-                mapOf("a" to 3L, "b" to 1L, "c" to 2L),
-                listOf("b", "c", "a"),
-            ),
-            Case(
-                "A2 me newest comes first",
-                listOf("a", "b", me),
-                mapOf("a" to 3L, "b" to 2L, me to 1L),
-                listOf(me, "b", "a"),
-            ),
-            Case(
-                "A2 me in the middle",
-                listOf(me, "a", "b"),
-                mapOf(me to 2L, "a" to 1L, "b" to 3L),
-                listOf("a", me, "b"),
-            ),
-            Case(
-                "A2 me the oldest comes last",
-                listOf(me, "a", "b"),
-                mapOf(me to 5L, "a" to 1L, "b" to 3L),
-                listOf("a", "b", me),
-            ),
-            Case(
-                "A3 no status at all goes after",
+                mapOf("a" to St(10, hasPhoto = false), "b" to St(9), "c" to noDate),
                 listOf("a", "b", "c"),
-                mapOf("a" to null, "b" to 4L, "c" to 1L),
+            ),
+            Case(
+                "T8 an update without a photo (lastUpdateAt later) changes nothing",
+                listOf("a", "b"),
+                mapOf("a" to St(10, lastH = 14), "b" to St(11, lastH = 11)),
+                listOf("b", "a"),
+            ),
+            Case(
+                "T9 arrival in a trusted place without a photo does not make the card rise",
+                listOf("a", "b"),
+                mapOf("a" to St(null, lastH = 15, presence = PresenceValue.IN_TRUSTED), "b" to St(9)),
+                listOf("b", "a"),
+            ),
+            Case(
+                "T10 \"Pas encore de nouvelles\" with a photoAt is sorted by it",
+                listOf("a", "b"),
+                mapOf("a" to St(12, presence = PresenceValue.UNKNOWN), "b" to St(10)),
+                listOf("a", "b"),
+            ),
+            Case(
+                "T11 \"Pas encore de nouvelles\" without photoAt, even with lastUpdateAt after presenceAt, has no date",
+                listOf("a", "b"),
+                mapOf("a" to St(null, lastH = 14, presence = PresenceValue.UNKNOWN, presenceH = 3), "b" to St(10)),
+                listOf("b", "a"),
+            ),
+            Case(
+                "T13 a member without a document status",
+                listOf("a", "b"),
+                mapOf("b" to St(10)),
+                listOf("b", "a"),
+            ),
+            Case(
+                "T15 a single member",
+                listOf(me),
+                mapOf(me to St(10)),
+                listOf(me),
+            ),
+            Case(
+                "T16 a trip: photoAt kept",
+                listOf("a", "b"),
+                mapOf("a" to St(12, presence = PresenceValue.TRAVEL), "b" to St(10)),
+                listOf("a", "b"),
+            ),
+            Case(
+                "T18 a card in alert comes first, the others follow the photos",
+                listOf("a", "b", "c"),
+                mapOf("c" to noDate, "a" to St(12), "b" to St(13)),
                 listOf("c", "b", "a"),
+                alerts = listOf("c"),
             ),
             Case(
-                "A3 undated ones keep the order of arrival",
-                listOf("a", "b", "c", "d"),
-                mapOf("a" to null, "b" to 9L, "c" to null, "d" to 1L),
-                listOf("d", "b", "a", "c"),
-            ),
-            Case(
-                "A3 presence unknown, sharing just activated (equal times) is without a date",
+                "B15 the alert of a member who has the OLDEST photo still comes first",
                 listOf("a", "b", "c"),
-                mapOf("a" to 1L, "b" to 2L, "c" to 3L),
-                listOf("b", "c", "a"),
-                presences = mapOf("a" to PresenceValue.UNKNOWN),
+                mapOf("a" to St(8), "b" to St(13), "c" to St(12)),
+                listOf("a", "b", "c"),
+                alerts = listOf("a"),
             ),
             Case(
-                "A3 presence unknown but a manual update after the activation: it rises with its date",
+                "B3 sharing stopped is without a date, even with a photoAt left",
                 listOf("a", "b", "c"),
-                mapOf("a" to 2L, "b" to 1L, "c" to 3L),
-                listOf("b", "a", "c"),
-                presences = mapOf("a" to PresenceValue.UNKNOWN),
-                manualAfterActivation = setOf("a"),
-            ),
-            Case(
-                "A3 sharing stopped is without a date",
-                listOf("a", "b", "c"),
-                mapOf("a" to 1L, "b" to 2L, "c" to 3L),
+                mapOf("a" to St(14), "b" to St(10), "c" to St(9)),
                 listOf("b", "c", "a"),
                 sharingOff = setOf("a"),
-            ),
-            Case(
-                "A4 equal dates keep the order of arrival",
-                listOf("a", "b", "c"),
-                mapOf(
-                    "a" to 2L,
-                    "b" to 2L,
-                    "c" to 2L,
-                ),
-                listOf("a", "b", "c"),
-            ),
-            Case(
-                "A4 equal dates, me in the middle",
-                listOf("a", me, "b"),
-                mapOf("a" to 2L, me to 2L, "b" to 2L),
-                listOf("a", me, "b"),
-            ),
-            Case(
-                "nobody has a date: order of arrival, me not forced",
-                listOf("a", me, "b"),
-                emptyMap(),
-                listOf("a", me, "b"),
-            ),
-            Case("a single member", listOf(me), mapOf(me to 1L), listOf(me)),
-            Case(
-                "A5 a very old update (the photo is long expired) still sorts by its date",
-                listOf("b", "a"),
-                mapOf("a" to 30L, "b" to 40L),
-                listOf("a", "b"),
-            ),
-            Case(
-                "a trip is dated like any other status",
-                listOf("a", "b"),
-                mapOf("a" to 5L, "b" to 1L),
-                listOf("b", "a"),
-                presences = mapOf("b" to PresenceValue.TRAVEL),
             ),
         )
 
     @Test
     fun orderTable_everyCase() {
         orderTable.forEach { case ->
-            assertEquals(
-                case.name,
-                case.expected,
-                order(
-                    case.arrival,
-                    case.agesHours.mapValues {
-                        it.value?.times(hour)
-                    },
-                    case.presences,
-                    case.sharingOff,
-                    case.manualAfterActivation,
-                ),
-            )
+            val alerts = case.alerts.map { AlertDoc(it, true, now - minute, now + 6 * 24 * hour, 1) }
+            val content =
+                build(case.arrival.map { member(it, it !in case.sharingOff) }, statusesOf(case.statuses), alerts)
+            assertEquals(case.name, case.expected, content.cards.map { it.member.uid })
         }
+    }
+
+    @Test
+    fun t4_equalDates_theResultIsTheSameWhateverTheOrderOfTheInput_100Shuffles() {
+        val table = mapOf("a" to St(12), "b" to St(12), me to noDate, "c" to noDate, "d" to noDate)
+        val expected = listOf("a", "b", me, "c", "d")
+        repeat(100) { seed ->
+            val shuffled =
+                statusesOf(table).entries.shuffled(java.util.Random(seed.toLong())).associate {
+                    it.key to
+                        it.value
+                }
+            assertEquals(expected, build(everyone.map { member(it) }, shuffled).cards.map { it.member.uid })
+        }
+    }
+
+    @Test
+    fun t5_sameArrivalAndSameDate_theIdentifierDecides_atEveryLaunch() {
+        // Two members who joined at the very same moment: the arrival order itself ends with the identifier, so the order of the Feed is the same at every launch.
+        val joined = 1_000L
+        val inputs =
+            listOf(
+                OrderedMember(member("b"), joined),
+                OrderedMember(member("a"), joined),
+                OrderedMember(member(me), joined),
+            )
+        val arrival = inputs.inArrivalOrder()
+        assertEquals(listOf(me, "a", "b"), arrival.map { it.uid })
+        assertEquals(arrival.map { it.uid }, inputs.reversed().inArrivalOrder().map { it.uid })
+        // Same photo date for the two: the order of arrival (so the identifier) decides, whichever way the statuses come.
+        val same = statusesOf(mapOf("a" to St(12), "b" to St(12)))
+        repeat(20) { seed ->
+            val shuffled = same.entries.shuffled(java.util.Random(seed.toLong())).associate { it.key to it.value }
+            assertEquals(listOf("a", "b", me), build(arrival, shuffled).cards.map { it.member.uid })
+        }
+    }
+
+    @Test
+    fun t12_labelsWithoutADate_evenWithAPhotoAtLeftInTheStatus() {
+        // "Partage désactivé" (a, photoAt 14), a dated card (d, 09), others without a date: d first, then the others in the order of arrival.
+        val members = listOf("a", "b", "c", "d").map { member(it, sharing = it != "a") }
+        val statuses = statusesOf(mapOf("a" to St(14), "b" to noDate, "c" to noDate, "d" to St(9)))
+        val stopped = build(members, statuses)
+        assertEquals(StateLabel.SharingStopped, stopped.cards.first { it.member.uid == "a" }.label)
+        assertEquals(listOf("d", "a", "b", "c"), stopped.cards.map { it.member.uid })
+
+        // "Informations masquées": I stopped sharing, the status of the others is not read, even with a photoAt (b 13, d 09): nobody has a date.
+        val mine = listOf(me, "a", "b", "c", "d").map { member(it, sharing = it != me) }
+        val hidden = build(mine, statusesOf(mapOf("a" to St(14), "b" to St(13), "c" to St(11), "d" to St(9))))
+        assertEquals(StateLabel.NewsHidden, hidden.cards.first { it.member.uid == "b" }.label)
+        assertEquals(listOf(me, "a", "b", "c", "d"), hidden.cards.map { it.member.uid })
+
+        // "En attente de mon accord": nobody has a date either (my card included).
+        val waiting =
+            build(
+                everyone.map { member(it) },
+                statusesOf(mapOf(me to St(15), "a" to St(14), "b" to St(13), "d" to St(9))),
+                waitingAgreement = true,
+            )
+        assertEquals(StateLabel.WaitingAgreement, waiting.cards.first { it.isMe }.label)
+        assertEquals(everyone, waiting.cards.map { it.member.uid })
+    }
+
+    @Test
+    fun newsDate_isPhotoAtAndNothingElse_exceptForTheThreeLabelsWithoutADate() {
+        val s = status(lastUpdateAgo = hour, presenceAgo = 2 * hour, photoAt = at(5))
+        listOf(
+            StateLabel.Danger,
+            StateLabel.TravelEnded,
+            StateLabel.NoNews,
+        ).forEach { assertEquals(at(5), FeedBuilder.newsDate(it, s)) }
+        listOf(StateLabel.SharingStopped, StateLabel.NewsHidden, StateLabel.WaitingAgreement).forEach {
+            assertNull(it.toString(), FeedBuilder.newsDate(it, s))
+        }
+        // No photoAt: no date, whatever the other times say (the old exception of "Pas encore de nouvelles" with lastUpdateAt after presenceAt is gone).
+        val without = status(PresenceValue.UNKNOWN, lastUpdateAgo = hour, presenceAgo = 2 * hour)
+        listOf(StateLabel.NoNews, StateLabel.Danger, StateLabel.TravelEnded).forEach {
+            assertNull(FeedBuilder.newsDate(it, without))
+        }
+        assertNull(FeedBuilder.newsDate(StateLabel.Danger, null))
+        assertNull(FeedBuilder.newsDate(StateLabel.NoNews, null))
+        // hasPhoto does not date anything either.
+        assertNull(FeedBuilder.newsDate(StateLabel.Danger, status(hasPhoto = true)))
+    }
+
+    @Test
+    fun t14_anUnreadableDate_isNoDate_andNothingFails() {
+        // At the level of the reading: null, a text, a number, a boolean, a map: no date. A real time: its milliseconds.
+        assertNull(photoAtMillisOf(null))
+        assertNull(photoAtMillisOf("2026-11-20"))
+        assertNull(photoAtMillisOf(1_800_000_000_000L))
+        assertNull(photoAtMillisOf(true))
+        assertNull(photoAtMillisOf(mapOf("seconds" to 1)))
+        assertEquals(1_800_000_000_123L, photoAtMillisOf(Timestamp(1_800_000_000L, 123_000_000)))
+        // At the level of the Feed: a status whose photoAt could not be read sorts last, in the order of arrival, without a failure.
+        val order =
+            build(
+                listOf("a", "b").map { member(it) },
+                mapOf(
+                    "a" to status(photoAt = photoAtMillisOf("not a time")),
+                    "b" to status(photoAt = at(10)),
+                ),
+            ).cards.map { it.member.uid }
+        assertEquals(listOf("b", "a"), order)
+    }
+
+    @Test
+    fun t17_theDatesAreCompared_toTheMillisecond() {
+        // Two photos that differ only by the microseconds are EQUAL (the same truncation as iOS): the order of arrival decides, in both arrival orders.
+        val first = photoAtMillisOf(Timestamp(1_800_000_000L, 1_000))
+        val second = photoAtMillisOf(Timestamp(1_800_000_000L, 2_000))
+        assertEquals(first, second)
+        val statuses = mapOf("a" to status(photoAt = first), "b" to status(photoAt = second))
+        assertEquals(listOf("a", "b"), build(listOf("a", "b").map { member(it) }, statuses).cards.map { it.member.uid })
+        assertEquals(listOf("b", "a"), build(listOf("b", "a").map { member(it) }, statuses).cards.map { it.member.uid })
+        // One whole millisecond later is later.
+        val later = photoAtMillisOf(Timestamp(1_800_000_000L, 1_000_000))
+        val earlier = photoAtMillisOf(Timestamp(1_800_000_000L, 999_999))
+        assertEquals(first, earlier)
+        assertEquals(first!! + 1, later)
+        val byMs = mapOf("a" to status(photoAt = earlier), "b" to status(photoAt = later))
+        assertEquals(listOf("b", "a"), build(listOf("a", "b").map { member(it) }, byMs).cards.map { it.member.uid })
+    }
+
+    @Test
+    fun t19_myPhotoStillWaitingForTheServer_isDatedNow_thenTheServerValueKeepsTheSameOrder() {
+        val members = listOf(me, "a", "b").map { member(it) }
+        val others = mapOf("a" to status(photoAt = at(12)), "b" to status(photoAt = at(10)))
+        // Pending: the estimate is "now".
+        val pending = build(members, others + (me to status(photoAt = now)))
+        assertEquals(listOf(me, "a", "b"), pending.cards.map { it.member.uid })
+        // Confirmed: the value of the server (a few seconds before) puts me in the same place.
+        val confirmed = build(members, others + (me to status(photoAt = now - 3_000L)))
+        assertEquals(pending.cards.map { it.member.uid }, confirmed.cards.map { it.member.uid })
     }
 
     @Test
     fun orderTable_theOrderDoesNotDependOnTheOrderOfTheMapsOrTheNumberOfRuns() {
         val arrival = listOf("a", me, "b", "c", "d", "e")
-        val ages = mapOf("a" to 3L, me to 3L, "b" to null, "c" to 1L, "d" to 3L, "e" to null)
-        val expected = listOf("c", "a", me, "d", "b", "e")
-        val statuses = ages.mapNotNull { (uid, ago) -> ago?.let { uid to status(lastUpdateAgo = it * hour) } }
+        val dates = mapOf("a" to 3, me to 3, "b" to null, "c" to 1, "d" to 3, "e" to null)
+        // The more recent the photo, the later the hour: 3 is the most recent.
+        val expected = listOf("a", me, "d", "c", "b", "e")
+        val statuses = dates.map { (uid, h) -> uid to status(photoAt = h?.let { at(it) }) }
         repeat(100) { seed ->
             val shuffled = statuses.shuffled(java.util.Random(seed.toLong())).toMap()
             assertEquals(expected, build(arrival.map { member(it) }, shuffled).cards.map { it.member.uid })
@@ -265,45 +400,32 @@ class FeedOrderTest {
         val members = listOf("a", "b", "c").map { member(it) }
         val dates = mapOf("a" to 1_000L, "b" to 3_000L, "c" to 2_000L)
         assertEquals(listOf("b", "c", "a"), FeedBuilder.orderMembers(members, dates).map { it.uid })
-        // A date in the future (a clock ahead, up to 5 minutes by the rules) is compared as stored, never clamped to "now".
+        // A date in the future (never written by the rules, but possible in a modified client) is compared as stored, never clamped to "now".
         val ahead = mapOf("a" to now + 5 * minute, "b" to now, "c" to now - hour)
         assertEquals(listOf("a", "b", "c"), FeedBuilder.orderMembers(members, ahead).map { it.uid })
     }
 
     @Test
-    fun newsDate_isTheLastUpdate_exceptWhenTheCardSaysNoNewsAndNothingFollowedTheFirstStatus() {
-        val s = status(lastUpdateAgo = hour)
-        val expected = now - hour
-        assertEquals(expected, FeedBuilder.newsDate(StateLabel.Danger, s))
-        assertEquals(expected, FeedBuilder.newsDate(StateLabel.TravelEnded, s))
-        assertNull(FeedBuilder.newsDate(StateLabel.NoNews, s))
-        // "Pas encore de nouvelles" with presence unknown: dated only by an update strictly AFTER the first status.
-        val unknownAfter = status(PresenceValue.UNKNOWN, lastUpdateAgo = hour, presenceAgo = 2 * hour)
-        assertEquals(expected, FeedBuilder.newsDate(StateLabel.NoNews, unknownAfter))
-        assertNull(
-            FeedBuilder.newsDate(
-                StateLabel.NoNews,
-                status(PresenceValue.UNKNOWN, lastUpdateAgo = hour, presenceAgo = hour),
-            ),
-        )
-        assertNull(
-            FeedBuilder.newsDate(
-                StateLabel.NoNews,
-                status(PresenceValue.UNKNOWN, lastUpdateAgo = 2 * hour, presenceAgo = hour),
-            ),
-        )
-        assertNull(
-            FeedBuilder.newsDate(
-                StateLabel.NoNews,
-                status(PresenceValue.UNKNOWN, lastUpdateAgo = null, presenceAgo = hour),
-            ),
-        )
-        assertNull(FeedBuilder.newsDate(StateLabel.NoNews, status(null, lastUpdateAgo = hour, presenceAgo = 2 * hour)))
-        assertNull(FeedBuilder.newsDate(StateLabel.SharingStopped, s))
-        assertNull(FeedBuilder.newsDate(StateLabel.NewsHidden, s))
-        assertNull(FeedBuilder.newsDate(StateLabel.WaitingAgreement, s))
-        assertNull(FeedBuilder.newsDate(StateLabel.Danger, null))
-        assertNull(FeedBuilder.newsDate(StateLabel.Danger, status(lastUpdateAgo = null)))
+    fun b5_onlyANewPhotoMovesACard() {
+        val members = listOf(me, "a", "b").map { member(it) }
+        val base =
+            mapOf(
+                me to status(photoAt = at(8)),
+                "a" to status(photoAt = at(10)),
+                "b" to status(photoAt = at(9)),
+            )
+        val before = build(members, base).cards.map { it.member.uid }
+        assertEquals(listOf("a", "b", me), before)
+        // An update without a photo (lastUpdateAt much later), an arrival at a place, a flat battery, a trip, a photo that expired: nothing moves.
+        val calm =
+            base +
+                (me to status(lastUpdateAgo = minute, photoAt = at(8))) +
+                ("b" to status(PresenceValue.OUT, lastUpdateAgo = minute, hasPhoto = false, photoAt = at(9))) +
+                ("a" to status(PresenceValue.TRAVEL, lastUpdateAgo = 2 * hour, photoAt = at(10)))
+        assertEquals(before, build(members, calm).cards.map { it.member.uid })
+        // A NEW photo (a later photoAt) is what moves it.
+        val photo = base + (me to status(lastUpdateAgo = minute, hasPhoto = true, photoAt = now - minute))
+        assertEquals(listOf(me, "a", "b"), build(members, photo).cards.map { it.member.uid })
     }
 
     @Test
@@ -313,9 +435,9 @@ class FeedOrderTest {
             build(
                 members,
                 mapOf(
-                    "a" to status(lastUpdateAgo = hour),
-                    "b" to status(lastUpdateAgo = minute),
-                    me to status(lastUpdateAgo = 2 * hour),
+                    "a" to status(photoAt = at(10)),
+                    "b" to status(photoAt = at(12)),
+                    me to status(photoAt = at(9)),
                 ),
             )
         // Nothing of the others is read while I do not share: no card has a date, the order of arrival stays.
@@ -323,34 +445,26 @@ class FeedOrderTest {
     }
 
     @Test
-    fun presenceUnknownAfterAManualUpdate_rises_butStaysLastWhenTheTimesAreEqual() {
-        // The case flagged by the ticket: a manual update before any departure leaves `presence = unknown`. Sharing just activated: `presenceAt` and
-        // `lastUpdateAt` are the same server time, the card has no news and stays last. After a manual update `lastUpdateAt` is later: the card rises with
-        // its date (the wording stays "Pas encore de nouvelles": question left to the PM).
-        val members = listOf("a", "b", "c").map { member(it) }
-        val manual =
+    fun presenceUnknown_isDatedByItsPhotoAt_andKeepsItsLabel() {
+        // "Pas encore de nouvelles" keeps its wording although it is dated by its photoAt (the question of the label stays open in the ticket).
+        val members = listOf("a", "b").map { member(it) }
+        val content =
             build(
                 members,
                 mapOf(
                     "a" to
-                        status(PresenceValue.UNKNOWN, lastUpdateAgo = minute, hasPhoto = true, presenceAgo = 3 * hour),
-                    "b" to status(lastUpdateAgo = 5 * hour),
-                    "c" to status(lastUpdateAgo = 6 * hour),
+                        status(
+                            PresenceValue.UNKNOWN,
+                            lastUpdateAgo = minute,
+                            presenceAgo = 3 * hour,
+                            hasPhoto = true,
+                            photoAt = at(12),
+                        ),
+                    "b" to status(photoAt = at(10)),
                 ),
             )
-        assertEquals(listOf("a", "b", "c"), manual.cards.map { it.member.uid })
-        assertEquals(StateLabel.NoNews, manual.cards.first().label)
-        val activation =
-            build(
-                members,
-                mapOf(
-                    "a" to status(PresenceValue.UNKNOWN, lastUpdateAgo = minute, presenceAgo = minute),
-                    "b" to status(lastUpdateAgo = 5 * hour),
-                    "c" to status(lastUpdateAgo = 6 * hour),
-                ),
-            )
-        assertEquals(listOf("b", "c", "a"), activation.cards.map { it.member.uid })
-        assertEquals(StateLabel.NoNews, activation.cards.last().label)
+        assertEquals(listOf("a", "b"), content.cards.map { it.member.uid })
+        assertEquals(StateLabel.NoNews, content.cards.first().label)
     }
 
     @Test

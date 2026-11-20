@@ -51,12 +51,20 @@ class UpdatePublisherTest {
         var notSharing = emptySet<String>()
         var needsAgreement = emptySet<String>()
 
-        /** The call (0-based) that fails, and with what. */
-        var failCall: Int? = null
+        /** The calls (0-based) that fail, and with what (a single one: [failCall]). */
+        var failCalls: Set<Int> = emptySet()
+        var failCall: Int?
+            get() = failCalls.singleOrNull()
+            set(value) {
+                failCalls = setOfNotNull(value)
+            }
         var failure: Exception = FirebaseFirestoreException("down", FirebaseFirestoreException.Code.UNAVAILABLE)
         var beforeCommit: () -> Unit = {}
         var delayMillis = 0L
-        private var calls = 0
+
+        /** How many times the store was asked to commit (failed attempts included). */
+        var calls = 0
+            private set
 
         override suspend fun commit(
             uid: String,
@@ -67,7 +75,7 @@ class UpdatePublisherTest {
             val call = calls++
             beforeCommit()
             if (delayMillis > 0) delay(delayMillis)
-            if (call == failCall) throw failure
+            if (call in failCalls) throw failure
             val sharingStopped = miffIds.filter { it in notSharing }
             val noAgreement = miffIds.filter { it in needsAgreement && it !in notSharing && requireConsent }
             val allowed = miffIds - sharingStopped.toSet() - noAgreement.toSet()
@@ -219,13 +227,183 @@ class UpdatePublisherTest {
     @Test
     fun aRefusal_whenTheRulesDoNotKnowTheDescriptionYet_leavesNothing_andIsRefused() =
         runTest {
-            store.failCall = 0
+            store.failCalls = setOf(0, 1) // refused again without photoAt: a real refusal
             store.failure = FirebaseFirestoreException("no", FirebaseFirestoreException.Code.PERMISSION_DENIED)
             val result = publisher().publish(photo, description = "Bien arrivé")
             assertEquals(PublishResult.Refused, result)
             // Nothing is counted, and my card shows no photo: the screen keeps the photo and its description, "Réessayer" sends both again.
             assertNull(cache.get(miffIds[0], uid, null, now))
             assertNull(ledger.last)
+        }
+
+    // --- FEED-ORDRE-PHOTO: the date of the last photo (`photoAt`) and the safety net for the order of deployment -----------------------------
+
+    private fun statusWrite(commit: Commit) = commit.writes.single { "/status/" in it.path }
+
+    @Test
+    fun thePublicationWritesPhotoAt_asTheServerTime_inTheStatusOfEachMiff_notInThePhoto() =
+        runTest {
+            myMiffs = miffIds.take(2)
+            assertEquals(PublishResult.Published(2), publisher().publish(photo))
+            val writes = store.commits.single().writes
+            val statuses = writes.filter { "/status/" in it.path }
+            assertEquals(2, statuses.size)
+            statuses.forEach {
+                assertEquals(
+                    com.google.firebase.firestore.FieldValue
+                        .serverTimestamp(),
+                    it.data["photoAt"],
+                )
+                assertEquals(true, it.data["hasPhoto"])
+            }
+            photoWrites().forEach { assertFalse("photoAt" in it.data) }
+            assertEquals("one attempt, no more transaction than before", 1, store.calls)
+        }
+
+    @Test
+    fun ifTheRulesDoNotKnowPhotoAtYet_theSecondAttemptWithoutIt_keepsThePhoto() =
+        runTest {
+            // The rules of FEED-ORDRE-PHOTO are not deployed: the server refuses the whole lot (photo included) as long as the status names `photoAt`.
+            store.failCall = 0
+            store.failure = FirebaseFirestoreException("no", FirebaseFirestoreException.Code.PERMISSION_DENIED)
+            val result = publisher().publish(photo)
+            assertEquals(PublishResult.Published(1), result)
+            assertEquals("one refused attempt, one more, never a third", 2, store.calls)
+            val commit = store.commits.single()
+            assertEquals(1, photoWrites().size)
+            val status = statusWrite(commit)
+            assertFalse("photoAt" in status.data)
+            // The second attempt is the first one minus the key, nothing else is changed (no other key added, none lowered).
+            val stamped =
+                UpdateWrites.publish(
+                    miffIds[0],
+                    uid,
+                    photo,
+                    com.tomessa.miff.domain.update.PhotoPlace
+                        .from(position.fix, T0)!!,
+                    T0,
+                    77,
+                    DEVICE_A,
+                )[1]
+            assertEquals(stamped.data.keys - "photoAt", status.data.keys)
+            assertEquals(true, status.data["hasPhoto"])
+            // The photo is counted and my own card shows it, as for any publication that went through.
+            assertNotNull(ledger.last)
+            assertNotNull(cache.get(miffIds[0], uid, null, now))
+        }
+
+    @Test
+    fun afterAFallbackThatWorked_thePublisherDoesNotAskForPhotoAtForAnHour_thenAsksAgain() =
+        runTest {
+            store.failCall = 0
+            store.failure = FirebaseFirestoreException("no", FirebaseFirestoreException.Code.PERMISSION_DENIED)
+            val same = publisher()
+            assertEquals(PublishResult.Published(1), same.publish(photo))
+            assertEquals(2, store.calls)
+            ledger.last = null
+            now += 60_000L
+            assertEquals(PublishResult.Published(1), same.publish(photo))
+            // No doubled transaction: a single call, already without the key.
+            assertEquals(3, store.calls)
+            assertFalse("photoAt" in statusWrite(store.commits.last()).data)
+            // Just before the hour is over: still without the key.
+            ledger.last = null
+            now = T0 + UpdatePublisher.PHOTO_DATE_RETRY_MILLIS - 1_000L
+            assertEquals(PublishResult.Published(1), same.publish(freshPhoto()))
+            assertEquals(4, store.calls)
+            assertFalse("photoAt" in statusWrite(store.commits.last()).data)
+            // The hour is over and the rules were deployed meanwhile (nothing fails any more): the date is written again, in one call.
+            ledger.last = null
+            now = T0 + UpdatePublisher.PHOTO_DATE_RETRY_MILLIS + 1_000L
+            assertEquals(PublishResult.Published(1), same.publish(freshPhoto()))
+            assertEquals(5, store.calls)
+            assertTrue("photoAt" in statusWrite(store.commits.last()).data)
+            // And it is asked at every publication from now on.
+            ledger.last = null
+            now += 60_000L
+            assertEquals(PublishResult.Published(1), same.publish(freshPhoto()))
+            assertTrue("photoAt" in statusWrite(store.commits.last()).data)
+        }
+
+    @Test
+    fun afterTheHour_ifTheRulesAreStillNotDeployed_theFallbackWorksAgain_andWaitsAnotherHour() =
+        runTest {
+            store.failure = FirebaseFirestoreException("no", FirebaseFirestoreException.Code.PERMISSION_DENIED)
+            store.failCalls = setOf(0, 2) // the first attempt of each of the two publications is refused
+            val same = publisher()
+            assertEquals(PublishResult.Published(1), same.publish(photo))
+            ledger.last = null
+            now = T0 + UpdatePublisher.PHOTO_DATE_RETRY_MILLIS + 1_000L
+            assertEquals(PublishResult.Published(1), same.publish(freshPhoto()))
+            // Calls: 0 refused, 1 plain, 2 refused (asked again after the hour), 3 plain.
+            assertEquals(4, store.calls)
+            assertFalse("photoAt" in statusWrite(store.commits.last()).data)
+            // Waiting another hour: the next one goes straight without the key.
+            ledger.last = null
+            now += 60_000L
+            assertEquals(PublishResult.Published(1), same.publish(freshPhoto()))
+            assertEquals(5, store.calls)
+        }
+
+    @Test
+    fun aNewLaunch_asksForPhotoAtAgainAtOnce() =
+        runTest {
+            store.failCall = 0
+            store.failure = FirebaseFirestoreException("no", FirebaseFirestoreException.Code.PERMISSION_DENIED)
+            assertEquals(PublishResult.Published(1), publisher().publish(photo))
+            ledger.last = null
+            now += 60_000L
+            assertEquals(PublishResult.Published(1), publisher().publish(freshPhoto()))
+            assertEquals(3, store.calls)
+            assertTrue("photoAt" in statusWrite(store.commits.last()).data)
+        }
+
+    /** A photo and a position that are recent at the moment [now] has reached (the guard-rails refuse a photo that waited 5 minutes). */
+    private fun freshPhoto(): UpdatePhoto {
+        position.fix = Fix(48.8566, 2.3522, now - 30_000L)
+        return UpdatePhoto(photo.jpeg, 461, 1024, takenAtMillis = now - 20_000L)
+    }
+
+    @Test
+    fun aRefusalThatIsNotAboutPhotoAt_isRefusedAgainWithoutIt_endsAsRefused_andIsNotRemembered() =
+        runTest {
+            // A real refusal (session, App Check, rules): the second attempt is judged by the same rules and refused too; exactly one retry.
+            store.failCalls = setOf(0, 1)
+            store.failure = FirebaseFirestoreException("no", FirebaseFirestoreException.Code.PERMISSION_DENIED)
+            val same = publisher()
+            assertEquals(PublishResult.Refused, same.publish(photo))
+            assertEquals(2, store.calls)
+            assertNothingLeft()
+            // Nothing was learnt about `photoAt`: the next publication asks for it again.
+            store.failCalls = emptySet()
+            assertEquals(PublishResult.Published(1), same.publish(photo))
+            assertTrue("photoAt" in statusWrite(store.commits.single()).data)
+        }
+
+    @Test
+    fun aFailureThatIsNotARefusal_isNeverRetriedWithoutPhotoAt() =
+        runTest {
+            store.failCall = 0
+            store.failure = FirebaseFirestoreException("down", FirebaseFirestoreException.Code.UNAVAILABLE)
+            assertEquals(PublishResult.Offline, publisher().publish(photo))
+            assertEquals(1, store.calls)
+            assertNothingLeft()
+        }
+
+    @Test
+    fun theFallbackIsPerLot_severalLots_theLaterOnesDoNotAskAgain() =
+        runTest {
+            myMiffs = miffIds
+            store.failCall = 0
+            store.failure = FirebaseFirestoreException("no", FirebaseFirestoreException.Code.PERMISSION_DENIED)
+            assertEquals(PublishResult.Published(7), publisher().publish(photo))
+            // Lot 1: refused, then written without the key; lot 2: straight without the key (3 calls, not 4).
+            assertEquals(3, store.calls)
+            store.commits.forEach { c ->
+                c.writes.filter { "/status/" in it.path }.forEach {
+                    assertFalse("photoAt" in it.data)
+                }
+            }
         }
 
     // --- MODE VOYAGE -------------------------------------------------------------------------------------------------------------------
@@ -423,7 +601,7 @@ class UpdatePublisherTest {
             ledger.photoUid = uid
             ledger.photoAt = T0 - 3_600_000L
             store.failure = FirebaseFirestoreException("no", FirebaseFirestoreException.Code.PERMISSION_DENIED)
-            store.failCall = 0
+            store.failCalls = setOf(0, 1)
             assertEquals(PublishResult.Refused, publisher().publish(photo))
             assertEquals(T0 - 3_600_000L, ledger.photoAt)
             // And without any previous note: no note.
@@ -442,7 +620,7 @@ class UpdatePublisherTest {
                     { now },
                     { zone },
                 )
-            store.failCall = 1
+            store.failCalls = setOf(2, 3)
             assertEquals(PublishResult.Refused, again.publish(photo))
             assertNull(other.photoAt)
         }
@@ -599,13 +777,13 @@ class UpdatePublisherTest {
     fun aRefusalOfTheRules_isRefused_aNetworkErrorIsOffline_anythingElseIsFailed_nothingIsCounted() =
         runTest {
             store.failure = FirebaseFirestoreException("no", FirebaseFirestoreException.Code.PERMISSION_DENIED)
-            store.failCall = 0
+            store.failCalls = setOf(0, 1)
             assertEquals(PublishResult.Refused, publisher().publish(photo))
             store.failure = FirebaseFirestoreException("down", FirebaseFirestoreException.Code.UNAVAILABLE)
-            store.failCall = 1
+            store.failCall = 2
             assertEquals(PublishResult.Offline, publisher().publish(photo))
             store.failure = IllegalStateException("boom")
-            store.failCall = 2
+            store.failCall = 3
             assertEquals(PublishResult.Failed, publisher().publish(photo))
             assertNull(ledger.last)
             assertNull(cache.get(miffIds[0], uid, null, now))

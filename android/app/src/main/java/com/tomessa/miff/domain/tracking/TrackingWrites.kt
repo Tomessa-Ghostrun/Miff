@@ -20,6 +20,9 @@ import java.util.Date
  *   session's value, and the next step of the deployment makes the key mandatory). The parameter is required and checked: a write cannot be built without it.
  * - R-LIEU-1 (deployed): an update never sends `presenceAt` / `lastUpdateAt` when it does not change them (the merged document keeps the stored value, which the
  *   rules accept whatever its age). `lastUpdateAt` is never set to the time of an event just to get past the rules.
+ * - FEED-ORDRE-PHOTO: `photoAt` (the date the Feed sorts by) is written in ONE place only, [photoStatus] with a photo published, and ALWAYS with the SERVER time
+ *   (`FieldValue.serverTimestamp()`, which the rules compare to `request.time`): never the clock of the phone. No other write names it, so the partial updates
+ *   (arrival in a place, battery, trip, the clean-up of an expired photo) keep it as it is stored, and the initial status (a `set`) has none.
  */
 object TrackingWrites {
     /**
@@ -160,7 +163,11 @@ object TrackingWrites {
      * `DeviceIdInEveryWriteTest` counts). An UPDATE of the fields of the photo only: `presence`, `placeId`, `presenceAt` and `locationAccess` are NOT sent
      * (the merged document keeps them, R-LIEU-1), `lastUpdateAt` is the SERVER time (it is the moment of the update, and what the colour restarts from).
      * [photoPublished] true: a photo is published (`hasPhoto = true`, `updateText = null`: no text in v1). False: the photo of the author was removed
-     * because it expired (`hasPhoto = false`), `lastUpdateAt` is then left alone.
+     * because it expired (`hasPhoto = false`), `lastUpdateAt` is then left alone, and so is `photoAt` (the rank of the card does not move when a photo expires).
+     *
+     * FEED-ORDRE-PHOTO: a published photo also sets `photoAt` to the SERVER time (the date the Feed sorts the cards by). [stampPhotoDate] false leaves the key out: it is
+     * ONLY the second attempt of [com.tomessa.miff.data.update.UpdatePublisher] when the server refused the first one (rules without `photoAt` not deployed yet), so that
+     * the photo is never lost. Leaving an optional key out can only make the write MORE conservative: the rules judge it exactly as they judge any older client's.
      */
     fun photoStatus(
         miffId: String,
@@ -168,6 +175,7 @@ object TrackingWrites {
         photoPublished: Boolean,
         batteryPct: Int?,
         deviceId: String,
+        stampPhotoDate: Boolean = true,
     ): DocWrite {
         requireDeviceId(deviceId)
         val data =
@@ -179,6 +187,7 @@ object TrackingWrites {
             )
         if (photoPublished) {
             data["lastUpdateAt"] = FieldValue.serverTimestamp()
+            if (stampPhotoDate) data["photoAt"] = FieldValue.serverTimestamp()
             data["updateText"] = null
         }
         return DocWrite("miffs/$miffId/status/$uid", WriteKind.UPDATE, data)

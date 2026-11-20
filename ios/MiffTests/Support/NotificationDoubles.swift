@@ -134,6 +134,30 @@ final class MemoryLastVisitStore: LastVisitStoring {
     }
 }
 
+/// CNC-I : le curseur du journal du serveur en mémoire (un compte à la fois, comme le fichier).
+final class MemoryJournalCursorStore: NotificationJournalCursorStoring {
+    private(set) var storedUid: String?
+    private(set) var millis: Int?
+    private(set) var setCalls = 0
+    private(set) var clearCalls = 0
+
+    func cursor(uid: String) -> Int? {
+        storedUid == uid ? millis : nil
+    }
+
+    func setCursor(_ value: Int, uid: String) {
+        setCalls += 1
+        storedUid = uid
+        millis = value
+    }
+
+    func clear() {
+        clearCalls += 1
+        storedUid = nil
+        millis = nil
+    }
+}
+
 /// Un ensemble complet de stockages en mémoire.
 struct NotificationMemory {
     let preferences = MemoryNotificationPreferencesStore()
@@ -141,10 +165,12 @@ struct NotificationMemory {
     let secondChance = MemorySecondChanceStore()
     let plan = MemoryNotificationPlanStore()
     let lastVisit = MemoryLastVisitStore()
+    let journalCursor = MemoryJournalCursorStore()
 
     var localData: NotificationLocalData {
         NotificationLocalData(
-            preferences: preferences, center: center, secondChance: secondChance, plan: plan, lastVisit: lastVisit
+            preferences: preferences, center: center, secondChance: secondChance, plan: plan, lastVisit: lastVisit,
+            journalCursor: journalCursor
         )
     }
 }
