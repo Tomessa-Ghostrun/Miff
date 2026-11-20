@@ -8,8 +8,17 @@ rules_version = '2';
 // 2026-10-27, AUTH-B et ONB-B comprises), puis le 2026-11-04 (commit 42031c0 : lieux R-LIEU-5, -2, -6 ; dernière position
 // connue R-LIEU-POS ; renouvellement d'un consentement actif R-LIEU-3), puis le 2026-11-05 (SESS-1 temps 1) et le 2026-11-06
 // (R-PHOTO-LOC), puis le 2026-11-10 (fichier de `main` de ce jour : 3 lieux gratuits p1/p2/p3, mode voyage, R-LIEU-1 au plus tard
-// à cette date ; informations du PM, non vérifiables par l'agent, à confirmer dans la console : Firestore > Règles). NON DÉPLOYÉ :
-// SESS-1 temps 2 (deviceIdRequired() = true) et, depuis la PR backend/lieu-demande, la demande d'ajout d'un lieu (LIEU-REQ-A, point 13). Et, depuis la PR backend/jetons-appareil, les jetons d'appareil (SRV-2R, point 14). Et, depuis la PR backend/description-update, la description facultative d'une photo d'update (DESC-R, clé « description » de validPhoto). Et, depuis la PR docs/feed-ordre-photo, la date facultative de la dernière photo publiée (FEED-ORDRE-PHOTO, clé « photoAt » de validStatus ; à déployer AVANT les applications). **Mise à jour du 2026-11-19 : les règles de l'alerte « Je suis en danger » (point 16) et du quota d'alertes (point 17) ont été déployées par le PM le 2026-11-18 au commit 13ec6177 ; la fonction `notifierAlerte` reste NON DÉPLOYÉE.** Tout déploiement suit la procédure
+// à cette date ; informations du PM, non vérifiables par l'agent, à confirmer dans la console : Firestore > Règles). NON DÉPLOYÉ (au 2026-11-20 ; à lire avant tout « oui » : `firebase deploy --only firestore:rules` publie le FICHIER ENTIER) :
+// (a) SESS-1 temps 2 (deviceIdRequired() = true) ; (b) le journal de notifications CNC-B (point 18, `users/{uid}/notifications`, commit 85fc8066) ;
+// (c) la date facultative de la dernière photo publiée (FEED-ORDRE-PHOTO, clé « photoAt » de validStatus, PR docs/feed-ordre-photo ; à déployer AVANT les
+// applications qui l'écrivent). Le reste de ce fichier est parti avec le déploiement du 2026-11-18 au commit 13ec6177 (information du PM, non vérifiable par
+// l'agent ; un déploiement publie le fichier entier de ce commit) : LIEU-REQ-A (point 13), jetons d'appareil SRV-2R (point 14), description DESC-R (clé
+// « description » de validPhoto), LIEU-DANGER-REQ (point 15), alerte « Je suis en danger » (point 16) et quota d'alertes (point 17) sont tous des ancêtres de
+// 13ec6177 (`git merge-base --is-ancestor`, vérifié le 2026-11-20) ; une mention « NON DÉPLOYÉ » restée plus bas pour ces points est donc périmée (à
+// confirmer par la date de publication dans la console : Firestore > Règles). Les FONCTIONS ne font pas partie de ce fichier (état de `notifierAlerte` : sources
+// divergentes, data-model.md la dit non déployée, docs/dev/deploiement-centre-notifications.md §0 note un déploiement au commit 424e858a le 2026-11-19 ; à
+// confirmer dans la console Functions). Ce que le fichier actuel ajoute à 13ec6177 : `git diff 13ec6177 <commit> -- backend/firestore.rules`
+// (= (b) + (c) + commentaires). Tout déploiement suit la procédure
 // docs/dev/deploiement-regles.md et l'accord explicite du PM.
 //
 // Principes :
@@ -76,7 +85,7 @@ rules_version = '2';
 //     présence ordinaire pendant le voyage (les règles l'acceptent, c'est le geste « désactiver », mais il mettrait fin au voyage côté proches ;
 //     data-model.md). Commentaire seul : aucune règle modifiée.
 //
-// 13. Demande d'ajout d'un lieu par un membre (LIEU-REQ-A, ticket docs/tickets/demande-ajout-lieu.md, décisions du PM D1 à D9 du 2026-11-11) — NON DÉPLOYÉ
+// 13. Demande d'ajout d'un lieu par un membre (LIEU-REQ-A, ticket docs/tickets/demande-ajout-lieu.md, décisions du PM D1 à D9 du 2026-11-11) — DÉPLOYÉ avec le fichier du 2026-11-18 (13ec6177 ; déduit, voir l'en-tête)
 //     (le fichier déployé est celui du 2026-11-10 : en production, `placeRequests` et `meta` sont refusés par défaut). Un membre NON créateur dépose
 //     une demande miffs/{id}/placeRequests/{uid}_{1..3} (trois emplacements fixes par membre ; 9 clés exactes dont la catégorie ; `requestedBy` = soi ; `createdAt` =
 //     heure serveur ; `type` = `trusted` ou `risk` : la zone de danger se DEMANDE sans Miff+, voir point 15) ; un compteur miffs/{id}/meta/placeRequests tient le plafond de 10 par Miff, écrit DANS LE MÊME LOT
@@ -88,7 +97,7 @@ rules_version = '2';
 //     Limites : pas de limitation de débit (App Check) ; compteur auto-réparé par le créateur (valeur absolue) ; aucune règle ne juge le contenu
 //     (adresse d'un tiers) ; risque juridique assumé par le PM (data-model.md §11, point 31).
 //
-// 14. Jetons d'appareil pour les notifications push (SRV-2R, ticket docs/tickets/notification-update-membres.md §8, étude docs/dev/etude-serveur-notifications-premium.md §8) — NON DÉPLOYÉ
+// 14. Jetons d'appareil pour les notifications push (SRV-2R, ticket docs/tickets/notification-update-membres.md §8, étude docs/dev/etude-serveur-notifications-premium.md §8) — DÉPLOYÉ avec le fichier du 2026-11-18 (13ec6177 ; déduit, voir l'en-tête)
 //     (le fichier déployé porte encore l'ANCIEN gabarit de `devices` { token ≤ 512, platform, updatedAt } : aucun client ne l'écrit). Document
 //     users/{uid}/devices/{deviceId} : `deviceId` = l'identifiant de la SESSION active (users/{uid}/session/active.deviceId, un compte = un appareil) ;
 //     7 clés exactes (token ≤ 4096, platform, appVersion, tz, notify { updates }, updatedAt = heure serveur, createdAt =
@@ -99,7 +108,7 @@ rules_version = '2';
 //     lot de connexion. `notifState/{miffId}` (état du serveur : idempotence, plafond horaire) n'a AUCUNE règle : refusé par défaut, lu et écrit avec les droits
 //     Admin seulement. Remplace l'ancien bloc `devices` (seule règle existante modifiée : voir data-model.md §2.10).
 //
-// 15. Zone de danger DEMANDÉE sans Miff+ (LIEU-DANGER-REQ, ticket docs/tickets/lieu-danger-demande-gratuite.md, décision du PM du 2026-11-17) — NON DÉPLOYÉ.
+// 15. Zone de danger DEMANDÉE sans Miff+ (LIEU-DANGER-REQ, ticket docs/tickets/lieu-danger-demande-gratuite.md, décision du PM du 2026-11-17) — DÉPLOYÉ avec le fichier du 2026-11-18 (13ec6177 ; déduit, voir l'en-tête).
 //     Une demande `placeRequests` de type `risk` n'exige PLUS que le demandeur soit Miff+ (une seule condition retirée de la création de la demande :
 //     `isPremiumOneRead(demandeur)`). Les deux autres contraintes restent APPLIQUÉES PAR LES RÈGLES, inchangées : (a) ACCEPTER = créer le lieu `risk`
 //     dans `places` : Miff+ du CRÉATEUR (validPlaceCreate, isPremiumOneRead du créateur) ; la demande n'est supprimée que dans le même lot : lot refusé en
