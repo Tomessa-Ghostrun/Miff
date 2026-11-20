@@ -23,6 +23,8 @@ Modifié :
 - **Nouvelle clé** `ios_notif_help_step_2` (étape « Notifications » de l'écran d'aide ; « Mitteilungen » en allemand plus tard) à la place de `notif_help_step_2`, qui reste pour Android.
 - **Clé renommée** `ios_notif_debug_counters` devient `ios_diag_notif_counters` (texte de recette des builds Debug et Internal, jamais traduit ; « Recette, rappels « ta Miff est passée » jugés inutiles : N sur M. »).
 - **Clés non affichées gardées** : `permission_notifications_note`, `settings_privacy_notifications_body` et `place_paywall_limit_title` ne sont affichées par aucun écran iOS ; elles sont **gardées** (texte corrigé) parce que supprimées d'un seul côté elles feraient échouer la parité avec Android. Une PR de nettoyage commune les retirera des deux plateformes.
+- **Texte de l'appareil photo** : la valeur par défaut de `NSCameraUsageDescription` dans `project.yml` suit le nouveau texte anglais du catalogue ; `PermissionPrivacyTests` attend le nouveau sens (partagée avec l'endroit de la prise de vue, visible des seuls membres qui partagent aussi leur position, copie possible).
+- **PR empilée** : cette branche contient provisoirement les changements de la PR Android #295 (un test iOS compare les textes partagés aux textes d'Android) ; à fusionner après #295.
 - **Tests** : `LimitTextsTests` (nouveau : valeurs et accords lus dans le catalogue compilé fr et en) ; `NotificationTypeTests`, `SessionDeviceLaunchTests`, `UpdatePromptTests` et `PaywallTextsTests` adaptés aux nouveaux textes.
 - **Contrat** : `docs/contracts/i18n-keys.md` (`ios_notif_help_step_2`, `ios_diag_notif_counters`, anciennes clés).
 
