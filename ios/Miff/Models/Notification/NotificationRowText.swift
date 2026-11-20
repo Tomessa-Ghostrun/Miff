@@ -15,13 +15,18 @@ enum NotificationRowTexts {
     ///   - miffName: le nom de la Miff, seulement quand le compte en a plusieurs.
     ///   - requestMiffName: le nom de la Miff, TOUJOURS connu quand l'annuaire est lu (la phrase d'une demande dit pour quelle Miff).
     ///   - firstName: le prénom de la personne qui a demandé, tel que l'app le sait MAINTENANT.
+    ///   - lovedOneName: CNC-I, N9, N10 et N11 : le prénom du proche, lu MAINTENANT sur la même fiche que son image ; nil dit « Un proche ».
     static func text(
         for item: NotificationItem,
         count: Int,
         miffName: String?,
         requestMiffName: String?,
-        firstName: String?
+        firstName: String?,
+        lovedOneName: String? = nil
     ) -> NotificationRowText {
+        if item.type.aboutALovedOne {
+            return lovedOneText(for: item, name: lovedOneName, miffName: miffName)
+        }
         guard item.type == .n8 else {
             return NotificationRowText(
                 title: L10n.string(item.type.titleKey), body: L10n.string(item.type.bodyKey), miffName: miffName
@@ -37,5 +42,40 @@ enum NotificationRowTexts {
             ? L10n.format("place_request_center_many", firstName, count, requestMiffName)
             : L10n.format("place_request_center_one", firstName, requestMiffName)
         return NotificationRowText(title: sentence, body: nil, miffName: nil)
+    }
+
+    /// Les mots du message du serveur, calmes (aucun rouge ni icône d'alarme dans le centre : le Feed porte déjà la couleur). Avec le prénom : ceux de
+    /// la notification du système ; sans prénom (parti, supprimé, pas encore lu) : « Un proche a donné des nouvelles », jamais un prénom inventé.
+    private static func lovedOneText(
+        for item: NotificationItem,
+        name: String?,
+        miffName: String?
+    ) -> NotificationRowText {
+        let generic = NotificationRowText(
+            title: L10n.string(item.type.titleKey), body: L10n.string(item.type.bodyKey), miffName: miffName
+        )
+        guard let name, !name.isEmpty else {
+            return generic
+        }
+        switch item.type {
+        case .n9:
+            return NotificationRowText(
+                title: L10n.format("notif_circle_update_title", name), body: generic.body, miffName: miffName
+            )
+        case .n10:
+            return NotificationRowText(
+                title: L10n.format("notif_alert_start_title", name),
+                body: L10n.format("notif_alert_start_body", name),
+                miffName: miffName
+            )
+        case .n11:
+            return NotificationRowText(
+                title: L10n.format("notif_alert_end_title", name),
+                body: L10n.format("notif_alert_end_body", name),
+                miffName: miffName
+            )
+        default:
+            return generic
+        }
     }
 }

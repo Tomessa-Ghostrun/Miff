@@ -54,7 +54,12 @@ struct MiffApp: App {
             // LOC-4b : à l'ouverture et au passage en arrière-plan, le suivi des lieux lit la position (s'il en a le droit).
             .trackingLifecycle(environment.tracking)
             // NOTIF-P0 : au retour au premier plan, à un changement d'heure ou de langue, les rappels sont réconciliés avec le système.
-            .notificationLifecycle(environment.notifications.reconciler)
+            // CNC-I : et le journal des notifications du serveur est relu (au plus une fois par minute ; sans effet dans un build sans `NOTIF_JOURNAL`).
+            .notificationLifecycle(
+                environment.notifications.reconciler,
+                journal: environment.notifications.journal,
+                session: environment.sessionState
+            )
             // SRV-2I : au premier plan et à chaque changement de la session, le registre des appareils est regardé (rien d'écrit si rien n'a changé).
             .pushLifecycle(environment.push, session: environment.sessionState)
             // NOTIF-P1I : « Depuis ta dernière visite » compare au retour après 30 minutes ou plus loin de l'app (aucune lecture de plus).

@@ -14,6 +14,8 @@ struct NotificationLocalData {
     let plan: NotificationPlanStoring
     /// « Depuis ta dernière visite » : la dernière image des proches que le Feed a montrée (identifiants, catégories et heures).
     let lastVisit: LastVisitStoring
+    /// CNC-I : le curseur de la lecture du journal du serveur (une date et un identifiant de compte).
+    let journalCursor: NotificationJournalCursorStoring
 
     /// Fin de session (déconnexion, suppression du compte, session prise par un autre appareil) : les choix et le centre partent.
     func eraseSession() {
@@ -21,6 +23,7 @@ struct NotificationLocalData {
         center.clear()
         plan.clear()
         lastVisit.clear()
+        journalCursor.clear()
     }
 
     /// Suppression du compte : la fin de session, plus la carte « deuxième chance » de ce compte.
@@ -35,7 +38,8 @@ struct NotificationLocalData {
             center: NotificationCenterFileStore(),
             secondChance: UserDefaultsNotificationSecondChanceStore(),
             plan: NotificationPlanFileStore(),
-            lastVisit: LastVisitFileStore()
+            lastVisit: LastVisitFileStore(),
+            journalCursor: NotificationJournalCursorFileStore()
         )
     }
 }

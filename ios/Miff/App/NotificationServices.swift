@@ -23,10 +23,24 @@ struct NotificationServices {
     let requesters: RequesterDirectory
     /// « Depuis ta dernière visite » : compare ce que le Feed montre à ce qu'il montrait la dernière fois (aucune lecture de plus).
     let lastVisit: LastVisitTracker
+    /// CNC-I : la lecture du journal du serveur (sans effet dans un build sans la condition `NOTIF_JOURNAL`).
+    let journal: NotificationJournalSync
+    /// CNC-I : la passerelle du journal, pour vider le journal avec le compte ; nil dans un build sans la condition `NOTIF_JOURNAL`.
+    let journalGateway: NotificationJournalGateway?
+    /// CNC-I : les visages (photo ou initiales, prénom) que les lignes du centre dessinent, en mémoire seulement.
+    let faces: CenterFaces
+    /// CNC-I : les lignes de proches d'une Miff qui n'est plus celle du compte s'en vont.
+    let lovedOnes: LovedOneLinesWatcher
 
     static func make(currentUid: @escaping () -> String?) -> NotificationServices {
         let data = NotificationLocalData.live()
         let center = NotificationCenterService(store: data.center, currentUid: currentUid)
+        #if NOTIF_JOURNAL
+        let gateway: NotificationJournalGateway? = FirestoreNotificationJournal()
+        #else
+        let gateway: NotificationJournalGateway? = nil
+        #endif
+        let faces = CenterFaces(reader: FirestoreMemberFaceReader())
         let preferences = NotificationPreferencesService(store: data.preferences, currentUid: currentUid)
         let tabRequests = TabRequests()
         let scheduler = SystemLocalNotificationScheduler()
@@ -69,7 +83,13 @@ struct NotificationServices {
             reconciler: reconciler,
             responseDelegate: delegate,
             requesters: RequesterDirectory(),
-            lastVisit: LastVisitTracker(store: data.lastVisit, center: center, currentUid: currentUid)
+            lastVisit: LastVisitTracker(store: data.lastVisit, center: center, currentUid: currentUid),
+            journal: NotificationJournalSync(
+                gateway: gateway, cursors: data.journalCursor, center: center, currentUid: currentUid
+            ),
+            journalGateway: gateway,
+            faces: faces,
+            lovedOnes: LovedOneLinesWatcher(center: center, faces: faces)
         )
     }
 
@@ -102,6 +122,23 @@ struct NotificationServices {
         }
         // Une Miff quittée, supprimée ou perdue : son image et ses lignes de « Depuis ta dernière visite » partent.
         lastVisit.watch(directory)
+        lovedOnes.watch(directory)
+    }
+
+    /// CNC-I : l'app voit passer un message du serveur (premier plan, ou toucher sur la notification) : la ligne du centre est écrite tout de suite, avec la
+    /// MÊME clé que le journal du serveur (le message puis le journal, ou le journal puis le message : une seule ligne) ; un toucher la lit. Le journal
+    /// est relu bientôt (une requête au plus toutes les 10 secondes après un message). Le prénom n'est pas dans le message : il se lit à l'affichage.
+    var pushArrived: @MainActor (PushArrival, Bool) -> Void {
+        let center = self.center
+        let journal = self.journal
+        return { arrival, opened in
+            let line = NotificationJournal.item(for: arrival, nowMillis: NotificationClock.wallMillis(), opened: opened)
+            center.record(line)
+            if opened {
+                center.markRead(id: line.id)
+            }
+            Task { await journal.sync(.pushReceived) }
+        }
     }
 
     /// Le suivi des lieux a détecté un nouveau statut de MA présence (arrivée, départ) : N1 et N2 sont programmées ou annulées aussitôt,
@@ -141,9 +178,13 @@ struct NotificationServices {
         let requesters = self.requesters
         let visit = self.lastVisit
         let tabRequests = self.tabRequests
+        let journal = self.journal
+        let faces = self.faces
         return {
             await MainActor.run {
                 center.purge()
+                journal.purge()
+                faces.stop()
                 preferences.forget()
                 requesters.stop()
                 visit.purge()
