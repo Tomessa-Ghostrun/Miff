@@ -8,6 +8,12 @@
   "lengthRatio": { "maxVsSource": 1.5, "minSourceLength": 10, "shortLabelExtra": 0.4 },
   "lengthBudgets": {},
   "exceptions": [
+    { "lang": "de", "key": "settings_subscription_title", "check": "identical-to-source" },
+    { "lang": "de", "key": "place_address_title", "check": "identical-to-source" },
+    { "lang": "de", "key": "onboarding_sample_place_address", "check": "identical-to-source" },
+    { "lang": "de", "key": "tabbar_profile_a11y", "check": "identical-to-source" },
+    { "lang": "es", "key": "feed_colors_miff_gray_title", "check": "identical-to-source" },
+    { "lang": "es", "key": "feed_colors_person_gray_title", "check": "identical-to-source" },
     { "lang": "es", "keyPattern": "^(?:ios_|android_)?diag_", "check": "missing-key" },
     { "lang": "it", "keyPattern": "^(?:ios_|android_)?diag_", "check": "missing-key" },
     { "lang": "pt", "keyPattern": "^(?:ios_|android_)?diag_", "check": "missing-key" },

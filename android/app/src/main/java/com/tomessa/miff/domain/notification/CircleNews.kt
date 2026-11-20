@@ -25,6 +25,11 @@ class CircleNewsPayload(
     val serverQuiet: Boolean = false,
     /** The identifier FCM gave the message, cleaned: the same message delivered twice makes one line. Null when there is none. */
     val messageId: String? = null,
+    /**
+     * CNC-A: the identifier of the entry of the journal of the server for this very message (key `entryId` of the data; a server that does not write the journal sends none). When
+     * there, the line of the centre carries it, so that the entry the journal brings later is the SAME line (never a double). Validated like every identifier of the network.
+     */
+    val entryId: String? = null,
 ) {
     /** Redacted: a name and identifiers are not for a log. */
     override fun toString(): String = "CircleNewsPayload(redacted)"
@@ -39,6 +44,9 @@ object CircleNewsParser {
     const val KEY_AUTHOR_UID = "authorUid"
     const val KEY_FIRST_NAME = "firstName"
     const val KEY_QUIET = "quiet"
+
+    /** CNC-A: the identifier of the entry of the journal (see [CircleNewsPayload.entryId]). */
+    const val KEY_ENTRY_ID = "entryId"
 
     /**
      * The first name shown: 20 GRAPHEMES at most, the final "…" included (what the server does: 19 and "…"; ticket section 4). A grapheme is what a person sees as one
@@ -85,6 +93,14 @@ object CircleNewsParser {
                 else -> return null
             }
         if (receivedAtMillis <= 0L) return null
+        // Absent or empty: a server that does not write the journal (the line is then keyed by the message). Present but malformed: the whole message is ignored.
+        val entryRaw = data[KEY_ENTRY_ID]
+        val entryId =
+            if (entryRaw.isNullOrEmpty()) {
+                null
+            } else {
+                entryRaw.takeIf { identifier.matches(it) } ?: return null
+            }
         return CircleNewsPayload(
             miffId,
             authorUid,
@@ -94,6 +110,7 @@ object CircleNewsParser {
             messageId?.takeIf {
                 messageIdShape.matches(it)
             },
+            entryId,
         )
     }
 
@@ -203,14 +220,36 @@ object CircleNewsKeys {
     fun trayTag(news: CircleNewsPayload): String =
         if (news.authorUid != null) "${PREFIX}u|${news.authorUid}" else "${PREFIX}m|${news.miffId}"
 
-    /** The key of the line of the centre, also the key of deduplication (a message delivered twice makes one line): the tag and the identifier of the message (else the time of reception). */
-    fun centerId(news: CircleNewsPayload): String = "${trayTag(news)}|${news.messageId ?: news.sentAtMillis}"
+    /**
+     * The key of the line of the centre, also the key of deduplication (a message delivered twice makes one line): the tag and the identifier of the entry of the journal when the
+     * server gave one (CNC-A: the same line as the journal's), else the identifier of the message, else the time of reception.
+     */
+    fun centerId(news: CircleNewsPayload): String =
+        "${trayTag(news)}|${news.entryId ?: news.messageId ?: news.sentAtMillis}"
+
+    /** CNC-A: the key of the line the journal brings for the entry [entryId] of [actorUid] (the same as [centerId] of the push that carried that entry). */
+    fun journalId(
+        actorUid: String,
+        entryId: String,
+    ): String = "${PREFIX}u|$actorUid|$entryId"
 
     fun isCircleNews(centerId: String): Boolean = centerId.startsWith(PREFIX)
 
     /** The tag of the tray that goes with a line of the centre (reading the line takes the notification out of the tray). */
     fun trayTagOf(centerId: String): String =
         if (isCircleNews(centerId)) centerId.substringBeforeLast('|') else centerId
+
+    /**
+     * CNC-A: the loved one a line is about, read in its key (`n9|u|{uid}|…`): the photo of an old line is found without any migration (CNC-24). Null for a line keyed by the Miff
+     * (`n9|m|…`, no author), or a key of another shape: the line then shows the logo.
+     */
+    fun actorOf(centerId: String): String? {
+        val pieces = centerId.split('|', limit = 4)
+        if (pieces.size < 4 || pieces[0] != "n9" || pieces[1] != "u") return null
+        return pieces[2].takeIf { identifierShape.matches(it) }
+    }
+
+    private val identifierShape = Regex("^[A-Za-z0-9_-]{1,128}$")
 }
 
 /** An identifier of a Miff that comes from outside the app (a tap on a notification): checked before anything is done with it. */

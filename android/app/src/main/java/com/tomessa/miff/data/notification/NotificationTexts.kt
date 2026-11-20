@@ -20,6 +20,8 @@ object NotificationTexts {
             NotificationType.N6 -> R.string.notif_n6a_title
             NotificationType.N7 -> R.string.notif_n7_title
             NotificationType.N9 -> R.string.notif_center_circle_update_title
+            NotificationType.N10 -> R.string.notif_center_alert_start_title_unnamed
+            NotificationType.N11 -> R.string.notif_center_alert_end_title_unnamed
             NotificationType.N8 -> R.string.notif_n8_title
             NotificationType.C1 -> R.string.notif_c1_title
         }
@@ -40,6 +42,10 @@ object NotificationTexts {
             NotificationType.N7 -> R.string.notif_n7_body
 
             NotificationType.N9 -> R.string.notif_circle_update_body
+
+            NotificationType.N10 -> R.string.notif_center_alert_start_body_unnamed
+
+            NotificationType.N11 -> R.string.notif_center_alert_end_body_unnamed
 
             NotificationType.N8 -> R.string.notif_n8_body
 
@@ -66,6 +72,10 @@ object NotificationTexts {
 
             NotificationType.N9 -> R.string.notif_settings_circle_update
 
-            NotificationType.N8, NotificationType.C1 -> R.string.notif_settings_n3
+            NotificationType.N8,
+            NotificationType.C1,
+            NotificationType.N10,
+            NotificationType.N11,
+            -> R.string.notif_settings_n3
         }
 }

@@ -30,16 +30,23 @@ sealed interface ConsentRenewalCheck {
     /** The server could not be asked (offline, slow): nothing is claimed, the Feed is shown, the next opening asks again. */
     data object Unknown : ConsentRenewalCheck
 
+    /**
+     * Something older than this build's text: [miffs] = the Miffs whose text does NOT cover the location (versions 1 and 2: the sharing is really
+     * PAUSED until the person agrees, blocking screen); [clarify] = the Miffs whose text still covers it (version 3: NOTHING is paused, only the calm card
+     * "Une précision sur ce que tu partages", CONS-4-A). A Miff is in one list only. [miffs] may be empty when only [clarify] is due.
+     */
     class Due(
         val miffs: List<RenewalMiff>,
+        val clarify: List<RenewalMiff> = emptyList(),
     ) : ConsentRenewalCheck {
         override fun toString(): String = "Due(redacted)"
     }
 }
 
 /**
- * The renewal of the consent (LOC-2a, rule R-LIEU-3): members who share under an OLDER text must accept the current one before any
- * position can be written (LOC-2b). The check reads, from the server, the index of the person (1 read) and the card of each Miff
+ * The renewal of the consent (LOC-2a, rule R-LIEU-3): members who share under a text that does NOT cover the location (versions 1 and 2) must accept
+ * the current one before any position can be written (LOC-2b). Members under version 3 (which covers it) are only offered a calm clarification
+ * (CONS-4-A): nothing stops for them; "J'ai compris" is the SAME renewal write. The check reads, from the server, the index of the person (1 read) and the card of each Miff
  * (1 document each, 2 reads of rules each): at most one Miff for a free account. The renewal is ONE lot (0 reads of rules).
  */
 interface ConsentRenewals {
@@ -55,7 +62,7 @@ interface ConsentRenewals {
 class FirestoreConsentRenewals(
     private val store: MiffStore,
     private val timeoutMillis: Long = FirestoreMiffRepository.TIMEOUT_MS,
-    /** Called once the agreement is recorded: the detection (LOC-2b) looks at its Miffs again (they now carry the consent of version 3). */
+    /** Called once the agreement is recorded: the detection (LOC-2b) looks at its Miffs again (they now carry the current consent). */
     private val onRenewed: () -> Unit = {},
 ) : ConsentRenewals {
     override suspend fun check(uid: String): ConsentRenewalCheck {
@@ -65,13 +72,25 @@ class FirestoreConsentRenewals(
                 is Guarded.Failed -> return ConsentRenewalCheck.Unknown
             }
         val due = mutableListOf<RenewalMiff>()
+        val clarify = mutableListOf<RenewalMiff>()
         var incomplete = false
         for (ref in refs.distinctBy { it.miffId }) {
             when (val read = guardedCall(timeoutMillis) { store.readSharingConsent(ref.miffId, uid) }) {
                 is Guarded.Value -> {
                     val consent = read.value
-                    if (consent != null && consent.enabled && MiffSharingConsent.isRenewalDue(consent.version)) {
-                        due += describe(ref.miffId, uid)
+                    if (consent != null && consent.enabled) {
+                        // Two different things (CONS-4-A, criterion CA-10): a text that does not cover the location PAUSES the sharing (blocking
+                        // renewal); a text that still covers it (version 3) pauses nothing and is only clarified.
+                        when {
+                            MiffSharingConsent.pausesSharing(consent.version) -> {
+                                due += describe(ref.miffId, uid)
+                            }
+
+                            MiffSharingConsent.isClarificationDue(consent.version) -> {
+                                clarify +=
+                                    describe(ref.miffId, uid)
+                            }
+                        }
                     }
                 }
 
@@ -83,7 +102,7 @@ class FirestoreConsentRenewals(
             }
         }
         return when {
-            due.isNotEmpty() -> ConsentRenewalCheck.Due(due)
+            due.isNotEmpty() || clarify.isNotEmpty() -> ConsentRenewalCheck.Due(due, clarify)
             incomplete -> ConsentRenewalCheck.Unknown
             else -> ConsentRenewalCheck.NothingToRenew
         }

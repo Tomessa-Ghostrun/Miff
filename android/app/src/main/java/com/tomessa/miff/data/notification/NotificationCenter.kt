@@ -16,8 +16,10 @@ import kotlinx.serialization.json.Json
 
 /*
  * PRIVACY, for this file (criteria N-C3, N-C4, N-P0-10): the centre of notifications is LOCAL. It stores a type, a Miff identifier, two times and a
- * state per line, nothing else: no position, no address, no name of a place, no photo, and the first name of the author for N9 only (a loved one gave news). It is never written to the server, never
- * sent as an event, never logged. Kept 30 days or 100 lines; erased at the sign-out and at the deletion of the account.
+ * state per line, nothing else: no position, no address, no name of a place, no photo (CNC-A: the round picture of a line is read from memory when it is drawn, never kept here), and the first
+ * name of the author for N9, N10 and N11 only (a loved one gave news, declared or ended an alert: the line a PUSH wrote; a line the journal of the server brought holds no name at all). It is
+ * never sent as an event, never logged; the only thing it ever sends to the server is the deletion of a line that came from the journal ([onDeleted], CNC-15). Kept 30 days or 100 lines;
+ * erased at the sign-out and at the deletion of the account.
  */
 
 /** Where the lines are kept (a double in tests). */
@@ -105,6 +107,10 @@ class NotificationCenter(
     private val nowMillis: () -> Long = System::currentTimeMillis,
     /** Called with the key of each line that was just read or deleted, so that its notification leaves the tray. */
     private val onRead: (String) -> Unit = {},
+    /** CNC-15: called with the keys of the lines the person just deleted ("Supprimer", "Tout effacer"), so that the entries they came from are deleted on the server too. */
+    private val onDeleted: (List<String>) -> Unit = {},
+    /** CNC-15: "Tout effacer" was confirmed: every entry of the journal is to be deleted on the server (the ones this phone never saw included). */
+    private val onClearedAll: () -> Unit = {},
 ) {
     private val lock = Any()
     private val state = MutableStateFlow(NotificationRetention.apply(store.load(), nowMillis()))
@@ -124,6 +130,18 @@ class NotificationCenter(
             if (before.any { it.id == item.id }) return false
             commit(NotificationList.add(before, item, nowMillis()))
             true
+        }
+
+    /** CNC-A: adds the lines of the journal in ONE write, each unless a line with the same key exists (a push that came first, or the same entry read twice). Returns how many were added. */
+    fun addAll(items: List<NotificationItem>): Int =
+        synchronized(lock) {
+            val before = state.value
+            val known = before.mapTo(HashSet()) { it.id }
+            val fresh = items.filter { known.add(it.id) }
+            if (fresh.isEmpty()) return 0
+            val after = NotificationRetention.apply(before + fresh, nowMillis())
+            if (after != before) commit(after)
+            fresh.size
         }
 
     fun markRead(id: String) =
@@ -146,6 +164,7 @@ class NotificationCenter(
         synchronized(lock) {
             commit(NotificationList.delete(state.value, id))
             onRead(id)
+            onDeleted(listOf(id))
         }
 
     /**
@@ -167,12 +186,25 @@ class NotificationCenter(
             if (after != before) commit(after)
         }
 
+    /**
+     * CNC-A (ticket 6.6): a Miff the person is not in any more (left, deleted, access lost): the lines about the loved ones of that Miff (N9, N10, N11) go from the phone, so that the dot of
+     * the bell does not count what the screen no longer draws. Nothing is deleted on the server (the entries expire by themselves, 30 days) and the tray is not touched.
+     */
+    fun removeLovedOneLines(remove: (NotificationItem) -> Boolean) =
+        synchronized(lock) {
+            val before = state.value
+            val after = before.filterNot { it.type in NotificationType.ABOUT_A_LOVED_ONE && remove(it) }
+            if (after.size != before.size) commit(after)
+        }
+
     /** "Tout effacer" (after the confirmation). */
     fun clearAll() =
         synchronized(lock) {
             val ids = state.value.map { it.id }
             commit(emptyList())
             ids.forEach(onRead)
+            onDeleted(ids)
+            onClearedAll()
         }
 
     /** Applies the retention again (called when the centre opens): 30 days or 100 lines. */

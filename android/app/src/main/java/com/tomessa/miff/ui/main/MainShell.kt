@@ -487,6 +487,12 @@ private fun MainNavigation(
                     }
                 }
             }
+            // CNC-A: the members the Feed read (and who is NOT in that Miff any more) are the faces the centre of notifications draws for the Miff shown: FREE, no reading of its own, memory only.
+            LaunchedEffect(feedViewModel, container) {
+                feedViewModel.readMembers.collect { read ->
+                    if (read != null) container.memberFaces.seedFromFeed(read.miffId, read.members)
+                }
+            }
             val requestNotificationWindow =
                 rememberNotificationPermissionRequest(onAnswered = notificationsViewModel::onSystemWindowAnswered)
             LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { notificationsViewModel.refresh() }
