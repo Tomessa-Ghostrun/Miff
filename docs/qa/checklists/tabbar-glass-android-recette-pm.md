@@ -2,7 +2,7 @@
 
 **Pour qui** : vous, sur l'OPPO Find X5 Lite (Android 13). Aucune connaissance technique requise.
 **Durée** : 10 minutes. **Ce qu'on vérifie** : la barre du bas est un verre dépoli (on devine ce qui passe dessous, en flou), reste lisible, ne cache jamais le contenu, et redevient pleine (opaque) quand le téléphone le demande.
-**MISE A JOUR du 2026-11-20 : la barre livrée n'est plus FLOUE.** Après la recette du PM (rectangle clair sur la rangée d'icônes et opacité qui varie, avec ou sans économiseur de batterie), le flou est coupé (`GlassPolicy.BLUR_ALLOWED = false`) : la barre est le **même voile blanc 32 % posé sur ce qui passe dessous, mais ce contenu se devine NET, pas flou**. Partout dans cette liste, « flou / flouté / floue » se lit donc « translucide » ; le point à surveiller est l'**absence de bande claire et d'opacité qui change**. Voir `design/tab-bar-liquid-glass.md` §10.
+**MISE A JOUR du 2026-11-20** : le flou est maintenant **LÉGER** (12 dp au lieu de 28, demande du PM) : ce qui passe sous la barre se devine **un peu flou**, pas très flou. Et l'**ombre** de la barre est dessinée **hors de la barre seulement** (cause probable du rectangle clair : l'ombre traversait le voile). Le point à surveiller est l'**absence de bande claire et d'opacité qui change**. Voir `design/tab-bar-liquid-glass.md` §10.
 **Avant** : installer l'APK de la PR « Tab bar verre Android » (artefact `miff-debug-apk` de la CI, jamais un APK construit à la main). Avoir une Miff avec quelques cartes et au moins un lieu (pour que l'onglet Profil défile).
 **À savoir** : dans l'APK de test (debug), le bouton central est visible mais **grisé et inactif** : c'est voulu, il s'allumera avec le ticket « Update ». Il est **gris** (statut inconnu). Les couleurs vert / orange / rouge du bouton se vérifieront à ce moment-là (elles sont déjà testées sur ordinateur). Le **viseur photo** n'existe pas encore : sa barre sombre se vérifiera avec le ticket « Update ».
 
@@ -20,10 +20,10 @@
 
 | # | Vérifier | OK |
 |---|---|---|
-| 6 | **Feed** : faire défiler une carte (de préférence avec une photo ou une zone colorée) **sous** la barre : on la devine à travers la barre (**nette, plus floue depuis le 2026-11-20**), les icônes restent nettes | [ ] |
+| 6 | **Feed** : faire défiler une carte (de préférence avec une photo ou une zone colorée) **sous** la barre : on la devine à travers la barre (**légèrement floue depuis le 2026-11-20**), les icônes restent nettes | [ ] |
 | 7 | **Profil** : même chose en faisant défiler la liste « Lieux de la Miff » sous la barre | [ ] |
 | 8 | Sur le Feed puis sur le Profil, aller jusqu'en **bas** : le dernier élément (carte, bouton « Ajouter un lieu ») peut remonter **entièrement au-dessus** de la barre, rien n'est caché derrière | [ ] |
-| 9 | **BLOQUANT pour « prêt à merger »** : **Fluidité** : faire défiler le Feed et le Profil vite pendant 10 secondes : pas de saccade visible. Mesure chiffrée : `adb shell dumpsys gfxinfo com.tomessa.miff reset`, défiler 10 s, puis `adb shell dumpsys gfxinfo com.tomessa.miff` (images lentes), (le flou est coupé depuis le 2026-11-20 : cette mesure n'est utile que si on le remet, `GlassPolicy.BLUR_ALLOWED = true`) | [ ] |
+| 9 | **BLOQUANT pour « prêt à merger »** : **Fluidité** : faire défiler le Feed et le Profil vite pendant 10 secondes : pas de saccade visible. Mesure chiffrée : `adb shell dumpsys gfxinfo com.tomessa.miff reset`, défiler 10 s, puis `adb shell dumpsys gfxinfo com.tomessa.miff` (images lentes), **avec le flou léger puis sans** (`GlassPolicy.BLUR_ALLOWED = false`, voile seul). Si ça saccade : couper le flou (l'interrupteur existe) | [ ] |
 | 10 | **Lisibilité** : les deux icônes (maison, silhouette) se lisent **sans effort** même quand une carte sombre passe dessous | [ ] |
 
 ## 3. Les replis (la barre devient pleine, sans flou)
@@ -60,13 +60,13 @@ Dans la PR, sur l'OPPO : images perdues pendant 10 s de défilement du Feed, ave
 
 ## 6. Barre très translucide (retours du PM du 2026-11-11) : 5 minutes
 
-La barre est **très transparente** (voile blanc 32 % au lieu de 80 %, flou renforcé) : le contenu dessous se voit nettement (flouté jusqu'au 2026-11-20, net depuis). Les icônes restent lisibles grâce à une icône inactive quasi noire et une pastille active pleine.
+La barre est **très transparente** (voile blanc 32 % au lieu de 80 %, flou renforcé) : le contenu dessous se voit nettement (très flouté jusqu'au 2026-11-20, légèrement depuis). Les icônes restent lisibles grâce à une icône inactive quasi noire et une pastille active pleine.
 | # | Vérifier | OK |
 |---|---|---|
-| 1 | Sur le Feed, faites défiler lentement : les **cartes passent sous la barre, bien visibles (nettes, plus floutées depuis le 2026-11-20)**, sans que la barre paraisse sale ou illisible, **sans bande plus claire** sur la rangée d'icônes et **avec la même transparence en permanence** | [ ] |
+| 1 | Sur le Feed, faites défiler lentement : les **cartes passent sous la barre, bien visibles (légèrement floutées depuis le 2026-11-20)**, sans que la barre paraisse sale ou illisible, **sans bande plus claire** sur la rangée d'icônes et **avec la même transparence en permanence** | [ ] |
 | 2 | L'icône **inactive** (Profil) est **noire** et se repère sans effort sur une carte claire, une carte rouge/orange et une photo de jour | [ ] |
 | 3 | **Risque connu, accepté** : sous une photo **presque noire**, l'icône du Profil se repère **moins bien**. Dites-moi si c'est gênant : on remontera le voile vers 40 % | [ ] |
 | 4 | L'**onglet actif** a une pastille bleu pâle **pleine** avec l'icône bleue bien visible, quel que soit le fond | [ ] |
 | 5 | Le **bouton central** n'a pas changé (plaque blanche, anneau, pastille de couleur) | [ ] |
 | 6 | Activez l'**économiseur de batterie** (décision du PM, 2026-11-20) : la barre **ne change pas** (même voile translucide), sur le Feed **et** sur le Profil ; elle ne devient pas blanche pleine et **aucun rectangle clair** n'apparaît. (Seules les animations supprimées, ou le contraste renforcé sous Android 14+, la rendent encore pleine.) | [ ] |
-| 7 | Le défilement reste **fluide** (sans flou, plus léger qu'avant pour le téléphone) | [ ] |
+| 7 | Le défilement reste **fluide** (flou plus léger qu'avant) : si ça saccade sur l'OPPO, le dire (on coupe le flou : `GlassPolicy.BLUR_ALLOWED`) | [ ] |

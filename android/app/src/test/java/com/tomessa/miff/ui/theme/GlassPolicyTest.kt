@@ -2,6 +2,7 @@ package com.tomessa.miff.ui.theme
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** The levels of glass (design/tab-bar-liquid-glass.md sections 4, 9 and 10): which phones and settings get blur, a denser veil, or opacity. */
@@ -27,11 +28,13 @@ class GlassPolicyTest {
     }
 
     @Test
-    fun theShippedBuild_hasNoBlur_aLightBarIsTheTranslucentVeilAlone() {
-        // Decision of 2026-11-20: a clear rectangle and a changing opacity were seen on the OPPO WITH the blur (battery saver or not), cause never proven.
-        // The shipped switch is off: Feed and Profile get the same white 32 % veil, with nothing recorded and nothing blurred.
-        assertFalse("the blur ships switched off", GlassPolicy.BLUR_ALLOWED)
-        assertEquals(GlassLevel.TRANSLUCENT, GlassPolicy.level(modern, GlassVariant.LIGHT))
+    fun theShippedBuild_hasALightBlur_onTheFeedAndTheProfile() {
+        // Decision of the PM, 2026-11-20: a SLIGHT blur is wanted. The APK without blur still showed the clear rectangle, so the blur was never the
+        // cause (the elevation shadow seen through the veil is, see GlassTabBarTest): the switch ships on again.
+        assertTrue("the blur ships switched on", GlassPolicy.BLUR_ALLOWED)
+        assertEquals(GlassLevel.BLUR, GlassPolicy.level(modern, GlassVariant.LIGHT))
+        // The battery saver is not a condition: same level as with nothing asked.
+        assertEquals(GlassLevel.NO_BLUR, GlassPolicy.level(modern, GlassVariant.ON_PHOTO))
     }
 
     @Test
@@ -107,7 +110,7 @@ class GlassPolicyTest {
 
     @Test
     fun theShippedSwitch_decidesTheDefault_whicheverWayItIsSet() {
-        // The switch is shipped at false (see GlassPolicy.BLUR_ALLOWED): the build must stay green either way.
+        // The switch is shipped at true (see GlassPolicy.BLUR_ALLOWED); false is the safe fallback (translucent veil alone): the build must stay green either way.
         val expected = if (GlassPolicy.BLUR_ALLOWED) GlassLevel.BLUR else GlassLevel.TRANSLUCENT
         assertEquals(expected, GlassPolicy.level(modern, GlassVariant.LIGHT))
         assertEquals(31, GlassPolicy.MIN_BLUR_SDK)

@@ -262,9 +262,9 @@ class GlassTabBarTest {
     }
 
     @Test
-    fun theShippedHost_recordsNothingAndBlursNothing_aLightBarIsTheVeilAlone() {
-        // The build ships with the blur off (GlassPolicy.BLUR_ALLOWED): no Haze state given to the bar, so nothing is recorded or blurred.
-        // A bar that cannot be partially redrawn or stale: its colour is the veil over what is behind, the same at every frame.
+    fun theHostWithTheBlurSwitchedOff_recordsNothingAndBlursNothing_aLightBarIsTheVeilAlone() {
+        // The fallback (GlassPolicy.BLUR_ALLOWED = false): no Haze state given to the bar, so nothing is recorded or blurred; its colour is the veil
+        // over what is behind, the same at every frame.
         var level: GlassLevel? = null
         var source: Any? = Unit
         composeRule.setContent {
@@ -274,6 +274,7 @@ class GlassTabBarTest {
                         variant = GlassVariant.LIGHT,
                         barVisible = true,
                         conditions = modern,
+                        blurAllowed = false,
                         bar = { glass ->
                             level = glass.level
                             source = glass.hazeState
@@ -293,6 +294,52 @@ class GlassTabBarTest {
         assertColor("translucent over black", over(GlassPaletteLight.tint, Color.Black), pixel(x, y))
         assertEquals("the same pixel at the next frame", pixel(x, y), pixel(x, y))
     }
+
+    // --- The shadow: outside the shape only, never under the veil ---------------------------------------------------------------------
+
+    /** The bar over WHITE: the veil (white 32 %) over white is white, so ANY darker pixel inside the bar is a shadow drawn under the veil. */
+    @Test
+    fun translucentLevels_drawTheirShadowOutsideTheBarOnly_nothingUnderTheVeil() {
+        listOf(GlassLevel.BLUR, GlassLevel.TRANSLUCENT, GlassLevel.NO_BLUR).forEach { level ->
+            showBar(TabBarGlass(GlassVariant.LIGHT, level), Color.White)
+            if (level == GlassLevel.TRANSLUCENT) shoot("glass-shadow-outside-only")
+            val bar = composeRule.onNodeWithTag(TAB_BAR_TAG).getUnclippedBoundsInRoot()
+            val feed = bounds(R.string.tabbar_feed_a11y)
+            val middle = (bar.left + bar.right) / 2
+            val inside =
+                listOf(
+                    // Where the shadow would show through: just inside the bottom edge, just inside the top edge, between the entries.
+                    middle to bar.bottom - 2.dp,
+                    middle to bar.top + 2.dp,
+                    (middle - 60.dp) to bar.bottom - 3.dp,
+                    (feed.left - 12.dp) to (bar.top + bar.bottom) / 2,
+                )
+            inside.forEach { (x, y) ->
+                val p = pixel(x, y)
+                assertTrue(
+                    "$level: the bar is white over white at ($x, $y), got ${Integer.toHexString(p)}",
+                    brightness(p) >= 253,
+                )
+            }
+            // Under the bar the shadow IS drawn (the bar keeps its elevation look): darker than the page.
+            val below = pixel(middle, bar.bottom + 3.dp)
+            assertTrue("$level: a shadow under the bar, got ${Integer.toHexString(below)}", brightness(below) < 250)
+        }
+    }
+
+    @Test
+    fun theOpaqueLevel_keepsTheShadowOfThePlatform_itHidesWhatIsUnderIt() {
+        showBar(TabBarGlass(GlassVariant.LIGHT, GlassLevel.OPAQUE), Color.White)
+        val bar = composeRule.onNodeWithTag(TAB_BAR_TAG).getUnclippedBoundsInRoot()
+        val (x, y) = veilPoint()
+        assertColor("opaque bar", Color.White, pixel(x, y), tolerance = 0)
+        assertTrue(
+            "the opaque bar has a shadow under it",
+            brightness(pixel((bar.left + bar.right) / 2, bar.bottom + 3.dp)) < 255,
+        )
+    }
+
+    private fun brightness(argb: Int): Int = ((argb shr 16 and 0xFF) + (argb shr 8 and 0xFF) + (argb and 0xFF)) / 3
 
     @Test
     fun lightBar_translucent_hasTheVeilOfTheBlur_overAnyBackground() {

@@ -22,10 +22,10 @@ import com.tomessa.miff.ui.splash.ReduceMotion
 
 /**
  * How much "glass" the tab bar may be on this phone right now (design/tab-bar-liquid-glass.md sections 4, 9 and 10).
- * - [BLUR]: the background behind the bar is blurred, plus a veil (Android 12 and up, nothing asked against it). NOT the shipped default any
- *   more: see [GlassPolicy.BLUR_ALLOWED].
+ * - [BLUR]: the background behind the bar is lightly blurred (12 dp), plus a veil (Android 12 and up, nothing asked against it). The shipped
+ *   default for a Light bar (see [GlassPolicy.BLUR_ALLOWED]).
  * - [TRANSLUCENT]: the SAME light veil as [BLUR] (white 32 %) over the live content, with NOTHING recorded and NOTHING blurred: no Haze node, no
- *   render effect, nothing that can be partially redrawn or stale. This is what a Light bar is in the shipped build.
+ *   render effect. What a Light bar is when the blur switch is off (kept as the safe fallback).
  * - [NO_BLUR]: nothing is blurred, a denser veil instead (before Android 12, a modest phone, the camera viewfinder).
  * - [OPAQUE]: no transparency at all (animations removed, increased contrast). The battery saver is deliberately NOT a reason: the PM
  *   prefers the bar to stay translucent then (decision of 2026-11-20, design/tab-bar-liquid-glass.md section 9).
@@ -44,13 +44,14 @@ data class GlassConditions(
 
 object GlassPolicy {
     /**
-     * THE SWITCH of the blur. SHIPPED AT `false` (decision of 2026-11-20, after two recipes on the OPPO Find X5 Lite, Android 13, ColorOS, in which
-     * a clear rectangle over the row of icons and an opacity that kept changing were seen WITH the blur, with or without the battery saver):
-     * a Light bar is then [GlassLevel.TRANSLUCENT], the same white 32 % veil with nothing recorded and nothing blurred (nothing left that can
-     * be stale or partially redrawn), instead of [GlassLevel.BLUR]. The cause of the defect of the blur was never PROVEN (no device on the
-     * development machine): set to `true` and rebuild to get the blur back, once an APK with it has been seen clean on the OPPO.
+     * THE SWITCH of the blur. SHIPPED AT `true`: a Light bar is [GlassLevel.BLUR] (a LIGHT blur, 12 dp: the PM wants a slight blur, 2026-11-20).
+     * History: after a recipe on the OPPO Find X5 Lite (Android 13, ColorOS) showed a clear rectangle over the row of icons and an opacity that changed,
+     * the blur was switched off (APK without blur) and the defect was STILL THERE: the blur is not the cause. The cause (probable, not provable without a
+     * device) is the elevation SHADOW of the bar seen through the veil, now drawn outside the shape only ([com.tomessa.miff.ui.theme.miffOuterShadow]).
+     * Set to `false` and rebuild to ship the bar WITHOUT any blur or recording ([GlassLevel.TRANSLUCENT], the same veil): the safe fallback if the
+     * blur itself ever shows a defect on the OPPO.
      */
-    const val BLUR_ALLOWED = false
+    const val BLUR_ALLOWED = true
 
     /** `RenderEffect` (the blur of the platform) exists from Android 12 (API 31). Below, Haze would use RenderScript (deprecated): not used. */
     const val MIN_BLUR_SDK = 31
