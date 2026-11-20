@@ -320,7 +320,7 @@
     <string name="feed_refresh_position_unavailable">Não foi possível atualizar a tua localização. Para isso, a Miff precisa de ter a localização ativada, em «Sempre» e com localização precisa. Podes ajustar isto nas definições do telemóvel.</string>
 
     <!-- FEED-ORDRE : annonce polie (lecteur d'écran) quand l'ordre des cartes change. %1$s = le prénom du proche. Clés partagées avec iOS. -->
-    <string name="feed_order_updated_one_a11y">%1$s deu notícias</string>
+    <string name="feed_order_updated_one_a11y">%1$s publicou uma foto</string>
     <string name="feed_order_updated_many_a11y">O Feed foi atualizado</string>
     <string name="feed_loading_a11y">A carregar o teu Feed</string>
     <string name="feed_card_you_sees">O que os teus entes queridos veem de ti</string>

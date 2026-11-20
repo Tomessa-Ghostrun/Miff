@@ -320,7 +320,7 @@
     <string name="feed_refresh_position_unavailable">Non è stato possibile aggiornare la tua posizione. Per farlo, Miff ha bisogno che la posizione sia attiva, su «Sempre» e precisa. Puoi regolarlo nelle impostazioni del telefono.</string>
 
     <!-- FEED-ORDRE : annonce polie (lecteur d'écran) quand l'ordre des cartes change. %1$s = le prénom du proche. Clés partagées avec iOS. -->
-    <string name="feed_order_updated_one_a11y">%1$s ha dato notizie</string>
+    <string name="feed_order_updated_one_a11y">%1$s ha pubblicato una foto</string>
     <string name="feed_order_updated_many_a11y">Il Feed è stato aggiornato</string>
     <string name="feed_loading_a11y">Caricamento del tuo Feed</string>
     <string name="feed_card_you_sees">Ciò che i tuoi cari vedono di te</string>

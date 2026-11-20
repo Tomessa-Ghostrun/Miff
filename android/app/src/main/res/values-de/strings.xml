@@ -320,7 +320,7 @@
     <string name="feed_refresh_position_unavailable">Dein Standort konnte nicht aktualisiert werden. Dafür muss der Standort aktiviert sein und Miff den Zugriff „Immer“ mit genauem Standort haben. Das kannst du in den Einstellungen deines Telefons ändern.</string>
 
     <!-- FEED-ORDRE : annonce polie (lecteur d'écran) quand l'ordre des cartes change. %1$s = le prénom du proche. Clés partagées avec iOS. -->
-    <string name="feed_order_updated_one_a11y">%1$s hat sich gemeldet</string>
+    <string name="feed_order_updated_one_a11y">%1$s hat ein Foto geteilt</string>
     <string name="feed_order_updated_many_a11y">Der Feed wurde aktualisiert</string>
     <string name="feed_loading_a11y">Dein Feed wird geladen</string>
     <string name="feed_card_you_sees">Das sehen deine Liebsten von dir</string>
