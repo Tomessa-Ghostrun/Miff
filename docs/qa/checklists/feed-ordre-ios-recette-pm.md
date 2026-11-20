@@ -7,7 +7,8 @@
 
 ## Avant de commencer
 
-- **Les règles Firestore de la PR « Feed : ordre par photo » doivent être déployées par vous AVANT d'installer le build** : sinon chaque publication de photo est refusée (l'étape 4 le montrerait).
+- **Les règles Firestore de la PR « Feed : ordre par photo » doivent être déployées par vous AVANT d'installer le build** : sinon le tri ne fonctionne pas (voir le repli ci-dessous).
+- **Repli de l'application** : si, par erreur, les règles n'étaient pas encore déployées, la publication d'une photo **réussit quand même** (l'application renvoie une fois la publication sans la date de tri), mais **la carte ne remonte pas**. Ce n'est pas la bonne configuration de recette : déployez les règles, puis publiez une nouvelle photo.
 - Installez le **build TestFlight** de la PR iOS `ios/feed-ordre-photo` (lancé par vous). Projet Firebase : `miff-3d283` uniquement.
 - **Chaque compte (A, B, C) publie d'abord une photo** : après la mise à jour, aucune date n'existe encore, tout le monde est « sans date » (ordre d'arrivée). Publiez dans l'ordre C, puis B, puis A : A doit alors être en tête, puis B, puis C.
 - Un défaut : capture d'écran (ou vidéo courte) + numéro de l'étape, puis étape suivante.

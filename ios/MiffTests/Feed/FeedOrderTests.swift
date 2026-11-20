@@ -254,6 +254,9 @@ final class FeedOrderTests: XCTestCase {
     }
 
     func testT19MyPhotoWaitingForTheServerIsEstimatedAtNowThenTheServerValueKeepsTheOrder() {
+        // Sur iOS la publication passe par une TRANSACTION (`FirestorePhotoStore`) : il n'y a pas d'écriture locale en attente, donc pas de valeur
+        // estimée « maintenant » (contrairement à Android, qui lit un statut en attente avec l'estimation). Ma carte monte quand la valeur du
+        // serveur arrive ; le cas teste les deux états (estimation, puis valeur du serveur) : le même ordre, sans saut.
         let waiting = ["me": status(photo: feedNow), "a": status(photo: at(12))]
         let confirmed = ["me": status(photo: feedNow - 2_000), "a": status(photo: at(12))]
 
