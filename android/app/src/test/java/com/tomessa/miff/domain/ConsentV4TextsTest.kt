@@ -194,6 +194,17 @@ class ConsentV4TextsTest {
     }
 
     @Test
+    fun thePhotoPlace_isSaidReadableFor24Hours_neverErasedAfter24Hours() {
+        // The document may stay until the cleaning (TTL): only its readability is limited to 24 h.
+        listOf("miff_clarify_body_one", "miff_clarify_body_unnamed", "miff_clarify_body_many").forEach {
+            assertTrue(it, fr.getValue(it).contains("l'endroit de ta photo, lisible pendant 24 h"))
+            assertTrue(it, en.getValue(it).contains("the place of your photo, readable for 24 hours"))
+            assertFalse(it, fr.getValue(it).contains("photo pendant 24 h"))
+            assertFalse(it, en.getValue(it).contains("photo for 24 hours"))
+        }
+    }
+
+    @Test
     fun theCalmCard_saysEverythingContinues_onlyBecauseNothingIsPaused() {
         assertEquals("Tout continue comme avant.", fr.getValue("miff_clarify_continue"))
         assertEquals("Everything goes on as before.", en.getValue("miff_clarify_continue"))

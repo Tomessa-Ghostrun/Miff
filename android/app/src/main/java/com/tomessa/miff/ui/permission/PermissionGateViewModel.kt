@@ -244,6 +244,8 @@ class PermissionGateViewModel(
         if (renewalBusy) return
         renewalDeferred = true
         renewalMessage = null
+        // A person who just said "Pas maintenant" does not get the calm card right behind it in the same launch (it can come back at the next one).
+        clarifyDeferred = true
         publish()
     }
 

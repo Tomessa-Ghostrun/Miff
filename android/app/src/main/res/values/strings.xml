@@ -844,9 +844,9 @@
     <string name="miff_renewal_saving">Saving your agreement…</string>
     <string name="miff_renewal_error_extra">Your agreement is not saved: nothing is shared for now.</string>
     <string name="miff_clarify_title">A clarification about what you share</string>
-    <string name="miff_clarify_body_one">For \"%1$s\", we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your time breakdown; you can erase it in Settings > Privacy.</string>
-    <string name="miff_clarify_body_unnamed">For this Miff, we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your time breakdown; you can erase it in Settings > Privacy.</string>
-    <string name="miff_clarify_body_many">For your Miffs, we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your time breakdown; you can erase it in Settings > Privacy.</string>
+    <string name="miff_clarify_body_one">For \"%1$s\", we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo, readable for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your time breakdown; you can erase it in Settings > Privacy.</string>
+    <string name="miff_clarify_body_unnamed">For this Miff, we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo, readable for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your time breakdown; you can erase it in Settings > Privacy.</string>
+    <string name="miff_clarify_body_many">For your Miffs, we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo, readable for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your time breakdown; you can erase it in Settings > Privacy.</string>
     <string name="miff_clarify_continue">Everything goes on as before.</string>
     <string name="miff_clarify_accept">Got it</string>
     <string name="miff_clarify_later">Later</string>
@@ -1082,6 +1082,11 @@
     <string name="notif_circle_update_title">%1$s checked in</string>
     <string name="notif_circle_update_body">See it in your Miff.</string>
     <string name="notif_center_circle_update_title">Someone in your circle checked in</string>
+    <!-- CNC-A: the centre lines for an alert when the first name cannot be found (left, deleted account, unreadable card): one whole sentence per key, never "call A loved one". -->
+    <string name="notif_center_alert_start_title_unnamed">Someone in your circle declared an alert</string>
+    <string name="notif_center_alert_start_body_unnamed">Check in with them: contact this loved one or open Miff.</string>
+    <string name="notif_center_alert_end_title_unnamed">Someone in your circle ended their alert</string>
+    <string name="notif_center_alert_end_body_unnamed">They said they\'re okay.</string>
     <string name="notif_settings_section_loved_ones">For your loved ones</string>
     <string name="notif_settings_circle_update">When someone in your circle checks in</string>
     <string name="notif_settings_circle_update_hint">A notification when someone in your Miff posts an update.</string>

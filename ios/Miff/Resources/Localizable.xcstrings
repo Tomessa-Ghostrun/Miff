@@ -16681,13 +16681,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "For \"%1$@\", we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your time breakdown; you can erase it in Settings > Privacy."
+            "value": "For \"%1$@\", we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo, readable for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your time breakdown; you can erase it in Settings > Privacy."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pour « %1$@ », nous précisons ce que Miff garde. Sur nos serveurs : ta dernière position connue, et l'endroit de ta photo pendant 24 h, sans aucun historique de trajets. Sur ton téléphone seulement : un journal de tes arrivées et départs (35 jours, sans position ni adresse) qui dessine ta répartition du temps ; tu peux l'effacer dans Réglages > Confidentialité."
+            "value": "Pour « %1$@ », nous précisons ce que Miff garde. Sur nos serveurs : ta dernière position connue, et l'endroit de ta photo, lisible pendant 24 h, sans aucun historique de trajets. Sur ton téléphone seulement : un journal de tes arrivées et départs (35 jours, sans position ni adresse) qui dessine ta répartition du temps ; tu peux l'effacer dans Réglages > Confidentialité."
           }
         }
       }
@@ -16698,13 +16698,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "For this Miff, we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your time breakdown; you can erase it in Settings > Privacy."
+            "value": "For this Miff, we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo, readable for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your time breakdown; you can erase it in Settings > Privacy."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pour cette Miff, nous précisons ce que Miff garde. Sur nos serveurs : ta dernière position connue, et l'endroit de ta photo pendant 24 h, sans aucun historique de trajets. Sur ton téléphone seulement : un journal de tes arrivées et départs (35 jours, sans position ni adresse) qui dessine ta répartition du temps ; tu peux l'effacer dans Réglages > Confidentialité."
+            "value": "Pour cette Miff, nous précisons ce que Miff garde. Sur nos serveurs : ta dernière position connue, et l'endroit de ta photo, lisible pendant 24 h, sans aucun historique de trajets. Sur ton téléphone seulement : un journal de tes arrivées et départs (35 jours, sans position ni adresse) qui dessine ta répartition du temps ; tu peux l'effacer dans Réglages > Confidentialité."
           }
         }
       }
@@ -16715,13 +16715,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "For your Miffs, we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your time breakdown; you can erase it in Settings > Privacy."
+            "value": "For your Miffs, we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo, readable for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your time breakdown; you can erase it in Settings > Privacy."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pour tes Miffs, nous précisons ce que Miff garde. Sur nos serveurs : ta dernière position connue, et l'endroit de ta photo pendant 24 h, sans aucun historique de trajets. Sur ton téléphone seulement : un journal de tes arrivées et départs (35 jours, sans position ni adresse) qui dessine ta répartition du temps ; tu peux l'effacer dans Réglages > Confidentialité."
+            "value": "Pour tes Miffs, nous précisons ce que Miff garde. Sur nos serveurs : ta dernière position connue, et l'endroit de ta photo, lisible pendant 24 h, sans aucun historique de trajets. Sur ton téléphone seulement : un journal de tes arrivées et départs (35 jours, sans position ni adresse) qui dessine ta répartition du temps ; tu peux l'effacer dans Réglages > Confidentialité."
           }
         }
       }
@@ -21175,6 +21175,74 @@
           "stringUnit": {
             "state": "translated",
             "value": "Retrouve-les dans ta Miff."
+          }
+        }
+      }
+    },
+    "notif_center_alert_end_body_unnamed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "They said they're okay."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette personne a indiqué que tout va bien."
+          }
+        }
+      }
+    },
+    "notif_center_alert_end_title_unnamed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Someone in your circle ended their alert"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un proche a mis fin à son alerte"
+          }
+        }
+      }
+    },
+    "notif_center_alert_start_body_unnamed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check in with them: contact this loved one or open Miff."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prends de ses nouvelles : contacte ce proche ou ouvre Miff."
+          }
+        }
+      }
+    },
+    "notif_center_alert_start_title_unnamed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Someone in your circle declared an alert"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un proche a déclaré une alerte"
           }
         }
       }

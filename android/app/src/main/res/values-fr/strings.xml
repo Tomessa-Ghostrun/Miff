@@ -823,9 +823,9 @@
     <string name="miff_renewal_saving">On enregistre ton accord…</string>
     <string name="miff_renewal_error_extra">Ton accord n\'est pas enregistré : rien n\'est partagé pour l\'instant.</string>
     <string name="miff_clarify_title">Une précision sur ce que tu partages</string>
-    <string name="miff_clarify_body_one">Pour « %1$s », nous précisons ce que Miff garde. Sur nos serveurs : ta dernière position connue, et l\'endroit de ta photo pendant 24 h, sans aucun historique de trajets. Sur ton téléphone seulement : un journal de tes arrivées et départs (35 jours, sans position ni adresse) qui dessine ta répartition du temps ; tu peux l\'effacer dans Réglages > Confidentialité.</string>
-    <string name="miff_clarify_body_unnamed">Pour cette Miff, nous précisons ce que Miff garde. Sur nos serveurs : ta dernière position connue, et l\'endroit de ta photo pendant 24 h, sans aucun historique de trajets. Sur ton téléphone seulement : un journal de tes arrivées et départs (35 jours, sans position ni adresse) qui dessine ta répartition du temps ; tu peux l\'effacer dans Réglages > Confidentialité.</string>
-    <string name="miff_clarify_body_many">Pour tes Miffs, nous précisons ce que Miff garde. Sur nos serveurs : ta dernière position connue, et l\'endroit de ta photo pendant 24 h, sans aucun historique de trajets. Sur ton téléphone seulement : un journal de tes arrivées et départs (35 jours, sans position ni adresse) qui dessine ta répartition du temps ; tu peux l\'effacer dans Réglages > Confidentialité.</string>
+    <string name="miff_clarify_body_one">Pour « %1$s », nous précisons ce que Miff garde. Sur nos serveurs : ta dernière position connue, et l\'endroit de ta photo, lisible pendant 24 h, sans aucun historique de trajets. Sur ton téléphone seulement : un journal de tes arrivées et départs (35 jours, sans position ni adresse) qui dessine ta répartition du temps ; tu peux l\'effacer dans Réglages > Confidentialité.</string>
+    <string name="miff_clarify_body_unnamed">Pour cette Miff, nous précisons ce que Miff garde. Sur nos serveurs : ta dernière position connue, et l\'endroit de ta photo, lisible pendant 24 h, sans aucun historique de trajets. Sur ton téléphone seulement : un journal de tes arrivées et départs (35 jours, sans position ni adresse) qui dessine ta répartition du temps ; tu peux l\'effacer dans Réglages > Confidentialité.</string>
+    <string name="miff_clarify_body_many">Pour tes Miffs, nous précisons ce que Miff garde. Sur nos serveurs : ta dernière position connue, et l\'endroit de ta photo, lisible pendant 24 h, sans aucun historique de trajets. Sur ton téléphone seulement : un journal de tes arrivées et départs (35 jours, sans position ni adresse) qui dessine ta répartition du temps ; tu peux l\'effacer dans Réglages > Confidentialité.</string>
     <string name="miff_clarify_continue">Tout continue comme avant.</string>
     <string name="miff_clarify_accept">J\'ai compris</string>
     <string name="miff_clarify_later">Plus tard</string>
@@ -1060,6 +1060,11 @@
     <string name="notif_circle_update_title">%1$s a donné des nouvelles</string>
     <string name="notif_circle_update_body">Retrouve-les dans ta Miff.</string>
     <string name="notif_center_circle_update_title">Un proche a donné des nouvelles</string>
+    <!-- CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche illisible) : une phrase entière par clé, jamais « appelle Un proche ». -->
+    <string name="notif_center_alert_start_title_unnamed">Un proche a déclaré une alerte</string>
+    <string name="notif_center_alert_start_body_unnamed">Prends de ses nouvelles : contacte ce proche ou ouvre Miff.</string>
+    <string name="notif_center_alert_end_title_unnamed">Un proche a mis fin à son alerte</string>
+    <string name="notif_center_alert_end_body_unnamed">Cette personne a indiqué que tout va bien.</string>
     <string name="notif_settings_section_loved_ones">Pour tes proches</string>
     <string name="notif_settings_circle_update">Quand un proche donne des nouvelles</string>
     <string name="notif_settings_circle_update_hint">Une notification quand un proche de ta Miff publie une update.</string>
