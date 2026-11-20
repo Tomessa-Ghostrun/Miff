@@ -10,6 +10,8 @@
 
 **État au 2026-11-19** : les règles de l'alerte « Je suis en danger » et du quota d'alertes (3 débuts par 24 h) ont été déployées par le PM le 2026-11-18 au commit `13ec6177` (sortie « released rules » collée ; règles TTL `alerts.purgeAt`, `quota.expireAt` et `notifState.expireAt` constatées actives). La fonction `notifierAlerte` n'est **pas** déployée (guide : `docs/dev/deploiement-alerte-danger.md`).
 
+**À venir (2026-11-20, FEED-ORDRE-PHOTO, PR `docs/feed-ordre-photo`)** : une clé facultative `photoAt` est ajoutée au statut dans `backend/firestore.rules` (ordre du Feed par date de la dernière photo). Règles **rétro-compatibles** : à déployer **AVANT** les applications Android et iOS qui l'écrivent (sinon chaque publication de photo est refusée en entier) ; **pas de retour arrière** des règles une fois ces applications en circulation. Détail : `backend/data-model.md` (« Ce qui change : date de la dernière photo dans le statut »), `docs/tickets/feed-ordre-photo.md` §7.
+
 ---
 
 ## 0. Les trois interdits

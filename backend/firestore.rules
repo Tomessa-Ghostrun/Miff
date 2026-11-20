@@ -9,7 +9,7 @@ rules_version = '2';
 // connue R-LIEU-POS ; renouvellement d'un consentement actif R-LIEU-3), puis le 2026-11-05 (SESS-1 temps 1) et le 2026-11-06
 // (R-PHOTO-LOC), puis le 2026-11-10 (fichier de `main` de ce jour : 3 lieux gratuits p1/p2/p3, mode voyage, R-LIEU-1 au plus tard
 // à cette date ; informations du PM, non vérifiables par l'agent, à confirmer dans la console : Firestore > Règles). NON DÉPLOYÉ :
-// SESS-1 temps 2 (deviceIdRequired() = true) et, depuis la PR backend/lieu-demande, la demande d'ajout d'un lieu (LIEU-REQ-A, point 13). Et, depuis la PR backend/jetons-appareil, les jetons d'appareil (SRV-2R, point 14). Et, depuis la PR backend/description-update, la description facultative d'une photo d'update (DESC-R, clé « description » de validPhoto). **Mise à jour du 2026-11-19 : les règles de l'alerte « Je suis en danger » (point 16) et du quota d'alertes (point 17) ont été déployées par le PM le 2026-11-18 au commit 13ec6177 ; la fonction `notifierAlerte` reste NON DÉPLOYÉE.** Tout déploiement suit la procédure
+// SESS-1 temps 2 (deviceIdRequired() = true) et, depuis la PR backend/lieu-demande, la demande d'ajout d'un lieu (LIEU-REQ-A, point 13). Et, depuis la PR backend/jetons-appareil, les jetons d'appareil (SRV-2R, point 14). Et, depuis la PR backend/description-update, la description facultative d'une photo d'update (DESC-R, clé « description » de validPhoto). Et, depuis la PR docs/feed-ordre-photo, la date facultative de la dernière photo publiée (FEED-ORDRE-PHOTO, clé « photoAt » de validStatus ; à déployer AVANT les applications). **Mise à jour du 2026-11-19 : les règles de l'alerte « Je suis en danger » (point 16) et du quota d'alertes (point 17) ont été déployées par le PM le 2026-11-18 au commit 13ec6177 ; la fonction `notifierAlerte` reste NON DÉPLOYÉE.** Tout déploiement suit la procédure
 // docs/dev/deploiement-regles.md et l'accord explicite du PM.
 //
 // Principes :
@@ -641,10 +641,10 @@ service cloud.firestore {
 
     // État courant du membre dans UNE Miff. Jamais de coordonnées brutes :
     // uniquement l'état (dans un lieu / hors lieu / zone de danger / en voyage) + horodatages.
-    // Toutes les clés sont toujours présentes (null si non applicable), sauf `deviceId`, `travelUntil` et `travelUntilDay`, facultatives.
+    // Toutes les clés sont toujours présentes (null si non applicable), sauf `deviceId`, `travelUntil`, `travelUntilDay` et `photoAt`, facultatives.
     function validStatus(miffId, uid) {
       let d = request.resource.data;
-      return d.keys().hasOnly(['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt', 'deviceId', 'travelUntil', 'travelUntilDay'])
+      return d.keys().hasOnly(['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt', 'deviceId', 'travelUntil', 'travelUntilDay', 'photoAt'])
         && d.keys().hasAll(['presence', 'placeId', 'presenceAt', 'lastUpdateAt', 'updateText', 'hasPhoto', 'batteryPct', 'locationAccess', 'escalationDueAt', 'updatedAt'])
         && d.presence in ['in_trusted', 'out', 'in_risk', 'unknown', 'travel']
         // Mode voyage (VOY-B, pour tous les comptes) : cohérence des clés de voyage et fenêtre de fin, voir validTravel.
@@ -658,6 +658,8 @@ service cloud.firestore {
         && statusInstant(d.lastUpdateAt, 'lastUpdateAt')
         && isNullOrStr(d.updateText, 140)
         && d.hasPhoto is bool
+        // Date de la dernière photo (FEED-ORDRE-PHOTO) : facultative, conservée ou heure du serveur avec hasPhoto, voir validPhotoAt.
+        && validPhotoAt(d)
         && (d.batteryPct == null || (d.batteryPct is int && d.batteryPct >= 0 && d.batteryPct <= 100))
         && d.locationAccess in ['background', 'foreground', 'denied', 'unknown']
         && (d.escalationDueAt == null
@@ -668,6 +670,29 @@ service cloud.firestore {
         // Consentement actif APRÈS le batch (le membre peut activer le partage
         // et créer son statut dans le même batch).
         && getAfter(/databases/$(database)/documents/miffs/$(miffId)/members/$(uid)).data.sharing.enabled == true;
+    }
+
+    // Date de la dernière photo publiée (FEED-ORDRE-PHOTO, ticket docs/tickets/feed-ordre-photo.md, décision du PM du 2026-11-20 : le Feed classe les
+    // cartes UNIQUEMENT selon cette date). Clé FACULTATIVE `photoAt` du statut (dans hasOnly, absente de hasAll ; absente ou nulle = « pas de date »).
+    // Trois cas acceptés, et aucun autre :
+    //  - absente ou nulle : tous les statuts existants, tout ancien client, tout statut initial (activation du partage : la date est perdue) ;
+    //  - CONSERVÉE : identique, à la microseconde, à la valeur déjà en base (`resource`). Une mise à jour PARTIELLE (tous les clients actuels, Android et
+    //    iOS) qui ne touche pas la clé la garde telle quelle (document fusionné) ; une photo expirée ou supprimée ne change donc pas la date ;
+    //  - NOUVELLE : exactement l'heure du serveur (`request.time`, FieldValue.serverTimestamp()) ET `hasPhoto` vrai dans le même document : c'est la
+    //    publication d'une photo (même heure que le `createdAt` de la photo et le `lastUpdateAt` du même lot). Jamais l'heure de l'appareil, jamais
+    //    antidatée ni postdatée, jamais la valeur d'un autre champ ni d'un autre membre. La date peut disparaître (un `set` complet sans la clé, ou
+    //    suppression puis recréation du statut, que la règle de suppression de soi autorise de toute façon : impossible et inutile à interdire, cela
+    //    ne fait perdre son rang qu'à son auteur).
+    // Limite connue (assumée) : la règle ne prouve pas qu'une photo existe dans le même lot (un `getAfter` de plus par Miff ferait passer la mise à jour
+    // manuelle de 3 à 4 lectures de règles par Miff, soit 5 Miffs au plus par lot et aucune marge) : un client modifié peut remonter SA PROPRE carte à
+    // l'heure du serveur sans photo, comme il peut déjà écrire `lastUpdateAt` = maintenant sans update. Aucune lecture de règles ajoutée : `resource`
+    // n'en est pas une, le coût de validStatus reste 1.
+    function validPhotoAt(d) {
+      let at = d.get('photoAt', null);
+      return at == null
+        || (at is timestamp
+            && ((resource != null && resource.data.get('photoAt', null) == at)
+                || (at == request.time && d.hasPhoto == true)));
     }
 
     // MODE VOYAGE (VOY-B, ticket docs/tickets/mode-voyage.md §4, décisions du PM du 2026-11-10) : `presence = 'travel'` avec deux clés
