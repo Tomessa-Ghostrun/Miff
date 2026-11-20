@@ -909,8 +909,8 @@
     <string name="update_description_counter_a11y">%1$d caratteri su %2$d</string>
     <string name="update_description_limit">Limite di %1$d caratteri raggiunto.</string>
     <string name="update_description_shown_a11y">Descrizione: %1$s</string>
-    <string name="update_preview_visibility">I tuoi cari vedranno questa foto per 24&#160;ore.</string>
-    <string name="update_preview_visibility_many">La tua foto sarà visibile ai membri delle tue %1$d Miff per 24&#160;ore.</string>
+    <string name="update_preview_visibility">I tuoi cari che condividono a loro volta la propria posizione vedranno questa foto per 24 ore.</string>
+    <string name="update_preview_visibility_many">La tua foto sarà visibile per 24 ore ai membri delle tue %1$d Miff che condividono a loro volta la propria posizione.</string>
     <string name="update_preview_place">Pubblicata con la tua posizione. Chi condivide a sua volta la propria può vedere dove l’hai scattata.</string>
     <string name="update_preview_stale">Questa foto è un po’ vecchia: scattane un’altra.</string>
     <string name="update_publishing">Condivisione in corso…</string>
@@ -957,7 +957,7 @@
     <string name="notif_n7_title">La tua modalità viaggio è terminata</string>
     <string name="notif_n7_body">La tua scheda riprende i suoi colori per i tuoi cari. Buon rientro!</string>
     <string name="notif_prime_title">Un promemoria, solo quando serve</string>
-    <string name="notif_prime_body">Se non hai tempo di dare notizie, Miff te lo ricorda con delicatezza e ti avvisa quando una persona cara dà notizie. Per inviarti queste notifiche, Miff registra un identificativo tecnico del tuo telefono, fornito da Google. Scegli tu cosa ricevere nelle impostazioni.</string>
+    <string name="notif_prime_body">Se non hai tempo di dare notizie, Miff te lo ricorda con delicatezza e ti avvisa quando una persona cara dà notizie. Per inviarti queste notifiche, Miff registra un identificativo tecnico del tuo telefono, fornito da Google. Puoi scegliere cosa ricevere nelle impostazioni e disattivare tutto in qualsiasi momento.</string>
     <string name="notif_prime_allow">Consenti</string>
     <string name="notif_prime_later">Più tardi</string>
     <string name="notif_prime_example_when">2&#160;min fa</string>
@@ -966,7 +966,7 @@
     <string name="notif_second_chance_later">Non ora</string>
     <string name="notif_state_allowed">Consentite dal tuo telefono</string>
     <string name="notif_state_off">Disattivate sul tuo telefono</string>
-    <string name="notif_state_off_note">Non riceverai promemoria.</string>
+    <string name="notif_state_off_note">Non riceverai notifiche.</string>
     <string name="notif_state_notasked">Non ancora attivate</string>
     <string name="notif_state_open_settings">Apri le impostazioni del telefono</string>
     <string name="notif_privacy_body">Quando dai notizie o dichiari un’allerta, i tuoi cari che hanno attivato le notifiche ricevono una notifica, solo con il tuo nome (né foto né posizione); per le tue notizie devono condividere a loro volta la posizione. I tuoi promemoria vengono preparati dal tuo telefono. Il fatto che tu arrivi in un luogo o lo lasci non invia alcuna notifica immediata ai tuoi cari; se il tuo stato resta arancione o rosso per un po’, il loro telefono può suggerire di chiedere come stai. Se accetti le notifiche, Miff registra un identificativo tecnico del tuo telefono per inviartele. I nostri server conservano inoltre per 30&#160;giorni una traccia tecnica di ogni notifica inviata (tipo, Miff, persona che ha dato notizie o dichiarato l’allerta, data; mai nome, foto o posizione). Puoi disattivare tutto in qualsiasi momento in Impostazioni > Notifiche o nelle impostazioni del tuo telefono.</string>
@@ -1004,11 +1004,11 @@
     <string name="notif_settings_night_title">Notte tranquilla</string>
     <string name="notif_settings_night_body">Dalle 22 alle 7, senza suono né vibrazione, tranne quando qualcuno passa al rosso.</string>
     <string name="notif_settings_see_all">Vedi le mie notifiche</string>
-    <string name="notif_settings_help_link">Se i promemoria non arrivano</string>
+    <string name="notif_settings_help_link">Se le notifiche non arrivano</string>
     <string name="notif_help_title">Notifiche disattivate</string>
     <string name="notif_help_intro">Hai disattivato le notifiche nel telefono.</string>
     <string name="notif_help_choice">È una tua scelta, e conta.</string>
-    <string name="notif_help_lead">Per ricevere un promemoria quando non hai tempo di dare notizie:</string>
+    <string name="notif_help_lead">Per riattivare le notifiche di Miff:</string>
     <string name="notif_help_step_1">Apri le impostazioni del telefono</string>
     <string name="notif_help_step_2">Scegli «Notifiche»</string>
     <string name="notif_help_step_3">Attivale per Miff</string>

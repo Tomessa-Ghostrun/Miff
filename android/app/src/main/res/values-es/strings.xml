@@ -43,7 +43,7 @@
     <string name="auth_error_network">Sin conexión por ahora. Inténtalo de nuevo cuando tengas red.</string>
     <string name="auth_error_unknown">Algo no ha funcionado. Inténtalo de nuevo en un momento.</string>
     <string name="auth_error_google_interrupted">No se ha podido completar el inicio de sesión con Google. Inténtalo de nuevo en un momento.</string>
-    <string name="auth_error_google_no_account">Google no ha podido ofrecer una cuenta en este teléfono por ahora. Puedes añadir una en la configuración del teléfono, o continuar con tu dirección de correo electrónico.</string>
+    <string name="auth_error_google_no_account">Google no ha podido ofrecer una cuenta en este teléfono por ahora. Puedes añadir una en los ajustes del teléfono, o continuar con tu dirección de correo electrónico.</string>
     <string name="auth_error_google_services">Los servicios de Google no responden en este teléfono por ahora. Comprueba que estén al día, o continúa con tu dirección de correo electrónico.</string>
     <string name="auth_error_account_unavailable">Esta cuenta no está disponible por ahora. Si necesitas ayuda, escríbenos a %1$s.</string>
     <string name="auth_lookup_failed">No conseguimos abrir tu cuenta por ahora. Inténtalo de nuevo en un momento.</string>
@@ -72,8 +72,8 @@
     <string name="android_legal_privacy_path">/en/privacy</string>
 
     <!-- Carrousel de bienvenue et consentement implicite (AUTH-1) -->
-    <string name="auth_consent_notice">Al tocar «Unirse» o «Continuar con Google», aceptas nuestras %1$s y nuestra %2$s, así como compartir tus estadísticas de uso e informes de fallos anónimos (puedes cambiarlo en cualquier momento en Configuración).</string>
-    <string name="auth_panel_notice">Al tocar «Continuar», aceptas nuestras %1$s y nuestra %2$s, así como compartir tus estadísticas de uso e informes de fallos anónimos (puedes cambiarlo en cualquier momento en Configuración).</string>
+    <string name="auth_consent_notice">Al tocar «Unirse» o «Continuar con Google», aceptas nuestras %1$s y nuestra %2$s, así como compartir tus estadísticas de uso e informes de fallos anónimos (puedes cambiarlo en cualquier momento en Ajustes).</string>
+    <string name="auth_panel_notice">Al tocar «Continuar», aceptas nuestras %1$s y nuestra %2$s, así como compartir tus estadísticas de uso e informes de fallos anónimos (puedes cambiarlo en cualquier momento en Ajustes).</string>
     <string name="onboarding_headline">Saber que están bien,\nsin molestar</string>
     <string name="onboarding_start">Empezar</string>
     <string name="onboarding_have_account">Ya tengo una cuenta</string>
@@ -172,9 +172,9 @@
     <string name="profile_tab_pane_a11y">Tu perfil</string>
     <string name="profile_tab_you_label">Eres tú</string>
     <string name="profile_tab_open_my_info_a11y">abrir Mis datos</string>
-    <string name="profile_tab_settings_a11y">Configuración</string>
+    <string name="profile_tab_settings_a11y">Ajustes</string>
     <string name="profile_tab_unavailable">No conseguimos mostrar tu perfil por ahora. Comprueba tu conexión e inténtalo de nuevo.</string>
-    <string name="settings_title">Configuración</string>
+    <string name="settings_title">Ajustes</string>
     <string name="settings_my_info_title">Mis datos</string>
     <string name="settings_my_info_subtitle">Cambia tu foto, tu nombre y tu número</string>
     <string name="settings_account_title">Mi cuenta</string>
@@ -317,7 +317,7 @@
     <string name="feed_refresh_done_a11y">Información actualizada</string>
 
     <!-- FEED-REFRESH-POSITION : phrase calme (toast) quand « Actualiser » ne peut pas relire MA position faute d'accès à la localisation. Clé partagée avec iOS. -->
-    <string name="feed_refresh_position_unavailable">No se ha podido actualizar tu ubicación. Para ello, Miff necesita que la ubicación esté activada, en «Siempre» y con ubicación precisa. Puedes ajustarlo en la configuración de tu teléfono.</string>
+    <string name="feed_refresh_position_unavailable">No se ha podido actualizar tu ubicación. Para ello, Miff necesita que la ubicación esté activada, en «Siempre» y con ubicación precisa. Puedes cambiarlo en los ajustes de tu teléfono.</string>
 
     <!-- FEED-ORDRE : annonce polie (lecteur d'écran) quand l'ordre des cartes change. %1$s = le prénom du proche. Clés partagées avec iOS. -->
     <string name="feed_order_updated_one_a11y">%1$s ha publicado una foto</string>
@@ -335,7 +335,7 @@
     <string name="feed_moment_at_today">hoy, %1$s</string>
     <string name="feed_moment_at_yesterday">ayer, %1$s</string>
     <string name="feed_moment_at_date">el %1$s, %2$s</string>
-    <string name="feed_moment_since_today">%1$s</string>
+    <string name="feed_moment_since_today">las %1$s</string>
     <string name="feed_moment_since_yesterday">ayer, %1$s</string>
     <string name="feed_moment_since_date">el %1$s, %2$s</string>
     <string name="feed_moment_from_today">de hoy, %1$s</string>
@@ -452,8 +452,8 @@
     <string name="settings_privacy_location_title">Ubicación</string>
     <string name="settings_privacy_location_body">Miff usa la ubicación de tu teléfono, incluso con la app cerrada, para detectar tus llegadas a los lugares de tu Miff y tus salidas de ellos. Solo los miembros de una Miff que también comparten la suya ven tu última ubicación conocida, con la hora, y el lugar de tu foto si publicas una. No se guarda ningún historial de trayectos en nuestros servidores. Puedes dejar de compartir en cualquier momento: tu ubicación se borra entonces.</string>
     <string name="settings_privacy_notifications_title">Notificaciones</string>
-    <string name="settings_privacy_notifications_body">Cuando das noticias o declaras una alerta, tus seres queridos que tienen las notificaciones activadas reciben una notificación, solo con tu nombre (sin foto ni ubicación); para tus noticias, también tienen que compartir su ubicación. Tus recordatorios los prepara tu teléfono. Tus llegadas y salidas no activan ninguna notificación inmediata para tus seres queridos; si tu estado se queda en naranja o en rojo un tiempo, su teléfono puede proponerles que pregunten cómo estás. Si aceptas las notificaciones, Miff guarda un identificador técnico de tu teléfono para enviártelas. Nuestros servidores conservan además durante 30&#160;días un registro técnico de cada notificación enviada (tipo, Miff, persona que dio noticias o declaró la alerta, fecha; nunca un nombre, una foto ni una ubicación). Puedes desactivarlo todo en cualquier momento en Configuración > Notificaciones o en la configuración de tu teléfono.</string>
-    <string name="settings_privacy_open_phone_settings">Abrir la configuración del teléfono</string>
+    <string name="settings_privacy_notifications_body">Cuando das noticias o declaras una alerta, tus seres queridos que tienen las notificaciones activadas reciben una notificación, solo con tu nombre (sin foto ni ubicación); para tus noticias, también tienen que compartir su ubicación. Tus recordatorios los prepara tu teléfono. Tus llegadas y salidas no activan ninguna notificación inmediata para tus seres queridos; si tu estado se queda en naranja o en rojo un tiempo, su teléfono puede proponerles que pregunten cómo estás. Si aceptas las notificaciones, Miff guarda un identificador técnico de tu teléfono para enviártelas. Nuestros servidores conservan además durante 30&#160;días un registro técnico de cada notificación enviada (tipo, Miff, persona que dio noticias o declaró la alerta, fecha; nunca un nombre, una foto ni una ubicación). Puedes desactivarlo todo en cualquier momento en Ajustes > Notificaciones o en los ajustes de tu teléfono.</string>
+    <string name="settings_privacy_open_phone_settings">Abrir los ajustes del teléfono</string>
     <string name="settings_privacy_texts_title">Nuestros textos</string>
     <string name="settings_privacy_contact">Contáctanos</string>
     <string name="about_title">Acerca de y ayuda</string>
@@ -691,7 +691,7 @@
 
     <!-- LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement -->
     <string name="permission_notifications_title">¡Te avisamos solo cuando sea útil!</string>
-    <string name="permission_notifications_note">Los ejemplos de arriba muestran lo que podrías recibir. Puedes desactivarlo todo en cualquier momento en la configuración de tu teléfono.</string>
+    <string name="permission_notifications_note">Los ejemplos de arriba muestran lo que podrías recibir. Puedes desactivarlo todo en cualquier momento en los ajustes de tu teléfono.</string>
     <string name="permission_notifications_action">Permitir</string>
     <string name="permission_location_title">¡Saber que estás bien!</string>
     <string name="permission_location_body">Miff necesita tu ubicación para que tus seres queridos sepan que estás bien.</string>
@@ -708,25 +708,25 @@
     <string name="permission_location_action_settings">Permitir la ubicación en segundo plano</string>
     <string name="permission_location_later">Más tarde</string>
     <string name="permission_location_error">Miff necesita la opción «Permitir siempre» y la ubicación precisa para funcionar</string>
-    <string name="permission_location_error_calm">Puedes cambiar esta elección en cualquier momento en la configuración de tu teléfono.</string>
+    <string name="permission_location_error_calm">Puedes cambiar esta elección en cualquier momento en los ajustes de tu teléfono.</string>
     <string name="permission_location_steps_error_calm">Puedes volver aquí tantas veces como necesites.</string>
     <string name="permission_location_steps_body">Miff necesita acceder a tu ubicación en segundo plano, incluso con la app cerrada, para funcionar.</string>
-    <string name="permission_location_step_1">Toca el botón: se abre la configuración de Miff</string>
+    <string name="permission_location_step_1">Toca el botón: se abren los ajustes de Miff</string>
     <string name="permission_location_step_2">Elige Permisos y luego Ubicación</string>
     <string name="permission_location_step_3">Elige Permitir siempre y deja activada la opción Usar ubicación precisa</string>
     <string name="android_permission_location_system_step_1">Toca el botón: se abre la pantalla donde se ajusta el acceso a tu ubicación</string>
     <string name="android_permission_location_system_step_2">Elige Permitir siempre (o Permitir todo el tiempo)</string>
     <string name="android_permission_location_system_step_3">Mantén activada Ubicación exacta (o Usar ubicación precisa)</string>
     <string name="miff_consent3_title">Lo que compartes con esta Miff</string>
-    <string name="miff_consent3_create">Al crear esta Miff, compartes tu estado, tu última ubicación conocida y, si publicas una foto, el lugar donde se tomó, con sus miembros; puedes dejar de compartir en cualquier momento en la configuración de la Miff.</string>
-    <string name="miff_consent3_join">Al unirte a esta Miff, compartes tu estado, tu última ubicación conocida y, si publicas una foto, el lugar donde se tomó, con sus miembros; puedes dejar de compartir en cualquier momento en la configuración de la Miff.</string>
+    <string name="miff_consent3_create">Al crear esta Miff, compartes tu estado, tu última ubicación conocida y, si publicas una foto, el lugar donde se tomó, con sus miembros; puedes dejar de compartir en cualquier momento en los ajustes de la Miff.</string>
+    <string name="miff_consent3_join">Al unirte a esta Miff, compartes tu estado, tu última ubicación conocida y, si publicas una foto, el lugar donde se tomó, con sus miembros; puedes dejar de compartir en cualquier momento en los ajustes de la Miff.</string>
     <string name="miff_consent3_resume">Vuelves a compartir tu estado, tu última ubicación conocida y, si publicas una foto, el lugar donde se tomó, con los miembros de esta Miff; puedes dejar de compartir en cualquier momento.</string>
     <string name="miff_consent3_kept_title">Tu última ubicación conocida</string>
     <string name="miff_consent3_kept_body">Miff solo guarda tu última ubicación conocida, con la hora de la medición, en sus servidores. No hay historial de trayectos en nuestros servidores: cada ubicación sustituye a la anterior. No es un seguimiento en directo.</string>
     <string name="miff_consent3_photo_title">El lugar de tu foto</string>
     <string name="miff_consent3_photo_body">Cuando publicas una foto, se le adjunta el lugar donde la tomaste, con la hora de la medición. Los miembros que también comparten su ubicación lo ven durante 24&#160;h; después, la foto ya no se puede ver.</string>
     <string name="miff_consent3_local_title">Solo en tu teléfono</string>
-    <string name="miff_consent3_local_body">Para mostrarte cómo se reparte tu tiempo, tu teléfono también anota tus llegadas a tus lugares y tus salidas de ellos, durante 35&#160;días, sin ubicación ni dirección. No se envía nada y nadie más lo ve. Puedes borrarlo en Configuración > Privacidad.</string>
+    <string name="miff_consent3_local_body">Para mostrarte cómo se reparte tu tiempo, tu teléfono también anota tus llegadas a tus lugares y tus salidas de ellos, durante 35&#160;días, sin ubicación ni dirección. No se envía nada y nadie más lo ve. Puedes borrarlo en Ajustes > Privacidad.</string>
     <string name="miff_consent3_who_title">Quién la ve</string>
     <string name="miff_consent3_who_body">Solo la ven los miembros de esta Miff que también comparten la suya. Quien creó la Miff no tiene ningún derecho adicional.</string>
     <string name="miff_consent3_closed_title">Incluso con la app cerrada</string>
@@ -748,9 +748,9 @@
     <string name="miff_renewal_saving">Estamos guardando tu consentimiento…</string>
     <string name="miff_renewal_error_extra">Tu consentimiento no se ha guardado: por ahora Miff no actualiza tu estado.</string>
     <string name="miff_clarify_title">Una precisión sobre lo que compartes</string>
-    <string name="miff_clarify_body_one">Para «%1$s», aclaramos lo que guarda Miff. En nuestros servidores: tu última ubicación conocida y el lugar de tu foto, visible durante 24&#160;h, sin ningún historial de trayectos. Solo en tu teléfono: un registro de tus llegadas y salidas (35&#160;días, sin ubicación ni dirección) que dibuja el reparto de tu tiempo; puedes borrarlo en Configuración > Privacidad.</string>
-    <string name="miff_clarify_body_unnamed">Para esta Miff, aclaramos lo que guarda Miff. En nuestros servidores: tu última ubicación conocida y el lugar de tu foto, visible durante 24&#160;h, sin ningún historial de trayectos. Solo en tu teléfono: un registro de tus llegadas y salidas (35&#160;días, sin ubicación ni dirección) que dibuja el reparto de tu tiempo; puedes borrarlo en Configuración > Privacidad.</string>
-    <string name="miff_clarify_body_many">Para tus Miffs, aclaramos lo que guarda Miff. En nuestros servidores: tu última ubicación conocida y el lugar de tu foto, visible durante 24&#160;h, sin ningún historial de trayectos. Solo en tu teléfono: un registro de tus llegadas y salidas (35&#160;días, sin ubicación ni dirección) que dibuja el reparto de tu tiempo; puedes borrarlo en Configuración > Privacidad.</string>
+    <string name="miff_clarify_body_one">Para «%1$s», aclaramos lo que guarda Miff. En nuestros servidores: tu última ubicación conocida y el lugar de tu foto, visible durante 24&#160;h, sin ningún historial de trayectos. Solo en tu teléfono: un registro de tus llegadas y salidas (35&#160;días, sin ubicación ni dirección) que dibuja el reparto de tu tiempo; puedes borrarlo en Ajustes > Privacidad.</string>
+    <string name="miff_clarify_body_unnamed">Para esta Miff, aclaramos lo que guarda Miff. En nuestros servidores: tu última ubicación conocida y el lugar de tu foto, visible durante 24&#160;h, sin ningún historial de trayectos. Solo en tu teléfono: un registro de tus llegadas y salidas (35&#160;días, sin ubicación ni dirección) que dibuja el reparto de tu tiempo; puedes borrarlo en Ajustes > Privacidad.</string>
+    <string name="miff_clarify_body_many">Para tus Miffs, aclaramos lo que guarda Miff. En nuestros servidores: tu última ubicación conocida y el lugar de tu foto, visible durante 24&#160;h, sin ningún historial de trayectos. Solo en tu teléfono: un registro de tus llegadas y salidas (35&#160;días, sin ubicación ni dirección) que dibuja el reparto de tu tiempo; puedes borrarlo en Ajustes > Privacidad.</string>
     <string name="miff_clarify_continue">Todo sigue como antes.</string>
     <string name="miff_clarify_accept">Entendido</string>
     <string name="miff_clarify_later">Más tarde</string>
@@ -769,7 +769,7 @@
     <string name="settings_delete_loading">Un momento, estamos revisando tus Miffs…</string>
     <string name="settings_delete_offline_list">Sin conexión por ahora. Tus Miffs aparecerán en cuanto tengas red.</string>
     <string name="settings_delete_read_failed">No hemos podido leer tus Miffs por ahora. Inténtalo de nuevo en un momento.</string>
-    <string name="settings_delete_apple_android_info">Tu cuenta también está vinculada a Apple. Desde Android no podemos retirar esa autorización: al final te explicamos cómo hacerlo en la configuración de tu ID de Apple.</string>
+    <string name="settings_delete_apple_android_info">Tu cuenta también está vinculada a Apple. Desde Android no podemos retirar esa autorización: al final te explicamos cómo hacerlo en los ajustes de tu ID de Apple.</string>
     <string name="settings_delete_confirm_title">¿Eliminar tu cuenta?</string>
     <string name="settings_delete_confirm_body">Tu cuenta y tus datos de Miff se eliminarán. No se puede deshacer.</string>
     <string name="settings_delete_confirm_ok">Eliminar mi cuenta</string>
@@ -805,9 +805,9 @@
     <string name="settings_delete_done_title">Tu cuenta se ha eliminado</string>
     <string name="settings_delete_done_body">Gracias por haber recorrido un trozo de camino con Miff. Podrás volver cuando quieras.</string>
     <string name="settings_delete_done_continue">Continuar</string>
-    <string name="settings_delete_done_apple_android">Tu cuenta estaba vinculada a Apple. Puedes retirar la autorización en la configuración de tu ID de Apple.</string>
+    <string name="settings_delete_done_apple_android">Tu cuenta estaba vinculada a Apple. Puedes retirar la autorización en los ajustes de tu ID de Apple.</string>
     <string name="settings_delete_apple_howto_title">Para retirar la autorización</string>
-    <string name="settings_delete_apple_howto_step1">Abre la configuración de tu ID de Apple (appleid.apple.com o Configuración en un iPhone).</string>
+    <string name="settings_delete_apple_howto_step1">Abre los ajustes de tu ID de Apple (appleid.apple.com o Ajustes en un iPhone).</string>
     <string name="settings_delete_apple_howto_step2">Ve a «Inicio de sesión y seguridad» y luego a «Iniciar sesión con Apple».</string>
     <string name="settings_delete_apple_howto_step3">Elige Miff y deja de usar el ID de Apple con esta app.</string>
     <string name="auth_account_deleted_notice">Tu cuenta se ha eliminado.</string>
@@ -836,7 +836,7 @@
     <string name="settings_delete_confirm_body_owner">Tu cuenta, tus datos de Miff y tus Miffs se eliminarán. No se puede deshacer.</string>
     <string name="settings_delete_progress_miff">Miff %1$d de %2$d</string>
     <string name="settings_delete_progress_long">Puede tardar unos minutos si tu Miff tiene muchos seres queridos.</string>
-    <string name="settings_delete_miffs_blocked">Ha aparecido una Miff durante la eliminación, así que tu cuenta no se ha eliminado. Puedes volver a iniciar la eliminación desde Configuración > Mi cuenta cuando quieras. ¿Alguna duda? Escríbenos: %1$s.</string>
+    <string name="settings_delete_miffs_blocked">Ha aparecido una Miff durante la eliminación, así que tu cuenta no se ha eliminado. Puedes volver a iniciar la eliminación desde Ajustes > Mi cuenta cuando quieras. ¿Alguna duda? Escríbenos: %1$s.</string>
 
     <!-- LOC-2b: "En attente de ton accord" (design 23), help for the phones that stop apps in the background -->
     <string name="miff_waiting_title">Esperando tu consentimiento</string>
@@ -847,7 +847,7 @@
     <string name="miff_waiting_review">Revisar y aceptar</string>
     <string name="miff_sharing_waiting_description">Esperando tu consentimiento: tu estado ya no se actualiza. Puedes dejar de compartir.</string>
     <string name="settings_privacy_location_status_ok">Siempre permitida</string>
-    <string name="settings_privacy_location_status_todo">Por completar en la configuración del teléfono</string>
+    <string name="settings_privacy_location_status_todo">Por completar en los ajustes del teléfono</string>
     <string name="settings_privacy_miff_waiting_pill">Pendiente</string>
     <string name="settings_privacy_miff_waiting_body">Tu consentimiento está en espera: Miff ya no actualiza tu estado con esta Miff. Puedes dejar de compartir desde la pantalla de la Miff.</string>
     <string name="settings_privacy_clarify_body">Miff ha precisado lo que guarda en nuestros servidores y lo que guarda solo en tu teléfono. Todo sigue como antes: puedes leer esta precisión y aceptarla cuando quieras.</string>
@@ -862,7 +862,7 @@
     <string name="settings_subscription_no_store_note">Este acceso no pasa por una tienda de aplicaciones.</string>
     <string name="settings_detection_help_title">Si las llegadas y salidas tardan</string>
     <string name="settings_detection_help_intro">Algunos teléfonos (Oppo, Xiaomi, Samsung, Huawei…) detienen las aplicaciones en segundo plano para ahorrar batería. Entonces Miff puede detectar una llegada o una salida con retraso, o mostrar con retraso las noticias de tus seres queridos. Estas opciones de configuración son opcionales: pueden ayudar, y Miff funciona sin ellas.</string>
-    <string name="settings_detection_help_step_battery">1. En la configuración de Miff, abre «Batería» (o «Consumo de energía») y elige «Sin restricciones» (o «No optimizar»).</string>
+    <string name="settings_detection_help_step_battery">1. En los ajustes de Miff, abre «Batería» (o «Consumo de energía») y elige «Sin restricciones» (o «No optimizar»).</string>
     <string name="settings_detection_help_step_background">2. Permite la actividad en segundo plano de Miff si el teléfono lo ofrece.</string>
     <string name="settings_detection_help_step_autostart">3. En Oppo, OnePlus o Realme (ColorOS): permite también el «inicio automático» de Miff y no la cierres deslizándola en la lista de aplicaciones recientes.</string>
     <string name="settings_detection_help_step_saver">4. Si puedes, evita tener el ahorro de batería activado todo el tiempo, sobre todo durante tus desplazamientos.</string>
@@ -877,11 +877,11 @@
     <string name="update_retry_title">¿Reintentamos?</string>
     <string name="update_retry_body">Podrás dar noticias con una foto en cuanto se permita la cámara.</string>
     <string name="update_disabled_title">La cámara está desactivada</string>
-    <string name="update_disabled_body">Puedes activarla en la configuración del teléfono.</string>
+    <string name="update_disabled_body">Puedes activarla en los ajustes del teléfono.</string>
     <string name="update_unavailable_title">Cámara no disponible</string>
     <string name="update_unavailable_body">La cámara no está disponible por ahora. Cierra las demás aplicaciones que la usen e inténtalo de nuevo.</string>
     <string name="update_action_retry">Reintentar</string>
-    <string name="update_action_open_settings">Abrir configuración</string>
+    <string name="update_action_open_settings">Abrir ajustes</string>
     <string name="update_action_phone_camera">Usar la app de cámara del teléfono</string>
     <string name="update_action_close">Cerrar</string>
     <string name="update_action_review_agreement">Revisar y aceptar</string>
@@ -909,8 +909,8 @@
     <string name="update_description_counter_a11y">%1$d caracteres de %2$d</string>
     <string name="update_description_limit">Has alcanzado el límite de %1$d caracteres.</string>
     <string name="update_description_shown_a11y">Descripción: %1$s</string>
-    <string name="update_preview_visibility">Tus seres queridos verán esta foto durante 24&#160;h.</string>
-    <string name="update_preview_visibility_many">Tu foto será visible para los miembros de tus %1$d Miffs durante 24&#160;h.</string>
+    <string name="update_preview_visibility">Tus seres queridos que también comparten su ubicación verán esta foto durante 24&#160;h.</string>
+    <string name="update_preview_visibility_many">Tu foto será visible durante 24&#160;h para los miembros de tus %1$d Miffs que también comparten su ubicación.</string>
     <string name="update_preview_place">Publicada con tu ubicación. Los miembros que también comparten la suya pueden ver dónde la tomaste.</string>
     <string name="update_preview_stale">Esta foto ya es algo antigua: toma otra.</string>
     <string name="update_publishing">Compartiendo…</string>
@@ -941,7 +941,7 @@
     <string name="feed_photo_download_done">Foto guardada.</string>
     <string name="update_notice_unconfirmed">No hemos podido confirmarlo. Mira en tu Feed: si tu foto está ahí, se ha enviado.</string>
     <string name="update_action_open_feed">Ver mi Feed</string>
-    <string name="update_notice_location_off">Tu ubicación no está accesible: la ubicación del teléfono está desactivada, o Miff no tiene el acceso «Siempre» con la ubicación precisa. Puedes ajustarlo en la configuración y luego intentarlo de nuevo.</string>
+    <string name="update_notice_location_off">Tu ubicación no está accesible: la ubicación del teléfono está desactivada, o Miff no tiene el acceso «Siempre» con la ubicación precisa. Puedes cambiarlo en los ajustes y luego intentarlo de nuevo.</string>
 
     <!-- NOTIF-P0: notifications (centre, reglages, autorisation) -->
     <string name="notif_n1_title">Tu estado ha pasado a naranja</string>
@@ -957,7 +957,7 @@
     <string name="notif_n7_title">Tu modo viaje ha terminado</string>
     <string name="notif_n7_body">Tu tarjeta recupera sus colores para tus seres queridos. ¡Qué bueno verte de nuevo!</string>
     <string name="notif_prime_title">Un recordatorio, solo cuando es útil</string>
-    <string name="notif_prime_body">Si no tienes tiempo para dar noticias, Miff te lo recuerda con suavidad, y te avisa cuando un ser querido da noticias. Para enviarte estas notificaciones, Miff guarda un identificador técnico de tu teléfono, proporcionado por Google. Tú eliges lo que recibes en la configuración.</string>
+    <string name="notif_prime_body">Si no tienes tiempo para dar noticias, Miff te lo recuerda con suavidad, y te avisa cuando un ser querido da noticias. Para enviarte estas notificaciones, Miff guarda un identificador técnico de tu teléfono, proporcionado por Google. Puedes elegir lo que recibes en los ajustes, y desactivarlo todo en cualquier momento.</string>
     <string name="notif_prime_allow">Permitir</string>
     <string name="notif_prime_later">Más tarde</string>
     <string name="notif_prime_example_when">Hace 2&#160;min</string>
@@ -966,10 +966,10 @@
     <string name="notif_second_chance_later">Ahora no</string>
     <string name="notif_state_allowed">Permitidas por tu teléfono</string>
     <string name="notif_state_off">Desactivadas en tu teléfono</string>
-    <string name="notif_state_off_note">No recibirás recordatorios.</string>
+    <string name="notif_state_off_note">No recibirás notificaciones.</string>
     <string name="notif_state_notasked">Aún no activadas</string>
-    <string name="notif_state_open_settings">Abrir la configuración del teléfono</string>
-    <string name="notif_privacy_body">Cuando das noticias o declaras una alerta, tus seres queridos que tienen las notificaciones activadas reciben una notificación, solo con tu nombre (sin foto ni ubicación); para tus noticias, también tienen que compartir su ubicación. Tus recordatorios los prepara tu teléfono. Tus llegadas y salidas no activan ninguna notificación inmediata para tus seres queridos; si tu estado se queda en naranja o en rojo un tiempo, su teléfono puede proponerles que pregunten cómo estás. Si aceptas las notificaciones, Miff guarda un identificador técnico de tu teléfono para enviártelas. Nuestros servidores conservan además durante 30&#160;días un registro técnico de cada notificación enviada (tipo, Miff, persona que dio noticias o declaró la alerta, fecha; nunca un nombre, una foto ni una ubicación). Puedes desactivarlo todo en cualquier momento en Configuración > Notificaciones o en la configuración de tu teléfono.</string>
+    <string name="notif_state_open_settings">Abrir los ajustes del teléfono</string>
+    <string name="notif_privacy_body">Cuando das noticias o declaras una alerta, tus seres queridos que tienen las notificaciones activadas reciben una notificación, solo con tu nombre (sin foto ni ubicación); para tus noticias, también tienen que compartir su ubicación. Tus recordatorios los prepara tu teléfono. Tus llegadas y salidas no activan ninguna notificación inmediata para tus seres queridos; si tu estado se queda en naranja o en rojo un tiempo, su teléfono puede proponerles que pregunten cómo estás. Si aceptas las notificaciones, Miff guarda un identificador técnico de tu teléfono para enviártelas. Nuestros servidores conservan además durante 30&#160;días un registro técnico de cada notificación enviada (tipo, Miff, persona que dio noticias o declaró la alerta, fecha; nunca un nombre, una foto ni una ubicación). Puedes desactivarlo todo en cualquier momento en Ajustes > Notificaciones o en los ajustes de tu teléfono.</string>
     <string name="notif_settings_title">Notificaciones</string>
     <string name="notif_settings_subtitle">Recordatorios y noticias de tu Miff</string>
     <string name="notif_settings_authorization">Permiso del teléfono</string>
@@ -1004,12 +1004,12 @@
     <string name="notif_settings_night_title">Noche tranquila</string>
     <string name="notif_settings_night_body">De 22:00 a 7:00, sin sonido ni vibración, salvo cuando un estado pasa a rojo.</string>
     <string name="notif_settings_see_all">Ver mis notificaciones</string>
-    <string name="notif_settings_help_link">Si los recordatorios no llegan</string>
+    <string name="notif_settings_help_link">Si las notificaciones no llegan</string>
     <string name="notif_help_title">Notificaciones desactivadas</string>
     <string name="notif_help_intro">Has desactivado las notificaciones en tu teléfono.</string>
     <string name="notif_help_choice">Es tu decisión, y cuenta.</string>
-    <string name="notif_help_lead">Para recibir un recordatorio cuando no tengas tiempo de dar noticias:</string>
-    <string name="notif_help_step_1">Abre la configuración del teléfono</string>
+    <string name="notif_help_lead">Para reactivar las notificaciones de Miff:</string>
+    <string name="notif_help_step_1">Abre los ajustes del teléfono</string>
     <string name="notif_help_step_2">Elige «Notificaciones»</string>
     <string name="notif_help_step_3">Actívalas para Miff</string>
     <string name="notif_help_footer">Siempre puedes dar noticias desde la app.</string>
@@ -1137,7 +1137,7 @@
     <string name="paywall_info_trial">Prueba gratuita de 7 días y después %1$s al año, que se cobran al terminar la prueba y luego cada año. La suscripción se renueva automáticamente al mismo precio hasta que la canceles.</string>
     <string name="paywall_info_annual">%1$s al año, que se cobran de una sola vez y luego cada año. Renovación automática al mismo precio hasta que la canceles.</string>
     <string name="paywall_info_monthly">%1$s al mes, sin compromiso. Renovación automática cada mes hasta que la canceles.</string>
-    <string name="paywall_info_cancel">Cancela en cualquier momento en la configuración de tu cuenta de %1$s, antes de que termine el periodo en curso; conservas el acceso hasta el final del periodo pagado.</string>
+    <string name="paywall_info_cancel">Cancela en cualquier momento en los ajustes de tu cuenta de %1$s, antes de que termine el periodo en curso; conservas el acceso hasta el final del periodo pagado.</string>
     <string name="paywall_terms_link">Condiciones de uso</string>
     <string name="paywall_privacy_link">Política de privacidad</string>
     <string name="android_paywall_store_name">Google Play</string>

@@ -904,8 +904,8 @@
     <string name="update_description_counter_a11y">%1$d von %2$d Zeichen</string>
     <string name="update_description_limit">Das Limit von %1$d Zeichen ist erreicht.</string>
     <string name="update_description_shown_a11y">Beschreibung: %1$s</string>
-    <string name="update_preview_visibility">Deine Liebsten sehen dieses Foto 24&#160;Stunden lang.</string>
-    <string name="update_preview_visibility_many">Dein Foto ist 24&#160;Stunden lang für die Mitglieder deiner %1$d Miffs sichtbar.</string>
+    <string name="update_preview_visibility">Deine Liebsten, die ebenfalls ihren Standort teilen, sehen dieses Foto 24 Stunden lang.</string>
+    <string name="update_preview_visibility_many">Dein Foto ist 24 Stunden lang für die Mitglieder deiner %1$d Miffs sichtbar, die ebenfalls ihren Standort teilen.</string>
     <string name="update_preview_place">Mit deinem Standort geteilt. Wer seinen Standort ebenfalls teilt, kann sehen, wo du das Foto aufgenommen hast.</string>
     <string name="update_preview_stale">Dieses Foto ist schon etwas älter: Nimm ein neues auf.</string>
     <string name="update_publishing">Wird geteilt…</string>
@@ -952,7 +952,7 @@
     <string name="notif_n7_title">Dein Reisemodus ist beendet</string>
     <string name="notif_n7_body">Deine Karte bekommt bei deinen Liebsten ihre Farben zurück. Willkommen zurück!</string>
     <string name="notif_prime_title">Eine Erinnerung, nur wenn es nützlich ist</string>
-    <string name="notif_prime_body">Falls du mal nicht dazu kommst, dich zu melden, erinnert Miff dich sanft daran und sagt dir Bescheid, wenn sich eine dir nahestehende Person meldet. Um dir diese Benachrichtigungen zu senden, speichert Miff eine technische Kennung deines Telefons, die von Google bereitgestellt wird. Was du bekommst, legst du in den Einstellungen fest.</string>
+    <string name="notif_prime_body">Falls du mal nicht dazu kommst, dich zu melden, erinnert Miff dich sanft daran und sagt dir Bescheid, wenn sich eine dir nahestehende Person meldet. Um dir diese Benachrichtigungen zu senden, speichert Miff eine technische Kennung deines Telefons, die von Google bereitgestellt wird. Was du bekommst, kannst du in den Einstellungen festlegen, und du kannst jederzeit alles ausschalten.</string>
     <string name="notif_prime_allow">Erlauben</string>
     <string name="notif_prime_later">Später</string>
     <string name="notif_prime_example_when">Vor 2&#160;Min.</string>
@@ -961,7 +961,7 @@
     <string name="notif_second_chance_later">Jetzt nicht</string>
     <string name="notif_state_allowed">Von deinem Telefon erlaubt</string>
     <string name="notif_state_off">In deinem Telefon ausgeschaltet</string>
-    <string name="notif_state_off_note">Du bekommst keine Erinnerungen.</string>
+    <string name="notif_state_off_note">Du bekommst keine Benachrichtigungen.</string>
     <string name="notif_state_notasked">Noch nicht aktiviert</string>
     <string name="notif_state_open_settings">Einstellungen des Telefons öffnen</string>
     <string name="notif_privacy_body">Wenn du dich meldest oder eine Warnung sendest, bekommen deine Liebsten, die Benachrichtigungen aktiviert haben, eine Benachrichtigung, nur mit deinem Vornamen (ohne Foto, ohne Standort); bei deinen Neuigkeiten müssen sie ebenfalls ihren Standort teilen. Deine Erinnerungen bereitet dein Telefon vor. Dass du irgendwo ankommst oder einen Ort verlässt, löst bei deinen Liebsten keine sofortige Benachrichtigung aus; wenn dein Status eine Weile auf Orange oder Rot bleibt, kann ihr Telefon ihnen vorschlagen, bei dir nachzufragen. Wenn du Benachrichtigungen erlaubst, speichert Miff eine technische Kennung deines Telefons, um sie dir zu senden. Unsere Server speichern außerdem 30&#160;Tage lang einen technischen Eintrag zu jeder gesendeten Benachrichtigung (Art, Miff, Person, die sich gemeldet oder eine Warnung gesendet hat, Datum; nie Vorname, Foto oder Standort). Du kannst alles jederzeit in Einstellungen > Benachrichtigungen oder in den Einstellungen deines Telefons ausschalten.</string>
@@ -999,11 +999,11 @@
     <string name="notif_settings_night_title">Ruhige Nacht</string>
     <string name="notif_settings_night_body">Von 22 bis 7 Uhr ohne Ton und Vibration, außer wenn jemand auf Rot wechselt.</string>
     <string name="notif_settings_see_all">Meine Benachrichtigungen ansehen</string>
-    <string name="notif_settings_help_link">Wenn Erinnerungen nicht ankommen</string>
+    <string name="notif_settings_help_link">Wenn Benachrichtigungen nicht ankommen</string>
     <string name="notif_help_title">Benachrichtigungen aus</string>
     <string name="notif_help_intro">Du hast die Benachrichtigungen auf deinem Telefon ausgeschaltet.</string>
     <string name="notif_help_choice">Das ist deine Entscheidung, und sie zählt.</string>
-    <string name="notif_help_lead">Damit du eine Erinnerung bekommst, falls du mal nicht dazu kommst, dich zu melden:</string>
+    <string name="notif_help_lead">Um die Benachrichtigungen von Miff wieder zu aktivieren:</string>
     <string name="notif_help_step_1">Öffne die Einstellungen deines Telefons</string>
     <string name="notif_help_step_2">Wähle „Benachrichtigungen“</string>
     <string name="notif_help_step_3">Aktiviere sie für Miff</string>

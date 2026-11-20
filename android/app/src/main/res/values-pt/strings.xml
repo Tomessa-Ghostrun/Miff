@@ -335,7 +335,7 @@
     <string name="feed_moment_at_today">hoje, %1$s</string>
     <string name="feed_moment_at_yesterday">ontem, %1$s</string>
     <string name="feed_moment_at_date">dia %1$s, %2$s</string>
-    <string name="feed_moment_since_today">%1$s</string>
+    <string name="feed_moment_since_today">as %1$s</string>
     <string name="feed_moment_since_yesterday">ontem, %1$s</string>
     <string name="feed_moment_since_date">dia %1$s, %2$s</string>
     <string name="feed_moment_from_today">de hoje, %1$s</string>
@@ -909,8 +909,8 @@
     <string name="update_description_counter_a11y">%1$d de %2$d carateres</string>
     <string name="update_description_limit">Limite de %1$d carateres atingido.</string>
     <string name="update_description_shown_a11y">Descrição: %1$s</string>
-    <string name="update_preview_visibility">Os teus entes queridos vão ver esta foto durante 24&#160;h.</string>
-    <string name="update_preview_visibility_many">A tua foto vai ficar visível para os membros das tuas %1$d Miffs durante 24&#160;h.</string>
+    <string name="update_preview_visibility">Os teus entes queridos que também partilham a sua localização vão ver esta foto durante 24&#160;h.</string>
+    <string name="update_preview_visibility_many">A tua foto vai ficar visível durante 24&#160;h para os membros das tuas %1$d Miffs que também partilham a sua localização.</string>
     <string name="update_preview_place">Publicada com a tua localização. Quem também partilha a sua pode ver onde a tiraste.</string>
     <string name="update_preview_stale">Esta foto já não é muito recente: tira outra.</string>
     <string name="update_publishing">A partilhar…</string>
@@ -957,7 +957,7 @@
     <string name="notif_n7_title">O teu modo viagem terminou</string>
     <string name="notif_n7_body">O teu cartão recupera as cores junto dos teus entes queridos. Bom regresso!</string>
     <string name="notif_prime_title">Um lembrete, só quando é útil</string>
-    <string name="notif_prime_body">Se não tiveres tempo para dar notícias, a Miff lembra-te com delicadeza e avisa-te quando um ente querido dá notícias. Para te enviar estas notificações, a Miff guarda um identificador técnico do teu telemóvel, fornecido pela Google. Escolhes o que recebes nas definições.</string>
+    <string name="notif_prime_body">Se não tiveres tempo para dar notícias, a Miff lembra-te com delicadeza e avisa-te quando um ente querido dá notícias. Para te enviar estas notificações, a Miff guarda um identificador técnico do teu telemóvel, fornecido pela Google. Podes escolher o que recebes nas definições e desativar tudo a qualquer momento.</string>
     <string name="notif_prime_allow">Permitir</string>
     <string name="notif_prime_later">Mais tarde</string>
     <string name="notif_prime_example_when">Há 2&#160;min</string>
@@ -966,7 +966,7 @@
     <string name="notif_second_chance_later">Agora não</string>
     <string name="notif_state_allowed">Permitidas pelo teu telemóvel</string>
     <string name="notif_state_off">Desativadas no teu telemóvel</string>
-    <string name="notif_state_off_note">Não vais receber lembretes.</string>
+    <string name="notif_state_off_note">Não vais receber notificações.</string>
     <string name="notif_state_notasked">Ainda não ativadas</string>
     <string name="notif_state_open_settings">Abrir as definições do telemóvel</string>
     <string name="notif_privacy_body">Quando dás notícias ou declaras um alerta, os teus entes queridos que têm as notificações ativadas recebem uma notificação, só com o teu nome (sem foto nem localização); para as tuas notícias, também têm de partilhar a localização. Os teus lembretes são preparados pelo teu telemóvel. As tuas chegadas e saídas não enviam nenhuma notificação imediata aos teus entes queridos; se o teu estado ficar laranja ou vermelho durante algum tempo, o telemóvel deles pode sugerir que perguntem como estás. Se aceitares as notificações, a Miff guarda um identificador técnico do teu telemóvel para te enviar as notificações. Os nossos servidores guardam também, durante 30&#160;dias, um registo técnico de cada notificação enviada (tipo, Miff, pessoa que deu notícias ou declarou o alerta, data; nunca um nome, uma foto ou uma localização). Podes desativar tudo a qualquer momento em Definições > Notificações ou nas definições do teu telemóvel.</string>
@@ -1004,11 +1004,11 @@
     <string name="notif_settings_night_title">Noite tranquila</string>
     <string name="notif_settings_night_body">De 22:00 a 7:00, sem som nem vibração, exceto quando alguém passa a vermelho.</string>
     <string name="notif_settings_see_all">Ver as minhas notificações</string>
-    <string name="notif_settings_help_link">Se os lembretes não chegarem</string>
+    <string name="notif_settings_help_link">Se as notificações não chegarem</string>
     <string name="notif_help_title">Notificações desativadas</string>
     <string name="notif_help_intro">Desativaste as notificações no teu telemóvel.</string>
     <string name="notif_help_choice">A escolha é tua, e é importante.</string>
-    <string name="notif_help_lead">Para receberes um lembrete quando não tiveres tempo para dar notícias:</string>
+    <string name="notif_help_lead">Para reativar as notificações da Miff:</string>
     <string name="notif_help_step_1">Abre as definições do telemóvel</string>
     <string name="notif_help_step_2">Escolhe «Notificações»</string>
     <string name="notif_help_step_3">Ativa-as para a Miff</string>
