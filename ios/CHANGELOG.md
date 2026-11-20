@@ -2,6 +2,33 @@
 
 ## Non publié
 
+### Six langues : prérequis de code (I18N-4L lot 3 iOS, numéro provisoire ; ticket `docs/tickets/traduction-es-it-pt-de.md`)
+
+Branche `ios/i18n-lot3`, PR brouillon. **Aucune traduction** (lot 4) : le catalogue n'a ni valeur vide ni texte es / it / pt / de. **Rien n'est compilé en local** (la CI fait foi). Détail : `ios/README.md` (« Six langues »).
+
+Modifié :
+- **Langues** : `AppLanguageChoice` a un cas par langue (`german` = `de`, `english`, `spanish` = `es`, `french`, `italian` = `it`, `portuguese` = `pt`, puis `system`) ; libellés écrits dans leur langue (Deutsch, English, Español, Français, Italiano, Português ; clés `ios_settings_language_*`, non traduisibles). Écran Réglages > Langue construit depuis `offeredChoices`. `CFBundleLocalizations` ne déclare que `fr` et `en` : es, it, pt, de y seront ajoutées au lot 4 avec leurs textes (déclarer une langue sans dossier `xx.lproj` risquerait de faire retomber un iPhone en espagnol sur l'anglais au lieu de sa 2e langue, par exemple le français). Seules l'énumération et le registre `docs/contracts/i18n-languages.json` connaissent déjà les six.
+- **Visible aujourd'hui : rien de plus** : une langue n'est proposée dans l'écran qu'une fois ses textes dans l'app (son `xx.lproj`), et un téléphone en espagnol, italien, portugais ou allemand prend sa **2e langue** si l'app la parle (un iPhone en espagnol puis français reste en français), sinon l'**anglais**, tant que le lot 4 n'est pas livré. L'écran montre aujourd'hui trois lignes, dans l'ordre alphabétique du nom natif : « English », « Français », « Langue du téléphone » (avant : « Français », « English »). Les langues apparaissent d'elles-mêmes quand le catalogue les contient.
+- **Appareil** : seule la langue compte, jamais la région (pt-BR et pt-PT donnent `pt`, es-MX donne `es`, de-CH donne `de`) ; langue sans texte (ja, nl...) = anglais ; changement à chaud inchangé. Une valeur gardée avec une région (`pt-BR`) donne « Langue du téléphone » (avant : « fr-FR » comptait pour `fr`).
+- **Portugais du Portugal** : formats et pluriels de `pt` en `pt_PT` (0 n'est pas un singulier : « 0 dias »), y compris sur un téléphone en pt-BR.
+- **Compléments de lieu** : 14 clés `feed_place_leave_*` / `feed_place_arrive_*` (préposition et article compris, lieu nommé dans `_named`) à la place des 6 `feed_place_noun_*` (supprimées) ; `FeedTexts.placeComplement(_:movement:)`. En anglais, « at » passe dans le complément d'arrivée. Les phrases françaises et anglaises affichées sont identiques à celles d'avant. **Parité Android : la PR Android du lot 3 doit porter les mêmes 14 clés (et retirer les 6 anciennes), sinon le job « Parité des clés de traduction » est rouge des deux côtés.**
+- **Formats** : `TimeShareTexts` (pourcentages) lit la locale de la langue de l'app, plus celle du téléphone seule.
+- **Recherche d'adresse** : sans objet sur iOS (MapKit, langue de l'appareil, aucun paramètre `lang=`).
+- **CI** : la capture `03-de-repli-anglais` devient `03-ja-repli-anglais` (l'allemand ne sera plus un repli).
+- **Tests** : `I18nRegistry` (lit le registre) ; les tests de contenu bouclent sur les langues dont l'app a les textes ; `LocalizationTests` (langues du catalogue dans le registre, langues `required` complètes, formes de pluriel selon le registre), `AppLanguageTests` (six langues, régions, anglais de repli, portugais), `AppConfigurationTests` (`CFBundleLocalizations` = registre), `InfoPlistStaticTests` (textes système prêts pour les langues), `FeedPlaceComplementTests`.
+
+À savoir : plus de risque de fiche annonçant des langues sans texte (`CFBundleLocalizations` ne déclare que fr et en) ; le lot 4 y ajoute es, it, pt, de avec leurs textes.
+
+### Profil : plus d'espace vide énorme sous la carte de la Miff (retour du PM, TestFlight 43)
+
+Ce que le PM doit voir : **sur l'onglet Profil, les pastilles de pagination sont de nouveau juste sous la carte de la Miff (8 pt), et « Répartition de ton temps » et la suite remontent avec elles**. Rien d'autre ne change d'aspect. **Rien n'est compilé en local** (la CI fait foi).
+
+Corrigé :
+- Cause (la plus probable, non vérifiable sans l'appareil) : la hauteur commune des cartes du carrousel était la plus grande hauteur JAMAIS mesurée et ne rétrécissait plus. Une carte mesurée avant d'avoir sa vraie largeur (première mise en page, largeur nulle ou étroite) est très haute (le texte passe à la ligne mot à mot) : cette hauteur transitoire était gardée à vie, d'où les ~200 pt de vide sous la carte.
+- Une carte dont la largeur est inférieure à 100 pt ne publie plus de hauteur (`CarouselCardHeight.minMeasurableWidth`). La mesure porte aussi la largeur : quand la largeur des cartes change (vraie largeur qui arrive, rotation), la hauteur est recalculée, même vers le bas.
+- Inchangé : la hauteur ne rétrécit toujours pas tant que la taille du texte ET la largeur restent les mêmes (pas de clignotement quand « Touche pour ouvrir » devient « 4 membres » ou que les photos arrivent).
+- Tests : `ProfileCarouselHeightTests` (mesure sans largeur ignorée, plus haute carte retenue, hauteur qui suit une nouvelle largeur ou taille de texte, rejeu du cas transitoire, pas de saut à largeur égale).
+
 ### Consentement à la localisation, version 4 (« historique ») : textes corrigés, carte « Une précision » (CONS-4-I, miroir d'Android CONS-4-A) [numéro provisoire : à renuméroter avec Android 0.52.0]
 
 Branche `ios/consentement-v4`, PR brouillon. Ticket `docs/tickets/consentement-localisation-historique.md`, décisions du PM du 2026-11-19 (option D, section 0 : elles priment). Recette : `docs/qa/checklists/consentement-v4-ios-recette-pm.md`. **Dépend de la PR Android #287** (le catalogue `Localizable.xcstrings`, `docs/contracts/i18n-keys.md` et la recette Android y arrivent ; cette branche les contient par fusion). **Rien n'est compilé en local** (poste Windows : la CI fait foi). **Coût ajouté : 0 €** (aucun service, aucune bibliothèque, aucune écriture serveur de plus). **`backend/` n'est pas touché : aucune règle ne change, aucun déploiement** : les règles acceptent toujours « 03 ou plus » (position et photo).

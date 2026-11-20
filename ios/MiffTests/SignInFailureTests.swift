@@ -64,7 +64,7 @@ final class SignInFailureTests: XCTestCase {
             "diag_signin_disabled", "diag_signin_unknown"
         ]
         let alarming = ["danger", "alerte", "erreur fatale", "fatal", "critique", "urgent", "alert", "critical"]
-        for language in ["fr", "en"] {
+        for language in try I18nRegistry.shipped() {
             let path = try XCTUnwrap(Bundle.main.path(forResource: language, ofType: "lproj"), language)
             let bundle = try XCTUnwrap(Bundle(path: path))
             for key in keys {

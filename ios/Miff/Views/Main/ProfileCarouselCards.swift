@@ -2,11 +2,12 @@ import SwiftUI
 
 // CONFIDENTIALITÉ, pour ce fichier : les photos des membres viennent de `MiffMemberPreviews`. Rien n'est journalisé.
 
-/// La hauteur d'une carte (la plus grande gagne : toutes les cartes ont la même hauteur, quelle que soit la taille du texte).
+/// La mesure d'une carte (la plus haute gagne : toutes les cartes ont la même hauteur, quelle que soit la taille du texte). Elle porte aussi
+/// la largeur de la mesure : une carte mesurée avant d'avoir sa vraie largeur ne publie rien (voir `CarouselCardHeight`).
 struct CardHeightKey: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = max(value, nextValue())
+    static var defaultValue = CarouselCardHeight.Measure.none
+    static func reduce(value: inout CarouselCardHeight.Measure, nextValue: () -> CarouselCardHeight.Measure) {
+        value = CarouselCardHeight.combine(value, nextValue())
     }
 }
 
@@ -64,7 +65,10 @@ struct CarouselCardsRow: View, Equatable {
         .fixedSize(horizontal: false, vertical: true)
         .background(
             GeometryReader { proxy in
-                Color.clear.preference(key: CardHeightKey.self, value: proxy.size.height)
+                Color.clear.preference(
+                    key: CardHeightKey.self,
+                    value: CarouselCardHeight.measure(height: proxy.size.height, width: proxy.size.width)
+                )
             }
         )
         .frame(minHeight: cardHeight, alignment: .top)

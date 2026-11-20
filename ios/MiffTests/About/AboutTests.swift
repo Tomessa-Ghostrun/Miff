@@ -208,7 +208,7 @@ final class AboutTests: XCTestCase {
         XCTAssertGreaterThan(used.count, 15)
         for key in used.sorted() {
             let entry = try XCTUnwrap(catalog[key], "Clé « \(key) » absente du catalogue")
-            for language in ["fr", "en"] {
+            for language in try I18nRegistry.shipped() {
                 XCTAssertFalse(text(of: entry, language).isEmpty, "\(key) : texte \(language) manquant")
             }
         }
@@ -219,7 +219,7 @@ final class AboutTests: XCTestCase {
         let words = "store|stores|app store|google play|note|notes|noter|rating|rate|star|stars|étoile|étoiles"
         let forbidden = try NSRegularExpression(pattern: "\\b(\(words))\\b", options: .caseInsensitive)
         for key in catalog.keys where key.hasPrefix("about_feedback_") {
-            for language in ["fr", "en"] {
+            for language in try I18nRegistry.shipped() {
                 let value = try text(of: XCTUnwrap(catalog[key]), language)
                 let range = NSRange(value.startIndex..., in: value)
                 XCTAssertNil(forbidden.firstMatch(in: value, range: range), "\(key) (\(language)) : « \(value) »")
@@ -230,7 +230,7 @@ final class AboutTests: XCTestCase {
     func testTheAboutTextsNeverWriteTheContactOrTheFormAddress() throws {
         let catalog = try loadStrings()
         for key in catalog.keys where key.hasPrefix("about_") || key.hasPrefix("ios_about_") {
-            for language in ["fr", "en"] {
+            for language in try I18nRegistry.shipped() {
                 let value = try text(of: XCTUnwrap(catalog[key]), language)
                 XCTAssertFalse(value.contains(AppLinks.supportEmail), "\(key) : le contact est dans un texte traduit")
                 XCTAssertFalse(value.contains("gmail"), "\(key) : une adresse e-mail dans un texte traduit")
@@ -243,7 +243,7 @@ final class AboutTests: XCTestCase {
         let catalog = try loadStrings()
         let names = ["maplibre", "openfreemap", "photon", "openmaptiles", "komoot"]
         for key in catalog.keys where key.hasPrefix("about_") || key.hasPrefix("ios_about_") {
-            for language in ["fr", "en"] {
+            for language in try I18nRegistry.shipped() {
                 let value = try text(of: XCTUnwrap(catalog[key]), language).lowercased()
                 for name in names {
                     XCTAssertFalse(value.contains(name), "\(key) (\(language)) cite \(name)")
