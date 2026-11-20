@@ -132,6 +132,40 @@ final class InfoPlistStaticTests: XCTestCase {
         }
     }
 
+    /// Le FOND des quatre textes du système, dans chaque langue du registre (une traduction ne doit pas perdre ce que dit le français) : la photo
+    /// et les deux textes de localisation citent les 24 heures ; le texte « Toujours » dit que la position sert en arrière-plan ; la galerie ne
+    /// cite aucun chiffre (la photo n'y est enregistrée qu'au toucher). Motifs choisis pour ne pas casser sur une bonne traduction.
+    func testTheSystemTextsKeepTheSubstanceOfTheFrenchInEveryLanguage() throws {
+        let url = iosRoot.appendingPathComponent("Miff/Resources/InfoPlist.xcstrings")
+        let root = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        let strings = try XCTUnwrap(root["strings"] as? [String: [String: Any]])
+        let background = [
+            "fr": "arrière-plan", "en": "background", "es": "segundo plano",
+            "it": "background", "pt": "segundo plano", "de": "Hintergrund"
+        ]
+        func text(_ key: String, _ language: String) throws -> String {
+            let entry = try XCTUnwrap(strings[key], key)
+            let localization = (entry["localizations"] as? [String: Any])?[language] as? [String: Any]
+            let unit = localization?["stringUnit"] as? [String: Any]
+            return try XCTUnwrap(unit?["value"] as? String, "\(key) \(language)")
+        }
+
+        for language in try I18nRegistry.requiredCodes() {
+            let withHours = [
+                "NSCameraUsageDescription", "NSLocationWhenInUseUsageDescription",
+                "NSLocationAlwaysAndWhenInUseUsageDescription"
+            ]
+            for key in withHours {
+                XCTAssertTrue(try text(key, language).contains("24"), "\(key) (\(language)) : les 24 heures manquent")
+            }
+            let always = try text("NSLocationAlwaysAndWhenInUseUsageDescription", language)
+            let word = try XCTUnwrap(background[language], "mot « arrière-plan » à déclarer pour \(language)")
+            XCTAssertTrue(always.contains(word), "NSLocationAlways (\(language)) : l'arrière-plan manque")
+            let library = try text("NSPhotoLibraryAddUsageDescription", language)
+            XCTAssertNil(library.rangeOfCharacter(from: .decimalDigits), "NSPhotoLibraryAdd (\(language)) : chiffre")
+        }
+    }
+
     func testThePrivacyManifestDeclaresThePreciseLocationLinkedForTheFunctionOfTheAppWithoutTracking() throws {
         let url = iosRoot.appendingPathComponent("Miff/Resources/PrivacyInfo.xcprivacy")
         let data = try Data(contentsOf: url)

@@ -962,7 +962,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Al tocar «Unirse» o «Continuar con Google», aceptas nuestras %1$@ y nuestra %2$@, así como compartir tus estadísticas de uso e informes de fallos anónimos (puedes cambiarlo en cualquier momento en Configuración)."
+            "value": "Al tocar «Unirse» o «Continuar con Google», aceptas nuestras %1$@ y nuestra %2$@, así como compartir tus estadísticas de uso e informes de fallos anónimos (puedes cambiarlo en cualquier momento en Ajustes)."
           }
         },
         "fr": {
@@ -1290,7 +1290,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Google no ha podido ofrecer una cuenta en este teléfono por ahora. Puedes añadir una en la configuración del teléfono, o continuar con tu dirección de correo electrónico."
+            "value": "Google no ha podido ofrecer una cuenta en este teléfono por ahora. Puedes añadir una en los ajustes del teléfono, o continuar con tu dirección de correo electrónico."
           }
         },
         "fr": {
@@ -1905,7 +1905,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Al tocar «Continuar», aceptas nuestras %1$@ y nuestra %2$@, así como compartir tus estadísticas de uso e informes de fallos anónimos (puedes cambiarlo en cualquier momento en Configuración)."
+            "value": "Al tocar «Continuar», aceptas nuestras %1$@ y nuestra %2$@, así como compartir tus estadísticas de uso e informes de fallos anónimos (puedes cambiarlo en cualquier momento en Ajustes)."
           }
         },
         "fr": {
@@ -11477,7 +11477,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "No se ha podido actualizar tu ubicación. Para ello, Miff necesita que la ubicación esté activada, en «Siempre» y con la ubicación exacta. Puedes ajustarlo en la configuración de tu iPhone."
+            "value": "No se ha podido actualizar tu ubicación. Para ello, Miff necesita que la ubicación esté activada, en «Siempre» y con la ubicación exacta. Puedes cambiarlo en los ajustes de tu iPhone."
           }
         },
         "fr": {
@@ -19711,7 +19711,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cancela en cualquier momento en la configuración de tu cuenta de %1$@, antes de que termine el periodo en curso; conservas el acceso hasta el final del periodo pagado."
+            "value": "Cancela en cualquier momento en los ajustes de tu cuenta de %1$@, antes de que termine el periodo en curso; conservas el acceso hasta el final del periodo pagado."
           }
         },
         "fr": {
@@ -29161,7 +29161,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Configuración"
+            "value": "Ajustes"
           }
         },
         "fr": {
@@ -31526,7 +31526,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu cuenta también está vinculada a Apple. Desde Android no podemos retirar esa autorización: al final te explicamos cómo hacerlo en la configuración de tu ID de Apple."
+            "value": "Tu cuenta también está vinculada a Apple. Desde Android no podemos retirar esa autorización: al final te explicamos cómo hacerlo en los ajustes de tu ID de Apple."
           }
         },
         "fr": {
@@ -31567,7 +31567,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abre la configuración de tu ID de Apple (appleid.apple.com o Configuración en un iPhone)."
+            "value": "Abre los ajustes de tu ID de Apple (appleid.apple.com o Ajustes en un iPhone)."
           }
         },
         "fr": {
@@ -32059,7 +32059,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu cuenta estaba vinculada a Apple. Puedes retirar la autorización en la configuración de tu ID de Apple."
+            "value": "Tu cuenta estaba vinculada a Apple. Puedes retirar la autorización en los ajustes de tu ID de Apple."
           }
         },
         "fr": {
@@ -34609,7 +34609,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ha aparecido una Miff durante la eliminación, así que tu cuenta no se ha eliminado. Puedes volver a iniciar la eliminación desde Configuración > Mi cuenta cuando quieras. ¿Alguna duda? Escríbenos: %1$@."
+            "value": "Ha aparecido una Miff durante la eliminación, así que tu cuenta no se ha eliminado. Puedes volver a iniciar la eliminación desde Ajustes > Mi cuenta cuando quieras. ¿Alguna duda? Escríbenos: %1$@."
           }
         },
         "fr": {
@@ -35625,7 +35625,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cuando das noticias o declaras una alerta, tus seres queridos que tienen las notificaciones activadas reciben una notificación, solo con tu nombre (sin foto ni ubicación); para tus noticias, también tienen que compartir su ubicación. Tus recordatorios los prepara tu teléfono. Tus llegadas y salidas no activan ninguna notificación inmediata para tus seres queridos; si tu estado se queda en naranja o en rojo un tiempo, su teléfono puede proponerles que pregunten cómo estás. Si aceptas las notificaciones, Miff guarda un identificador técnico de tu teléfono para enviártelas. Nuestros servidores conservan además durante 30 días un registro técnico de cada notificación enviada (tipo, Miff, persona que dio noticias o declaró la alerta, fecha; nunca un nombre, una foto ni una ubicación). Puedes desactivarlo todo en cualquier momento en Configuración > Notificaciones o en la configuración de tu teléfono."
+            "value": "Cuando das noticias o declaras una alerta, tus seres queridos que tienen las notificaciones activadas reciben una notificación, solo con tu nombre (sin foto ni ubicación); para tus noticias, también tienen que compartir su ubicación. Tus recordatorios los prepara tu teléfono. Tus llegadas y salidas no activan ninguna notificación inmediata para tus seres queridos; si tu estado se queda en naranja o en rojo un tiempo, su teléfono puede proponerles que pregunten cómo estás. Si aceptas las notificaciones, Miff guarda un identificador técnico de tu teléfono para enviártelas. Nuestros servidores conservan además durante 30 días un registro técnico de cada notificación enviada (tipo, Miff, persona que dio noticias o declaró la alerta, fecha; nunca un nombre, una foto ni una ubicación). Puedes desactivarlo todo en cualquier momento en Ajustes > Notificaciones o en los ajustes de tu teléfono."
           }
         },
         "fr": {
@@ -35789,7 +35789,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abrir la configuración del teléfono"
+            "value": "Abrir los ajustes del teléfono"
           }
         },
         "fr": {
@@ -36363,7 +36363,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Configuración"
+            "value": "Ajustes"
           }
         },
         "fr": {
@@ -36609,7 +36609,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Miff también te avisa cuando un ser querido da noticias. Para ello, Miff guarda un identificador técnico de tu teléfono, proporcionado por Apple para enviar las notificaciones. Puedes desactivarlo todo en cualquier momento en la configuración de tu teléfono. Los ejemplos de arriba muestran lo que podrías recibir."
+            "value": "Miff también te avisa cuando un ser querido da noticias. Para ello, Miff guarda un identificador técnico de tu teléfono, proporcionado por Apple para enviar las notificaciones. Puedes desactivarlo todo en cualquier momento en los ajustes de tu teléfono. Los ejemplos de arriba muestran lo que podrías recibir."
           }
         },
         "fr": {
@@ -36650,7 +36650,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Los ejemplos de arriba muestran lo que podrías recibir. Puedes desactivarlo todo en cualquier momento en la configuración de tu teléfono."
+            "value": "Los ejemplos de arriba muestran lo que podrías recibir. Puedes desactivarlo todo en cualquier momento en los ajustes de tu teléfono."
           }
         },
         "fr": {
@@ -37347,7 +37347,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Puedes cambiar esta elección en cualquier momento en la configuración de tu teléfono."
+            "value": "Puedes cambiar esta elección en cualquier momento en los ajustes de tu teléfono."
           }
         },
         "fr": {
@@ -37470,7 +37470,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Toca el botón: se abre la configuración de Miff"
+            "value": "Toca el botón: se abren los ajustes de Miff"
           }
         },
         "fr": {
@@ -37634,7 +37634,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Al crear esta Miff, compartes tu estado, tu última ubicación conocida y, si publicas una foto, el lugar donde se tomó, con sus miembros; puedes dejar de compartir en cualquier momento en la configuración de la Miff."
+            "value": "Al crear esta Miff, compartes tu estado, tu última ubicación conocida y, si publicas una foto, el lugar donde se tomó, con sus miembros; puedes dejar de compartir en cualquier momento en los ajustes de la Miff."
           }
         },
         "fr": {
@@ -37675,7 +37675,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Al unirte a esta Miff, compartes tu estado, tu última ubicación conocida y, si publicas una foto, el lugar donde se tomó, con sus miembros; puedes dejar de compartir en cualquier momento en la configuración de la Miff."
+            "value": "Al unirte a esta Miff, compartes tu estado, tu última ubicación conocida y, si publicas una foto, el lugar donde se tomó, con sus miembros; puedes dejar de compartir en cualquier momento en los ajustes de la Miff."
           }
         },
         "fr": {
@@ -37962,7 +37962,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Para mostrarte cómo se reparte tu tiempo, tu teléfono también anota tus llegadas a tus lugares y tus salidas de ellos, durante 35 días, sin ubicación ni dirección. No se envía nada y nadie más lo ve. Puedes borrarlo en Configuración > Privacidad."
+            "value": "Para mostrarte cómo se reparte tu tiempo, tu teléfono también anota tus llegadas a tus lugares y tus salidas de ellos, durante 35 días, sin ubicación ni dirección. No se envía nada y nadie más lo ve. Puedes borrarlo en Ajustes > Privacidad."
           }
         },
         "fr": {
@@ -38823,7 +38823,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Para «%1$@», aclaramos lo que guarda Miff. En nuestros servidores: tu última ubicación conocida y el lugar de tu foto, visible durante 24 h, sin ningún historial de trayectos. Solo en tu teléfono: un registro de tus llegadas y salidas (35 días, sin ubicación ni dirección) que dibuja el reparto de tu tiempo; puedes borrarlo en Configuración > Privacidad."
+            "value": "Para «%1$@», aclaramos lo que guarda Miff. En nuestros servidores: tu última ubicación conocida y el lugar de tu foto, visible durante 24 h, sin ningún historial de trayectos. Solo en tu teléfono: un registro de tus llegadas y salidas (35 días, sin ubicación ni dirección) que dibuja el reparto de tu tiempo; puedes borrarlo en Ajustes > Privacidad."
           }
         },
         "fr": {
@@ -38864,7 +38864,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Para esta Miff, aclaramos lo que guarda Miff. En nuestros servidores: tu última ubicación conocida y el lugar de tu foto, visible durante 24 h, sin ningún historial de trayectos. Solo en tu teléfono: un registro de tus llegadas y salidas (35 días, sin ubicación ni dirección) que dibuja el reparto de tu tiempo; puedes borrarlo en Configuración > Privacidad."
+            "value": "Para esta Miff, aclaramos lo que guarda Miff. En nuestros servidores: tu última ubicación conocida y el lugar de tu foto, visible durante 24 h, sin ningún historial de trayectos. Solo en tu teléfono: un registro de tus llegadas y salidas (35 días, sin ubicación ni dirección) que dibuja el reparto de tu tiempo; puedes borrarlo en Ajustes > Privacidad."
           }
         },
         "fr": {
@@ -38905,7 +38905,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Para tus Miffs, aclaramos lo que guarda Miff. En nuestros servidores: tu última ubicación conocida y el lugar de tu foto, visible durante 24 h, sin ningún historial de trayectos. Solo en tu teléfono: un registro de tus llegadas y salidas (35 días, sin ubicación ni dirección) que dibuja el reparto de tu tiempo; puedes borrarlo en Configuración > Privacidad."
+            "value": "Para tus Miffs, aclaramos lo que guarda Miff. En nuestros servidores: tu última ubicación conocida y el lugar de tu foto, visible durante 24 h, sin ningún historial de trayectos. Solo en tu teléfono: un registro de tus llegadas y salidas (35 días, sin ubicación ni dirección) que dibuja el reparto de tu tiempo; puedes borrarlo en Ajustes > Privacidad."
           }
         },
         "fr": {
@@ -39520,7 +39520,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Por completar en la configuración del teléfono"
+            "value": "Por completar en los ajustes del teléfono"
           }
         },
         "fr": {
@@ -39807,7 +39807,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "1. En la configuración de Miff, abre «Batería» (o «Consumo de energía») y elige «Sin restricciones» (o «No optimizar»)."
+            "value": "1. En los ajustes de Miff, abre «Batería» (o «Consumo de energía») y elige «Sin restricciones» (o «No optimizar»)."
           }
         },
         "fr": {
@@ -40360,7 +40360,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Toca el botón de abajo para abrir la **Configuración** de Miff"
+            "value": "Toca el botón de abajo para abrir los **Ajustes** de Miff"
           }
         },
         "fr": {
@@ -40401,7 +40401,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abre la **Configuración** de Miff"
+            "value": "Abre los **Ajustes** de Miff"
           }
         },
         "fr": {
@@ -40442,7 +40442,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Toca **Ubicación**"
+            "value": "Toca **Localización**"
           }
         },
         "fr": {
@@ -40524,7 +40524,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Activa **Ubicación exacta**"
+            "value": "Activa **Localización exacta**"
           }
         },
         "fr": {
@@ -40565,7 +40565,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abrir Configuración"
+            "value": "Abrir Ajustes"
           }
         },
         "fr": {
@@ -40606,7 +40606,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Podrás cambiar esta elección en cualquier momento en la configuración de tu iPhone."
+            "value": "Podrás cambiar esta elección en cualquier momento en los ajustes de tu iPhone."
           }
         },
         "fr": {
@@ -40729,7 +40729,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Puedes cambiar de opinión en cualquier momento en Configuración."
+            "value": "Puedes cambiar de opinión en cualquier momento en Ajustes."
           }
         },
         "fr": {
@@ -40811,7 +40811,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abre la **Configuración** del iPhone"
+            "value": "Abre los **Ajustes** del iPhone"
           }
         },
         "fr": {
@@ -41385,7 +41385,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "1. En la configuración de Miff, la ubicación debe estar en «Siempre», con «Ubicación exacta» activada."
+            "value": "1. En los ajustes de Miff, la localización debe estar en «Siempre», con «Localización exacta» activada."
           }
         },
         "fr": {
@@ -41426,7 +41426,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "2. Mantén activada la «Actualización en segundo plano» de Miff (Configuración > General)."
+            "value": "2. Mantén activada la «Actualización en segundo plano» de Miff (Ajustes > General)."
           }
         },
         "fr": {
@@ -41877,7 +41877,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Puedes activarla en la configuración del teléfono."
+            "value": "Puedes activarla en los ajustes del teléfono."
           }
         },
         "fr": {
@@ -42041,7 +42041,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abrir configuración"
+            "value": "Abrir ajustes"
           }
         },
         "fr": {
@@ -44173,7 +44173,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Para guardar esta foto, permite que Miff añada fotos a tu galería de fotos en Configuración."
+            "value": "Para guardar esta foto, permite que Miff añada fotos a tu galería de fotos en Ajustes."
           }
         },
         "fr": {
@@ -44460,7 +44460,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu ubicación no está accesible: la ubicación del teléfono está desactivada, o Miff ya no tiene permiso para usarla. Puedes volver a activarla en la configuración y luego intentarlo de nuevo."
+            "value": "Tu ubicación no está accesible: la ubicación del teléfono está desactivada, o Miff ya no tiene permiso para usarla. Puedes volver a activarla en los ajustes y luego intentarlo de nuevo."
           }
         },
         "fr": {
@@ -44501,7 +44501,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Activa la ubicación precisa para esta función. Puedes hacerlo en la configuración e intentarlo de nuevo."
+            "value": "Activa la ubicación precisa para esta función. Puedes hacerlo en los ajustes e intentarlo de nuevo."
           }
         },
         "fr": {
@@ -44788,7 +44788,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "No hemos podido retirar la autorización «Iniciar sesión con Apple» automáticamente. Puedes hacerlo en la configuración de tu ID de Apple."
+            "value": "No hemos podido retirar la autorización «Iniciar sesión con Apple» automáticamente. Puedes hacerlo en los ajustes de tu ID de Apple."
           }
         },
         "fr": {
@@ -46428,7 +46428,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Si no tienes tiempo para dar noticias, Miff te lo recuerda con suavidad, y te avisa cuando tu Miff cambia de estado. Tú eliges lo que recibes en la configuración."
+            "value": "Si no tienes tiempo para dar noticias, Miff te lo recuerda con suavidad, y te avisa cuando tu Miff cambia de estado. Tú eliges lo que recibes en los ajustes."
           }
         },
         "fr": {
@@ -46879,7 +46879,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abrir la configuración del teléfono"
+            "value": "Abrir los ajustes del teléfono"
           }
         },
         "fr": {
@@ -46920,7 +46920,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Cuando das noticias o declaras una alerta, tus seres queridos que tienen las notificaciones activadas reciben una notificación, solo con tu nombre (sin foto ni ubicación); para tus noticias, también tienen que compartir su ubicación. Tus recordatorios los prepara tu teléfono. Tus llegadas y salidas no activan ninguna notificación inmediata para tus seres queridos; si tu estado se queda en naranja o en rojo un tiempo, su teléfono puede proponerles que pregunten cómo estás. Si aceptas las notificaciones, Miff guarda un identificador técnico de tu teléfono para enviártelas. Nuestros servidores conservan además durante 30 días un registro técnico de cada notificación enviada (tipo, Miff, persona que dio noticias o declaró la alerta, fecha; nunca un nombre, una foto ni una ubicación). Puedes desactivarlo todo en cualquier momento en Configuración > Notificaciones o en la configuración de tu teléfono."
+            "value": "Cuando das noticias o declaras una alerta, tus seres queridos que tienen las notificaciones activadas reciben una notificación, solo con tu nombre (sin foto ni ubicación); para tus noticias, también tienen que compartir su ubicación. Tus recordatorios los prepara tu teléfono. Tus llegadas y salidas no activan ninguna notificación inmediata para tus seres queridos; si tu estado se queda en naranja o en rojo un tiempo, su teléfono puede proponerles que pregunten cómo estás. Si aceptas las notificaciones, Miff guarda un identificador técnico de tu teléfono para enviártelas. Nuestros servidores conservan además durante 30 días un registro técnico de cada notificación enviada (tipo, Miff, persona que dio noticias o declaró la alerta, fecha; nunca un nombre, una foto ni una ubicación). Puedes desactivarlo todo en cualquier momento en Ajustes > Notificaciones o en los ajustes de tu teléfono."
           }
         },
         "fr": {
@@ -47781,7 +47781,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Abre la configuración del teléfono"
+            "value": "Abre los ajustes del teléfono"
           }
         },
         "fr": {

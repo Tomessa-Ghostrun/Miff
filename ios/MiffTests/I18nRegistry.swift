@@ -82,6 +82,10 @@ enum I18nRegistry {
     static func shipped() throws -> [String] {
         let found = try codes().filter { Bundle.main.path(forResource: $0, ofType: "lproj") != nil }
         XCTAssertTrue(Set(["fr", "en"]).isSubset(of: found), "fr et en doivent toujours être dans l'app : \(found)")
+        // Chaque langue `required` du registre a son `xx.lproj` dans l'app : sinon une langue déclarée n'aurait aucun texte compilé.
+        let required = Set(try requiredCodes())
+        let missing = required.subtracting(found).sorted()
+        XCTAssertTrue(missing.isEmpty, "langues required sans xx.lproj : \(missing)")
         return found
     }
 }

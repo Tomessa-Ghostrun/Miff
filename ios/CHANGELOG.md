@@ -4,7 +4,7 @@
 
 ### Miff en espagnol, italien, portugais et allemand (I18N-4L lot 4 iOS, numéro provisoire ; ticket `docs/tickets/traduction-es-it-pt-de.md`)
 
-Branche `ios/langues-es-it-pt-de`. **Rien n'est compilé en local** (poste Windows) : la CI fait foi. Les 1 289 textes par langue (es, it, pt = portugais du **Portugal**, de) sont **traduits par un agent, relus par un second agent indépendant, rétro-traduits pour les textes sensibles, contrôlés automatiquement**. Aucune relecture native ni juridique ; textes publiés sous la responsabilité du PM.
+Branche `ios/langues-es-it-pt-de`. **Rien n'est compilé en local** (poste Windows) : la CI fait foi. Les 1 239 textes (+ 4 textes système) par langue (es = espagnol d'**Espagne**, it, pt = portugais du **Portugal**, de) sont **traduits par un agent, relus par un second agent indépendant, rétro-traduits pour les textes sensibles, contrôlés automatiquement**. Aucune relecture native ni juridique ; textes publiés sous la responsabilité du PM.
 
 Ce que le PM doit voir sur l'iPhone : Réglages > Langue propose maintenant six langues (Deutsch, English, Español, Français, Italiano, Português) plus « Langue du téléphone » ; un iPhone réglé dans l'une de ces langues affiche l'app dans cette langue (au lieu de l'anglais). Détail de la vérification demandée dans la PR.
 
@@ -20,8 +20,10 @@ Modifié :
 
 Limites connues, à regarder sur l'iPhone :
 - Les notifications poussées par le serveur (clés résolues par le système) suivent la **langue du téléphone**, pas le choix fait dans l'app (ticket §4.1).
-- 5 à 13 textes par langue dépassent le budget de longueur (formules figées du glossaire : « entes queridos », « Bei Nahestehenden »...) : simples avertissements, à vérifier sur capture, surtout en allemand avec une grande taille de texte.
-- Une PR ouverte qui ajoute des clés iOS (par exemple #299) devra les ajouter dans les six langues avant sa fusion : le job « Parité des clés de traduction » échoue sinon.
+- 6 à 14 textes par langue dépassent le budget de longueur (formules figées du glossaire : « entes queridos », « Bei Nahestehenden »...) : simples avertissements, à vérifier sur capture, surtout en allemand avec une grande taille de texte.
+- Ordre de fusion : **#298 d'abord, puis #302** (conflit attendu sur `feed_order_updated_one_a11y` : garder le texte français et anglais de #298 avec les six langues, déjà « a publié une photo » en es, it, pt, de). Toute PR qui ajoute des clés iOS doit les ajouter dans les six langues : le job « Parité des clés de traduction » échoue sinon.
+- Écran de diagnostic (builds de test) : certains textes ne passent pas par `L10n` et peuvent montrer le nom brut de la clé hors fr et en (aucun impact en production).
+- Espagnol d'Espagne (décision du PM) : « Ajustes », « Localización » pour les noms de menus iOS (glossaire G32, G113, §6). Photo : l'allemand dit « teilst » (G146) ; es et it citent le bouton exact « Guardar la foto » / « Salva la foto » dans le texte de la galerie.
 
 ### Textes français corrigés (lot 4C iOS, numéro provisoire ; décisions du PM du 2026-11-20, `docs/i18n/corrections-sources-fr-decidees.md`)
 

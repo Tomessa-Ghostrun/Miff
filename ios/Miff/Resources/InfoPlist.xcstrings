@@ -60,7 +60,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Miff guarda la foto en tu galería solo cuando tocas «Guardar esta foto». Miff nunca lee tus fotos ni tu galería."
+            "value": "Miff guarda la foto en tu galería solo cuando tocas «Guardar la foto». Miff nunca lee tus fotos ni tu galería."
           }
         },
         "fr": {
@@ -72,7 +72,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Miff salva la foto nella tua libreria foto solo quando tocchi «Salva questa foto». Miff non legge mai le tue foto né la tua libreria."
+            "value": "Miff salva la foto nella tua libreria foto solo quando tocchi «Salva la foto». Miff non legge mai le tue foto né la tua libreria."
           }
         },
         "pt": {
