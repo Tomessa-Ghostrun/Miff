@@ -1,6 +1,6 @@
 import Foundation
 
-/// Ce que dit la bulle d'incitation : rien, « Tu es passé en orange… » ou « Tu es passé en rouge… » (les textes des maquettes du PM, D21).
+/// Ce que dit la bulle d'incitation : rien, « Ton statut est passé à l'orange… » ou « Ton statut est passé au rouge… » (les textes des maquettes du PM, D21).
 enum PromptLevel: Equatable {
     case hidden
     case orange

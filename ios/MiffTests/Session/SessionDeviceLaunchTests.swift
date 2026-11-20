@@ -249,7 +249,7 @@ final class SessionDeviceLaunchTests: XCTestCase {
 
         XCTAssertEqual(
             text("fr"),
-            "Ton compte est maintenant utilisé sur un autre téléphone. Tu as été déconnecté(e) de celui-ci."
+            "Ton compte est maintenant utilisé sur un autre téléphone. Ta session a été fermée sur ce téléphone."
         )
         XCTAssertEqual(
             text("en"),

@@ -61,7 +61,7 @@ struct NotificationSettingsView: View {
     @ViewBuilder
     private var recordedCounters: some View {
         if BuildFlavor.includesDiagnostic, let counters = model.recordedCounters {
-            SettingsBody(text: L10n.format("ios_notif_debug_counters", counters.falseAlerts, counters.judged))
+            SettingsBody(text: L10n.format("ios_diag_notif_counters", counters.falseAlerts, counters.judged))
         }
     }
 

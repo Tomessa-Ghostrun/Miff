@@ -404,7 +404,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "En cliquant sur « Rejoindre » ou « Continuer avec Google », tu acceptes nos %1$@ et notre %2$@, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages)."
+            "value": "En touchant « Rejoindre » ou « Continuer avec Google », tu acceptes nos %1$@ et notre %2$@, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages)."
           }
         }
       }
@@ -795,7 +795,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "En cliquant sur « Continuer », tu acceptes nos %1$@ et notre %2$@, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages)."
+            "value": "En touchant « Continuer », tu acceptes nos %1$@ et notre %2$@, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages)."
           }
         }
       }
@@ -982,7 +982,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Si un compte existe avec cette adresse, un e-mail vient d'être envoyé. Pense à regarder dans tes courriers indésirables. Si tu t'es inscrit avec Apple ou Google, utilise plutôt le bouton correspondant sur l'écran de connexion."
+            "value": "Si un compte existe avec cette adresse, un e-mail vient d'être envoyé. Pense à regarder dans tes courriers indésirables. Si tu as créé ton compte avec Apple ou Google, utilise plutôt le bouton correspondant sur l'écran de connexion."
           }
         }
       }
@@ -1033,7 +1033,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ton compte est maintenant utilisé sur un autre téléphone. Tu as été déconnecté(e) de celui-ci."
+            "value": "Ton compte est maintenant utilisé sur un autre téléphone. Ta session a été fermée sur ce téléphone."
           }
         }
       }
@@ -1118,7 +1118,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Content de te revoir"
+            "value": "Ça fait plaisir de te revoir"
           }
         }
       }
@@ -5516,19 +5516,19 @@
         }
       }
     },
-    "ios_notif_debug_counters": {
+    "ios_diag_notif_counters": {
       "extractionState": "manual",
       "localizations": {
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Testing: %1$lld false alert(s) out of %2$lld “your Miff has turned” reminder(s) judged. Counted on this phone, never sent."
+            "value": "Testing, “your Miff has turned” reminders judged unnecessary: %1$lld out of %2$lld. Counted on this phone, never sent."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Recette : %1$lld fausse(s) alerte(s) sur %2$lld rappel(s) « ta Miff est passée » jugé(s). Compté sur ce téléphone, jamais envoyé."
+            "value": "Recette, rappels « ta Miff est passée » jugés inutiles : %1$lld sur %2$lld. Compté sur ce téléphone, jamais envoyé."
           }
         }
       }
@@ -5783,7 +5783,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Savoir que vos proches vont bien, sans les déranger."
+            "value": "Savoir que tes proches vont bien, sans les déranger."
           }
         }
       }
@@ -5817,7 +5817,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "En cliquant sur « Rejoindre », « Continuer avec Apple » ou « Continuer avec Google », tu acceptes nos %1$@ et notre %2$@, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$@)."
+            "value": "En touchant « Rejoindre », « Continuer avec Apple » ou « Continuer avec Google », tu acceptes nos %1$@ et notre %2$@, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$@)."
           }
         }
       }
@@ -5834,7 +5834,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "En cliquant sur « Continuer », tu acceptes nos %1$@ et notre %2$@, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$@)."
+            "value": "En touchant « Continuer », tu acceptes nos %1$@ et notre %2$@, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$@)."
           }
         }
       }
@@ -6174,7 +6174,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Entrez l'adresse exacte de ce lieu"
+            "value": "Entre l'adresse exacte de ce lieu"
           }
         }
       }
@@ -6191,7 +6191,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Arrivé il y a 12 min"
+            "value": "Arrivée : il y a 12 min"
           }
         }
       }
@@ -6276,7 +6276,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Choisissez un nom pour retrouver l'endroit facilement"
+            "value": "Choisis un nom pour retrouver l'endroit facilement"
           }
         }
       }
@@ -6293,7 +6293,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Définissez le rayon autour du lieu"
+            "value": "Définis le rayon autour du lieu"
           }
         }
       }
@@ -6327,7 +6327,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Quel type de zone définissez-vous ?"
+            "value": "Quel type de zone définis-tu ?"
           }
         }
       }
@@ -6412,7 +6412,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lieu sûr pour vos proches"
+            "value": "Lieu sûr pour tes proches"
           }
         }
       }
@@ -8289,13 +8289,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your status, update photo and last known location will be deleted for this circle. You can resume whenever you like."
+            "value": "Your status, photo and last known location will be deleted for this circle. You can resume whenever you like."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ton statut, ta photo d'update et ta dernière position seront supprimés pour ce cercle. Tu pourras reprendre quand tu veux."
+            "value": "Ton statut, ta photo et ta dernière position seront supprimés pour ce cercle. Tu pourras reprendre quand tu veux."
           }
         }
       }
@@ -8357,13 +8357,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A member of your Miff suggested a place. You can accept it or not from your Profile."
+            "value": "A member of your Miff suggested a place. You can accept or decline it from your Profile."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Un membre de ta Miff propose un lieu. Tu peux l'accepter ou non depuis ton Profil."
+            "value": "Un membre de ta Miff propose un lieu. Tu peux l'accepter ou le refuser depuis ton Profil."
           }
         }
       }
@@ -8442,13 +8442,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Everyone is safe"
+            "value": "Everyone is fine"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tout le monde est en sécurité"
+            "value": "Tout le monde va bien"
           }
         }
       }
@@ -8782,13 +8782,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Preview of your Miff screen: everyone is safe, Thomas is at home and Amandine is at school."
+            "value": "Preview of your Miff screen: everyone is fine, Thomas is at home and Amandine is at school."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aperçu de l'écran de ta Miff : tout le monde est en sécurité, Thomas est à la maison et Amandine à l'école."
+            "value": "Aperçu de l'écran de ta Miff : tout le monde va bien, Thomas est à la maison et Amandine à l'école."
           }
         }
       }
@@ -9001,15 +9001,45 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The free plan is still available: 1 Miff and %1$lld trusted places."
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "The free plan is still available: 1 Miff and %1$lld trusted place."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "The free plan is still available: 1 Miff and %1$lld trusted places."
+                }
+              }
+            }
           }
         },
         "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La formule gratuite reste disponible : 1 Miff et %1$lld lieux de confiance."
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "La formule gratuite reste disponible : 1 Miff et %1$lld lieu de confiance."
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "La formule gratuite reste disponible : 1 Miff et %1$lld lieux de confiance."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "La formule gratuite reste disponible : 1 Miff et %1$lld lieux de confiance."
+                }
+              }
+            }
           }
         }
       }
@@ -10123,42 +10153,62 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%1$lld of 3 places on the free plan"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%1$lld of 3 places on the free plan"
+          "stringUnit": {
+            "state": "translated",
+            "value": "%#@arg1@ of %2$lld places on the free plan"
+          },
+          "substitutions": {
+            "arg1": {
+              "argNum": 1,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg"
+                    }
+                  }
                 }
               }
             }
           }
         },
         "fr": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%1$lld lieu sur 3 avec la formule gratuite"
-                }
-              },
-              "many": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%1$lld lieux sur 3 avec la formule gratuite"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%1$lld lieux sur 3 avec la formule gratuite"
+          "stringUnit": {
+            "state": "translated",
+            "value": "%#@arg1@ sur %2$lld avec la formule gratuite"
+          },
+          "substitutions": {
+            "arg1": {
+              "argNum": 1,
+              "formatSpecifier": "lld",
+              "variations": {
+                "plural": {
+                  "one": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg lieu"
+                    }
+                  },
+                  "many": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg lieux"
+                    }
+                  },
+                  "other": {
+                    "stringUnit": {
+                      "state": "translated",
+                      "value": "%arg lieux"
+                    }
+                  }
                 }
               }
             }
@@ -10512,13 +10562,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A place can be attached to 5 Miffs at most."
+            "value": "A place can be attached to %1$lld Miffs at most."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Un lieu peut être attaché à 5 Miffs au maximum."
+            "value": "Un lieu peut être attaché à %1$lld Miffs au maximum."
           }
         }
       }
@@ -10988,13 +11038,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You've reached 3 places"
+            "value": "You've reached %1$lld places"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu as atteint 3 lieux"
+            "value": "Tu as atteint %1$lld lieux"
           }
         }
       }
@@ -11147,7 +11197,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "En dessous de 100 m, la détection peut manquer un passage."
+            "value": "En dessous de 100 m, la détection peut ne pas repérer ton passage."
           }
         }
       }
@@ -11521,7 +11571,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Le créateur de la Miff verra ta demande et décidera de l'ajouter ou non."
+            "value": "Le créateur de la Miff verra ta demande et décidera s'il l'ajoute."
           }
         }
       }
@@ -11581,15 +11631,45 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You already have 3 pending requests. You can suggest more once they've been handled."
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "You already have %1$lld pending request. You can suggest more once it's been handled."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "You already have %1$lld pending requests. You can suggest more once they've been handled."
+                }
+              }
+            }
           }
         },
         "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu as déjà 3 demandes en attente. Tu pourras en proposer d'autres quand elles auront été traitées."
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Tu as déjà %1$lld demande en attente. Tu pourras en proposer d'autres quand elle aura été traitée."
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Tu as déjà %1$lld demandes en attente. Tu pourras en proposer d'autres quand elles auront été traitées."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Tu as déjà %1$lld demandes en attente. Tu pourras en proposer d'autres quand elles auront été traitées."
+                }
+              }
+            }
           }
         }
       }
@@ -11708,7 +11788,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ta demande partira dès que tu seras connecté."
+            "value": "Ta demande partira dès que tu auras du réseau."
           }
         }
       }
@@ -12297,13 +12377,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Enter your number without the leading zero."
+            "value": "Enter your number without the country code."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Saisis ton numéro sans le premier zéro."
+            "value": "Saisis ton numéro sans l'indicatif du pays."
           }
         }
       }
@@ -13651,7 +13731,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connecté avec Google"
+            "value": "Compte relié à Google"
           }
         }
       }
@@ -13747,13 +13827,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your loved ones won't see your updates while you're signed out."
+            "value": "Your loved ones won't see your news while you're signed out."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tes proches ne verront plus tes mises à jour tant que tu es déconnecté(e)."
+            "value": "Tes proches ne verront plus tes nouvelles tant que ta session est fermée."
           }
         }
       }
@@ -14603,7 +14683,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ce n’est pas le compte avec lequel tu es connecté(e). Choisis le bon compte pour continuer."
+            "value": "Ce n’est pas le compte avec lequel tu as ouvert ta session. Choisis le bon compte pour continuer."
           }
         }
       }
@@ -14767,13 +14847,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your profile, photo and phone number will be deleted. You will leave the Miffs you joined: your status and update photo will no longer be visible there."
+            "value": "Your profile, photo and phone number will be deleted. You will leave the Miffs you joined: your status and photo will no longer be visible there."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ton profil, ta photo et ton numéro de téléphone seront supprimés. Tu quitteras les Miffs que tu as rejointes : ton statut et ta photo de mise à jour n’y seront plus visibles."
+            "value": "Ton profil, ta photo et ton numéro de téléphone seront supprimés. Tu quitteras les Miffs que tu as rejointes : ton statut et ta photo n’y seront plus visibles."
           }
         }
       }
@@ -15585,13 +15665,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Notifications are coming soon. Nothing is sent for now."
+            "value": "When you share your news or declare an alert, your loved ones who have notifications turned on are notified, with your first name only (no photo, no location); for your news, they must also share their location. Your reminders are prepared by your phone. Your arrivals and departures trigger no immediate notification for your loved ones; if your status stays orange or red for a while, their phone may suggest they check in on you. If you accept notifications, Miff saves a technical identifier of your phone to send them to you. Our servers also keep a technical record of each notification sent for 30 days (type, Miff, person who shared news or declared the alert, date; never a first name, photo or location). You can turn everything off at any time in Settings > Notifications or in your phone's settings."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les notifications arrivent bientôt. Rien n'est envoyé pour l'instant."
+            "value": "Quand tu donnes de tes nouvelles ou que tu déclares une alerte, tes proches qui ont activé les notifications en sont prévenus, avec ton prénom seulement (ni photo, ni position) ; pour tes nouvelles, il faut aussi qu'ils partagent leur position. Tes rappels sont préparés par ton téléphone. Tes arrivées et tes départs ne déclenchent aucune notification immédiate chez tes proches ; si ton statut reste orange ou rouge un moment, leur téléphone peut leur proposer de prendre de tes nouvelles. Si tu acceptes les notifications, Miff enregistre un identifiant technique de ton téléphone pour te les envoyer. Nos serveurs gardent aussi 30 jours une trace technique de chaque notification envoyée (type, Miff, personne qui a donné des nouvelles ou déclaré l'alerte, date ; jamais de prénom, de photo ni de position). Tu peux tout couper à tout moment dans Réglages > Notifications ou dans les réglages de ton téléphone."
           }
         }
       }
@@ -16010,13 +16090,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "For now, Miff doesn't send notifications yet. The examples above show what is planned."
+            "value": "The examples above show what you could receive. You can turn everything off at any time in your phone's settings."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pour l'instant, Miff n'envoie pas encore de notification. Les exemples ci-dessus montrent ce qui est prévu."
+            "value": "Les exemples ci-dessus montrent ce que tu pourrais recevoir. Tu peux tout couper à tout moment dans les réglages de ton téléphone."
           }
         }
       }
@@ -16061,13 +16141,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Miff needs your location so your loved ones can know whether you're safe."
+            "value": "Miff needs your location so your loved ones know you're doing well."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Miff a besoin de ta localisation pour permettre à tes proches de savoir que tu es ou non en sécurité."
+            "value": "Miff a besoin de ta localisation pour que tes proches sachent que tu vas bien."
           }
         }
       }
@@ -17957,7 +18037,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Connecté avec Apple"
+            "value": "Compte relié à Apple"
           }
         }
       }
@@ -18087,13 +18167,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "To take a photo of you, or of what's around you, Miff needs access to your camera. The photo can be seen by the members of your Miffs for 24 hours, then it can no longer be read. Nothing is saved to your gallery."
+            "value": "To take a photo of you, or of what's around you, Miff needs access to your camera. If you publish it, the photo is shared with the place where you took it. Members of your Miffs who also share their location can see it for 24 hours, then it is no longer visible; a member may still have kept a copy. Nothing is saved to your gallery."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pour te prendre en photo, ou photographier ce qui t'entoure, Miff a besoin d'accéder à ta caméra. La photo est visible des membres de tes Miffs pendant 24 h, puis elle n'est plus lisible. Rien n'est enregistré dans ta galerie."
+            "value": "Pour te prendre en photo, ou photographier ce qui t'entoure, Miff a besoin d'accéder à ta caméra. Si tu la publies, la photo est partagée avec l'endroit où tu l'as prise. Les membres de tes Miffs qui partagent aussi leur position peuvent la voir pendant 24 h, puis elle n'est plus visible ; un membre peut toutefois en avoir gardé une copie. Rien n'est enregistré dans ta galerie."
           }
         }
       }
@@ -18733,13 +18813,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your loved ones will see this photo for 24 hours."
+            "value": "Your loved ones who also share their location will see this photo for 24 hours."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tes proches verront cette photo pendant 24 h."
+            "value": "Tes proches qui partagent aussi leur position verront cette photo pendant 24 h."
           }
         }
       }
@@ -18750,13 +18830,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your photo will be visible to the members of your %1$lld Miffs for 24 hours."
+            "value": "Your photo will be visible for 24 hours to the members of your %1$lld Miffs who also share their location."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ta photo sera visible des membres de tes %1$lld Miffs pendant 24 h."
+            "value": "Ta photo sera visible pendant 24 h des membres de tes %1$lld Miffs qui partagent aussi leur position."
           }
         }
       }
@@ -18954,13 +19034,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You've turned orange: let your Miff know all is well by posting an update"
+            "value": "Your status has turned orange: let your Miff know all is well by sharing your news"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu es passé en orange, indique à la Miff que tout va bien en publiant une update"
+            "value": "Ton statut est passé à l'orange, indique à la Miff que tout va bien en donnant de tes nouvelles"
           }
         }
       }
@@ -18971,13 +19051,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You've turned red: let your Miff know all is well by posting an update"
+            "value": "Your status has turned red: let your Miff know all is well by sharing your news"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu es passé en rouge, indique à la Miff que tout va bien en publiant une update"
+            "value": "Ton statut est passé au rouge, indique à la Miff que tout va bien en donnant de tes nouvelles"
           }
         }
       }
@@ -19889,13 +19969,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You've turned orange"
+            "value": "Your status has turned orange"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu es passé orange"
+            "value": "Ton statut est passé à l'orange"
           }
         }
       }
@@ -19923,13 +20003,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You've turned red"
+            "value": "Your status has turned red"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu es passé rouge"
+            "value": "Ton statut est passé au rouge"
           }
         }
       }
@@ -20048,7 +20128,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pendant que tu y es, tes proches voient un état différent."
+            "value": "Tant que tu es dans cette zone, tes proches voient un état différent."
           }
         }
       }
@@ -20076,13 +20156,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "If you forget to check in, Miff gently reminds you, and lets you know when your Miff changes status. You choose what you get in the settings."
+            "value": "If you don't have time to check in, Miff gently reminds you, and lets you know when your Miff turns orange or red. You can adjust what you get in the settings, and turn everything off at any time."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Si tu oublies de donner de tes nouvelles, Miff te le rappelle doucement, et te dit quand ta Miff change d'état. Tu choisis ce que tu reçois dans les réglages."
+            "value": "Si tu n'as pas le temps de donner de tes nouvelles, Miff te le rappelle doucement, et te prévient quand ta Miff passe à l'orange ou au rouge. Tu peux régler ce que tu reçois dans les réglages, et tout couper à tout moment."
           }
         }
       }
@@ -20144,13 +20224,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A reminder if you forget to check in?"
+            "value": "A reminder if you don't have time to check in?"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Un rappel si tu oublies de donner de tes nouvelles ?"
+            "value": "Un rappel si tu n'as pas le temps de donner de tes nouvelles ?"
           }
         }
       }
@@ -20229,13 +20309,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You won't get reminders."
+            "value": "You won't receive any notifications."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu ne recevras pas de rappel."
+            "value": "Tu ne recevras pas de notification."
           }
         }
       }
@@ -20280,13 +20360,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Notifications are prepared by your phone: Miff doesn't send any to your loved ones. You choose what you get in Settings > Notifications."
+            "value": "When you share your news or declare an alert, your loved ones who have notifications turned on are notified, with your first name only (no photo, no location); for your news, they must also share their location. Your reminders are prepared by your phone. Your arrivals and departures trigger no immediate notification for your loved ones; if your status stays orange or red for a while, their phone may suggest they check in on you. If you accept notifications, Miff saves a technical identifier of your phone to send them to you. Our servers also keep a technical record of each notification sent for 30 days (type, Miff, person who shared news or declared the alert, date; never a first name, photo or location). You can turn everything off at any time in Settings > Notifications or in your phone's settings."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les notifications sont préparées par ton téléphone : Miff n'en envoie aucune à tes proches. Tu choisis ce que tu reçois dans Réglages > Notifications."
+            "value": "Quand tu donnes de tes nouvelles ou que tu déclares une alerte, tes proches qui ont activé les notifications en sont prévenus, avec ton prénom seulement (ni photo, ni position) ; pour tes nouvelles, il faut aussi qu'ils partagent leur position. Tes rappels sont préparés par ton téléphone. Tes arrivées et tes départs ne déclenchent aucune notification immédiate chez tes proches ; si ton statut reste orange ou rouge un moment, leur téléphone peut leur proposer de prendre de tes nouvelles. Si tu acceptes les notifications, Miff enregistre un identifiant technique de ton téléphone pour te les envoyer. Nos serveurs gardent aussi 30 jours une trace technique de chaque notification envoyée (type, Miff, personne qui a donné des nouvelles ou déclaré l'alerte, date ; jamais de prénom, de photo ni de position). Tu peux tout couper à tout moment dans Réglages > Notifications ou dans les réglages de ton téléphone."
           }
         }
       }
@@ -20552,13 +20632,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "If reminders don't arrive"
+            "value": "If notifications don't arrive"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Si les rappels n'arrivent pas"
+            "value": "Si les notifications n'arrivent pas"
           }
         }
       }
@@ -20620,13 +20700,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "To get a reminder when you forget to check in:"
+            "value": "To turn Miff's notifications back on:"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pour recevoir un rappel quand tu oublies de donner de tes nouvelles :"
+            "value": "Pour réactiver les notifications de Miff :"
           }
         }
       }
@@ -21290,6 +21370,23 @@
         }
       }
     },
+    "ios_notif_help_step_2": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose “Notifications”"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisis « Notifications »"
+          }
+        }
+      }
+    },
     "ios_notif_delete": {
       "extractionState": "manual",
       "localizations": {
@@ -21517,13 +21614,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A notification when someone in your Miff posts an update."
+            "value": "A notification when someone in your Miff shares their news."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Une notification quand un proche de ta Miff publie une update."
+            "value": "Une notification quand un proche de ta Miff donne de ses nouvelles."
           }
         }
       }
@@ -21653,13 +21750,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tap to publish an update"
+            "value": "Tap to share your news"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Touche pour publier une update"
+            "value": "Touche pour donner de tes nouvelles"
           }
         }
       }
@@ -21772,13 +21869,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Miff is not an emergency service. If you're in immediate danger, call 112."
+            "value": "Miff is not an emergency service. If you're in immediate danger, call the emergency services (112 in Europe)."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Miff n'est pas un service d'urgence. En cas de danger immédiat, appelle le 112."
+            "value": "Miff n'est pas un service d'urgence. En cas de danger immédiat, appelle les secours (le 112 en Europe)."
           }
         }
       }
@@ -22110,15 +22207,45 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "You've reached the limit of 3 alerts a day. If you're in danger, call the emergency services directly."
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "You've reached the limit of %1$lld alert a day. If you're in danger, call the emergency services directly."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "You've reached the limit of %1$lld alerts a day. If you're in danger, call the emergency services directly."
+                }
+              }
+            }
           }
         },
         "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Tu as atteint la limite de 3 alertes par jour. Si tu es en danger, appelle directement les secours."
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Tu as atteint la limite de %1$lld alerte par jour. Si tu es en danger, appelle directement les secours."
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Tu as atteint la limite de %1$lld alertes par jour. Si tu es en danger, appelle directement les secours."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Tu as atteint la limite de %1$lld alertes par jour. Si tu es en danger, appelle directement les secours."
+                }
+              }
+            }
           }
         }
       }
@@ -22603,15 +22730,45 @@
       "extractionState": "manual",
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The limit of 3 alerts a day is reached. If you're in danger, open the emergency numbers."
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "The limit of %1$lld alert a day is reached. If you're in danger, open the emergency numbers."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "The limit of %1$lld alerts a day is reached. If you're in danger, open the emergency numbers."
+                }
+              }
+            }
           }
         },
         "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "La limite de 3 alertes par jour est atteinte. Si tu es en danger, ouvre les numéros d'urgence."
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "La limite de %1$lld alerte par jour est atteinte. Si tu es en danger, ouvre les numéros d'urgence."
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "La limite de %1$lld alertes par jour est atteinte. Si tu es en danger, ouvre les numéros d'urgence."
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "La limite de %1$lld alertes par jour est atteinte. Si tu es en danger, ouvre les numéros d'urgence."
+                }
+              }
+            }
           }
         }
       }

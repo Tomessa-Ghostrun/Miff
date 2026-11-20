@@ -39,7 +39,7 @@ struct FeedListView: View {
     /// Le mouvement de la bulle n'existe que si l'onglet est en usage et l'app au premier plan.
     let isActive: Bool
     let agreementWaiting: Bool
-    /// La carte « Un rappel si tu oublies de donner de tes nouvelles ? » est due (une seule fois, après la première update).
+    /// La carte « Un rappel si tu n'as pas le temps de donner de tes nouvelles ? » est due (une seule fois, après la première update).
     let secondChanceDue: Bool
     let scrollToTop: Int
     let actions: FeedListActions

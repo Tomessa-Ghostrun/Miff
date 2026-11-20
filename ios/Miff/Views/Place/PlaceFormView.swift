@@ -259,7 +259,7 @@ struct PlaceFormFoot: View {
         case .idTaken:
             return L10n.string("ios_place_message_id_taken")
         case .requestLimitMember:
-            return L10n.string("place_request_limit_member")
+            return L10n.plural("place_request_limit_member", count: PlaceRequestLimits.perMember)
         case .requestsUnavailable:
             return L10n.string("place_request_unavailable")
         }
