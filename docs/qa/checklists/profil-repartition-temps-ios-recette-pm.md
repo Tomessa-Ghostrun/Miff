@@ -12,7 +12,7 @@
 
 ## Partie A : avant 7 jours
 
-1. [ ] Ouvrez l'onglet **Profil**. La carte est **entre le carrousel « Mes Miffs » et la liste « Lieux de confiance de … »** ; la carte « Mode voyage » reste **en dernier**. Elle montre le titre **« Répartition du temps »** (**sans** « Sur les N derniers jours »), le texte exact **« Ton graphique arrive dans X jours, nous analysons tes habitudes »** **seul** : **pas d'anneau gris vide**, ni graphique, ni sélecteur. Carte blanche très arrondie, pastille d'icône **verte** à gauche du titre.
+1. [ ] Ouvrez l'onglet **Profil**. La carte est **entre le carrousel « Mes Miffs » et la liste « Les lieux de la Miff » (le titre ne nomme plus la Miff)** ; la carte « Mode voyage » reste **en dernier**. Elle montre le titre **« Répartition du temps »** (**sans** « Sur les N derniers jours »), le texte exact **« Ton graphique arrive dans X jours, nous analysons tes habitudes »** **seul** : **pas d'anneau gris vide**, ni graphique, ni sélecteur. Carte blanche très arrondie, pastille d'icône **verte** à gauche du titre.
 2. [ ] Le lendemain (et chaque jour suivant), X **baisse d'un jour** ; la veille du 7e jour : **« dans 1 jour »** (singulier).
 3. [ ] **Balayez le carrousel** vers une autre Miff : la carte suit **cette Miff** (son propre décompte), **sans clignotement** ; sur la carte « Créer une Miff », la carte garde la dernière Miff regardée.
 4. [ ] **Miff sans lieu** : la carte **n'est pas dessinée** (pas même une marge) ; la section des lieux porte son message.

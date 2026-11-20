@@ -11106,13 +11106,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trusted places of %@"
+            "value": "The Miff's places"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lieux de confiance de %@"
+            "value": "Les lieux de la Miff"
           }
         }
       }
