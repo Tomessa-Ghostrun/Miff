@@ -866,7 +866,7 @@
 
     <!-- UPDATE-1 / UPDATE-2 / FEED-4 : l'Update (photo du moment, bulle d'incitation, photo dans le Feed). -->
     <string name="update_permission_title">Ein Foto für deine Liebsten</string>
-    <string name="update_permission_body">Um ein Foto von dir oder deiner Umgebung aufzunehmen, braucht Miff Zugriff auf deine Kamera. Wenn du es veröffentlichst, wird das Foto mit dem Ort der Aufnahme geteilt. Mitglieder deiner Miffs, die ebenfalls ihren Standort teilen, können es 24&#160;Stunden lang sehen; danach lässt es sich nicht mehr ansehen, auch wenn ein Mitglied vielleicht eine Kopie behalten hat. Es wird nichts in deiner Galerie gespeichert.</string>
+    <string name="update_permission_body">Um ein Foto von dir oder deiner Umgebung aufzunehmen, braucht Miff Zugriff auf deine Kamera. Wenn du es teilst, wird der Ort der Aufnahme mit dem Foto geteilt. Mitglieder deiner Miffs, die ebenfalls ihren Standort teilen, können es 24&#160;Stunden lang sehen; danach lässt es sich nicht mehr ansehen, auch wenn ein Mitglied vielleicht eine Kopie behalten hat. Es wird nichts in deiner Galerie gespeichert.</string>
     <string name="update_permission_continue">Weiter</string>
     <string name="update_permission_not_now">Jetzt nicht</string>
     <string name="update_retry_title">Nochmal versuchen?</string>
