@@ -1052,7 +1052,7 @@
     <string name="notif_second_chance_later">Pas maintenant</string>
     <string name="notif_state_allowed">Autorisées par ton téléphone</string>
     <string name="notif_state_off">Coupées dans ton téléphone</string>
-    <string name="notif_state_off_note">Tu ne recevras pas de rappel.</string>
+    <string name="notif_state_off_note">Tu ne recevras pas de notification.</string>
     <string name="notif_state_notasked">Pas encore activées</string>
     <string name="notif_state_open_settings">Ouvrir les réglages du téléphone</string>
     <string name="notif_privacy_body">Quand tu donnes de tes nouvelles ou que tu déclares une alerte, tes proches qui ont activé les notifications en sont prévenus, avec ton prénom seulement (ni photo, ni position) ; pour tes nouvelles, il faut aussi qu\'ils partagent leur position. Tes rappels sont préparés par ton téléphone. Tes arrivées et tes départs ne déclenchent aucune notification immédiate chez tes proches ; si ton statut reste orange ou rouge un moment, leur téléphone peut leur proposer de prendre de tes nouvelles. Si tu acceptes les notifications, Miff enregistre un identifiant technique de ton téléphone pour te les envoyer. Nos serveurs gardent aussi 30 jours une trace technique de chaque notification envoyée (type, Miff, personne qui a donné des nouvelles ou déclaré l\'alerte, date ; jamais de prénom, de photo ni de position). Tu peux tout couper à tout moment dans Réglages > Notifications ou dans les réglages de ton téléphone.</string>
@@ -1088,7 +1088,7 @@
     <string name="notif_settings_night_title">Nuit calme</string>
     <string name="notif_settings_night_body">De 22 h à 7 h, ni son ni vibration, sauf pour un passage au rouge.</string>
     <string name="notif_settings_see_all">Voir mes notifications</string>
-    <string name="notif_settings_help_link">Si les rappels n\'arrivent pas</string>
+    <string name="notif_settings_help_link">Si les notifications n\'arrivent pas</string>
     <string name="notif_help_title">Notifications coupées</string>
     <string name="notif_help_intro">Tu as coupé les notifications dans ton téléphone.</string>
     <string name="notif_help_choice">C\'est ton choix, et il compte.</string>

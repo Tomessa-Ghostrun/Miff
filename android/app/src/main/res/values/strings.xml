@@ -1021,7 +1021,7 @@
     <string name="update_description_counter_a11y">%1$d of %2$d characters</string>
     <string name="update_description_limit">Limit of %1$d characters reached.</string>
     <string name="update_description_shown_a11y">Description: %1$s</string>
-    <string name="update_preview_visibility">Your close ones who also share their location will see this photo for 24 hours.</string>
+    <string name="update_preview_visibility">Your loved ones who also share their location will see this photo for 24 hours.</string>
     <string name="update_preview_visibility_many">Your photo will be visible for 24 hours to the members of your %1$d Miffs who also share their location.</string>
     <string name="update_preview_place">Published with your position. Members who share theirs too can see where you took it.</string>
     <string name="update_preview_stale">This photo is a bit old: take a new one.</string>
@@ -1078,7 +1078,7 @@
     <string name="notif_second_chance_later">Not now</string>
     <string name="notif_state_allowed">Allowed by your phone</string>
     <string name="notif_state_off">Turned off in your phone</string>
-    <string name="notif_state_off_note">You won\'t get reminders.</string>
+    <string name="notif_state_off_note">You won\'t receive any notifications.</string>
     <string name="notif_state_notasked">Not turned on yet</string>
     <string name="notif_state_open_settings">Open your phone\'s settings</string>
     <string name="notif_privacy_body">When you share your news or declare an alert, your loved ones who have notifications turned on are notified, with your first name only (no photo, no location); for your news, they must also share their location. Your reminders are prepared by your phone. Your arrivals and departures trigger no immediate notification for your loved ones; if your status stays orange or red for a while, their phone may suggest they check in on you. If you accept notifications, Miff saves a technical identifier of your phone to send them to you. Our servers also keep a technical record of each notification sent for 30 days (type, Miff, person who shared news or declared the alert, date; never a first name, photo or location). You can turn everything off at any time in Settings > Notifications or in your phone\'s settings.</string>
@@ -1114,7 +1114,7 @@
     <string name="notif_settings_night_title">Quiet night</string>
     <string name="notif_settings_night_body">From 10 pm to 7 am, no sound or vibration, except when someone turns red.</string>
     <string name="notif_settings_see_all">See my notifications</string>
-    <string name="notif_settings_help_link">If reminders don\'t arrive</string>
+    <string name="notif_settings_help_link">If notifications don\'t arrive</string>
     <string name="notif_help_title">Notifications turned off</string>
     <string name="notif_help_intro">You turned notifications off in your phone.</string>
     <string name="notif_help_choice">That\'s your choice, and it matters.</string>
@@ -1132,7 +1132,7 @@
     <string name="notif_center_empty_title">Nothing to report</string>
     <string name="notif_center_empty_body">Here you\'ll find your reminders and news from your Miff.</string>
     <string name="notif_center_off_title">Notifications are off</string>
-    <string name="notif_center_off_body">You won\'t get reminders.</string>
+    <string name="notif_center_off_body">You won\'t receive any notifications.</string>
     <string name="notif_center_off_action">Turn them on</string>
     <string name="notif_center_notasked_body">Turn them on to get a reminder when it matters.</string>
     <string name="notif_center_notasked_action">Turn on</string>

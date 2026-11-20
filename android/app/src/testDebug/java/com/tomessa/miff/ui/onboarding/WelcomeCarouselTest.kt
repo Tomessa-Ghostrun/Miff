@@ -32,7 +32,7 @@ import java.io.File
 
 /**
  * The welcome carousel against the PM's mockups (design/exports/onboarding-original): the headline and the sentences
- * of the illustrations are EXACTLY the ones of the mockups and are REAL texts (vectors, not pixels: sharp at any
+ * of the illustrations are the ones of the mockups (except the few reworded by the decision I18N-4C, listed in android/CHANGELOG.md 0.55.0) and are REAL texts (vectors, not pixels: sharp at any
  * density), there is no invented caption. Also writes screenshots (build/screenshots/welcome-*.png) at several
  * densities and font sizes to check the sharpness.
  */

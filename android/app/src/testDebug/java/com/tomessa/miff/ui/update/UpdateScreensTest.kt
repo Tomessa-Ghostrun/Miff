@@ -468,7 +468,7 @@ class UpdateScreensTest {
     )
 
     @Test
-    fun theBubble_isOnTheFeed_andOnTheProfile_butNeverOnTheUpdate_withTheTextOfTheMockups() {
+    fun theBubble_isOnTheFeed_andOnTheProfile_butNeverOnTheUpdate_withTheDecidedText() {
         val orange = text(R.string.update_bubble_orange)
         assertEquals(
             "Ton statut est passé à l'orange, indique à la Miff que tout va bien en donnant de tes nouvelles",

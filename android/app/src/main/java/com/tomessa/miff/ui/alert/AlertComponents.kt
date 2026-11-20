@@ -80,7 +80,7 @@ const val ALERT_HINT_MILLIS = 6_000L
 // --- Blue bubble of the onboarding (maquette 01) ---------------------------------------------------------------------------------------------
 
 /**
- * "Touche pour publier une update / Maintiens pour déclarer une alerte" (maquette 01, tutoiement instead of the infinitive: E1). Not blocking, no button but the discreet "En savoir
+ * "Touche pour donner de tes nouvelles / Maintiens pour déclarer une alerte" (maquette 01 said "publier une update": reworded by the decision I18N-4C; tutoiement instead of the infinitive: E1). Not blocking, no button but the discreet "En savoir
  * plus", hides itself after about 6 seconds ([ALERT_HINT_MILLIS]) and at the first touch elsewhere (the caller hides it). Announced politely to a screen reader, once.
  */
 @Composable

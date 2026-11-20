@@ -216,7 +216,7 @@ class UpdatePrivacyRuleTest {
     }
 
     @Test
-    fun theBubbleHasNoTitle_noButton_noCrossAndTheTextsAreThoseOfTheMockups() {
+    fun theBubbleHasNoTitle_noButton_noCrossAndTheTextsAreTheDecidedOnes() {
         val strings = File("src/main/res/values-fr/strings.xml").readText()
         assertTrue(
             strings.contains(

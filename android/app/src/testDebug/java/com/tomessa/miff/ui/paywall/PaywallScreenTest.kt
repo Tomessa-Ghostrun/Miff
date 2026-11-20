@@ -626,7 +626,11 @@ class PaywallScreenTest {
                 text(R.string.paywall_info_cancel, "Google Play"),
             ).performScrollTo()
             .assertIsDisplayed()
-        composeRule.onNodeWithText(plural(R.plurals.paywall_free_plan_stays, 3)).performScrollTo().assertIsDisplayed()
+        composeRule
+            .onNodeWithText(
+                plural(R.plurals.paywall_free_plan_stays, PlaceLimits.FREE_PLACES),
+            ).performScrollTo()
+            .assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.paywall_terms_link)).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.paywall_privacy_link)).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.paywall_restore)).performScrollTo().assertIsDisplayed()
@@ -701,7 +705,11 @@ class PaywallScreenTest {
         composeRule.onNodeWithText(text(R.string.paywall_loading)).assertIsDisplayed().assertIsNotEnabled()
         composeRule.onAllNodesWithText("€", substring = true).assertCountEquals(0)
         composeRule.onAllNodesWithText(text(R.string.paywall_cta_trial)).assertCountEquals(0)
-        composeRule.onNodeWithText(plural(R.plurals.paywall_free_plan_stays, 3)).performScrollTo().assertIsDisplayed()
+        composeRule
+            .onNodeWithText(
+                plural(R.plurals.paywall_free_plan_stays, PlaceLimits.FREE_PLACES),
+            ).performScrollTo()
+            .assertIsDisplayed()
     }
 
     @Test
