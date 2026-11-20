@@ -19,6 +19,7 @@ Préparée le 2026-11-11 par `android-dev` (lot « préparation de la release An
 | Contrôles « pas de code de debug dans le bundle » | **Prêts**, joués à chaque PR et de nouveau sur le bundle signé. |
 | Création de l'app, piste de test, déclarations | **À faire par toi** (étapes 3 à 9). |
 | Fiche de l'app (textes, captures, icône) | **Pas écrite** : `aso-marketing` (hors de cette checklist). |
+| **BLOQUANT : textes de notifications et de confidentialité** | **Avant tout build de distribution** : le journal de notifications est déployé (TTL, règles, fonctions) ET la politique de confidentialité publiée est alignée (art. 3 et 7, J59 : plus de « aucun historique des notifications »), sinon retirer la phrase « Nos serveurs gardent aussi 30 jours… » de `notif_privacy_body` ; `ALERT_DANGER` : mentions de l'alerte alignées (ou retirées). Voir `docs/release/README.md`. |
 
 ## 1. Avant de commencer : quelques constats à faire (15 min)
 

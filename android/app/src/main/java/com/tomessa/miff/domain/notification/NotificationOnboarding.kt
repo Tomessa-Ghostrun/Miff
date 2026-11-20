@@ -4,7 +4,7 @@ import com.tomessa.miff.domain.permission.ApiLevel
 
 /*
  * The "second chance" of the notification permission (ticket section 8.1, step 3; criterion N-A3): when the person said "Plus tard" on the pop-in, ONE
- * calm card is offered in the Feed after the FIRST update they publish ("Un rappel si tu oublies de donner de tes nouvelles ?"). Never a window, never
+ * calm card is offered in the Feed after the FIRST update they publish ("Un rappel si tu n'as pas le temps de donner de tes nouvelles ?"). Never a window, never
  * more than once. A person who answered the system window (yes or no) never gets the card: that was their choice.
  */
 enum class SecondChance {

@@ -19,6 +19,7 @@ import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.data.place.PlaceNotices
 import com.tomessa.miff.domain.miff.MiffSummary
 import com.tomessa.miff.domain.place.MiffPlacesView
+import com.tomessa.miff.domain.place.PlaceRequestLimits
 import com.tomessa.miff.domain.place.PlaceType
 import com.tomessa.miff.domain.place.RequestsView
 import com.tomessa.miff.testsupport.testPlace
@@ -49,6 +50,14 @@ class ProfileRequestsSectionTest {
     private fun context(): Context = ApplicationProvider.getApplicationContext()
 
     private fun text(id: Int): String = context().getString(id)
+
+    /** The sentence of the limit: a plural whose value inserted is the number of pending requests allowed per member. */
+    private fun limitText(): String =
+        context().resources.getQuantityString(
+            R.plurals.place_request_limit_member,
+            PlaceRequestLimits.PER_MEMBER,
+            PlaceRequestLimits.PER_MEMBER,
+        )
 
     private val famille = MiffSummary("miff-a", "Famille Martin", ownerUid = "u1")
 
@@ -208,9 +217,9 @@ class ProfileRequestsSectionTest {
     fun member_withThreeRequests_theButtonSaysTheLimitCalmly_andOpensNoForm() {
         var asked = false
         section(myUid = "u2", requests = requestsOf(3), onRequestPlace = { asked = true })
-        composeRule.onAllNodesWithText(text(R.string.place_request_limit_member)).assertCountEquals(0)
+        composeRule.onAllNodesWithText(limitText()).assertCountEquals(0)
         composeRule.onNodeWithText(text(R.string.place_request_cta_member)).performClick()
-        composeRule.onNodeWithText(text(R.string.place_request_limit_member)).assertIsDisplayed()
+        composeRule.onNodeWithText(limitText()).assertIsDisplayed()
         assertTrue("no form is opened at the 4th request", !asked)
     }
 

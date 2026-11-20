@@ -64,7 +64,7 @@ data class AccountUiState(
  * - The e-mail address is read-only (no change of address in this version).
  * - "Changer mon mot de passe" sends the reset e-mail of AUTH-2 to the address of the account (the new password is chosen on
  *   the web page of AUTH-W): no form with three fields, no re-authentication. Shown for an e-mail account only: a Google
- *   account has no password here ("Connecté avec Google").
+ *   account has no password here ("Compte relié à Google").
  * - "Se déconnecter" asks for a confirmation that says honestly what a sign-out means for the loved ones, then runs the
  *   sign-out procedure of the session (listeners stopped, cache purged, back to the sign-in screen: [signOut] is
  *   `SessionManager.signOut`).
