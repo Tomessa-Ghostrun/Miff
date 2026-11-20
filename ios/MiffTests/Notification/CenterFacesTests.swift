@@ -165,7 +165,7 @@ final class CenterFacesTests: XCTestCase {
         let reader = FakeReader()
         reader.answers["uid13"] = .found(face("Zoé"))
         let faces = makeFaces(reader)
-        let uids = (1...13).map { "uid($0)" }
+        let uids = (1...13).map { "uid\($0)" }
 
         await faces.ensure(keys(uids))
 

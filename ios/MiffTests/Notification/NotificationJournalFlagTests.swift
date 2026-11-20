@@ -111,7 +111,7 @@ final class NotificationJournalFlagTests: XCTestCase {
         var files = ["Services/Firebase/FirestoreMemberFaceReader.swift"]
         for folder in folders {
             let found = try FileManager.default.contentsOfDirectory(atPath: app.appendingPathComponent(folder).path)
-            files += found.filter { $0.hasSuffix(".swift") }.map { "(folder)/($0)" }
+            files += found.filter { $0.hasSuffix(".swift") }.map { "\(folder)/\($0)" }
         }
         let forbidden = [
             "FileManager", "UserDefaults", ".write(to", "print(", "NSLog", "Logger", "Analytics",
@@ -122,7 +122,7 @@ final class NotificationJournalFlagTests: XCTestCase {
         for file in files {
             for line in try code("Miff/" + file) {
                 for word in forbidden where line.contains(word) {
-                    XCTFail("(file) : « (word) » interdit dans le code des visages ((line))")
+                    XCTFail("\(file) : « \(word) » interdit dans le code des visages (\(line))")
                 }
             }
         }
