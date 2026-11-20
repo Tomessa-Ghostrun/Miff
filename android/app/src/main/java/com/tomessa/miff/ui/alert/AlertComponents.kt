@@ -291,17 +291,14 @@ fun AlertBanner(
     // The cross: only where the alert is not active on the server and nothing is in flight (a write under way could still land).
     val closable = sending != null && sending.step != SendStep.SENDING
     val name = miffName?.takeIf { it.isNotBlank() }
-    // HIERARCHY (decision of the PM, 2026-11-20, recette): while the alert is active the title is THE QUESTION of the gesture, twice as big as before (32 sp, the body was 16), and the
-    // sentence under it says how. Only the transition of the end in flight keeps it too (no jump of height); "waiting for a connection to end" and every phase of the SENDING keep the
-    // title that names the Miff, at the size of before.
-    val endQuestion = alert is MyAlert.Active && alert.end != EndStep.WAITING_NETWORK
+    // HIERARCHY (decision of the PM, 2026-11-20, recette): while the alert is ACTIVE (whatever the state of its end) the title is THE QUESTION of the gesture, twice as big as before
+    // (32 sp, the body was 16), without the name of the Miff (same as iOS); the sentence under it says how. Every phase of the SENDING keeps its title that names the Miff, at the size of before.
+    val endQuestion = alert is MyAlert.Active
     val title =
         when {
-            endQuestion -> stringResource(R.string.alert_confirm_end_title)
+            endQuestion -> stringResource(R.string.alert_banner_title)
             sending != null && name != null -> stringResource(R.string.alert_banner_sending, name)
-            sending != null -> stringResource(R.string.alert_banner_sending_no_name)
-            name != null -> stringResource(R.string.alert_banner_title, name)
-            else -> stringResource(R.string.alert_banner_title_no_name)
+            else -> stringResource(R.string.alert_banner_sending_no_name)
         }
     val note =
         when {

@@ -284,7 +284,7 @@ class AlertScreensTest {
         rule.onNodeWithText("End the alert?").assertIsDisplayed()
         rule
             .onNodeWithText(
-                "Hold for 5 seconds to end the alert. Your loved ones will know you're safe now",
+                "Hold for 5 seconds to end the alert. Your loved ones will know you're now safe",
             ).assertIsDisplayed()
         // the old sentences are gone
         rule.onNodeWithText("You alerted the people of the Miff “Family”.").assertDoesNotExist()
@@ -768,10 +768,18 @@ class AlertScreensTest {
     }
 
     @Test
-    fun whileAnEndWaitsForTheNetwork_theOldTitleIsBack_andSaysYourMiffWithoutAName() {
+    fun whileAnEndWaitsForTheNetwork_theBigTitleStays_andTheNoteSaysWhy() {
         banner(MyAlert.Active("m", 1, 2, EndStep.WAITING_NETWORK), name = null)
-        rule.onNodeWithText("You alerted the people of your Miff.").assertIsDisplayed()
-        assertEquals(textBodyBold16.fontSize.value, fontSizeSp(ALERT_BANNER_TITLE_TAG), 0.01f)
+        rule.onNodeWithText("End the alert?").assertIsDisplayed()
+        rule.onNodeWithText("Ending the alert: waiting for a connection").assertIsDisplayed()
+        assertEquals(32f, fontSizeSp(ALERT_BANNER_TITLE_TAG), 0.01f)
+    }
+
+    @Test
+    fun theBannerTitleIsTheSameWithOrWithoutAName_theNameOfTheMiffIsNotInIt() {
+        banner(active, name = null)
+        rule.onNodeWithText("End the alert?").assertIsDisplayed()
+        rule.onNodeWithText("Family", substring = true).assertDoesNotExist()
     }
 
     @Test
