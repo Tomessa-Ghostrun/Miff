@@ -22,6 +22,7 @@ Modifié :
 Tests : `FeedOrderTests` (réécrit : T1 à T19 ; T12 est découpé en trois scénarios car « Partage désactivé », « Informations masquées » et « accord attendu » ne peuvent pas coexister dans une même Miff sur iOS ; T5 : le rang d'arrivée iOS est la position dans la liste, l'identifiant reste la dernière clé du tri), `PhotoDateWritesTests` (T20, repli, textes), `PhotoDateFallbackTests` (rejeu une seule fois, seulement sur « permission refusée », par lot), `PhotoDateMappingTests` (T13, T14, T17, lecture exacte). Les tests existants du refus de publication (`UpdatePublisherTests`, `UpdatePublisherDiagnosisTests`, `UpdateDescriptionFlowTests`) simulent désormais un refus sur les DEUX tentatives.
 
 À savoir : après le déploiement, **tout le monde est « sans date »** (aucun statut n'a `photoAt`) : le Feed est dans l'ordre d'arrivée jusqu'à ce que chacun publie une nouvelle photo ; pour la recette, chaque compte de test doit d'abord publier une photo. Une application plus ancienne qui publie une photo ne met pas la date à jour (son rang ne monte pas tant qu'elle n'est pas mise à jour).
+
 ### Textes français corrigés (lot 4C iOS, numéro provisoire ; décisions du PM du 2026-11-20, `docs/i18n/corrections-sources-fr-decidees.md`)
 
 Branche `ios/textes-fr-corriges`. **Rien n'est compilé en local** (la CI fait foi). Français et anglais seulement : aucune traduction es / it / pt / de n'est injectée ici.
