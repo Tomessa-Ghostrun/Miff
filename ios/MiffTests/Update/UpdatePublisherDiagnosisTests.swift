@@ -13,13 +13,14 @@ final class UpdatePublisherDiagnosisTests: XCTestCase {
     }
 
     func testARefusedWriteIsNeverPresentedAsNoConnection() async {
-        rig.store.failures = [error(FirestoreErrorNumber.permissionDenied)]
+        let denied = error(FirestoreErrorNumber.permissionDenied)
+        rig.store.failures = [denied, denied]  // refusé avec `photoAt`, rejeu sans, refusé de nouveau
 
         let result = await rig.makePublisher().publish(UpdateFixtures.photo())
 
         XCTAssertEqual(result, .refused)
         XCTAssertNotEqual(PreviewNotice(result: result).textKey, PreviewNotice.offline.textKey)
-        XCTAssertEqual(rig.journal.kinds, [.updateErrorRefused])
+        XCTAssertEqual(rig.journal.kinds, [.updatePhotoDateRefused, .updateErrorRefused])
     }
 
     func testAnUnauthenticatedWriteIsRefusedToo() async {

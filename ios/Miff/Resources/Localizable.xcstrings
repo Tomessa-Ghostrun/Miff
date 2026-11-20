@@ -3740,13 +3740,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ shared an update"
+            "value": "%@ shared a photo"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ a donné des nouvelles"
+            "value": "%@ a publié une photo"
           }
         }
       }

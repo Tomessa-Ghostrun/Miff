@@ -1,14 +1,14 @@
 import Foundation
 import SwiftUI
 
-// L'ordre AFFICHÉ des cartes du Feed et son report (ticket FEED-ORDRE, §3 #6 et #7). Rien n'est lu ni écrit ici : l'ordre vient de
+// L'ordre AFFICHÉ des cartes du Feed et son report (tickets FEED-ORDRE §3 #6 et FEED-ORDRE-PHOTO §3 #7). Rien n'est lu ni écrit ici : l'ordre vient de
 // `FeedBuilder` (les dates déjà lues), la logique est dans `FeedDisplayOrder` (pure, testée). Ce modèle y ajoute seulement ce qui touche
 // l'écran : le geste en cours, l'animation douce (jamais avec « Réduire les animations ») et l'annonce du lecteur d'écran. Aucun prénom
 // n'est gardé : les noms passent par `update` et sont oubliés à la mise à jour suivante ; rien n'est journalisé.
 // Miroir du report d'ordre d'Android.
 
 /// Ce que le Feed dit de l'ordre à afficher : la Miff, les membres dans l'ordre voulu, moi, et le prénom de chacun (identifiant vers prénom ;
-/// vide quand la personne n'a pas de prénom lisible). Les prénoms servent seulement à dire qui a donné des nouvelles.
+/// vide quand la personne n'a pas de prénom lisible). Les prénoms servent seulement à dire qui a publié une photo.
 struct FeedOrderContext: Equatable, CustomStringConvertible {
     let miffId: String
     let uids: [String]
