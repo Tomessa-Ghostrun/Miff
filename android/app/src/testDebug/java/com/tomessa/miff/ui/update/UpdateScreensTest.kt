@@ -255,7 +255,10 @@ class UpdateScreensTest {
     fun thePreview_saysWhoSeesThePhotoAndThatItGoesWithThePosition_andHasTheThreeButtons() {
         show { Tab(previewOf()) }
         shoot("update-apercu")
-        composeRule.onNodeWithText("Tes proches verront cette photo pendant 24 h.").assertExists()
+        composeRule
+            .onNodeWithText(
+                "Tes proches qui partagent aussi leur position verront cette photo pendant 24 h.",
+            ).assertExists()
         composeRule.onNodeWithText(text(R.string.update_preview_place)).assertExists()
         composeRule.onNodeWithContentDescription("Fermer").assertExists()
         composeRule.onNodeWithContentDescription("Recommencer").assertExists()
@@ -267,7 +270,10 @@ class UpdateScreensTest {
     @Test
     fun withSeveralMiffs_thePreviewSaysWhereThePhotoGoes() {
         show { Tab(previewOf(), miffCount = 3) }
-        composeRule.onNodeWithText("Ta photo sera visible des membres de tes 3 Miffs pendant 24 h.").assertExists()
+        composeRule
+            .onNodeWithText(
+                "Ta photo sera visible pendant 24 h des membres de tes 3 Miffs qui partagent aussi leur position.",
+            ).assertExists()
     }
 
     private fun leavesThePreview(name: String) {
@@ -355,7 +361,10 @@ class UpdateScreensTest {
         listOf("Fermer", "Recommencer", "Publier").forEach {
             composeRule.onNodeWithContentDescription(it).assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
         }
-        composeRule.onNodeWithText("Tes proches verront cette photo pendant 24 h.").assertExists()
+        composeRule
+            .onNodeWithText(
+                "Tes proches qui partagent aussi leur position verront cette photo pendant 24 h.",
+            ).assertExists()
     }
 
     // --- The central button and the bubble ------------------------------------------------------------------------------------------------
@@ -459,9 +468,12 @@ class UpdateScreensTest {
     )
 
     @Test
-    fun theBubble_isOnTheFeed_andOnTheProfile_butNeverOnTheUpdate_withTheTextOfTheMockups() {
+    fun theBubble_isOnTheFeed_andOnTheProfile_butNeverOnTheUpdate_withTheDecidedText() {
         val orange = text(R.string.update_bubble_orange)
-        assertEquals("Tu es passé en orange, indique à la Miff que tout va bien en publiant une update", orange)
+        assertEquals(
+            "Ton statut est passé à l'orange, indique à la Miff que tout va bien en donnant de tes nouvelles",
+            orange,
+        )
         show { Tabs(feedWith(ago = 150 * minute)) }
         shoot("update-bulle-orange-feed")
         composeRule.onNodeWithText(orange).assertExists().assertHasNoClickAction()

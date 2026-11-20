@@ -216,13 +216,17 @@ class UpdatePrivacyRuleTest {
     }
 
     @Test
-    fun theBubbleHasNoTitle_noButton_noCrossAndTheTextsAreThoseOfTheMockups() {
+    fun theBubbleHasNoTitle_noButton_noCrossAndTheTextsAreTheDecidedOnes() {
         val strings = File("src/main/res/values-fr/strings.xml").readText()
         assertTrue(
-            strings.contains(">Tu es passé en orange, indique à la Miff que tout va bien en publiant une update<"),
+            strings.contains(
+                ">Ton statut est passé à l\\'orange, indique à la Miff que tout va bien en donnant de tes nouvelles<",
+            ),
         )
         assertTrue(
-            strings.contains(">Tu es passé en rouge, indique à la Miff que tout va bien en publiant une update<"),
+            strings.contains(
+                ">Ton statut est passé au rouge, indique à la Miff que tout va bien en donnant de tes nouvelles<",
+            ),
         )
         val bubble =
             code(

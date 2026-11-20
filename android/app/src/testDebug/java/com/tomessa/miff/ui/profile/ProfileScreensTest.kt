@@ -353,7 +353,7 @@ class ProfileScreensTest {
         composeRule.onNodeWithText("France +33").assertExists()
         // The "+33" prefix is visual only (hidden from the screen reader, the country field says the code).
         // The grey example ("6 12 34 56 78") is visual only: it is hidden from the screen reader (see the screenshot).
-        composeRule.onNodeWithText("Enter your number without the leading zero.").assertExists()
+        composeRule.onNodeWithText("Enter your number without the country code.").assertExists()
         val country = composeRule.onNodeWithText("France +33").getUnclippedBoundsInRoot()
         val number = composeRule.onNodeWithText(text(R.string.profile_phone_number_label)).getUnclippedBoundsInRoot()
         assertTrue(country.top < number.top)
@@ -410,7 +410,7 @@ class ProfileScreensTest {
         val message = composeRule.onNodeWithText("This number doesn't look right.").fetchSemanticsNode()
         assertTrue("live region", message.config.contains(SemanticsProperties.LiveRegion))
         val error = composeRule.onNodeWithText("This number doesn't look right.").getUnclippedBoundsInRoot()
-        val help = composeRule.onNodeWithText("Enter your number without the leading zero.").getUnclippedBoundsInRoot()
+        val help = composeRule.onNodeWithText("Enter your number without the country code.").getUnclippedBoundsInRoot()
         assertTrue("the error comes before the help, like the mockup", error.top < help.top)
     }
 
@@ -536,7 +536,7 @@ class ProfileScreensTest {
         composeRule.onNodeWithContentDescription("Pays : France, indicatif +33", substring = true).assertExists()
         composeRule.onNodeWithText("France +33").assertExists()
         composeRule.onNodeWithText("Numéro de téléphone").assertExists()
-        composeRule.onNodeWithText("Saisis ton numéro sans le premier zéro.").assertExists()
+        composeRule.onNodeWithText("Saisis ton numéro sans l'indicatif du pays.").assertExists()
         composeRule
             .onNodeWithText(
                 "Seuls les membres de tes Miffs verront ce numéro, pour pouvoir t'appeler ou t'écrire. Personne d'autre.",

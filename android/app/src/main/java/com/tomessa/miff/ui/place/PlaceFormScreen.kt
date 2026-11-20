@@ -50,6 +50,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -78,6 +79,7 @@ import com.tomessa.miff.domain.place.OwnedMiff
 import com.tomessa.miff.domain.place.PlaceCategory
 import com.tomessa.miff.domain.place.PlaceLimits
 import com.tomessa.miff.domain.place.PlaceRadius
+import com.tomessa.miff.domain.place.PlaceRequestLimits
 import com.tomessa.miff.domain.place.PlaceType
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.RecentsPrivacy
@@ -523,7 +525,7 @@ private fun MiffPickerSheet(
                         }
 
                         full -> {
-                            stringResource(R.string.place_miffs_max_reached)
+                            stringResource(R.string.place_miffs_max_reached, PlaceLimits.MAX_MIFFS)
                         }
 
                         state.selectedMiffIds.size > 1 -> {
@@ -1094,15 +1096,32 @@ private fun Foot(
         state.displayedMessage?.let { message ->
             MiffNotice(
                 text =
-                    stringResource(
-                        when (message) {
-                            PlaceMessage.OFFLINE -> R.string.miff_message_offline
-                            PlaceMessage.GENERIC -> R.string.miff_message_generic
-                            PlaceMessage.MIFF_GONE -> R.string.place_message_miff_gone
-                            PlaceMessage.REQUEST_LIMIT_MEMBER -> R.string.place_request_limit_member
-                            PlaceMessage.REQUESTS_UNAVAILABLE -> R.string.place_request_unavailable
-                        },
-                    ),
+                    when (message) {
+                        PlaceMessage.OFFLINE -> {
+                            stringResource(R.string.miff_message_offline)
+                        }
+
+                        PlaceMessage.GENERIC -> {
+                            stringResource(R.string.miff_message_generic)
+                        }
+
+                        PlaceMessage.MIFF_GONE -> {
+                            stringResource(R.string.place_message_miff_gone)
+                        }
+
+                        // The only message with a value inserted: the number of pending requests per member (a plural; the number is the rule's).
+                        PlaceMessage.REQUEST_LIMIT_MEMBER -> {
+                            pluralStringResource(
+                                R.plurals.place_request_limit_member,
+                                PlaceRequestLimits.PER_MEMBER,
+                                PlaceRequestLimits.PER_MEMBER,
+                            )
+                        }
+
+                        PlaceMessage.REQUESTS_UNAVAILABLE -> {
+                            stringResource(R.string.place_request_unavailable)
+                        }
+                    },
                 // The limits of a request are said calmly, as information: never in the colour of an error.
                 isError =
                     message != PlaceMessage.OFFLINE &&

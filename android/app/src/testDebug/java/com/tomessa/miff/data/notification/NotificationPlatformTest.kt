@@ -242,7 +242,7 @@ class NotificationPlatformTest {
         )
         val n2 = shadowOf(notificationManager).getNotification("n2|m|u|1", 0)
         assertEquals(NotificationChannels.REMINDERS, n2.channelId)
-        assertEquals("Tu es passé rouge", n2.extras.getString("android.title"))
+        assertEquals("Ton statut est passé au rouge", n2.extras.getString("android.title"))
         assertEquals("Indique à ta Miff que tout va bien.", n2.extras.getString("android.text"))
     }
 
