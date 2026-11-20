@@ -1,9 +1,10 @@
 import XCTest
 @testable import Miff
 
-/// Les limites écrites dans les textes (3 lieux, 3 alertes par jour, 3 demandes, 5 Miffs par lieu) sont des VALEURS INSÉRÉES venues des
-/// constantes de l'app, et les textes qui en parlent s'accordent (« 1 lieu », « 3 lieux »). Ce test lit le catalogue COMPILÉ de chaque langue :
-/// il dit aussi si un pluriel à deux valeurs (« %1$lld lieu sur %2$lld ») est bien résolu par le système.
+/// Les limites écrites dans les textes (lieux gratuits, alertes par jour, demandes en attente, Miffs par lieu) sont des VALEURS INSÉRÉES
+/// venues des constantes de l'app, et les textes qui en parlent s'accordent (« 1 lieu », « 3 lieux »). Ce test lit le catalogue COMPILÉ de
+/// chaque langue : il dit aussi si un pluriel à deux valeurs (« %1$lld lieu sur %2$lld ») est bien résolu par le système. Aucun plafond n'est
+/// écrit en dur ici : si une limite change, les textes et ce test la suivent.
 final class LimitTextsTests: XCTestCase {
     private func bundle(_ language: String) throws -> Bundle {
         let path = try XCTUnwrap(Bundle.main.path(forResource: language, ofType: "lproj"), language)
@@ -13,11 +14,19 @@ final class LimitTextsTests: XCTestCase {
     func testThePlaceCounterTakesTheFreeLimitAsASecondValueAndAgreesInNumber() throws {
         let french = try bundle("fr")
         let english = try bundle("en")
-
         let counter = "place_list_counter_free"
-        XCTAssertEqual(L10n.plural(counter, count: 1, bundle: french, 3), "1 lieu sur 3 avec la formule gratuite")
-        XCTAssertEqual(L10n.plural(counter, count: 3, bundle: french, 3), "3 lieux sur 3 avec la formule gratuite")
-        XCTAssertEqual(L10n.plural(counter, count: 2, bundle: english, 5), "2 of 5 places on the free plan")
+        let free = PlaceLimits.freePlaces
+
+        XCTAssertEqual(
+            L10n.plural(counter, count: 1, bundle: french, free), "1 lieu sur \(free) avec la formule gratuite"
+        )
+        XCTAssertEqual(
+            L10n.plural(counter, count: free, bundle: french, free),
+            "\(free) lieux sur \(free) avec la formule gratuite"
+        )
+        XCTAssertEqual(
+            L10n.plural(counter, count: 2, bundle: english, free), "2 of \(free) places on the free plan"
+        )
     }
 
     func testTheDailyAlertLimitIsTheOneOfTheRules() throws {
@@ -36,9 +45,10 @@ final class LimitTextsTests: XCTestCase {
     func testThePendingRequestLimitAgreesInNumber() throws {
         let french = try bundle("fr")
         let english = try bundle("en")
+        let limit = PlaceRequestLimits.perMember
 
-        let many = L10n.plural("place_request_limit_member", count: PlaceRequestLimits.perMember, bundle: french)
-        XCTAssertTrue(many.contains("\(PlaceRequestLimits.perMember) demandes en attente"), many)
+        let many = L10n.plural("place_request_limit_member", count: limit, bundle: french)
+        XCTAssertTrue(many.contains("\(limit) demandes en attente"), many)
         XCTAssertTrue(many.contains("quand elles auront été traitées"), many)
         let one = L10n.plural("place_request_limit_member", count: 1, bundle: french)
         XCTAssertTrue(one.contains("1 demande en attente") && one.contains("quand elle aura été traitée"), one)
@@ -49,10 +59,11 @@ final class LimitTextsTests: XCTestCase {
 
     func testTheFreePlanSentenceAgreesInNumber() throws {
         let french = try bundle("fr")
-
         let sentence = "paywall_free_plan_stays"
+        let free = PlaceLimits.freePlaces
+
         XCTAssertTrue(L10n.plural(sentence, count: 1, bundle: french).hasSuffix("1 lieu de confiance."))
-        XCTAssertTrue(L10n.plural(sentence, count: 3, bundle: french).hasSuffix("3 lieux de confiance."))
+        XCTAssertTrue(L10n.plural(sentence, count: free, bundle: french).hasSuffix("\(free) lieux de confiance."))
     }
 
     func testTheMaximumOfMiffsPerPlaceIsTheOneOfTheRules() throws {

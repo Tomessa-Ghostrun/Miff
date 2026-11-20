@@ -18813,7 +18813,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Your close ones who also share their location will see this photo for 24 hours."
+            "value": "Your loved ones who also share their location will see this photo for 24 hours."
           }
         },
         "fr": {
@@ -20309,13 +20309,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You won't get reminders."
+            "value": "You won't receive any notifications."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu ne recevras pas de rappel."
+            "value": "Tu ne recevras pas de notification."
           }
         }
       }
@@ -20632,13 +20632,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "If reminders don't arrive"
+            "value": "If notifications don't arrive"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Si les rappels n'arrivent pas"
+            "value": "Si les notifications n'arrivent pas"
           }
         }
       }
