@@ -62,9 +62,13 @@ struct LastVisitTexts {
         let text: String
         switch line.kind {
         case .arrival:
-            text = feed.text("notif_c1_arrival", name, feed.placeArrived(place), at(line.shownAtMillis, nowMillis: nowMillis))
+            text = feed.text(
+                "notif_c1_arrival", name, feed.placeArrived(place), at(line.shownAtMillis, nowMillis: nowMillis)
+            )
         case .departure:
-            text = feed.text("notif_c1_departure", name, feed.placeLeft(place), at(line.shownAtMillis, nowMillis: nowMillis))
+            text = feed.text(
+                "notif_c1_departure", name, feed.placeLeft(place), at(line.shownAtMillis, nowMillis: nowMillis)
+            )
         case .update:
             text = feed.text("notif_c1_update", name, at(line.shownAtMillis, nowMillis: nowMillis))
         case .silence:
