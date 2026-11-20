@@ -20,6 +20,7 @@ import com.tomessa.miff.R
 import com.tomessa.miff.domain.analytics.AnalyticsSink
 import com.tomessa.miff.domain.analytics.AnalyticsTracker
 import com.tomessa.miff.domain.place.PaywallReason
+import com.tomessa.miff.domain.place.PlaceLimits
 import com.tomessa.miff.ui.place.PlacePaywallRoute
 import com.tomessa.miff.ui.place.paywallRoute
 import com.tomessa.miff.ui.profile.miffOfferRoute
@@ -142,10 +143,13 @@ class PaywallEntryPointsTest {
         composeRule.onAllNodesWithText(text(R.string.place_paywall_headline)).assertCountEquals(1)
         composeRule.onAllNodesWithText(text(R.string.paywall_soon_body)).assertCountEquals(1)
         listOf(
-            R.string.place_paywall_limit_title,
             R.string.place_paywall_danger_title,
             R.string.feed_selector_paywall_title,
         ).forEach { composeRule.onAllNodesWithText(text(it)).assertCountEquals(0) }
+        // The title of the limit carries the number of free places (a value inserted from the rule).
+        composeRule
+            .onAllNodesWithText(context().getString(R.string.place_paywall_limit_title, PlaceLimits.FREE_PLACES))
+            .assertCountEquals(0)
 
         // Before the end: back does nothing, a touch where the cross will be does nothing.
         pass(1_500)

@@ -316,7 +316,7 @@ class AuthScreensTest {
         signIn(SignInUiState(showSessionReplacedNote = true))
         composeRule
             .onNodeWithText(
-                "Ton compte est maintenant utilisé sur un autre téléphone. Tu as été déconnecté(e) de celui-ci.",
+                "Ton compte est maintenant utilisé sur un autre téléphone. Ta session a été fermée sur ce téléphone.",
             ).assertExists()
     }
 
@@ -369,7 +369,7 @@ class AuthScreensTest {
         val line = notice(R.string.auth_consent_notice)
         assertTrue(
             line,
-            line.startsWith("En cliquant sur « Rejoindre »") &&
+            line.startsWith("En touchant sur « Rejoindre »") &&
                 line.contains("tu acceptes nos Conditions d'utilisation"),
         )
     }
@@ -636,7 +636,7 @@ class AuthScreensTest {
         composeRule.onNodeWithText("Tu peux demander un nouvel e-mail dans quelques instants.").assertExists()
         assertEquals(
             "Si un compte existe avec cette adresse, un e-mail vient d'être envoyé. " +
-                "Pense à regarder dans tes courriers indésirables. Si tu t'es inscrit avec Apple ou Google, " +
+                "Pense à regarder dans tes courriers indésirables. Si tu as créé ton compte avec Apple ou Google, " +
                 "utilise plutôt le bouton correspondant sur l'écran de connexion.",
             text(R.string.auth_reset_sent),
         )

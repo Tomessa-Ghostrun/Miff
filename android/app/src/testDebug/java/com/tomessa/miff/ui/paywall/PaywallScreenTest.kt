@@ -53,6 +53,7 @@ import com.tomessa.miff.domain.paywall.PaywallOffer
 import com.tomessa.miff.domain.paywall.PaywallPrice
 import com.tomessa.miff.domain.paywall.PaywallProgress
 import com.tomessa.miff.domain.paywall.PaywallUiState
+import com.tomessa.miff.domain.place.PlaceLimits
 import com.tomessa.miff.ui.theme.MiffTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -87,6 +88,12 @@ class PaywallScreenTest {
         id: Int,
         vararg args: Any,
     ): String = context().getString(id, *args)
+
+    /** A plural whose only value inserted is its own quantity (the number of free places). */
+    private fun plural(
+        id: Int,
+        quantity: Int,
+    ): String = context().resources.getQuantityString(id, quantity, quantity)
 
     private val clock = FakePaywallClock()
     private var closed = 0
@@ -520,7 +527,6 @@ class PaywallScreenTest {
     // about "your places" or "your Miff": the screen does not even know where it was opened from.
     private fun assertNoContextSentence() {
         listOf(
-            R.string.place_paywall_limit_title,
             R.string.place_paywall_limit_body,
             R.string.place_paywall_danger_title,
             R.string.place_paywall_danger_body,
@@ -531,6 +537,9 @@ class PaywallScreenTest {
             R.string.place_request_paywall_limit,
             R.string.place_request_paywall_danger,
         ).forEach { composeRule.onAllNodesWithText(text(it)).assertCountEquals(0) }
+        composeRule
+            .onAllNodesWithText(text(R.string.place_paywall_limit_title, PlaceLimits.FREE_PLACES))
+            .assertCountEquals(0)
         composeRule.onAllNodesWithText("Tu as atteint", substring = true).assertCountEquals(0)
         composeRule.onAllNodesWithText("reste en place", substring = true).assertCountEquals(0)
     }
@@ -617,7 +626,7 @@ class PaywallScreenTest {
                 text(R.string.paywall_info_cancel, "Google Play"),
             ).performScrollTo()
             .assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.paywall_free_plan_stays, 3)).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(plural(R.plurals.paywall_free_plan_stays, 3)).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.paywall_terms_link)).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.paywall_privacy_link)).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.paywall_restore)).performScrollTo().assertIsDisplayed()
@@ -692,7 +701,7 @@ class PaywallScreenTest {
         composeRule.onNodeWithText(text(R.string.paywall_loading)).assertIsDisplayed().assertIsNotEnabled()
         composeRule.onAllNodesWithText("€", substring = true).assertCountEquals(0)
         composeRule.onAllNodesWithText(text(R.string.paywall_cta_trial)).assertCountEquals(0)
-        composeRule.onNodeWithText(text(R.string.paywall_free_plan_stays, 3)).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(plural(R.plurals.paywall_free_plan_stays, 3)).performScrollTo().assertIsDisplayed()
     }
 
     @Test

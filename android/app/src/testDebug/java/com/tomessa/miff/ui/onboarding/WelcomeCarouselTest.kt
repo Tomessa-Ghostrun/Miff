@@ -78,11 +78,11 @@ class WelcomeCarouselTest {
         composeRule.onNodeWithText("Commencer").assertExists()
         assertTexts(
             "Famille Alberta",
-            "Tout le monde est en sécurité",
+            "Tout le monde va bien",
             "Mis à jour il y a 2 min.",
             "Thomas",
             "À la maison",
-            "Arrivé il y a 12 min",
+            "Arrivée : il y a 12 min",
             "85 %",
             "Amandine",
             "22 %",
@@ -110,18 +110,18 @@ class WelcomeCarouselTest {
         assertTexts(
             "Nouveau lieu",
             "Nom",
-            "Choisissez un nom pour retrouver l'endroit facilement",
+            "Choisis un nom pour retrouver l'endroit facilement",
             "Maison du père de Nathan",
             "Adresse",
-            "Entrez l'adresse exacte de ce lieu",
+            "Entre l'adresse exacte de ce lieu",
             "17 Avenue d'Italie, 75013, Paris",
             "Périmètre",
-            "Définissez le rayon autour du lieu",
+            "Définis le rayon autour du lieu",
             "100 m",
             "Type",
-            "Quel type de zone définissez-vous ?",
+            "Quel type de zone définis-tu ?",
             "Zone de confiance",
-            "Lieu sûr pour vos proches",
+            "Lieu sûr pour tes proches",
             "Zone de danger",
             "Lieu à éviter",
         )
@@ -151,7 +151,7 @@ class WelcomeCarouselTest {
         composeRule.onNodeWithText("Get started").assertExists()
         assertTexts(
             "Alberta family",
-            "Everyone is safe",
+            "Everyone is fine",
             "Updated 2 min ago.",
             "At home",
             "At school",
