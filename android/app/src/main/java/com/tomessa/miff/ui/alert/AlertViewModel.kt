@@ -78,7 +78,7 @@ class AlertViewModel(
     private var callJob: Job? = null
     private var callMiffId: String? = null
 
-    /** The person started holding the button (the gesture was discovered), or published an update after the delivery, or declared an alert: the bubble is done for good. */
+    /** The person touched the capture button for the first time (a press, a hold, a click, or the accessible actions), or published an update after the delivery, or declared an alert: the bubble is done for good. */
     fun onHintDone() {
         if (mutableHintDone.value) return
         local.markHintDone()

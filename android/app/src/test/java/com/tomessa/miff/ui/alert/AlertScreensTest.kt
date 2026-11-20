@@ -14,6 +14,7 @@ import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.click
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -22,6 +23,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.height
 import com.tomessa.miff.data.alert.EndStep
 import com.tomessa.miff.data.alert.MyAlert
 import com.tomessa.miff.data.alert.SendStep
@@ -29,6 +31,8 @@ import com.tomessa.miff.domain.alert.AlertCallList
 import com.tomessa.miff.domain.alert.AlertDialTarget
 import com.tomessa.miff.domain.miff.MiffMember
 import com.tomessa.miff.domain.miff.MiffRole
+import com.tomessa.miff.ui.theme.textBodyBold14
+import com.tomessa.miff.ui.theme.textBodyBold16
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -275,11 +279,107 @@ class AlertScreensTest {
     private val active = MyAlert.Active("m", 1, 2)
 
     @Test
-    fun theBannerNamesTheOriginMiff_andSaysHowToEnd() {
+    fun theBannerAsksTheQuestionOfTheEnd_andSaysHowToEnd() {
         banner(active)
-        rule.onNodeWithText("You alerted the people of the Miff “Family”.").assertIsDisplayed()
-        rule.onNodeWithText("Hold for 5 seconds to end the alert if you're no longer in danger.").assertIsDisplayed()
+        rule.onNodeWithText("End the alert?").assertIsDisplayed()
+        rule
+            .onNodeWithText(
+                "Hold for 5 seconds to end the alert. Your loved ones will know you're safe now",
+            ).assertIsDisplayed()
+        // the old sentences are gone
+        rule.onNodeWithText("You alerted the people of the Miff “Family”.").assertDoesNotExist()
         rule.onNodeWithTag(ALERT_BANNER_SEE_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    @Config(qualifiers = "fr")
+    fun theBannerSaysTheExactWordsOfThePm_inFrench() {
+        banner(active)
+        rule.onNodeWithText("Mettre fin à l'alerte ?").assertIsDisplayed()
+        rule
+            .onNodeWithText(
+                "Maintiens 5 secondes pour mettre fin à l'alerte, tes proches sauront que tu es désormais en sécurité",
+            ).assertIsDisplayed()
+        rule.onNodeWithText("Appeler").assertIsDisplayed()
+    }
+
+    @Test
+    fun theTitleOfTheBanner_isTwiceAsBigAsBefore_theCallButtonIsUnchanged() {
+        banner(active)
+        assertEquals(32f, fontSizeSp(ALERT_BANNER_TITLE_TAG), 0.01f)
+        // the title was 16 sp (textBodyBold16): two times
+        assertEquals(textBodyBold16.fontSize.value * 2f, fontSizeSp(ALERT_BANNER_TITLE_TAG), 0.01f)
+        rule.onNodeWithText("Call").assertIsDisplayed()
+        assertEquals(textBodyBold14.fontSize.value, fontSizeOfText("Call"), 0.01f)
+    }
+
+    @Test
+    fun theOtherPhasesOfTheBanner_keepTheirOldTitleSize() {
+        banner(MyAlert.Sending("m", 1, SendStep.WAITING_NETWORK))
+        assertEquals(textBodyBold16.fontSize.value, fontSizeSp(ALERT_BANNER_TITLE_TAG), 0.01f)
+        rule.onNodeWithText("Sending your alert to the Miff “Family”…").assertIsDisplayed()
+    }
+
+    private fun fontSizeSp(tag: String): Float = fontSizeOf(rule.onNodeWithTag(tag).fetchSemanticsNode())
+
+    private fun fontSizeOfText(text: String): Float = fontSizeOf(rule.onNodeWithText(text).fetchSemanticsNode())
+
+    private fun fontSizeOf(node: androidx.compose.ui.semantics.SemanticsNode): Float {
+        val results = mutableListOf<androidx.compose.ui.text.TextLayoutResult>()
+        node.config
+            .getOrNull(SemanticsActions.GetTextLayoutResult)
+            ?.action
+            ?.invoke(results)
+        return results
+            .first()
+            .layoutInput.style.fontSize.value
+    }
+
+    /** The banner at a system font scale, in a screen of 360 x 800 dp: it never takes more than 45 % of the height and "Appeler" stays on the screen. */
+    private fun bannerAtFontScale(scale: Float) {
+        rule.setContent {
+            val base = androidx.compose.ui.platform.LocalDensity.current
+            androidx.compose.runtime.CompositionLocalProvider(
+                androidx.compose.ui.platform.LocalDensity provides
+                    androidx.compose.ui.unit
+                        .Density(base.density, fontScale = scale),
+            ) {
+                AlertBanner(
+                    alert = active,
+                    miffName = "Family",
+                    showSeeMiff = false,
+                    onCall = {},
+                    onSeeMiff = {},
+                    onEndRequested = {},
+                    onEndAccessible = {},
+                )
+            }
+        }
+    }
+
+    @Test
+    @Config(qualifiers = "en-w360dp-h800dp-xhdpi")
+    fun withALargeSystemFont_x1_3_theTitleWraps_theBannerStaysUnder45PercentOfTheScreen_andCallIsThere() {
+        bannerAtFontScale(1.3f)
+        assertTrue(
+            "banner height ${rule.onNodeWithTag(ALERT_BANNER_TAG).getUnclippedBoundsInRoot().height}",
+            rule.onNodeWithTag(ALERT_BANNER_TAG).getUnclippedBoundsInRoot().height <= 360.dp,
+        )
+        rule.onNodeWithTag(ALERT_BANNER_CALL_TAG).assertIsDisplayed()
+        rule.onNodeWithText("End the alert?").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(qualifiers = "en-w360dp-h800dp-xhdpi")
+    fun withTheLargestSystemFont_x2_0_theBannerStaysUnder45PercentOfTheScreen_theTextsScroll_andCallIsPinned() {
+        bannerAtFontScale(2.0f)
+        assertTrue(
+            "banner height ${rule.onNodeWithTag(ALERT_BANNER_TAG).getUnclippedBoundsInRoot().height}",
+            rule.onNodeWithTag(ALERT_BANNER_TAG).getUnclippedBoundsInRoot().height <= 360.dp,
+        )
+        // pinned under the scrolling texts: on the screen, not scrolled away
+        rule.onNodeWithTag(ALERT_BANNER_CALL_TAG).assertIsDisplayed()
+        rule.onNodeWithTag(ALERT_BANNER_TITLE_TAG).assertIsDisplayed()
     }
 
     @Test
@@ -363,19 +463,18 @@ class AlertScreensTest {
     // ---- the blue bubble and the red mode ----------------------------------------------------------------------------------------------
 
     @Test
-    fun theBlueBubbleSaysTheTwoGestures_hidesItselfAfterItsTime_andOffersLearnMore() {
-        var gone = 0
+    fun theBlueBubbleSaysTheTwoGestures_andOffersLearnMore_andNeverHidesItselfWithTime() {
         var more = 0
         rule.mainClock.autoAdvance = false
-        rule.setContent { AlertHintBubble(onMore = { more++ }, onGone = { gone++ }, visibleMillis = 6_000) }
+        rule.setContent { AlertHintBubble(onMore = { more++ }) }
         rule.onNodeWithText("• Tap to share your news").assertIsDisplayed()
         rule.onNodeWithText("• Hold to declare an alert").assertIsDisplayed()
         rule.onNodeWithText("Learn more").performClick()
         assertEquals(1, more)
-        rule.mainClock.advanceTimeBy(5_900)
-        assertEquals(0, gone)
-        rule.mainClock.advanceTimeBy(300)
-        assertEquals(1, gone)
+        // no timer (decision of the PM, 2026-11-20): still there a long time after the 6 seconds it used to last, and again for a screen reader to read
+        rule.mainClock.advanceTimeBy(10 * 60_000)
+        rule.onNodeWithTag(ALERT_HINT_TAG).assertIsDisplayed()
+        rule.onNodeWithText("• Hold to declare an alert").assertIsDisplayed()
     }
 
     @Test
@@ -460,14 +559,148 @@ class AlertScreensTest {
     }
 
     @Test
-    fun aFingerThatDriftsMoreThan48dp_cancels() {
+    fun onceArmed_aFingerThatLeavesTheButton_keepsTheLoading_untilItIsReleased() {
         hold()
         rule.onNodeWithTag("shutter").performTouchInput { down(center) }
         rule.mainClock.advanceTimeBy(1_000)
+        assertTrue(holdState.armed)
+        // the finger slides far OUTSIDE the 80 dp button (400 px, then 600 px more): the loading goes on
         rule.onNodeWithTag("shutter").performTouchInput { moveBy(Offset(400f, 400f)) }
+        rule.mainClock.advanceTimeBy(1_000)
+        assertTrue(holdState.armed)
+        assertEquals(0, cancelledHold)
+        assertEquals(0, done)
+        val progress = holdState.progress
+        assertTrue("the bar goes on filling: $progress", progress > 0.25f)
+        rule.onNodeWithTag("shutter").performTouchInput { moveBy(Offset(600f, 600f)) }
+        rule.mainClock.advanceTimeBy(4_500)
+        // 5 seconds held in total: it is done, wherever the finger is
+        assertEquals(1, done)
+        assertEquals(0, cancelledHold)
+        assertEquals(0, taps)
+        assertFalse(holdState.armed)
+    }
+
+    @Test
+    fun onceArmed_theFingerOutsideTheButton_thenReleased_stopsTheLoadingSilently() {
+        hold()
+        rule.onNodeWithTag("shutter").performTouchInput { down(center) }
+        rule.mainClock.advanceTimeBy(1_000)
+        rule.onNodeWithTag("shutter").performTouchInput { moveBy(Offset(500f, 500f)) }
+        rule.mainClock.advanceTimeBy(1_000)
+        assertTrue(holdState.armed)
+        rule.onNodeWithTag("shutter").performTouchInput { up() }
         rule.mainClock.advanceTimeBy(6_000)
         assertEquals(0, done)
         assertEquals(1, cancelledHold)
+        assertEquals(0, taps)
+        assertFalse(holdState.armed)
+    }
+
+    @Test
+    fun aSystemCancelWhileLoadingOutsideTheButton_stopsTheLoading() {
+        hold()
+        rule.onNodeWithTag("shutter").performTouchInput { down(center) }
+        rule.mainClock.advanceTimeBy(1_000)
+        rule.onNodeWithTag("shutter").performTouchInput { moveBy(Offset(500f, 500f)) }
+        rule.mainClock.advanceTimeBy(500)
+        rule.onNodeWithTag("shutter").performTouchInput { cancel() }
+        rule.mainClock.advanceTimeBy(6_000)
+        assertEquals(0, done)
+        assertEquals(1, cancelledHold)
+        assertFalse(holdState.armed)
+    }
+
+    @Test
+    fun beforeTheScreenIsArmed_aSwipeOfMoreThan48dp_isNotAHold() {
+        hold()
+        rule.onNodeWithTag("shutter").performTouchInput { down(center) }
+        rule.mainClock.advanceTimeBy(100)
+        rule.onNodeWithTag("shutter").performTouchInput { moveBy(Offset(400f, 400f)) }
+        rule.mainClock.advanceTimeBy(6_000)
+        assertFalse(holdState.armed)
+        assertEquals(0, armed)
+        assertEquals(0, done)
+        assertEquals(0, taps)
+    }
+
+    @Test
+    fun aTouchThatStartsOutsideTheButton_andSlidesOntoIt_startsNothing() {
+        var pressed = 0
+        rule.setContent {
+            holdState = androidx.compose.runtime.remember { AlertHoldState() }
+            // the zone is the viewfinder: it has its own touch handler (the double tap of the camera), so the touch that starts on it is its own, as on the Update
+            Box(Modifier.size(300.dp).testTag("zone").pointerInput(Unit) { detectTapGestures(onDoubleTap = {}) }) {
+                Box(
+                    Modifier
+                        .size(80.dp)
+                        .testTag("shutter")
+                        .alertHoldGesture(
+                            holdState,
+                            onPress = { pressed++ },
+                            onTap = { taps++ },
+                            onArmed = { armed++ },
+                            onDone = { done++ },
+                        ),
+                )
+            }
+        }
+        rule.mainClock.autoAdvance = false
+        // down at the opposite corner of the 300 dp zone (the button is at the top left), then a slide over the button, held 6 s
+        rule.onNodeWithTag("zone").performTouchInput { down(Offset(width - 5f, height - 5f)) }
+        val zone = rule.onNodeWithTag("zone").getUnclippedBoundsInRoot()
+        val button = rule.onNodeWithTag("shutter").getUnclippedBoundsInRoot()
+        assertEquals("after down, zone=$zone button=$button", 0, pressed)
+        rule.onNodeWithTag("zone").performTouchInput { moveTo(Offset(10f, 10f)) }
+        assertEquals("after move", 0, pressed)
+        rule.mainClock.advanceTimeBy(6_000)
+        assertEquals(0, pressed)
+        assertFalse(holdState.armed)
+        assertEquals(0, armed)
+        assertEquals(0, done)
+        assertEquals(0, taps)
+    }
+
+    @Test
+    fun theFirstPress_isReportedAtOnce_beforeAnyTapOrHold() {
+        var pressed = 0
+        rule.setContent {
+            holdState = androidx.compose.runtime.remember { AlertHoldState() }
+            Box(
+                Modifier.size(80.dp).testTag("shutter").alertHoldGesture(holdState, onPress = {
+                    pressed++
+                }, onTap = { taps++ }, onDone = { done++ }),
+            )
+        }
+        rule.mainClock.autoAdvance = false
+        rule.onNodeWithTag("shutter").performTouchInput { down(center) }
+        rule.mainClock.advanceTimeBy(20)
+        assertEquals(1, pressed)
+        assertEquals(0, taps)
+    }
+
+    @Test
+    fun theBanner_keepsHoldingWhenTheFingerLeavesIt_andEndsAfter5Seconds() {
+        banner(active)
+        rule.mainClock.autoAdvance = false
+        rule.onNodeWithTag(ALERT_BANNER_TAG).performTouchInput { down(Offset(20f, 20f)) }
+        rule.mainClock.advanceTimeBy(1_000)
+        rule.onNodeWithTag(ALERT_BANNER_TAG).performTouchInput { moveBy(Offset(0f, -900f)) }
+        rule.mainClock.advanceTimeBy(4_700)
+        assertEquals(1, endAsked)
+    }
+
+    @Test
+    fun theBanner_releasedAfterLeavingIt_endsNothing() {
+        banner(active)
+        rule.mainClock.autoAdvance = false
+        rule.onNodeWithTag(ALERT_BANNER_TAG).performTouchInput { down(Offset(20f, 20f)) }
+        rule.mainClock.advanceTimeBy(1_000)
+        rule.onNodeWithTag(ALERT_BANNER_TAG).performTouchInput { moveBy(Offset(0f, -900f)) }
+        rule.mainClock.advanceTimeBy(1_500)
+        rule.onNodeWithTag(ALERT_BANNER_TAG).performTouchInput { up() }
+        rule.mainClock.advanceTimeBy(6_000)
+        assertEquals(0, endAsked)
     }
 
     // ---- the cross of the banner and the honest buttons (retour du PM) ------------------------------------------------------------------
@@ -529,9 +762,16 @@ class AlertScreensTest {
     @Test
     fun theBannerNeverShowsAnEmptyName_afterARelaunch() {
         banner(active, showSee = true, name = null)
-        rule.onNodeWithText("You alerted the people of your Miff.").assertIsDisplayed()
+        rule.onNodeWithText("End the alert?").assertIsDisplayed()
         // "Voir la Miff" needs a name: not offered without one
         rule.onNodeWithTag(ALERT_BANNER_SEE_TAG).assertDoesNotExist()
+    }
+
+    @Test
+    fun whileAnEndWaitsForTheNetwork_theOldTitleIsBack_andSaysYourMiffWithoutAName() {
+        banner(MyAlert.Active("m", 1, 2, EndStep.WAITING_NETWORK), name = null)
+        rule.onNodeWithText("You alerted the people of your Miff.").assertIsDisplayed()
+        assertEquals(textBodyBold16.fontSize.value, fontSizeSp(ALERT_BANNER_TITLE_TAG), 0.01f)
     }
 
     @Test

@@ -1413,7 +1413,7 @@
     <string name="alert_emergency_european">European emergency number</string>
     <string name="alert_emergency_international">International emergency number</string>
     <string name="alert_banner_title">You alerted the people of the Miff “%1$s”.</string>
-    <string name="alert_banner_body">Hold for 5 seconds to end the alert if you\'re no longer in danger.</string>
+    <string name="alert_banner_body">Hold for 5 seconds to end the alert. Your loved ones will know you\'re safe now</string>
     <string name="alert_banner_sending">Sending your alert to the Miff “%1$s”…</string>
     <string name="alert_banner_waiting">Waiting to be sent</string>
     <string name="alert_banner_needs_confirmation">Your alert hasn\'t gone for a while: it\'s waiting for your decision.</string>

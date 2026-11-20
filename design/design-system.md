@@ -65,6 +65,7 @@ Deux familles : **Baloo Thambi 2** (titres et noms, ton chaleureux) et **Hanken 
 | `display/headline` | Baloo Thambi 2 | 24 / 30 | Message principal du Feed ("Tout le monde est en sécurité") |
 | `display/title` | Baloo Thambi 2 | 20 / 26 | Titres d'écran (Réglages, notifications) |
 | `display/label` | Baloo Thambi 2 | 16 / 22 | Prénoms dans les cartes |
+| `title/bold-32` | Hanken Grotesk Bold | 32 / 40 | Titre du bandeau rouge de l'alerte en cours (deux fois le corps 16 des autres bandeaux ; décision du PM, 2026-11-20) |
 | `title/bold-24` | Hanken Grotesk Bold | 24 / 30 | Accroche en dégradé (Bienvenue, Paywall) |
 | `title/bold-20` | Hanken Grotesk Bold | 20 / 26 | Titres d'écrans de formulaire, titres de section |
 | `body/large` | Hanken Grotesk Regular | 20 / 26 | Texte saisi, libellés de bouton larges |

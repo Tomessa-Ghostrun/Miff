@@ -2,6 +2,36 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.59.0] - 2026-11-20 : alerte « Je suis en danger », retours de recette du PM : le doigt peut sortir du bouton, bulle bleue sans minuterie, titre du bandeau rouge deux fois plus gros
+
+Trois retours du PM sur la recette de l'alerte (`docs/tickets/alerte-danger.md`, §7.1, 7.2, 7.4). Branche `android/alerte-retours-recette`. **Numéro de version provisoire** (le PM renumérote à la fusion). **Coût ajouté : 0 €** (aucun service, aucune bibliothèque). **À savoir : français et anglais seulement ; les traductions es / it / pt / de ne sont pas touchées** (passe dédiée ensuite).
+
+### Modifié
+- **Le doigt peut sortir du bouton pendant le maintien** (`AlertHoldGesture.kt`). Avant : dès que le doigt s'écartait de plus de 48 dp du point d'appui, le chargement s'arrêtait. Maintenant : il faut **poser** le doigt sur le bouton pour initier l'alerte (un toucher posé ailleurs puis glissé sur le bouton ne déclenche rien, comme avant), mais **une fois l'écran armé (0,4 s), le chargement continue où que le doigt aille** ; il ne s'arrête qu'au **relâchement** ou à une **annulation système** (appel entrant, fenêtre système, arrière-plan, geste système qui prend le toucher). Même détecteur pour la **fin d'alerte** sur le bandeau rouge (« Maintiens 5 secondes ») : même règle. Retour haptique et visuel inchangés ; accessibilité inchangée (actions « Déclarer une alerte » et « Terminer l'alerte » avec confirmation en deux étapes). **Choix gardé** : pendant les **0,4 premières secondes** (rien n'est encore affiché), un doigt qui s'écarte de plus de 48 dp reste un balayage et annule en silence : ce n'est pas encore un chargement.
+- **Bulle bleue de l'onboarding sans minuterie** (`AlertComponents.kt`, `UpdateScreen.kt`). Elle **ne disparaît plus au bout de 6 s** ni quand on touche l'écran ailleurs : elle disparaît **uniquement à la première interaction avec le bouton de capture** (dès que le doigt se pose : appui court, appui long ; ou le clic / l'action « Déclarer une alerte » d'un lecteur d'écran), puis **ne revient plus** (même indicateur local `alertHintDone`, un simple booléen de l'installation : aucune donnée personnelle, aucune donnée serveur). Avant, un appui court (photo) ne validait pas la bulle : elle revenait à l'ouverture suivante. Accessibilité : tant qu'elle est affichée elle reste lisible (aucune disparition qui priverait TalkBack du message).
+- **Bandeau rouge de l'alerte active** : titre **« Mettre fin à l'alerte ? »** en **32 sp** (nouveau jeton `textTitleBold32`, 32 / 40, ajouté à `design/design-system.md` ; l'ancien titre était à 16 sp), sous lui « Maintiens 5 secondes pour mettre fin à l'alerte, tes proches sauront que tu es désormais en sécurité » (14 sp) ; « Appeler » inchangé. **Grande police** : le titre passe à la ligne ; le bandeau ne dépasse jamais **45 % de la hauteur de l'écran** ; au-delà (police x2,0) les textes défilent **dans** le bandeau et la ligne des boutons reste épinglée en bas (« Appeler » toujours visible, le bouton rond reste atteignable). Le bandeau mesuré continue de pousser le bouton rond et le contenu.
+
+### Clés de texte (seulement `values/` et `values-fr/`)
+- **Modifiée** `alert_banner_body` (FR et EN) : la phrase sous le titre.
+- **Modifiée** `alert_confirm_end_title` (FR seulement : « Mettre fin à l'alerte ? » ; l'anglais « End the alert? » était déjà le bon) : c'est le titre du bandeau **et** celui de la confirmation en deux étapes du lecteur d'écran, pour ne pas créer de clé qui casserait le contrôle de parité avec iOS tant qu'iOS ne l'a pas.
+- **Aucune clé créée ni supprimée.** Les clés `alert_banner_title` et `alert_banner_title_no_name` (« Tu as alerté les proches de la Miff… ») restent en usage pour la fin en attente de réseau.
+
+### Écarts (CLAUDE.md : listés et justifiés)
+- **Le bandeau ne nomme plus la Miff d'origine quand l'alerte est active** (texte donné par le PM, appliqué tel quel). Le ticket (AD21b) demandait « toujours la Miff d'origine » pour limiter le risque de fausse sécurité quand la personne est dans plusieurs Miffs. Elle reste nommée par « Voir la Miff {nom} » (quand le Feed en affiche une autre) et sur l'écran « avertis ». `docs/tickets/alerte-danger.md` est mis à jour ; décision à confirmer par le PM.
+- **« en sécurité »** dans la phrase du bandeau : le projet le remplace ailleurs par « va bien » (décision I18N-4C) ; formule choisie par le PM ici, appliquée telle quelle. **Pas de point final** (texte du PM tel quel ; l'anglais suit).
+- **Anglais (repli)** : « End the alert? » / « Hold for 5 seconds to end the alert. Your loved ones will know you're safe now » (deux phrases au lieu d'une virgule, plus naturel).
+- **Vocabulaire** : l'action du lecteur d'écran et le bouton de confirmation disent encore « Terminer l'alerte » alors que le titre dit « Mettre fin à l'alerte ? » ; non harmonisé (non demandé).
+- **Ticket iOS** : le comportement du doigt (iOS : tolérance de 44 pt), de la bulle et du bandeau est à aligner côté iOS (non touché ici).
+
+### Tests
+- `AlertScreensTest` : le doigt sort du bouton (rond et bandeau) : le chargement continue jusqu'à 5 s ; relâché hors du bouton : il s'arrête, sans rien envoyer ; annulation système ; balayage avant l'armement ; toucher posé hors du bouton puis glissé dessus : rien ; premier appui signalé ; textes FR et EN du bandeau ; taille 32 sp du titre (16 sp pour les autres phases) ; police x1,3 et x2,0 : bandeau sous 45 % de l'écran, « Appeler » visible.
+- `ShutterOnboardingTest` (nouveau, avec le vrai obturateur) : pas de minuterie, un toucher ailleurs ne masque pas la bulle, appui court / appui long / clic et action du lecteur d'écran la font disparaître pour de bon.
+- `AlertViewModelTest` : l'indicateur est mémorisé, ne revient pas, reste après une déconnexion (repère d'installation).
+- Mises à jour : `docs/qa/checklists/alerte-danger-android-recette-pm.md` (étapes 1, 2, 5, 8, 9bis, 18, 23, 30).
+
+### À savoir : effacement local (DUR-3)
+`alertHintDone` est un repère de l'**installation** (ticket §7.1 : conservé quand un autre compte se connecte sur le même téléphone, remis à zéro par une réinstallation) : il n'est volontairement **pas** effacé à la déconnexion ni à la suppression du compte, contrairement au pointeur de l'alerte et à la note d'adoption qui, eux, le sont (`AccountLocalData`). Il ne contient aucune donnée liée à une personne. Si le PM préfère l'effacer aussi, c'est une ligne dans `AlertLocalStore.clearAccount`.
+
 ## [0.56.0] - 2026-11-20 : textes français corrigés (tutoiement, ton, exactitude) et limites lues dans les règles, pas écrites en dur (I18N-4C)
 
 Document de décision `docs/i18n/corrections-sources-fr-decidees.md` (PR docs #294, décisions D1 à D12 du PM du 2026-11-20). Branche `android/textes-fr-corriges`, PR brouillon. **Numéro de version provisoire** (0.54.0 est pris par la PR #293 ; à renuméroter à la fusion). **Coût ajouté : 0 €** (aucun service, aucune bibliothèque). **À savoir : français et anglais seulement ; aucune traduction es / it / pt / de n'est touchée** (elles seront injectées après, avec les textes corrigés ici).

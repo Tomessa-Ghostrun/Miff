@@ -29,9 +29,13 @@ import kotlinx.coroutines.delay
  * The HOLD gesture of the alert (ticket docs/tickets/alerte-danger.md 7.2 and 7.4), shared by the button of the Update (start) and the banner (end). The rules of time live in
  * [AlertHold] (pure, tested); this file only reads the finger.
  *
- * ANTI-ACCIDENT (criteria AD1 to AD3): a touch shorter than [AlertRules.ARM_MILLIS] is a TAP (a photo, as before); only after that the screen turns into the alert and the 5 seconds
- * count; releasing, the finger drifting more than 48 dp, the window losing the focus (an incoming call, a system window) or the app going to the background cancels, SILENTLY (no
- * message, only a very light haptic): a false start is not commented. Haptics: a light one when the screen arms, a crescendo of short ones that get closer, a firm one at 5 s. No sound.
+ * ANTI-ACCIDENT (criteria AD1 to AD3): the finger must go down ON the node (a touch that starts elsewhere never reaches it); a touch shorter than [AlertRules.ARM_MILLIS] is a TAP
+ * (a photo, as before); only after that the screen turns into the alert and the 5 seconds count. Releasing, the window losing the focus (an incoming call, a system window) or the app
+ * going to the background cancels, SILENTLY (no message, only a very light haptic): a false start is not commented.
+ *
+ * THE FINGER MAY LEAVE THE NODE (decision of the PM, 2026-11-20, recette): once the screen is armed, the 5 seconds go on as long as the finger stays DOWN, wherever it slides (off the
+ * shutter, off the banner); only the release (or a system cancel, which reads as a release) stops it. Before the screen is armed (the first 0.4 s, nothing is seen yet) a finger that
+ * drifts more than 48 dp is a swipe, not a hold: it cancels, as before. Haptics: a light one when the screen arms, a crescendo of short ones that get closer, a firm one at 5 s. No sound.
  */
 
 /** What a screen reads of the gesture in progress. */
@@ -63,12 +67,15 @@ fun Modifier.alertHoldGesture(
     holdMillis: Long = AlertRules.HOLD_MILLIS,
     /** True: a touch that a child (a button of the banner) already consumed never starts the hold. */
     ignoreConsumed: Boolean = false,
+    /** The finger went down on the node (before any tap or hold is known): the first touch of the person on it. */
+    onPress: () -> Unit = {},
     onTap: () -> Unit = {},
     onArmed: () -> Unit = {},
     onDone: () -> Unit,
     onCancel: () -> Unit = {},
 ): Modifier {
     val haptics = LocalHapticFeedback.current
+    val press by rememberUpdatedState(onPress)
     val tap by rememberUpdatedState(onTap)
     val armedCallback by rememberUpdatedState(onArmed)
     val done by rememberUpdatedState(onDone)
@@ -110,6 +117,7 @@ fun Modifier.alertHoldGesture(
             // The touch is OURS from here: consumed like a plain click would (review of #275, m2): the double tap that switches the camera, a parent of the shutter, must never see
             // two quick photos as its own double tap.
             down.consume()
+            press()
             val origin = down.position
 
             fun PointerInputChange.tooFar(): Boolean =
@@ -139,7 +147,7 @@ fun Modifier.alertHoldGesture(
                 return@awaitEachGesture
             }
             if (first == Ended.CANCELLED) return@awaitEachGesture
-            // Phase 2, "Holding": the screen is in alert mode, the bar fills up.
+            // Phase 2, "Holding": the screen is in alert mode, the bar fills up. The finger is FREE to leave the node: only its release ends the hold (no distance check here).
             state.armed = true
             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
             armedCallback()
@@ -147,7 +155,7 @@ fun Modifier.alertHoldGesture(
                 withTimeoutOrNull(holdMillis) {
                     while (true) {
                         val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
-                        if (!change.pressed || change.tooFar()) break
+                        if (!change.pressed) break
                         change.consume()
                     }
                     Ended.CANCELLED

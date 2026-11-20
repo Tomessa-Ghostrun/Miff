@@ -13,12 +13,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -26,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
@@ -57,7 +59,7 @@ import com.tomessa.miff.ui.theme.textBodyBold14
 import com.tomessa.miff.ui.theme.textBodyBold16
 import com.tomessa.miff.ui.theme.textBodyRegular14
 import com.tomessa.miff.ui.theme.textTitleBold24
-import kotlinx.coroutines.delay
+import com.tomessa.miff.ui.theme.textTitleBold32
 
 /*
  * The pieces of the alert that sit on other screens (docs/tickets/alerte-danger.md 7.1, 7.2, 7.4, 13): the blue bubble of the onboarding, its "En savoir plus" sheet, the red mode
@@ -73,27 +75,23 @@ const val ALERT_BANNER_CALL_TAG = "alert_banner_call"
 const val ALERT_BANNER_SEE_TAG = "alert_banner_see_miff"
 const val ALERT_BANNER_RETRY_TAG = "alert_banner_retry"
 const val ALERT_BANNER_CLOSE_TAG = "alert_banner_close"
+const val ALERT_BANNER_TITLE_TAG = "alert_banner_title"
 
-/** How long the blue bubble stays on its own (ticket 7.1: it must not cover the viewfinder at every opening). */
-const val ALERT_HINT_MILLIS = 6_000L
+/** The most of the screen the banner of an alert in progress may take (the texts scroll inside it beyond that; the Update's bubble stops at 40 %). */
+private const val BANNER_MAX_SCREEN_SHARE = 0.45f
 
 // --- Blue bubble of the onboarding (maquette 01) ---------------------------------------------------------------------------------------------
 
 /**
  * "Touche pour donner de tes nouvelles / Maintiens pour déclarer une alerte" (maquette 01 said "publier une update": reworded by the decision I18N-4C; tutoiement instead of the infinitive: E1). Not blocking, no button but the discreet "En savoir
- * plus", hides itself after about 6 seconds ([ALERT_HINT_MILLIS]) and at the first touch elsewhere (the caller hides it). Announced politely to a screen reader, once.
+ * plus". NO TIMER (decision of the PM, 2026-11-20, recette): it stays until the person's FIRST interaction with the capture button (a press, a hold or a click on it; the caller puts it away and the
+ * phone remembers it, see AlertViewModel.onHintDone), so that a screen reader always has the time to read it. Announced politely to a screen reader, once.
  */
 @Composable
 fun AlertHintBubble(
     onMore: () -> Unit,
-    onGone: () -> Unit,
     modifier: Modifier = Modifier,
-    visibleMillis: Long = ALERT_HINT_MILLIS,
 ) {
-    LaunchedEffect(Unit) {
-        delay(visibleMillis)
-        onGone()
-    }
     Column(
         modifier =
             modifier
@@ -293,8 +291,13 @@ fun AlertBanner(
     // The cross: only where the alert is not active on the server and nothing is in flight (a write under way could still land).
     val closable = sending != null && sending.step != SendStep.SENDING
     val name = miffName?.takeIf { it.isNotBlank() }
+    // HIERARCHY (decision of the PM, 2026-11-20, recette): while the alert is active the title is THE QUESTION of the gesture, twice as big as before (32 sp, the body was 16), and the
+    // sentence under it says how. Only the transition of the end in flight keeps it too (no jump of height); "waiting for a connection to end" and every phase of the SENDING keep the
+    // title that names the Miff, at the size of before.
+    val endQuestion = alert is MyAlert.Active && alert.end != EndStep.WAITING_NETWORK
     val title =
         when {
+            endQuestion -> stringResource(R.string.alert_confirm_end_title)
             sending != null && name != null -> stringResource(R.string.alert_banner_sending, name)
             sending != null -> stringResource(R.string.alert_banner_sending_no_name)
             name != null -> stringResource(R.string.alert_banner_title, name)
@@ -337,11 +340,15 @@ fun AlertBanner(
             }
         }
     val endAction = stringResource(R.string.alert_banner_end_action)
+    // The banner follows the person on every tab: with a big system font (x1.3, x2.0) it must never take the screen. It stops at [BANNER_MAX_SCREEN_SHARE] of the height; beyond that the
+    // texts scroll INSIDE it and the buttons stay pinned at its bottom, so that "Appeler" never leaves the screen.
+    val maxHeight = (LocalConfiguration.current.screenHeightDp * BANNER_MAX_SCREEN_SHARE).dp
     Box(
         modifier =
             modifier
                 .testTag(ALERT_BANNER_TAG)
                 .fillMaxWidth()
+                .heightIn(max = maxHeight)
                 .clip(RoundedCornerShape(10.dp))
                 .background(colorAlertBanner)
                 .alertHoldGesture(
@@ -377,13 +384,18 @@ fun AlertBanner(
                     .padding(end = if (closable) Spacing.minTouchTarget else Spacing.m),
             verticalArrangement = Arrangement.spacedBy(Spacing.xs),
         ) {
-            Text(
-                text = title,
-                style = textBodyBold16,
-                color = colorOnAlert,
-                modifier = Modifier.semantics { heading() },
-            )
-            note?.let { Text(text = it, style = textBodyRegular14, color = colorOnAlert) }
+            Column(
+                modifier = Modifier.weight(1f, fill = false).verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+            ) {
+                Text(
+                    text = title,
+                    style = if (endQuestion) textTitleBold32 else textBodyBold16,
+                    color = colorOnAlert,
+                    modifier = Modifier.semantics { heading() }.testTag(ALERT_BANNER_TITLE_TAG),
+                )
+                note?.let { Text(text = it, style = textBodyRegular14, color = colorOnAlert) }
+            }
             Row(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.m),
                 verticalAlignment = Alignment.CenterVertically,

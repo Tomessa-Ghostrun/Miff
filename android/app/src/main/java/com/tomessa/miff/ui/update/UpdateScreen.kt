@@ -16,8 +16,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -436,7 +434,6 @@ private fun ViewfinderStage(
     val handle = remember { CameraHandle() }
     // ALERTE: the hold of 5 seconds on the shutter. Everything below is inert when [alert] is null.
     val hold = remember { AlertHoldState() }
-    var hintShown by remember { mutableStateOf(true) }
     var infoOpen by remember { mutableStateOf(false) }
     var confirmOpen by remember { mutableStateOf(false) }
     // An alert is already in progress (in ANY Miff): a hold never starts a second one (D14); the person is told calmly, once per hold.
@@ -467,15 +464,6 @@ private fun ViewfinderStage(
                 Modifier
                     .align(Alignment.Center)
                     .size(boxWidth, boxHeight)
-                    // ALERTE: a touch anywhere on the viewfinder puts the blue bubble away (it is not consumed: the buttons and the double tap keep it).
-                    .pointerInput(alert != null) {
-                        if (alert != null) {
-                            awaitEachGesture {
-                                awaitFirstDown(requireUnconsumed = false)
-                                hintShown = false
-                            }
-                        }
-                    }
                     // Two quick taps OUTSIDE the buttons switch the camera, and back. The buttons keep their own taps (they sit above this).
                     .pointerInput(handle) {
                         detectTapGestures(
@@ -552,12 +540,11 @@ private fun ViewfinderStage(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(Spacing.m),
             ) {
-                // ALERTE (maquette 01): the blue bubble of the onboarding, until the person has discovered the gesture (indicator local to the phone). It hides itself after about 6 seconds
-                // and at the first touch; it never covers the shutter and keeps no one from taking a photo.
-                if (alert != null && alert.hintVisible && hintShown && !hold.armed) {
+                // ALERTE (maquette 01): the blue bubble of the onboarding, until the person's FIRST interaction with the capture button (a press, a hold or a click; indicator local to the
+                // phone, decision of the PM 2026-11-20). NO timer: it stays as long as nothing was done with the button, so a screen reader can always read it. It never covers the shutter.
+                if (alert != null && alert.hintVisible && !hold.armed) {
                     AlertHintBubble(
                         onMore = { infoOpen = true },
-                        onGone = { hintShown = false },
                         modifier = Modifier.padding(horizontal = Spacing.l),
                     )
                 }
@@ -582,14 +569,11 @@ private fun ViewfinderStage(
                         alert?.let { hooks ->
                             ShutterHold(
                                 state = hold,
-                                onArmed = {
-                                    // The gesture is discovered: the bubble is done for good. If an alert is already in progress, the person is told calmly (no red mode, nothing starts).
-                                    hooks.onHintDone()
-                                    hintShown = false
-                                    alreadyActive?.let { name -> hooks.onAlreadyActive(name) }
-                                },
+                                // The first interaction with the button (a press, a hold, a click, or the accessible actions): the bubble is done for good.
+                                onInteract = hooks.onHintDone,
+                                // If an alert is already in progress, the person is told calmly (no red mode, nothing starts).
+                                onArmed = { alreadyActive?.let { name -> hooks.onAlreadyActive(name) } },
                                 onDone = { if (alreadyActive == null) hooks.onTrigger() },
-                                onTap = { hintShown = false },
                                 onDeclareAccessible = {
                                     if (alreadyActive !=
                                         null
@@ -666,7 +650,7 @@ private fun boundedBox(
  * shorter than 400 ms is still the photo; a longer one arms the alert (the ring and the disc turn red), and 5 seconds send it. A screen reader gets the action "Déclarer une alerte".
  */
 @Composable
-private fun Shutter(
+internal fun Shutter(
     hold: ShutterHold? = null,
     onPhoto: () -> Unit,
 ) {
@@ -680,20 +664,27 @@ private fun Shutter(
             Modifier
                 .alertHoldGesture(
                     state = hold.state,
-                    onTap = {
-                        hold.onTap()
-                        onPhoto()
-                    },
+                    // A press is already an interaction: the blue bubble goes, whether it ends as a tap (a photo) or as a hold.
+                    onPress = hold.onInteract,
+                    onTap = onPhoto,
                     onArmed = hold.onArmed,
                     onDone = hold.onDone,
                 ).semantics {
                     role = Role.Button
+                    // A screen reader's double tap and its custom action do not go through the finger: they count as the first interaction too.
                     onClick(label = null) {
+                        hold.onInteract()
                         onPhoto()
                         true
                     }
                     customActions =
-                        listOf(CustomAccessibilityAction(declare) { hold.onDeclareAccessible().let { true } })
+                        listOf(
+                            CustomAccessibilityAction(declare) {
+                                hold.onInteract()
+                                hold.onDeclareAccessible()
+                                true
+                            },
+                        )
                 }
         }
     Box(
@@ -717,11 +708,12 @@ private fun Shutter(
 }
 
 /** What the shutter needs for the alert (see [Shutter]). */
-private class ShutterHold(
+internal class ShutterHold(
     val state: AlertHoldState,
+    /** The first interaction with the button, by the finger or by a screen reader (the blue bubble of the onboarding goes for good). */
+    val onInteract: () -> Unit,
     val onArmed: () -> Unit,
     val onDone: () -> Unit,
-    val onTap: () -> Unit,
     val onDeclareAccessible: () -> Unit,
 )
 

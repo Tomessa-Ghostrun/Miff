@@ -29,15 +29,16 @@ Le **drapeau de build** (`BuildConfig.ALERT_DANGER`) est **allumé dans l'APK de
 
 ## Partie 1 : bulle bleue, gestes, annulation (A) (8 min)
 
-1. [ ] Ouvrez l'onglet central (appareil photo) **sur un téléphone où la bulle n'a jamais été vue** (première ouverture après installation) : une **bulle bleue** au-dessus du bouton rond dit « • Touche pour publier une update / • Maintiens pour déclarer une alerte » et propose « En savoir plus ». Elle **disparaît seule au bout d'environ 6 s**, et dès que vous touchez l'écran ailleurs.
-2. [ ] Rouvrez l'onglet : la bulle **revient** (vous n'avez pas encore découvert le geste). Touchez « En savoir plus » : une fiche explique ce que fait l'alerte, ce qu'elle ne fait pas (« Miff n'est pas un service d'urgence »), la position, 7 jours, « notification pas garantie ». « Compris » la ferme.
+1. [ ] Ouvrez l'onglet central (appareil photo) **sur un téléphone où la bulle n'a jamais été vue** (première ouverture après installation) : une **bulle bleue** au-dessus du bouton rond dit « • Touche pour donner de tes nouvelles / • Maintiens pour déclarer une alerte » et propose « En savoir plus ». **Elle ne disparaît pas seule** : attendez une bonne minute, elle est toujours là. **Touchez l'écran ailleurs** (le viseur, le haut de l'écran) : elle reste.
+2. [ ] Changez d'onglet puis revenez sur l'appareil photo : la bulle **est toujours là** (vous n'avez pas encore touché le bouton rond). Touchez « En savoir plus » : une fiche explique ce que fait l'alerte, ce qu'elle ne fait pas (« Miff n'est pas un service d'urgence »), la position, 7 jours, « notification pas garantie ». « Compris » la ferme.
 3. [ ] **Appui court** sur le bouton rond : **une photo est prise** comme avant (aperçu). « Recommencer ».
 4. [ ] **Appui maintenu** : au bout de **0,4 s** l'écran passe en **rouge**, le bouton devient rouge, **« Je suis en danger »** et « Maintiens 5 secondes pour envoyer l'alerte » s'affichent, **un voile rouge monte du bas comme une barre**, de petites vibrations se rapprochent. **Aucune photo n'est prise, rien n'est envoyé.** **Relâchez avant 5 s** : retour immédiat au viseur, **sans message**.
-5. [ ] Recommencez, **faites glisser le doigt loin du bouton** (plus de 48 dp) : annulation silencieuse.
+5. [ ] **Le doigt peut sortir du bouton** (retour de recette) : maintenez le bouton rond jusqu'au rouge (0,4 s), puis, **sans relâcher**, **faites glisser le doigt loin du bouton** (hors du bouton rond, jusqu'au bord de l'écran) : le voile rouge **continue de monter** et, à 5 s, l'alerte part, même si le doigt est ailleurs. Recommencez et **relâchez le doigt hors du bouton** avant 5 s : annulation silencieuse, rien n'est parti. Enfin **posez le doigt hors du bouton** (sur le viseur) et glissez-le sur le bouton rond : **rien ne se déclenche**.
 6. [ ] Recommencez, **mettez l'app en arrière-plan** (bouton accueil) pendant le maintien, puis revenez : rien n'est parti.
 7. [ ] **Appel entrant** pendant le maintien (appelez le téléphone avec un autre) : annulation, rien n'est parti.
-8. [ ] Après ces essais, la bulle bleue **ne revient plus** (le premier maintien l'a validée) ; **elle revient après une réinstallation**.
+8. [ ] **Première interaction avec le bouton rond** (sur un téléphone où la bulle est affichée, après réinstallation) : un **appui court** (photo) **ou** un **appui maintenu** fait **disparaître** la bulle bleue, **dès que le doigt se pose** ; elle **ne revient plus** (même après avoir quitté puis rouvert l'app). **Elle revient après une réinstallation.** (Elle reste aussi après une déconnexion : c'est un repère de l'installation, sans donnée personnelle.)
 9. [ ] **Compte qui a déjà publié avant la mise à jour** : après l'installation, la bulle bleue s'affiche **une fois** (elle ne se base pas sur l'historique).
+9bis. [ ] **TalkBack, bulle bleue** (retour de recette) : TalkBack lit la bulle quand l'onglet s'ouvre ; elle **reste affichée** (aucune minuterie) tant que vous n'avez pas activé le bouton rond (double toucher = photo, ou l'action « Déclarer une alerte ») ; une fois activé, elle disparaît et ne revient pas.
 
 ## Partie 2 : déclencher une alerte (A) puis recevoir (B) (12 min)
 
@@ -51,7 +52,7 @@ Le **drapeau de build** (`BuildConfig.ALERT_DANGER`) est **allumé dans l'APK de
 15. [ ] **Chez B** (règles ET fonction déployées) : une **notification « {Prénom de A} a déclaré une alerte »** (« Prends de ses nouvelles : appelle … ou ouvre Miff ») en moins de 2 minutes, **sans position, sans nom de Miff, sans nom de famille**, canal **« Alertes d'un proche »** (son et bannière). Touchez-la : le Feed de la Miff s'ouvre.
 16. [ ] **Chez B, dans le Feed** : la **carte de A est PREMIÈRE**, **fond rouge**, étiquette **« Alerte en cours »**, « Depuis {heure} », boutons Localiser / Écrire / Appeler. La **bulle de la Miff est rouge**, sa **première page** dit « {Prénom} a déclaré une alerte à {heure} » avec « Appeler » et « Contacter » ; elle **ne dit jamais « Tout va bien »**.
 17. [ ] **Position** : chez B, « Localiser A » montre la dernière position **si B a lui-même publié la sienne**, sinon la phrase neutre habituelle (réciprocité inchangée). **L'alerte n'ajoute aucune demande d'autorisation.**
-18. [ ] **Chez A** : retour (flèche) sur l'écran de l'Update : une **bannière rouge** au-dessus de la barre d'onglets, « Tu as alerté les proches de la Miff {nom}. Maintiens 5 secondes pour terminer l'alerte si tu n'es plus en danger. » avec « Appeler ». Le bouton rond est remonté **au-dessus** de la bannière. Aucune bulle orange/rouge d'encouragement, aucun compte à rebours orange.
+18. [ ] **Chez A** : retour (flèche) sur l'écran de l'Update : une **bannière rouge** au-dessus de la barre d'onglets, avec le titre **« Mettre fin à l'alerte ? » en gros** (deux fois plus gros qu'avant, sur une ou deux lignes), puis « Maintiens 5 secondes pour mettre fin à l'alerte, tes proches sauront que tu es désormais en sécurité » en plus petit, et « Appeler » (inchangé). **Taille de police du téléphone** : testez « Grande » (Réglages > Affichage > Taille de la police) : le titre passe à la ligne, la bannière ne couvre pas plus de la moitié de l'écran, « Appeler » reste visible et le bouton rond reste atteignable. Le bouton rond est remonté **au-dessus** de la bannière. Aucune bulle orange/rouge d'encouragement, aucun compte à rebours orange.
 19. [ ] La bannière est aussi sur le **Feed** et sur le **Profil** (rien de caché derrière : faites défiler jusqu'en bas). Elle **n'est pas** sur l'aperçu d'une photo, ni sur l'écran « avertis ».
 20. [ ] « Appeler » de la bannière **rouvre** l'écran « avertis » (sans renvoyer d'alerte).
 21. [ ] **Un appui maintenu sur le bouton rond alors qu'une alerte est en cours** : **pas de seconde alerte**, le message « Une alerte est déjà en cours pour la Miff {nom} ».
@@ -59,7 +60,7 @@ Le **drapeau de build** (`BuildConfig.ALERT_DANGER`) est **allumé dans l'APK de
 
 ## Partie 3 : terminer l'alerte (A, puis B) (5 min)
 
-23. [ ] A : **maintenez 5 s sur la bannière** (la bannière se remplit d'un voile clair) : « Alerte terminée. Les proches de la Miff {nom} ont été prévenus. », la bannière disparaît. Relâcher avant 5 s : rien.
+23. [ ] A : **maintenez 5 s sur la bannière** (la bannière se remplit d'un voile clair) : « Alerte terminée. Les proches de la Miff {nom} ont été prévenus. », la bannière disparaît. Relâcher avant 5 s : rien. **Même règle que pour le bouton rond** : posez le doigt sur la bannière (pas sur « Appeler »), puis **faites-le glisser hors de la bannière sans relâcher** : le voile continue de se remplir et l'alerte se termine à 5 s ; relâché hors de la bannière avant 5 s : rien.
 24. [ ] B : notification **« {Prénom} a mis fin à son alerte »** (« {Prénom} a indiqué que tout va bien. »), la carte de A **redevient normale**, la bulle aussi.
 25. [ ] **Fin sans réseau** : redéclenchez (voir la limite de 3 par jour), puis coupez les données de A et maintenez la bannière : elle **reste** avec « Fin en attente d'envoi » ; rétablissez le réseau : elle part et la bannière disparaît.
 26. [ ] **Fausse alerte terminée en moins d'une minute, puis nouvelle alerte tout de suite** : l'app **attend calmement** les secondes qui restent (écran « Envoi… »), puis envoie. **Aucun message d'erreur.**
@@ -69,7 +70,7 @@ Le **drapeau de build** (`BuildConfig.ALERT_DANGER`) est **allumé dans l'APK de
 27. [ ] **Déclenchement sans réseau** (mode avion) : l'écran « avertis » dit **« Pas de réseau pour le moment. Ton alerte partira dès que possible. »**, les **numéros restent disponibles** ; la bannière dit « En attente d'envoi ». Désactivez le mode avion : l'alerte part toute seule.
 28. [ ] Mode avion pendant **plus de 15 minutes** (changez l'heure du téléphone de +16 min si besoin), puis réseau : la question **« Veux-tu toujours envoyer ton alerte ? »** (Envoyer / Annuler) : rien ne part avant votre réponse.
 29. [ ] **Alerte en attente : « Annuler l'alerte »** : rien n'est jamais envoyé.
-30. [ ] **TalkBack activé** : sur le bouton rond, l'action **« Déclarer une alerte »** ouvre une fenêtre « Déclarer une alerte à tes proches ? » (Envoyer l'alerte / Annuler) ; sur la bannière, l'action **« Terminer l'alerte »** ouvre une confirmation. Le titre de l'écran « avertis » est lu **en entier**, même avec un nom de Miff très long.
+30. [ ] **TalkBack activé** : sur le bouton rond, l'action **« Déclarer une alerte »** ouvre une fenêtre « Déclarer une alerte à tes proches ? » (Envoyer l'alerte / Annuler) ; sur la bannière, l'action **« Terminer l'alerte »** ouvre la confirmation, dont le titre est maintenant **« Mettre fin à l'alerte ? »** (même mot que la bannière). Le titre de l'écran « avertis » est lu **en entier**, même avec un nom de Miff très long.
 31. [ ] **Nom de Miff très long** (40 caractères, avec des emojis et sans espace, renommez la Miff) : le titre reste dans la bulle rose sans déborder.
 32. [ ] **Relancez l'app** pendant une alerte : la bannière **revient**. **Changez de téléphone** (connectez-vous sur un autre appareil, l'ancien est déconnecté) pendant une alerte : le nouveau téléphone **adopte** l'alerte (bannière avec le nom de la Miff, fin possible).
 33. [ ] **Expiration à 7 jours** (à vérifier après coup ou en avançant l'horloge du téléphone de 7 jours) : la bannière disparaît, **aucune notification, aucune ligne spéciale** chez B.
@@ -124,6 +125,8 @@ Le **drapeau de build** (`BuildConfig.ALERT_DANGER`) est **allumé dans l'APK de
 70. [ ] **TalkBack** : à l'ouverture de l'écran « avertis », TalkBack lit d'abord la phrase du titre puis « Appeler » (rien du Feed avant).
 
 ## Retours à noter
+- Le chargement continue-t-il bien quand le doigt sort du bouton (rond et bannière) ? S'arrête-t-il bien au relâchement ?
+- Bannière rouge : le titre en gros est-il lisible sans écraser le reste (taille de police normale et « Grande ») ?
 - Durée du maintien ressentie (400 ms + 5 s) : trop long / trop court ?
 - Livraison de la notification sur OPPO (appli balayée, économie d'énergie) : reçue en combien de temps ?
 - Mode « Ne pas déranger » : l'alerte passe-t-elle ? (Réglages du canal « Alertes d'un proche » : l'autoriser dans Ne pas déranger.)
