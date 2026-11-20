@@ -274,4 +274,30 @@ case "$mode" in
     ;;
 esac
 
+# --- Lecture du journal des notifications du serveur (docs/tickets/centre-notifications-complet.md, CNC-I) : présente en Debug et Internal (témoin positif : le build TestFlight de la recette
+#     du PM), ABSENTE de la publication tant que le PM n'a pas déployé le serveur. Sa passerelle Firestore est derrière la condition de compilation NOTIF_JOURNAL (project.yml : Debug et Internal
+#     oui, Release non) : en Release elle n'est même pas compilée. Marqueur : le nom de sa classe. Pour l'inclure EXPRÈS dans un build de publication (décision du PM, après déploiement des
+#     règles, de la règle d'expiration et des fonctions), MIFF_ALLOW_NOTIF_JOURNAL_IN_RELEASE=1 : jamais un oubli.
+journal_markers=FirestoreNotificationJournal
+journal_hits="$(count_strings "$journal_markers")"
+case "$mode" in
+  debug | internal)
+    if [ "${journal_hits:-0}" -eq 0 ]; then
+      fail "Le build ${mode} devrait contenir la lecture du journal des notifications (aucune trace trouvée : le drapeau NOTIF_JOURNAL est-il dans project.yml ?). La recherche de chaînes ne prouve rien."
+    else
+      report "Journal des notifications : présent dans le build ${mode} (${journal_hits} traces, OK)"
+    fi
+    ;;
+  release)
+    if [ "${journal_hits:-0}" -ne 0 ] && [ "${MIFF_ALLOW_NOTIF_JOURNAL_IN_RELEASE:-0}" != "1" ]; then
+      fail "Le build Release contient la lecture du journal des notifications (${journal_hits} trace(s)) : elle doit être absente des builds de diffusion tant que le PM n'a pas déployé le serveur (MIFF_ALLOW_NOTIF_JOURNAL_IN_RELEASE=1 en toute connaissance de cause)."
+      strings -a "$binary" | grep -E "$journal_markers" | head -n 5
+    elif [ "${journal_hits:-0}" -ne 0 ]; then
+      report "Release : le journal des notifications est PRÉSENT (voulu : MIFF_ALLOW_NOTIF_JOURNAL_IN_RELEASE=1)"
+    else
+      report "Release : aucune trace du journal des notifications (OK)"
+    fi
+    ;;
+esac
+
 exit "$failed"

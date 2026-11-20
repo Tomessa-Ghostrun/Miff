@@ -39,7 +39,11 @@ struct AccountDeletionServices {
         let session = environment.session
         let miffStore = FirestoreMiffStore()
         let procedure = AccountDeletion(
-            store: FirestoreAccountDataStore(alertsEnabled: BuildFlavor.includesAlertDanger),
+            store: FirestoreAccountDataStore(
+                alertsEnabled: BuildFlavor.includesAlertDanger,
+                // CNC-I : le journal des notifications du compte est vidé avant son profil (nil dans un build sans la condition `NOTIF_JOURNAL`).
+                journal: environment.notifications.journalGateway
+            ),
             gateway: session.gateway,
             cache: session.cache,
             session: DeviceAccountSession(device: session.device, network: environment.network),

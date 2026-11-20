@@ -14,6 +14,8 @@ final class AccountLocalStorageGuardTests: XCTestCase {
         "Services/Storage/DangerAlertFileStore.swift": "pointeur de l'alerte : teardown, AccountLocalData",
         "Services/Notification/LastVisitFileStore.swift": "dernière image vue des proches : teardown, AccountLocalData",
         "Services/Notification/NotificationCenterFileStore.swift": "centre : teardown, AccountLocalData",
+        "Services/Notification/NotificationJournalCursorFileStore.swift":
+            "curseur du journal du serveur : teardown, AccountLocalData",
         "Services/Notification/NotificationDefaultsStores.swift": "choix : teardown ; carte : AccountLocalData",
         "Services/Notification/NotificationPlanFileStore.swift": "instantané et registre : teardown, AccountLocalData",
         "Services/Notification/NotificationLocalData.swift": "regroupe et efface les stockages des notifications",

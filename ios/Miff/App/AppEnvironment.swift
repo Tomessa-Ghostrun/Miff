@@ -237,6 +237,9 @@ final class AppEnvironment {
         // Un SEUL delegue sur le centre de notifications : celui des messages du serveur ; les rappels locaux (NOTIF-P0) lui sont chaines.
         pushServices.delegate.next = notifs.responseDelegate
         pushServices.sessionProbe.isEnding = { [weak manager] in manager?.ending ?? false }
+        // CNC-I : pendant la fin de la session, le journal du serveur n'est pas lu ; un message du serveur vu au premier plan ou touché écrit sa ligne du centre.
+        notifs.journal.sessionValid = { [weak manager] _ in !(manager?.ending ?? false) }
+        pushServices.hook.onArrival = notifs.pushArrived
         #if ALERT_DANGER
         let directory = miff.directory
         // Un refus du serveur sur mon alerte : l'annuaire est relu (une perte confirmée retire l'alerte, voir `DangerAlertController.onAccessDoubt`).

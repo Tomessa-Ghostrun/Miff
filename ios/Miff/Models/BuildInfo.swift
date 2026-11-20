@@ -62,6 +62,19 @@ enum BuildFlavor {
         #endif
     }
 
+    /// CNC-I (docs/tickets/centre-notifications-complet.md) : la LECTURE du journal des notifications du serveur (`users/{uid}/notifications`) : présente seulement
+    /// quand la condition de compilation `NOTIF_JOURNAL` existe (project.yml : Debug et Internal oui, Release non). Même drapeau que `BuildConfig.NOTIF_JOURNAL`
+    /// d'Android. Éteinte, la passerelle Firestore n'est même pas compilée : rien n'est lu ni supprimé sur le serveur (le reste du centre fonctionne : avatars,
+    /// logo, lignes locales, messages vus au premier plan ou touchés). À allumer en Release SEULEMENT après le déploiement des règles, de la règle d'expiration et des
+    /// fonctions par le PM (ordre du ticket §8.9), avec `MIFF_ALLOW_NOTIF_JOURNAL_IN_RELEASE=1` pour le contrôle des binaires (ios/ci/check-binaries.sh).
+    static var includesNotificationJournal: Bool {
+        #if NOTIF_JOURNAL
+        return true
+        #else
+        return false
+        #endif
+    }
+
     static var includesReviewPrompt: Bool {
         #if REVIEW_PROMPT
         return true

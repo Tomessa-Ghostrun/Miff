@@ -254,6 +254,8 @@ struct MiffHomeHost: View {
         .onChange(of: profile.state) { state in
             if case .ready(let mine) = state, let uid = environment.session.currentUid {
                 memberPreviews.replaceFace(uid: uid, initials: mine.initials, jpeg: mine.avatarJpeg)
+                // CNC-I : et au centre de notifications (la photo de mes propres rappels), toujours sans lecture.
+                environment.notifications.faces.setMine(initials: mine.initials, photo: mine.avatarJpeg)
             }
         }
         // « Accepter » sur une demande reçue : l'offre s'ouvre si besoin ; un lieu accepté fait relire la liste des lieux du Profil.

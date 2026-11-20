@@ -84,7 +84,12 @@ struct FeedTab: View {
         // « Depuis ta dernière visite » : l'image fraîche des proches est comparée à la dernière vue (aucune lecture de plus).
         dependencies.onFreshPicture = environment.notifications.freshPicture
         // Les membres que le Feed a lus servent aussi aux photos de la carte du Profil : aucune lecture de plus.
-        dependencies.onMembers = { miffId, members in memberPreviews.record(miffId: miffId, members: members) }
+        // CNC-I : et au centre de notifications (la photo ou les initiales d'un proche dans ses lignes) : toujours aucune lecture de plus.
+        let faces = environment.notifications.faces
+        dependencies.onMembers = { miffId, members in
+            memberPreviews.record(miffId: miffId, members: members)
+            faces.seedFromFeed(miffId: miffId, members: members)
+        }
         // Les lieux que le Feed a lus servent aussi à la liste des lieux du Profil : aucune lecture de plus.
         dependencies.onPlaces = { miffId, places in profilePlaces.seedFromFeed(miffId: miffId, places: places) }
         // « Tirer pour actualiser » revérifie aussi MA présence : le suivi des lieux s'en charge (une fois par 30 s au plus, rien sans accord).

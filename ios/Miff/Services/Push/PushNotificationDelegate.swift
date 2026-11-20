@@ -45,6 +45,10 @@ final class PushNotificationDelegate: NSObject, UNUserNotificationCenterDelegate
     var onForeground: ((CircleNewsTarget) -> Void)?
     /// La personne a touché la notification (cible validée de forme, pas encore comparée aux Miffs du compte).
     var onTap: ((CircleNewsTarget) -> Void)?
+    /// CNC-I : l'app voit passer un message du serveur (« a donné des nouvelles », début ou fin d'alerte) : au premier plan (`opened` faux : rien n'est
+    /// affiché), ou au toucher sur la notification (`opened` vrai : le système l'avait affichée). La ligne du centre s'écrit ici ; l'hôte vérifie que la Miff est
+    /// celle du compte avant (`PushArrivalRules`).
+    var onArrival: ((PushArrival, _ opened: Bool) -> Void)?
     /// Un autre délégué (les rappels locaux) à qui passer tout ce qui n'est PAS un message du serveur. Faible : il appartient à l'app.
     weak var next: UNUserNotificationCenterDelegate?
 
@@ -52,13 +56,22 @@ final class PushNotificationDelegate: NSObject, UNUserNotificationCenterDelegate
         guard let target = CircleNewsParser.parse(userInfo) else {
             #if ALERT_DANGER
             if CircleAlertParser.parse(userInfo) != nil {
+                noteArrival(userInfo, opened: false)
                 return .present
             }
             #endif
             return .forward
         }
+        noteArrival(userInfo, opened: false)
         onForeground?(target)
         return .suppress
+    }
+
+    /// CNC-I : dit à l'hôte qu'un message du serveur est passé (la ligne du centre ; jamais une bannière : le système ou le Feed parlent déjà).
+    private func noteArrival(_ userInfo: [AnyHashable: Any], opened: Bool) {
+        if let arrival = PushArrivalParser.parse(userInfo) {
+            onArrival?(arrival, opened)
+        }
     }
 
     func routeResponse(userInfo: [AnyHashable: Any], actionIdentifier: String) -> PushResponseRoute {
@@ -70,6 +83,7 @@ final class PushNotificationDelegate: NSObject, UNUserNotificationCenterDelegate
                 guard actionIdentifier == UNNotificationDefaultActionIdentifier else {
                     return .ignore
                 }
+                noteArrival(userInfo, opened: true)
                 onTap?(alert.openTarget)
                 return .open
             }
@@ -80,6 +94,7 @@ final class PushNotificationDelegate: NSObject, UNUserNotificationCenterDelegate
         guard actionIdentifier == UNNotificationDefaultActionIdentifier else {
             return .ignore
         }
+        noteArrival(userInfo, opened: true)
         onTap?(target)
         return .open
     }
