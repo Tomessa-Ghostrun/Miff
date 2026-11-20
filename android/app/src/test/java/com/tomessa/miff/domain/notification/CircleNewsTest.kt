@@ -88,6 +88,34 @@ class CircleNewsTest {
         assertEquals(CircleNewsKeys.trayTag(one), CircleNewsKeys.trayTagOf(CircleNewsKeys.centerId(one)))
     }
 
+    // ---- CNC-A: the identifier of the entry of the journal, carried by the message --------------------------------------------------------
+
+    @Test
+    fun theEntryIdOfTheJournalIsReadFromTheMessage_andIsTheKeyOfTheLine() {
+        val entryId = "u-AbCdEf0123456789xyZ0-uidAuthor1234567890123456789-1700000000000"
+        val news = parse(message(extra = mapOf("entryId" to entryId)), messageId = "0:1699999999999999%abc123")!!
+        assertEquals(entryId, news.entryId)
+        assertEquals("n9|u|uidAuthor1234567890123456789|$entryId", CircleNewsKeys.centerId(news))
+        // the tag of the tray is still found from the key: reading the line takes the notification out of the tray
+        assertEquals(CircleNewsKeys.trayTag(news), CircleNewsKeys.trayTagOf(CircleNewsKeys.centerId(news)))
+        assertEquals(CircleNewsKeys.journalId("uidAuthor1234567890123456789", entryId), CircleNewsKeys.centerId(news))
+    }
+
+    @Test
+    fun withoutAnEntryId_aServerWithoutJournal_theKeyIsTheOneOfToday() {
+        val news = parse(message(), messageId = "0:1699999999999999%abc123")!!
+        assertNull(news.entryId)
+        assertEquals("n9|u|uidAuthor1234567890123456789|0:1699999999999999%abc123", CircleNewsKeys.centerId(news))
+        assertNull(parse(message(extra = mapOf("entryId" to "")))!!.entryId)
+    }
+
+    @Test
+    fun aMalformedEntryIdRejectsTheWholeMessage_strictLikeTheOtherFields() {
+        assertNull(parse(message(extra = mapOf("entryId" to "a|b"))))
+        assertNull(parse(message(extra = mapOf("entryId" to "x/y"))))
+        assertNull(parse(message(extra = mapOf("entryId" to "x".repeat(129)))))
+    }
+
     @Test
     fun theAuthorIdentifierIsOptional_absentOrEmptyMeansNone_butAMalformedOneRejectsTheMessage() {
         assertNull(parse(message(authorUid = null))!!.authorUid)

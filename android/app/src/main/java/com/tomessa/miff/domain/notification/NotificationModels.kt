@@ -71,16 +71,32 @@ enum class NotificationType(
      * (22 h to 7 h, local time of the phone = the time zone of the person), decision of the PM of 2026-11-12.
      */
     N9("n9", NotificationFamily.NEWS, NotificationDestination.FEED, quietAtNight = true),
+
+    /**
+     * CNC-A (ticket docs/tickets/centre-notifications-complet.md): the START of an alert of danger of a loved one ("{Prénom} a déclaré une alerte"). The notification of the system
+     * is shown by the alert presenter (own channel, no switch of its own); this type only gives the alert a LINE of the centre, written when the push arrives and by the journal of
+     * the server. Never planned, no switch, no cap: it is outside [PERIMETER], like [N8] and [C1].
+     */
+    N10("n10", NotificationFamily.CIRCLE, NotificationDestination.FEED, quietAtNight = false),
+
+    /** CNC-A: the END of an alert, by hand ("{Prénom} a mis fin à son alerte"). Same rules as [N10]. */
+    N11("n11", NotificationFamily.CIRCLE, NotificationDestination.FEED, quietAtNight = false),
     ;
 
     companion object {
         fun fromCode(code: String?): NotificationType? = entries.firstOrNull { it.code == code }
 
         /**
-         * The notifications of the perimeter: the ones a phone can SHOW, with a switch in Settings and a channel of the system. [N8] and [C1] are not
-         * (lines of the centre only), so every rule that is about showing, planning, switching or silencing a notification is written over THIS list, never over [entries].
+         * The notifications of the perimeter: the ones a phone can SHOW, with a switch in Settings and a channel of the system. [N8], [C1], [N10] and [N11] are not
+         * (lines of the centre only: the alert has its own presenter and channel), so every rule that is about showing, planning, switching or silencing a notification is written over THIS list, never over [entries].
          */
-        val PERIMETER: List<NotificationType> = entries.filter { it != N8 && it != C1 }
+        val PERIMETER: List<NotificationType> = entries.filter { it != N8 && it != C1 && it != N10 && it != N11 }
+
+        /**
+         * The lines that are about ONE loved one and come from another phone (a push of the server, or the journal of the server): their words and their picture depend on who it
+         * is, resolved when the line is drawn. The only lines the journal can bring.
+         */
+        val ABOUT_A_LOVED_ONE: Set<NotificationType> = setOf(N9, N10, N11)
     }
 }
 
@@ -117,8 +133,8 @@ data class NotificationPreferences(
 
             NotificationType.N9 -> n9
 
-            // In the centre only, no switch of its own: always on.
-            NotificationType.N8, NotificationType.C1 -> true
+            // In the centre only, no switch of its own: always on (the alert has no switch of type, decision D12 of the alert ticket).
+            NotificationType.N8, NotificationType.C1, NotificationType.N10, NotificationType.N11 -> true
         }
 
     /** The type may be produced: the general switch AND its own are on. */
@@ -136,7 +152,7 @@ data class NotificationPreferences(
             NotificationType.N6 -> copy(n6 = on)
             NotificationType.N7 -> copy(n7 = on)
             NotificationType.N9 -> copy(n9 = on)
-            NotificationType.N8, NotificationType.C1 -> this
+            NotificationType.N8, NotificationType.C1, NotificationType.N10, NotificationType.N11 -> this
         }
 
     /**

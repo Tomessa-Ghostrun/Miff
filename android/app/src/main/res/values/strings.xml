@@ -1082,6 +1082,11 @@
     <string name="notif_circle_update_title">%1$s checked in</string>
     <string name="notif_circle_update_body">See it in your Miff.</string>
     <string name="notif_center_circle_update_title">Someone in your circle checked in</string>
+    <!-- CNC-A: the centre lines for an alert when the first name cannot be found (left, deleted account, unreadable card): one whole sentence per key, never "call A loved one". -->
+    <string name="notif_center_alert_start_title_unnamed">Someone in your circle declared an alert</string>
+    <string name="notif_center_alert_start_body_unnamed">Check in with them: contact this loved one or open Miff.</string>
+    <string name="notif_center_alert_end_title_unnamed">Someone in your circle ended their alert</string>
+    <string name="notif_center_alert_end_body_unnamed">They said they\'re okay.</string>
     <string name="notif_settings_section_loved_ones">For your loved ones</string>
     <string name="notif_settings_circle_update">When someone in your circle checks in</string>
     <string name="notif_settings_circle_update_hint">A notification when someone in your Miff posts an update.</string>
