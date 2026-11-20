@@ -42,8 +42,8 @@ final class CenterFacesTests: XCTestCase {
         uids.map { FaceKey(miffId: miff, uid: $0) }
     }
 
-    private func makeFaces(_ reader: FakeReader = FakeReader(), clock: Clock = Clock()) -> CenterFaces {
-        CenterFaces(reader: reader, nowMillis: { clock.now })
+    private func makeFaces(_ reader: FakeReader? = nil, clock: Clock = Clock()) -> CenterFaces {
+        CenterFaces(reader: reader ?? FakeReader(), nowMillis: { clock.now })
     }
 
     // MARK: - Ce que le Feed a déjà lu : zéro lecture
