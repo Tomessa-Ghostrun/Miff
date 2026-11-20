@@ -333,11 +333,16 @@ final class PermissionPrivacyTests: XCTestCase {
 
         // Ton bienveillant, tutoiement, usage COMPLET : quand, qui voit, combien de temps, la position, rien dans la photothèque.
         XCTAssertTrue(french.contains("quand tu ouvres") && french.contains("membres de tes Miffs"))
-        XCTAssertTrue(french.contains("24 h") && french.contains("avec ta position"))
+        XCTAssertTrue(french.contains("24 h") && french.contains("partagent aussi leur position"))
+        XCTAssertTrue(french.contains("avec l'endroit où tu l'as prise") && french.contains("gardé une copie"))
         XCTAssertTrue(french.contains("photothèque"))
         XCTAssertTrue(english.contains("only when you open") && english.contains("members of your Miffs"))
-        XCTAssertTrue(english.contains("24 hours") && english.contains("with your position"))
+        XCTAssertTrue(english.contains("24 hours") && english.contains("also share their location"))
+        XCTAssertTrue(english.contains("where you took it") && english.contains("kept a copy"))
         XCTAssertTrue(english.contains("photo library"))
+        // La photo n'est lisible que d'un membre qui partage aussi sa position (règles Firestore) : jamais « visible des membres » seul.
+        XCTAssertFalse(french.contains("avec ta position"))
+        XCTAssertFalse(english.contains("with your position"))
         // Rien d'alarmiste : pas de point d'exclamation.
         XCTAssertFalse(french.contains("!") || english.contains("!"))
     }
