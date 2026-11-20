@@ -261,7 +261,7 @@ Ce que la personne voit une fois l'onboarding terminé et qu'une Miff existe (de
 ## Barre d'onglets en verre dépoli (ticket TABBAR-GLASS)
 
 Spec : `design/tab-bar-liquid-glass.md`. Tout est dans `ui/main/GlassTabBar.kt` (surface de verre, hôte, bouton central), `ui/theme/GlassTokens.kt` (jetons `tabbar/*`) et `ui/theme/GlassCapability.kt` (quel niveau de verre ce téléphone peut afficher en ce moment).
-- **Trois niveaux** : flou (Android 12 et plus), sans flou à voile dense (avant Android 12, appareil à peu de mémoire, viseur caméra), opaque (économiseur de batterie, animations supprimées, contraste renforcé sur Android 14 et plus). Pas de réglage dans l'app : elle suit le système. **« Réduire la transparence » n'a aucune API publique sur Android.**
+- **Trois niveaux** : flou (Android 12 et plus), sans flou à voile dense (avant Android 12, appareil à peu de mémoire, viseur caméra), opaque (animations supprimées, contraste renforcé sur Android 14 et plus ; **pas l'économiseur de batterie** : décision du PM du 2026-11-20, la barre reste translucide). Pas de réglage dans l'app : elle suit le système. **« Réduire la transparence » n'a aucune API publique sur Android.**
 - **Interrupteur** : `GlassPolicy.BLUR_ALLOWED` ; à `false`, plus aucun flou (ni enregistrement du contenu).
 - **Le contenu passe sous la barre** : `MainTabs` utilise `GlassTabHost` ; tout onglet qui défile doit garder `.padding(bottom = LocalTabBarInset.current)` dans sa colonne défilante (`TabBarInsetRuleTest` le vérifie pour le Feed et le Profil).
 - **Haze** n'est utilisée que dans `GlassTabBar.kt` (plan B : remplacer ce fichier). Version épinglée, module de flou seul, notice : `third_party/licenses/haze-NOTICE.md`.

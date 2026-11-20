@@ -2,16 +2,12 @@ package com.tomessa.miff.ui.theme
 
 import android.app.ActivityManager
 import android.app.UiModeManager
-import android.content.BroadcastReceiver
 import android.content.Context
-import android.content.Intent
-import android.content.IntentFilter
 import android.database.ContentObserver
 import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.os.PowerManager
 import android.provider.Settings
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
@@ -28,14 +24,14 @@ import com.tomessa.miff.ui.splash.ReduceMotion
  * How much "glass" the tab bar may be on this phone right now (design/tab-bar-liquid-glass.md sections 4, 9 and 10).
  * - [BLUR]: the background behind the bar is blurred, plus a veil (Android 12 and up, nothing asked against it).
  * - [NO_BLUR]: nothing is blurred, a denser veil instead (before Android 12, a modest phone, the camera viewfinder).
- * - [OPAQUE]: no transparency at all (battery saver, animations removed, increased contrast).
+ * - [OPAQUE]: no transparency at all (animations removed, increased contrast). The battery saver is deliberately NOT a reason: the PM
+ *   prefers the bar to stay translucent then (decision of 2026-11-20, design/tab-bar-liquid-glass.md section 9).
  */
 enum class GlassLevel { BLUR, NO_BLUR, OPAQUE }
 
 /** What the decision reads from the phone: plain values, so that the rules are testable without a device. */
 data class GlassConditions(
     val sdkInt: Int,
-    val powerSaveMode: Boolean,
     /** "Remove animations" / animation scale at 0. */
     val animationsRemoved: Boolean,
     /** Increased contrast asked in the system (`UiModeManager.getContrast()`, Android 14 and up only: nothing is readable before). */
@@ -55,7 +51,8 @@ object GlassPolicy {
     const val MIN_BLUR_SDK = 31
 
     /**
-     * Opaque first (what the person asked the system for), then "nothing to blur" cases, then the blur. The viewfinder is a
+     * Opaque first (what the person asked the system for: animations removed, increased contrast; NEVER the battery saver, see
+     * [GlassLevel.OPAQUE]), then "nothing to blur" cases, then the blur. The viewfinder is a
      * `SurfaceView`, which cannot be captured, and a blur of a 30 images per second video would heat the phone: the variant ON_PHOTO
      * therefore never blurs (the preview of a still photo gets the same bar, for consistency).
      */
@@ -65,7 +62,6 @@ object GlassPolicy {
         blurAllowed: Boolean = BLUR_ALLOWED,
     ): GlassLevel =
         when {
-            conditions.powerSaveMode -> GlassLevel.OPAQUE
             conditions.animationsRemoved -> GlassLevel.OPAQUE
             conditions.contrastIncreased -> GlassLevel.OPAQUE
             !blurAllowed || conditions.lowRamDevice || conditions.sdkInt < MIN_BLUR_SDK -> GlassLevel.NO_BLUR
@@ -79,7 +75,6 @@ object GlassConditionsReader {
     fun read(context: Context): GlassConditions =
         GlassConditions(
             sdkInt = Build.VERSION.SDK_INT,
-            powerSaveMode = context.getSystemService(PowerManager::class.java)?.isPowerSaveMode == true,
             animationsRemoved = ReduceMotion.isRequested(context),
             contrastIncreased = contrastIncreased(context),
             lowRamDevice = context.getSystemService(ActivityManager::class.java)?.isLowRamDevice == true,
@@ -93,8 +88,8 @@ object GlassConditionsReader {
 }
 
 /**
- * The conditions of the phone, kept up to date while the composition lives: battery saver (system broadcast), animation scale
- * (setting observed), contrast (system listener, Android 14+). No polling. Nothing leaves the phone.
+ * The conditions of the phone, kept up to date while the composition lives: animation scale (setting observed), contrast (system
+ * listener, Android 14+). The battery saver is not watched any more (it no longer changes the bar). No polling. Nothing leaves the phone.
  */
 @Composable
 fun rememberGlassConditions(): GlassConditions {
@@ -103,20 +98,6 @@ fun rememberGlassConditions(): GlassConditions {
     DisposableEffect(context) {
         val refresh = { conditions = GlassConditionsReader.read(context) }
         refresh()
-        val powerReceiver =
-            object : BroadcastReceiver() {
-                override fun onReceive(
-                    context: Context?,
-                    intent: Intent?,
-                ) = refresh()
-            }
-        // A protected system broadcast: delivered to a receiver that is NOT exported, no permission asked.
-        ContextCompat.registerReceiver(
-            context,
-            powerReceiver,
-            IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED),
-            ContextCompat.RECEIVER_NOT_EXPORTED,
-        )
         val animationObserver =
             object : ContentObserver(Handler(Looper.getMainLooper())) {
                 override fun onChange(
@@ -138,7 +119,6 @@ fun rememberGlassConditions(): GlassConditions {
                 null
             }
         onDispose {
-            context.unregisterReceiver(powerReceiver)
             context.contentResolver.unregisterContentObserver(animationObserver)
             contrastWatch?.close()
         }

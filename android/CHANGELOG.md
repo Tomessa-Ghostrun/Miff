@@ -2,6 +2,18 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.54.0] - 2026-11-20 : la barre d'onglets reste translucide en économiseur de batterie
+
+Décision du PM du 2026-11-20 (le PM préfère que la barre reste transparente). Branche `android/tabbar-transparente-economiseur`. Numéro de version : 0.54.0 (`main` est à 0.53.0 ; à renuméroter à la fusion si besoin). **Coût ajouté : 0 €.** Aucun texte à traduire.
+
+### Modifié
+- **L'économiseur de batterie ne rend plus la barre opaque** (Android). Avant : barre pleine blanche dès que le téléphone était en économiseur (y compris celui qui se déclenche tout seul à faible batterie). Maintenant : même verre translucide (flou) qu'en usage normal, sur le Feed et sur le Profil. Les autres replis sont inchangés : animations supprimées et contraste renforcé (Android 14+) = opaque ; Android < 12, appareil à peu de mémoire, viseur caméra = sans flou à voile dense.
+- **Signal supprimé, pas de code mort** (`ui/theme/GlassCapability.kt`) : champ `powerSaveMode` de `GlassConditions`, sa lecture (`PowerManager.isPowerSaveMode`) et l'abonnement à `ACTION_POWER_SAVE_MODE_CHANGED` (un récepteur de moins, plus aucune écoute des changements d'économiseur par la barre).
+- Tests : `GlassPolicyTest` (test des trois replis réécrit sans l'économiseur, `opaqueWinsOverEverythingElse...` sur animations/contraste, **nouveau** `theBatterySaver_noLongerAffectsTheLevel_theBarStaysTranslucent`), `GlassTabBarTest` (la barre reste translucide **et identique** quand l'économiseur est activé app ouverte ; le lecteur ne bouge plus avec l'économiseur). Documentation : `design/tab-bar-liquid-glass.md` (§1, §6 bis, §9, §10, §11, §14), `android/README.md`, listes de recette `docs/qa/checklists/tabbar-*-android-recette-pm.md`. iOS : aucun repli lié à la batterie, rien de modifié.
+
+### Choix assumé (compromis documenté)
+- **Le flou en temps réel coûte un peu de batterie, y compris quand le téléphone économise l'énergie.** Le PM accepte ce petit surcoût pour garder la transparence (zone floutée de 342 x 64 pt, coût faible ; jamais mesuré). **Signal de bascule : des retours de consommation de batterie anormale ou de saccades en économiseur (OPPO) ; réponse prévue : repli « sans flou » (`NO_BLUR`) en économiseur plutôt qu'opaque, ou interrupteur `GlassPolicy.BLUR_ALLOWED`.** Détail dans `design/tab-bar-liquid-glass.md` §10.
+
 ## [0.53.0] - 2026-11-20 : centre de notifications complet : toutes les notifications reçues, avec la photo de la personne ou le logo Miff (CNC-L et CNC-A)
 
 Ticket `docs/tickets/centre-notifications-complet.md` (PR #281, décisions du PM du 2026-11-19). Branche `android/notif-centre`, PR brouillon. Numéro de version : 0.52.0 (`main` est à 0.51.0 ; à renuméroter à la fusion si besoin). **Coût ajouté : 0 € tant que le journal n'est pas déployé ; ensuite environ 0 $ à 1 000 utilisateurs actifs par jour et 3 à 4 $ par mois à 10 000 (hypothèses du ticket, §8.7), une seule requête d'au plus 100 lignes par ouverture, jamais d'écouteur permanent.** **À savoir : la lecture du journal du serveur est derrière un drapeau de build (`BuildConfig.NOTIF_JOURNAL`), allumé dans l'APK de debug et ÉTEINT dans release et releaseLike ; elle ne fonctionne qu'une fois les règles (`users/{uid}/notifications`), la règle TTL et les fonctions `notifierUpdate` / `notifierAlerte` déployées par le PM (sur « oui » explicite, dans l'ordre du ticket : règles + TTL, texte légal publié, fonctions, Android, iOS).** Tout le reste (alertes dans le centre, avatars, logo, lignes locales) marche sans le journal.

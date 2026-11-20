@@ -67,5 +67,5 @@ La barre est **très transparente** (voile blanc 32 % au lieu de 80 %, flou renf
 | 3 | **Risque connu, accepté** : sous une photo **presque noire**, l'icône du Profil se repère **moins bien**. Dites-moi si c'est gênant : on remontera le voile vers 40 % | [ ] |
 | 4 | L'**onglet actif** a une pastille bleu pâle **pleine** avec l'icône bleue bien visible, quel que soit le fond | [ ] |
 | 5 | Le **bouton central** n'a pas changé (plaque blanche, anneau, pastille de couleur) | [ ] |
-| 6 | Activez l'**économiseur de batterie** : la barre redevient **pleine** (blanche, opaque) ; désactivez-le : elle redevient translucide | [ ] |
+| 6 | Activez l'**économiseur de batterie** (décision du PM, 2026-11-20) : la barre **reste translucide** (même verre flou qu'avant), sur le Feed **et** sur le Profil ; elle ne devient plus blanche pleine. (Seules les animations supprimées, ou le contraste renforcé sous Android 14+, la rendent encore pleine.) | [ ] |
 | 7 | Le défilement reste **fluide** (pas de saccade plus qu'avant avec le flou renforcé) : si ça saccade sur l'OPPO, le dire (on repasse à 20 dp ou on coupe le flou : `GlassPolicy.BLUR_ALLOWED`) | [ ] |

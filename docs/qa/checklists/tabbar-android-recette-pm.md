@@ -15,7 +15,7 @@
 
 ## À savoir (pas des défauts)
 - Une barre **translucide** laisse deviner ce qui passe dessous : une carte blanche derrière donne une barre plus claire, une photo sombre une barre plus sombre. C'est le choix du verre (32 %). Pour une barre qui ne dépend jamais de ce qu'il y a dessous, il faudrait une barre **pleine** : à décider ensemble si c'est ce que vous voulez.
-- La barre devient **pleine blanche** quand le téléphone est en économiseur de batterie (y compris l'économiseur qui s'active tout seul à faible batterie sur OPPO) ou quand les animations sont supprimées : c'est le repli prévu pour l'accessibilité et la batterie, cela peut ressembler à un changement d'opacité.
+- La barre devient **pleine blanche** quand les animations sont supprimées : c'est le repli prévu pour l'accessibilité, cela peut ressembler à un changement d'opacité. **Depuis le 2026-11-20 (décision du PM), l'économiseur de batterie (y compris celui qui s'active tout seul à faible batterie sur OPPO) ne la rend plus pleine : elle reste translucide.**
 - Sur l'écran photo (onglet central), la barre est **sombre** par conception.
 
 **Si un rectangle clair est encore visible** : une capture d'écran de la barre sur un fond uni (par exemple le Profil sans rien dessous), avec l'écran de la barre en gros plan, et l'état de l'économiseur de batterie.

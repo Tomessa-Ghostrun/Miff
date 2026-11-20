@@ -67,7 +67,6 @@ class GlassTabBarConstancyTest {
     private val modern =
         GlassConditions(
             sdkInt = 33,
-            powerSaveMode = false,
             animationsRemoved = false,
             contrastIncreased = false,
             lowRamDevice = false,

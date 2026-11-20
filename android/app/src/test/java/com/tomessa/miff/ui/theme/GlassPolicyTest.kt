@@ -1,6 +1,7 @@
 package com.tomessa.miff.ui.theme
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Test
 
 /** The levels of glass (design/tab-bar-liquid-glass.md sections 4, 9 and 10): which phones and settings get blur, a denser veil, or opacity. */
@@ -8,7 +9,6 @@ class GlassPolicyTest {
     private val modern =
         GlassConditions(
             sdkInt = 33,
-            powerSaveMode = false,
             animationsRemoved = false,
             contrastIncreased = false,
             lowRamDevice = false,
@@ -44,9 +44,8 @@ class GlassPolicyTest {
     }
 
     @Test
-    fun batterySaver_animationsRemovedAndIncreasedContrast_giveAnOpaqueBar_onBothVariants() {
+    fun animationsRemovedAndIncreasedContrast_giveAnOpaqueBar_onBothVariants() {
         listOf(
-            modern.copy(powerSaveMode = true),
             modern.copy(animationsRemoved = true),
             modern.copy(contrastIncreased = true),
         ).forEach { conditions ->
@@ -58,14 +57,38 @@ class GlassPolicyTest {
 
     @Test
     fun opaqueWinsOverEverythingElse_evenOnAnOldPhone() {
-        val old = modern.copy(sdkInt = 26, lowRamDevice = true, powerSaveMode = true)
+        val old = modern.copy(sdkInt = 26, lowRamDevice = true, animationsRemoved = true)
         assertEquals(GlassLevel.OPAQUE, level(old, GlassVariant.ON_PHOTO))
+        val oldWithContrast = modern.copy(sdkInt = 26, lowRamDevice = true, contrastIncreased = true)
+        assertEquals(GlassLevel.OPAQUE, level(oldWithContrast, GlassVariant.ON_PHOTO))
+    }
+
+    @Test
+    fun theBatterySaver_noLongerAffectsTheLevel_theBarStaysTranslucent() {
+        // Decision of the PM, 2026-11-20: with the battery saver on, the bar keeps its glass (the PM prefers it translucent).
+        // The saver is not a condition any more: nothing in GlassConditions can carry it, so no setting of the phone can turn it into opacity.
+        val names = GlassConditions::class.java.declaredFields.map { it.name.lowercase() }
+        assertFalse(
+            "no battery signal in the conditions: $names",
+            names.any {
+                "power" in it || "batter" in it ||
+                    "saver" in it
+            },
+        )
+        // A phone with the saver on is, for the policy, a phone with nothing asked: blur on the usual screens, denser veil on the viewfinder.
+        assertEquals(GlassLevel.BLUR, level(modern))
+        assertEquals(GlassLevel.NO_BLUR, level(modern, GlassVariant.ON_PHOTO))
+        // The other fallbacks stay as they were.
+        assertEquals(GlassLevel.OPAQUE, level(modern.copy(animationsRemoved = true)))
+        assertEquals(GlassLevel.OPAQUE, level(modern.copy(contrastIncreased = true)))
+        assertEquals(GlassLevel.NO_BLUR, level(modern.copy(sdkInt = 30)))
+        assertEquals(GlassLevel.NO_BLUR, level(modern.copy(lowRamDevice = true)))
     }
 
     @Test
     fun theSwitch_turnsTheBlurOffEverywhere_withoutMakingTheBarOpaque() {
         assertEquals(GlassLevel.NO_BLUR, level(modern, blurAllowed = false))
-        assertEquals(GlassLevel.OPAQUE, level(modern.copy(powerSaveMode = true), blurAllowed = false))
+        assertEquals(GlassLevel.OPAQUE, level(modern.copy(animationsRemoved = true), blurAllowed = false))
     }
 
     @Test

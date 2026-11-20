@@ -89,7 +89,6 @@ class GlassTabBarTest {
     private val modern =
         GlassConditions(
             sdkInt = 33,
-            powerSaveMode = false,
             animationsRemoved = false,
             contrastIncreased = false,
             lowRamDevice = false,
@@ -289,12 +288,16 @@ class GlassTabBarTest {
             MiffTheme {
                 host("viewfinder", GlassVariant.ON_PHOTO, modern)()
                 host("api30", GlassVariant.LIGHT, modern.copy(sdkInt = 30))()
-                host("saver", GlassVariant.LIGHT, modern.copy(powerSaveMode = true))()
+                host("noAnimations", GlassVariant.LIGHT, modern.copy(animationsRemoved = true))()
             }
         }
         composeRule.waitForIdle()
         assertEquals(
-            listOf("viewfinder" to GlassLevel.NO_BLUR, "api30" to GlassLevel.NO_BLUR, "saver" to GlassLevel.OPAQUE),
+            listOf(
+                "viewfinder" to GlassLevel.NO_BLUR,
+                "api30" to GlassLevel.NO_BLUR,
+                "noAnimations" to GlassLevel.OPAQUE,
+            ),
             seen.distinct(),
         )
     }
@@ -302,19 +305,19 @@ class GlassTabBarTest {
     // --- Fallbacks read from the system ------------------------------------------------------------------------------------------------
 
     @Test
-    fun theReader_seesBatterySaver_andRemovedAnimations_inTheSystem() {
+    fun theReader_seesRemovedAnimations_inTheSystem_butNotTheBatterySaver() {
         val c = context()
         val before = GlassConditionsReader.read(c)
-        assertFalse(before.powerSaveMode)
         assertFalse(before.animationsRemoved)
+        // Decision of the PM, 2026-11-20: the battery saver is not read any more, the conditions do not move when it is switched on.
         shadowOf(c.getSystemService(PowerManager::class.java)).setIsPowerSaveMode(true)
-        assertTrue(GlassConditionsReader.read(c).powerSaveMode)
+        assertEquals(before, GlassConditionsReader.read(c))
         Settings.Global.putFloat(c.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 0f)
         assertTrue(GlassConditionsReader.read(c).animationsRemoved)
     }
 
     @Test
-    fun theBar_becomesOpaque_whenBatterySaverIsSwitchedOnWhileTheAppIsOpen() {
+    fun theBar_staysTranslucent_whenBatterySaverIsSwitchedOnWhileTheAppIsOpen() {
         composeRule.setContent {
             MiffTheme {
                 CompositionLocalProvider(LocalDensity provides Density(density, 1f)) {
@@ -334,13 +337,18 @@ class GlassTabBarTest {
         }
         composeRule.waitForIdle()
         val (x, y) = veilPoint()
-        assertTrue("with nothing asked, the bar is translucent", pixel(x, y) != Color.White.toArgb())
+        val translucent = pixel(x, y)
+        assertTrue("with nothing asked, the bar is translucent", translucent != Color.White.toArgb())
         shadowOf(context().getSystemService(PowerManager::class.java)).setIsPowerSaveMode(true)
         context().sendBroadcast(Intent(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED))
         shadowOf(android.os.Looper.getMainLooper()).idle()
         composeRule.waitForIdle()
         shoot("glass-light-batterysaver")
-        assertColor("opaque with battery saver", Color.White, pixel(x, y), tolerance = 0)
+        assertTrue(
+            "still translucent with battery saver (PM decision, 2026-11-20)",
+            pixel(x, y) != Color.White.toArgb(),
+        )
+        assertEquals("the same glass with battery saver", translucent, pixel(x, y))
     }
 
     // --- The central button ------------------------------------------------------------------------------------------------------------
@@ -459,7 +467,7 @@ class GlassTabBarTest {
                     GlassTabHost(
                         variant = GlassVariant.LIGHT,
                         barVisible = true,
-                        conditions = modern.copy(powerSaveMode = true),
+                        conditions = modern.copy(animationsRemoved = true),
                         bar = { glass ->
                             MainTabBar(config = internal, selected = MainTab.FEED, onSelect = {}, glass = glass)
                         },

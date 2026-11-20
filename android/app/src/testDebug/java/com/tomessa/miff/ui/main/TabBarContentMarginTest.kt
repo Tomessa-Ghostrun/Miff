@@ -79,7 +79,6 @@ class TabBarContentMarginTest {
     private val phoneConditions =
         GlassConditions(
             sdkInt = 33,
-            powerSaveMode = false,
             animationsRemoved = false,
             contrastIncreased = false,
             lowRamDevice = false,
