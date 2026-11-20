@@ -27,9 +27,20 @@ class SettingsDomainTest {
     // --- Languages (decision Q4, criterion A9) -------------------------------------------------------------------------
 
     @Test
-    fun onlyFrenchEnglishAndThePhoneAreOffered_inThisOrder() {
-        assertEquals(listOf(AppLanguage.FRENCH, AppLanguage.ENGLISH, AppLanguage.SYSTEM), AppLanguage.entries.toList())
-        assertEquals(listOf("fr", "en", null), AppLanguage.entries.map { it.tag })
+    fun theSixLanguagesAndThePhoneAreOffered_inTheAlphabeticalOrderOfTheirOwnNames() {
+        assertEquals(
+            listOf(
+                AppLanguage.GERMAN,
+                AppLanguage.ENGLISH,
+                AppLanguage.SPANISH,
+                AppLanguage.FRENCH,
+                AppLanguage.ITALIAN,
+                AppLanguage.PORTUGUESE,
+                AppLanguage.SYSTEM,
+            ),
+            AppLanguage.entries.toList(),
+        )
+        assertEquals(listOf("de", "en", "es", "fr", "it", "pt", null), AppLanguage.entries.map { it.tag })
     }
 
     @Test
@@ -38,14 +49,72 @@ class SettingsDomainTest {
         assertEquals(AppLanguage.FRENCH, AppLanguage.fromTag("fr-FR"))
         assertEquals(AppLanguage.FRENCH, AppLanguage.fromTag("fr_CA"))
         assertEquals(AppLanguage.ENGLISH, AppLanguage.fromTag("en-GB"))
+        assertEquals(AppLanguage.ENGLISH, AppLanguage.fromTag("en-US"))
         assertEquals(AppLanguage.ENGLISH, AppLanguage.fromTag(" EN "))
+        assertEquals(AppLanguage.SPANISH, AppLanguage.fromTag("es"))
+        assertEquals(AppLanguage.SPANISH, AppLanguage.fromTag("es-ES"))
+        assertEquals(AppLanguage.SPANISH, AppLanguage.fromTag("es-MX"))
+        assertEquals(AppLanguage.SPANISH, AppLanguage.fromTag("es-419"))
+        assertEquals(AppLanguage.ITALIAN, AppLanguage.fromTag("it-CH"))
+        assertEquals(AppLanguage.GERMAN, AppLanguage.fromTag("de-AT"))
+        assertEquals(AppLanguage.GERMAN, AppLanguage.fromTag("de_CH"))
+    }
+
+    /** The Portuguese of the app is the one of Portugal (ticket I18N-4L, section 5): a phone in Brazilian Portuguese reads it too, never English. */
+    @Test
+    fun everyPortugueseTagIsThePortugueseOfTheApp() {
+        assertEquals(AppLanguage.PORTUGUESE, AppLanguage.fromTag("pt"))
+        assertEquals(AppLanguage.PORTUGUESE, AppLanguage.fromTag("pt-PT"))
+        assertEquals(AppLanguage.PORTUGUESE, AppLanguage.fromTag("pt-BR"))
+        assertEquals(AppLanguage.PORTUGUESE, AppLanguage.fromTag("pt_BR"))
+    }
+
+    /** Only the languages whose texts are in the build are offered (ticket I18N-4L, review of the lot 3): the others appear by themselves with their texts. */
+    @Test
+    fun onlyTheLanguagesThatAreProvidedAreOffered_thePhoneAlways() {
+        assertEquals(
+            listOf(AppLanguage.ENGLISH, AppLanguage.FRENCH, AppLanguage.SYSTEM),
+            AppLanguage.offered(setOf("fr", "en")),
+        )
+        assertEquals(
+            listOf(AppLanguage.GERMAN, AppLanguage.ENGLISH, AppLanguage.SPANISH, AppLanguage.SYSTEM),
+            AppLanguage.offered(setOf("es", "de", "en")),
+        )
+        assertEquals(listOf(AppLanguage.SYSTEM), AppLanguage.offered(emptySet()))
+        assertEquals(
+            AppLanguage.entries.toList(),
+            AppLanguage.offered(AppLanguage.entries.mapNotNull { it.tag }.toSet()),
+        )
+    }
+
+    /** A language that is not provided is never applied (neither read back nor kept): dates and numbers would follow it while the texts are English. */
+    @Test
+    fun aLanguageThatIsNotProvidedIsNeverApplied() {
+        val provided = setOf("fr", "en")
+        assertEquals(AppLanguage.FRENCH, AppLanguage.fromTag("fr-FR", provided))
+        assertEquals(AppLanguage.SYSTEM, AppLanguage.fromTag("es", provided))
+        assertEquals(AppLanguage.SYSTEM, AppLanguage.fromTag("pt-BR", provided))
+        assertEquals(AppLanguage.SYSTEM, AppLanguage.fromTag("de", provided))
+        assertEquals(AppLanguage.SPANISH, AppLanguage.fromTag("es", provided + "es"))
+    }
+
+    /** The Portuguese of the app is applied as `pt-PT`: ICU gives the European plural rules ("0 dias") to it, the Brazilian ones ("0 dia") to the bare `pt`. */
+    @Test
+    fun portugueseIsAppliedAsThePortugueseOfPortugal_everyOtherLanguageAsItsOwnTag() {
+        assertEquals("pt-PT", AppLanguage.PORTUGUESE.localeTag)
+        assertEquals("pt", AppLanguage.PORTUGUESE.tag)
+        assertEquals(AppLanguage.PORTUGUESE, AppLanguage.fromTag("pt-PT"))
+        AppLanguage.entries.filter { it != AppLanguage.PORTUGUESE }.forEach { assertEquals(it.tag, it.localeTag) }
     }
 
     @Test
     fun anythingElseMeansThePhoneDecides() {
         assertEquals(AppLanguage.SYSTEM, AppLanguage.fromTag(null))
         assertEquals(AppLanguage.SYSTEM, AppLanguage.fromTag(""))
-        assertEquals(AppLanguage.SYSTEM, AppLanguage.fromTag("es-ES"))
+        assertEquals(AppLanguage.SYSTEM, AppLanguage.fromTag("   "))
+        // A language the app does not speak (Dutch, Japanese, a language of a future version) never breaks the screen: the phone decides, English is the fallback.
+        assertEquals(AppLanguage.SYSTEM, AppLanguage.fromTag("nl-NL"))
+        assertEquals(AppLanguage.SYSTEM, AppLanguage.fromTag("ja"))
         assertEquals(AppLanguage.SYSTEM, AppLanguage.fromTag("not a tag at all"))
     }
 

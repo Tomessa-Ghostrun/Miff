@@ -15,11 +15,13 @@ final class MiffConsentWritesTests: XCTestCase {
         return try XCTUnwrap(matching.first)
     }
 
-    func testTheConsentIsVersionThreeInTheFixedWidthFormatAndCoversThePosition() {
-        // LOC-4a : « 2026-11-v03 », la même constante qu'Android ; AAAA-MM-vNN de largeur fixe (les règles comparent des chaînes).
-        XCTAssertEqual(MiffSharingConsent.version, "2026-11-v03")
+    func testTheConsentIsVersionFourInTheFixedWidthFormatAndCoversThePosition() {
+        // CONS-4-I : « 2026-11-v04 », la même constante qu'Android ; AAAA-MM-vNN de largeur fixe (les règles comparent des chaînes).
+        XCTAssertEqual(MiffSharingConsent.version, "2026-11-v04")
         XCTAssertTrue(MiffSharingConsent.isFixedWidth(MiffSharingConsent.version))
         XCTAssertTrue(MiffSharingConsent.coversPosition(MiffSharingConsent.version))
+        // Les versions 03 à 99 couvrent la position ET la photo (seuil des règles, inchangé : décision Q1 du PM).
+        XCTAssertTrue(MiffSharingConsent.coversPosition("2026-11-v03"))
         XCTAssertTrue(MiffSharingConsent.coversPosition("2026-12-v04"))
         XCTAssertTrue(MiffSharingConsent.coversPosition("2027-01-v99"))
         // Les deux anciens textes ne couvrent PAS la position et ne sont pas de largeur fixe.
@@ -34,14 +36,48 @@ final class MiffConsentWritesTests: XCTestCase {
     }
 
     func testARenewalIsDueOnlyForAnOlderKnownText() {
-        for old in ["2026-10-v1", "2026-10-v2", "2026-11-v02", "2025-12-v01", "2026-10-v10"] {
+        // CONS-4-I : « 2026-11-v03 » est désormais plus ancienne que le texte de ce build (elle reçoit la carte « Une précision »).
+        for old in ["2026-10-v1", "2026-10-v2", "2026-11-v02", "2026-11-v03", "2025-12-v01", "2026-10-v10"] {
             XCTAssertTrue(MiffSharingConsent.isRenewalDue(old), old)
         }
         // Le texte en vigueur, un texte plus récent (jamais « renouvelé » en arrière), une forme inconnue, aucune version : rien.
-        for current in [MiffSharingConsent.version, "2026-12-v04", "2027-01-v05", "texte libre", "", "2026-13-v02"] {
+        for current in [MiffSharingConsent.version, "2026-12-v05", "2027-01-v05", "texte libre", "", "2026-13-v02"] {
             XCTAssertFalse(MiffSharingConsent.isRenewalDue(current), current)
         }
         XCTAssertFalse(MiffSharingConsent.isRenewalDue(nil))
+    }
+
+    func testOnlyATextThatDoesNotCoverThePositionPausesTheSharing() {
+        // CA-10 : « l'interface annonce une pause » (pausesSharing) <=> « le suivi est réellement arrêté » (coversPosition faux, texte dû).
+        for stored in ["2026-10-v1", "2026-10-v2", "2026-11-v02", "2025-12-v01"] {
+            XCTAssertTrue(MiffSharingConsent.pausesSharing(stored), stored)
+            XCTAssertFalse(MiffSharingConsent.isClarificationDue(stored), stored)
+        }
+        // La version 3 : texte plus ancien, mais qui couvre la position et la photo : jamais de pause, seulement une précision.
+        XCTAssertFalse(MiffSharingConsent.pausesSharing("2026-11-v03"))
+        XCTAssertTrue(MiffSharingConsent.isClarificationDue("2026-11-v03"))
+        // La version 4 (courante), une plus récente, une forme inconnue, aucune version : rien du tout.
+        for none in [MiffSharingConsent.version, "2026-12-v05", "texte libre", ""] {
+            XCTAssertFalse(MiffSharingConsent.pausesSharing(none), none)
+            XCTAssertFalse(MiffSharingConsent.isClarificationDue(none), none)
+        }
+        XCTAssertFalse(MiffSharingConsent.pausesSharing(nil))
+        XCTAssertFalse(MiffSharingConsent.isClarificationDue(nil))
+    }
+
+    func testForEveryKnownVersionThePauseIsAnnouncedIfAndOnlyIfTheTrackingIsReallyStopped() {
+        let known = [
+            "2026-10-v1", "2026-10-v2", "2026-11-v02", "2026-11-v03", "2026-11-v04", "2026-12-v05", "2027-03-v99",
+        ]
+        for stored in known where MiffSharingConsent.isRenewalDue(stored) {
+            // Le suivi (TrackingEngine) et la photo (FirestorePhotoStore) s'appuient sur `coversPosition`, jamais sur la version courante.
+            XCTAssertEqual(MiffSharingConsent.pausesSharing(stored), !MiffSharingConsent.coversPosition(stored), stored)
+        }
+        // Et jamais les deux à la fois.
+        for stored in known {
+            let both = MiffSharingConsent.pausesSharing(stored) && MiffSharingConsent.isClarificationDue(stored)
+            XCTAssertFalse(both, stored)
+        }
     }
 
     // MARK: - Renouvellement (R-LIEU-3)
@@ -61,7 +97,7 @@ final class MiffConsentWritesTests: XCTestCase {
         XCTAssertEqual(nested["enabled"], .bool(true))
         // La date est celle du serveur, jamais celle du téléphone.
         XCTAssertEqual(nested["consentedAt"], .serverTimestamp)
-        XCTAssertEqual(nested["consentVersion"], .string("2026-11-v03"))
+        XCTAssertEqual(nested["consentVersion"], .string("2026-11-v04"))
         XCTAssertEqual(nested["revokedAt"], .null)
     }
 

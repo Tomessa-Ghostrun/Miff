@@ -1,5 +1,6 @@
 package com.tomessa.miff.ui
 
+import com.tomessa.miff.testsupport.I18nResources
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -97,7 +98,7 @@ class AboutRuleTest {
         assertTrue(french.contains("<string name=\"about_feedback_title\">Un retour sur l\\'app ?</string>"))
         // AP10: nothing about the stores, a note or stars in the line.
         val words = Regex("store|note|étoile|etoile|avis|star|rating|review|play", RegexOption.IGNORE_CASE)
-        listOf("src/main/res/values-fr/strings.xml", "src/main/res/values/strings.xml").forEach { path ->
+        I18nResources.present.map { it.stringsFile.path }.forEach { path ->
             Regex(
                 """<string name="about_feedback_[a-z0-9_]+"[^>]*>([^<]*)</string>""",
             ).findAll(File(path).readText()).forEach {
@@ -129,7 +130,7 @@ class AboutRuleTest {
 
     @Test
     fun theContactAddress_isNeverWrittenInATranslatedText() {
-        listOf("src/main/res/values-fr/strings.xml", "src/main/res/values/strings.xml").forEach { path ->
+        I18nResources.present.map { it.stringsFile.path }.forEach { path ->
             Regex("""<string name="about_[a-z0-9_]+"[^>]*>([^<]*)</string>""").findAll(File(path).readText()).forEach {
                 assertFalse("$path: an about_ text holds an e-mail address", it.groupValues[1].contains("@"))
             }

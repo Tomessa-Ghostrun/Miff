@@ -1,5 +1,6 @@
 package com.tomessa.miff.domain.notification
 
+import com.tomessa.miff.testsupport.I18nResources
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -188,9 +189,9 @@ class NotificationPrivacyTest {
     @Test
     fun theTextsOfTheNotificationsHoldNoNameNoHourNoPlace_criterionNM7() {
         val fr = File("src/main/res/values-fr/strings.xml").readText()
-        val en = File("src/main/res/values/strings.xml").readText()
         listOf("n1", "n2", "n3", "n4", "n6a").forEach { id ->
-            listOf(fr, en).forEach { xml ->
+            // Every language of the registry that has its file (not only French and English): the rule is the same in all of them.
+            I18nResources.present.map { it.text() }.forEach { xml ->
                 listOf("title", "body").forEach { part ->
                     val value =
                         Regex("""<string name="notif_${id}_$part">(.*?)</string>""").find(xml)?.groupValues?.get(1)

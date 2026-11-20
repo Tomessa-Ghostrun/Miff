@@ -1,5 +1,6 @@
 package com.tomessa.miff.domain
 
+import com.tomessa.miff.testsupport.I18nResources
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -163,7 +164,7 @@ class PushPrivacyTest {
         assertTrue(en.contains("""<string name="notif_circle_update_title">%1${'$'}s checked in</string>"""))
         assertTrue(en.contains("""<string name="notif_circle_update_body">See it in your Miff.</string>"""))
         // The body is fixed: no placeholder (no name of a Miff, no place, no hour can slip in).
-        listOf(fr, en).forEach { xml ->
+        I18nResources.present.map { it.text() }.forEach { xml ->
             val body = Regex("""<string name="notif_circle_update_body">(.*?)</string>""").find(xml)!!.groupValues[1]
             assertFalse(body.contains("%"))
         }

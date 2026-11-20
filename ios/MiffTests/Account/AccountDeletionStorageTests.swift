@@ -233,11 +233,15 @@ final class AccountLocalDataTests: XCTestCase {
         notifications.center.seed([NotificationFixtures.item("n1|a", at: 1_000)], uid: "uid-1")
         notifications.secondChance.save(SecondChanceState(firstUpdateSeen: true, answered: false), uid: "uid-1")
         notifications.secondChance.save(SecondChanceState(firstUpdateSeen: true, answered: true), uid: "uid-2")
+        let clarifyAsks = InMemoryClarifyAskStore()
+        clarifyAsks.markShown(uid: "uid-1")
+        clarifyAsks.markShown(uid: "uid-2")
         let erasers = AccountLocalData.erasers(
             AccountLocalStores(
                 notificationAsks: asks, pendingMiffDeletions: pending, activeMiff: active, notifications: cleaner,
                 trackingLocal: tracking, detectionJournal: journal, presenceHistory: history,
-                notificationData: notifications.localData, updateLedger: MemoryPublishLedger()
+                notificationData: notifications.localData, updateLedger: MemoryPublishLedger(),
+                clarifyAsks: clarifyAsks
             )
         )
 
@@ -245,6 +249,8 @@ final class AccountLocalDataTests: XCTestCase {
             await erase("uid-1")
         }
 
+        XCTAssertEqual(clarifyAsks.shownCount(uid: "uid-1"), 0, "le compteur de la carte « Une précision » part")
+        XCTAssertEqual(clarifyAsks.shownCount(uid: "uid-2"), 1, "celui d'un autre compte reste")
         XCTAssertFalse(asks.wasShown(uid: "uid-1"))
         XCTAssertTrue(asks.wasShown(uid: "uid-2"), "le drapeau d'un autre compte n'est pas touché")
         XCTAssertTrue(pending.ids(uid: "uid-1").isEmpty)
