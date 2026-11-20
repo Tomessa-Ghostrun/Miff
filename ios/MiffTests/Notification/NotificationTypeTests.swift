@@ -37,12 +37,12 @@ final class NotificationTypeTests: XCTestCase {
         let catalog = try catalog()
         let expected: [ExpectedTexts] = [
             ExpectedTexts(
-                type: .n1, french: ("Tu es passé orange", "Indique à ta Miff que tout va bien."),
-                english: ("You've turned orange", "Let your Miff know everything's fine.")
+                type: .n1, french: ("Ton statut est passé à l'orange", "Indique à ta Miff que tout va bien."),
+                english: ("Your status has turned orange", "Let your Miff know everything's fine.")
             ),
             ExpectedTexts(
-                type: .n2, french: ("Tu es passé rouge", "Indique à ta Miff que tout va bien."),
-                english: ("You've turned red", "Let your Miff know everything's fine.")
+                type: .n2, french: ("Ton statut est passé au rouge", "Indique à ta Miff que tout va bien."),
+                english: ("Your status has turned red", "Let your Miff know everything's fine.")
             ),
             ExpectedTexts(
                 type: .n3, french: ("Ta Miff est passée en orange", "Prends des nouvelles de tes proches."),
@@ -56,7 +56,7 @@ final class NotificationTypeTests: XCTestCase {
                 type: .n6,
                 french: (
                     "Tu es dans une zone de danger de ta Miff",
-                    "Pendant que tu y es, tes proches voient un état différent."
+                    "Tant que tu es dans cette zone, tes proches voient un état différent."
                 ),
                 english: (
                     "You're in a danger zone of your Miff",

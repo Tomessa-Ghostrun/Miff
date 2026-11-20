@@ -17,7 +17,7 @@ struct PlaceListUi: Equatable, CustomStringConvertible {
     var offersRequests = false
     /// Un membre qui n'est pas le créateur : ses propres demandes en attente (LIEU-REQ-B), la plus récente d'abord ; elles viennent AVANT les lieux.
     var requests: [PlaceRequest] = []
-    /// « Demande envoyée… » / « Ta demande partira dès que tu seras connecté. », montré après la fermeture du formulaire d'une demande.
+    /// « Demande envoyée… » / « Ta demande partira dès que tu auras du réseau. », montré après la fermeture du formulaire d'une demande.
     var requestNotice: RequestNotice?
     /// Le message calme du dernier geste sur une demande (« Demande retirée. »…).
     var requestKind: RequestNoticeKind?

@@ -2,6 +2,29 @@
 
 ## Non publié
 
+### Textes français corrigés (lot 4C iOS, numéro provisoire ; décisions du PM du 2026-11-20, `docs/i18n/corrections-sources-fr-decidees.md`)
+
+Branche `ios/textes-fr-corriges`. **Rien n'est compilé en local** (la CI fait foi). Français et anglais seulement : aucune traduction es / it / pt / de n'est injectée ici.
+
+Ce que le PM doit voir sur l'iPhone : le tutoiement partout (onboarding), des notifications et une Confidentialité qui disent la vérité sur ce qui est envoyé, « Ton statut est passé à l'orange / au rouge », « va bien » à la place de « en sécurité », « En touchant » dans l'inscription, des limites (3 lieux, 3 alertes par jour, 3 demandes, 5 Miffs par lieu) qui s'accordent (« 1 lieu », « 3 lieux »), et le texte de l'appareil photo (la photo n'est visible que des membres qui partagent aussi leur position).
+
+À faire avant la publication (préconditions) :
+- **Journal des notifications** : le nouveau texte de confidentialité des notifications (`notif_privacy_body`) dit que les serveurs gardent **30 jours** une trace technique de chaque notification envoyée. C'est vrai **seulement quand le journal des notifications (backend) est déployé** (déploiement par le PM). Sinon, retirer la phrase « Nos serveurs gardent aussi 30 jours… » avant de publier.
+- **Alerte** : la mention de l'alerte dans ces textes suppose `ALERT_DANGER` actif dans les builds de distribution.
+
+Modifié :
+- **Catalogue** (`Localizable.xcstrings`, fr et en) : 52 clés réécrites (tutoiement, fin des marques de genre, « update » devenu « nouvelles », « En touchant », « en sécurité » devenu « va bien », couleurs et rappels sans reproche, valeurs insérées, phrase d'urgence « appelle les secours (le 112 en Europe) », numéro de téléphone « sans l'indicatif du pays »). Texte système `NSCameraUsageDescription` (`InfoPlist.xcstrings`) : la photo est « partagée avec l'endroit où elle a été prise », visible des seuls membres qui partagent aussi leur position, avec la mention d'une copie possible ; `NSLocationWhenInUseUsageDescription` est inchangé.
+- **Notifications** : `notif_privacy_body` réécrit (ce qui part vers les proches, ce qui reste sur le téléphone, l'identifiant technique, les 30 jours) ; `notif_prime_body` : « Tu peux régler ce que tu reçois dans les réglages, et tout couper à tout moment. » ; `notif_help_lead` : « Pour réactiver les notifications de Miff : » (ce que fait vraiment la réactivation) ; `notif_second_chance_title` et rappels : « Si tu n'as pas le temps de donner de tes nouvelles ».
+- **Photo** : `update_permission_body`, `update_preview_visibility` et `update_preview_visibility_many` disent que seuls les membres qui partagent aussi leur position voient la photo (règles Firestore `photoLocationReadable`).
+- **Valeurs insérées** (aucune nouvelle règle : les constantes existantes) : `place_list_counter_free` (`PlaceLimits.freePlaces`, pluriel à deux valeurs), `alert_quota_title` et `alert_banner_quota` (`DangerAlertRules.maxStartsPerDay`), `place_request_limit_member` (`PlaceRequestLimits.perMember`) et `paywall_free_plan_stays` passent en **pluriel** ; `place_miffs_max_reached` (`PlaceLimits.maxMiffs`) et `place_paywall_limit_title` reçoivent leur valeur. `L10n.plural` accepte maintenant d'autres valeurs après le nombre (et un paquet de langue, pour les tests). Le pluriel à deux valeurs est écrit avec des `substitutions` du catalogue (`%#@arg1@ sur %2$lld`) : **à confirmer par la CI** (test `LimitTextsTests`).
+- **Nouvelle clé** `ios_notif_help_step_2` (étape « Notifications » de l'écran d'aide ; « Mitteilungen » en allemand plus tard) à la place de `notif_help_step_2`, qui reste pour Android.
+- **Clé renommée** `ios_notif_debug_counters` devient `ios_diag_notif_counters` (texte de recette des builds Debug et Internal, jamais traduit ; « Recette, rappels « ta Miff est passée » jugés inutiles : N sur M. »).
+- **Clés non affichées gardées** : `permission_notifications_note`, `settings_privacy_notifications_body` et `place_paywall_limit_title` ne sont affichées par aucun écran iOS ; elles sont **gardées** (texte corrigé) parce que supprimées d'un seul côté elles feraient échouer la parité avec Android. Une PR de nettoyage commune les retirera des deux plateformes.
+- **Tests** : `LimitTextsTests` (nouveau : valeurs et accords lus dans le catalogue compilé fr et en) ; `NotificationTypeTests`, `SessionDeviceLaunchTests`, `UpdatePromptTests` et `PaywallTextsTests` adaptés aux nouveaux textes.
+- **Contrat** : `docs/contracts/i18n-keys.md` (`ios_notif_help_step_2`, `ios_diag_notif_counters`, anciennes clés).
+
+Non corrigé (décisions du PM) : D4 `NSLocationWhenInUseUsageDescription`, D7 messages de l'Alerte, le reste des couleurs, `notif_prime_body` iOS « quand ta Miff change d'état » (à décider), politique de confidentialité (autre PR).
+
 ### Six langues : prérequis de code (I18N-4L lot 3 iOS, numéro provisoire ; ticket `docs/tickets/traduction-es-it-pt-de.md`)
 
 Branche `ios/i18n-lot3`, PR brouillon. **Aucune traduction** (lot 4) : le catalogue n'a ni valeur vide ni texte es / it / pt / de. **Rien n'est compilé en local** (la CI fait foi). Détail : `ios/README.md` (« Six langues »).

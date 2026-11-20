@@ -43,6 +43,6 @@ enum PaywallInformation {
     /// « La formule gratuite reste disponible : 1 Miff et N lieux de confiance. » N est la limite RÉELLEMENT appliquée par l'app
     /// (`PlaceLimits.freePlaces`), jamais un nombre écrit dans le texte : si la limite change, la phrase reste vraie.
     static func freePlanSentence(freePlaces: Int = PlaceLimits.freePlaces) -> String {
-        L10n.format("paywall_free_plan_stays", freePlaces)
+        L10n.plural("paywall_free_plan_stays", count: freePlaces)
     }
 }

@@ -8,7 +8,7 @@ import UIKit
 
 // MARK: - La bulle bleue de l'onboarding (maquette 01)
 
-/// « Touche pour publier une update / Maintiens pour déclarer une alerte » (maquette 01, au tutoiement : écart E1). Non bloquante, sans bouton hormis
+/// « Touche pour donner de tes nouvelles / Maintiens pour déclarer une alerte » (maquette 01, au tutoiement : écart E1). Non bloquante, sans bouton hormis
 /// le discret « En savoir plus », elle se retire d'elle-même après environ 6 secondes et au premier toucher ailleurs (l'appelant la retire). Annoncée
 /// poliment une seule fois au lecteur d'écran.
 struct DangerHintBubble: View {
