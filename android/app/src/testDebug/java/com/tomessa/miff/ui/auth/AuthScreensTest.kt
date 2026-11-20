@@ -369,7 +369,7 @@ class AuthScreensTest {
         val line = notice(R.string.auth_consent_notice)
         assertTrue(
             line,
-            line.startsWith("En touchant sur « Rejoindre »") &&
+            line.startsWith("En touchant « Rejoindre »") &&
                 line.contains("tu acceptes nos Conditions d'utilisation"),
         )
     }

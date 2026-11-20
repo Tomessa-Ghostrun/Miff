@@ -168,8 +168,8 @@
     <string name="android_legal_privacy_path">/fr/confidentialite</string>
 
     <!-- Carrousel de bienvenue et consentement implicite (AUTH-1) -->
-    <string name="auth_consent_notice">En touchant sur « Rejoindre » ou « Continuer avec Google », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d\'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages).</string>
-    <string name="auth_panel_notice">En touchant sur « Continuer », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d\'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages).</string>
+    <string name="auth_consent_notice">En touchant « Rejoindre » ou « Continuer avec Google », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d\'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages).</string>
+    <string name="auth_panel_notice">En touchant « Continuer », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d\'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages).</string>
     <string name="onboarding_headline">Savoir qu’ils vont bien,\nsans les déranger</string>
     <string name="onboarding_start">Commencer</string>
     <string name="onboarding_have_account">J\'ai déjà un compte</string>
@@ -995,7 +995,7 @@
     <string name="update_description_counter_a11y">%1$d caractères sur %2$d</string>
     <string name="update_description_limit">Limite de %1$d caractères atteinte.</string>
     <string name="update_description_shown_a11y">Description : %1$s</string>
-    <string name="update_preview_visibility">Tes proches verront cette photo pendant 24 h.</string>
+    <string name="update_preview_visibility">Tes proches qui partagent aussi leur position verront cette photo pendant 24 h.</string>
     <string name="update_preview_visibility_many">Ta photo sera visible pendant 24 h des membres de tes %1$d Miffs qui partagent aussi leur position.</string>
     <string name="update_preview_place">Publiée avec ta position. Ceux qui partagent aussi la leur peuvent voir où tu l\'as prise.</string>
     <string name="update_preview_stale">Cette photo date un peu : reprends-en une.</string>

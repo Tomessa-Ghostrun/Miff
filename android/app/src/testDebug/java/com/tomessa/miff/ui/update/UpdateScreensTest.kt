@@ -255,7 +255,7 @@ class UpdateScreensTest {
     fun thePreview_saysWhoSeesThePhotoAndThatItGoesWithThePosition_andHasTheThreeButtons() {
         show { Tab(previewOf()) }
         shoot("update-apercu")
-        composeRule.onNodeWithText("Tes proches verront cette photo pendant 24 h.").assertExists()
+        composeRule.onNodeWithText("Tes proches qui partagent aussi leur position verront cette photo pendant 24 h.").assertExists()
         composeRule.onNodeWithText(text(R.string.update_preview_place)).assertExists()
         composeRule.onNodeWithContentDescription("Fermer").assertExists()
         composeRule.onNodeWithContentDescription("Recommencer").assertExists()
@@ -358,7 +358,7 @@ class UpdateScreensTest {
         listOf("Fermer", "Recommencer", "Publier").forEach {
             composeRule.onNodeWithContentDescription(it).assertHeightIsAtLeast(48.dp).assertWidthIsAtLeast(48.dp)
         }
-        composeRule.onNodeWithText("Tes proches verront cette photo pendant 24 h.").assertExists()
+        composeRule.onNodeWithText("Tes proches qui partagent aussi leur position verront cette photo pendant 24 h.").assertExists()
     }
 
     // --- The central button and the bubble ------------------------------------------------------------------------------------------------
