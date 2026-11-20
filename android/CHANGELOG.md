@@ -22,7 +22,8 @@ Ticket `docs/tickets/traduction-es-it-pt-de.md`, procédure `docs/i18n/procedure
 - **Six textes volontairement identiques au français** (exceptions déjà déclarées au registre, une clé à la fois, aucun contrôle désactivé) : allemand « Abonnement », « Adresse » (deux clés), « Profil » ; espagnol « Gris » (deux clés).
 - **Budgets de longueur dépassés** (§6 de chaque `docs/i18n/relectures/lot4c-<langue>.md`) : une forme figée du glossaire n'est jamais raccourcie pour un budget ; ce sont des avertissements, à mesurer sur écran (OPPO, police à 1,3 et 2,0). Espagnol : 10 clés (« En casa de un ser querido », « Lugar que conviene evitar »…) ; italien : 8 (formules d'heure à « ore », « Ha creato la Miff »…) ; portugais : 8 ; allemand : 2 (« Wir erstellen deine Miff… », et un texte lu seulement).
 - **Portugais du Brésil** : un téléphone en `pt-BR` sans choix dans l'app lit le portugais du Portugal avec les règles de pluriel brésiliennes (« 0 dia ») ; en choisissant « Português » dans l'app, l'app applique `pt-PT` (« 0 dias »).
-- **Texte modifié après traduction** : `feed_order_updated_one_a11y` change de français dans les PR FEED-ORDRE-PHOTO (#300 Android, #298 iOS) ; sa traduction sera à revoir à ce moment-là.
+- **Tâche de suite (après la fusion de #300 et #298)** : `feed_order_updated_one_a11y` change de français (« %1$s a publié une photo ») ; ses 4 traductions sont prêtes (es « ha publicado una foto », it « ha pubblicato una foto », pt « publicou uma foto », de « hat ein Foto geteilt ») mais pas injectées ici.
+- **Allemand** : `update_permission_body` dit « teilst » (glossaire G146).
 - **Textes légaux et fiches des stores** : inchangés (français et anglais seulement, ticket §2.2).
 
 ## [0.56.0] - 2026-11-20 : textes français corrigés (tutoiement, ton, exactitude) et limites lues dans les règles, pas écrites en dur (I18N-4C)
