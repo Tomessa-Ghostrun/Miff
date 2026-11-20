@@ -13,6 +13,12 @@ import Foundation
 //   heures de marge pour un téléphone en avance).
 // - Le STATUT ne porte AUCUNE coordonnée et jamais `presence`, `placeId`, `presenceAt` (R-LIEU-1 : le document fusionné les garde) ; il
 //   porte `deviceId` (SESS-3) comme toute écriture de statut.
+// - `photoAt` (ticket FEED-ORDRE-PHOTO, règle `validPhotoAt`) : l'heure du SERVEUR de la dernière photo, qui seule classe les cartes du Feed. Elle
+//   n'est écrite QUE par la mise à jour partielle d'une photo PUBLIÉE (`photoStatus` avec `photoPublished` vrai), jamais par le nettoyage d'une
+//   photo expirée, une arrivée en lieu, la batterie, un voyage ni le statut initial, et jamais avec l'heure du téléphone. REPLI : les règles
+//   doivent être déployées avant cette version ; si elles ne le sont pas, tout le lot est refusé (permission refusée) et `UpdatePublisher`
+//   le rejoue UNE fois sans `photoAt` (`PublishContext.datesPhoto` faux, `DocWrite.removing`) pour ne jamais perdre la photo. Le rejeu écrit
+//   un sous-ensemble de la première tentative (un champ de moins) : il ne contourne aucune règle, un vrai refus est refusé deux fois.
 // - Aucune coordonnée, aucune photo et aucun nom n'est jamais dans un journal, un événement ou un rapport de plantage : `DocWrite`
 //   ne montre que le genre d'écriture.
 
@@ -51,7 +57,9 @@ enum UpdateWrites {
     /// Le statut de la photo : un UPDATE des seuls champs de la photo. `presence`, `placeId`, `presenceAt` et `locationAccess` ne sont PAS
     /// envoyés ; `lastUpdateAt` est l'heure du SERVEUR (c'est le moment de l'update, et ce d'où la couleur repart). `photoPublished` vrai :
     /// une photo est publiée (`hasPhoto = true`, `updateText = null` : pas de texte en v1). Faux : la photo de l'auteur a été retirée parce
-    /// qu'elle a expiré (`hasPhoto = false`), `lastUpdateAt` est alors laissé tel quel. nil si l'identifiant de session est mal formé.
+    /// qu'elle a expiré (`hasPhoto = false`), `lastUpdateAt` ET `photoAt` sont alors laissés tels quels (le rang de la carte dans le Feed
+    /// reste). `photoAt` (FEED-ORDRE-PHOTO) est l'heure du SERVEUR, écrite à côté de `lastUpdateAt` seulement quand une photo est publiée.
+    /// nil si l'identifiant de session est mal formé.
     static func photoStatus(
         miffId: String,
         uid: String,
@@ -69,6 +77,7 @@ enum UpdateWrites {
         ]
         if photoPublished {
             fields["lastUpdateAt"] = .serverTimestamp
+            fields["photoAt"] = .serverTimestamp
             fields["updateText"] = .null
         }
         let stamped = SessionWriteGuard.stamped(fields, deviceId: deviceId)
@@ -99,7 +108,8 @@ enum UpdateWrites {
         ) else {
             return []
         }
-        return [photoWrite, status]
+        // Le repli (règles pas encore déployées) : le même lot, sans la date de la photo.
+        return [photoWrite, context.datesPhoto ? status : status.removing("photoAt")]
     }
 
     /// Le nettoyage par l'auteur d'une photo expirée : la photo est supprimée et le statut dit `hasPhoto = false`.
@@ -122,6 +132,9 @@ struct PublishContext: Equatable, CustomStringConvertible {
     let deviceId: String
     /// Ce que la personne a écrit sous l'aperçu (n'importe quel texte : il est nettoyé à l'écriture, et la clé est omise s'il ne reste rien).
     var photoDescription: String?
+    /// Écrire `photoAt` (FEED-ORDRE-PHOTO) ? Oui, toujours, SAUF au rejeu d'un lot que les règles ont refusé (règles pas encore déployées) :
+    /// la photo ne doit jamais être perdue pour une date de tri.
+    var datesPhoto = true
 
     init(nowMillis: Int, batteryPct: Int?, deviceId: String, photoDescription: String? = nil) {
         self.nowMillis = nowMillis

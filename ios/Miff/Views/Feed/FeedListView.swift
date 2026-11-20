@@ -1,7 +1,7 @@
 import SwiftUI
 import UIKit
 
-// La liste du Feed : les mentions, la bulle, les cartes des membres (de la dernière update la plus récente à la plus ancienne, FEED-ORDRE), puis « Ajouter un proche ». Une seule colonne,
+// La liste du Feed : les mentions, la bulle, les cartes des membres (de la dernière photo publiée la plus récente à la plus ancienne, FEED-ORDRE-PHOTO), puis « Ajouter un proche ». Une seule colonne,
 // un défilement vertical, aucune liste imbriquée. Le contenu commence SOUS l'en-tête (marge haute = sa hauteur) et passe sous la barre
 // d'onglets (la zone sûre qu'elle déclare garde la marge basse). Elle dit à l'écran où est le haut du contenu (pour l'en-tête qui se
 // masque) et accepte « tirer pour actualiser ».
