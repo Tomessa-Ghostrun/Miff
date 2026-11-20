@@ -103,7 +103,7 @@ class ProfilePlacesSectionTest {
     fun member_seesTheNamedTitle_theList_andTheHintWhoSetsThePlaces() {
         var opened: Pair<String, String>? = null
         section(ready(famille, three), myUid = "u2", onOpen = { miff, place -> opened = miff to place })
-        composeRule.onNodeWithText("Lieux de confiance de Famille Martin").assertIsDisplayed()
+        composeRule.onNodeWithText("Les lieux de la Miff").assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.place_list_member_hint)).assertIsDisplayed()
         composeRule.onNodeWithText("Maison de Papa").performClick()
         assertEquals("miff-a" to "p1", opened)
@@ -197,7 +197,7 @@ class ProfilePlacesSectionTest {
     fun creator_keepsAddAndTheCounter_andAddAsksForTheSelectedMiff() {
         var added: String? = null
         section(ready(amis, three), myUid = "u2", onAdd = { added = it })
-        composeRule.onNodeWithText("Lieux de confiance de Les amis").assertIsDisplayed()
+        composeRule.onNodeWithText("Les lieux de la Miff").assertIsDisplayed()
         composeRule.onNodeWithText("3 lieux sur 3 avec la formule gratuite").assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.place_list_add_action)).performClick()
         assertEquals("miff-b", added)
@@ -234,7 +234,7 @@ class ProfilePlacesSectionTest {
             myUid = "u2",
             onRetry = { retried++ },
         )
-        composeRule.onNodeWithText("Lieux de confiance de Famille Martin").assertIsDisplayed()
+        composeRule.onNodeWithText("Les lieux de la Miff").assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.place_profile_unavailable)).assertIsDisplayed()
         composeRule.onAllNodesWithContentDescription("erreur", substring = true, ignoreCase = true).assertCountEquals(0)
         composeRule.onNodeWithText(text(R.string.auth_retry_action)).performClick()
@@ -268,7 +268,7 @@ class ProfilePlacesSectionTest {
                 )
             }
         }
-        val places = composeRule.onNodeWithText("Lieux de confiance de Famille Martin").getUnclippedBoundsInRoot()
+        val places = composeRule.onNodeWithText("Les lieux de la Miff").getUnclippedBoundsInRoot()
         val lastPlace = composeRule.onNodeWithText("Chantier rue Haute").getUnclippedBoundsInRoot()
         val travel = composeRule.onNodeWithText("MARQUEUR-VOYAGE").getUnclippedBoundsInRoot()
         assertTrue("the travel card is under the title of the places", travel.top > places.top)

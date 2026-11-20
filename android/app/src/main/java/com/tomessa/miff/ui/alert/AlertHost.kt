@@ -44,6 +44,16 @@ class AlertUpdateHooks(
     val onOpenEmergency: (stopped: Boolean) -> Unit = {},
 )
 
+/**
+ * "Voir la Miff {nom}" on the banner: it names the Miff of origin now that the title does not. Offered when the Feed shows ANOTHER Miff, and as soon as the person has SEVERAL Miffs
+ * (review of #306: she always sees which circle was alerted).
+ */
+fun shouldOfferSeeMiff(
+    miffCount: Int,
+    shownMiffId: String?,
+    originId: String,
+): Boolean = miffCount > 1 || (shownMiffId != null && shownMiffId != originId)
+
 /** What the tabs need to host the banner and to open the screen of the call. */
 class AlertHost(
     val viewModel: AlertViewModel,

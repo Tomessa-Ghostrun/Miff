@@ -156,6 +156,25 @@ class ShutterOnboardingTest {
         runCatching { assertIsDisplayed() }.isSuccess
 
     @Test
+    fun theBubbleIsOnTheViewfinder_onlyWhileThePhoneHasNotRememberedTheInteraction_andNeverInTheRedMode() {
+        fun hooks(hintVisible: Boolean) =
+            com.tomessa.miff.ui.alert.AlertUpdateHooks(
+                hintVisible = hintVisible,
+                onHintDone = {},
+                targetMiffName = null,
+                several = false,
+                activeAlertMiffName = null,
+                bannerInset = androidx.compose.ui.unit.Dp.Hairline,
+                onTrigger = {},
+                onAlreadyActive = {},
+            )
+        assertTrue(shouldShowHint(hooks(true), armed = false))
+        assertFalse(shouldShowHint(hooks(true), armed = true))
+        assertFalse(shouldShowHint(hooks(false), armed = false))
+        assertFalse(shouldShowHint(null, armed = false))
+    }
+
+    @Test
     fun theShutterWithoutTheAlert_isUntouched_aPlainClickIsAPhoto() {
         var shots = 0
         rule.setContent { Shutter(hold = null, onPhoto = { shots++ }) }

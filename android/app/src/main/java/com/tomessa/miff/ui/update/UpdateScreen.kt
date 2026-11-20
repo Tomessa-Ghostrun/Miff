@@ -542,7 +542,7 @@ private fun ViewfinderStage(
             ) {
                 // ALERTE (maquette 01): the blue bubble of the onboarding, until the person's FIRST interaction with the capture button (a press, a hold or a click; indicator local to the
                 // phone, decision of the PM 2026-11-20). NO timer: it stays as long as nothing was done with the button, so a screen reader can always read it. It never covers the shutter.
-                if (alert != null && alert.hintVisible && !hold.armed) {
+                if (shouldShowHint(alert, hold.armed)) {
                     AlertHintBubble(
                         onMore = { infoOpen = true },
                         modifier = Modifier.padding(horizontal = Spacing.l),
@@ -706,6 +706,12 @@ internal fun Shutter(
         )
     }
 }
+
+/** The blue bubble of the onboarding is on the viewfinder while the phone has not remembered the first interaction with the button, and never while the red mode is on. */
+internal fun shouldShowHint(
+    alert: AlertUpdateHooks?,
+    armed: Boolean,
+): Boolean = alert != null && alert.hintVisible && !armed
 
 /** What the shutter needs for the alert (see [Shutter]). */
 internal class ShutterHold(

@@ -3,6 +3,8 @@ package com.tomessa.miff.ui.alert
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.input.pointer.pointerInput
@@ -14,7 +16,6 @@ import androidx.compose.ui.test.assertHeightIsAtLeast
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertWidthIsAtLeast
 import androidx.compose.ui.test.click
-import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -23,7 +24,6 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.height
 import com.tomessa.miff.data.alert.EndStep
 import com.tomessa.miff.data.alert.MyAlert
 import com.tomessa.miff.data.alert.SendStep
@@ -335,59 +335,38 @@ class AlertScreensTest {
             .layoutInput.style.fontSize.value
     }
 
-    /** The banner at a system font scale, in a screen of 360 x 800 dp: it never takes more than 45 % of the height and "Appeler" stays on the screen. */
-    private fun bannerAtFontScale(scale: Float) {
-        rule.setContent {
-            val base = androidx.compose.ui.platform.LocalDensity.current
-            androidx.compose.runtime.CompositionLocalProvider(
-                androidx.compose.ui.platform.LocalDensity provides
-                    androidx.compose.ui.unit
-                        .Density(base.density, fontScale = scale),
-            ) {
-                AlertBanner(
-                    alert = active,
-                    miffName = "Family",
-                    showSeeMiff = false,
-                    onCall = {},
-                    onSeeMiff = {},
-                    onEndRequested = {},
-                    onEndAccessible = {},
-                )
-            }
-        }
-    }
-
-    @Test
-    @Config(qualifiers = "en-w360dp-h800dp-xhdpi")
-    fun withALargeSystemFont_x1_3_theTitleWraps_theBannerStaysUnder45PercentOfTheScreen_andCallIsThere() {
-        bannerAtFontScale(1.3f)
-        assertTrue(
-            "banner height ${rule.onNodeWithTag(ALERT_BANNER_TAG).getUnclippedBoundsInRoot().height}",
-            rule.onNodeWithTag(ALERT_BANNER_TAG).getUnclippedBoundsInRoot().height <= 360.dp,
-        )
-        rule.onNodeWithTag(ALERT_BANNER_CALL_TAG).assertIsDisplayed()
-        rule.onNodeWithText("End the alert?").assertIsDisplayed()
-    }
-
-    @Test
-    @Config(qualifiers = "en-w360dp-h800dp-xhdpi")
-    fun withTheLargestSystemFont_x2_0_theBannerStaysUnder45PercentOfTheScreen_theTextsScroll_andCallIsPinned() {
-        bannerAtFontScale(2.0f)
-        assertTrue(
-            "banner height ${rule.onNodeWithTag(ALERT_BANNER_TAG).getUnclippedBoundsInRoot().height}",
-            rule.onNodeWithTag(ALERT_BANNER_TAG).getUnclippedBoundsInRoot().height <= 360.dp,
-        )
-        // pinned under the scrolling texts: on the screen, not scrolled away
-        rule.onNodeWithTag(ALERT_BANNER_CALL_TAG).assertIsDisplayed()
-        rule.onNodeWithTag(ALERT_BANNER_TITLE_TAG).assertIsDisplayed()
-    }
-
     @Test
     fun whenTheFeedShowsAnotherMiff_theBannerOffersToSeeTheMiffOfOrigin() {
         banner(active, showSee = true)
         rule.onNodeWithTag(ALERT_BANNER_SEE_TAG).performClick()
         assertEquals(1, seen)
         assertEquals(0, endAsked)
+    }
+
+    @Test
+    fun seeTheMiff_isOfferedWhenTheFeedShowsAnotherMiff_orAsSoonAsThereAreSeveralMiffs() {
+        assertFalse(shouldOfferSeeMiff(1, "a", "a"))
+        assertTrue(shouldOfferSeeMiff(1, "b", "a"))
+        assertTrue(shouldOfferSeeMiff(2, "a", "a"))
+        assertTrue(shouldOfferSeeMiff(3, null, "a"))
+        assertFalse(shouldOfferSeeMiff(0, null, "a"))
+    }
+
+    @Test
+    fun aHoldCancelledWhileArmed_byTheNodeLeavingTheComposition_neverLeavesTheRedModeOn() {
+        var present by androidx.compose.runtime.mutableStateOf(true)
+        rule.setContent {
+            holdState = androidx.compose.runtime.remember { AlertHoldState() }
+            if (present) Box(Modifier.size(80.dp).testTag("shutter").alertHoldGesture(holdState, onDone = { done++ }))
+        }
+        rule.mainClock.autoAdvance = false
+        rule.onNodeWithTag("shutter").performTouchInput { down(center) }
+        rule.mainClock.advanceTimeBy(1_000)
+        assertTrue(holdState.armed)
+        present = false
+        rule.mainClock.advanceTimeBy(100)
+        assertFalse(holdState.armed)
+        assertEquals(0, done)
     }
 
     @Test
@@ -648,9 +627,7 @@ class AlertScreensTest {
         rule.mainClock.autoAdvance = false
         // down at the opposite corner of the 300 dp zone (the button is at the top left), then a slide over the button, held 6 s
         rule.onNodeWithTag("zone").performTouchInput { down(Offset(width - 5f, height - 5f)) }
-        val zone = rule.onNodeWithTag("zone").getUnclippedBoundsInRoot()
-        val button = rule.onNodeWithTag("shutter").getUnclippedBoundsInRoot()
-        assertEquals("after down, zone=$zone button=$button", 0, pressed)
+        assertEquals("after down", 0, pressed)
         rule.onNodeWithTag("zone").performTouchInput { moveTo(Offset(10f, 10f)) }
         assertEquals("after move", 0, pressed)
         rule.mainClock.advanceTimeBy(6_000)

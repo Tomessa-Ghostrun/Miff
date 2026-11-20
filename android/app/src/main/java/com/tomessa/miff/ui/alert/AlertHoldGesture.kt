@@ -149,29 +149,34 @@ fun Modifier.alertHoldGesture(
             if (first == Ended.CANCELLED) return@awaitEachGesture
             // Phase 2, "Holding": the screen is in alert mode, the bar fills up. The finger is FREE to leave the node: only its release ends the hold (no distance check here).
             state.armed = true
-            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-            armedCallback()
-            val second =
-                withTimeoutOrNull(holdMillis) {
-                    while (true) {
-                        val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
-                        if (!change.pressed) break
-                        change.consume()
+            try {
+                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                armedCallback()
+                val second =
+                    withTimeoutOrNull(holdMillis) {
+                        while (true) {
+                            val change = awaitPointerEvent().changes.firstOrNull { it.id == down.id } ?: break
+                            if (!change.pressed) break
+                            change.consume()
+                        }
+                        Ended.CANCELLED
                     }
-                    Ended.CANCELLED
+                if (!state.armed) {
+                    // Reset from outside (background, focus lost): already cancelled.
+                    cancelled()
+                    return@awaitEachGesture
                 }
-            if (!state.armed) {
-                // Reset from outside (background, focus lost): already cancelled.
-                cancelled()
-                return@awaitEachGesture
-            }
-            state.reset()
-            if (second == null) {
-                haptics.performHapticFeedback(HapticFeedbackType.Confirm)
-                done()
-            } else {
-                haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
-                cancelled()
+                state.reset()
+                if (second == null) {
+                    haptics.performHapticFeedback(HapticFeedbackType.Confirm)
+                    done()
+                } else {
+                    haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    cancelled()
+                }
+            } finally {
+                // The coroutine itself was cancelled while armed (the node left the composition, `enabled` changed): never leave the screen in the red mode.
+                if (state.armed) state.reset()
             }
         }
     }

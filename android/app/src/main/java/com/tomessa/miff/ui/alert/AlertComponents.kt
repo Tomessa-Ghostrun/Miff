@@ -77,7 +77,7 @@ const val ALERT_BANNER_RETRY_TAG = "alert_banner_retry"
 const val ALERT_BANNER_CLOSE_TAG = "alert_banner_close"
 const val ALERT_BANNER_TITLE_TAG = "alert_banner_title"
 
-/** The most of the screen the banner of an alert in progress may take (the texts scroll inside it beyond that; the Update's bubble stops at 40 %). */
+/** The most of the screen the banner of an alert in progress, and the blue bubble of the onboarding, may take (the texts scroll inside beyond that; the Update's bubble stops at 40 %). */
 private const val BANNER_MAX_SCREEN_SHARE = 0.45f
 
 // --- Blue bubble of the onboarding (maquette 01) ---------------------------------------------------------------------------------------------
@@ -92,13 +92,17 @@ fun AlertHintBubble(
     onMore: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // It stays until the first interaction, so with a big system font (x2.0) it must never take the screen: at most [BANNER_MAX_SCREEN_SHARE] of the height, the text scrolls inside.
+    val maxHeight = (LocalConfiguration.current.screenHeightDp * BANNER_MAX_SCREEN_SHARE).dp
     Column(
         modifier =
             modifier
                 .testTag(ALERT_HINT_TAG)
+                .heightIn(max = maxHeight)
                 .clip(RoundedCornerShape(10.dp))
                 .background(colorActionPrimary.copy(alpha = 0.92f))
                 .border(2.dp, colorActionPrimary, RoundedCornerShape(10.dp))
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = Spacing.m, vertical = Spacing.s + Spacing.xs),
         verticalArrangement = Arrangement.spacedBy(Spacing.xs),
     ) {
