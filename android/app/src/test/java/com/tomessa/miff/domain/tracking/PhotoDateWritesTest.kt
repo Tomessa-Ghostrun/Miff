@@ -145,4 +145,13 @@ class PhotoDateWritesTest {
                 .toSet()
         assertEquals(setOf("TrackingWrites.kt", "StatusObserver.kt"), namedIn)
     }
+
+    @Test
+    fun photoAtIsReadWithTheUntypedGetter_soAWrongTypeCanNeverBringTheStatusDown() {
+        // No mock library is available to build a DocumentSnapshot: this pins the way the key is read. `get(field, behavior)` returns the raw value (never a cast
+        // exception, unlike getTimestamp), and photoAtMillisOf turns anything that is not a time into "no date" (T14); the rest of the status is read apart.
+        val text = File("src/main/java/com/tomessa/miff/data/feed/StatusObserver.kt").readText()
+        assertTrue(text.contains("photoAtMillisOf(doc.get(\"photoAt\""))
+        assertFalse(text.contains("getTimestamp(\"photoAt\""))
+    }
 }

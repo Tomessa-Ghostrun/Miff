@@ -293,7 +293,7 @@ class UpdatePublisherTest {
         }
 
     @Test
-    fun afterAFallbackThatWorked_thePublisherNoLongerAsksForPhotoAt_untilTheAppRestarts() =
+    fun afterAFallbackThatWorked_thePublisherDoesNotAskForPhotoAtForAnHour_thenAsksAgain() =
         runTest {
             store.failCall = 0
             store.failure = FirebaseFirestoreException("no", FirebaseFirestoreException.Code.PERMISSION_DENIED)
@@ -306,13 +306,63 @@ class UpdatePublisherTest {
             // No doubled transaction: a single call, already without the key.
             assertEquals(3, store.calls)
             assertFalse("photoAt" in statusWrite(store.commits.last()).data)
-            // A new launch (a new publisher) asks again: once the rules are deployed, the date is written.
+            // Just before the hour is over: still without the key.
+            ledger.last = null
+            now = T0 + UpdatePublisher.PHOTO_DATE_RETRY_MILLIS - 1_000L
+            assertEquals(PublishResult.Published(1), same.publish(freshPhoto()))
+            assertEquals(4, store.calls)
+            assertFalse("photoAt" in statusWrite(store.commits.last()).data)
+            // The hour is over and the rules were deployed meanwhile (nothing fails any more): the date is written again, in one call.
+            ledger.last = null
+            now = T0 + UpdatePublisher.PHOTO_DATE_RETRY_MILLIS + 1_000L
+            assertEquals(PublishResult.Published(1), same.publish(freshPhoto()))
+            assertEquals(5, store.calls)
+            assertTrue("photoAt" in statusWrite(store.commits.last()).data)
+            // And it is asked at every publication from now on.
             ledger.last = null
             now += 60_000L
-            assertEquals(PublishResult.Published(1), publisher().publish(photo))
-            assertEquals(4, store.calls)
+            assertEquals(PublishResult.Published(1), same.publish(freshPhoto()))
             assertTrue("photoAt" in statusWrite(store.commits.last()).data)
         }
+
+    @Test
+    fun afterTheHour_ifTheRulesAreStillNotDeployed_theFallbackWorksAgain_andWaitsAnotherHour() =
+        runTest {
+            store.failure = FirebaseFirestoreException("no", FirebaseFirestoreException.Code.PERMISSION_DENIED)
+            store.failCalls = setOf(0, 2) // the first attempt of each of the two publications is refused
+            val same = publisher()
+            assertEquals(PublishResult.Published(1), same.publish(photo))
+            ledger.last = null
+            now = T0 + UpdatePublisher.PHOTO_DATE_RETRY_MILLIS + 1_000L
+            assertEquals(PublishResult.Published(1), same.publish(freshPhoto()))
+            // Calls: 0 refused, 1 plain, 2 refused (asked again after the hour), 3 plain.
+            assertEquals(4, store.calls)
+            assertFalse("photoAt" in statusWrite(store.commits.last()).data)
+            // Waiting another hour: the next one goes straight without the key.
+            ledger.last = null
+            now += 60_000L
+            assertEquals(PublishResult.Published(1), same.publish(freshPhoto()))
+            assertEquals(5, store.calls)
+        }
+
+    @Test
+    fun aNewLaunch_asksForPhotoAtAgainAtOnce() =
+        runTest {
+            store.failCall = 0
+            store.failure = FirebaseFirestoreException("no", FirebaseFirestoreException.Code.PERMISSION_DENIED)
+            assertEquals(PublishResult.Published(1), publisher().publish(photo))
+            ledger.last = null
+            now += 60_000L
+            assertEquals(PublishResult.Published(1), publisher().publish(freshPhoto()))
+            assertEquals(3, store.calls)
+            assertTrue("photoAt" in statusWrite(store.commits.last()).data)
+        }
+
+    /** A photo and a position that are recent at the moment [now] has reached (the guard-rails refuse a photo that waited 5 minutes). */
+    private fun freshPhoto(): UpdatePhoto {
+        position.fix = Fix(48.8566, 2.3522, now - 30_000L)
+        return UpdatePhoto(photo.jpeg, 461, 1024, takenAtMillis = now - 20_000L)
+    }
 
     @Test
     fun aRefusalThatIsNotAboutPhotoAt_isRefusedAgainWithoutIt_endsAsRefused_andIsNotRemembered() =

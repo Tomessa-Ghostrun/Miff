@@ -29,7 +29,7 @@ Le second compte publie une photo (écran Update) pendant que vous êtes sur le 
 | 11 | Revenir sur le Feed depuis l'onglet Update ou Profil, ou depuis une autre app : l'ordre est **déjà à jour**, sans glissement | [ ] |
 | 12 | Tirer pour actualiser : l'ordre à jour apparaît directement, sans attendre | [ ] |
 | 13 | Ma propre photo (écran Update) : au retour sur le Feed, ma carte est **déjà à sa place** (en tête) | [ ] |
-| 14 | **Publication acceptée** : la photo se publie sans message d'erreur **et** votre carte remonte en tête (si la photo part mais que votre carte ne bouge pas, ou si une erreur apparaît, les règles ne sont probablement pas déployées : arrêtez et prévenez-moi) | [ ] |
+| 14 | **Publication acceptée** : la photo se publie sans message d'erreur **et** votre carte remonte en tête (si la photo part mais que votre carte ne bouge pas, ou si une erreur apparaît, les règles ne sont probablement pas déployées : arrêtez et prévenez-moi). **Après le déploiement des règles, fermer complètement l'application puis la relancer** avant ce test : si la photo a déjà été publiée avant le déploiement, l'application évite de redemander la date pendant 1 h, puis la redemande (une carte qui ne remonte pas dans cette heure est normale sans relance) | [ ] |
 
 ## 3. Animations réduites et lecteur d'écran (TalkBack, si vous l'utilisez)
 
