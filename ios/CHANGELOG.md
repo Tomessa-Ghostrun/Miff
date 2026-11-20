@@ -19,6 +19,16 @@ Modifié :
 
 À savoir : plus de risque de fiche annonçant des langues sans texte (`CFBundleLocalizations` ne déclare que fr et en) ; le lot 4 y ajoute es, it, pt, de avec leurs textes.
 
+### Profil : plus d'espace vide énorme sous la carte de la Miff (retour du PM, TestFlight 43)
+
+Ce que le PM doit voir : **sur l'onglet Profil, les pastilles de pagination sont de nouveau juste sous la carte de la Miff (8 pt), et « Répartition de ton temps » et la suite remontent avec elles**. Rien d'autre ne change d'aspect. **Rien n'est compilé en local** (la CI fait foi).
+
+Corrigé :
+- Cause (la plus probable, non vérifiable sans l'appareil) : la hauteur commune des cartes du carrousel était la plus grande hauteur JAMAIS mesurée et ne rétrécissait plus. Une carte mesurée avant d'avoir sa vraie largeur (première mise en page, largeur nulle ou étroite) est très haute (le texte passe à la ligne mot à mot) : cette hauteur transitoire était gardée à vie, d'où les ~200 pt de vide sous la carte.
+- Une carte dont la largeur est inférieure à 100 pt ne publie plus de hauteur (`CarouselCardHeight.minMeasurableWidth`). La mesure porte aussi la largeur : quand la largeur des cartes change (vraie largeur qui arrive, rotation), la hauteur est recalculée, même vers le bas.
+- Inchangé : la hauteur ne rétrécit toujours pas tant que la taille du texte ET la largeur restent les mêmes (pas de clignotement quand « Touche pour ouvrir » devient « 4 membres » ou que les photos arrivent).
+- Tests : `ProfileCarouselHeightTests` (mesure sans largeur ignorée, plus haute carte retenue, hauteur qui suit une nouvelle largeur ou taille de texte, rejeu du cas transitoire, pas de saut à largeur égale).
+
 ### Consentement à la localisation, version 4 (« historique ») : textes corrigés, carte « Une précision » (CONS-4-I, miroir d'Android CONS-4-A) [numéro provisoire : à renuméroter avec Android 0.52.0]
 
 Branche `ios/consentement-v4`, PR brouillon. Ticket `docs/tickets/consentement-localisation-historique.md`, décisions du PM du 2026-11-19 (option D, section 0 : elles priment). Recette : `docs/qa/checklists/consentement-v4-ios-recette-pm.md`. **Dépend de la PR Android #287** (le catalogue `Localizable.xcstrings`, `docs/contracts/i18n-keys.md` et la recette Android y arrivent ; cette branche les contient par fusion). **Rien n'est compilé en local** (poste Windows : la CI fait foi). **Coût ajouté : 0 €** (aucun service, aucune bibliothèque, aucune écriture serveur de plus). **`backend/` n'est pas touché : aucune règle ne change, aucun déploiement** : les règles acceptent toujours « 03 ou plus » (position et photo).
