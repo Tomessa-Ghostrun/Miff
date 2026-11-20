@@ -22630,13 +22630,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You alerted the people of the Miff “%1$@”."
+            "value": "End the alert?"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu as alerté les proches de la Miff %1$@."
+            "value": "Mettre fin à l'alerte ?"
           }
         }
       }
@@ -22647,13 +22647,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hold for 5 seconds to end the alert if you're no longer in danger."
+            "value": "Hold for 5 seconds to end the alert. Your loved ones will know you're now safe"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Maintiens 5 secondes pour terminer l'alerte si tu n'es plus en danger."
+            "value": "Maintiens 5 secondes pour mettre fin à l'alerte, tes proches sauront que tu es désormais en sécurité"
           }
         }
       }
@@ -23017,13 +23017,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You alerted the people of your Miff."
+            "value": "End the alert?"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu as alerté les proches de ta Miff."
+            "value": "Mettre fin à l'alerte ?"
           }
         }
       }

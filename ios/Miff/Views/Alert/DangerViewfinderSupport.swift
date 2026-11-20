@@ -54,17 +54,18 @@ final class DangerViewfinderState: ObservableObject {
     func bind(hooks: DangerUpdateHooks, onPhoto: @escaping () -> Void) {
         current = hooks
         photo = onPhoto
+        // PREMIÈRE INTERACTION avec le bouton de capture (le doigt se pose : clic ou maintien) : la bulle d'onboarding disparaît, pour de bon. Aucune minuterie.
+        hold.onTouchDown = { [weak self] in
+            self?.interacted()
+        }
         hold.onTap = { [weak self] in
-            self?.hintShown = false
             self?.photo()
         }
         hold.onArmed = { [weak self] in
-            // Le geste est découvert : la bulle a fini pour de bon. Si une alerte est déjà en cours, la personne le sait calmement (pas de mode rouge).
+            // Si une alerte est déjà en cours, la personne le sait calmement (pas de mode rouge).
             guard let self, let hooks = self.current else {
                 return
             }
-            hooks.onHintDone()
-            self.hintShown = false
             if hooks.alertInProgress {
                 hooks.onAlreadyActive(hooks.activeAlertMiffName)
             }
@@ -74,6 +75,13 @@ final class DangerViewfinderState: ObservableObject {
                 hooks.onTrigger()
             }
         }
+    }
+
+    /// La première interaction avec le bouton de capture (un doigt posé, ou l'action équivalente d'un lecteur d'écran) : la bulle d'onboarding se retire et
+    /// l'indicateur LOCAL (`alertHintDone`, aucune donnée personnelle) est posé : elle ne revient plus. Sans effet les fois suivantes.
+    func interacted() {
+        hintShown = false
+        current?.onHintDone()
     }
 }
 
@@ -122,7 +130,10 @@ struct DangerShutter: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("update_shutter_a11y"))
         .accessibilityAddTraits(.isButton)
-        .accessibilityAction { onPhoto() }
+        .accessibilityAction {
+            state.interacted()
+            onPhoto()
+        }
         .accessibilityAction(named: Text("alert_shutter_a11y_action")) { declareAccessibly() }
         .modifier(ShutterSwitchAction(action: onSwitchCamera))
         .onAppear { bind() }
@@ -138,6 +149,7 @@ struct DangerShutter: View {
     }
 
     private func declareAccessibly() {
+        state.interacted()
         if hooks.alertInProgress {
             hooks.onAlreadyActive(hooks.activeAlertMiffName)
         } else {
@@ -188,22 +200,20 @@ struct DangerViewfinderLayer: ViewModifier {
     }
 }
 
-/// La bulle bleue au-dessus de l'obturateur, tant que la personne n'a pas découvert le geste. Elle ne couvre jamais l'obturateur et n'empêche personne
-/// de prendre une photo.
+/// La bulle bleue au-dessus de l'obturateur, tant que la personne n'a pas touché le bouton de capture (clic ou maintien : `DangerViewfinderState.interacted`).
+/// Elle ne couvre jamais l'obturateur et n'empêche personne de prendre une photo. Aucune minuterie : elle reste affichée jusqu'à cette interaction.
 struct DangerHintSlot: View {
     @ObservedObject var state: DangerViewfinderState
-    @ObservedObject private var hold: DangerHoldModel
     let hooks: DangerUpdateHooks
 
     init(state: DangerViewfinderState, hooks: DangerUpdateHooks) {
         self.state = state
-        _hold = ObservedObject(wrappedValue: state.hold)
         self.hooks = hooks
     }
 
     var body: some View {
-        if hooks.hintVisible && state.hintShown && !hold.armed {
-            DangerHintBubble(onMore: { state.infoOpen = true }, onGone: { state.hintShown = false })
+        if hooks.hintVisible && state.hintShown {
+            DangerHintBubble(onMore: { state.infoOpen = true })
                 .padding(.horizontal, Spacing.lg)
         }
     }

@@ -9,12 +9,10 @@ import UIKit
 // MARK: - La bulle bleue de l'onboarding (maquette 01)
 
 /// « Touche pour donner de tes nouvelles / Maintiens pour déclarer une alerte » (maquette 01, au tutoiement : écart E1). Non bloquante, sans bouton hormis
-/// le discret « En savoir plus », elle se retire d'elle-même après environ 6 secondes et au premier toucher ailleurs (l'appelant la retire). Annoncée
-/// poliment une seule fois au lecteur d'écran.
+/// le discret « En savoir plus ». AUCUNE minuterie (retour du PM en recette) : elle reste affichée, lisible et annoncée, jusqu'à la première interaction avec le
+/// bouton de capture (clic ou maintien), que l'appelant (`DangerHintSlot`) constate pour la retirer. Annoncée poliment une seule fois au lecteur d'écran.
 struct DangerHintBubble: View {
     let onMore: () -> Void
-    let onGone: () -> Void
-    var visibleSeconds = DangerAlertRules.hintSeconds
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
@@ -44,10 +42,6 @@ struct DangerHintBubble: View {
                 notification: .announcement,
                 argument: L10n.string("alert_hint_tap") + ". " + L10n.string("alert_hint_hold")
             )
-            try? await Task.sleep(nanoseconds: UInt64(visibleSeconds * 1_000_000_000))
-            if !Task.isCancelled {
-                onGone()
-            }
         }
     }
 
