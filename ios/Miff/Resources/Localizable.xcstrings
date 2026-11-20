@@ -10708,7 +10708,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@"
+            "value": "las %1$@"
           }
         },
         "fr": {
@@ -10726,7 +10726,7 @@
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "%1$@"
+            "value": "as %1$@"
           }
         }
       }
@@ -43177,7 +43177,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Deine Liebsten sehen dieses Foto 24 Stunden lang."
+            "value": "Deine Liebsten, die ebenfalls ihren Standort teilen, sehen dieses Foto 24 Stunden lang."
           }
         },
         "en": {
@@ -43189,7 +43189,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tus seres queridos verán esta foto durante 24 h."
+            "value": "Tus seres queridos que también comparten su ubicación verán esta foto durante 24 h."
           }
         },
         "fr": {
@@ -43201,13 +43201,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "I tuoi cari vedranno questa foto per 24 ore."
+            "value": "I tuoi cari che condividono a loro volta la propria posizione vedranno questa foto per 24 ore."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Os teus entes queridos vão ver esta foto durante 24 h."
+            "value": "Os teus entes queridos que também partilham a sua localização vão ver esta foto durante 24 h."
           }
         }
       }
@@ -43218,7 +43218,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dein Foto ist 24 Stunden lang für die Mitglieder deiner %1$lld Miffs sichtbar."
+            "value": "Dein Foto ist 24 Stunden lang für die Mitglieder deiner %1$lld Miffs sichtbar, die ebenfalls ihren Standort teilen."
           }
         },
         "en": {
@@ -43230,7 +43230,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu foto será visible para los miembros de tus %1$lld Miffs durante 24 h."
+            "value": "Tu foto será visible durante 24 h para los miembros de tus %1$lld Miffs que también comparten su ubicación."
           }
         },
         "fr": {
@@ -43242,13 +43242,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "La tua foto sarà visibile ai membri delle tue %1$lld Miff per 24 ore."
+            "value": "La tua foto sarà visibile per 24 ore ai membri delle tue %1$lld Miff che condividono a loro volta la propria posizione."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "A tua foto vai ficar visível para os membros das tuas %1$lld Miffs durante 24 h."
+            "value": "A tua foto vai ficar visível durante 24 h para os membros das tuas %1$lld Miffs que também partilham a sua localização."
           }
         }
       }
@@ -46416,7 +46416,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Falls du mal nicht dazu kommst, dich zu melden, erinnert Miff dich sanft daran und sagt dir Bescheid, wenn sich der Status deiner Miff ändert. Was du bekommst, legst du in den Einstellungen fest."
+            "value": "Falls du mal nicht dazu kommst, dich zu melden, erinnert Miff dich sanft daran und sagt dir Bescheid, wenn der Status deiner Miff auf Orange oder Rot wechselt. Was du bekommst, kannst du in den Einstellungen festlegen, und du kannst jederzeit alles ausschalten."
           }
         },
         "en": {
@@ -46428,7 +46428,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Si no tienes tiempo para dar noticias, Miff te lo recuerda con suavidad, y te avisa cuando tu Miff cambia de estado. Tú eliges lo que recibes en los ajustes."
+            "value": "Si no tienes tiempo para dar noticias, Miff te lo recuerda con suavidad, y te avisa cuando tu Miff pasa a naranja o a rojo. Puedes elegir lo que recibes en los ajustes, y desactivarlo todo en cualquier momento."
           }
         },
         "fr": {
@@ -46440,13 +46440,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se non hai tempo di dare notizie, Miff te lo ricorda con delicatezza e ti avvisa quando la tua Miff cambia stato. Scegli tu cosa ricevere nelle impostazioni."
+            "value": "Se non hai tempo di dare notizie, Miff te lo ricorda con delicatezza e ti avvisa quando la tua Miff passa all’arancione o al rosso. Puoi scegliere cosa ricevere nelle impostazioni e disattivare tutto in qualsiasi momento."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se não tiveres tempo para dar notícias, a Miff lembra-te com delicadeza e diz-te quando a tua Miff muda de estado. Escolhes o que recebes nas definições."
+            "value": "Se não tiveres tempo para dar notícias, a Miff lembra-te com delicadeza e diz-te quando a tua Miff passa a laranja ou a vermelho. Podes escolher o que recebes nas definições e desativar tudo a qualquer momento."
           }
         }
       }
@@ -46785,7 +46785,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Du bekommst keine Erinnerungen."
+            "value": "Du bekommst keine Benachrichtigungen."
           }
         },
         "en": {
@@ -46797,7 +46797,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "No recibirás recordatorios."
+            "value": "No recibirás notificaciones."
           }
         },
         "fr": {
@@ -46809,13 +46809,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Non riceverai promemoria."
+            "value": "Non riceverai notifiche."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Não vais receber lembretes."
+            "value": "Não vais receber notificações."
           }
         }
       }
@@ -47564,7 +47564,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wenn Erinnerungen nicht ankommen"
+            "value": "Wenn Benachrichtigungen nicht ankommen"
           }
         },
         "en": {
@@ -47576,7 +47576,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Si los recordatorios no llegan"
+            "value": "Si las notificaciones no llegan"
           }
         },
         "fr": {
@@ -47588,13 +47588,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se i promemoria non arrivano"
+            "value": "Se le notifiche non arrivano"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se os lembretes não chegarem"
+            "value": "Se as notificações não chegarem"
           }
         }
       }
@@ -47728,7 +47728,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Damit du eine Erinnerung bekommst, falls du mal nicht dazu kommst, dich zu melden:"
+            "value": "Um die Benachrichtigungen von Miff wieder zu aktivieren:"
           }
         },
         "en": {
@@ -47740,7 +47740,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Para recibir un recordatorio cuando no tengas tiempo de dar noticias:"
+            "value": "Para reactivar las notificaciones de Miff:"
           }
         },
         "fr": {
@@ -47752,13 +47752,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Per ricevere un promemoria quando non hai tempo di dare notizie:"
+            "value": "Per riattivare le notifiche di Miff:"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Para receberes um lembrete quando não tiveres tempo para dar notícias:"
+            "value": "Para reativar as notificações da Miff:"
           }
         }
       }
