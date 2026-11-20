@@ -16,7 +16,7 @@ final class AccountLocalStorageGuardTests: XCTestCase {
         "App/AppEnvironment.swift": "branchement des réglages ; rien de plus",
         "App/AppEnvironment+AccountDeletion.swift": "branchement des effaceurs (AccountLocalData)",
         "App/MiffServices.swift": "Miff active (UserDefaultsActiveMiffStore) : AccountLocalData",
-        "Services/Storage/DangerAlertFileStore.swift": Self.dangerStoreNote,
+        "Services/Storage/DangerAlertFileStore.swift": AccountLocalStorageGuardTests.dangerStoreNote,
         "Services/Notification/LastVisitFileStore.swift": "dernière image vue des proches : teardown, AccountLocalData",
         "Services/Notification/NotificationCenterFileStore.swift": "centre : teardown, AccountLocalData",
         "Services/Notification/NotificationDefaultsStores.swift": "choix : teardown ; carte : AccountLocalData",
