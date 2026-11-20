@@ -19,7 +19,7 @@ struct MiffHomeActions {
 ///   n'a qu'une Miff) ; un sélecteur avec « + Rejoindre une Miff » et « + Créer une Miff » pour un compte Premium ;
 /// - la carte « Mes Miffs » qui ouvre l'écran de la Miff (sur Android elle est dans l'onglet Profil : iOS n'a pas encore de
 ///   barre d'onglets, ni de Profil, ni de Réglages) ;
-/// - l'état « Pas encore de Miff » avec « Créer une Miff » et « Rejoindre une Miff ». Le « Tout le monde est en sécurité » vert
+/// - l'état « Pas encore de Miff » avec « Créer une Miff » et « Rejoindre une Miff ». Le « Tout le monde va bien » vert
 ///   de la maquette n'est PAS dessiné : sans Miff, rien n'est connu de personne, et l'app ne dit jamais « tout va bien » quand
 ///   elle ne le sait pas (décision Q12).
 /// Le lien « Se déconnecter » reste ici faute d'écran Réglages sur iOS (voir `ios/README.md`). Sans état propre.

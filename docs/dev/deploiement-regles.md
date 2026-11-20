@@ -82,6 +82,8 @@ La CLI affiche « Deploy complete! » en cas de succès. En cas d'erreur de synt
 
 À utiliser **seulement** si l'application est cassée pour de vrais utilisateurs (par exemple, des refus partout) : l'ancienne version peut contenir les failles corrigées depuis.
 
+**Attention, `photoAt` (FEED-ORDRE-PHOTO)** : **pas de retour arrière des règles une fois que les applications qui écrivent `photoAt` sont en circulation** : revenir à un fichier sans `photoAt` ferait refuser **chaque publication de photo en entier** (clé inconnue de l'ancien schéma fermé). Dans ce cas, corriger en avant, ne pas revenir en arrière (voir « À venir (2026-11-20, FEED-ORDRE-PHOTO) » en tête de ce document et `backend/data-model.md`).
+
 **Méthode A — historique de la console (la plus rapide).** Console Firebase > Firestore Database > **Règles** : Firebase conserve les versions déjà publiées (d'après l'annonce Firebase de 2018 : une colonne d'historique à gauche, une option pour comparer à la dernière version et republier une version plus ancienne). **L'interface a pu changer depuis : à vérifier dans la console.** Si tu retrouves la version précédente (repère : la date notée à l'étape « Avant » n° 5), republie-la avec le bouton de publication.
 
 **Méthode B — redéployer l'ancien fichier depuis le dépôt (toujours possible, ne dépend pas de l'interface).**

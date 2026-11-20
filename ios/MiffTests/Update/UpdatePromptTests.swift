@@ -165,7 +165,7 @@ final class UpdatePromptTests: XCTestCase {
         XCTAssertNotEqual(orange, "update_bubble_orange")
         XCTAssertNotEqual(red, "update_bubble_red")
         XCTAssertTrue(orange.contains("orange") && (red.contains("rouge") || red.contains("turned red")))
-        XCTAssertTrue(orange.contains("publiant une update") || orange.contains("posting an update"))
-        XCTAssertTrue(red.contains("publiant une update") || red.contains("posting an update"))
+        XCTAssertTrue(orange.contains("donnant de tes nouvelles") || orange.contains("sharing your news"))
+        XCTAssertTrue(red.contains("donnant de tes nouvelles") || red.contains("sharing your news"))
     }
 }

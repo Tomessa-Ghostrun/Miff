@@ -3,7 +3,7 @@
 // Clé FACULTATIVE `photoAt` de miffs/{id}/status/{uid} : absente ou nulle ; CONSERVÉE (identique à la base) ; ou NOUVELLE = exactement l'heure du serveur
 // avec `hasPhoto` vrai. Rien d'autre ne change : clés obligatoires, schéma fermé, bornes de lastUpdateAt / presenceAt (R-LIEU-1), budgets de lectures de règles.
 import {
-  ID, T0, DAY, HOUR, suite, assertFails, assertSucceeds, commit, set, update, del, Timestamp, serverTs, inMs,
+  ID, T0, DAY, HOUR, suite, assertFails, assertSucceeds, commit, set, update, del, Timestamp, Blob, serverTs, inMs,
   statusDoc, statusInitial, photoDoc, setConsentV3, DEVICE_A, sessionSeed, SESSION_PATH, sharingOnNow, readRules,
 } from '../helpers/fixtures.js';
 
@@ -121,9 +121,9 @@ s.tc('PA4', 'refus : une NOUVELLE date sans photo annoncée (hasPhoto faux : éc
   if ((await photoAtOf(h)) === OLD_PHOTO.toMillis()) throw new Error('la date devrait avoir été remplacée par celle du serveur');
 });
 
-s.tc('PA5', 'type : texte, nombre, booléen, liste, objet, durée refusés (même identiques à la base) ; null accepté (équivaut à « pas de date »)', async (h) => {
+s.tc('PA5', 'type : texte, nombre, booléen, liste, objet, octets, référence de document refusés (13 valeurs, chacune en mise à jour partielle ET en set : 26 refus ; la durée n’existe pas comme valeur stockable) ; null accepté (équivaut à « pas de date ») ; base corrompue refusée', async (h) => {
   await seed(h);
-  for (const bad of ['2026-11-20T10:00:00Z', 'x', '', 0, 1790000000000, true, false, [], [1, 2], {}, { seconds: 1 }]) {
+  for (const bad of ['2026-11-20T10:00:00Z', 'x', '', 0, 1790000000000, true, false, [], [1, 2], {}, { seconds: 1 }, Blob.fromBase64String('AAAA'), h.db('bob').doc(`${M1}/status/bob`)]) {
     await assertFails(partial(h, { hasPhoto: true, photoAt: bad }));
     await assertFails(full(h, { hasPhoto: true, photoAt: bad }));
   }
