@@ -72,7 +72,7 @@ final class FeedPhotoCardsTests: XCTestCase {
         let content = feed(statuses: ["me": feedPhotoStatus(), "a": feedPhotoStatus()])
 
         let order = content.cards.map { $0.member.uid }
-        XCTAssertEqual(order, ["me", "a"], "mêmes dates : ordre d'arrivée, moi pas forcé en dernier")
+        XCTAssertEqual(order, ["me", "a"], "sans date de photo : ordre d'arrivée, moi pas forcé en dernier")
         XCTAssertEqual(content.card("me")?.photo, .candidate(lastUpdateAtMillis: feedNow - feedMinutes(20)))
     }
 

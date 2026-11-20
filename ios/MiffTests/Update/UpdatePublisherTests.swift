@@ -235,7 +235,8 @@ final class UpdatePublisherTests: XCTestCase {
 
     func testASendingKnownNotToHaveLeftPutsThePreviousNoteBack() async {
         rig.ledger.notePhotoSent(uid: updateUid, millis: 5)
-        rig.store.failures = [firestoreError(FirestoreErrorNumber.permissionDenied)]
+        let denied = firestoreError(FirestoreErrorNumber.permissionDenied)
+        rig.store.failures = [denied, denied]  // refusé avec `photoAt`, rejeu sans, refusé de nouveau
 
         let result = await rig.makePublisher().publish(UpdateFixtures.photo())
 
@@ -251,7 +252,7 @@ final class UpdatePublisherTests: XCTestCase {
             (NSError(domain: "autre", code: 1), .failed)
         ]
         for (error, expected) in cases {
-            rig.store.failures = [error]
+            rig.store.failures = [error, error]  // un refus est rejoué une fois sans `photoAt` : refusé deux fois
             let result = await rig.makePublisher().publish(UpdateFixtures.photo())
 
             XCTAssertEqual(result, expected, "\(error)")

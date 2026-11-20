@@ -112,7 +112,7 @@ final class UpdateDescriptionFlowTests: XCTestCase {
     func testARefusalOfTheRulesWritesNothingAndTheRetryWithTheSameTextGoesThrough() async {
         // Les règles pas encore déployées refusent la clé inconnue : le client dit un refus calme, la photo et le texte restent à l'écran.
         let publisher = makePublisher()
-        rig.store.failures = [firestoreError(FirestoreErrorNumber.permissionDenied)]
+        rig.store.failures = [firestoreError(FirestoreErrorNumber.permissionDenied), firestoreError(FirestoreErrorNumber.permissionDenied)]
 
         let refused = await publisher.publish(UpdateFixtures.photo(), description: "Coucou")
 
@@ -202,7 +202,7 @@ final class UpdateDescriptionFlowTests: XCTestCase {
     }
 
     func testAFailedSendingKeepsThePhotoAndTheTextAndRetryingSendsBoth() async {
-        rig.store.failures = [firestoreError(FirestoreErrorNumber.permissionDenied)]
+        rig.store.failures = [firestoreError(FirestoreErrorNumber.permissionDenied), firestoreError(FirestoreErrorNumber.permissionDenied)]
         let model = makeModel()
         await withPhoto(model)
         model.onDescriptionChanged("Je reviens vite")
