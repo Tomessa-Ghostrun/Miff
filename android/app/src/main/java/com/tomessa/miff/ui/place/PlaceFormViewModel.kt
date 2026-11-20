@@ -188,7 +188,7 @@ class PlaceFormViewModel(
     private val network: NetworkMonitor,
     private val currentUid: () -> String?,
     private val notices: PlaceNotices,
-    /** "fr" or "en": the language of the labels asked of the search service. */
+    /** The language of the app ("fr", "pt"...): the search service maps it to a language it accepts (AddressSearchLanguage). */
     private val language: () -> String,
     /** Request mode (a member who is not the creator proposes a place): true, with the repository of the requests. */
     private val request: Boolean = false,

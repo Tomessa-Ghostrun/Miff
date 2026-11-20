@@ -1,5 +1,6 @@
 package com.tomessa.miff.ui
 
+import com.tomessa.miff.testsupport.I18nResources
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -56,6 +57,8 @@ class FeedColourAloneRuleTest {
         // The label is still a Text inside the merged block of the card, and the header still says the state of the person.
         val cards = source("FeedCards.kt")
         assertTrue(cards.contains("texts.label(card.label)"))
-        assertTrue(File("src/main/res/values-fr/strings.xml").readText().contains("name=\"feed_header_avatar_a11y\""))
+        I18nResources.present.forEach {
+            assertTrue(it.code, it.text().contains("name=\"feed_header_avatar_a11y\""))
+        }
     }
 }

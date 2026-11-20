@@ -136,7 +136,8 @@ fun NavGraphBuilder.placeRoutes(
                                 network = container.networkMonitor,
                                 currentUid = { session.currentUid },
                                 notices = container.placeNotices,
-                                language = { if (Locale.getDefault().language == "fr") "fr" else "en" },
+                                // The language of the app: the service chosen maps it to one it accepts (AddressSearchLanguage).
+                                language = { Locale.getDefault().language },
                                 request = route.request,
                                 requests = container.placeRequestRepository,
                             )

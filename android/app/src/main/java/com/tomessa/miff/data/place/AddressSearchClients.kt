@@ -2,6 +2,7 @@ package com.tomessa.miff.data.place
 
 import com.tomessa.miff.data.session.SessionTeardown
 import com.tomessa.miff.domain.place.AddressSearch
+import com.tomessa.miff.domain.place.AddressSearchLanguage
 import com.tomessa.miff.domain.place.AddressSearchResult
 import com.tomessa.miff.domain.place.AddressSuggestionParser
 import kotlinx.coroutines.CancellationException
@@ -105,7 +106,9 @@ class PhotonAddressSearch(
         query: String,
         language: String,
     ): AddressSearchResult {
-        val url = "$baseUrl?q=${encode(query)}&limit=$LIMIT&lang=${if (language == "fr") "fr" else "en"}"
+        val url = "$baseUrl?q=${encode(
+            query,
+        )}&limit=$LIMIT&lang=${AddressSearchLanguage.forService(language, AddressSearchLanguage.PHOTON)}"
         val body = fetcher.getText(url) ?: return AddressSearchResult.Unavailable
         val suggestions = AddressSuggestionParser.fromPhoton(body) ?: return AddressSearchResult.Unavailable
         return if (suggestions.isEmpty()) AddressSearchResult.NoResults else AddressSearchResult.Found(suggestions)
@@ -133,10 +136,8 @@ class GeoapifyAddressSearch(
         query: String,
         language: String,
     ): AddressSearchResult {
-        val url =
-            "$baseUrl?text=${encode(
-                query,
-            )}&limit=$LIMIT&lang=${if (language == "fr") "fr" else "en"}&format=geojson&apiKey=$apiKey"
+        val lang = AddressSearchLanguage.forService(language, AddressSearchLanguage.GEOAPIFY)
+        val url = "$baseUrl?text=${encode(query)}&limit=$LIMIT&lang=$lang&format=geojson&apiKey=$apiKey"
         val body = fetcher.getText(url) ?: return AddressSearchResult.Unavailable
         val suggestions = AddressSuggestionParser.fromGeoapify(body) ?: return AddressSearchResult.Unavailable
         return if (suggestions.isEmpty()) AddressSearchResult.NoResults else AddressSearchResult.Found(suggestions)
