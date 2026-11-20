@@ -7088,7 +7088,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ hat sich gemeldet"
+            "value": "%@ hat ein Foto geteilt"
           }
         },
         "en": {
@@ -7100,7 +7100,7 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ ha dado noticias"
+            "value": "%@ ha publicado una foto"
           }
         },
         "fr": {
@@ -7112,13 +7112,13 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ ha dato notizie"
+            "value": "%@ ha pubblicato una foto"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ deu notícias"
+            "value": "%@ publicou uma foto"
           }
         }
       }
