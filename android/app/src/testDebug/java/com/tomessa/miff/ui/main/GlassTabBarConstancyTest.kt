@@ -67,7 +67,6 @@ class GlassTabBarConstancyTest {
     private val modern =
         GlassConditions(
             sdkInt = 33,
-            powerSaveMode = false,
             animationsRemoved = false,
             contrastIncreased = false,
             lowRamDevice = false,
@@ -103,12 +102,18 @@ class GlassTabBarConstancyTest {
 
     @Test
     fun theVeilIsOneFixedColour_perLevelAndVariant() {
-        // Light glass: white 32 % (validated by the PM on 2026-11-11) and a blur of 28 dp; then the denser veil and the opaque fill of the fallbacks.
+        // Light glass: white 32 % (validated by the PM on 2026-11-11) and a light blur of 12 dp (PM, 2026-11-20); then the denser veil and the opaque fill of the fallbacks.
         assertEquals(Color.White.copy(alpha = 0.32f), glassVeil(GlassLevel.BLUR, GlassPaletteLight))
+        // The translucent level (shipped: no blur, nothing recorded) has EXACTLY the veil of the blur: same opacity, so the bar looks the same.
+        assertEquals(
+            glassVeil(GlassLevel.BLUR, GlassPaletteLight),
+            glassVeil(GlassLevel.TRANSLUCENT, GlassPaletteLight),
+        )
+        assertEquals(Color.White.copy(alpha = 0.32f), glassVeil(GlassLevel.TRANSLUCENT, GlassPaletteLight))
         assertEquals(Color.White.copy(alpha = 0.92f), glassVeil(GlassLevel.NO_BLUR, GlassPaletteLight))
         assertEquals(Color.White, glassVeil(GlassLevel.OPAQUE, GlassPaletteLight))
         assertEquals(Color.Black.copy(alpha = 0.60f), glassVeil(GlassLevel.BLUR, GlassPaletteOnPhoto))
-        assertEquals(28.dp, GlassBlurRadius)
+        assertEquals(12.dp, GlassBlurRadius)
     }
 
     // --- ONE surface, nothing behind the central button --------------------------------------------------------------------------------
@@ -151,7 +156,7 @@ class GlassTabBarConstancyTest {
     fun noLighterRectangleBehindTheCentralButton_whateverTheTabInUse() {
         showBar()
         listOf(MainTab.FEED, MainTab.PROFILE).forEach { selected ->
-            listOf(GlassLevel.NO_BLUR, GlassLevel.OPAQUE).forEach { lvl ->
+            listOf(GlassLevel.TRANSLUCENT, GlassLevel.NO_BLUR, GlassLevel.OPAQUE).forEach { lvl ->
                 tab.value = selected
                 level.value = lvl
                 composeRule.waitForIdle()
