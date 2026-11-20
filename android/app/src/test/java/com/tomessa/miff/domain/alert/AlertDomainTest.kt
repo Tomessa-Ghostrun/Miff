@@ -360,6 +360,25 @@ class AlertDomainTest {
     ) = mapOf("type" to "circle_alert", "event" to event, "miffId" to "m1", "authorUid" to "u1", "firstName" to name)
 
     @Test
+    fun theEntryIdOfTheJournal_isTheKeyOfTheLineOfTheAlert_andIsOptional() {
+        val start = CircleAlertParser.parse(push("start") + ("entryId" to "as-m1-u1-1700"), now)!!
+        assertEquals("as-m1-u1-1700", start.entryId)
+        assertEquals("al|u|u1|start|as-m1-u1-1700", CircleAlertKeys.centerId(start))
+        assertEquals(
+            CircleAlertKeys.journalId("u1", CircleAlertEvent.START, "as-m1-u1-1700"),
+            CircleAlertKeys.centerId(start),
+        )
+        val end = CircleAlertParser.parse(push("end") + ("entryId" to "ae-m1-u1-1800"), now)!!
+        assertEquals("al|u|u1|end|ae-m1-u1-1800", CircleAlertKeys.centerId(end))
+        // a server without journal: the key is the one of today
+        assertNull(CircleAlertParser.parse(push(), now)!!.entryId)
+        assertNull(CircleAlertParser.parse(push() + ("entryId" to ""), now)!!.entryId)
+        // a malformed one: the whole message is ignored
+        assertNull(CircleAlertParser.parse(push() + ("entryId" to "a|b"), now))
+        assertNull(CircleAlertParser.parse(push() + ("entryId" to "x".repeat(129)), now))
+    }
+
+    @Test
     fun theStartAndTheEndAreUnderstood() {
         assertEquals(CircleAlertEvent.START, CircleAlertParser.parse(push("start"), now)!!.event)
         assertEquals(CircleAlertEvent.END, CircleAlertParser.parse(push("end"), now)!!.event)

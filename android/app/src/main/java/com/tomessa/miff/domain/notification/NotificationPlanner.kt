@@ -321,7 +321,14 @@ object NotificationPlanner {
             }
 
             // Never planned: N6 and N7 are decided elsewhere, N8 and C1 are only lines of the centre, N9 comes from the server.
-            NotificationType.N6, NotificationType.N7, NotificationType.N8, NotificationType.N9, NotificationType.C1 -> {
+            NotificationType.N6,
+            NotificationType.N7,
+            NotificationType.N8,
+            NotificationType.N9,
+            NotificationType.N10,
+            NotificationType.N11,
+            NotificationType.C1,
+            -> {
                 false
             }
         }

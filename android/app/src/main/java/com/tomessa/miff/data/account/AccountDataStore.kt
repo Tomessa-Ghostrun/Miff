@@ -2,6 +2,7 @@ package com.tomessa.miff.data.account
 
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Source
+import com.tomessa.miff.data.notification.JournalGateway
 import kotlinx.coroutines.tasks.await
 
 /*
@@ -40,6 +41,8 @@ class FirestoreAccountDataStore(
     private val firestore: () -> FirebaseFirestore = { FirebaseFirestore.getInstance() },
     /** ALERTE (BuildConfig.ALERT_DANGER): the daily counter `users/{uid}/quota/alerts` goes with the profile, in the same transaction (backend/data-model.md 2.20). False: nothing added. */
     private val alertsEnabled: Boolean = false,
+    /** CNC-A: the journal of the notifications `users/{uid}/notifications`, emptied before the profile when it is given (null while its switch is off). Never throws. */
+    private val journal: JournalGateway? = null,
 ) : AccountDataStore {
     // The instance is resolved at each use: it is replaced after a cache purge.
     private fun user(uid: String) = firestore().collection("users").document(uid)
@@ -74,6 +77,8 @@ class FirestoreAccountDataStore(
     }
 
     override suspend fun deleteProfile(uid: String) {
+        // Before `users/{uid}` (contract 2.21): the entries of the journal. Tolerated: it never throws, and what is left is deleted by the TTL and readable by nobody.
+        journal?.deleteAll(uid)
         val db = firestore()
         val ref = db.collection("users").document(uid)
         val quota = ref.collection("quota").document("alerts")

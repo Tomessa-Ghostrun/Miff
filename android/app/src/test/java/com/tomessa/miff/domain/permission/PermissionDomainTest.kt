@@ -26,7 +26,32 @@ class PermissionDomainTest {
         renewal: RenewalState = RenewalState.NOTHING_DUE,
         renewalDeferred: Boolean = false,
         consentFirst: Boolean = true,
-    ) = resolveGate(GateInput(snapshot, handled, blocking, deferred, renewal, renewalDeferred, consentFirst))
+        clarify: Boolean = false,
+    ) = resolveGate(GateInput(snapshot, handled, blocking, deferred, renewal, renewalDeferred, consentFirst, clarify))
+
+    // --- The calm card (CONS-4-A) ---------------------------------------------------------------------------------------
+
+    @Test
+    fun theCalmCard_comesLast_afterNotifications_theBlockingAgreement_andTheLocation() {
+        assertEquals(GateScreen.CLARIFY, gate(full, clarify = true))
+        // Never before something that was already asked.
+        assertEquals(GateScreen.NOTIFICATIONS, gate(snap(), clarify = true))
+        assertEquals(GateScreen.LOCATION, gate(snap(notifications = true), clarify = true))
+        assertEquals(GateScreen.RENEWAL, gate(full, renewal = RenewalState.DUE, clarify = true))
+        // Put off the blocking agreement: the calm card is still only the last thing.
+        assertEquals(GateScreen.CLARIFY, gate(full, renewal = RenewalState.DUE, renewalDeferred = true, clarify = true))
+        // Not asked: nothing.
+        assertEquals(GateScreen.NONE, gate(full, clarify = false))
+    }
+
+    @Test
+    fun theCalmCard_isNeverABlockingStateOfTheLocationScreen() {
+        // The card does not change what the location screen needs: a person who lacks "all the time" still gets the location screen first.
+        assertEquals(
+            GateScreen.LOCATION,
+            gate(snap(notifications = true, fine = true, coarse = true), handled = true, clarify = true),
+        )
+    }
 
     // --- Snapshot ----------------------------------------------------------------------------------------------------
 
@@ -319,10 +344,16 @@ class PermissionDomainTest {
     // --- Consent version ---------------------------------------------------------------------------------------------
 
     @Test
-    fun theVersionIsV3_inTheFixedWidthFormat_andCoversThePosition() {
-        assertEquals("2026-11-v03", MiffSharingConsent.VERSION)
+    fun theVersionIsV4_inTheFixedWidthFormat_andCoversThePosition() {
+        assertEquals("2026-11-v04", MiffSharingConsent.VERSION)
+        assertTrue(Regex("^20[0-9]{2}-(0[1-9]|1[0-2])-v[0-9]{2}$").matches(MiffSharingConsent.VERSION))
         assertTrue(MiffSharingConsent.isFixedWidth(MiffSharingConsent.VERSION))
         assertTrue(MiffSharingConsent.coversPosition(MiffSharingConsent.VERSION))
+        // The thresholds of the rules did not move (decision Q1 of the PM): 03 and 99 still cover the location and the photo; 02 and 1 do not.
+        assertTrue(MiffSharingConsent.coversPosition("2026-11-v03"))
+        assertTrue(MiffSharingConsent.coversPosition("2026-11-v04"))
+        assertTrue(MiffSharingConsent.coversPosition("2026-11-v99"))
+        assertFalse(MiffSharingConsent.coversPosition("2026-11-v02"))
         assertFalse(MiffSharingConsent.coversPosition("2026-10-v2"))
         assertFalse(MiffSharingConsent.coversPosition("2026-10-v1"))
         assertFalse(MiffSharingConsent.coversPosition(null))
@@ -333,13 +364,57 @@ class PermissionDomainTest {
     fun aRenewalIsDueOnlyForAnOlderKnownText() {
         assertTrue(MiffSharingConsent.isRenewalDue("2026-10-v1"))
         assertTrue(MiffSharingConsent.isRenewalDue("2026-10-v2"))
+        // The version 3 is OLDER than 4: "to renew" (to clarify) but, see below, not paused.
+        assertTrue(MiffSharingConsent.isRenewalDue("2026-11-v03"))
         assertFalse(MiffSharingConsent.isRenewalDue(MiffSharingConsent.VERSION))
         // A newer text (another build) is never renewed backwards; garbage is not touched.
-        assertFalse(MiffSharingConsent.isRenewalDue("2026-12-v04"))
+        assertFalse(MiffSharingConsent.isRenewalDue("2026-12-v05"))
         assertFalse(MiffSharingConsent.isRenewalDue("abc"))
         assertFalse(MiffSharingConsent.isRenewalDue(null))
         // What the rules compare: the new version is strictly greater than each old one (as strings).
         assertTrue(MiffSharingConsent.VERSION > "2026-10-v1")
         assertTrue(MiffSharingConsent.VERSION > "2026-10-v2")
+        assertTrue(MiffSharingConsent.VERSION > "2026-11-v03")
+    }
+
+    @Test
+    fun threePopulations_v1v2_areBlocking_v3_isOnlyClarified_current_isNothing() {
+        // v1 and v2 (accounts of before 2026-11-04): the sharing is really paused until they agree.
+        listOf("2026-10-v1", "2026-10-v2").forEach {
+            assertTrue(it, MiffSharingConsent.pausesSharing(it))
+            assertFalse(it, MiffSharingConsent.isClarificationDue(it))
+        }
+        // v3: still covers the location and the photo: NOTHING is paused, the calm card is offered.
+        assertFalse(MiffSharingConsent.pausesSharing("2026-11-v03"))
+        assertTrue(MiffSharingConsent.isClarificationDue("2026-11-v03"))
+        // New accounts (the current text), a newer build's text, unknown shapes and no card: nothing at all.
+        listOf(MiffSharingConsent.VERSION, "2026-12-v05", "abc", null).forEach {
+            assertFalse("$it", MiffSharingConsent.pausesSharing(it))
+            assertFalse("$it", MiffSharingConsent.isClarificationDue(it))
+        }
+    }
+
+    @Test
+    fun theInterfaceSaysPaused_ifAndOnlyIf_theTrackingIsReallyStopped() {
+        // Criterion CA-10: for every KNOWN text, "En attente" is shown exactly when the position cannot be written (coversPosition false),
+        // so the pill never says that a version 3 account is waiting. (A text of a shape this build does not know is neither: the rules refuse it.)
+        val known =
+            listOf(
+                "2026-10-v1",
+                "2026-10-v2",
+                "2026-11-v02",
+                "2026-11-v03",
+                "2026-11-v04",
+                "2026-11-v05",
+                "2027-01-v10",
+                "2026-12-v99",
+            )
+        known.forEach { version ->
+            assertEquals(
+                version,
+                !MiffSharingConsent.coversPosition(version),
+                MiffSharingConsent.pausesSharing(version),
+            )
+        }
     }
 }

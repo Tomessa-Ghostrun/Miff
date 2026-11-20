@@ -16,6 +16,7 @@ import { STATUS_TIME_MUTATIONS } from './mutations-statut.mjs';
 import { VOYAGE_MUTATIONS } from './mutations-voyage.mjs';
 import { DEVICE_MUTATIONS } from './mutations-jetons.mjs';
 import { ALERT_MUTATIONS } from './mutations-alerte.mjs';
+import { JOURNAL_MUTATIONS } from './mutations-journal.mjs';
 
 const DB = '/databases/$(database)/documents';
 const edit = (find, replace, nth = 1, of = 1) => ({ find, replace, nth, of });
@@ -719,4 +720,6 @@ export const MUTATIONS = [
   ...DEVICE_MUTATIONS,
   // --- Alerte « Je suis en danger » (AD-B1, miffs/{miffId}/alerts/{uid}) : voir mutations-alerte.mjs ---
   ...ALERT_MUTATIONS,
+  // --- Journal de notifications (CNC-B, users/{uid}/notifications) : voir mutations-journal.mjs ---
+  ...JOURNAL_MUTATIONS,
 ];

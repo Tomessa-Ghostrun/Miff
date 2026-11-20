@@ -26,6 +26,14 @@ val reviewPromptProperty: String? = providers.gradleProperty("miff.reviewPrompt"
 // build (release, releaseLike) refuses "true" unless -Pmiff.allowAlertDangerInRelease=true is ALSO given, on purpose, once the PM has deployed the backend. Checked by AlertDangerFlagTest.
 val alertDangerProperty: String? = providers.gradleProperty("miff.alertDanger").orNull
 
+// CENTRE DE NOTIFICATIONS COMPLET (ticket docs/tickets/centre-notifications-complet.md, CNC-A, decision of the PM of 2026-11-19). BuildConfig.NOTIF_JOURNAL is the SWITCH of the READING of the
+// journal of the server (`users/{uid}/notifications`, written by the functions notifierUpdate and notifierAlerte): the request from a cursor at the foreground, at the opening of the centre and at the
+// arrival of a push, and the deletion of an entry with its line. It is TRUE in the debug build (internal tests) and FALSE in release and releaseLike: until the rules (backend/firestore.rules) and the
+// functions are deployed by the PM, a distributed build reads nothing there (a reading refused by the rules would still be paid). The lines written by the app itself (pushes, reminders) do not depend
+// on it. -Pmiff.notifJournal=true|false forces it either way for a TEST; a RELEASE build (release, releaseLike) refuses "true" unless -Pmiff.allowNotifJournalInRelease=true is ALSO given, on purpose,
+// once the PM has deployed the backend. Checked by NotifJournalGuardTest.
+val notifJournalProperty: String? = providers.gradleProperty("miff.notifJournal").orNull
+
 // VERSIONS (docs/release/checklist-android.md). Nothing is frozen here any more:
 // - versionName = the first "## [x.y.z]" heading of android/CHANGELOG.md (one place: the changelog the team already keeps), or -Pmiff.versionName=... for a test.
 // - versionCode = -Pmiff.versionCode=N when given (the release workflow gives its own run number: Google Play only accepts a code HIGHER than every one it has
@@ -156,6 +164,11 @@ android {
             alertDangerProperty == null || alertDangerProperty == "true" || alertDangerProperty == "false",
         ) { "miff.alertDanger must be true or false" }
         buildConfigField("boolean", "ALERT_DANGER", alertDangerProperty ?: "false")
+        // Journal of the notifications of the server: off unless the flag says otherwise; the debug build turns it on (see buildTypes).
+        require(
+            notifJournalProperty == null || notifJournalProperty == "true" || notifJournalProperty == "false",
+        ) { "miff.notifJournal must be true or false" }
+        buildConfigField("boolean", "NOTIF_JOURNAL", notifJournalProperty ?: "false")
         // Review window, "Peux faire mieux..." (decision of the PM, 2026-11-08): the EXTERNAL FEEDBACK FORM the PM will provide. ONE place: the default value of
         // "miff.feedbackFormUrl" just below: the public Google Forms address given by the PM on 2026-11-13 (a public address, not a secret). Override it with
         // -Pmiff.feedbackFormUrl=... for a test; an EMPTY value (-Pmiff.feedbackFormUrl=) makes the window show its "Merci de nous le dire !" screen with "Nous écrire"
@@ -201,6 +214,7 @@ android {
             buildConfigField("boolean", "STARTUP_METRICS", "true")
             buildConfigField("boolean", "REVIEW_PROMPT", reviewPromptProperty ?: "true")
             buildConfigField("boolean", "ALERT_DANGER", alertDangerProperty ?: "true")
+            buildConfigField("boolean", "NOTIF_JOURNAL", notifJournalProperty ?: "true")
             // en-XA (long accented text) and ar-XB (right-to-left) pseudo-locales, to test layouts without translations.
             isPseudoLocalesEnabled = true
         }
@@ -408,6 +422,22 @@ run {
                         "absent from " +
                         "distributed builds until the PM has deployed the rules and the function notifierAlerte). " +
                         "Add -Pmiff.allowAlertDangerInRelease=true only after that deployment.",
+                )
+            }
+        }
+    }
+}
+
+run {
+    val journalOnInRelease = notifJournalProperty == "true"
+    val allowedInRelease = providers.gradleProperty("miff.allowNotifJournalInRelease").orNull == "true"
+    if (journalOnInRelease && !allowedInRelease) {
+        tasks.matching { it.name == "preReleaseBuild" || it.name == "preReleaseLikeBuild" }.configureEach {
+            doFirst {
+                throw GradleException(
+                    "miff.notifJournal=true is not allowed in a release build (the journal of the notifications must " +
+                        "not be read by distributed builds until the PM has deployed the rules and the functions). " +
+                        "Add -Pmiff.allowNotifJournalInRelease=true only after that deployment.",
                 )
             }
         }

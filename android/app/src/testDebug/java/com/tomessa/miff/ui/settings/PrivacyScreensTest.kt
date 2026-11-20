@@ -77,12 +77,16 @@ class PrivacyScreensTest {
         onToggled: (Boolean) -> Unit = {},
         onRetry: () -> Unit = {},
         notifications: NotificationPermissionState = NotificationPermissionState.ALLOWED,
+        location: LocationPrivacyUi = LocationPrivacyUi(),
+        onReview: () -> Unit = {},
     ) = show {
         PrivacyScreen(
             state,
             onBack = {},
             onAnalyticsToggled = onToggled,
             onRetryWithdrawal = onRetry,
+            location = location,
+            onReviewAgreement = onReview,
             notifications = notifications,
         )
     }
@@ -133,7 +137,11 @@ class PrivacyScreensTest {
                 substring = true,
             ).performScrollTo()
             .assertExists()
-        composeRule.onNodeWithText("No history of trips is kept.", substring = true).performScrollTo().assertExists()
+        // CONS-4-A: "no history" is said for OUR SERVERS (the phone keeps a local journal, said below).
+        composeRule
+            .onNodeWithText("No history of trips is kept on our servers.", substring = true)
+            .performScrollTo()
+            .assertExists()
         // The permission is not complete in this state: the state says so, it never says "Always allowed".
         composeRule.onAllNodesWithText(text(R.string.settings_privacy_location_status_ok)).assertCountEquals(0)
         composeRule
@@ -142,6 +150,45 @@ class PrivacyScreensTest {
             ).performScrollTo()
             .assertExists()
         composeRule.onAllNodesWithText("approximate", substring = true, ignoreCase = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun privacy_theTimeHistory_saysStoppingTheSharingDoesNotEraseIt_andWhereToDoIt() {
+        privacy(PrivacyUiState())
+        composeRule.onNodeWithText(text(R.string.settings_privacy_time_body)).performScrollTo().assertExists()
+        assertTrue(text(R.string.settings_privacy_time_body).contains("Stopping sharing does not erase it"))
+        composeRule.onNodeWithText(text(R.string.settings_privacy_time_erase_note)).performScrollTo().assertExists()
+        composeRule.onNodeWithText(text(R.string.settings_privacy_time_erase)).performScrollTo().assertHasClickAction()
+    }
+
+    @Test
+    fun privacy_aVersion3Account_canReviewTheClarification_andNothingSaysItIsWaiting() {
+        var reviews = 0
+        privacy(PrivacyUiState(), location = LocationPrivacyUi(clarifyMiffNames = listOf("Chez nous")), onReview = {
+            reviews++
+        })
+        composeRule.onNodeWithText(text(R.string.miff_clarify_title)).performScrollTo().assertExists()
+        composeRule.onNodeWithText(text(R.string.settings_privacy_clarify_body)).performScrollTo().assertExists()
+        // The trap of the ticket: the pill "Waiting" and the sentence "Miff no longer updates your status" are for a REAL pause only.
+        composeRule.onAllNodesWithText(text(R.string.settings_privacy_miff_waiting_pill)).assertCountEquals(0)
+        composeRule.onAllNodesWithText(text(R.string.settings_privacy_miff_waiting_body)).assertCountEquals(0)
+        composeRule.onNodeWithText(text(R.string.miff_waiting_review)).performScrollTo().performClick()
+        assertEquals(1, reviews)
+    }
+
+    @Test
+    fun privacy_aPausedMiff_stillShowsTheWaitingPill_andNoCalmCard() {
+        privacy(PrivacyUiState(), location = LocationPrivacyUi(waitingMiffNames = listOf("Chez nous")))
+        composeRule.onNodeWithText(text(R.string.settings_privacy_miff_waiting_pill)).performScrollTo().assertExists()
+        composeRule.onAllNodesWithText(text(R.string.settings_privacy_clarify_body)).assertCountEquals(0)
+    }
+
+    @Test
+    fun privacy_nothingToClarifyAndNothingWaiting_showsNeitherLine() {
+        privacy(PrivacyUiState())
+        composeRule.onAllNodesWithText(text(R.string.settings_privacy_clarify_body)).assertCountEquals(0)
+        composeRule.onAllNodesWithText(text(R.string.miff_waiting_review)).assertCountEquals(0)
+        composeRule.onAllNodesWithText(text(R.string.settings_privacy_miff_waiting_pill)).assertCountEquals(0)
     }
 
     @Test

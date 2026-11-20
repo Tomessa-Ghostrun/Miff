@@ -284,7 +284,7 @@ class MiffWritesTest {
         assertEquals(setOf("enabled", "consentedAt", "consentVersion", "revokedAt"), sharing.keys)
         assertEquals(true, sharing["enabled"])
         assertEquals(serverTime, sharing["consentedAt"])
-        assertEquals("2026-11-v03", sharing["consentVersion"])
+        assertEquals("2026-11-v04", sharing["consentVersion"])
         assertNull(sharing["revokedAt"])
     }
 

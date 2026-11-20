@@ -119,7 +119,7 @@ const quatre = () => ({
 
 // --- V1 : destinataires, auteur exclu, forme exacte, budget de lectures ----------------------------------------------------------------
 
-test('V1 : A publie à 14:00 -> B, C, D notifiés, A non ; message de forme exacte ; 13 lectures et 1 écriture (Miff de 4)', async () => {
+test('V1 : A publie à 14:00 -> B, C, D notifiés, A non ; message de forme exacte ; 13 lectures et 4 écritures (Miff de 4 : état + 3 lignes de journal)', async () => {
   await creerMiff(MIFF, quatre());
   const c = contexte();
   const bilan = await publier(c);
@@ -128,17 +128,18 @@ test('V1 : A publie à 14:00 -> B, C, D notifiés, A non ; message de forme exac
   assert.equal(bilan.envoyes, 3);
   assert.equal(bilan.motif, undefined);
   assert.equal(bilan.lectures, 13, '1 pré-contrôle + 1 Miff + 4 fiches + 3 destinataires x (session + appareil) + 1 état (transaction)');
-  assert.equal(bilan.ecritures, 1, "1 écriture : l'état de la Miff");
+  assert.equal(bilan.ecritures, 4, "4 écritures : l'état de la Miff + 3 lignes de journal (une par destinataire, CNC-B)");
+  assert.equal(bilan.journalisees, 3);
 
   const parJeton = Object.fromEntries(c.fcm.messages.map((m) => [m.token, m]));
   assert.deepEqual(parJeton['jeton-C-0'], {
     token: 'jeton-C-0',
-    data: { type: 'circle_update', miffId: MIFF, authorUid: 'A', firstName: 'Tomessa', quiet: '0' },
+    data: { type: 'circle_update', miffId: MIFF, authorUid: 'A', firstName: 'Tomessa', quiet: '0', entryId: `u-${MIFF}-A-${T_PUBLICATION.getTime()}` },
     android: { priority: 'high', ttl: 7_200_000 },
   });
   assert.deepEqual(parJeton['jeton-B-0'], {
     token: 'jeton-B-0',
-    data: { type: 'circle_update', miffId: MIFF, authorUid: 'A' },
+    data: { type: 'circle_update', miffId: MIFF, authorUid: 'A', entryId: `u-${MIFF}-A-${T_PUBLICATION.getTime()}` },
     apns: {
       headers: { 'apns-push-type': 'alert', 'apns-priority': '10', 'apns-expiration': String(Math.floor(plus(T_PUBLICATION, 5000 + 2 * 60 * MIN).getTime() / 1000)), 'apns-collapse-id': 'A' },
       payload: { aps: { alert: { titleLocKey: 'notif_circle_update_title', titleLocArgs: ['Tomessa'], locKey: 'notif_circle_update_body' }, threadId: 'A', sound: 'default' } },
@@ -369,7 +370,7 @@ test('V9 : FCM répond « jeton inconnu » pour B -> son document est supprimé 
   assert.equal(await existe('users/D/devices/dev0'), true);
   assert.deepEqual(bilan.erreursFcm, { 1: 1 });
   assert.deepEqual(c.attentes, [], "un jeton inconnu n'est jamais retenté");
-  assert.equal(bilan.ecritures, 2, "état + suppression d'un jeton");
+  assert.equal(bilan.ecritures, 5, "état + 3 lignes de journal (le journal garde la ligne de B : le téléphone la relira) + suppression d'un jeton");
 });
 
 test("jeton renouvelé entre la lecture et la réponse de FCM : le nouveau document n'est PAS supprimé (précondition)", async () => {
@@ -455,14 +456,14 @@ test('V11 : un événement dont la photo a plus de 5 min au traitement n\'envoie
   assert.equal(bilan.envoyes, 3);
 });
 
-test('F3/V12 : Miff de 15 membres = 46 lectures et 1 écriture ; Miff de 40 membres = 30 fiches, 20 destinataires, 73 lectures (74 si l\'auteur est hors des 30 premières fiches)', async () => {
+test('F3/V12 : Miff de 15 membres = 46 lectures et 15 écritures (état + 14 lignes de journal) ; Miff de 40 membres = 30 fiches, 20 destinataires, 73 lectures (74 si l\'auteur est hors des 30 premières fiches)', async () => {
   const membres = (n) => Object.fromEntries(Array.from({ length: n }, (_, i) => [`u${String(i).padStart(2, '0')}`, {}]));
   await creerMiff('Quinze', membres(15));
   let c = contexte();
   let bilan = await publier(c, { miffId: 'Quinze', auteurUid: 'u00' });
   assert.equal(c.fcm.messages.length, 14);
   assert.equal(bilan.lectures, 1 + 1 + 15 + 14 + 14 + 1);
-  assert.equal(bilan.ecritures, 1);
+  assert.equal(bilan.ecritures, 1 + 14);
 
   await creerMiff('Quarante', membres(40));
   c = contexte();
@@ -511,7 +512,7 @@ test('contenu STRICT : prénom tronqué à 20 caractères ; ni nom de famille, n
     assert.ok(!texte.includes(interdit), `« ${interdit} » ne doit jamais figurer dans un message : ${texte}`);
   }
   // Seules clés possibles dans `data`.
-  for (const message of c.fcm.messages) assert.ok(Object.keys(message.data).every((k) => ['type', 'miffId', 'authorUid', 'firstName', 'quiet'].includes(k)));
+  for (const message of c.fcm.messages) assert.ok(Object.keys(message.data).every((k) => ['type', 'miffId', 'authorUid', 'firstName', 'quiet', 'entryId'].includes(k)));
 });
 
 test('prénom vide ou non affichable : rien n\'est envoyé (jamais un message cassé)', async () => {

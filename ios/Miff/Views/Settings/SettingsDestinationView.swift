@@ -53,6 +53,7 @@ struct SettingsDestinationView: View {
         case .privacy:
             PrivacyView(
                 permissions: environment.devicePermissions,
+                awaiting: environment.awaitingAgreement,
                 onBack: onBack,
                 onOpenDetectionHelp: { navigate(.detectionHelp) },
                 // TIME-3 (D15) : « Effacer mon historique de temps » : le journal local des changements de présence part ; aucune écriture serveur.

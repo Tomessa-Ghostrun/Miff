@@ -46,6 +46,21 @@ final class TrackingEngineTests: XCTestCase {
         }
     }
 
+    func testAnAccountStillUnderVersionThreeKeepsSharingItsPositionAndItsStatus() async {
+        // CONS-4-I (CA-7, option D du PM) : la version 3 n'est plus la version courante, mais elle COUVRE la position (seuil des règles
+        // inchangé : 03 à 99) : le suivi ne s'arrête pas, rien n'est en pause, la carte « Une précision » est seulement proposée.
+        for version in ["2026-11-v03", MiffSharingConsent.version] {
+            let fresh = TrackingRig()
+            fresh.store.consents[testMiffId] = SharingConsentRead(enabled: true, version: version)
+
+            await fresh.engine.refresh(.opened)
+
+            XCTAssertEqual(fresh.position.calls, 1, version)
+            XCTAssertEqual(fresh.store.positionWrites().count, 1, version)
+            XCTAssertFalse(fresh.journal.kinds.contains(.notEligible), version)
+        }
+    }
+
     func testNothingIsDoneWhenSharingIsStoppedOrThereIsNoCard() async {
         rig.store.consents[testMiffId] = SharingConsentRead(enabled: false, version: MiffSharingConsent.version)
         await rig.engine.refresh(.opened)

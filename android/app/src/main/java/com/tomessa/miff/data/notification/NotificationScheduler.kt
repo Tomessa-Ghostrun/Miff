@@ -2,6 +2,7 @@ package com.tomessa.miff.data.notification
 
 import com.tomessa.miff.data.feed.CircleRead
 import com.tomessa.miff.data.feed.CircleStatusReader
+import com.tomessa.miff.domain.notification.CircleAlertEvent
 import com.tomessa.miff.domain.notification.CircleAlertKeys
 import com.tomessa.miff.domain.notification.CircleAlertPayload
 import com.tomessa.miff.domain.notification.CircleNewsKeys
@@ -325,7 +326,13 @@ class NotificationScheduler(
             }
 
             // N6 is shown at once, N8 and C1 are only lines of the centre, N9 comes from the server: none of them waits for an hour.
-            NotificationType.N6, NotificationType.N8, NotificationType.N9, NotificationType.C1 -> {
+            NotificationType.N6,
+            NotificationType.N8,
+            NotificationType.N9,
+            NotificationType.N10,
+            NotificationType.N11,
+            NotificationType.C1,
+            -> {
                 Unit
             }
 
@@ -407,8 +414,9 @@ class NotificationScheduler(
 
     /**
      * The server told this phone that a member of a Miff published an update ([news], already validated by the parser). It reads and writes NOTHING on the server (the
-     * message carries everything: no read at the arrival of a push). Dropped when: nobody is signed in with a valid session, the phone does not let Miff notify, the author is
-     * the person herself, the general switch or the switch "Quand un proche donne des nouvelles" is off, or the same message already came (a key is never notified twice).
+     * message carries everything: no read at the arrival of a push). Dropped when: nobody is signed in with a valid session, the author is
+     * the person herself, the general switch or the switch "Quand un proche donne des nouvelles" is off, or the same message already came (a key is never notified twice). Without the
+     * permission of the phone nothing is shown but the line is written (silent): CNC-A, cause C4.
      * Written to the centre only (a SILENT line, no notification) when: the app is in front (the Feed already shows it), the message is older than 2 hours (the life of the
      * message at the server), or the 6 of the day were shown. Shown on the quiet channel from 22 h to 7 h (the local time of this phone is the time zone of the person)
      * when "Nuit calme" is on. Not cut by a trip of the person: she receives as usual (ticket 5, Q5).
@@ -418,7 +426,8 @@ class NotificationScheduler(
         news: CircleNewsPayload,
     ) {
         synchronized(lock) {
-            if (!permissionAllowed() || !sessionValid(myUid)) return
+            // A session that is not the one in use (signed out, replaced by another phone, deletion under way): nothing is written for an account that is not served here.
+            if (!sessionValid(myUid)) return
             // Contract 4.9: nothing at all (no notification, no line of the centre, no navigation) for a Miff that is not one of this account.
             if (!isMyMiff(myUid, news.miffId)) return
             if (news.authorUid == myUid) return
@@ -428,7 +437,7 @@ class NotificationScheduler(
             val zone = zone()
             val at = Instant.ofEpochMilli(now).atZone(zone)
             val counters = ledger.counters(at.toLocalDate().toString())
-            val decision =
+            val decided =
                 NotificationDelivery.decide(
                     type = NotificationType.N9,
                     preferences = settings.current(),
@@ -440,6 +449,8 @@ class NotificationScheduler(
                     maxLatenessMillis = NotificationPolicy.N9_MAX_AGE_MILLIS,
                     serverQuiet = news.serverQuiet,
                 )
+            // CNC-A (C4): the permission of the phone withdrawn is no reason to lose the line: the system shows nothing then, but the centre still tells what happened (a push still arrives).
+            val decision = if (!permissionAllowed() && decided is Delivery.Show) Delivery.Silent else decided
             when (decision) {
                 Delivery.Drop -> {
                     Unit
@@ -483,17 +494,19 @@ class NotificationScheduler(
 
     /**
      * The server told this phone that a member of a Miff declared an alert, or ended it by hand ([alert], already validated by the parser). It reads and writes NOTHING on the server.
-     * Dropped when: nobody is signed in with a valid session, the phone does not let Miff notify, the general switch of Settings is off, the Miff is not one of this account's, the author
-     * is the person herself, or the same message already came. NOT cut by: the quiet hours of "Nuit calme", the daily cap, the switch "Quand un proche donne des nouvelles", the app being
+     * Dropped when: nobody is signed in with a valid session, the Miff is not one of this account's, the author
+     * is the person herself, or the same message already came. With the general switch of Settings off, or without the permission of the phone, only the line is written (silent). NOT cut by: the quiet hours of "Nuit calme", the daily cap, the switch "Quand un proche donne des nouvelles", the app being
      * in front, a trip of the person (decision of the PM, D12 and D18: an alert must reach the person; only the settings of the phone's own channel can silence it).
+     *
+     * CNC-A (C2): it now WRITES A LINE in the centre (N10 for the start, N11 for the end), before the notification of the system, with the key the journal of the server uses for the same
+     * entry. Without the permission of the phone the line is written all the same, as a silent one: the system shows nothing, the centre still tells what happened.
      */
     fun onCircleAlert(
         myUid: String,
         alert: CircleAlertPayload,
     ) {
         synchronized(lock) {
-            if (!permissionAllowed() || !sessionValid(myUid)) return
-            if (!settings.current().enabled) return
+            if (!sessionValid(myUid)) return
             // Contract 2.19: nothing at all (no notification, no navigation) for a Miff that is not one of this account.
             if (!isMyMiff(myUid, alert.miffId)) return
             if (alert.authorUid == myUid) return
@@ -501,7 +514,20 @@ class NotificationScheduler(
             val key = CircleAlertKeys.centerId(alert)
             val keys = ledger.keys(now)
             if (NotifiedKeys.contains(keys, key, now)) return
-            presenter.showCircleAlert(alert, key)
+            // The general switch of Settings off, or the permission of the phone withdrawn: the system shows nothing, but the line is written all the same (silent), as the journal would bring it back.
+            val allowed = permissionAllowed() && settings.current().enabled
+            // The line first: if the tray refuses (permission withdrawn a second ago), the centre still tells what happened.
+            center.add(
+                NotificationItem(
+                    key,
+                    if (alert.event == CircleAlertEvent.START) NotificationType.N10 else NotificationType.N11,
+                    alert.miffId,
+                    now,
+                    state = if (allowed) ItemState.SHOWN else ItemState.SILENT,
+                    who = alert.authorFirstName,
+                ),
+            )
+            if (allowed) presenter.showCircleAlert(alert, key)
             ledger.remember(key, now)
         }
     }

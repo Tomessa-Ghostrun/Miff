@@ -14,7 +14,9 @@ final class SharedTextsParityTests: XCTestCase {
     }
 
     private static let sharedPrefixes = [
-        "permission_", "miff_consent3_", "miff_renewal_", "miff_leave_", "miff_sharing_", "settings_privacy_location"
+        "permission_", "miff_consent3_", "miff_renewal_", "miff_leave_", "miff_sharing_", "settings_privacy_location",
+        // CONS-4-I : la carte « Une précision », le journal local dans Réglages > Confidentialité (mêmes mots sur les deux plateformes, CA-1).
+        "miff_clarify_", "miff_waiting_", "settings_privacy_clarify", "settings_privacy_time_"
     ]
 
     /// Les `<string>` d'un fichier de textes d'Android, mis en forme comme ceux du catalogue iOS (apostrophes, valeurs insérées).
