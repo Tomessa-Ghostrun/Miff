@@ -43,7 +43,7 @@ import com.tomessa.miff.ui.theme.textBodyRegular14
  * The bubble of encouragement (decision of the PM, D21, 2026-11-06; design/screens/update.md section 4): the bubble of the mockups, in the colour of the level,
  * a small tail pointing down at the central button, NO title, NO button, NO cross. It is not interactive (the gesture is the central button it points at) and
  * it swallows the touches (what is under it is never triggered by accident). No sound, no vibration, no blinking, no blocking window. The text is the one of the
- * mockups, word for word.
+ * mockups, reworded by the decision I18N-4C (no gender mark, no "update"): see the deviations listed in android/CHANGELOG.md 0.55.0.
  *
  * Screen reader (the ticket decides, 5.5 and A1, confirmed by the PM): the text is a POLITE live region: announced once when the bubble appears and again when it
  * goes from orange to red, never in a loop; the next element is the central button, whose spoken name says the state. Height: at most 40 % of the screen, the text

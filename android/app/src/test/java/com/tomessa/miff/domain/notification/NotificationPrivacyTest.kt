@@ -203,16 +203,16 @@ class NotificationPrivacyTest {
             }
         }
         // The words of the PM, mot pour mot (decision of the ticket, section 20.1).
-        assertTrue(fr.contains("""<string name="notif_n1_title">Tu es passé orange</string>"""))
+        assertTrue(fr.contains("""<string name="notif_n1_title">Ton statut est passé à l\'orange</string>"""))
         assertTrue(fr.contains("""<string name="notif_n1_body">Indique à ta Miff que tout va bien.</string>"""))
-        assertTrue(fr.contains("""<string name="notif_n2_title">Tu es passé rouge</string>"""))
+        assertTrue(fr.contains("""<string name="notif_n2_title">Ton statut est passé au rouge</string>"""))
         assertTrue(fr.contains("""<string name="notif_n3_title">Ta Miff est passée en orange</string>"""))
         assertTrue(fr.contains("""<string name="notif_n3_body">Prends des nouvelles de tes proches.</string>"""))
         assertTrue(fr.contains("""<string name="notif_n4_title">Ta Miff est passée en rouge</string>"""))
         assertTrue(fr.contains("""<string name="notif_n6a_title">Tu es dans une zone de danger de ta Miff</string>"""))
         assertTrue(
             fr.contains(
-                """<string name="notif_n6a_body">Pendant que tu y es, tes proches voient un état différent.</string>""",
+                """<string name="notif_n6a_body">Tant que tu es dans cette zone, tes proches voient un état différent.</string>""",
             ),
         )
         // Tutoiement everywhere in the texts of the notifications.

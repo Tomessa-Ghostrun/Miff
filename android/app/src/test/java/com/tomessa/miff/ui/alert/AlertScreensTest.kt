@@ -106,7 +106,7 @@ class AlertScreensTest {
         rule.onNodeWithTag(ALERT_SENT_CALL_TAG).assertExists()
         rule
             .onNodeWithText(
-                "Miff is not an emergency service. If you're in immediate danger, call 112.",
+                "Miff is not an emergency service. If you're in immediate danger, call the emergency services (112 in Europe).",
             ).assertExists()
     }
 
@@ -368,7 +368,7 @@ class AlertScreensTest {
         var more = 0
         rule.mainClock.autoAdvance = false
         rule.setContent { AlertHintBubble(onMore = { more++ }, onGone = { gone++ }, visibleMillis = 6_000) }
-        rule.onNodeWithText("• Tap to publish an update").assertIsDisplayed()
+        rule.onNodeWithText("• Tap to share your news").assertIsDisplayed()
         rule.onNodeWithText("• Hold to declare an alert").assertIsDisplayed()
         rule.onNodeWithText("Learn more").performClick()
         assertEquals(1, more)

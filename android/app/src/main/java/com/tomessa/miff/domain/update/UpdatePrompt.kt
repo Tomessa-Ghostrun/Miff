@@ -5,7 +5,7 @@ import com.tomessa.miff.domain.tracking.MemberStatusFacts
 import com.tomessa.miff.domain.tracking.StatusColor
 import com.tomessa.miff.domain.tracking.StatusLevel
 
-/** What the bubble of encouragement says: nothing, "Tu es passé en orange…", or "Tu es passé en rouge…" (the texts of the PM's mockups, D21). */
+/** What the bubble of encouragement says: nothing, "Ton statut est passé à l'orange…", or "Ton statut est passé au rouge…" (the texts of the PM's mockups, D21, reworded by the decision I18N-4C: no gender mark, no "update"). */
 enum class PromptLevel { NONE, ORANGE, RED }
 
 /*

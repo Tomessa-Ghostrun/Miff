@@ -137,7 +137,7 @@ fun PlaceRows(
                             .map { it.id }
                             .toSet()
                             .size
-                    pluralStringResource(R.plurals.place_list_counter_free, count, count)
+                    pluralStringResource(R.plurals.place_list_counter_free, count, count, PlaceLimits.FREE_PLACES)
                 }
 
                 else -> {
@@ -206,7 +206,12 @@ fun PlaceRows(
             )
             if (limitShown && ui.atRequestLimit) {
                 Text(
-                    text = stringResource(R.string.place_request_limit_member),
+                    text =
+                        pluralStringResource(
+                            R.plurals.place_request_limit_member,
+                            PlaceRequestLimits.PER_MEMBER,
+                            PlaceRequestLimits.PER_MEMBER,
+                        ),
                     style = textBodyRegular14,
                     color = colorTextDescription,
                     modifier = Modifier.fillMaxWidth().semantics { liveRegion = LiveRegionMode.Polite },
