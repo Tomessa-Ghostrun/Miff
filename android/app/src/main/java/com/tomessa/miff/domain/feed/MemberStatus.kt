@@ -38,6 +38,12 @@ class MemberStatus(
     /** MODE VOYAGE: the end of the trip (instant) and the day chosen (`AAAA-MM-JJ`, display only), when [presence] is `travel`. */
     val travelUntilMillis: Long? = null,
     val travelUntilDay: String? = null,
+    /**
+     * FEED-ORDRE-PHOTO: the SERVER time of the last photo published in this Miff (`photoAt`), the ONLY date the order of the cards follows. Null when the status holds
+     * none (every status written before this key existed, an old client, a status created again after the sharing was stopped) or holds something that is not a time.
+     * It keeps its value when the photo expires: it says "the last time a photo was shared", not "the photo is still there".
+     */
+    val photoAtMillis: Long? = null,
 ) {
     override fun toString(): String = "MemberStatus(redacted)"
 
@@ -62,6 +68,7 @@ class MemberStatus(
             updatedAtMillis: Long?,
             travelUntilMillis: Long? = null,
             travelUntilDay: String? = null,
+            photoAtMillis: Long? = null,
         ): MemberStatus {
             val value = PresenceValue.fromWire(presence)
             // Only a trip carries an end: whatever somebody else wrote next to another presence is dropped.
@@ -81,6 +88,7 @@ class MemberStatus(
                 updatedAtMillis = updatedAtMillis,
                 travelUntilMillis = travelUntilMillis.takeIf { isTravel },
                 travelUntilDay = travelUntilDay.takeIf { isTravel },
+                photoAtMillis = photoAtMillis,
             )
         }
     }

@@ -59,6 +59,8 @@ object UpdateWrites {
         batteryPct: Int?,
         deviceId: String,
         description: String? = null,
+        /** FEED-ORDRE-PHOTO: false only for the second attempt after a refusal (see [TrackingWrites.photoStatus]): the photo and the rest of the status are written as before. */
+        stampPhotoDate: Boolean = true,
     ): List<DocWrite> =
         listOf(
             photo(miffId, uid, photo, place, nowMillis, description),
@@ -68,6 +70,7 @@ object UpdateWrites {
                 photoPublished = true,
                 batteryPct = batteryPct,
                 deviceId = deviceId,
+                stampPhotoDate = stampPhotoDate,
             ),
         )
 

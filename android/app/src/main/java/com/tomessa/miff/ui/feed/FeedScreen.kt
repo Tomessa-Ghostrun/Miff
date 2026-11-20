@@ -187,7 +187,7 @@ fun rememberSystemFeedActions(base: FeedActions): FeedActions {
 }
 
 /**
- * The Feed tab (tickets FEED-1 to FEED-3): the fixed header, then the bubble of the Miff, the cards of the members (the latest news first, me like the others: FEED-ORDRE), and
+ * The Feed tab (tickets FEED-1 to FEED-3): the fixed header, then the bubble of the Miff, the cards of the members (the latest photo first, me like the others: FEED-ORDRE-PHOTO), and
  * "Ajouter un proche". [feed] is what the view model computed; [locate] the sheet "Localiser". The photo of the last update is FEED-4.
  * [scrollToTopSignal] goes up each time the person taps the tab they are already on.
  *
@@ -230,7 +230,7 @@ fun FeedScreen(
     val content = (feed as? FeedUiState.Ready)?.content
     val density = LocalDensity.current
 
-    // FEED-ORDRE: the cards are sorted by the Feed (the latest news first), but the ORDER the person sees only changes when nothing is under their finger:
+    // FEED-ORDRE: the cards are sorted by the Feed (the latest photo first), but the ORDER the person sees only changes when nothing is under their finger:
     // the content of a card is updated at once, its place waits for the end of the scroll or of the touch. Coming back to the Feed (tab, foreground) or
     // refreshing shows the up-to-date order directly (no glide, no announcement): the gate is new on each arrival on the tab.
     val orderGate =
@@ -881,7 +881,7 @@ private val CARD_GLIDE =
 private const val ORDER_ANNOUNCEMENT_MILLIS = 3_000L
 
 /**
- * Polite announcement (TalkBack) of a change of the order of the cards: "{Prénom} a donné des nouvelles", or "Le Feed a été mis à jour" when several cards
+ * Polite announcement (TalkBack) of a change of the order of the cards: "{Prénom} a publié une photo" (FEED-ORDRE-PHOTO: only a new photo makes a card rise), or "Le Feed a été mis à jour" when several cards
  * moved. A node apart of one dp, drawn nowhere: it never takes the focus of the screen reader and never interrupts what is being read. Said once per
  * announcement ([OrderAnnouncement.id]); the gate gives none for my own card, nor when coming back to the Feed.
  */

@@ -91,14 +91,14 @@ object FeedBuilder {
         val statuses = (input.statuses as? StatusesView.Loaded)?.byUid.orEmpty()
         val places = input.places.associateBy { it.id }
 
-        // The cards are first made in the order of arrival, then put in the order of the news (FEED-ORDRE): a card does not depend on its place.
+        // The cards are first made in the order of arrival, then put in the order of the last photo (FEED-ORDRE-PHOTO): a card does not depend on its place.
         val byArrival =
             input.members.map { member ->
                 val isMe = member.uid == input.myUid
                 val status = if (hidden && !isMe) null else statuses[member.uid]
                 Triple(member, status, card(member, isMe, status, places, input, hidden, mySharing, nowMillis, zone))
             }
-        val newsAt =
+        val photoAt =
             byArrival
                 .mapNotNull { (member, status, card) -> newsDate(card.label, status)?.let { member.uid to it } }
                 .toMap()
@@ -110,7 +110,7 @@ object FeedBuilder {
             byArrival.associate { (member, _, card) ->
                 member.uid to (alertByUid[member.uid]?.let { withAlert(card, it, nowMillis, zone) } ?: card)
             }
-        val cards = alertsFirst(orderMembers(input.members, newsAt).mapNotNull { cardsByUid[it.uid] }, liveAlerts)
+        val cards = alertsFirst(orderMembers(input.members, photoAt).mapNotNull { cardsByUid[it.uid] }, liveAlerts)
         val mine = cards.firstOrNull { it.isMe }
         val miffLevel = miffLevel(cards.map { it.level })
         val latestUpdate = statuses.values.mapNotNull { it.updatedAtMillis }.maxOrNull()
@@ -234,57 +234,37 @@ object FeedBuilder {
     }
 
     /**
-     * The date a card is sorted by (FEED-ORDRE, ticket section 3, decisions 1 and 3): `lastUpdateAt` of the status, the last "tout va bien" signal (a manual
-     * update or an arrival in a trusted place; it survives the expiry of the photo and costs no extra read). Null ("without a usable date", last) for a card
-     * that says "Partage désactivé", "Informations masquées" or the wait for my agreement, and when the status holds no date.
-     *
-     * The card "Pas encore de nouvelles" (`presence = unknown`) is also without a date, EXCEPT when the member published an update AFTER the first status
-     * (`lastUpdateAt` strictly after `presenceAt`): the first status writes both with the same server time, so a later `lastUpdateAt` can only be a manual
-     * update made before any departure from a place. That card rises with its date; the wording of the card stays "Pas encore de nouvelles" (question left to
-     * the PM, ticket section 10). Equal times (sharing just activated) stay last.
+     * The date a card is sorted by (FEED-ORDRE-PHOTO, ticket docs/tickets/feed-ordre-photo.md section 3, decisions 1, 3, 5 and 10): `photoAt` of the status, the SERVER
+     * time of the last photo published, and NOTHING else. Not `lastUpdateAt` (an arrival in a place or an update without a photo moves it), not `presenceAt`, not
+     * `hasPhoto` (a photo that expired or was cleaned up keeps its rank: `photoAt` stays). Null ("without a date", after everybody who has one, in the order of
+     * arrival) for a card that says "Partage désactivé", "Informations masquées" or the wait for my agreement (their status is not read, even if one is left), and
+     * when the status holds no `photoAt` (never a photo in this Miff, a status older than the key, a status created again, an old client) or none that can be read.
+     * The card "Pas encore de nouvelles" is dated by its `photoAt` like any other, and without one it is without a date, whatever `lastUpdateAt` says.
      */
     internal fun newsDate(
         label: StateLabel,
         status: MemberStatus?,
     ): Long? =
         when (label) {
-            StateLabel.SharingStopped, StateLabel.NewsHidden, StateLabel.WaitingAgreement -> {
-                null
-            }
-
-            StateLabel.NoNews -> {
-                val entry = status?.presenceAtMillis
-                val update = status?.lastUpdateAtMillis
-                if (status?.presence == PresenceValue.UNKNOWN && entry != null && update != null &&
-                    update > entry
-                ) {
-                    update
-                } else {
-                    null
-                }
-            }
-
-            else -> {
-                status?.lastUpdateAtMillis
-            }
+            StateLabel.SharingStopped, StateLabel.NewsHidden, StateLabel.WaitingAgreement -> null
+            else -> status?.photoAtMillis
         }
 
     /**
-     * The order of the cards (FEED-ORDRE, which replaces the decision of 2026-11-07 "the others in the order of arrival, me last"): from the most recent
-     * news to the oldest, and ME LIKE ANYBODY ELSE. [newsAtMillis] holds the date of the members who have a usable one; the others come AFTER them all, in
-     * the order of arrival. Equal dates keep the order of arrival too ([members] is the creator first, then the order of arrival, with the identifier as
-     * the last tie-break: see `membersFromSnapshot`), so the order is the same at every launch. Only STORED dates are compared: the clock of the person
-     * who looks never takes part.
+     * The order of the cards (FEED-ORDRE-PHOTO, which replaces the date of FEED-ORDRE): from the most recent photo to the oldest, and ME LIKE ANYBODY ELSE.
+     * [photoAtMillis] holds the date of the members who have one; the others come AFTER them all, in the order of arrival. Equal dates keep the order of
+     * arrival too ([members] is the creator first, then the order of arrival, with the identifier as the last tie-break: see `inArrivalOrder`), so the order
+     * is the same at every launch. Only STORED dates are compared: the clock of the person who looks never takes part.
      */
     fun orderMembers(
         members: List<MiffMember>,
-        newsAtMillis: Map<String, Long>,
+        photoAtMillis: Map<String, Long>,
     ): List<MiffMember> =
         members
             .withIndex()
             .sortedWith(
-                compareBy<IndexedValue<MiffMember>> { newsAtMillis[it.value.uid] == null }
-                    .thenByDescending { newsAtMillis[it.value.uid] ?: 0L }
+                compareBy<IndexedValue<MiffMember>> { photoAtMillis[it.value.uid] == null }
+                    .thenByDescending { photoAtMillis[it.value.uid] ?: 0L }
                     .thenBy { it.index }
                     .thenBy { it.value.uid },
             ).map { it.value }
