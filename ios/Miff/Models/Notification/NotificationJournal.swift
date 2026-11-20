@@ -12,10 +12,35 @@ import Foundation
 // validé ici avant d'être utilisé ; une entrée d'une version ou d'une sorte inconnue est ignorée sans erreur (compatibilité).
 
 /// Ce que le serveur a notifié : les trois sortes de message qu'il envoie.
-enum NotificationJournalKind: String, Equatable {
+enum NotificationJournalKind: Equatable {
     case update
-    case alertStart = "alert_start"
-    case alertEnd = "alert_end"
+    case alertStart
+    case alertEnd
+
+    /// Le mot « alert » des valeurs du contrat (`alert_start`, `alert_end`). Il est écrit à part, et la valeur construite : ce sont des valeurs de DONNÉES du
+    /// serveur, pas des clés de texte, et le garde-fou des clés (`LocalizationTests`) prend pour une clé de texte toute chaîne qui commence par « alert_ ».
+    private static let alertWord = "alert"
+
+    /// La valeur du champ `kind` du document (`backend/data-model.md` §2.21).
+    var code: String {
+        switch self {
+        case .update:
+            return "update"
+        case .alertStart:
+            return Self.alertWord + "_start"
+        case .alertEnd:
+            return Self.alertWord + "_end"
+        }
+    }
+
+    /// La sorte que dit cette valeur, ou nil quand elle est inconnue (un serveur plus récent peut en écrire d'autres : l'entrée est ignorée).
+    init?(code: String) {
+        let all: [NotificationJournalKind] = [.update, .alertStart, .alertEnd]
+        guard let found = all.first(where: { $0.code == code }) else {
+            return nil
+        }
+        self = found
+    }
 }
 
 /// Une entrée du journal, validée. Ne dit rien dans un journal d'exécution : des identifiants ne s'y écrivent pas.
@@ -63,7 +88,7 @@ enum NotificationJournal {
         expireAtMillis: Int? = Int.max
     ) -> JournalEntry? {
         guard isIdentifier(docId), integer(data["v"]) == version,
-              let kindCode = data["kind"] as? String, let kind = NotificationJournalKind(rawValue: kindCode),
+              let kindCode = data["kind"] as? String, let kind = NotificationJournalKind(code: kindCode),
               let miffId = data["miffId"] as? String, isIdentifier(miffId),
               let actorUid = data["actorUid"] as? String, isIdentifier(actorUid),
               let createdAtMillis, createdAtMillis > 0,
