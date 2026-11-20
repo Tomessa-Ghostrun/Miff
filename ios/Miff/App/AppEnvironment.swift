@@ -89,6 +89,9 @@ final class AppEnvironment {
     /// FEED-5 : les lectures du Feed (statuts en direct, position au toucher, actualisation). Elles ne lisent qu'à l'usage.
     let feedServices = FeedServices.live()
     let notificationAsks: NotificationAskStore = UserDefaultsNotificationAskStore()
+    /// CONS-4-I : combien de fois la carte calme « Une précision sur ce que tu partages » a été montrée à chaque compte sur ce téléphone
+    /// (un compteur dans un fichier exclu des sauvegardes, jamais envoyé, effacé avec le compte).
+    let clarifyAsks: ClarifyAskStore = ClarifyAskFileStore()
     /// NOTIF-P0 : le centre de notifications local, les choix de Réglages > Notifications, les demandes d'onglet.
     let notifications: NotificationServices
     /// La carte « deuxième chance » du Feed : créée à la première demande, comme les autorisations qu'elle lit.
@@ -362,6 +365,7 @@ final class AppEnvironment {
                 leaver: { uid, miffId in await repository.leave(uid: uid, miffId: miffId) },
                 onLeft: { miffId in await directory.afterOwnDeparture(miffId: miffId) },
                 awaiting: awaitingAgreement,
+                clarifyAsks: clarifyAsks,
                 pushConsent: push.consent,
                 // SRV-2I : l'accord vient d'être donné : le registre est synchronisé TOUT DE SUITE (pas au prochain retour au premier plan).
                 onNotificationsAnswered: { push.sync() }

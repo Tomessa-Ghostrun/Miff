@@ -74,7 +74,25 @@ struct PermissionGateHost<Content: View>: View {
             } else {
                 SessionLoadingView()
             }
+        case .clarify:
+            // CONS-4-I : la carte calme ; elle ne remplace rien de ce qui était demandé (elle vient en dernier) et ne met rien en pause.
+            if let clarify = state.clarify {
+                ClarifyScreen(state: clarify, actions: clarifyActions)
+            } else {
+                SessionLoadingView()
+            }
         }
+    }
+
+    private var clarifyActions: ClarifyActions {
+        ClarifyActions(
+            onAccept: {
+                Task {
+                    await viewModel.onClarifyAccepted()
+                }
+            },
+            onLater: { viewModel.onClarifyPutOff() }
+        )
     }
 
     private var signOutAction: (() -> Void)? {

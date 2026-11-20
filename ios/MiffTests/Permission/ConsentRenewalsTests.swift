@@ -18,10 +18,19 @@ final class ConsentRenewalsTests: XCTestCase {
     }
 
     private func dueMiffs(_ check: ConsentRenewalCheck) -> [RenewalMiff] {
-        if case .due(let miffs) = check {
+        if case .due(let miffs, _) = check {
             return miffs
         }
         XCTFail("un renouvellement était attendu : \(check)")
+        return []
+    }
+
+    /// Les Miffs à préciser (texte de la version 3 : rien n'est en pause pour elles).
+    private func clarifyMiffs(_ check: ConsentRenewalCheck) -> [RenewalMiff] {
+        if case .due(_, let clarify) = check {
+            return clarify
+        }
+        XCTFail("une précision était attendue : \(check)")
         return []
     }
 
@@ -58,6 +67,67 @@ final class ConsentRenewalsTests: XCTestCase {
         store.consents.removeAll()
         let noCard = await renewals().check(uid: uid)
         XCTAssertEqual(noCard, .nothingToRenew)
+    }
+
+    // MARK: - Trois populations (CONS-4-I, option D) : v1 ou v2 (pause), v3 (précision calme), v4 (rien)
+
+    func testVersions1And2PauseTheSharingAndAreNeverOnlyClarified() async {
+        store.memberships = [MembershipRef(key: first, miffId: first), MembershipRef(key: second, miffId: second)]
+        member(first, version: "2026-10-v1")
+        member(second, version: "2026-11-v02")
+
+        let check = await renewals().check(uid: uid)
+
+        XCTAssertEqual(dueMiffs(check).map { $0.miffId }, [first, second])
+        XCTAssertTrue(clarifyMiffs(check).isEmpty)
+    }
+
+    func testVersion3PausesNothingAndIsOnlyClarified() async {
+        store.memberships = [MembershipRef(key: "free", miffId: first)]
+        store.miffs[first] = testMiffDetails(name: "Chez nous")
+        member(first, version: "2026-11-v03")
+
+        let check = await renewals().check(uid: uid)
+
+        XCTAssertTrue(dueMiffs(check).isEmpty, "une version 3 n'est JAMAIS en pause : aucune pastille « En attente »")
+        XCTAssertEqual(clarifyMiffs(check).map { $0.miffId }, [first])
+        XCTAssertEqual(clarifyMiffs(check).first?.name, "Chez nous")
+    }
+
+    func testAMixOfVersionsSplitsIntoTheTwoListsAndAMiffIsInOneListOnly() async {
+        store.memberships = [MembershipRef(key: first, miffId: first), MembershipRef(key: second, miffId: second)]
+        member(first, version: "2026-10-v2")
+        member(second, version: "2026-11-v03")
+
+        let check = await renewals().check(uid: uid)
+
+        XCTAssertEqual(dueMiffs(check).map { $0.miffId }, [first])
+        XCTAssertEqual(clarifyMiffs(check).map { $0.miffId }, [second])
+    }
+
+    func testAStoppedSharingUnderVersion3IsNotClarifiedAtAll() async {
+        store.memberships = [MembershipRef(key: "free", miffId: first)]
+        member(first, enabled: false, version: "2026-11-v03")
+
+        let check = await renewals().check(uid: uid)
+
+        XCTAssertEqual(check, .nothingToRenew)
+    }
+
+    func testRenewingAVersion3WritesTheSameOneUpdateToVersion4WithServerTime() async throws {
+        member(first, version: "2026-11-v03")
+
+        let result = await renewals().renew(uid: uid, miffIds: [first])
+
+        XCTAssertEqual(result, .done)
+        XCTAssertEqual(store.commitsAsLots.count, 1)
+        let lot = try XCTUnwrap(store.commitsAsLots.first)
+        XCTAssertEqual(lot.map { $0.path }, ["miffs/\(first)/members/\(uid)"], "ni statut, ni photo, ni position")
+        guard case .map(let sharing)? = lot.first?.data["sharing"] else {
+            return XCTFail("sharing doit être une carte")
+        }
+        XCTAssertEqual(sharing["consentVersion"], .string("2026-11-v04"))
+        XCTAssertEqual(sharing["consentedAt"], .serverTimestamp)
     }
 
     func testANewerTextThanThisBuildIsNeverRenewedBackwards() async {
@@ -143,7 +213,8 @@ final class ConsentRenewalsTests: XCTestCase {
         guard case .map(let sharing)? = lot.first?.data["sharing"] else {
             return XCTFail("sharing doit être une carte")
         }
-        XCTAssertEqual(sharing["consentVersion"], .string("2026-11-v03"))
+        // CONS-4-I : « J'accepte » et « J'ai compris » écrivent la version 4 (règle R-LIEU-3 : strictement supérieure à la v1, v2 et v3).
+        XCTAssertEqual(sharing["consentVersion"], .string("2026-11-v04"))
         XCTAssertEqual(sharing["enabled"], .bool(true))
         XCTAssertEqual(sharing["consentedAt"], .serverTimestamp)
         XCTAssertEqual(sharing["revokedAt"], .null)

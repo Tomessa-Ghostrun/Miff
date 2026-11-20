@@ -1,9 +1,11 @@
 import SwiftUI
 
-// Le texte du consentement, version « 2026-11-v03 » (`MiffSharingConsent.version` ; maquettes 21 et 24 de
-// design/exports/lieux/claude, docs/legal/consentement-localisation-v3.md). UN seul texte pour l'entrée (créer, rejoindre), la
-// reprise du partage et l'écran de renouvellement : une ligne changée ici l'est pour tous (et dans le catalogue d'Android, clés
-// `miff_consent3_*`). Rien dans ce fichier ne lit ni n'écrit quoi que ce soit.
+// Le texte du consentement, version « 2026-11-v04 » (`MiffSharingConsent.version` ; maquettes 21 et 24 de
+// design/exports/lieux/claude + les deux lignes de CONS-4 : l'endroit de la photo et « Sur ton téléphone seulement » ;
+// docs/tickets/consentement-localisation-historique.md, section 7 ; le texte de la version 3 est archivé dans
+// docs/legal/consentement-localisation-v3.md). UN seul texte pour l'entrée (créer, rejoindre), la reprise du partage et l'écran de
+// renouvellement : une ligne changée ici l'est pour tous (et dans le catalogue d'Android, clés `miff_consent3_*` : le préfixe est
+// historique, il ne nomme pas la version). Rien dans ce fichier ne lit ni n'écrit quoi que ce soit.
 
 /// Une ligne du consentement : un pictogramme bleu, un intitulé en gras, la phrase du texte. Lue d'un bloc par le lecteur
 /// d'écran : l'intitulé d'abord, puis la phrase.
@@ -65,12 +67,18 @@ private struct ConsentFrame<Content: View>: View {
     }
 }
 
-/// Les lignes que la carte d'entrée et l'écran de renouvellement ont en commun.
+/// Les lignes que la carte d'entrée et l'écran de renouvellement ont en commun : l'endroit de la photo, qui voit, la localisation du
+/// téléphone, ce qui reste SUR LE TÉLÉPHONE SEULEMENT (CONS-4 : cette ligne ne se retire jamais, c'est elle qui ferme l'écart J65),
+/// l'effacement, ce que les membres voient aussi, les lieux.
 private struct ConsentWhoSeesLines: View {
     var body: some View {
+        ConsentLine(systemImage: "camera", titleId: "miff_consent3_photo_title", bodyId: "miff_consent3_photo_body")
+        ConsentDivider()
         ConsentLine(systemImage: "eye", titleId: "miff_consent3_who_title", bodyId: "miff_consent3_who_body")
         ConsentDivider()
         ConsentLine(systemImage: "iphone", titleId: "miff_consent3_closed_title", bodyId: "miff_consent3_closed_body")
+        ConsentDivider()
+        ConsentLine(systemImage: "lock", titleId: "miff_consent3_local_title", bodyId: "miff_consent3_local_body")
         ConsentDivider()
         ConsentLine(systemImage: "trash", titleId: "miff_consent3_erase_title", bodyId: "miff_consent3_erase_body")
         ConsentDivider()
