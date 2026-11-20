@@ -27,6 +27,7 @@ final class AccountLocalStorageGuardTests: XCTestCase {
         "Services/Storage/DeviceIdFileStore.swift": "session d'appareil : DeviceSession.forget",
         "Services/Storage/LocalStores.swift": "consentement en attente : pending.clear ; drapeaux d'onboarding gardés",
         "Services/Storage/PendingDeletionFileStore.swift": "marqueurs de suppression de Miff : AccountLocalData",
+        "Services/Miff/ClarifyAskStore.swift": "compteur de la carte « Une précision » : AccountLocalData",
         "Services/Storage/ProfileDraftFileStore.swift": "brouillon du profil : drafts.clear",
         "Models/Main/AppLanguage.swift": "langue d'affichage : préférence de l'appareil, rien de personnel, gardée",
         "Services/Update/PublishLedger.swift": "carnet de l'Update : AccountLocalData (updateLedger)",

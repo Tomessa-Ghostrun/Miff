@@ -1,30 +1,42 @@
 import Foundation
 
 // CONFIDENTIALITÉ, pour ce fichier : le choix de langue est une préférence d'affichage gardée SUR L'APPAREIL (UserDefaults, une seule valeur :
-// « fr », « en » ou « system »). Ce n'est pas une donnée personnelle ; elle n'est ni envoyée au serveur, ni liée au compte, ni journalisée,
-// ni jamais un paramètre d'événement Analytics.
+// le code de la langue (« fr », « en », « es », « it », « pt », « de ») ou « system »). Ce n'est pas une donnée personnelle ; elle n'est ni
+// envoyée au serveur, ni liée au compte, ni journalisée, ni jamais un paramètre d'événement Analytics.
 
-/// Ce que la personne choisit dans Réglages > Langue (miroir de `AppLanguage` d'Android : français, anglais, ou « la langue du téléphone »).
-/// Rien d'autre n'est proposé : ajouter une langue est une décision produit (relecture du ton, des textes légaux, des captures).
+/// Ce que la personne choisit dans Réglages > Langue (miroir de `AppLanguage` d'Android : une langue de l'app, ou « la langue du téléphone »).
+/// Les langues sont celles du registre `docs/contracts/i18n-languages.json` (source unique ; le job « Parité des clés de traduction » vérifie que
+/// ce fichier, `CFBundleLocalizations` et le catalogue disent la même chose). Elles sont écrites dans l'ORDRE ALPHABÉTIQUE DE LEUR NOM, écrit dans
+/// leur langue (Deutsch, English, Español, Français, Italiano, Português : ticket I18N-4L §4.6), puis « langue du téléphone » en dernier.
 ///
-/// POUR AJOUTER UNE LANGUE (es, it, pt, de : chantier traduction, registre `docs/contracts/i18n-languages.json`) : un cas ci-dessous dont la valeur
-/// est le code (`case spanish = "es"`, placé AVANT `system`), son libellé dans `LanguageLabels` (le compilateur refuse un `switch` incomplet ;
-/// nom écrit dans sa propre langue, clé `ios_settings_language_*`), le code dans `CFBundleLocalizations` (`project.yml`) et les textes dans le catalogue.
-/// Rien d'autre : la liste de l'écran, la lecture du choix gardé et la langue effective se déduisent de `allCases`.
+/// `pt` est le portugais du PORTUGAL (décision du ticket §5) : un téléphone en pt-BR ou en pt-PT affiche `pt`. Une autre variante régionale
+/// (`pt-BR`) serait un jeu de textes distinct, ajouté plus tard.
+///
+/// POUR AJOUTER UNE LANGUE : l'entrée du registre, un cas ci-dessous dont la valeur est le code (`case spanish = "es"`, AVANT `system`, à sa place
+/// alphabétique), son libellé dans `LanguageLabels` (le compilateur refuse un `switch` incomplet ; nom écrit dans sa propre langue, clé
+/// `ios_settings_language_*`), le code dans `CFBundleLocalizations` (`project.yml`) et les textes dans le catalogue. Rien d'autre : la liste de
+/// l'écran, la lecture du choix gardé et la langue effective se déduisent de `allCases`.
+///
+/// Une langue n'est PROPOSÉE dans l'écran qu'une fois ses textes dans l'app (`AppLanguageController.offeredChoices`) : tant que le catalogue n'a
+/// aucun texte pour elle, personne ne peut la choisir et un téléphone dans cette langue reste en anglais.
 enum AppLanguageChoice: String, CaseIterable, Equatable {
-    case french = "fr"
+    case german = "de"
     case english = "en"
+    case spanish = "es"
+    case french = "fr"
+    case italian = "it"
+    case portuguese = "pt"
     case system
 
-    /// Lit la valeur gardée sur l'appareil. Seule la langue compte (« fr-FR » est le français) ; une valeur vide, inconnue ou écrite par
-    /// une version future donne « langue du téléphone » : elle ne casse jamais l'écran.
+    /// Lit la valeur gardée sur l'appareil : le code d'une langue de l'app, exactement (« fr » ; la casse et les espaces autour sont tolérés). Une
+    /// valeur vide, inconnue ou écrite par une version future (« pt-BR », qui serait un jeu de textes à part) donne « langue du téléphone » : elle
+    /// ne casse jamais l'écran. L'app n'écrit jamais autre chose que ces codes.
     static func from(stored: String?) -> AppLanguageChoice {
         guard let stored else {
             return .system
         }
         let cleaned = stored.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        let language = cleaned.split(whereSeparator: { $0 == "-" || $0 == "_" }).first.map(String.init) ?? ""
-        return allCases.first { $0 != .system && $0.rawValue == language } ?? .system
+        return allCases.first { $0 != .system && $0.rawValue == cleaned } ?? .system
     }
 
     /// Le code de langue imposé, ou nil quand c'est le téléphone qui décide.
@@ -66,14 +78,16 @@ struct UserDefaultsLanguageStore: AppLanguageStoring {
 struct AppLanguageEnvironment {
     /// Les langues de la personne dans l'ordre (`Locale.preferredLanguages`).
     var preferred: () -> [String]
-    /// Les langues déclarées par l'app (`Bundle.main.localizations`).
+    /// Les langues dont l'app a les textes (`Bundle.main.localizations`, réduites à celles qui ont leur `xx.lproj`).
     var available: () -> [String]
     /// Le paquet de textes d'une langue (`fr.lproj`), nil s'il n'existe pas.
     var languageBundle: (String) -> Bundle?
 
     static let live = AppLanguageEnvironment(
         preferred: { Locale.preferredLanguages },
-        available: { Bundle.main.localizations },
+        // Une langue déclarée dans `CFBundleLocalizations` mais sans textes encore (`planned` au registre) n'est PAS parlée par l'app : un
+        // téléphone dans cette langue reste en anglais (sinon la langue effective dirait « es » avec des textes anglais).
+        available: { Bundle.main.localizations.filter { Bundle.main.path(forResource: $0, ofType: "lproj") != nil } },
         languageBundle: { code in
             Bundle.main.path(forResource: code, ofType: "lproj").flatMap { Bundle(path: $0) }
         }
@@ -85,7 +99,7 @@ struct AppLanguageEnvironment {
 /// pseudo-langue allongée, le repli anglais et les captures de la CI ne changent pas.
 struct AppLanguageState {
     let choice: AppLanguageChoice
-    /// Le code effectif (« fr » ou « en »), jamais nil : le français ou l'anglais, même quand le téléphone parle une autre langue.
+    /// Le code effectif (« fr », « en », « es »...), jamais nil : une langue de l'app, l'anglais quand le téléphone parle une autre langue.
     let code: String
     let locale: Locale
     let bundle: Bundle
@@ -93,15 +107,24 @@ struct AppLanguageState {
     static func make(choice: AppLanguageChoice, environment: AppLanguageEnvironment = .live) -> AppLanguageState {
         guard let forced = choice.forcedCode else {
             let code = AppLanguageName.code(preferred: environment.preferred(), available: environment.available())
-            return AppLanguageState(choice: choice, code: code, locale: .autoupdatingCurrent, bundle: .main)
+            // Le portugais de l'app est celui du PORTUGAL, même sur un téléphone en pt-BR : ses pluriels (« 0 dias », le zéro n'est pas un singulier
+            // au Portugal, contrairement au Brésil) et ses dates suivent `pt_PT`. Les autres langues gardent les formats du téléphone.
+            let locale: Locale = code == "pt" ? formattingLocale(code: code) : .autoupdatingCurrent
+            return AppLanguageState(choice: choice, code: code, locale: locale, bundle: .main)
         }
         // Paquet absent (ne doit pas arriver) : le paquet principal, donc la langue du téléphone, jamais des clés brutes.
         return AppLanguageState(
             choice: choice,
             code: forced,
-            locale: Locale(identifier: forced),
+            locale: formattingLocale(code: forced),
             bundle: environment.languageBundle(forced) ?? .main
         )
+    }
+
+    /// La locale des dates, des nombres et des pluriels d'une langue de l'app : son code, sauf `pt` (portugais du Portugal, `pt_PT` : règle de
+    /// pluriel et formats du Portugal, pas ceux du Brésil que `pt` seul désigne pour le système).
+    static func formattingLocale(code: String) -> Locale {
+        Locale(identifier: code == "pt" ? "pt_PT" : code)
     }
 }
 
@@ -164,6 +187,14 @@ final class AppLanguageController: ObservableObject {
     }
 
     var choice: AppLanguageChoice { state.choice }
+
+    /// Les choix montrés dans Réglages > Langue, dans l'ordre de `allCases` : « langue du téléphone », et chaque langue dont les textes sont dans
+    /// l'app (son `xx.lproj` existe). Le choix en cours y est toujours, même si ses textes ont disparu (version plus ancienne).
+    var offeredChoices: [AppLanguageChoice] {
+        AppLanguageChoice.allCases.filter {
+            $0 == .system || $0 == state.choice || environment.languageBundle($0.rawValue) != nil
+        }
+    }
 
     /// Garde le choix sur l'appareil et l'applique tout de suite. Choisir ce qui est déjà choisi ne fait rien.
     func select(_ choice: AppLanguageChoice) {

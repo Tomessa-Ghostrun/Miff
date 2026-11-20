@@ -36,7 +36,7 @@ final class CountdownTextsTests: XCTestCase {
     }
 
     func testNoDurationEverShowsSeconds() throws {
-        for language in ["fr", "en"] {
+        for language in try I18nRegistry.shipped() {
             let localized = try texts(language)
             for minutes in 1...120 {
                 let text = localized.duration(CountdownDuration.make(minutes: minutes))
@@ -64,7 +64,7 @@ final class CountdownTextsTests: XCTestCase {
     }
 
     func testNoAlertWordNoExclamationMarkAndNoDangerWordInAnyLanguage() throws {
-        for language in ["fr", "en"] {
+        for language in try I18nRegistry.shipped() {
             let localized = try texts(language)
             let all = [
                 localized.title, localized.body(.hours(2)), localized.body(.lessThanMinute),
@@ -111,7 +111,7 @@ final class CountdownTextsTests: XCTestCase {
     }
 
     func testTheSpokenLabelNeverCarriesTheNonBreakingSpaceOfTheWrittenDuration() throws {
-        for language in ["fr", "en"] {
+        for language in try I18nRegistry.shipped() {
             let localized = try texts(language)
             for minutes in [1, 2, 47, 60, 61, 119, 120] {
                 let label = localized.accessibilityLabel(CountdownDuration.make(minutes: minutes))

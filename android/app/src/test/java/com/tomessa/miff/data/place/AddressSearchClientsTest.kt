@@ -1,7 +1,9 @@
 package com.tomessa.miff.data.place
 
 import com.tomessa.miff.domain.place.AddressSearch
+import com.tomessa.miff.domain.place.AddressSearchLanguage
 import com.tomessa.miff.domain.place.AddressSearchResult
+import com.tomessa.miff.testsupport.I18nResources
 import com.tomessa.miff.testsupport.testSuggestion
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -43,13 +45,42 @@ class AddressSearchClientsTest {
             assertFalse(url.contains("lat="))
         }
 
+    /**
+     * One request per language of the registry and per service (ticket I18N-4L, criterion 14). Photon knows `de`, `en` and `fr` only (measured on 2026-11-19: `it`, `es`
+     * and `pt` answer HTTP 400): the other languages ask for English, a language of a phone that is not supported (Dutch...) too.
+     */
     @Test
-    fun photon_anyOtherLanguageAsksForEnglish() =
+    fun everyLanguageOfTheRegistry_asksTheServiceForALanguageItAccepts() =
         runTest {
-            val fetcher = FakeFetcher(photonBody)
-            PhotonAddressSearch("https://photon.komoot.io/api/", fetcher).search("rue", "de")
-            assertTrue(fetcher.urls.single().contains("lang=en"))
+            val expected = mapOf("fr" to "fr", "en" to "en", "de" to "de", "es" to "en", "it" to "en", "pt" to "en")
+            assertEquals(
+                "a language of the registry has no row in this test",
+                expected.keys,
+                I18nResources.languages
+                    .map {
+                        it.code
+                    }.toSet(),
+            )
+            expected.forEach { (language, asked) ->
+                val photon = FakeFetcher(photonBody)
+                PhotonAddressSearch("https://photon.komoot.io/api/", photon).search("rue", language)
+                assertTrue("photon $language", Regex("[?&]lang=$asked(&|$)").containsMatchIn(photon.urls.single()))
+                val geoapify = FakeFetcher("""{"features":[]}""")
+                GeoapifyAddressSearch("TESTKEY123", geoapify).search("rue", language)
+                assertTrue("geoapify $language", Regex("[?&]lang=$asked(&|$)").containsMatchIn(geoapify.urls.single()))
+            }
         }
+
+    @Test
+    fun aTagOfRegion_aLanguageOfThePhoneThatIsNotSupported_orNothing_asksForEnglishOrTheLanguageAlone() {
+        val photon = AddressSearchLanguage.PHOTON
+        assertEquals("fr", AddressSearchLanguage.forService("fr-CA", photon))
+        assertEquals("de", AddressSearchLanguage.forService("de_AT", photon))
+        assertEquals("en", AddressSearchLanguage.forService("pt-BR", photon))
+        assertEquals("en", AddressSearchLanguage.forService("nl", photon))
+        assertEquals("en", AddressSearchLanguage.forService("", photon))
+        assertEquals("fr", AddressSearchLanguage.forService(" FR ", photon))
+    }
 
     @Test
     fun photon_noAnswer_orAnAnswerThatMakesNoSense_isUnavailable_andAnEmptyOneIsNoResult() =

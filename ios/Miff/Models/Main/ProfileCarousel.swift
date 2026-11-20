@@ -174,11 +174,44 @@ enum ProfileCarouselRules {
     }
 }
 
-/// La hauteur commune des cartes du carrousel. Elle ne RÉTRÉCIT pas tant que la taille du texte reste la même : une carte dont le contenu
-/// change pendant un balayage (la phrase d'aide qui devient « 4 membres », des pastilles qui deviennent des photos) ne fait plus sauter
-/// ce qui est dessous (clignotement). Elle suit la taille du texte quand celle-ci change (réglages d'accessibilité).
+/// La hauteur commune des cartes du carrousel. Elle ne RÉTRÉCIT pas tant que la taille du texte ET la largeur des cartes restent les mêmes :
+/// une carte dont le contenu change pendant un balayage (la phrase d'aide qui devient « 4 membres », des pastilles qui deviennent des photos)
+/// ne fait plus sauter ce qui est dessous (clignotement). Elle suit la taille du texte quand celle-ci change (réglages d'accessibilité), et
+/// elle suit la largeur : une carte mesurée AVANT d'avoir sa vraie largeur (première mise en page, étroite ou nulle) est très haute (le texte
+/// passe à la ligne mot à mot) ; cette hauteur-là n'est pas une mesure, elle ne doit jamais être retenue (espace vide énorme sous la carte,
+/// retour du PM, TestFlight 43).
 enum CarouselCardHeight {
-    static func next(current: CGFloat, measured: CGFloat, sameTextSize: Bool) -> CGFloat {
-        sameTextSize ? max(current, measured) : measured
+    /// En dessous de cette largeur (en points), une carte n'a pas encore sa mise en page : sa hauteur n'est pas publiée.
+    static let minMeasurableWidth: CGFloat = 100
+
+    /// Ce que publie une carte : sa hauteur naturelle ET la largeur à laquelle elle a été mesurée.
+    struct Measure: Equatable {
+        let height: CGFloat
+        let width: CGFloat
+
+        /// Aucune mesure (valeur de départ, ou mesure sans valeur).
+        static let none = Measure(height: 0, width: 0)
+    }
+
+    /// La mesure d'UNE carte : `none` tant que sa largeur ou sa hauteur n'a pas de sens (largeur sous `minMeasurableWidth`, valeur négative, NaN).
+    static func measure(height: CGFloat, width: CGFloat) -> Measure {
+        guard height.isFinite, width.isFinite, height > 0, width >= minMeasurableWidth else {
+            return .none
+        }
+        return Measure(height: height, width: width)
+    }
+
+    /// La mesure retenue parmi toutes les cartes : la plus haute (une mesure vide ne gagne jamais).
+    static func combine(_ first: Measure, _ second: Measure) -> Measure {
+        second.height > first.height ? second : first
+    }
+
+    /// La hauteur à utiliser. `measured` <= 0 (aucune mesure) : rien ne change. `sameTextSize` et `sameWidth` : la mesure précédente a été
+    /// faite avec la même taille de texte et à la même largeur ; sinon la nouvelle mesure remplace l'ancienne, même plus petite.
+    static func next(current: CGFloat, measured: CGFloat, sameTextSize: Bool, sameWidth: Bool = true) -> CGFloat {
+        guard measured > 0 else {
+            return current
+        }
+        return sameTextSize && sameWidth ? max(current, measured) : measured
     }
 }

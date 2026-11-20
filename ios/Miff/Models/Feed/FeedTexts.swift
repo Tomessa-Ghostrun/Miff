@@ -3,7 +3,7 @@ import Foundation
 // Les phrases du Feed : ce que `FeedBuilder` a décidé (des faits), écrit dans la langue du téléphone avec les clés `feed_*` du
 // catalogue (français et anglais, mêmes clés qu'Android). Les heures suivent la langue ET le choix 12 h / 24 h du téléphone
 // (« 16 h 02 » en français ; « 4:02 PM » ou « 16:02 » en anglais). Une phrase est une clé entière : rien n'est assemblé à partir de
-// morceaux, sauf une heure, un nombre ou un prénom. Rien n'est journalisé ; les prénoms reçus sont montrés, jamais gardés.
+// morceaux, sauf une heure, un nombre, un prénom ou un complément de lieu COMPLET (préposition et article compris, une clé par catégorie et par sens). Rien n'est journalisé ; les prénoms reçus sont montrés, jamais gardés.
 // La recherche du texte, la langue, le fuseau et le format 12 h / 24 h sont injectables : les tests lisent le VRAI catalogue.
 
 struct FeedTexts {
@@ -111,35 +111,12 @@ struct FeedTexts {
         }
     }
 
-    /// Le lieu au milieu d'une phrase (« A quitté la maison », « Thomas a quitté le travail à 16 h 40 »).
-    func placeNoun(_ place: PlaceRef) -> String {
-        switch place {
-        case .category(let kind):
-            switch kind {
-            case .home:
-                return text("feed_place_noun_home")
-            case .work:
-                return text("feed_place_noun_work")
-            case .school:
-                return text("feed_place_noun_school")
-            case .sport:
-                return text("feed_place_noun_sport")
-            case .relative:
-                return text("feed_place_noun_relative")
-            }
-        case .named(let name):
-            return name
-        case .unknown:
-            return text("feed_place_noun_generic")
-        }
-    }
-
     func label(_ label: StateLabel) -> String {
         switch label {
         case .at(let place):
             return atLabel(place)
         case .left(let place):
-            return text("feed_label_left", placeNoun(place))
+            return text("feed_label_left", placeComplement(place, movement: .leave))
         case .danger:
             return text("feed_label_danger")
         case .noNews:
@@ -232,9 +209,9 @@ struct FeedTexts {
         switch page.kind {
         case .left(let place, let moment):
             if page.isMe {
-                return text("feed_bubble_me_orange", placeNoun(place), at(moment))
+                return text("feed_bubble_me_orange", placeComplement(place, movement: .leave), at(moment))
             }
-            return text("feed_bubble_orange", name, placeNoun(place), at(moment))
+            return text("feed_bubble_orange", name, placeComplement(place, movement: .leave), at(moment))
         case .noNewsSince(let moment):
             if page.isMe {
                 return text("feed_bubble_me_red_stale", since(moment))

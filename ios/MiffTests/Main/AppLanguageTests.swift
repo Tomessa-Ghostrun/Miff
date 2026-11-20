@@ -1,7 +1,7 @@
 import XCTest
 @testable import Miff
 
-/// Réglages > Langue : le choix (français, English, langue du téléphone), sa conservation sur l'appareil, la langue effective qui en
+/// Réglages > Langue : le choix (une langue de l'app ou la langue du téléphone), sa conservation sur l'appareil, la langue effective qui en
 /// résulte (texte, locale des dates et des nombres) et l'absence totale de renvoi vers les réglages de l'iPhone pour cette ligne.
 private final class MemoryLanguageStore: AppLanguageStoring {
     var value: String?
@@ -23,7 +23,7 @@ private final class MemoryLanguageStore: AppLanguageStoring {
 
 @MainActor
 final class AppLanguageTests: XCTestCase {
-    /// Un téléphone qui parle allemand, puis français, puis anglais : l'app ne parle que le français et l'anglais.
+    /// Un téléphone dont l'app n'a encore les textes que du français et de l'anglais (es, it, pt, de : lot 4 du ticket I18N-4L).
     private func phone(_ preferred: [String]) -> AppLanguageEnvironment {
         AppLanguageEnvironment(
             preferred: { preferred },
@@ -51,19 +51,23 @@ final class AppLanguageTests: XCTestCase {
         XCTAssertNil(AppLanguageChoice.system.forcedCode)
     }
 
-    func testAStoredValueIsReadByItsLanguageAndAnythingElseIsThePhoneLanguage() {
+    func testAStoredValueIsReadByItsLanguageCodeAndAnythingElseIsThePhoneLanguage() {
         XCTAssertEqual(AppLanguageChoice.from(stored: "fr"), .french)
         XCTAssertEqual(AppLanguageChoice.from(stored: "en"), .english)
-        XCTAssertEqual(AppLanguageChoice.from(stored: "fr-FR"), .french)
-        XCTAssertEqual(AppLanguageChoice.from(stored: " EN_us "), .english)
+        XCTAssertEqual(AppLanguageChoice.from(stored: "es"), .spanish)
+        XCTAssertEqual(AppLanguageChoice.from(stored: "it"), .italian)
+        XCTAssertEqual(AppLanguageChoice.from(stored: "pt"), .portuguese)
+        XCTAssertEqual(AppLanguageChoice.from(stored: "de"), .german)
+        XCTAssertEqual(AppLanguageChoice.from(stored: " EN "), .english)
         XCTAssertEqual(AppLanguageChoice.from(stored: "system"), .system)
-        for unknown in [nil, "", "   ", "de", "es-ES", "klingon", "🙂"] {
+        // Une région n'est jamais réduite à sa langue : « pt-BR » serait un jeu de textes à part (ticket I18N-4L critère 11), écrit par une
+        // version future ; cette version-ci ne le connaît pas et revient à « langue du téléphone » sans casser l'écran.
+        let unknowns: [String?] = [
+            nil, "", "   ", "klingon", "🙂", "ja", "nl", "pt-BR", "pt_BR", "pt-PT", "fr-FR", "es-ES", "de-CH"
+        ]
+        for unknown in unknowns {
             XCTAssertEqual(AppLanguageChoice.from(stored: unknown), .system, "\(String(describing: unknown))")
         }
-    }
-
-    func testTheThreeChoicesAreOfferedInTheOrderOfAndroid() {
-        XCTAssertEqual(AppLanguageChoice.allCases, [.french, .english, .system])
     }
 
     // MARK: - La langue effective
@@ -209,13 +213,18 @@ final class AppLanguageTests: XCTestCase {
 
     // MARK: - L'écran
 
-    func testTheNamesOfTheTwoLanguagesAreNeverTranslated() {
+    /// Chaque langue est écrite dans SA langue, quelle que soit la langue de l'app (VoiceOver lit « Español, sélectionné »).
+    func testTheNamesOfTheLanguagesAreNeverTranslated() {
         let controller = AppLanguageController(store: MemoryLanguageStore(), publishesGlobally: true)
         for choice in [AppLanguageChoice.french, .english] {
             controller.select(choice)
 
-            XCTAssertEqual(LanguageLabels.label(for: .french), "Français")
+            XCTAssertEqual(LanguageLabels.label(for: .german), "Deutsch")
             XCTAssertEqual(LanguageLabels.label(for: .english), "English")
+            XCTAssertEqual(LanguageLabels.label(for: .spanish), "Español")
+            XCTAssertEqual(LanguageLabels.label(for: .french), "Français")
+            XCTAssertEqual(LanguageLabels.label(for: .italian), "Italiano")
+            XCTAssertEqual(LanguageLabels.label(for: .portuguese), "Português")
         }
     }
 
@@ -255,7 +264,7 @@ final class AppLanguageTests: XCTestCase {
         for choice in AppLanguageChoice.allCases {
             let rows = LanguageRows.rows(selected: choice)
 
-            XCTAssertEqual(rows.map { $0.choice }, [.french, .english, .system])
+            XCTAssertEqual(rows.map { $0.choice }, AppLanguageChoice.allCases)
             XCTAssertEqual(rows.filter { $0.isSelected }.map { $0.choice }, [choice])
         }
     }

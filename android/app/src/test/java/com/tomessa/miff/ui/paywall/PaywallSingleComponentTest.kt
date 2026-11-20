@@ -1,5 +1,6 @@
 package com.tomessa.miff.ui.paywall
 
+import com.tomessa.miff.testsupport.I18nResources
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -100,9 +101,9 @@ class PaywallSingleComponentTest {
 
     @Test
     fun noNotificationsIntelligentesInTheOffer() {
-        val res = File("src/main/res")
-        listOf("values/strings.xml", "values-fr/strings.xml").forEach { file ->
-            val text = File(res, file).readText()
+        I18nResources.present.forEach { language ->
+            val file = language.stringsFile.path
+            val text = language.text()
             assertFalse(file, text.contains("Notifications intelligentes", ignoreCase = true))
             assertFalse(file, text.contains("Smart notifications", ignoreCase = true))
         }

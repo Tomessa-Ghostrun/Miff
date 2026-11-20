@@ -207,7 +207,7 @@ final class DangerRequestRightsTests: XCTestCase {
             "miff_message_generic"
         ] {
             let localizations = strings[key]?["localizations"] as? [String: Any]
-            for language in ["fr", "en"] {
+            for language in try I18nRegistry.shipped() {
                 let unit = (localizations?[language] as? [String: Any])?["stringUnit"] as? [String: Any]
                 let value = unit?["value"] as? String ?? ""
                 XCTAssertFalse(value.isEmpty, "texte manquant : \(key) (\(language))")

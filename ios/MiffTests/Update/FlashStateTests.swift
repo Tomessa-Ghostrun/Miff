@@ -73,7 +73,7 @@ final class FlashStateTests: XCTestCase {
         XCTAssertEqual(state.textKey, "update_flash_state_on")
         XCTAssertEqual(state.symbolName, "bolt.fill")
         for key in ["update_flash_state_on", "update_flash_state_off"] {
-            for language in ["fr", "en"] {
+            for language in try I18nRegistry.shipped() {
                 let path = try XCTUnwrap(Bundle.main.path(forResource: language, ofType: "lproj"), language)
                 let bundle = try XCTUnwrap(Bundle(path: path))
                 XCTAssertNotEqual(L10n.string(key, bundle: bundle), key, "\(key) non traduit en \(language)")

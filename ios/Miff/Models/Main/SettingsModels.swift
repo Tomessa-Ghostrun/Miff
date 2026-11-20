@@ -96,16 +96,19 @@ enum SettingsAccess {
     }
 }
 
-/// Les noms des langues et la langue du téléphone que l'app parle. Le CHOIX de la langue (français, English, langue du téléphone) est dans
+/// Les noms des langues et la langue du téléphone que l'app parle. Le CHOIX de la langue (une des langues de l'app, ou la langue du téléphone) est dans
 /// `AppLanguage.swift` ; l'écran est `LanguageView` (décision du PM du 2026-11-13 : le même écran qu'Android, dans l'app, à la place de
 /// l'ouverture des réglages de l'iPhone décidée d'abord, Q4 du ticket Feed / Profil / Réglages).
 enum AppLanguageName {
     /// `preferred` : les langues de la personne dans l'ordre (`Locale.preferredLanguages`) ; `available` : les langues de l'app
     /// (`Bundle.main.localizations`). La première langue de la personne que l'app parle gagne, sinon la langue de repli (l'anglais).
+    /// Seule la langue compte, jamais la région : « pt-BR » et « pt-PT » donnent `pt` (le portugais du Portugal, ticket I18N-4L §5), « es-MX »
+    /// donne `es`, « de-CH » donne `de`.
     static func code(preferred: [String], available: [String], fallback: String = "en") -> String {
         let supported = available.filter { $0 != "Base" }
         for language in preferred {
-            let base = language.split(separator: "-").first.map(String.init) ?? language
+            let parts = language.lowercased().split(whereSeparator: { $0 == "-" || $0 == "_" })
+            let base = parts.first.map(String.init) ?? language
             if supported.contains(base) {
                 return base
             }
