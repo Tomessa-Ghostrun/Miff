@@ -207,7 +207,7 @@ class TabBarGlassContrastTest {
         assertEquals(0xFFFFFFFF.toInt(), GlassPaletteLight.surfaceOpaque.toArgb())
         assertEquals(0xFF222222.toInt(), GlassPaletteOnPhoto.surfaceOpaque.toArgb())
         assertEquals(0xFF043CD1.toInt(), GlassPaletteLight.iconActive.toArgb())
-        assertEquals(28f, GlassBlurRadius.value, 0f)
+        assertEquals(12f, GlassBlurRadius.value, 0f)
     }
 
     // --- The central button: the figures of section 7 (item 4), including the limits the PM accepted ---------------------------------
