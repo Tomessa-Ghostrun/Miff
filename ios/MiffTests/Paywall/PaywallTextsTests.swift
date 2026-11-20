@@ -36,7 +36,7 @@ final class PaywallTextsTests: XCTestCase {
 
     func testEveryTextExistsInFrenchAndEnglishWithTheSameNumberOfValues() throws {
         for (key, expected) in keys {
-            for language in ["fr", "en"] {
+            for language in try I18nRegistry.shipped() {
                 let text = try value(key, language)
                 XCTAssertFalse(text.isEmpty, "\(key) \(language)")
                 let count = text.components(separatedBy: "%1$").count - 1
@@ -48,7 +48,7 @@ final class PaywallTextsTests: XCTestCase {
     func testNoTextWritesAPriceACurrencyOrTheWordPremium() throws {
         let forbidden = try NSRegularExpression(pattern: "€|\\$|\\beur\\b|\\busd\\b|premium", options: .caseInsensitive)
         for key in keys.keys {
-            for language in ["fr", "en"] {
+            for language in try I18nRegistry.shipped() {
                 // Les valeurs insérées (`%1$@`, `%1$lld`) ne sont pas un signe de dollar : on les retire avant de chercher.
                 let text = try value(key, language).replacingOccurrences(of: "%1$", with: "")
                 let range = NSRange(text.startIndex..., in: text)
@@ -59,7 +59,7 @@ final class PaywallTextsTests: XCTestCase {
 
     func testTheOnlyPercentageWrittenInATextIsTheDecidedAlmostThirty() throws {
         for key in keys.keys where key != "paywall_annual_savings" {
-            for language in ["fr", "en"] {
+            for language in try I18nRegistry.shipped() {
                 XCTAssertFalse(try value(key, language).contains("%\u{0020}"), "\(key) : un pourcentage en dur ?")
             }
         }
@@ -77,7 +77,7 @@ final class PaywallTextsTests: XCTestCase {
 
     func testTheCalmMessagesAreNeverAlarming() throws {
         for key in ["paywall_unavailable", "paywall_pending", "paywall_error_calm", "paywall_restore_none"] {
-            for language in ["fr", "en"] {
+            for language in try I18nRegistry.shipped() {
                 let text = try value(key, language)
                 XCTAssertFalse(text.contains("!"), "\(key) \(language) : pas de point d'exclamation")
             }

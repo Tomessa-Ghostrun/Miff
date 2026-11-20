@@ -169,8 +169,18 @@ final class AppConfigurationTests: XCTestCase {
 
     // MARK: - Langues
 
-    func testEnglishIsTheFallbackAndFrenchAndEnglishAreDeclared() {
+    /// L'anglais est la langue de repli ; les langues déclarées sont EXACTEMENT les langues `required` du registre
+    /// (`docs/contracts/i18n-languages.json`), codes sans région (`pt`, jamais `pt-PT` ni `pt-BR`). Une langue `planned` (es, it, pt, de avant le
+    /// lot 4) n'est PAS déclarée : sans dossier `xx.lproj`, iOS pourrait la retenir comme langue du bundle et retomber sur l'anglais au lieu de la
+    /// 2e langue de la personne.
+    func testEnglishIsTheFallbackAndTheDeclaredLanguagesAreTheRequiredOnesOfTheRegistry() throws {
         XCTAssertEqual(info["CFBundleDevelopmentRegion"] as? String, "en")
-        XCTAssertEqual(Set(info["CFBundleLocalizations"] as? [String] ?? []), ["fr", "en"])
+        let declared = info["CFBundleLocalizations"] as? [String] ?? []
+        XCTAssertEqual(Set(declared), Set(try I18nRegistry.requiredCodes()))
+        for code in try I18nRegistry.shipped() {
+            XCTAssertTrue(declared.contains(code), "\(code) a ses textes dans l'app mais n'est pas déclarée")
+        }
+        XCTAssertEqual(declared.count, Set(declared).count, "une langue déclarée deux fois")
+        XCTAssertFalse(declared.contains { $0.contains("-") }, "aucune région dans les langues déclarées : \(declared)")
     }
 }

@@ -2,7 +2,7 @@
 
 **Pour qui** : vous, sur votre iPhone 11 Pro, avec une version envoyée par TestFlight (branche `ios/reglages-langue`).
 **Durée** : environ 10 minutes.
-**Ce que vous testez** : toucher « Langue » dans les Réglages n'ouvre plus les réglages de l'iPhone. Vous arrivez sur **le même écran qu'Android** : Français, English, Langue du téléphone, avec un **bouton radio** (cercle) sur chaque ligne, plein sur le choix actif. Le choix s'applique tout de suite, sans redémarrer l'app.
+**Ce que vous testez** : toucher « Langue » dans les Réglages n'ouvre plus les réglages de l'iPhone. Vous arrivez sur **le même écran qu'Android** : English, Français, Langue du téléphone (ordre alphabétique du nom écrit dans sa langue ; es, it, pt, de s'ajouteront avec leurs textes), avec un **bouton radio** (cercle) sur chaque ligne, plein sur le choix actif. Le choix s'applique tout de suite, sans redémarrer l'app.
 **Décision** : PM, 2026-11-13 (retour de recette) — `docs/tickets/feed-profil-reglages.md`, section « Décision du PM (2026-11-13) ».
 **Matériel** : un compte avec au moins une Miff (la ligne « Langue » n'existe pas dans les Réglages restreints d'un compte sans Miff). Un iPhone dont la langue est le français ; pour la partie D, vous pouvez aussi le passer en anglais le temps du test.
 **Rappel de confidentialité** : le choix reste **sur l'iPhone** (une valeur « fr », « en » ou « system »). Il n'est envoyé nulle part et ne figure dans aucune statistique.
@@ -12,7 +12,7 @@
 | # | Action | Résultat attendu |
 |---|---|---|
 | A1 | Profil > roue crantée > Réglages. Regarder la ligne « Langue ». | Titre « Langue » et, dessous, « Langue actuelle : Français » (la langue en cours, écrite dans sa langue). |
-| A2 | Toucher « Langue ». | L'écran **Langue** s'ouvre **dans l'app** : les réglages de l'iPhone ne s'ouvrent pas. Trois lignes : « Français », « English », « Langue du téléphone ». Pas de bouton « Enregistrer ». |
+| A2 | Toucher « Langue ». | L'écran **Langue** s'ouvre **dans l'app** : les réglages de l'iPhone ne s'ouvrent pas. Trois lignes, dans cet ordre : « English », « Français », « Langue du téléphone ». Pas de bouton « Enregistrer ». |
 | A3 | Regarder les cercles à droite de chaque ligne (comme Android). | Un seul cercle est **plein, en bleu de l'app** (point plein dans un cercle) : « Langue du téléphone » au premier lancement. Les deux autres sont des cercles **vides** en gris soutenu. Le choix actif est aussi en gras. |
 | A3b | Toucher n'importe où sur une ligne (le texte, l'espace vide, le cercle). | Toute la ligne est touchable, pas seulement le cercle. Le cercle plein passe sur la ligne touchée ; il n'y en a jamais deux. |
 | A4 | Flèche de retour, ou balayage depuis le bord gauche. | Retour à la liste des Réglages. |

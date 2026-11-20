@@ -48,7 +48,9 @@ shot() {
 
 shot 01-fr-diagnostic 5 -AppleLanguages "(fr)" -AppleLocale fr_FR
 shot 02-en-diagnostic 3 -AppleLanguages "(en)" -AppleLocale en_US
-shot 03-de-repli-anglais 3 -AppleLanguages "(de)" -AppleLocale de_DE
+# Langue NON prise en charge : l'app s'affiche en anglais (langue de repli). Le japonais n'est dans aucun chantier de traduction ; l'allemand
+# (de) l'etait avant le chantier es / it / pt / de, il n'est plus un repli (ticket I18N-4L). A changer si une langue de cette capture devient prise en charge.
+shot 03-ja-repli-anglais 3 -AppleLanguages "(ja)" -AppleLocale ja_JP
 shot 04-fr-pseudo-allongee 3 -AppleLanguages "(fr)" -AppleLocale fr_FR -NSDoubleLocalizedStrings YES
 shot 05-fr-droite-a-gauche 3 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffForceRTL YES
 shot 06-fr-accueil 3 -AppleLanguages "(fr)" -AppleLocale fr_FR -MiffShowHome YES

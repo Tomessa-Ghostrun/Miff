@@ -172,7 +172,7 @@ final class ColorsInfoTests: XCTestCase {
         var found: [String: [String: String]] = [:]
         for (key, entry) in strings where key.hasPrefix(prefix) {
             let localizations = entry["localizations"] as? [String: Any] ?? [:]
-            for language in ["fr", "en"] {
+            for language in try I18nRegistry.shipped() {
                 let unit = (localizations[language] as? [String: Any])?["stringUnit"] as? [String: Any]
                 found[key, default: [:]][language] = unit?["value"] as? String
             }

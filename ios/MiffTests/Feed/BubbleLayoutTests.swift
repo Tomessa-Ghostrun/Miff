@@ -102,7 +102,7 @@ final class BubbleLayoutTests: XCTestCase {
         ]
         for key in keys {
             let localizations = try XCTUnwrap(strings[key]?["localizations"] as? [String: [String: Any]])
-            for language in ["fr", "en"] {
+            for language in try I18nRegistry.shipped() {
                 let unit = localizations[language]?["stringUnit"] as? [String: Any]
                 words += (unit?["value"] as? String ?? "").split(separator: " ").map(String.init)
             }

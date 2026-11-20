@@ -86,7 +86,7 @@ final class NotificationTypeTests: XCTestCase {
     func testNoTextOfANotificationCarriesAValueAnHourOrShouting() throws {
         let catalog = try catalog()
         for type in NotificationType.allCases {
-            for language in ["fr", "en"] {
+            for language in try I18nRegistry.shipped() {
                 let title = try text(type.titleKey, language, in: catalog)
                 let body = try text(type.bodyKey, language, in: catalog)
                 for sentence in [title, body] {
@@ -109,7 +109,7 @@ final class NotificationTypeTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(keys.count, 50)
         for key in keys.sorted() {
             let localizations = try XCTUnwrap(catalog[key]?["localizations"] as? [String: Any], key)
-            for language in ["fr", "en"] {
+            for language in try I18nRegistry.shipped() {
                 let localization = try XCTUnwrap(localizations[language] as? [String: Any], "\(key) \(language)")
                 let hasText = localization["stringUnit"] != nil || localization["variations"] != nil
                 XCTAssertTrue(hasText, "\(key) \(language)")
