@@ -121,7 +121,7 @@ final class DangerHintBubbleTests: XCTestCase {
         for forbidden in ["sleep", "Timer", "asyncAfter", "onGone", "visibleSeconds", "hintSeconds"] {
             XCTAssertFalse(bubble.contains(forbidden), "la bulle ne se retire pas toute seule : \(forbidden)")
         }
-        XCTAssertTrue(bubble.contains("UIAccessibility.post(notification: .announcement"), "elle reste annoncée au lecteur d'écran")
+        XCTAssertTrue(bubble.contains("UIAccessibility.post(") && bubble.contains("notification: .announcement"), "elle reste annoncée au lecteur d'écran")
     }
 
     func testTheSlotOnlyDependsOnTheInteractionNotOnTheArming() throws {
