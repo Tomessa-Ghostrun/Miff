@@ -77,6 +77,8 @@ enum JournalKind: String, CaseIterable {
     case updateErrorNetworkUrl
     case updateErrorRefused
     case updateErrorOther
+    /// FEED-ORDRE-PHOTO : les règles ont refusé le lot AVEC `photoAt` (règles pas encore déployées ?) ; il est rejoué une fois sans cette date.
+    case updatePhotoDateRefused
 }
 
 /// Une ligne du journal telle qu'elle est gardée et montrée.
