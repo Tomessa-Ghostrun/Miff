@@ -15551,13 +15551,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Miff uses your phone's location, even when the app is closed, to notice your arrivals and departures at the places of your Miff. Only the members of a Miff who also share theirs see your last known location, with the time. No history of trips is kept. You can stop sharing at any time: your location is then erased."
+            "value": "Miff uses your phone's location, even when the app is closed, to notice your arrivals and departures at the places of your Miff. Only the members of a Miff who also share theirs see your last known location, with the time, and the place of your photo if you publish one. No history of trips is kept on our servers. You can stop sharing at any time: your location is then erased."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Miff utilise la localisation de ton téléphone, même quand l'app est fermée, pour repérer tes arrivées et tes départs des lieux de ta Miff. Seuls les membres d'une Miff qui partagent aussi la leur voient ta dernière position connue, avec l'heure. Aucun historique de trajets n'est gardé. Tu peux arrêter de partager à tout moment : ta position est alors effacée."
+            "value": "Miff utilise la localisation de ton téléphone, même quand l'app est fermée, pour repérer tes arrivées et tes départs des lieux de ta Miff. Seuls les membres d'une Miff qui partagent aussi la leur voient ta dernière position connue, avec l'heure, et l'endroit de ta photo si tu en publies une. Aucun historique de trajets n'est gardé sur nos serveurs. Tu peux arrêter de partager à tout moment : ta position est alors effacée."
           }
         }
       }
@@ -15721,13 +15721,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "To work out how your time is spread, your phone keeps for 35 days the moments you arrive at and leave your places, with no position or address. Nothing is sent: nobody else can see it."
+            "value": "To work out how your time is spread, your phone keeps for 35 days the moments you arrive at and leave your places, with no position or address. Nothing is sent: nobody else can see them. Stopping sharing does not erase it: you can do it here."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pour calculer la répartition de ton temps, ton téléphone garde pendant 35 jours les moments où tu arrives dans un de tes lieux et où tu en pars, sans position ni adresse. Rien n'est envoyé : personne d'autre ne peut les voir."
+            "value": "Pour calculer la répartition de ton temps, ton téléphone garde pendant 35 jours les moments où tu arrives dans un de tes lieux et où tu en pars, sans position ni adresse. Rien n'est envoyé : personne d'autre ne peut les voir. Arrêter de partager ne l'efface pas : c'est ici que tu peux le faire."
           }
         }
       }
@@ -15813,6 +15813,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Effacer mon historique de temps"
+          }
+        }
+      }
+    },
+    "settings_privacy_time_erase_note": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erases the arrivals and departures Miff keeps on your phone for your time breakdown. This changes nothing for your loved ones."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Efface les arrivées et départs que Miff garde sur ton téléphone pour la répartition de ton temps. Cela ne change rien pour tes proches."
           }
         }
       }
@@ -16129,13 +16146,47 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "The members of your Miff who also share see your status (for example \"at home\") and your last known location, with the time. No history."
+            "value": "The members of your Miff who also share see your status (for example \"at home\") and your last known location, with the time. No history of trips on our servers."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Les membres de ta Miff qui partagent aussi voient ton statut (par exemple « à la maison ») et ta dernière position connue, avec l'heure. Pas d'historique."
+            "value": "Les membres de ta Miff qui partagent aussi voient ton statut (par exemple « à la maison ») et ta dernière position connue, avec l'heure. Aucun historique de trajets sur nos serveurs."
+          }
+        }
+      }
+    },
+    "permission_location_local_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For you only"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour toi seul(e)"
+          }
+        }
+      }
+    },
+    "permission_location_local_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On your phone only, Miff also notes your arrivals and departures to show you how your time is spread. Nothing is sent."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sur ton téléphone seulement, Miff note aussi tes arrivées et départs pour te montrer comment ton temps se répartit. Rien n'est envoyé."
           }
         }
       }
@@ -16367,13 +16418,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "By creating this Miff, you share your status and your last known location with its members; you can stop at any time in the Miff's settings."
+            "value": "By creating this Miff, you share your status, your last known location and, if you publish a photo, the place where it was taken, with its members; you can stop at any time in the Miff's settings."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "En créant cette Miff, tu partages ton statut et ta dernière position connue avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff."
+            "value": "En créant cette Miff, tu partages ton statut, ta dernière position connue et, si tu publies une photo, l'endroit où elle a été prise, avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff."
           }
         }
       }
@@ -16384,13 +16435,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "By joining this Miff, you share your status and your last known location with its members; you can stop at any time in the Miff's settings."
+            "value": "By joining this Miff, you share your status, your last known location and, if you publish a photo, the place where it was taken, with its members; you can stop at any time in the Miff's settings."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "En rejoignant cette Miff, tu partages ton statut et ta dernière position connue avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff."
+            "value": "En rejoignant cette Miff, tu partages ton statut, ta dernière position connue et, si tu publies une photo, l'endroit où elle a été prise, avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff."
           }
         }
       }
@@ -16401,13 +16452,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You are sharing your status and your last known location with the members of this Miff again; you can stop at any time."
+            "value": "You are sharing your status, your last known location and, if you publish a photo, the place where it was taken, with the members of this Miff again; you can stop at any time."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu partages à nouveau ton statut et ta dernière position connue avec les membres de cette Miff ; tu peux arrêter à tout moment."
+            "value": "Tu partages à nouveau ton statut, ta dernière position connue et, si tu publies une photo, l'endroit où elle a été prise, avec les membres de cette Miff ; tu peux arrêter à tout moment."
           }
         }
       }
@@ -16435,13 +16486,81 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Miff only keeps your last known location, with the time it was measured. No history of trips: each location replaces the previous one. This is not live tracking."
+            "value": "Miff only keeps your last known location, with the time it was measured, on its servers. No history of trips on our servers: each location replaces the previous one. This is not live tracking."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Miff garde seulement ta dernière position connue, avec l'heure de la mesure. Pas d'historique de trajets : chaque position remplace la précédente. Ce n'est pas un suivi en direct."
+            "value": "Miff garde seulement ta dernière position connue, avec l'heure de la mesure, sur ses serveurs. Aucun historique de trajets sur nos serveurs : chaque position remplace la précédente. Ce n'est pas un suivi en direct."
+          }
+        }
+      }
+    },
+    "miff_consent3_photo_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The place of your photo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L'endroit de ta photo"
+          }
+        }
+      }
+    },
+    "miff_consent3_photo_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "When you publish a photo, the place where you took it is attached to it, with the time of the measurement. The members who also share their location can see it for 24 hours, then the photo can no longer be read."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quand tu publies une photo, l'endroit où tu l'as prise y est joint, avec l'heure de la mesure. Les membres qui partagent aussi leur position le voient pendant 24 h, puis la photo n'est plus lisible."
+          }
+        }
+      }
+    },
+    "miff_consent3_local_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On your phone only"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sur ton téléphone seulement"
+          }
+        }
+      }
+    },
+    "miff_consent3_local_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To show you how your time is spread, your phone also notes your arrivals at and departures from your places, for 35 days, with no position or address. Nothing is sent and nobody else can see it. You can erase it in Settings > Privacy."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour te montrer comment ton temps se répartit, ton téléphone note aussi tes arrivées et tes départs de tes lieux, pendant 35 jours, sans position ni adresse. Rien n'est envoyé et personne d'autre ne le voit. Tu peux l'effacer dans Réglages > Confidentialité."
           }
         }
       }
@@ -16537,13 +16656,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "If you stop sharing, leave the Miff or delete your account, your location is erased. After 24 h it is hidden and only its date remains visible."
+            "value": "If you stop sharing, leave the Miff or delete your account, your location and your photo with its place are erased. After 24 h your location is hidden and only its date remains visible."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Si tu arrêtes de partager, quittes la Miff ou supprimes ton compte, ta position est effacée. Après 24 h, elle est masquée et seule sa date reste visible."
+            "value": "Si tu arrêtes de partager, quittes la Miff ou supprimes ton compte, ta position et ta photo avec son endroit sont effacées. Après 24 h, ta position est masquée et seule sa date reste visible."
           }
         }
       }
@@ -16656,13 +16775,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "For \"%1$@\", Miff can now keep your last known location, with the time it was measured. The members of this Miff who also share theirs can see it. No history, never live, and it is erased if you stop sharing. To keep sharing with this Miff, we need your agreement."
+            "value": "For \"%1$@\", Miff can now keep your last known location, with the time it was measured, and, if you publish a photo, the place where it was taken. The members of this Miff who also share theirs can see them. No history of trips on our servers, never live. If you stop sharing, your location and your photo are erased. To keep sharing with this Miff, we need your agreement."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pour « %1$@ », Miff peut maintenant garder ta dernière position connue, avec l'heure de la mesure. Les membres de cette Miff qui partagent aussi la leur peuvent la voir. Pas d'historique, jamais en direct, et elle est effacée si tu arrêtes de partager. Pour continuer à partager avec cette Miff, nous avons besoin de ton accord."
+            "value": "Pour « %1$@ », Miff peut maintenant garder ta dernière position connue, avec l'heure de la mesure, et, si tu publies une photo, l'endroit où elle a été prise. Les membres de cette Miff qui partagent aussi la leur peuvent les voir. Aucun historique de trajets sur nos serveurs, jamais en direct. Si tu arrêtes de partager, ta position et ta photo sont effacées. Pour continuer à partager avec cette Miff, nous avons besoin de ton accord."
           }
         }
       }
@@ -16673,13 +16792,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "For this Miff, Miff can now keep your last known location, with the time it was measured. The members of this Miff who also share theirs can see it. No history, never live, and it is erased if you stop sharing. To keep sharing with this Miff, we need your agreement."
+            "value": "For this Miff, Miff can now keep your last known location, with the time it was measured, and, if you publish a photo, the place where it was taken. The members of this Miff who also share theirs can see them. No history of trips on our servers, never live. If you stop sharing, your location and your photo are erased. To keep sharing with this Miff, we need your agreement."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pour cette Miff, Miff peut maintenant garder ta dernière position connue, avec l'heure de la mesure. Les membres de cette Miff qui partagent aussi la leur peuvent la voir. Pas d'historique, jamais en direct, et elle est effacée si tu arrêtes de partager. Pour continuer à partager avec cette Miff, nous avons besoin de ton accord."
+            "value": "Pour cette Miff, Miff peut maintenant garder ta dernière position connue, avec l'heure de la mesure, et, si tu publies une photo, l'endroit où elle a été prise. Les membres de cette Miff qui partagent aussi la leur peuvent les voir. Aucun historique de trajets sur nos serveurs, jamais en direct. Si tu arrêtes de partager, ta position et ta photo sont effacées. Pour continuer à partager avec cette Miff, nous avons besoin de ton accord."
           }
         }
       }
@@ -16690,13 +16809,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "For your Miffs, Miff can now keep your last known location, with the time it was measured. The members of each Miff who also share theirs can see it. No history, never live, and it is erased if you stop sharing. To keep sharing with these Miffs, we need your agreement."
+            "value": "For your Miffs, Miff can now keep your last known location, with the time it was measured, and, if you publish a photo, the place where it was taken. The members of each Miff who also share theirs can see them. No history of trips on our servers, never live. If you stop sharing, your location and your photo are erased. To keep sharing with these Miffs, we need your agreement."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Pour tes Miffs, Miff peut maintenant garder ta dernière position connue, avec l'heure de la mesure. Les membres de chaque Miff qui partagent aussi la leur peuvent la voir. Pas d'historique, jamais en direct, et elle est effacée si tu arrêtes de partager. Pour continuer à partager avec ces Miffs, nous avons besoin de ton accord."
+            "value": "Pour tes Miffs, Miff peut maintenant garder ta dernière position connue, avec l'heure de la mesure, et, si tu publies une photo, l'endroit où elle a été prise. Les membres de chaque Miff qui partagent aussi la leur peuvent les voir. Aucun historique de trajets sur nos serveurs, jamais en direct. Si tu arrêtes de partager, ta position et ta photo sont effacées. Pour continuer à partager avec ces Miffs, nous avons besoin de ton accord."
           }
         }
       }
@@ -16765,6 +16884,159 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ton accord n'est pas enregistré : rien n'est partagé pour l'instant."
+          }
+        }
+      }
+    },
+    "miff_clarify_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A clarification about what you share"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une précision sur ce que tu partages"
+          }
+        }
+      }
+    },
+    "miff_clarify_body_one": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For \"%1$@\", we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo, readable for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your time breakdown; you can erase it in Settings > Privacy."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour « %1$@ », nous précisons ce que Miff garde. Sur nos serveurs : ta dernière position connue, et l'endroit de ta photo, lisible pendant 24 h, sans aucun historique de trajets. Sur ton téléphone seulement : un journal de tes arrivées et départs (35 jours, sans position ni adresse) qui dessine ta répartition du temps ; tu peux l'effacer dans Réglages > Confidentialité."
+          }
+        }
+      }
+    },
+    "miff_clarify_body_unnamed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For this Miff, we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo, readable for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your time breakdown; you can erase it in Settings > Privacy."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour cette Miff, nous précisons ce que Miff garde. Sur nos serveurs : ta dernière position connue, et l'endroit de ta photo, lisible pendant 24 h, sans aucun historique de trajets. Sur ton téléphone seulement : un journal de tes arrivées et départs (35 jours, sans position ni adresse) qui dessine ta répartition du temps ; tu peux l'effacer dans Réglages > Confidentialité."
+          }
+        }
+      }
+    },
+    "miff_clarify_body_many": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "For your Miffs, we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo, readable for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your time breakdown; you can erase it in Settings > Privacy."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour tes Miffs, nous précisons ce que Miff garde. Sur nos serveurs : ta dernière position connue, et l'endroit de ta photo, lisible pendant 24 h, sans aucun historique de trajets. Sur ton téléphone seulement : un journal de tes arrivées et départs (35 jours, sans position ni adresse) qui dessine ta répartition du temps ; tu peux l'effacer dans Réglages > Confidentialité."
+          }
+        }
+      }
+    },
+    "miff_clarify_continue": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Everything goes on as before."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout continue comme avant."
+          }
+        }
+      }
+    },
+    "miff_clarify_accept": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Got it"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "J'ai compris"
+          }
+        }
+      }
+    },
+    "miff_clarify_later": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus tard"
+          }
+        }
+      }
+    },
+    "miff_clarify_saving": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Saving…"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On enregistre…"
+          }
+        }
+      }
+    },
+    "miff_clarify_error_extra": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This is not saved, but everything goes on as before."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce n'est pas enregistré, mais tout continue comme avant."
           }
         }
       }
@@ -16969,6 +17241,23 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ton accord est en attente : Miff ne met plus à jour ton statut avec cette Miff. Tu peux arrêter de partager depuis l'écran de la Miff."
+          }
+        }
+      }
+    },
+    "settings_privacy_clarify_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff has clarified what it keeps on our servers and on your phone only. Everything goes on as before: you can read this clarification and accept it whenever you like."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff a précisé ce qu'il garde sur nos serveurs et sur ton téléphone seulement. Tout continue comme avant : tu peux lire cette précision et l'accepter quand tu veux."
           }
         }
       }
@@ -21116,6 +21405,74 @@
           "stringUnit": {
             "state": "translated",
             "value": "Retrouve-les dans ta Miff."
+          }
+        }
+      }
+    },
+    "notif_center_alert_end_body_unnamed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "They said they're okay."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cette personne a indiqué que tout va bien."
+          }
+        }
+      }
+    },
+    "notif_center_alert_end_title_unnamed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Someone in your circle ended their alert"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un proche a mis fin à son alerte"
+          }
+        }
+      }
+    },
+    "notif_center_alert_start_body_unnamed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Check in with them: contact this loved one or open Miff."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prends de ses nouvelles : contacte ce proche ou ouvre Miff."
+          }
+        }
+      }
+    },
+    "notif_center_alert_start_title_unnamed": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Someone in your circle declared an alert"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un proche a déclaré une alerte"
           }
         }
       }

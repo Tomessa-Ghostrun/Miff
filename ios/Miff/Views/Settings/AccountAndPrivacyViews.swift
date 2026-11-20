@@ -112,6 +112,8 @@ struct AccountView: View {
 /// dit déjà le texte de consentement d'iOS.
 struct PrivacyView: View {
     let permissions: DevicePermissions
+    /// CONS-4-I : les Miffs sous le texte de la version 3 (« Revoir et accepter » de la carte « Une précision », sans pause ni pastille).
+    @ObservedObject var awaiting: AwaitingAgreement
     let onBack: () -> Void
     let onOpenDetectionHelp: () -> Void
     /// Efface le journal local des changements de présence (la répartition du temps du Profil repart de zéro). Local : rien n'est envoyé.
@@ -152,6 +154,9 @@ struct PrivacyView: View {
         if let permission {
             MiffNotice(text: L10n.string(permission.locationStatusKey))
         }
+        if showsClarify {
+            clarify
+        }
         Button {
             ExternalOpener.openSystemSettings()
         } label: {
@@ -163,6 +168,32 @@ struct PrivacyView: View {
             spokenHint: "",
             action: onOpenDetectionHelp
         )
+    }
+
+    /// La carte calme peut toujours être relue d'ici (elle vient d'elle-même 3 fois au plus). Mots calmes, aucune pause, aucune pastille : elle
+    /// n'apparaît que s'il y a des Miffs à préciser et qu'aucune n'est réellement en pause (CONS-4-I, critère CA-10).
+    private var showsClarify: Bool {
+        !awaiting.clarifying.isEmpty && awaiting.waiting.isEmpty
+    }
+
+    @ViewBuilder
+    private var clarify: some View {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            Text("miff_clarify_title")
+                .miffTextStyle(textBodyBold16)
+                .foregroundColor(colorTextForm.color)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityAddTraits(.isHeader)
+            SettingsBody(text: L10n.string("settings_privacy_clarify_body"))
+        }
+        .padding(.top, Spacing.sm)
+        Button {
+            awaiting.requestReview()
+        } label: {
+            Text("miff_waiting_review")
+        }
+        .buttonStyle(.miffSecondaryFullWidth)
     }
 
     @ViewBuilder
@@ -199,6 +230,8 @@ struct PrivacyView: View {
             },
             message: { Text("settings_privacy_time_confirm_body") }
         )
+        // CONS-4-I : dit ce que le bouton efface, et que cela ne change rien pour les proches.
+        SettingsBody(text: L10n.string("settings_privacy_time_erase_note"))
         if erased {
             MiffNotice(text: L10n.string("settings_privacy_time_done"))
         }

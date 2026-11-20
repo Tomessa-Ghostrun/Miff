@@ -1,5 +1,6 @@
 package com.tomessa.miff.domain
 
+import com.tomessa.miff.testsupport.I18nResources
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -211,7 +212,12 @@ class PermissionPrivacyTest {
         assertTrue("location" in enText && "background" in enText && "app is closed" in enText)
         // The lines under it say who sees it, that there is no history, and that the person can stop.
         assertTrue("qui partagent aussi" in fr.getValue("permission_location_seen_body"))
-        assertTrue("Pas d'historique" in fr.getValue("permission_location_seen_body").replace("\\'", "'"))
+        // CONS-4-A: "no history" is said for OUR SERVERS (the phone keeps a local journal), and the fourth line says what stays on the phone only.
+        assertTrue("Aucun historique de trajets sur nos serveurs" in fr.getValue("permission_location_seen_body"))
+        assertTrue("No history of trips on our servers" in en.getValue("permission_location_seen_body"))
+        assertTrue("Sur ton téléphone seulement" in fr.getValue("permission_location_local_body"))
+        assertTrue("Rien n\\'est envoyé" in fr.getValue("permission_location_local_body"))
+        assertTrue("On your phone only" in en.getValue("permission_location_local_body"))
         assertTrue("effacée" in fr.getValue("permission_location_control_body"))
     }
 
@@ -230,13 +236,16 @@ class PermissionPrivacyTest {
         val keys =
             fr.keys.filter {
                 it.startsWith("permission_") || it.startsWith("miff_consent3_") ||
-                    it.startsWith("miff_renewal_")
+                    it.startsWith("miff_renewal_") || it.startsWith("miff_clarify_")
             }
         assertTrue(keys.size >= 40)
         val vouvoiement = Regex("""(?i)\b(vous|votre|vos|autorisez|acceptez|nous avons besoin de votre)\b""")
         keys.forEach { key ->
             assertFalse("$key is not in tutoiement", vouvoiement.containsMatchIn(fr.getValue(key)))
-            assertTrue("$key has no English text", en.containsKey(key))
+            // Every language of the registry that has its file today (fr, en; es, it, pt, de once merged), not only French and English.
+            I18nResources.present.forEach {
+                assertTrue("$key has no text in ${it.code}", I18nResources.strings(it).containsKey(key))
+            }
         }
         // "zone de danger" (never "zone à risque") is the wording of the product; none of these texts needs either.
         keys.forEach { assertFalse(it, fr.getValue(it).contains("zone à risque")) }

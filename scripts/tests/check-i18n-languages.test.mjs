@@ -621,13 +621,14 @@ test('cohérence des sources : un échec bloque run (code 1) même si toutes les
   }
 });
 
-test('cohérence des sources du vrai dépôt : enum, localeFilters, CFBundleLocalizations, dossiers et catalogue = langues du registre (aucune erreur)', () => {
+test('cohérence des sources du vrai dépôt : enum, localeFilters, CFBundleLocalizations, dossiers et catalogue = langues du registre, aucune erreur', () => {
   const registry = loadRegistry(repoRoot);
   const findings = checkSourcesConsistency(registry, repoRoot);
+  // Aucune ERREUR : toute langue required est déclarée partout, aucune langue inconnue du registre. Les AVERTISSEMENTS « langue planned déjà déclarée » sont
+  // attendus : le lot 3 du ticket I18N-4L déclare es, it, pt et de dans le code (énumération, localeFilters) AVANT leurs textes (lot 4) ; ils disparaissent
+  // quand les langues passent en required. Toute autre forme d'avertissement reste refusée.
   assert.deepEqual(findings.filter((f) => f.level === 'error'), []);
-  // Le lot 3 déclare es, it, pt, de (planned) dans les énumérations, localeFilters et CFBundleLocalizations avant leurs textes : seul constat admis,
-  // un avertissement « déjà déclarée » (la passer en required au lot 4). Tout autre avertissement reste une anomalie.
-  for (const f of findings) assert.match(f.message, /\(planned sur (ios|android)\) déjà déclarée/);
+  assert.deepEqual(findings.filter((f) => f.level === 'warning' && !/\(planned sur (android|ios)\) déjà déclarée/.test(f.message)), []);
 });
 
 // ----- Ligne de commande -----

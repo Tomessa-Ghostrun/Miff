@@ -110,7 +110,16 @@ fun NotificationCenterScreen(
                 open = menuOpen,
                 onOpenChange = { menuOpen = it },
                 // The group "Depuis ta dernière visite" is real even when the notifications are off (decision Q4): the gestures of the menu apply to it.
-                hasRows = state.visitRows.isNotEmpty() || (state.rows.isNotEmpty() && !locked),
+                hasRows =
+                    state.visitRows.isNotEmpty() ||
+                        (
+                            if (locked) {
+                                state.rows.any { it.type in NotificationType.ABOUT_A_LOVED_ONE }
+                            } else {
+                                state.rows
+                                    .isNotEmpty()
+                            }
+                        ),
                 onMarkAllRead = actions.onMarkAllRead,
                 onClearAll = { confirmClear = true },
             )
@@ -132,29 +141,20 @@ fun NotificationCenterScreen(
             Spacer(Modifier.size(Spacing.s))
         }
         if (locked) {
+            // CNC-7: what a loved one did (news, an alert) is visible whatever the phone says about the notifications: it is the very case where the system showed nothing and the line
+            // is the only trace. The reminders of the phone stay out of sight, as before.
+            Days(
+                rows = state.rows.filter { it.type in NotificationType.ABOUT_A_LOVED_ONE },
+                nowMillis = nowMillis,
+                zone = zone,
+                actions = actions,
+            )
             // The real lines of the days stay out of sight while the notifications are off: a blurred preview and ONE way to turn them on.
             LockedPreview(state.banner) { actions.onBannerAction(state.banner) }
         } else if (state.rows.isEmpty() && state.visitRows.isEmpty()) {
             EmptyState()
         } else {
-            NotificationSections.group(state.rows, { it.createdAtMillis }, nowMillis, zone).forEach { (section, rows) ->
-                Text(
-                    text = stringResource(sectionTitle(section)),
-                    style = textBodyBold16,
-                    color = colorTextForm,
-                    modifier = Modifier.padding(top = Spacing.s, bottom = Spacing.xs).semantics { heading() },
-                )
-                rows.forEach { row ->
-                    CenterRowView(
-                        row = row,
-                        nowMillis = nowMillis,
-                        zone = zone,
-                        older = section == ItemSection.OLDER,
-                        onOpen = { actions.onOpen(row) },
-                        onDelete = { row.ids.forEach(actions.onDelete) },
-                    )
-                }
-            }
+            Days(rows = state.rows, nowMillis = nowMillis, zone = zone, actions = actions)
         }
     }
     if (confirmClear) {
@@ -169,6 +169,34 @@ fun NotificationCenterScreen(
             },
             onCancel = { confirmClear = false },
         )
+    }
+}
+
+/** The lines cut into days ("Aujourd'hui", "Hier", "Plus ancien"), newest first. */
+@Composable
+private fun Days(
+    rows: List<CenterRow>,
+    nowMillis: Long,
+    zone: ZoneId,
+    actions: NotificationCenterActions,
+) {
+    NotificationSections.group(rows, { it.createdAtMillis }, nowMillis, zone).forEach { (section, inSection) ->
+        Text(
+            text = stringResource(sectionTitle(section)),
+            style = textBodyBold16,
+            color = colorTextForm,
+            modifier = Modifier.padding(top = Spacing.s, bottom = Spacing.xs).semantics { heading() },
+        )
+        inSection.forEach { row ->
+            CenterRowView(
+                row = row,
+                nowMillis = nowMillis,
+                zone = zone,
+                older = section == ItemSection.OLDER,
+                onOpen = { actions.onOpen(row) },
+                onDelete = { row.ids.forEach(actions.onDelete) },
+            )
+        }
     }
 }
 
@@ -473,6 +501,11 @@ private fun CenterRowView(
             LastVisitTexts(context, zone).sentence(row.visit, row.visitName, nowMillis)
         } else if (row.type == NotificationType.N9 && row.who != null) {
             stringResource(R.string.notif_circle_update_title, row.who)
+        } else if (row.type == NotificationType.N10 && row.who != null) {
+            // The words of the push ("{Prénom} a déclaré une alerte"), calm: no red, no alarm icon in the centre (the Feed carries the colour).
+            stringResource(R.string.notif_alert_start_title, row.who)
+        } else if (row.type == NotificationType.N11 && row.who != null) {
+            stringResource(R.string.notif_alert_end_title, row.who)
         } else if (row.type == NotificationType.N8 && row.requesterName != null && row.requestMiffName != null) {
             // "Léa propose un lieu pour « Famille »" (one request), "Léa a proposé 3 lieux pour « Famille »" (several, all unread): made now from the first name
             // the app knows; the centre itself keeps no name.
@@ -485,7 +518,30 @@ private fun CenterRowView(
             stringResource(NotificationTexts.title(row.type))
         }
     // The sentence of a line of "Depuis ta dernière visite" carries its hour: no second line of body, no second line of time.
-    val body = if (row.visit != null) null else stringResource(NotificationTexts.body(row.type))
+    val body =
+        when {
+            row.visit != null -> {
+                null
+            }
+
+            row.type == NotificationType.N10 && row.who != null -> {
+                stringResource(
+                    R.string.notif_alert_start_body,
+                    row.who,
+                )
+            }
+
+            row.type == NotificationType.N11 && row.who != null -> {
+                stringResource(
+                    R.string.notif_alert_end_body,
+                    row.who,
+                )
+            }
+
+            else -> {
+                stringResource(NotificationTexts.body(row.type))
+            }
+        }
     val time =
         remember(row.createdAtMillis, older) {
             val flags =
@@ -535,6 +591,8 @@ private fun CenterRowView(
                     Box(Modifier.size(Spacing.s + Spacing.xs).clip(CircleShape).background(colorBrandPrimary))
                 }
             }
+            // CNC-A: who the line is about (a photo, initials, or the logo of Miff). Decorative for the screen reader: the words of the line say who it is.
+            CenterAvatarView(row.avatar)
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,

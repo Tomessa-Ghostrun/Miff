@@ -26,6 +26,7 @@ import androidx.navigation.compose.composable
 import com.tomessa.miff.AppContainer
 import com.tomessa.miff.R
 import com.tomessa.miff.data.miff.DirectoryState
+import com.tomessa.miff.data.notification.JournalSyncReason
 import com.tomessa.miff.data.notification.NotificationChannels
 import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.notification.EnableStep
@@ -126,6 +127,26 @@ internal fun NavGraphBuilder.notificationRoutes(
                                 miffNames = { severalMiffNames(container) },
                                 allMiffNames = { everyMiffName(container) },
                                 requesterNames = container.requesterDirectory.firstNames,
+                                // CNC-A: who each line is about (memory only; one reading per member that memory does not have, a dozen at the most), my own photo, the journal of the server.
+                                faces = container.memberFaces::lookup,
+                                facesChanged = container.memberFaces.version,
+                                myProfile = container.currentProfile.profile,
+                                ensureFaces = container.memberFaces::ensure,
+                                loadMyProfile = { container.currentProfile.refresh() },
+                                syncJournal = {
+                                    container.notificationJournalSync.sync(
+                                        JournalSyncReason.CENTER_OPENED,
+                                    )
+                                },
+                                isMyMiff = { miffId ->
+                                    container.authGateway.currentUid?.let {
+                                        container.knownMiffs.contains(
+                                            it,
+                                            miffId,
+                                        )
+                                    } ==
+                                        true
+                                },
                             )
                         }
                     },
@@ -148,9 +169,15 @@ internal fun NavGraphBuilder.notificationRoutes(
                     onBack = { navController.popBackStackIfSafe() },
                     onOpen = { row ->
                         viewModel.onOpen(row)
-                        // N9: the Feed of the Miff concerned (ignored if the person does not belong to it).
+                        // N9, N10, N11: the Feed of the Miff concerned (ignored if the person does not belong to it).
                         row.miffId?.let(container.miffDirectory::preselect)
-                        if (row.type == NotificationType.N8) {
+                        if (row.type in NotificationType.ABOUT_A_LOVED_ONE && row.miffId != null &&
+                            row.actorUid != null
+                        ) {
+                            // CNC-A: on the card of the person the line is about, when she is known (a person who left: the Feed opens as it is, never an error).
+                            container.tabRequests.requestFocus(FeedFocus(row.miffId, row.actorUid))
+                            container.tabRequests.request(MainTab.FEED)
+                        } else if (row.type == NotificationType.N8) {
                             // A request to add a place: the list of the places of THAT Miff, where it is first (ticket LIEU-REQ, section 7.1). If none of the requests
                             // the row stands for is pending any more, the list opens with a neutral sentence (never an error).
                             openRequestsOf(container, requests, row, context)

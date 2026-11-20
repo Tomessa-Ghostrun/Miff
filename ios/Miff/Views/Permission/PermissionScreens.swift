@@ -362,8 +362,10 @@ struct LocationPopIn: View {
     }
 }
 
-/// L'encart de trois lignes de la maquette 08 : quand, qui voit quoi, et la main que la personne garde. Ces textes disent la même
-/// chose que la phrase d'usage du système (`NSLocationAlwaysAndWhenInUseUsageDescription`) et le texte de consentement.
+/// L'encart de la maquette 08 : quand, qui voit quoi, ce qui reste sur le téléphone seulement (CONS-4 : « Pour toi seul(e) », une 4e ligne
+/// décidée par le PM, qui ne se retire pas : elle ferme l'écart J65 sur le texte lu avant la demande du système), et la main que la
+/// personne garde. Ces textes disent la même chose que la phrase d'usage du système (`NSLocationAlwaysAndWhenInUseUsageDescription`) et
+/// le texte de consentement.
 private struct LocationFactsCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
@@ -376,6 +378,11 @@ private struct LocationFactsCard: View {
                 systemImage: "eye",
                 titleId: "permission_location_seen_title",
                 bodyId: "permission_location_seen_body"
+            )
+            ConsentLine(
+                systemImage: "lock",
+                titleId: "permission_location_local_title",
+                bodyId: "permission_location_local_body"
             )
             ConsentLine(
                 systemImage: "arrow.left.arrow.right",

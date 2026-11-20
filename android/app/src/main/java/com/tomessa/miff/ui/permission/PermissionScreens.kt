@@ -357,6 +357,12 @@ fun LocationPopIn(
                 R.string.permission_location_seen_title,
                 R.string.permission_location_seen_body,
             )
+            // CONS-4-A: what stays on the phone only (never removed: it closes the gap J65 on the text Google Play reads next to the permission).
+            ConsentLine(
+                R.drawable.ic_lock,
+                R.string.permission_location_local_title,
+                R.string.permission_location_local_body,
+            )
             ConsentLine(
                 R.drawable.ic_perm_swap,
                 R.string.permission_location_control_title,
@@ -389,8 +395,9 @@ private fun Step(
 // --- Renewal of the consent (screens 21 and 22) ---------------------------------------------------------------------------
 
 /**
- * "Une précision sur ce que tu partages": a full screen (not a pop-in: a consent is read, not skimmed), the text of the version 3 with the
- * name of the Miff, the lines the introduction does not say, and two buttons that stay pinned. "Pas maintenant" is as visible as "J'accepte"
+ * "Une précision sur ce que tu partages": a full screen (not a pop-in: a consent is read, not skimmed), the text of the current version with the
+ * name of the Miff, the lines the introduction does not say, and two buttons that stay pinned. BLOCKING one: only for the Miffs whose text does
+ * not cover the location (versions 1 and 2); the calm card for the accounts under version 3 is [ClarifyScreen]. "Pas maintenant" is as visible as "J'accepte"
  * and writes NOTHING; the person is never reproached.
  */
 @Composable
@@ -545,5 +552,121 @@ private fun introText(state: RenewalUiState): String {
         single == null -> stringResource(R.string.miff_renewal_intro_many)
         single.name.isEmpty() -> stringResource(R.string.miff_renewal_intro_unnamed)
         else -> stringResource(R.string.miff_renewal_intro_one, single.name)
+    }
+}
+
+// --- The calm card for the accounts under the version 3 text (CONS-4-A, option D of the PM) ------------------------------------------
+
+/**
+ * "Une précision sur ce que tu partages", the CALM version: for the person who already shares under the version 3 text. Nothing is paused (no position,
+ * status or photo stops), whatever she answers: "J'ai compris" records the current version (same write as the renewal), "Plus tard" writes NOTHING and
+ * is as visible as the main button. It comes back at most 3 times, then only Settings > Confidentialité offers it. No countdown, no reproach, no red.
+ * The screen scrolls (a large font cuts nothing) and the two buttons stay pinned under it. Not designed: built from [RenewalScreen] (deviation listed in the PR).
+ */
+@Composable
+fun ClarifyScreen(
+    state: ClarifyUiState,
+    onAccept: () -> Unit,
+    onLater: () -> Unit,
+) {
+    val title = stringResource(R.string.miff_clarify_title)
+    Column(
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(GradientAuthBackground)
+                .miffScreenInsets()
+                .semantics { paneTitle = title },
+    ) {
+        Column(
+            modifier =
+                Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = Spacing.l, vertical = Spacing.s),
+            verticalArrangement = Arrangement.spacedBy(Spacing.m),
+        ) {
+            Image(
+                painter = painterResource(R.drawable.miff_wordmark_color),
+                contentDescription = stringResource(R.string.home_logo_a11y),
+                modifier =
+                    Modifier
+                        .size(width = Spacing.logoWidth / 2, height = Spacing.logoWidth / 5)
+                        .align(Alignment.CenterHorizontally),
+            )
+            Text(
+                text = title,
+                style = textDisplayHeadline,
+                color = colorTextForm,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth().semantics { heading() },
+            )
+            if (state.miffs.size > 1) {
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.xs), modifier = Modifier.fillMaxWidth()) {
+                    state.miffs.filter { it.name.isNotEmpty() }.forEach { miff ->
+                        Text(
+                            text = miff.name,
+                            style = textBodyBold14,
+                            color = colorActionPrimary,
+                            modifier =
+                                Modifier
+                                    .align(Alignment.CenterHorizontally)
+                                    .clip(ShapeFull)
+                                    .background(colorActionPrimaryTint10)
+                                    .border(StrokeHairline, colorBorderAction, ShapeFull)
+                                    .padding(horizontal = Spacing.m, vertical = Spacing.xs),
+                        )
+                    }
+                }
+            }
+            Text(text = clarifyBody(state), style = textBodyRegular14, color = colorTextPrimary)
+            // The reassurance is TRUE only because nothing is paused and no rule threshold moves for version 3 (CONS-4-A, criterion CA-7).
+            Text(
+                text = stringResource(R.string.miff_clarify_continue),
+                style = textBodyBold16,
+                color = colorTextPrimary,
+            )
+        }
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .background(colorBgCanvas)
+                    .padding(horizontal = Spacing.l, vertical = Spacing.s),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            state.message?.let {
+                MiffNotice(text = actionMessageText(it), isError = true)
+                Text(
+                    text = stringResource(R.string.miff_clarify_error_extra),
+                    style = textBodyCaption,
+                    color = colorTextDescription,
+                    modifier = Modifier.padding(vertical = Spacing.xs),
+                )
+            }
+            MiffButton(
+                text = stringResource(if (state.busy) R.string.miff_clarify_saving else R.string.miff_clarify_accept),
+                onClick = onAccept,
+                enabled = !state.busy,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            TextButton(
+                onClick = onLater,
+                enabled = !state.busy,
+                modifier = Modifier.heightIn(min = Spacing.minTouchTarget),
+            ) {
+                Text(stringResource(R.string.miff_clarify_later), style = textBodyBold16, color = colorActionPrimary)
+            }
+        }
+    }
+}
+
+@Composable
+private fun clarifyBody(state: ClarifyUiState): String {
+    val single = state.miffs.singleOrNull()
+    return when {
+        single == null -> stringResource(R.string.miff_clarify_body_many)
+        single.name.isEmpty() -> stringResource(R.string.miff_clarify_body_unnamed)
+        else -> stringResource(R.string.miff_clarify_body_one, single.name)
     }
 }

@@ -324,6 +324,12 @@ class MiffScreensTest {
         shoot("miff-e-join-confirm")
         composeRule.onNodeWithText(text(R.string.miff_join_confirm_title, "Famille Martin")).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.miff_consent3_join)).assertIsDisplayed()
+        // CONS-4-A: the two lines of the version 4 are on the card, and the corrected "kept" line (no history ON OUR SERVERS).
+        composeRule.onNodeWithText(text(R.string.miff_consent3_kept_body)).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.miff_consent3_photo_title)).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.miff_consent3_photo_body)).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.miff_consent3_local_title)).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.miff_consent3_local_body)).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.miff_consent3_system_note)).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.miff_consent3_members_body)).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.miff_consent3_places_body)).performScrollTo().assertIsDisplayed()

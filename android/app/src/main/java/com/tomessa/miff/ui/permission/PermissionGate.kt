@@ -65,6 +65,7 @@ fun PermissionGate(
                             leaver = { uid, miffId -> container.miffRepository.leave(uid, miffId) },
                             onLeft = { miffId -> container.onMiffLeft(miffId) },
                             awaiting = container.awaitingAgreement,
+                            clarifyAsks = container.clarifyAsks,
                         )
                     }
                 },
@@ -173,6 +174,17 @@ fun PermissionGate(
                     onLeave = viewModel::onLeaveRequested,
                     onLeaveConfirmed = viewModel::onLeaveConfirmed,
                     onLeaveCancelled = viewModel::onLeaveCancelled,
+                )
+            }
+        }
+
+        GateScreen.CLARIFY -> {
+            // CONS-4-A: the calm card; it replaces nothing that was asked (it comes last) and pauses nothing.
+            state.clarify?.let { clarify ->
+                ClarifyScreen(
+                    state = clarify,
+                    onAccept = viewModel::onClarifyAccepted,
+                    onLater = viewModel::onClarifyPutOff,
                 )
             }
         }

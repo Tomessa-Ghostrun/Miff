@@ -26,6 +26,14 @@ val reviewPromptProperty: String? = providers.gradleProperty("miff.reviewPrompt"
 // build (release, releaseLike) refuses "true" unless -Pmiff.allowAlertDangerInRelease=true is ALSO given, on purpose, once the PM has deployed the backend. Checked by AlertDangerFlagTest.
 val alertDangerProperty: String? = providers.gradleProperty("miff.alertDanger").orNull
 
+// CENTRE DE NOTIFICATIONS COMPLET (ticket docs/tickets/centre-notifications-complet.md, CNC-A, decision of the PM of 2026-11-19). BuildConfig.NOTIF_JOURNAL is the SWITCH of the READING of the
+// journal of the server (`users/{uid}/notifications`, written by the functions notifierUpdate and notifierAlerte): the request from a cursor at the foreground, at the opening of the centre and at the
+// arrival of a push, and the deletion of an entry with its line. It is TRUE in the debug build (internal tests) and FALSE in release and releaseLike: until the rules (backend/firestore.rules) and the
+// functions are deployed by the PM, a distributed build reads nothing there (a reading refused by the rules would still be paid). The lines written by the app itself (pushes, reminders) do not depend
+// on it. -Pmiff.notifJournal=true|false forces it either way for a TEST; a RELEASE build (release, releaseLike) refuses "true" unless -Pmiff.allowNotifJournalInRelease=true is ALSO given, on purpose,
+// once the PM has deployed the backend. Checked by NotifJournalGuardTest.
+val notifJournalProperty: String? = providers.gradleProperty("miff.notifJournal").orNull
+
 // VERSIONS (docs/release/checklist-android.md). Nothing is frozen here any more:
 // - versionName = the first "## [x.y.z]" heading of android/CHANGELOG.md (one place: the changelog the team already keeps), or -Pmiff.versionName=... for a test.
 // - versionCode = -Pmiff.versionCode=N when given (the release workflow gives its own run number: Google Play only accepts a code HIGHER than every one it has
@@ -42,6 +50,19 @@ val changelogVersion: String =
                     "android/CHANGELOG.md has no heading like \"## [0.32.0]\": the versionName cannot be derived from it",
                 )
         }.get()
+// LANGUAGES REALLY PROVIDED (ticket I18N-4L): the languages of the registry whose texts exist in this build (res/values for English, res/values-xx/strings.xml for
+// the others). Settings > Langue only offers these (a language declared in the registry but not yet translated would show English under its own name), and the
+// language chosen in the app is only applied when it is one of them. Each file is read through a Gradle provider, so that the configuration cache notices when
+// a language is added. The candidates are the languages of docs/contracts/i18n-languages.json (AppLanguageRegistryTest fails if the two differ).
+val providedLanguages: String =
+    listOf("de", "en", "es", "fr", "it", "pt")
+        .filter { code ->
+            val folder = if (code == "en") "values" else "values-$code"
+            providers
+                .fileContents(layout.projectDirectory.file("src/main/res/$folder/strings.xml"))
+                .asBytes
+                .isPresent
+        }.joinToString(",")
 val appVersionName: String = providers.gradleProperty("miff.versionName").getOrElse(changelogVersion)
 require(Regex("""\d+\.\d+\.\d+(-[0-9A-Za-z.]+)?""").matches(appVersionName)) {
     "miff.versionName must look like 1.2.3 (optionally followed by -suffix)"
@@ -109,6 +130,7 @@ android {
         require(legalBaseUrl.startsWith("https://")) { "miff.legalBaseUrl must be an https:// address (no clear text)" }
         buildConfigField("String", "LEGAL_BASE_URL", "\"$legalBaseUrl\"")
         buildConfigField("String", "SUPPORT_EMAIL", "\"$supportEmail\"")
+        buildConfigField("String", "PROVIDED_LANGUAGES", "\"$providedLanguages\"")
         // LOC-1 (places). Providers of the map and of the address suggestions: all free, none needs a key (decision of the ticket,
         // section 12). Override without editing the code: -Pmiff.mapStyleUrl=..., -Pmiff.photonUrl=... (https only).
         // The optional fallback of the suggestions (Geoapify, free plan) is OFF unless a key is given at build time with
@@ -142,6 +164,11 @@ android {
             alertDangerProperty == null || alertDangerProperty == "true" || alertDangerProperty == "false",
         ) { "miff.alertDanger must be true or false" }
         buildConfigField("boolean", "ALERT_DANGER", alertDangerProperty ?: "false")
+        // Journal of the notifications of the server: off unless the flag says otherwise; the debug build turns it on (see buildTypes).
+        require(
+            notifJournalProperty == null || notifJournalProperty == "true" || notifJournalProperty == "false",
+        ) { "miff.notifJournal must be true or false" }
+        buildConfigField("boolean", "NOTIF_JOURNAL", notifJournalProperty ?: "false")
         // Review window, "Peux faire mieux..." (decision of the PM, 2026-11-08): the EXTERNAL FEEDBACK FORM the PM will provide. ONE place: the default value of
         // "miff.feedbackFormUrl" just below: the public Google Forms address given by the PM on 2026-11-13 (a public address, not a secret). Override it with
         // -Pmiff.feedbackFormUrl=... for a test; an EMPTY value (-Pmiff.feedbackFormUrl=) makes the window show its "Merci de nous le dire !" screen with "Nous écrire"
@@ -187,6 +214,7 @@ android {
             buildConfigField("boolean", "STARTUP_METRICS", "true")
             buildConfigField("boolean", "REVIEW_PROMPT", reviewPromptProperty ?: "true")
             buildConfigField("boolean", "ALERT_DANGER", alertDangerProperty ?: "true")
+            buildConfigField("boolean", "NOTIF_JOURNAL", notifJournalProperty ?: "true")
             // en-XA (long accented text) and ar-XB (right-to-left) pseudo-locales, to test layouts without translations.
             isPseudoLocalesEnabled = true
         }
@@ -259,10 +287,13 @@ android {
 
 // Release keeps only the supported languages from libraries (smaller APK; any other device language falls back to
 // English). Debug keeps everything so that the en-XA / ar-XB pseudo-locales work.
+// THE LIST OF THE LANGUAGES: it is the registry docs/contracts/i18n-languages.json (ticket I18N-4L). A language missing here is REMOVED from the release APK
+// even when its values-xx folder exists (it would work in debug and be absent from the store build): AppLanguageRegistryTest and
+// scripts/check-i18n-parity.mjs fail when this list and the registry differ. "pt" is the Portuguese of Portugal and serves every region of Portuguese.
 androidComponents {
     for (buildType in listOf("release", "releaseLike")) {
         onVariants(selector().withBuildType(buildType)) { variant ->
-            variant.androidResources.localeFilters.addAll("en", "fr")
+            variant.androidResources.localeFilters.addAll("de", "en", "es", "fr", "it", "pt")
         }
     }
 }
@@ -391,6 +422,22 @@ run {
                         "absent from " +
                         "distributed builds until the PM has deployed the rules and the function notifierAlerte). " +
                         "Add -Pmiff.allowAlertDangerInRelease=true only after that deployment.",
+                )
+            }
+        }
+    }
+}
+
+run {
+    val journalOnInRelease = notifJournalProperty == "true"
+    val allowedInRelease = providers.gradleProperty("miff.allowNotifJournalInRelease").orNull == "true"
+    if (journalOnInRelease && !allowedInRelease) {
+        tasks.matching { it.name == "preReleaseBuild" || it.name == "preReleaseLikeBuild" }.configureEach {
+            doFirst {
+                throw GradleException(
+                    "miff.notifJournal=true is not allowed in a release build (the journal of the notifications must " +
+                        "not be read by distributed builds until the PM has deployed the rules and the functions). " +
+                        "Add -Pmiff.allowNotifJournalInRelease=true only after that deployment.",
                 )
             }
         }

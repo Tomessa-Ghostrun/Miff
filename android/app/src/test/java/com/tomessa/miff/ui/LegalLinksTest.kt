@@ -2,6 +2,7 @@ package com.tomessa.miff.ui
 
 import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.domain.auth.legalPageUrl
+import com.tomessa.miff.testsupport.I18nResources
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -37,6 +38,24 @@ class LegalLinksTest {
         assertEquals(pageUrl("terms", "en"), resource("values", "android_legal_terms_path"))
         assertEquals(pageUrl("privacy", "fr"), resource("values-fr", "android_legal_privacy_path"))
         assertEquals(pageUrl("privacy", "en"), resource("values", "android_legal_privacy_path"))
+    }
+
+    /**
+     * The legal pages exist in French and English only (ticket I18N-4L, D5 and risk R3): a language that has no web page opens the ENGLISH one. So every
+     * language of the registry that has its texts points to the page of its language when the web has one, to the English page otherwise.
+     */
+    @Test
+    fun everyLanguageOfTheRegistryOpensItsPage_orTheEnglishOneWhenTheWebHasNone() {
+        I18nResources.present.forEach { language ->
+            listOf("terms", "privacy").forEach { id ->
+                val expected = runCatching { pageUrl(id, language.code) }.getOrElse { pageUrl(id, "en") }
+                assertEquals(
+                    "${language.code} $id",
+                    expected,
+                    resource(language.resDir, "android_legal_${id}_path"),
+                )
+            }
+        }
     }
 
     @Test

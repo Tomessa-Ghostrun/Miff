@@ -40,6 +40,9 @@ enum GateScreen: Equatable {
     case checking
     case location
     case renewal
+    /// CONS-4-I : la carte calme « Une précision sur ce que tu partages » (comptes en version 3). Elle ne met RIEN en pause et passe en
+    /// dernier : voir `resolveGate`.
+    case clarify
 }
 
 struct GateInput {
@@ -58,6 +61,9 @@ struct GateInput {
     /// identifiant technique de son téléphone (elle avait autorisé AVANT cette version, avec l'ancien texte) : l'écran revient UNE fois. Sans
     /// cette réponse, aucun jeton n'est enregistré.
     var pushExplanationDue = false
+    /// CONS-4-I : la carte calme « Une précision » est à montrer (compte en version 3, carte pas épuisée ou demandée depuis les Réglages,
+    /// et pas remise à plus tard pendant ce lancement). Elle ne met jamais rien en pause et ne passe jamais avant un autre écran.
+    var clarify = false
 }
 
 extension GateInput {
@@ -93,6 +99,7 @@ extension GateInput {
 ///
 /// L'accord d'abord : l'écran « Toujours » n'est pas montré pendant la vérification, ni pendant que l'accord est dû (remis à
 /// plus tard ou non) : aucune permission n'est demandée tant que rien ne s'en servirait, et aucune avant l'accord.
+/// La carte « Une précision » (CONS-4-I) passe après tout cela.
 func resolveGate(_ input: GateInput) -> GateScreen {
     if input.notificationsAsked {
         return .notifications
@@ -106,5 +113,9 @@ func resolveGate(_ input: GateInput) -> GateScreen {
     if input.locationMayShow {
         return .location
     }
-    return input.renewalAsked ? .renewal : .none
+    if input.renewalAsked {
+        return .renewal
+    }
+    // La carte calme vient EN DERNIER : après les notifications, l'accord bloquant et la localisation, jamais avant. Elle ne met rien en pause.
+    return input.clarify ? .clarify : .none
 }
