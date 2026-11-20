@@ -4,10 +4,22 @@
     "NSCameraUsageDescription": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff verwendet die Kamera nur, wenn du den Bildschirm „Sich melden“ öffnest, um ein Foto von dir oder deiner Umgebung aufzunehmen. Wenn du es teilst, wird der Ort der Aufnahme mit dem Foto geteilt. Mitglieder deiner Miffs, die ebenfalls ihren Standort teilen, können es 24 Stunden lang sehen; danach lässt es sich nicht mehr ansehen, auch wenn ein Mitglied vielleicht eine Kopie behalten hat. In deiner Fotomediathek wird nichts gespeichert."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Miff uses the camera only when you open the “Share news” screen, to take a photo of you or of what's around you. If you publish it, it is shared with the place where you took it. Members of your Miffs who also share their location can see it for 24 hours, then it is no longer visible; a member may still have kept a copy. Nothing is saved to your photo library."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff usa la cámara solo cuando abres la pantalla «Dar noticias», para tomar una foto de ti o de lo que te rodea. Si la publicas, se comparte con el lugar donde la tomaste. Los miembros de tus Miffs que también comparten su ubicación pueden verla durante 24 h; después ya no se puede ver, aunque un miembro puede haber guardado una copia. No se guarda nada en tu galería de fotos."
           }
         },
         "fr": {
@@ -15,16 +27,40 @@
             "state": "translated",
             "value": "Miff utilise la caméra seulement quand tu ouvres l'écran « Donner des nouvelles », pour prendre une photo de toi ou de ce qui t'entoure. Si tu la publies, elle est partagée avec l'endroit où tu l'as prise. Les membres de tes Miffs qui partagent aussi leur position peuvent la voir pendant 24 h, puis elle n'est plus visible ; un membre peut toutefois en avoir gardé une copie. Rien n'est enregistré dans ta photothèque."
           }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff usa la fotocamera solo quando apri la schermata «Dare notizie», per scattare una foto di te o di ciò che ti circonda. Se la pubblichi, viene condivisa con il luogo in cui l’hai scattata. I membri delle tue Miff che condividono a loro volta la propria posizione possono vederla per 24 ore, poi non è più visibile, anche se un membro può averne conservato una copia. Non viene salvato nulla nella tua libreria foto."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A Miff usa a câmara apenas quando abres o ecrã «Dar notícias», para tirar uma foto de ti ou do que te rodeia. Se a publicares, é partilhada com o local onde a tiraste. Os membros das tuas Miffs que também partilham a sua localização podem vê-la durante 24 h; depois deixa de estar visível, embora um membro possa ter guardado uma cópia. Nada é guardado na tua fototeca."
+          }
         }
       }
     },
     "NSPhotoLibraryAddUsageDescription": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff speichert das Foto nur dann in deiner Fotomediathek, wenn du auf „Foto speichern“ tippst. Miff liest niemals deine Fotos oder deine Fotomediathek."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Miff saves the photo to your library only when you tap “Save this photo”. Miff never reads your photos or your library."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff guarda la foto en tu galería solo cuando tocas «Guardar la foto». Miff nunca lee tus fotos ni tu galería."
           }
         },
         "fr": {
@@ -32,16 +68,40 @@
             "state": "translated",
             "value": "Miff enregistre la photo dans ta galerie uniquement quand tu touches « Enregistrer cette photo ». Miff ne lit jamais tes photos ni ta galerie."
           }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff salva la foto nella tua libreria foto solo quando tocchi «Salva la foto». Miff non legge mai le tue foto né la tua libreria."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A Miff guarda a foto na tua fototeca apenas quando tocas em «Guardar a foto». A Miff nunca lê as tuas fotos nem a tua fototeca."
+          }
         }
       }
     },
     "NSLocationAlwaysAndWhenInUseUsageDescription": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Um deiner Miff mitzuteilen, wann du an einem vertrauten Ort ankommst oder ihn verlässt, auch bei geschlossener App, braucht Miff deinen Standort im Hintergrund. Mitglieder deiner Miff, die ebenfalls teilen, sehen deinen Status und deinen letzten bekannten Standort, mit Uhrzeit und ohne Verlauf deiner Wege auf unseren Servern. Wenn du ein Foto teilst, wird der Ort der Aufnahme angehängt und ist 24 Stunden lang für Mitglieder sichtbar, die ebenfalls ihren Standort teilen. Nur auf deinem Telefon notiert Miff außerdem, wann du an deinen Orten ankommst und sie verlässt, um dir zu zeigen, wie sich deine Zeit verteilt. Du kannst jederzeit aufhören."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "To let your Miff know when you arrive at or leave a trusted place, even when the app is closed, Miff needs your location in the background. The members of your Miff who also share can see your status and your last known location, with the time, with no history of trips on our servers. When you publish a photo, the place where you took it is attached to it, visible for 24 hours to the members who also share their location. On your phone only, Miff also notes your arrivals and departures to show you how your time is spread. You can stop at any time."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Para avisar a tu Miff de que llegas a un lugar de confianza o sales de él, incluso con la app cerrada, Miff necesita tu ubicación en segundo plano. Los miembros de tu Miff que también comparten ven tu estado y tu última ubicación conocida, con la hora, sin historial de trayectos en nuestros servidores. Cuando publicas una foto, se le adjunta el lugar donde la tomaste, visible durante 24 h para los miembros que también comparten su ubicación. Solo en tu teléfono, Miff también anota tus llegadas y salidas para mostrarte cómo se reparte tu tiempo. Puedes dejar de compartir en cualquier momento."
           }
         },
         "fr": {
@@ -49,22 +109,58 @@
             "state": "translated",
             "value": "Pour signaler à ta Miff que tu arrives dans un lieu de confiance ou que tu le quittes, même quand l'app est fermée, Miff a besoin de ta position en arrière-plan. Les membres de ta Miff qui partagent aussi voient ton statut et ta dernière position connue, avec l'heure, sans historique de trajets sur nos serveurs. Quand tu publies une photo, l'endroit où tu l'as prise y est joint, visible pendant 24 h des membres qui partagent aussi leur position. Sur ton téléphone seulement, Miff note aussi tes arrivées et départs pour te montrer comment ton temps se répartit. Tu peux arrêter à tout moment."
           }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Per segnalare alla tua Miff che arrivi in un luogo di fiducia o che lo lasci, anche quando l’app è chiusa, Miff ha bisogno della tua posizione in background. I membri della tua Miff che condividono a loro volta vedono il tuo stato e la tua ultima posizione nota, con l’orario, senza cronologia dei percorsi sui nostri server. Quando pubblichi una foto, vi viene allegato il luogo in cui l’hai scattata, visibile per 24 ore ai membri che condividono a loro volta la propria posizione. Solo sul tuo telefono, Miff annota anche i tuoi arrivi e le tue partenze per mostrarti come si ripartisce il tuo tempo. Puoi smettere in qualsiasi momento."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Para avisar a tua Miff de que chegas a um local de confiança ou de que o deixas, mesmo com a app fechada, a Miff precisa da tua localização em segundo plano. Os membros da tua Miff que também partilham veem o teu estado e a tua última localização conhecida, com a hora, sem histórico de trajetos nos nossos servidores. Quando publicas uma foto, o local onde a tiraste é anexado a ela e fica visível durante 24 h para os membros que também partilham a sua localização. Apenas no teu telemóvel, a Miff regista também as tuas chegadas e saídas para te mostrar como se distribui o teu tempo. Podes parar a qualquer momento."
+          }
         }
       }
     },
     "NSLocationWhenInUseUsageDescription": {
       "extractionState": "manual",
       "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff verwendet deinen Standort, um zu erkennen, wann du an einem vertrauten Ort ankommst oder ihn verlässt, und damit die Mitglieder deiner Miff, die ebenfalls teilen, deinen letzten bekannten Standort mit Uhrzeit sehen. Wenn du ein Foto teilst, wird der Ort der Aufnahme angehängt und ist 24 Stunden lang für Mitglieder sichtbar, die ebenfalls ihren Standort teilen."
+          }
+        },
         "en": {
           "stringUnit": {
             "state": "translated",
             "value": "Miff uses your location to know when you arrive at or leave a trusted place, and so that the members of your Miff who also share can see your last known location, with the time. When you publish a photo, the place where you took it is attached to it, visible for 24 hours to the members who also share their location."
           }
         },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff usa tu ubicación para saber cuándo llegas a un lugar de confianza o sales de él, y para que los miembros de tu Miff que también comparten vean tu última ubicación conocida, con la hora. Cuando publicas una foto, se le adjunta el lugar donde la tomaste, visible durante 24 h para los miembros que también comparten su ubicación."
+          }
+        },
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Miff utilise ta position pour savoir quand tu arrives dans un lieu de confiance ou que tu le quittes, et pour que les membres de ta Miff qui partagent aussi voient ta dernière position connue, avec l'heure. Quand tu publies une photo, l'endroit où tu l'as prise y est joint, visible pendant 24 h des membres qui partagent aussi leur position."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff usa la tua posizione per rilevare quando arrivi in un luogo di fiducia o lo lasci, e perché i membri della tua Miff che condividono a loro volta vedano la tua ultima posizione nota, con l’orario. Quando pubblichi una foto, vi viene allegato il luogo in cui l’hai scattata, visibile per 24 ore ai membri che condividono a loro volta la propria posizione."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A Miff usa a tua localização para saber quando chegas a um local de confiança ou sais dele, e para que os membros da tua Miff que também partilham vejam a tua última localização conhecida, com a hora. Quando publicas uma foto, o local onde a tiraste é anexado a ela e fica visível durante 24 h para os membros que também partilham a sua localização."
           }
         }
       }

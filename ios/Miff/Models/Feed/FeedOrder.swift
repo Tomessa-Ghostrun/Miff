@@ -1,14 +1,14 @@
 import Foundation
 
-// Ordre des cartes du Feed (ticket FEED-ORDRE) : du membre qui a donné des nouvelles le plus récemment au plus ancien. Logique PURE, sans
-// aucune lecture ni écriture : seules les dates DÉJÀ lues (`status.lastUpdateAt`) sont comparées entre elles ; l'horloge de celui qui regarde
-// n'intervient jamais. Miroir de l'ordre d'Android (les cas des tests sont le contrat).
+// Ordre des cartes du Feed (ticket FEED-ORDRE-PHOTO, qui remplace la date de FEED-ORDRE) : du membre qui a publié une photo le plus récemment
+// au plus ancien. Logique PURE, sans aucune lecture ni écriture : seules les dates DÉJÀ lues (`status.photoAt`) sont comparées entre elles ;
+// l'horloge de celui qui regarde n'intervient jamais. Miroir de l'ordre d'Android (les cas des tests T1 à T20 sont le contrat).
 
-/// Un membre à ordonner, dans l'ordre d'arrivée dans la Miff. `lastUpdateMillis` nil : aucune date exploitable (décision §3 #3 du ticket :
-/// pas de statut lisible, partage arrêté ou caché, accord attendu, ou carte « Pas encore de nouvelles »).
+/// Un membre à ordonner, dans l'ordre d'arrivée dans la Miff. `photoMillis` nil : aucune date exploitable (décision §3 #3 du ticket : pas de
+/// statut lisible, pas de `photoAt`, partage arrêté ou caché, accord attendu).
 struct FeedOrderEntry: Equatable {
     let uid: String
-    let lastUpdateMillis: Int?
+    let photoMillis: Int?
 }
 
 enum FeedOrder {
@@ -18,7 +18,7 @@ enum FeedOrder {
     static func sorted(_ entries: [FeedOrderEntry]) -> [String] {
         let indexed = entries.enumerated().map { (index: $0.offset, entry: $0.element) }
         return indexed.sorted { left, right in
-            switch (left.entry.lastUpdateMillis, right.entry.lastUpdateMillis) {
+            switch (left.entry.photoMillis, right.entry.photoMillis) {
             case (nil, nil):
                 return arrivesBefore(left, right)
             case (nil, _?):
@@ -48,7 +48,7 @@ enum FeedOrder {
 
 /// Ce que dit le lecteur d'écran quand l'ordre change réellement (ticket §3 #7), sans interrompre.
 enum FeedOrderAnnouncement: Equatable {
-    /// « {Prénom} a donné des nouvelles » : une seule carte a monté.
+    /// « {Prénom} a publié une photo » : une seule carte a monté et arrive en tête (une carte ne monte que par une nouvelle photo).
     case member(uid: String)
     /// « Le Feed a été mis à jour » : plusieurs cartes ont bougé.
     case generic

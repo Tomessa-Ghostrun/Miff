@@ -306,12 +306,36 @@ final class UpdatePublisher {
         ledger.recordPublication(nowMillis: now, dayKey: next.day, count: next.count)
     }
 
+    /// Le lot avec la date de la photo (`photoAt`, FEED-ORDRE-PHOTO). REPLI : si les règles refusent le lot (permission refusée : les règles qui
+    /// connaissent `photoAt` ne sont pas encore déployées), il est rejoué UNE fois, identique mais sans `photoAt`, pour ne jamais perdre la
+    /// photo. Rien n'est contourné : le rejeu n'écrit rien de plus que la première tentative, il passe par les mêmes règles et la même
+    /// transaction (session, consentement, partage) ; un refus pour une autre raison (téléphone remplacé, partage arrêté...) est refusé de
+    /// nouveau et c'est cette seconde réponse qui est rendue. Aucun autre type d'erreur (réseau, délai) n'est rejoué.
     private func commit(_ job: PublishJob, lot: [String]) async throws -> PhotoCommit {
+        do {
+            return try await commit(job, lot: lot, datesPhoto: true)
+        } catch {
+            guard Self.isPermissionDenied(error) else {
+                throw error
+            }
+        }
+        journal.record(.updatePhotoDateRefused)
+        return try await commit(job, lot: lot, datesPhoto: false)
+    }
+
+    static func isPermissionDenied(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        return nsError.domain == FirestoreErrorNumber.domain && nsError.code == FirestoreErrorNumber.permissionDenied
+    }
+
+    private func commit(_ job: PublishJob, lot: [String], datesPhoto: Bool) async throws -> PhotoCommit {
         // L'heure du lot est prise quand il est construit.
-        let context = PublishContext(
+        var building = PublishContext(
             nowMillis: environment.nowMillis(), batteryPct: job.batteryPct, deviceId: job.deviceId,
             photoDescription: job.description
         )
+        building.datesPhoto = datesPhoto
+        let context = building
         let store = self.store
         let uid = job.uid
         let photo = job.photo
