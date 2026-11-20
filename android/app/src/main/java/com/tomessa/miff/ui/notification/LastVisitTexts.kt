@@ -86,15 +86,16 @@ class LastVisitTexts(
         nowMillis: Long,
     ): String {
         val name = firstName?.takeIf { it.isNotBlank() } ?: s(R.string.notif_c1_someone)
-        val place = feedTexts.placeNoun(line.place?.let { PlaceRef.Category(it) } ?: PlaceRef.Unknown)
+        val place = line.place?.let { PlaceRef.Category(it) } ?: PlaceRef.Unknown
         val text =
             when (line.kind) {
+                // The complement of the place is written by the language for EACH verb ("a rejoint la maison", "a quitté la maison"): see FeedTexts.placeArrived / placeLeft.
                 VisitKind.ARRIVAL -> {
-                    s(R.string.notif_c1_arrival, name, place, at(line.shownAtMillis, nowMillis))
+                    s(R.string.notif_c1_arrival, name, feedTexts.placeArrived(place), at(line.shownAtMillis, nowMillis))
                 }
 
                 VisitKind.DEPARTURE -> {
-                    s(R.string.notif_c1_departure, name, place, at(line.shownAtMillis, nowMillis))
+                    s(R.string.notif_c1_departure, name, feedTexts.placeLeft(place), at(line.shownAtMillis, nowMillis))
                 }
 
                 VisitKind.UPDATE -> {

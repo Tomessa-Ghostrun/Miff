@@ -106,14 +106,16 @@ enum MiffObservation: Equatable {
 /// 20 caractères) et sur l'écran de re-consentement.
 enum MiffSharingConsent {
     /// Constante partagée avec Android : à changer EN MÊME TEMPS que le texte des clés `miff_consent3_*` (critère K8).
-    /// Version « 2026-11-v03 » (LOC-4a, miroir de LOC-2a) : le texte de docs/legal/consentement-localisation-v3.md, option A
-    /// (décision du PM du 2026-11-04), qui dit que Miff garde la DERNIÈRE POSITION CONNUE avec l'heure de la mesure, que les
-    /// membres qui partagent aussi peuvent la voir, que Miff utilise la localisation du téléphone même app fermée et qu'elle
-    /// est effacée quand la personne arrête. Une nouvelle formulation = une nouvelle version ; le numéro NN ne repart jamais
-    /// de zéro et le format est `AAAA-MM-vNN` de LARGEUR FIXE (les règles comparent les versions comme des chaînes :
-    /// backend/firestore.rules, isConsentVersion et isPositionConsentVersion). (« 2026-10-v1 » et « 2026-10-v2 » sont les
-    /// anciens textes, qui ne disent rien d'une position.)
-    static let version = "2026-11-v03"
+    /// Version « 2026-11-v04 » (CONS-4-I, option D du PM, décision du 2026-11-19) : le texte de
+    /// docs/tickets/consentement-localisation-historique.md, section 7. Elle garde ce que dit la version 3 (la DERNIÈRE POSITION
+    /// CONNUE avec l'heure de la mesure, les membres qui partagent aussi, la localisation du téléphone même app fermée, effacée
+    /// quand la personne arrête), dit « aucun historique de trajets SUR NOS SERVEURS », et ajoute l'ENDROIT DE LA PHOTO (visible
+    /// 24 h) et le journal local SUR LE TÉLÉPHONE SEULEMENT (35 jours, rien n'est envoyé). Une nouvelle formulation = une nouvelle
+    /// version ; le numéro NN ne repart jamais de zéro et le format est `AAAA-MM-vNN` de LARGEUR FIXE (les règles comparent les
+    /// versions comme des chaînes : backend/firestore.rules, isConsentVersion et isPositionConsentVersion). (« 2026-10-v1 » et
+    /// « 2026-10-v2 » sont les anciens textes, qui ne disent rien d'une position ; « 2026-11-v03 » est le texte archivé dans
+    /// docs/legal/consentement-localisation-v3.md : il COUVRE encore la position et la photo, voir `coversPosition`.)
+    static let version = "2026-11-v04"
 
     /// Nombre maximal de membres, créateur compris (décision QM5) : un plafond doux, montré par l'app seulement.
     static let softMemberLimit = 15
@@ -153,6 +155,22 @@ enum MiffSharingConsent {
             return false
         }
         return stored < version
+    }
+
+    /// « Le partage est EN PAUSE tant que la personne n'a pas accepté » : le texte gardé est plus ancien que celui de ce build ET ne
+    /// couvre PAS la position (le suivi et la photo s'arrêtent vraiment alors : `coversPosition`). C'est le SEUL cas où un écran peut
+    /// dire « En attente de ton accord » (CONS-4-I, critère CA-10 : l'interface annonce une pause si et seulement si le suivi est
+    /// réellement arrêté). Un texte qui couvre encore la localisation (version 03 ou plus) n'est jamais en pause : voir
+    /// `isClarificationDue`.
+    static func pausesSharing(_ stored: String?) -> Bool {
+        isRenewalDue(stored) && !coversPosition(stored)
+    }
+
+    /// Un texte plus ancien qui couvre ENCORE la position et la photo (la version 03 sous la 04 de ce build) : rien n'est en pause, la
+    /// personne se voit seulement proposer la carte calme « Une précision sur ce que tu partages » (option D du PM). Jamais une
+    /// raison de dire que quelque chose attend.
+    static func isClarificationDue(_ stored: String?) -> Bool {
+        isRenewalDue(stored) && coversPosition(stored)
     }
 }
 

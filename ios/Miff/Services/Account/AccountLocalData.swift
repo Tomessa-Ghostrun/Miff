@@ -20,6 +20,9 @@ struct AccountLocalStores {
     /// Le carnet de l'Update (`update-ledger.json`) : la note de la photo envoyée par ce compte. La MÊME instance que celle de l'Update
     /// (elle garde l'état en mémoire : une autre instance serait écrasée à la prochaine écriture).
     let updateLedger: PublishLedger
+    /// CONS-4-I : combien de fois la carte calme « Une précision » a été montrée à ce compte sur ce téléphone : un compteur, effacé avec le
+    /// compte. Nil : rien à effacer (les tests qui n'en ont pas besoin).
+    var clarifyAsks: ClarifyAskStore?
 }
 
 /// Ce que la suppression d'un compte efface du téléphone POUR CE COMPTE (AUTH-5c, ticket §5.10), en plus de ce que la fin d'une session
@@ -54,7 +57,13 @@ enum AccountLocalData {
             // Le centre de notifications, les choix de Réglages > Notifications et la carte « deuxième chance » (NOTIF-P0).
             { uid in stores.notificationData.eraseAccount(uid: uid) },
             // La note de la photo de l'Update de CE compte (la déconnexion simple, elle, la garde : la photo reste en base).
-            { uid in stores.updateLedger.eraseAccountData(uid: uid) }
+            { uid in stores.updateLedger.eraseAccountData(uid: uid) },
+            // Le compteur de la carte « Une précision » (CONS-4-I) de CE compte.
+            { uid in
+                if let asks = stores.clarifyAsks {
+                    asks.forget(uid: uid)
+                }
+            }
         ]
     }
 }
