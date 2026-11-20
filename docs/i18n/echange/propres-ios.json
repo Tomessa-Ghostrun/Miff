@@ -1,0 +1,1526 @@
+{
+  "meta": {
+    "version": 1,
+    "langueSource": "fr",
+    "langueRepli": "en",
+    "notation": "Notation iOS native (%@, %lld). Les entrées « table: InfoPlist.xcstrings » vont dans InfoPlist.xcstrings."
+  },
+  "textes": [
+    {
+      "cle": "ios_notif_debug_counters",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Recette : %1$lld fausse(s) alerte(s) sur %2$lld rappel(s) « ta Miff est passée » jugé(s). Compté sur ce téléphone, jamais envoyé.",
+      "en": "Testing: %1$lld false alert(s) out of %2$lld “your Miff has turned” reminder(s) judged. Counted on this phone, never sent.",
+      "placeholders": [
+        "%1$d",
+        "%2$d"
+      ],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 193,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_auth_consent_notice",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "En cliquant sur « Rejoindre », « Continuer avec Apple » ou « Continuer avec Google », tu acceptes nos %1$@ et notre %2$@, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$@).",
+      "en": "By tapping “Join”, “Continue with Apple” or “Continue with Google”, you accept our %1$@ and our %2$@, as well as the sharing of your anonymous usage statistics and crash reports (you can withdraw this at any time by writing to %3$@).",
+      "placeholders": [
+        "%1$s",
+        "%2$s",
+        "%3$s"
+      ],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 387,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_auth_panel_notice",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "En cliquant sur « Continuer », tu acceptes nos %1$@ et notre %2$@, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$@).",
+      "en": "By tapping “Continue”, you accept our %1$@ and our %2$@, as well as the sharing of your anonymous usage statistics and crash reports (you can withdraw this at any time by writing to %3$@).",
+      "placeholders": [
+        "%1$s",
+        "%2$s",
+        "%3$s"
+      ],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 304,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_diag_detection_clear",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Effacer le journal",
+      "en": "Clear the log",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 27,
+      "courte": false,
+      "gele": false,
+      "interne": true
+    },
+    {
+      "cle": "ios_diag_detection_description",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Les derniers événements de la détection de tes lieux : type, lieu, heure, batterie. Jamais de position, d'adresse ni de nom. Visible seulement dans les versions de test.",
+      "en": "The latest events of the detection of your places: type, place, time, battery. Never a location, an address or a name. Only visible in test versions.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 253,
+      "courte": false,
+      "gele": false,
+      "interne": true
+    },
+    {
+      "cle": "ios_diag_detection_empty",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Aucun événement pour l'instant.",
+      "en": "No event yet.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 46,
+      "courte": false,
+      "gele": false,
+      "interne": true
+    },
+    {
+      "cle": "ios_diag_detection_refresh",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Actualiser",
+      "en": "Refresh",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false,
+      "interne": true
+    },
+    {
+      "cle": "ios_diag_detection_title",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Journal de détection",
+      "en": "Detection log",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 30,
+      "courte": false,
+      "gele": false,
+      "interne": true
+    },
+    {
+      "cle": "ios_diag_review_force",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Afficher la fenêtre au prochain retour dans l'app",
+      "en": "Show the window at the next return to the app",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 73,
+      "courte": false,
+      "gele": false,
+      "interne": true
+    },
+    {
+      "cle": "ios_diag_review_force_armed",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Prête : mets l'app en arrière-plan puis rouvre-la (la fenêtre ne couvre jamais l'Update).",
+      "en": "Ready: send the app to the background, then reopen it (the window never covers the Update).",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 133,
+      "courte": false,
+      "gele": false,
+      "interne": true
+    },
+    {
+      "cle": "ios_diag_review_reset",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Remettre à zéro l'état de la fenêtre",
+      "en": "Reset the state of the window",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 54,
+      "courte": false,
+      "gele": false,
+      "interne": true
+    },
+    {
+      "cle": "ios_diag_review_reset_done",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "État remis à zéro : la fenêtre repart de zéro (7 jours, 30 jours, 90 jours).",
+      "en": "State reset: the window starts from zero (7 days, 30 days, 90 days).",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 114,
+      "courte": false,
+      "gele": false,
+      "interne": true
+    },
+    {
+      "cle": "ios_diag_review_title",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Fenêtre d'avis (essai)",
+      "en": "Review window (test)",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 33,
+      "courte": false,
+      "gele": false,
+      "interne": true
+    },
+    {
+      "cle": "ios_feed_offline_popin_close_a11y",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Fermer",
+      "en": "Close",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_feed_offline_popin_retrying_a11y",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Nouvel essai en cours",
+      "en": "Trying again",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 31,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_legal_privacy_path",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "/fr/confidentialite",
+      "en": "/en/privacy",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 28,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_legal_terms_path",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "/fr/cgu",
+      "en": "/en/terms",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_member_unnamed",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "ce proche",
+      "en": "this loved one",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_paywall_info_cancel_trial",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Pour un essai, au moins 24 heures avant sa fin.",
+      "en": "For a trial, at least 24 hours before it ends.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 70,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_paywall_store_name",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "App Store",
+      "en": "App Store",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false,
+      "invariableProbable": true
+    },
+    {
+      "cle": "ios_place_message_id_taken",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Un lieu a changé pendant que tu remplissais le formulaire. Ferme-le et rouvre-le, puis réessaie.",
+      "en": "A place changed while you were filling in the form. Close it and open it again, then try once more.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 144,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_miff_ready_hint",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Tu retrouveras ce code dans ta Miff, depuis l'écran d'accueil.",
+      "en": "You'll find this code in your Miff, from the home screen.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 93,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_onboarding_address_hint",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Entrez l'adresse exacte de ce lieu",
+      "en": "Enter the exact address of this place",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 51,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_onboarding_arrived_ago",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Arrivé il y a 12 min",
+      "en": "Arrived 12 min ago",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 30,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_onboarding_battery_1",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "85 %",
+      "en": "85%",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_onboarding_battery_2",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "22 %",
+      "en": "22%",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_onboarding_family_name",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Famille Alberta",
+      "en": "Alberta family",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 22,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_onboarding_name_counter",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "13/50",
+      "en": "13/50",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_onboarding_name_hint",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Choisissez un nom pour retrouver l'endroit facilement",
+      "en": "Choose a name to find the place easily",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 79,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_onboarding_radius_hint",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Définissez le rayon autour du lieu",
+      "en": "Set the radius around the place",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 51,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_onboarding_radius_value",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "100 m",
+      "en": "100 m",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false,
+      "invariableProbable": true
+    },
+    {
+      "cle": "ios_onboarding_type_hint",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Quel type de zone définissez-vous ?",
+      "en": "What type of zone are you setting?",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 52,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_onboarding_type_title",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Type",
+      "en": "Type",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false,
+      "invariableProbable": true
+    },
+    {
+      "cle": "ios_onboarding_zone_risk",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Zone de danger",
+      "en": "Danger zone",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 21,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_onboarding_zone_risk_hint",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Lieu à éviter",
+      "en": "Place to avoid",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 19,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_onboarding_zone_trust",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Zone de confiance",
+      "en": "Trusted zone",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 25,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_onboarding_zone_trust_hint",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Lieu sûr pour vos proches",
+      "en": "Safe place for your loved ones",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 37,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_phone_keyboard_done",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "OK",
+      "en": "OK",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false,
+      "invariableProbable": true
+    },
+    {
+      "cle": "ios_splash_a11y",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Miff",
+      "en": "Miff",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false,
+      "invariableProbable": true
+    },
+    {
+      "cle": "ios_settings_language_english",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "English",
+      "en": "English",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": true,
+      "geleRaisons": [
+        "PR #282 ouverte (modifie le texte)"
+      ],
+      "invariableProbable": true
+    },
+    {
+      "cle": "ios_settings_language_french",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Français",
+      "en": "Français",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": true,
+      "geleRaisons": [
+        "PR #282 ouverte (modifie le texte)"
+      ],
+      "invariableProbable": true
+    },
+    {
+      "cle": "ios_permission_notifications_note",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Miff te prévient aussi quand un proche donne des nouvelles. Pour cela, Miff enregistre un identifiant technique de ton téléphone, fourni par Apple pour envoyer les notifications. Tu peux tout couper à tout moment dans les réglages de ton téléphone. Les exemples ci-dessus montrent ce que tu pourrais recevoir.",
+      "en": "Miff also lets you know when someone in your circle checks in. For this, Miff saves a technical identifier of your phone, provided by Apple to send notifications. You can turn it all off at any time in your phone's settings. The examples above show what you could receive.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 463,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "ios_permission_location_upgrade_title",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Plus qu'une étape !",
+      "en": "One more step!",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 28,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "ios_permission_location_upgrade_body",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Pour te signaler à ta Miff même quand l'app est fermée, Miff a besoin de l'option « Toujours ».",
+      "en": "To let your Miff know even when the app is closed, Miff needs the \"Always\" option.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 142,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "ios_permission_location_step_open_miff",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Touche le bouton ci-dessous pour ouvrir les **Réglages** de Miff",
+      "en": "Tap the button below to open Miff's **Settings**",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 96,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "ios_permission_location_step_open_miff_short",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Ouvre les **Réglages** de Miff",
+      "en": "Open Miff's **Settings**",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 45,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "ios_permission_location_step_position",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Touche **Position**",
+      "en": "Tap **Location**",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 28,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "ios_permission_location_step_always",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Choisis **Toujours**",
+      "en": "Choose **Always**",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 30,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "ios_permission_location_step_precise",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Active **Position exacte**",
+      "en": "Turn on **Precise Location**",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 39,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "ios_permission_location_open_settings",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Ouvrir les Réglages",
+      "en": "Open Settings",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 28,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "ios_permission_location_settings_note",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Tu pourras changer ce choix à tout moment dans les Réglages de ton iPhone.",
+      "en": "You can change this choice at any time in your iPhone's Settings.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 111,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "ios_permission_location_denied_title",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "On a besoin de ta localisation",
+      "en": "We need your location",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 45,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "ios_permission_location_denied_body",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "La localisation est désactivée pour Miff sur ton iPhone. Sans elle, ta Miff ne peut pas savoir quand tu arrives ou pars de tes lieux.",
+      "en": "Location is turned off for Miff on your iPhone. Without it, your Miff can't know when you arrive at or leave your places.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 199,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "ios_permission_location_denied_note",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Tu peux changer d'avis à tout moment dans les Réglages.",
+      "en": "You can change your mind at any time in Settings.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 82,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "ios_permission_location_services_body",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Les services de localisation sont désactivés sur ton iPhone. Pour que Miff fonctionne, ils doivent être activés.",
+      "en": "Location Services are turned off on your iPhone. For Miff to work, they need to be turned on.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 168,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "ios_permission_location_services_step_1",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Ouvre les **Réglages** de l'iPhone",
+      "en": "Open your iPhone's **Settings**",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 51,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "ios_permission_location_services_step_2",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Touche **Confidentialité et sécurité**, puis **Service de localisation**",
+      "en": "Tap **Privacy & Security**, then **Location Services**",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 108,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "ios_permission_location_services_step_3",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Active-le, puis choisis **Toujours** pour Miff",
+      "en": "Turn it on, then choose **Always** for Miff",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 69,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "ios_permission_location_services_note",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Tu pourras changer ce choix à tout moment.",
+      "en": "You can change this choice at any time.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 63,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "ios_permission_location_restricted_body",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "La localisation est limitée sur ton iPhone par un réglage que tu ne peux pas modifier ici.",
+      "en": "Location is limited on your iPhone by a setting you can't change here.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 135,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "ios_permission_location_approximate_title",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "On a besoin de ta position exacte",
+      "en": "We need your exact location",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 49,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "ios_permission_location_approximate_body",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Miff a besoin de ta position exacte, et non d'une zone approximative, pour savoir quand tu arrives ou pars de tes lieux.",
+      "en": "Miff needs your exact location, not an approximate area, to know when you arrive at or leave your places.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 180,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "ios_settings_language_current",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Langue actuelle : %1$@",
+      "en": "Current language: %1$@",
+      "placeholders": [
+        "%1$s"
+      ],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 33,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_settings_language_hint_a11y",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "ouvre le choix de la langue",
+      "en": "opens the language choice",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 40,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_myinfo_save_failed_later",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Ça ne passe toujours pas. Tes informations restent ici : réessaie un peu plus tard.",
+      "en": "It still isn't going through. Your information stays here: try again a little later.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 124,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_about_licenses_maps_apple",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Plans d'Apple (MapKit)",
+      "en": "Apple Maps (MapKit)",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 33,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_about_licenses_binary_note",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Le dépôt de ce paquet publie ce texte. Le binaire livré peut aussi relever des conditions de service de Google, que nous n'avons pas relues.",
+      "en": "The repository of this package publishes this text. The shipped binary may also fall under Google terms of service, which we have not reviewed.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 210,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_account_apple",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Connecté avec Apple",
+      "en": "Signed in with Apple",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 28,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_detection_help_intro",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Une arrivée ou un départ peut mettre quelques minutes à être repéré. Si ça tarde, ces points peuvent aider.",
+      "en": "An arrival or a departure can take a few minutes to be noticed. If it takes longer, these points may help.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 160,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_detection_help_step_location",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "1. Dans les réglages de Miff, la localisation doit être sur « Toujours », avec « Position exacte » activée.",
+      "en": "1. In the Miff settings, location must be set to “Always”, with “Precise Location” turned on.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 160,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_detection_help_step_refresh",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "2. Garde « Actualisation en arrière-plan » activée pour Miff (Réglages > Général).",
+      "en": "2. Keep “Background App Refresh” turned on for Miff (Settings > General).",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 123,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_detection_help_step_saver",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "3. Le mode économie d'énergie peut retarder les détections : si possible, évite-le pendant tes déplacements.",
+      "en": "3. Low Power Mode can delay detections: if you can, avoid it while you are on the move.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 162,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_detection_help_step_swipe",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "4. Si une détection tarde, rouvrir Miff une fois permet de vérifier que tout est en ordre.",
+      "en": "4. If a detection is late, opening Miff once lets you check that everything is in order.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 135,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_detection_help_outro",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Les noms exacts des réglages peuvent changer selon la version d'iOS.",
+      "en": "The exact names of the settings can change depending on the iOS version.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 102,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_feed_photo_download_denied",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Pour enregistrer cette photo, autorise Miff à ajouter des photos à ta galerie dans les Réglages.",
+      "en": "To save this photo, allow Miff to add photos to your library in Settings.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 144,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_feed_photo_download_restricted",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Cet appareil n’autorise pas l’enregistrement dans la galerie.",
+      "en": "This device doesn’t allow saving photos to the library.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 91,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_update_notice_location_precise",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Active la position précise pour cette fonction. Tu peux le faire dans les réglages, puis réessayer.",
+      "en": "Turn on precise location for this feature. You can do it in the settings, then try again.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 148,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_update_restricted_title",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "La caméra n'est pas accessible",
+      "en": "The camera isn't accessible",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 45,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_update_restricted_body",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "La caméra est restreinte sur cet appareil. Cette action n'est pas disponible ici.",
+      "en": "The camera is restricted on this device. This action isn't available here.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 121,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_tabbar_update_neutral_a11y",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Donner des nouvelles",
+      "en": "Share news",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 30,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_settings_delete_not_erased",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Ce qui reste : les statistiques déjà envoyées avec ton accord ne contiennent ni ton nom ni ton compte et suivent la durée de conservation de la politique de confidentialité ; les copies de ta fiche gardées sur le téléphone des autres membres disparaissent à leur prochaine connexion.",
+      "en": "What remains: statistics already sent with your consent contain neither your name nor your account and follow the retention period of the privacy policy; copies of your card kept on other members’ phones disappear the next time they connect.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 424,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_settings_delete_miffs_blocked_more",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Les Miffs que tu avais déjà quittées ou supprimées pendant cette tentative le restent.",
+      "en": "The Miffs you had already left or deleted during this attempt stay that way.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 129,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_settings_delete_reauth_apple",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Apple va te demander de confirmer. On essaiera ensuite de retirer l’autorisation « Se connecter avec Apple » de ton compte Apple.",
+      "en": "Apple will ask you to confirm. We’ll then try to remove the “Sign in with Apple” authorization from your Apple account.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 193,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_settings_delete_apple_failed",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "On n’a pas pu retirer l’autorisation « Se connecter avec Apple » automatiquement. Tu peux le faire dans les réglages de ton identifiant Apple.",
+      "en": "We couldn’t remove the “Sign in with Apple” authorization automatically. You can do it in your Apple ID settings.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 213,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_settings_delete_entry_hint",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Ouvre une page qui explique ce qui sera supprimé. Rien n’est supprimé tout de suite.",
+      "en": "Opens a page that explains what will be deleted. Nothing is deleted yet.",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 126,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_notif_help_link",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Comment les réactiver ?",
+      "en": "How to turn them on?",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 34,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "ios_notif_delete",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Supprimer",
+      "en": "Delete",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "NSCameraUsageDescription",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Miff utilise la caméra seulement quand tu ouvres l'écran « Donner des nouvelles », pour prendre une photo de toi ou de ce qui t'entoure. La photo est publiée avec ta position et visible des membres de tes Miffs pendant 24 h, puis elle n'est plus lisible. Rien n'est enregistré dans ta photothèque.",
+      "en": "Miff uses the camera only when you open the “Share news” screen, to take a photo of you or of what's around you. The photo is published with your position and can be seen by the members of your Miffs for 24 hours, then it can no longer be read. Nothing is saved to your photo library.",
+      "placeholders": [],
+      "contexte": {},
+      "longueurMax": 445,
+      "courte": false,
+      "table": "InfoPlist.xcstrings",
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "NSPhotoLibraryAddUsageDescription",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Miff enregistre la photo dans ta galerie uniquement quand tu touches « Enregistrer cette photo ». Miff ne lit jamais tes photos ni ta galerie.",
+      "en": "Miff saves the photo to your library only when you tap “Save this photo”. Miff never reads your photos or your library.",
+      "placeholders": [],
+      "contexte": {},
+      "longueurMax": 213,
+      "courte": false,
+      "table": "InfoPlist.xcstrings",
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "NSLocationAlwaysAndWhenInUseUsageDescription",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Pour signaler à ta Miff que tu arrives dans un lieu de confiance ou que tu le quittes, même quand l'app est fermée, Miff a besoin de ta position en arrière-plan. Les membres de ta Miff qui partagent aussi voient ton statut et ta dernière position connue, avec l'heure, sans historique. Quand tu publies une photo, l'endroit où tu l'as prise y est joint, visible pendant 24 h des membres qui partagent aussi leur position. Tu peux arrêter à tout moment.",
+      "en": "To let your Miff know when you arrive at or leave a trusted place, even when the app is closed, Miff needs your location in the background. The members of your Miff who also share can see your status and your last known location, with the time, with no history. When you publish a photo, the place where you took it is attached to it, visible for 24 hours to the members who also share their location. You can stop at any time.",
+      "placeholders": [],
+      "contexte": {},
+      "longueurMax": 678,
+      "courte": false,
+      "table": "InfoPlist.xcstrings",
+      "gele": true,
+      "geleRaisons": [
+        "PR #290 ouverte (modifie le texte)"
+      ],
+      "sensible": true
+    },
+    {
+      "cle": "NSLocationWhenInUseUsageDescription",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Miff utilise ta position pour savoir quand tu arrives dans un lieu de confiance ou que tu le quittes, et pour que les membres de ta Miff qui partagent aussi voient ta dernière position connue, avec l'heure. Quand tu publies une photo, l'endroit où tu l'as prise y est joint, visible pendant 24 h des membres qui partagent aussi leur position.",
+      "en": "Miff uses your location to know when you arrive at or leave a trusted place, and so that the members of your Miff who also share can see your last known location, with the time. When you publish a photo, the place where you took it is attached to it, visible for 24 hours to the members who also share their location.",
+      "placeholders": [],
+      "contexte": {},
+      "longueurMax": 513,
+      "courte": false,
+      "table": "InfoPlist.xcstrings",
+      "gele": false,
+      "sensible": true
+    }
+  ]
+}

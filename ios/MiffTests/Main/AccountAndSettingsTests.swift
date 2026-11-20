@@ -194,6 +194,23 @@ final class SettingsModelsTests: XCTestCase {
     func testTheLanguageNameIsWrittenInItsOwnLanguage() {
         XCTAssertEqual(AppLanguageName.nativeName(code: "fr"), "Français")
         XCTAssertEqual(AppLanguageName.nativeName(code: "en"), "English")
+        XCTAssertEqual(AppLanguageName.nativeName(code: "es"), "Español")
+        XCTAssertEqual(AppLanguageName.nativeName(code: "it"), "Italiano")
+        XCTAssertEqual(AppLanguageName.nativeName(code: "pt"), "Português")
+        XCTAssertEqual(AppLanguageName.nativeName(code: "de"), "Deutsch")
+    }
+
+    /// Seule la langue compte, jamais la région : portugais du Brésil ou du Portugal, espagnol du Mexique, allemand d'Autriche (ticket
+    /// I18N-4L §5, critère 12).
+    func testTheRegionNeverCountsAndTheCaseDoesNotEither() {
+        let all = ["en", "fr", "es", "it", "pt", "de", "Base"]
+
+        XCTAssertEqual(AppLanguageName.code(preferred: ["pt-BR"], available: all), "pt")
+        XCTAssertEqual(AppLanguageName.code(preferred: ["pt-PT"], available: all), "pt")
+        XCTAssertEqual(AppLanguageName.code(preferred: ["es-MX"], available: all), "es")
+        XCTAssertEqual(AppLanguageName.code(preferred: ["de-AT", "en-US"], available: all), "de")
+        XCTAssertEqual(AppLanguageName.code(preferred: ["PT-br"], available: all), "pt")
+        XCTAssertEqual(AppLanguageName.code(preferred: ["ja-JP", "nl-NL"], available: all), "en")
     }
 
     func testTheMailLinkIsBuiltFromComponents() {

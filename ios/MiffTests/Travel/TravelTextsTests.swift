@@ -35,7 +35,7 @@ final class TravelTextsTests: XCTestCase {
 
         XCTAssertGreaterThanOrEqual(keys.count, 27)
         for key in keys {
-            for language in ["fr", "en"] {
+            for language in try I18nRegistry.shipped() {
                 XCTAssertFalse(text(key, language, in: strings).isEmpty, "\(key) \(language)")
                 XCTAssertFalse(text(key, language, in: strings).hasPrefix("MISSING"), "\(key) \(language)")
             }
@@ -77,7 +77,7 @@ final class TravelTextsTests: XCTestCase {
             let french = text(key, "fr", in: strings).lowercased()
             XCTAssertFalse(french.contains("vous "), key)
             XCTAssertFalse(french.contains("votre "), key)
-            for language in ["fr", "en"] {
+            for language in try I18nRegistry.shipped() {
                 let value = text(key, language, in: strings)
                 XCTAssertFalse(value.contains("!"), "\(key) \(language) : jamais de point d'exclamation")
                 XCTAssertFalse(value.lowercased().contains("alerte"), "\(key) \(language)")

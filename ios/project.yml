@@ -155,6 +155,11 @@ targets:
         # Langue de repli = ANGLAIS : un telephone dans une langue non prise en charge affiche l'anglais.
         # (Le francais reste la langue SOURCE des textes : sourceLanguage du catalogue.)
         CFBundleDevelopmentRegion: en
+        # Les langues du registre docs/contracts/i18n-languages.json dont le catalogue a REELLEMENT les textes (statut `required`) : fr et en.
+        # es, it, pt, de (statut `planned`) s'ajoutent ICI avec leurs textes, au lot 4 du chantier I18N-4L (`pt` = portugais du PORTUGAL, jamais
+        # `pt-PT`). Les declarer avant (sans dossier `xx.lproj`) pourrait faire retenir `es` comme langue du bundle puis retomber sur l'anglais
+        # au lieu de la 2e langue de l'utilisateur (un iPhone en espagnol puis francais verrait l'anglais). Un test (AppConfigurationTests) et le
+        # job « Parite des cles de traduction » verifient l'accord avec le registre.
         CFBundleLocalizations:
           - fr
           - en

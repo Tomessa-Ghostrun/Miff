@@ -6,7 +6,7 @@ import Foundation
 
 enum TimeShareTexts {
     /// « 72 % » en français (espace insécable fine), « 72% » en anglais : le format de pourcentage du SYSTÈME, jamais un texte construit.
-    static func percent(_ value: Int, locale: Locale = .current) -> String {
+    static func percent(_ value: Int, locale: Locale = AppLanguage.locale) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .percent
         formatter.maximumFractionDigits = 0
@@ -15,11 +15,11 @@ enum TimeShareTexts {
     }
 
     /// Le pourcentage d'une ligne : « < 1 % » pour une part réelle de moins de 1 %.
-    static func percent(of row: TimeShareRow, locale: Locale = .current) -> String {
+    static func percent(of row: TimeShareRow, locale: Locale = AppLanguage.locale) -> String {
         row.isUnderOnePercent ? L10n.string("profile_timeshare_percent_tiny") : percent(row.percent, locale: locale)
     }
 
-    static func percent(of detail: TimeShareDangerDetail, locale: Locale = .current) -> String {
+    static func percent(of detail: TimeShareDangerDetail, locale: Locale = AppLanguage.locale) -> String {
         if detail.isUnderOnePercent {
             return L10n.string("profile_timeshare_percent_tiny")
         }
@@ -58,7 +58,7 @@ enum TimeShareTexts {
     }
 
     /// L'encart de synthèse (maquette du PM) : « Tu as passé 72 % de ton temps dans tes zones de confiance ». Ne nomme jamais la zone de danger.
-    static func summary(trustedPercent: Int, locale: Locale = .current) -> String {
+    static func summary(trustedPercent: Int, locale: Locale = AppLanguage.locale) -> String {
         L10n.format("profile_timeshare_summary", percent(trustedPercent, locale: locale))
     }
 
@@ -68,7 +68,7 @@ enum TimeShareTexts {
     /// pourcentage du centre n'y est PAS répété : l'encart « Tu as passé 72 % de ton temps… » le dit. La zone de danger, quand la légende la
     /// montre, a sa propre ligne (un bouton) ; sous 1 % elle est citée ici. Le NOM de la catégorie est dit, jamais l'emoji. nil : rien à dire
     /// (seulement une zone de danger, déjà dite par sa ligne) : l'anneau est alors simplement caché.
-    static func spokenSummary(_ result: TimeShareResult, locale: Locale = .current) -> String? {
+    static func spokenSummary(_ result: TimeShareResult, locale: Locale = AppLanguage.locale) -> String? {
         let legend = Set(result.legendIndices)
         let parts = result.rows.enumerated().filter { index, row in
             if case .danger = row.kind {
@@ -83,12 +83,12 @@ enum TimeShareTexts {
     }
 
     /// La ligne de la zone de danger, dite seule : « Zone de danger, 12 %, afficher le détail ».
-    static func spokenDangerRow(_ row: TimeShareRow, locale: Locale = .current) -> String {
+    static func spokenDangerRow(_ row: TimeShareRow, locale: Locale = AppLanguage.locale) -> String {
         L10n.format("profile_timeshare_a11y_danger_row", name(of: row), percent(of: row, locale: locale))
     }
 
     /// Une ligne du détail : « Chantier rue Haute, 7 % ».
-    static func spokenDetail(_ detail: TimeShareDangerDetail, locale: Locale = .current) -> String {
+    static func spokenDetail(_ detail: TimeShareDangerDetail, locale: Locale = AppLanguage.locale) -> String {
         L10n.format("profile_timeshare_a11y_row", detail.name, percent(of: detail, locale: locale))
     }
 }

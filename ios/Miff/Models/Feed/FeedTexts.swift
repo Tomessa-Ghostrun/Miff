@@ -3,7 +3,7 @@ import Foundation
 // Les phrases du Feed : ce que `FeedBuilder` a décidé (des faits), écrit dans la langue du téléphone avec les clés `feed_*` du
 // catalogue (français et anglais, mêmes clés qu'Android). Les heures suivent la langue ET le choix 12 h / 24 h du téléphone
 // (« 16 h 02 » en français ; « 4:02 PM » ou « 16:02 » en anglais). Une phrase est une clé entière : rien n'est assemblé à partir de
-// morceaux, sauf une heure, un nombre ou un prénom. Rien n'est journalisé ; les prénoms reçus sont montrés, jamais gardés.
+// morceaux, sauf une heure, un nombre, un prénom ou un complément de lieu COMPLET (préposition et article compris, une clé par catégorie et par sens). Rien n'est journalisé ; les prénoms reçus sont montrés, jamais gardés.
 // La recherche du texte, la langue, le fuseau et le format 12 h / 24 h sont injectables : les tests lisent le VRAI catalogue.
 
 struct FeedTexts {
@@ -116,7 +116,7 @@ struct FeedTexts {
         case .at(let place):
             return atLabel(place)
         case .left(let place):
-            return text("feed_label_left", placeLeft(place))
+            return text("feed_label_left", placeComplement(place, movement: .leave))
         case .danger:
             return text("feed_label_danger")
         case .noNews:
@@ -209,9 +209,9 @@ struct FeedTexts {
         switch page.kind {
         case .left(let place, let moment):
             if page.isMe {
-                return text("feed_bubble_me_orange", placeLeft(place), at(moment))
+                return text("feed_bubble_me_orange", placeComplement(place, movement: .leave), at(moment))
             }
-            return text("feed_bubble_orange", name, placeLeft(place), at(moment))
+            return text("feed_bubble_orange", name, placeComplement(place, movement: .leave), at(moment))
         case .noNewsSince(let moment):
             if page.isMe {
                 return text("feed_bubble_me_red_stale", since(moment))
@@ -322,56 +322,5 @@ struct FeedTexts {
 
     func locateOld(_ measuredAt: Moment) -> String {
         text("feed_locate_old", from(measuredAt))
-    }
-}
-
-// Les compléments de lieu après « a quitté » et « a rejoint » : hors du corps de la structure (SwiftLint : 300 lignes au plus).
-extension FeedTexts {
-    /// Ce qui suit « a quitté » (« A quitté la maison », « Thomas a quitté le travail à 16 h 40 ») : un complément COMPLET, préposition comprise,
-    /// écrit par la langue (`feed_place_leave_*`). Rien n'est assemblé à partir d'un article et d'un nom : en espagnol, italien, portugais et allemand
-    /// la préposition et l'article se contractent ou changent avec le lieu (« del trabajo », « do trabalho »).
-    func placeLeft(_ place: PlaceRef) -> String {
-        switch place {
-        case .category(let kind):
-            switch kind {
-            case .home:
-                return text("feed_place_leave_home")
-            case .work:
-                return text("feed_place_leave_work")
-            case .school:
-                return text("feed_place_leave_school")
-            case .sport:
-                return text("feed_place_leave_sport")
-            case .relative:
-                return text("feed_place_leave_relative")
-            }
-        case .named(let name):
-            return text("feed_place_leave_named", name)
-        case .unknown:
-            return text("feed_place_leave_generic")
-        }
-    }
-
-    /// Ce qui suit « a rejoint » (« Thomas a rejoint l'école à 8 h 05 ») : même principe que `placeLeft`, textes `feed_place_arrive_*`.
-    func placeArrived(_ place: PlaceRef) -> String {
-        switch place {
-        case .category(let kind):
-            switch kind {
-            case .home:
-                return text("feed_place_arrive_home")
-            case .work:
-                return text("feed_place_arrive_work")
-            case .school:
-                return text("feed_place_arrive_school")
-            case .sport:
-                return text("feed_place_arrive_sport")
-            case .relative:
-                return text("feed_place_arrive_relative")
-            }
-        case .named(let name):
-            return text("feed_place_arrive_named", name)
-        case .unknown:
-            return text("feed_place_arrive_generic")
-        }
     }
 }

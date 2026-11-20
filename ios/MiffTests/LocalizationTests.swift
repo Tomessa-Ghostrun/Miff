@@ -104,6 +104,48 @@ final class LocalizationTests: XCTestCase {
         }
     }
 
+    // MARK: - Les langues du registre (docs/contracts/i18n-languages.json)
+
+    /// Toute langue du catalogue est une langue du registre ; une langue `required` a TOUS les textes traduisibles. Une langue `planned` (es, it,
+    /// pt, de avant le lot 4 du ticket I18N-4L) n'a pas à être complète : le job « Parité des clés de traduction » la suit en avertissement.
+    func testEveryLanguageOfTheCatalogIsInTheRegistryAndTheRequiredOnesAreComplete() throws {
+        let registry = try I18nRegistry.languages()
+        let catalog = try loadCatalog()
+        var present = Set<String>()
+        for entry in catalog.values {
+            present.formUnion((entry["localizations"] as? [String: Any] ?? [:]).keys)
+        }
+
+        let unknown = present.subtracting(registry.map { $0.code })
+        XCTAssertTrue(unknown.isEmpty, "Langue du catalogue absente du registre : \(unknown.sorted())")
+        for language in registry where language.status == "required" {
+            for (key, entry) in catalog where entry["shouldTranslate"] as? Bool != false {
+                let texts = values(entry, language: language.code).filter { !$0.isEmpty }
+                XCTAssertFalse(texts.isEmpty, "\(key) : texte \(language.code) manquant (langue required)")
+            }
+        }
+    }
+
+    /// Les formes de pluriel de chaque langue suivent le registre : jamais une forme que la langue ne connaît pas (« many » en anglais ou en
+    /// allemand, « few »...), toujours `one` et `other`. Le zéro se range avec `other` en es, it, pt, de (« 0 días ») : relire les textes
+    /// français pensés pour « 0 ou 1 » (ticket I18N-4L §4.2).
+    func testThePluralFormsOfEveryLanguageFollowTheRegistry() throws {
+        let catalog = try loadCatalog()
+        for language in try I18nRegistry.languages() {
+            for (key, entry) in catalog {
+                let localization = (entry["localizations"] as? [String: Any])?[language.code] as? [String: Any]
+                let plural = (localization?["variations"] as? [String: Any])?["plural"] as? [String: Any]
+                guard let forms = plural.map({ Set($0.keys) }) else {
+                    continue
+                }
+                let label = "\(key) (\(language.code))"
+                let unknown = forms.subtracting(language.pluralsAllowed)
+                XCTAssertTrue(unknown.isEmpty, "\(label) : forme inconnue de la langue \(unknown.sorted())")
+                XCTAssertTrue(language.pluralsRequired.isSubset(of: forms), "\(label) : forme obligatoire absente")
+            }
+        }
+    }
+
     func testTheAppBundleContainsFrenchAndEnglish() {
         XCTAssertTrue(Bundle.main.localizations.contains("fr"))
         XCTAssertTrue(Bundle.main.localizations.contains("en"))
@@ -113,8 +155,8 @@ final class LocalizationTests: XCTestCase {
         XCTAssertEqual(Bundle.main.developmentLocalization, "en")
     }
 
-    func testCompiledStringsAreTranslatedInBothLanguages() throws {
-        for language in ["fr", "en"] {
+    func testCompiledStringsAreTranslatedInEveryLanguageOfTheApp() throws {
+        for language in try I18nRegistry.shipped() {
             let path = try XCTUnwrap(Bundle.main.path(forResource: language, ofType: "lproj"), language)
             let bundle = try XCTUnwrap(Bundle(path: path))
             for key in ["home_tagline", "diag_title", "diag_test1_ok", "diag_switch_analytics"] {

@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// Réglages > Langue (maquette « reglages-5 », ticket Feed / Profil / Réglages critère A9 ; miroir de `LanguageScreen` d'Android). Trois choix,
-/// chacun écrit dans SA langue pour qu'on le retrouve quelle que soit la langue de l'app : « Français », « English » et « Langue du téléphone »
-/// (ce dernier suit la langue de l'app). Un toucher applique le choix tout de suite : pas de bouton « Enregistrer » (décision Q4). Un cercle
+/// Réglages > Langue (maquette « reglages-5 », ticket Feed / Profil / Réglages critère A9 ; miroir de `LanguageScreen` d'Android). Un choix par
+/// langue de l'app, chacun écrit dans SA langue pour qu'on le retrouve quelle que soit la langue de l'app (« Deutsch », « English », « Español »,
+/// « Français », « Italiano », « Português »), puis « Langue du téléphone » (qui suit la langue de l'app). Un toucher applique le choix tout de
+/// suite : pas de bouton « Enregistrer » (décision Q4). Un cercle
 /// radio (comme Android) marque le choix actif.
 ///
 /// L'écran n'ouvre plus les réglages de l'iPhone (décision du PM du 2026-11-13, qui remplace celle d'ouvrir ces réglages).
@@ -10,10 +11,14 @@ struct LanguageView: View {
     @ObservedObject var controller: AppLanguageController
     let onBack: () -> Void
 
+    private var rows: [LanguageRowModel] {
+        LanguageRows.rows(selected: controller.choice, offered: controller.offeredChoices)
+    }
+
     var body: some View {
         MiffFrame(title: L10n.string("settings_language_title"), onBack: onBack, usesCanvas: true) {
             VStack(spacing: 0) {
-                ForEach(LanguageRows.rows(selected: controller.choice), id: \.choice) { row in
+                ForEach(rows, id: \.choice) { row in
                     LanguageRow(
                         label: LanguageLabels.label(for: row.choice),
                         isSelected: row.isSelected,
@@ -25,30 +30,42 @@ struct LanguageView: View {
     }
 }
 
-/// Les libellés des trois choix. Les deux langues ne sont JAMAIS traduites (clés `ios_settings_language_french` et `_english`, même texte dans
-/// les deux colonnes du catalogue) ; « Langue du téléphone » suit la langue de l'app.
+/// Les libellés des choix. Les noms des langues ne sont JAMAIS traduits (clés `ios_settings_language_<langue>`, non traduisibles, même texte dans
+/// les colonnes du catalogue) ; « Langue du téléphone » suit la langue de l'app.
 enum LanguageLabels {
     static func label(for choice: AppLanguageChoice) -> String {
         switch choice {
-        case .french:
-            return L10n.string("ios_settings_language_french")
+        case .german:
+            return L10n.string("ios_settings_language_german")
         case .english:
             return L10n.string("ios_settings_language_english")
+        case .spanish:
+            return L10n.string("ios_settings_language_spanish")
+        case .french:
+            return L10n.string("ios_settings_language_french")
+        case .italian:
+            return L10n.string("ios_settings_language_italian")
+        case .portuguese:
+            return L10n.string("ios_settings_language_portuguese")
         case .system:
             return L10n.string("settings_language_system")
         }
     }
 }
 
-/// L'état des trois lignes pour un choix donné : UNE seule est sélectionnée (comme le `selectableGroup` d'Android). Pur, testé.
+/// L'état des lignes pour un choix donné : UNE seule est sélectionnée (comme le `selectableGroup` d'Android). Pur, testé.
 struct LanguageRowModel: Equatable {
     let choice: AppLanguageChoice
     let isSelected: Bool
 }
 
 enum LanguageRows {
-    static func rows(selected: AppLanguageChoice) -> [LanguageRowModel] {
-        AppLanguageChoice.allCases.map { LanguageRowModel(choice: $0, isSelected: $0 == selected) }
+    /// `offered` : les choix montrés (`AppLanguageController.offeredChoices`) ; tous par défaut.
+    static func rows(
+        selected: AppLanguageChoice,
+        offered: [AppLanguageChoice] = AppLanguageChoice.allCases
+    ) -> [LanguageRowModel] {
+        offered.map { LanguageRowModel(choice: $0, isSelected: $0 == selected) }
     }
 
     /// iOS n'a pas de rôle « bouton radio » : la ligne est un bouton, dit « sélectionné » quand elle l'est (VoiceOver lit
