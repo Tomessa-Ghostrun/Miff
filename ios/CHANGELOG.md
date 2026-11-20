@@ -2,6 +2,27 @@
 
 ## Non publié
 
+### Miff en espagnol, italien, portugais et allemand (I18N-4L lot 4 iOS, numéro provisoire ; ticket `docs/tickets/traduction-es-it-pt-de.md`)
+
+Branche `ios/langues-es-it-pt-de`. **Rien n'est compilé en local** (poste Windows) : la CI fait foi. Les 1 289 textes par langue (es, it, pt = portugais du **Portugal**, de) sont **traduits par un agent, relus par un second agent indépendant, rétro-traduits pour les textes sensibles, contrôlés automatiquement**. Aucune relecture native ni juridique ; textes publiés sous la responsabilité du PM.
+
+Ce que le PM doit voir sur l'iPhone : Réglages > Langue propose maintenant six langues (Deutsch, English, Español, Français, Italiano, Português) plus « Langue du téléphone » ; un iPhone réglé dans l'une de ces langues affiche l'app dans cette langue (au lieu de l'anglais). Détail de la vérification demandée dans la PR.
+
+Ajouté :
+- **Catalogues** : `Localizable.xcstrings` (1 239 textes traduits par langue, état `translated`, pluriels `one` / `many` / `other` en es, it, pt et `one` / `other` en de, substitutions et valeurs positionnelles identiques au français) et `InfoPlist.xcstrings` (les 4 textes des fenêtres du système : caméra, galerie, localisation en deux niveaux). Injectés par `node scripts/i18n-exchange.mjs injecter --plateforme ios` ; aucun texte français ni anglais, aucune clé, aucun ordre de clé modifié.
+- **Déclaration** : `CFBundleLocalizations` (`project.yml`) = fr, en, es, it, pt, de ; registre `docs/contracts/i18n-languages.json` : es, it, pt, de passent de `planned` à `required` pour **iOS** (Android reste `planned` : autre PR).
+- **Repli anglais dans `L10n.string`** : une clé absente du paquet de la langue choisie (écran de diagnostic des builds de test, noms de langue et nom « Miff+ », qui ne se traduisent pas) s'affiche en **anglais** au lieu du nom de la clé. Sans cela, choisir « Español » dans Réglages > Langue aurait montré « ios_settings_language_german » à la place de « Deutsch ». Une clé inconnue partout reste affichée telle quelle.
+- **Tests** : `LocalizationTests` vérifie, pour chaque langue déclarée, que tous les textes existent (hors écran de diagnostic, dispensé par le registre), que les valeurs insérées sont celles du français (type et position, dans les formes de pluriel et les substitutions), que les pluriels ont les formes de la langue, que `CFBundleLocalizations` = langues `required` du registre, et le repli anglais. Les tests de contenu qui bouclent sur les langues livrées (ton, valeurs, notifications, paywall, couleurs, voyage, compte à rebours, À propos, etc.) s'appliquent maintenant aux six langues.
+
+Modifié :
+- **Catalogue** : le saut de ligne final de `Localizable.xcstrings` est rétabli (forme d'Xcode ; perdu à une fusion, ce qui faisait refuser le fichier par le script d'injection). Aller-retour JSON identique à l'octet près.
+- **Config d'échange** : `docs/i18n/echange/config.json`, préfixes de gel vidés (les clés `consent3_`, `miff_consent`, `notif_centre`, `feed_place_` sont traduites).
+
+Limites connues, à regarder sur l'iPhone :
+- Les notifications poussées par le serveur (clés résolues par le système) suivent la **langue du téléphone**, pas le choix fait dans l'app (ticket §4.1).
+- 5 à 13 textes par langue dépassent le budget de longueur (formules figées du glossaire : « entes queridos », « Bei Nahestehenden »...) : simples avertissements, à vérifier sur capture, surtout en allemand avec une grande taille de texte.
+- Une PR ouverte qui ajoute des clés iOS (par exemple #299) devra les ajouter dans les six langues avant sa fusion : le job « Parité des clés de traduction » échoue sinon.
+
 ### Textes français corrigés (lot 4C iOS, numéro provisoire ; décisions du PM du 2026-11-20, `docs/i18n/corrections-sources-fr-decidees.md`)
 
 Branche `ios/textes-fr-corriges`. **Rien n'est compilé en local** (la CI fait foi). Français et anglais seulement : aucune traduction es / it / pt / de n'est injectée ici.

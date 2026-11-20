@@ -109,7 +109,7 @@ final class InfoPlistStaticTests: XCTestCase {
 
     /// Les textes que le système montre (caméra, galerie, localisation) sont prêts pour les langues du registre : toute langue du catalogue
     /// est une langue du registre, une langue qui a UN de ces textes les a TOUS (jamais une demande d'autorisation à moitié traduite), et
-    /// fr et en les ont tous. Les textes de es, it, pt, de arrivent au lot 4 du ticket I18N-4L.
+    /// fr et en les ont tous ; es, it, pt et de les ont depuis le lot 4 iOS du ticket I18N-4L (les quatre textes, dont les deux de localisation).
     func testTheSystemTextsAreReadyForTheLanguagesOfTheRegistry() throws {
         let url = iosRoot.appendingPathComponent("Miff/Resources/InfoPlist.xcstrings")
         let root = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
