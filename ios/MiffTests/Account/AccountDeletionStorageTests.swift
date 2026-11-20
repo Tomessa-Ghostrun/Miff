@@ -231,6 +231,7 @@ final class AccountLocalDataTests: XCTestCase {
         let notifications = NotificationMemory()
         notifications.preferences.save(NotificationPreferences(), uid: "uid-1")
         notifications.center.seed([NotificationFixtures.item("n1|a", at: 1_000)], uid: "uid-1")
+        notifications.journalCursor.setCursor(5_000, uid: "uid-1")
         notifications.secondChance.save(SecondChanceState(firstUpdateSeen: true, answered: false), uid: "uid-1")
         notifications.secondChance.save(SecondChanceState(firstUpdateSeen: true, answered: true), uid: "uid-2")
         let clarifyAsks = InMemoryClarifyAskStore()
@@ -256,6 +257,9 @@ final class AccountLocalDataTests: XCTestCase {
         XCTAssertTrue(pending.ids(uid: "uid-1").isEmpty)
         XCTAssertEqual(pending.ids(uid: "uid-2"), [testOtherMiffId])
         XCTAssertNil(active.chosen())
+        XCTAssertNil(
+            notifications.journalCursor.cursor(uid: "uid-1"), "le curseur du journal du serveur part avec le compte"
+        )
         XCTAssertEqual(cleaner.removals, 1)
         XCTAssertEqual(tracking.clears, 1, "la copie locale du suivi est effacée directement")
         XCTAssertEqual(journal.clears, 1, "le journal de détection aussi")

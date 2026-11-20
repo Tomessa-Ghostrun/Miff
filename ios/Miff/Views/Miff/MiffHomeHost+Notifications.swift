@@ -22,6 +22,8 @@ extension MiffHomeHost {
         }
         path.removeAll()
         directory.select(miffId: target.miffId)
+        // CNC-I (ticket §8.4) : le Feed amène aussi la carte de l'auteur à l'écran (comme une ligne du centre) ; sans effet si elle n'y est pas.
+        environment.notifications.tabRequests.requestFocus(FeedFocus(miffId: target.miffId, uid: target.authorUid))
         feedOpenCount += 1
     }
 

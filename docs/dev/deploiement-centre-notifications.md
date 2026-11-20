@@ -200,3 +200,13 @@ Effets : plus aucune ligne n'est écrite ; **les lignes déjà écrites expirent
 - **Aucune** photo ni prénom stocké dans le journal ; **aucun** changement de ce que le téléphone affiche sur l'écran verrouillé (le message ne gagne que la clé technique `entryId`).
 - **Aucun** purge croisée à la suppression du compte d'un **auteur** : son identifiant reste jusqu'à 30 jours chez ses anciens proches (risque assumé, `data-model.md` §11 n° 33).
 - **Rien n'est déployé par cette PR** : ce document est la procédure que **tu** exécutes, sur ton « oui ».
+
+## 7. À FAIRE AVANT LA PUBLICATION : allumer la lecture du journal dans les apps de diffusion (Android et iOS)
+
+**Le piège** : la lecture et **la suppression** du journal par les apps sont derrière un drapeau de build, **éteint dans les versions de publication** : `BuildConfig.NOTIF_JOURNAL` (Android) et la condition de compilation `NOTIF_JOURNAL` (iOS, `ios/project.yml`, ligne `Release`). Tant qu'il est éteint, **« Tout effacer » et la suppression du compte ne vident PAS le journal côté serveur** : ses entrées partent seules par la règle TTL, **30 jours plus tard**, alors que le texte légal (CNC-J) promet l'effacement. C'est le même écart sur Android et sur iOS.
+
+**Deux façons de le fermer, à décider avant de publier** :
+1. **Recommandé** : allumer le drapeau en Release **dans la MÊME vague que le déploiement des fonctions** (étape 3 de ce document), sur ton « oui » explicite. Android : `-Pmiff.notifJournal=true -Pmiff.allowNotifJournalInRelease=true`. iOS : ajouter `NOTIF_JOURNAL` à la ligne `Release` de `ios/project.yml` et lancer `ios/ci/check-binaries.sh` avec `MIFF_ALLOW_NOTIF_JOURNAL_IN_RELEASE=1` (les deux tests qui figent ces lignes doivent être mis à jour dans la même PR).
+2. **Accepter l'écart en connaissance de cause** : publier avec le drapeau éteint, c'est-à-dire un journal qui n'est effacé que par le TTL (30 jours), et le dire dans le registre des risques assumés (`docs/legal/README.md` §4). À écrire noir sur blanc : sinon le texte légal ne correspond pas à ce que fait l'app.
+
+Ne jamais publier avec le journal déployé côté serveur ET le drapeau éteint sans avoir choisi l'une des deux options.

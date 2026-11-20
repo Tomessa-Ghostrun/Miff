@@ -225,8 +225,11 @@ struct MiffAvatar: View {
                     .scaledToFill()
             } else {
                 Circle().fill(colorActionPrimaryTint20.color)
+                // Une ligne, réduite si besoin : à une très grande taille de texte, deux initiales ne débordent pas du rond (CNC-I, rond de 40 pt).
                 Text(verbatim: initials)
                     .miffTextStyle(textDisplayLabel)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
                     .foregroundColor(colorActionPrimary.color)
             }
         }
