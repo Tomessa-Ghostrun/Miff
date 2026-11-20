@@ -61,6 +61,21 @@ final class NotificationCenterService: ObservableObject {
         store.save(history.items, uid: uid)
     }
 
+    /// CNC-I : plusieurs lignes d'un coup (la lecture du journal du serveur), UNE seule écriture du fichier. Une clé déjà inscrite n'est pas inscrite
+    /// une seconde fois : un message vu par le téléphone ET relu depuis le journal ne fait qu'une ligne.
+    func record(contentsOf items: [NotificationItem]) {
+        guard let uid = currentUid(), !items.isEmpty else {
+            return
+        }
+        load()
+        let updated = history.adding(contentsOf: items, nowMillis: nowMillis())
+        guard updated != history else {
+            return
+        }
+        history = updated
+        store.save(history.items, uid: uid)
+    }
+
     func markRead(id: String) {
         apply { $0.markingRead(id: id, nowMillis: $1) }
     }
@@ -86,6 +101,11 @@ final class NotificationCenterService: ObservableObject {
     /// NOTIF-P1I : retire les lignes du groupe dont `remove` dit oui (un membre qui a quitté la Miff, une Miff qui n'est plus là).
     func removeVisitLines(where remove: @escaping (NotificationItem) -> Bool) {
         apply { $0.removingVisit(where: remove, nowMillis: $1) }
+    }
+
+    /// CNC-I : retire les lignes de proches dont `remove` dit oui (une Miff quittée, supprimée ou dont l'accès est perdu).
+    func removeLovedOneLines(where remove: @escaping (NotificationItem) -> Bool) {
+        apply { $0.removingLovedOnes(where: remove, nowMillis: $1) }
     }
 
     /// Fin de session (déconnexion, suppression du compte, session prise par un autre appareil) : la mémoire et le fichier sont vidés.

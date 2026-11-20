@@ -136,6 +136,13 @@ class UpdatePublisher(
     private val travelOn: () -> Boolean = { false },
 ) {
     /**
+     * FEED-ORDRE-PHOTO: after a refusal traced to `photoAt` alone (see [commitLot]), the moment from which it is asked again (null = ask now). In memory only.
+     * A date and not a flag for the life of the process: the rules may be deployed while the app stays open, and the date must then come back by itself.
+     */
+    @Volatile
+    private var photoDateRetryAtMillis: Long? = null
+
+    /**
      * Publishes [photo]. [only]: the Miffs a previous try did not reach (null = all). [description]: what the person wrote under the preview (optional): it is cleaned
      * here, written in the SAME document as the photo in every Miff of the lot, and left out when nothing is left. It is never logged. Never throws except for the
      * cancellation of the caller.
@@ -258,6 +265,83 @@ class UpdatePublisher(
         }
     }
 
+    /**
+     * FEED-ORDRE-PHOTO: the photo and the status of ONE lot, the status carrying `photoAt` (the server time, the date the Feed sorts the cards by).
+     *
+     * SAFETY NET, for the order of deployment (ticket section 7): the rules that accept `photoAt` must be deployed BEFORE this version reaches anybody; if they are not,
+     * the server refuses the WHOLE lot (photo included) with PERMISSION_DENIED. Rather than lose the photo, ONE second attempt is made WITHOUT `photoAt`. It cannot go
+     * round any control: the second write is the first one minus an OPTIONAL key (exactly what every older version sends), and the rules judge it in full (membership,
+     * sharing, session, shape, the 24 h window of the dates, App Check): a refusal for any other reason is refused again and ends as "Refused" as before. Nothing is
+     * lowered, nothing is written that the first attempt did not ask for. Cost: one more transaction, only on a refusal, never in a loop.
+     * Once the second attempt has worked the refusal was caused by `photoAt` alone, so this publisher does not ask for it for [PHOTO_DATE_RETRY_MILLIS] (1 h), then asks again (no doubled
+     * transaction at each publication while the rules are not deployed, and the date comes back by itself within the hour once they are). Without `photoAt` the card of the author does not rise.
+     * To be removed once the rules are deployed and the versions that wrote without the key are gone.
+     */
+    private suspend fun commitLot(
+        uid: String,
+        lot: List<String>,
+        photo: UpdatePhoto,
+        place: PhotoPlace,
+        deviceId: String,
+        traveling: Boolean,
+        description: String?,
+    ): PhotoCommit {
+        var refused = false
+        if (photoDateAsked()) {
+            try {
+                val committed =
+                    commitOnce(uid, lot, photo, place, deviceId, traveling, description, stampPhotoDate = true)
+                photoDateRetryAtMillis = null
+                return committed
+            } catch (e: FirebaseFirestoreException) {
+                if (e.code != FirebaseFirestoreException.Code.PERMISSION_DENIED) throw e
+                refused = true
+            }
+        }
+        val committed = commitOnce(uid, lot, photo, place, deviceId, traveling, description, stampPhotoDate = false)
+        // Only a second attempt that worked, after a REAL first attempt was refused, proves that `photoAt` was the cause: it is asked again in an hour (a publication
+        // made inside the waiting hour does not extend it).
+        if (refused) photoDateRetryAtMillis = nowMillis() + PHOTO_DATE_RETRY_MILLIS
+        return committed
+    }
+
+    /** True unless a fallback worked less than [PHOTO_DATE_RETRY_MILLIS] ago (a clock set back past that window also asks again: never stuck). */
+    private fun photoDateAsked(): Boolean {
+        val retryAt = photoDateRetryAtMillis ?: return true
+        val now = nowMillis()
+        return now >= retryAt || retryAt - now > PHOTO_DATE_RETRY_MILLIS
+    }
+
+    private suspend fun commitOnce(
+        uid: String,
+        lot: List<String>,
+        photo: UpdatePhoto,
+        place: PhotoPlace,
+        deviceId: String,
+        traveling: Boolean,
+        description: String?,
+        stampPhotoDate: Boolean,
+    ): PhotoCommit =
+        // The time of the lot is taken when the lot is built (a retry by Firestore builds it again with a fresh clock).
+        withTimeout(timeoutMillis) {
+            store.commit(uid, lot, requireConsent = true) { allowed ->
+                val moment = nowMillis()
+                allowed.flatMap { miffId ->
+                    UpdateWrites.publish(
+                        miffId,
+                        uid,
+                        photo,
+                        place,
+                        moment,
+                        if (traveling) null else battery(),
+                        deviceId,
+                        description,
+                        stampPhotoDate,
+                    )
+                }
+            }
+        }
+
     private suspend fun writeLots(
         uid: String,
         photo: UpdatePhoto,
@@ -275,24 +359,7 @@ class UpdatePublisher(
         for (lot in targets.chunked(LOT_SIZE)) {
             val outcome: PhotoCommit? =
                 try {
-                    // The time of the lot is taken when the lot is built (a retry by Firestore builds it again with a fresh clock).
-                    withTimeout(timeoutMillis) {
-                        store.commit(uid, lot, requireConsent = true) { allowed ->
-                            val moment = nowMillis()
-                            allowed.flatMap { miffId ->
-                                UpdateWrites.publish(
-                                    miffId,
-                                    uid,
-                                    photo,
-                                    place,
-                                    moment,
-                                    if (traveling) null else battery(),
-                                    deviceId,
-                                    description,
-                                )
-                            }
-                        }
-                    }
+                    commitLot(uid, lot, photo, place, deviceId, traveling, description)
                 } catch (e: TimeoutCancellationException) {
                     // No answer: it may or may not have left.
                     failure = PublishResult.Unconfirmed
@@ -390,6 +457,9 @@ class UpdatePublisher(
 
         /** The wait for the detection's pass after a hand-over: about the time the measure itself may take (a pass is a few reads and one write). */
         const val HANDOVER_TIMEOUT_MS = 10_000L
+
+        /** FEED-ORDRE-PHOTO: after a refusal traced to `photoAt`, it is not asked again for an hour (then once more: the rules may have been deployed meanwhile). */
+        const val PHOTO_DATE_RETRY_MILLIS = 60L * 60L * 1000L
     }
 }
 

@@ -45,23 +45,42 @@ final class PushNotificationDelegate: NSObject, UNUserNotificationCenterDelegate
     var onForeground: ((CircleNewsTarget) -> Void)?
     /// La personne a touché la notification (cible validée de forme, pas encore comparée aux Miffs du compte).
     var onTap: ((CircleNewsTarget) -> Void)?
+    /// CNC-I : l'app voit passer un message du serveur (« a donné des nouvelles », début ou fin d'alerte) : au premier plan (`opened` faux : rien n'est
+    /// affiché), ou au toucher sur la notification (`opened` vrai : le système l'avait affichée). La ligne du centre s'écrit ici ; l'hôte vérifie que la Miff est
+    /// celle du compte avant (`PushArrivalRules`).
+    var onArrival: ((PushArrival, _ opened: Bool) -> Void)?
     /// Un autre délégué (les rappels locaux) à qui passer tout ce qui n'est PAS un message du serveur. Faible : il appartient à l'app.
     weak var next: UNUserNotificationCenterDelegate?
 
-    func routeWillPresent(userInfo: [AnyHashable: Any]) -> PushPresentationRoute {
+    func routeWillPresent(userInfo: [AnyHashable: Any], deliveredAt: Date? = nil) -> PushPresentationRoute {
         guard let target = CircleNewsParser.parse(userInfo) else {
             #if ALERT_DANGER
             if CircleAlertParser.parse(userInfo) != nil {
+                noteArrival(userInfo, opened: false, deliveredAt: deliveredAt)
                 return .present
             }
             #endif
             return .forward
         }
+        noteArrival(userInfo, opened: false, deliveredAt: deliveredAt)
         onForeground?(target)
         return .suppress
     }
 
-    func routeResponse(userInfo: [AnyHashable: Any], actionIdentifier: String) -> PushResponseRoute {
+    /// CNC-I : dit à l'hôte qu'un message du serveur est passé (la ligne du centre ; jamais une bannière : le système ou le Feed parlent déjà).
+    /// `deliveredAt` : l'heure à laquelle le système a livré la notification (`notification.date`) : la ligne est datée de là, pas du toucher.
+    private func noteArrival(_ userInfo: [AnyHashable: Any], opened: Bool, deliveredAt: Date?) {
+        if var arrival = PushArrivalParser.parse(userInfo) {
+            arrival.deliveredAtMillis = deliveredAt.map { Int($0.timeIntervalSince1970 * 1000) }
+            onArrival?(arrival, opened)
+        }
+    }
+
+    func routeResponse(
+        userInfo: [AnyHashable: Any],
+        actionIdentifier: String,
+        deliveredAt: Date? = nil
+    ) -> PushResponseRoute {
         guard let target = CircleNewsParser.parse(userInfo) else {
             #if ALERT_DANGER
             // ALERTE : un toucher sur « {Prénom} a déclaré une alerte » ouvre la Miff d'origine (la même demande d'ouverture que « a donné des nouvelles »,
@@ -70,6 +89,7 @@ final class PushNotificationDelegate: NSObject, UNUserNotificationCenterDelegate
                 guard actionIdentifier == UNNotificationDefaultActionIdentifier else {
                     return .ignore
                 }
+                noteArrival(userInfo, opened: true, deliveredAt: deliveredAt)
                 onTap?(alert.openTarget)
                 return .open
             }
@@ -80,6 +100,7 @@ final class PushNotificationDelegate: NSObject, UNUserNotificationCenterDelegate
         guard actionIdentifier == UNNotificationDefaultActionIdentifier else {
             return .ignore
         }
+        noteArrival(userInfo, opened: true, deliveredAt: deliveredAt)
         onTap?(target)
         return .open
     }
@@ -89,7 +110,7 @@ final class PushNotificationDelegate: NSObject, UNUserNotificationCenterDelegate
         willPresent notification: UNNotification,
         withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
     ) {
-        switch routeWillPresent(userInfo: notification.request.content.userInfo) {
+        switch routeWillPresent(userInfo: notification.request.content.userInfo, deliveredAt: notification.date) {
         case .suppress:
             // App ouverte : aucune bannière, aucun son (la carte du Feed et la cloche parlent déjà).
             completionHandler([])
@@ -113,7 +134,8 @@ final class PushNotificationDelegate: NSObject, UNUserNotificationCenterDelegate
     ) {
         let route = routeResponse(
             userInfo: response.notification.request.content.userInfo,
-            actionIdentifier: response.actionIdentifier
+            actionIdentifier: response.actionIdentifier,
+            deliveredAt: response.notification.date
         )
         switch route {
         case .open, .ignore:

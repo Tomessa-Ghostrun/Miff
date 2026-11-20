@@ -440,8 +440,8 @@
     <string name="feed_refresh_done_a11y">Up to date</string>
     <!-- FEED-REFRESH-POSITION: calm sentence (toast) when "Refresh" cannot read MY position again for lack of access to the location. Key shared with iOS. -->
     <string name="feed_refresh_position_unavailable">Your position couldn\'t be refreshed. For that, Miff needs location turned on, set to \"Always\" with precise location. You can change this in your phone\'s settings.</string>
-    <!-- FEED-ORDRE: polite screen-reader announcement when the order of the cards changes. %1$s = the first name of the member. Keys shared with iOS. -->
-    <string name="feed_order_updated_one_a11y">%1$s shared an update</string>
+    <!-- FEED-ORDRE-PHOTO (was FEED-ORDRE): polite screen-reader announcement when the order of the cards changes (a member shared a photo). %1$s = the first name of the member. Keys shared with iOS. -->
+    <string name="feed_order_updated_one_a11y">%1$s shared a photo</string>
     <string name="feed_order_updated_many_a11y">The Feed was updated</string>
     <string name="feed_loading_a11y">Loading your feed</string>
     <string name="feed_card_you_sees">What your loved ones see of you</string>

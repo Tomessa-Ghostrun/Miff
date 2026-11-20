@@ -39,10 +39,25 @@ enum NotificationType: String, CaseIterable, Codable, Equatable {
     /// les proches depuis la dernière ouverture. Comme N8, une ligne du centre SEULEMENT : jamais une notification du système (ni bannière, ni
     /// son, ni pastille), jamais un réglage, et indépendante de l'autorisation du téléphone. Ses mots se font à l'affichage (`LastVisit`).
     case c1
+    /// CNC-I (centre de notifications complet) : « {Prénom} a donné des nouvelles », un message du serveur (écrit au premier plan, au toucher, ou
+    /// par la lecture du journal du serveur). Une ligne du centre SEULEMENT : le système l'affiche lui-même, hors périmètre des réglages (son
+    /// interrupteur est « Quand un proche donne des nouvelles »). Ses mots et son image se font à l'affichage.
+    case n9
+    /// CNC-I : « {Prénom} a déclaré une alerte ». Même règle que N9 ; aucun interrupteur de type (une alerte n'est pas un confort).
+    case n10
+    /// CNC-I : « {Prénom} a mis fin à son alerte ». Même règle que N10.
+    case n11
 
-    /// Le périmètre des notifications du système (réglages, programmation) : N8 et C1 n'en font pas partie, ce sont des lignes du centre seulement.
+    /// Le périmètre des notifications du système (réglages, programmation) : N8, C1, N9, N10 et N11 n'en font pas partie, ce sont des lignes du
+    /// centre seulement.
     static var allCases: [NotificationType] {
         [.n1, .n2, .n3, .n4, .n6, .n7]
+    }
+
+    /// Les lignes qui parlent d'UN PROCHE (un message du serveur) : elles restent visibles quand les notifications du téléphone sont coupées (c'est
+    /// précisément le cas où le système n'avait rien montré), et disparaissent quand la Miff n'est plus celle du compte.
+    var aboutALovedOne: Bool {
+        self == .n9 || self == .n10 || self == .n11
     }
 
     var titleKey: String {
@@ -65,6 +80,13 @@ enum NotificationType: String, CaseIterable, Codable, Equatable {
             return "notif_n8_title"
         case .c1:
             return "notif_c1_title"
+        case .n9:
+            // Quand le prénom n'est pas (encore) connu : « Un proche a donné des nouvelles ». Avec le prénom : `notif_circle_update_title`.
+            return "notif_center_circle_update_title"
+        case .n10:
+            return "notif_center_alert_start_title_unnamed"
+        case .n11:
+            return "notif_center_alert_end_title_unnamed"
         }
     }
 
@@ -87,6 +109,12 @@ enum NotificationType: String, CaseIterable, Codable, Equatable {
         case .c1:
             // Les lignes de C1 sont des phrases entières faites à l'affichage (`LastVisitTexts`) : ce corps n'est jamais montré.
             return "notif_c1_title"
+        case .n9:
+            return "notif_circle_update_body"
+        case .n10:
+            return "notif_center_alert_start_body_unnamed"
+        case .n11:
+            return "notif_center_alert_end_body_unnamed"
         }
     }
 
@@ -110,6 +138,11 @@ enum NotificationType: String, CaseIterable, Codable, Equatable {
             return "notif_n8_title"
         case .c1:
             return "notif_c1_title"
+        case .n9:
+            // L'interrupteur de N9 est celui des messages du serveur (Réglages > Notifications), pas un réglage de ce centre.
+            return "notif_settings_circle_update"
+        case .n10, .n11:
+            return titleKey
         }
     }
 
@@ -123,7 +156,7 @@ enum NotificationType: String, CaseIterable, Codable, Equatable {
             return .feed
         case .n8:
             return .profile
-        case .c1:
+        case .c1, .n9, .n10, .n11:
             return .feed
         }
     }
@@ -133,8 +166,9 @@ enum NotificationType: String, CaseIterable, Codable, Equatable {
         switch self {
         case .n1, .n3, .n6:
             return true
-        case .n2, .n4, .n7, .n8, .c1:
-            // N8 et C1 ne sont jamais des notifications du système. N7 part à 8 h : jamais la nuit, donc rien à adoucir.
+        case .n2, .n4, .n7, .n8, .c1, .n9, .n10, .n11:
+            // N8 et C1 ne sont jamais des notifications du système. N7 part à 8 h : jamais la nuit, donc rien à adoucir. N9, N10 et N11 sont
+            // affichées par le système lui-même (le serveur choisit leur niveau) : rien à adoucir ici.
             return false
         }
     }

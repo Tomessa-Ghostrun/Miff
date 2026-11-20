@@ -16,10 +16,18 @@ final class FirestoreAccountDataStore: AccountDataStore {
     /// ALERTE (`BuildFlavor.includesAlertDanger`) : le compteur du jour `users/{uid}/quota/alerts` part avec le profil, dans la MÊME transaction
     /// (backend/data-model.md §2.20).
     private let alertsEnabled: Bool
+    /// CNC-I : le journal des notifications `users/{uid}/notifications`, vidé AVANT le profil quand il est donné (nil : le build ne le lit pas, rien n'y est écrit
+    /// ni lu). Ne lève jamais, ne bloque jamais la suppression : ce qui reste est supprimé par la règle d'expiration et n'est lisible de personne.
+    private let journal: NotificationJournalGateway?
 
-    init(writer: MiffStore = FirestoreMiffStore(), alertsEnabled: Bool = false) {
+    init(
+        writer: MiffStore = FirestoreMiffStore(),
+        alertsEnabled: Bool = false,
+        journal: NotificationJournalGateway? = nil
+    ) {
         self.writer = writer
         self.alertsEnabled = alertsEnabled
+        self.journal = journal
     }
 
     func membershipCount(uid: String) async throws -> Int {
@@ -42,6 +50,8 @@ final class FirestoreAccountDataStore: AccountDataStore {
 
     func deleteProfile(uid: String) async throws {
         try Self.check(uid)
+        // Avant `users/{uid}` (contrat §2.21, point 4) : les entrées du journal des notifications. Toléré : `deleteAll` ne lève jamais.
+        await journal?.deleteAll(uid: uid)
         if alertsEnabled {
             let withCounter = [
                 DocWrite(path: DangerAlertWrites.quotaPath(uid: uid), kind: .delete),

@@ -68,10 +68,17 @@ settings:
     # écrit une alerte. Pour inclure la fonction dans la publication, après décision du PM : ajouter ALERT_DANGER à la ligne Release ET lancer le contrôle des
     # binaires avec MIFF_ALLOW_ALERT_DANGER_IN_RELEASE=1 (ios/ci/check-binaries.sh) ; jamais autrement.
     # ATTENTION : un build Internal ouvert à des testeurs EXTERNES contient la fonction ; la retirer de la ligne Internal avant de l'ouvrir.
+    # NOTIF_JOURNAL = la LECTURE du journal des notifications du serveur (docs/tickets/centre-notifications-complet.md, CNC-I) : MÊME principe que ALERT_DANGER et que
+    # `BuildConfig.NOTIF_JOURNAL` d'Android (vrai en debug, faux en release). ALLUMÉE en Debug et dans le build TestFlight « interne » (Internal) de la recette du PM,
+    # ÉTEINTE en Release : la passerelle Firestore n'y est même pas compilée. Elle ne fonctionne qu'une fois les règles (`users/{uid}/notifications`), la règle d'expiration et les
+    # fonctions `notifierUpdate` / `notifierAlerte` déployées par le PM, sur « oui » explicite, dans l'ordre du ticket (règles + TTL, texte légal publié, fonctions, Android, iOS) ;
+    # avant, elle est refusée par les règles sans aucun effet visible (message calme, aucune boucle). Pour l'inclure dans la publication, après décision du PM : ajouter NOTIF_JOURNAL à la ligne
+    # Release ET lancer le contrôle des binaires avec MIFF_ALLOW_NOTIF_JOURNAL_IN_RELEASE=1 (ios/ci/check-binaries.sh) ; jamais autrement.
+    # ATTENTION : un build Internal ouvert à des testeurs EXTERNES lit le journal ; l'en retirer avant de l'ouvrir si le serveur n'est pas déployé.
     Debug:
-      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG REVIEW_PROMPT ALERT_DANGER
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG REVIEW_PROMPT ALERT_DANGER NOTIF_JOURNAL
     Internal:
-      SWIFT_ACTIVE_COMPILATION_CONDITIONS: INTERNAL REVIEW_PROMPT ALERT_DANGER
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: INTERNAL REVIEW_PROMPT ALERT_DANGER NOTIF_JOURNAL
 
 targets:
   Miff:

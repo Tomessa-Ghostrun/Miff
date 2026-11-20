@@ -45,6 +45,8 @@ class FeedBuilderTest {
         battery: Int? = 85,
         updatedAgo: Long = 2 * minute,
         access: MemberLocationAccess? = MemberLocationAccess.BACKGROUND,
+        // FEED-ORDRE-PHOTO: the date the order follows (none by default: the order of arrival).
+        photoAgo: Long? = null,
     ) = MemberStatus(
         presence = presence,
         placeId = placeId,
@@ -54,6 +56,7 @@ class FeedBuilderTest {
         batteryPct = battery,
         locationAccess = access,
         updatedAtMillis = now - updatedAgo,
+        photoAtMillis = photoAgo?.let { now - it },
     )
 
     private fun input(
@@ -143,19 +146,38 @@ class FeedBuilderTest {
     // --- Cards (C1, C7) --------------------------------------------------------------------------------------------
 
     @Test
-    fun cards_areByLatestNews_neverByUrgency() {
+    fun cards_areByLatestPhoto_neverByUrgency() {
         val members = listOf(member("t", "Thomas"), member(me, "Camille"), member("a", "Amandine"))
         val content =
             build(
                 members,
                 mapOf(
-                    // Green (a trusted zone) but the oldest news; red (left 5 h ago) with newer news than Thomas: Amandine comes first all the same.
-                    "t" to status(PresenceValue.IN_TRUSTED, presenceAgo = 10 * hour, lastUpdateAgo = 10 * hour),
-                    "a" to status(PresenceValue.OUT, presenceAgo = 5 * hour, lastUpdateAgo = 5 * hour),
-                    me to status(PresenceValue.IN_TRUSTED, presenceAgo = minute, lastUpdateAgo = minute),
+                    // Green (a trusted zone) but the oldest photo; red (left 5 h ago) with a newer photo than Thomas: Amandine comes first all the same.
+                    "t" to
+                        status(
+                            PresenceValue.IN_TRUSTED,
+                            presenceAgo = 10 * hour,
+                            lastUpdateAgo = 10 * hour,
+                            photoAgo =
+                                10 * hour,
+                        ),
+                    "a" to
+                        status(
+                            PresenceValue.OUT,
+                            presenceAgo = 5 * hour,
+                            lastUpdateAgo = 5 * hour,
+                            photoAgo = 5 * hour,
+                        ),
+                    me to
+                        status(
+                            PresenceValue.IN_TRUSTED,
+                            presenceAgo = minute,
+                            lastUpdateAgo = minute,
+                            photoAgo = minute,
+                        ),
                 ),
             )
-        // FEED-ORDRE (replaces the decision of 2026-11-07 "me last"): the most recent news first, me like anybody else, never by urgency.
+        // FEED-ORDRE-PHOTO (replaces "me last"): the most recent PHOTO first, me like anybody else, never by urgency.
         assertEquals(listOf(me, "a", "t"), content.cards.map { it.member.uid })
         assertEquals(StatusLevel.RED, card(content, "a").level)
         assertTrue(content.cards.first().isMe)
