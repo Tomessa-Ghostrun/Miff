@@ -9,9 +9,28 @@ import Foundation
 enum L10n {
     /// `bundle` : par défaut le paquet de la LANGUE CHOISIE dans Réglages > Langue (`AppLanguage.bundle` : le paquet principal quand c'est
     /// la langue du téléphone, `fr.lproj` ou `en.lproj` sinon). Le texte suit donc le choix, même calculé hors d'une vue.
+    ///
+    /// Une clé ABSENTE du paquet de la langue (l'écran de diagnostic et les noms de langue ne sont pas traduits en es, it, pt, de : registre
+    /// `docs/contracts/i18n-languages.json`, exception `missing-key`) retombe sur l'ANGLAIS, la langue de repli de l'app, au lieu d'afficher
+    /// le nom de la clé (« diag_title »). Une clé inconnue partout reste affichée telle quelle : c'est un oubli à voir tout de suite.
     static func string(_ key: String, bundle: Bundle = AppLanguage.bundle) -> String {
-        bundle.localizedString(forKey: key, value: nil, table: nil)
+        let text = bundle.localizedString(forKey: key, value: absentMarker, table: nil)
+        guard text == absentMarker else {
+            return text
+        }
+        return englishBundle?.localizedString(forKey: key, value: nil, table: nil) ?? key
     }
+
+    /// Valeur « absent » passée à Foundation : un texte qui ne peut pas être une vraie traduction.
+    private static let absentMarker = "@@miff-absent@@"
+
+    /// Le paquet de textes anglais de l'app (`en.lproj`), la langue de repli ; nil s'il manquait (ne doit pas arriver).
+    private static let englishBundle: Bundle? = {
+        guard let path = Bundle.main.path(forResource: "en", ofType: "lproj") else {
+            return nil
+        }
+        return Bundle(path: path)
+    }()
 
     /// Texte avec valeurs positionnelles (`%1$@`, `%2$lld`) : l'ordre peut changer selon la langue.
     static func format(_ key: String, _ arguments: CVarArg...) -> String {

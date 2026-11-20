@@ -9,7 +9,7 @@ enum I18nRegistry {
         let code: String
         /// Le nom de la langue écrit dans sa langue (Réglages > Langue).
         let nativeName: String
-        /// `required` : livrée, tout écart bloque ; `planned` : en préparation (textes pas encore dans l'app).
+        /// `required` : livrée, tout écart bloque ; `planned` : en préparation (textes pas encore dans l'app, aucune pour iOS depuis le lot 4).
         let status: String
         /// Les formes de pluriel que la langue connaît, et celles qui sont obligatoires.
         let pluralsAllowed: Set<String>
@@ -52,21 +52,40 @@ enum I18nRegistry {
         }
     }
 
+    /// Les clés dont le registre dispense cette langue (exceptions `check: "missing-key"`, par clé ou par motif) : l'écran de diagnostic
+    /// (`diag_*`, `ios_diag_*`) n'est pas traduit en es, it, pt, de ; il retombe sur l'anglais (`L10n.string`). Renvoie un test de clé.
+    static func missingKeyExemption(language: String) throws -> (String) -> Bool {
+        let data = try Data(contentsOf: registryURL)
+        let root = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let exceptions = (root["exceptions"] as? [[String: Any]] ?? []).filter {
+            $0["check"] as? String == "missing-key" && $0["lang"] as? String == language
+        }
+        let keys = Set(exceptions.compactMap { $0["key"] as? String })
+        let patterns = exceptions.compactMap { $0["keyPattern"] as? String }
+        return { key in
+            keys.contains(key) || patterns.contains { key.range(of: $0, options: .regularExpression) != nil }
+        }
+    }
+
     /// Les codes iOS de toutes les langues du registre.
     static func codes() throws -> [String] {
         try languages().map { $0.code }
     }
 
-    /// Les codes iOS des langues `required` du registre : celles dont le catalogue a les textes (fr et en aujourd'hui).
+    /// Les codes iOS des langues `required` du registre : celles dont le catalogue a les textes (les six depuis le lot 4 iOS du ticket I18N-4L).
     static func requiredCodes() throws -> [String] {
         try languages().filter { $0.status == "required" }.map { $0.code }
     }
 
     /// Les langues dont l'app A les textes : leur `xx.lproj` est dans l'app (un catalogue sans aucun texte pour une langue n'en produit pas).
-    /// C'est sur elles que les tests de contenu bouclent : fr et en aujourd'hui, les autres dès que leurs textes arrivent.
+    /// C'est sur elles que les tests de contenu bouclent : les six langues depuis le lot 4 iOS.
     static func shipped() throws -> [String] {
         let found = try codes().filter { Bundle.main.path(forResource: $0, ofType: "lproj") != nil }
         XCTAssertTrue(Set(["fr", "en"]).isSubset(of: found), "fr et en doivent toujours être dans l'app : \(found)")
+        // Chaque langue `required` du registre a son `xx.lproj` dans l'app : sinon une langue déclarée n'aurait aucun texte compilé.
+        let required = Set(try requiredCodes())
+        let missing = required.subtracting(found).sorted()
+        XCTAssertTrue(missing.isEmpty, "langues required sans xx.lproj : \(missing)")
         return found
     }
 }

@@ -71,6 +71,30 @@ Choix « économiques » et signal de bascule : aucun écouteur permanent, aucun
 
 Tests (XCTest, sans serveur) : `NotificationJournalTests` (forme exacte, ce qui est ignoré, clés, première synchronisation lue / non lue, curseur et recouvrement, identifiant d'entrée d'une ligne, sections, 30 jours ou 100 lignes), `NotificationJournalSyncTests` (fusion sans doublon dans les deux sens, absence du journal : refus, hors ligne, build sans la lecture, rythme d'une par minute, compte qui change, suppression), `PushArrivalTests`, `CenterAvatarsTests` (les 12 vecteurs « type, acteur donne image et texte », photo trop lourde, logo), `CenterFacesTests`, `NotificationCenterJournalTests` (écran), `NotificationJournalFlagTests` (le drapeau, aucune donnée personnelle de plus).
 
+### Miff en espagnol, italien, portugais et allemand (I18N-4L lot 4 iOS, numéro provisoire ; ticket `docs/tickets/traduction-es-it-pt-de.md`)
+
+Branche `ios/langues-es-it-pt-de`. **Rien n'est compilé en local** (poste Windows) : la CI fait foi. Les 1 239 textes (+ 4 textes système) par langue (es = espagnol d'**Espagne**, it, pt = portugais du **Portugal**, de) sont **traduits par un agent, relus par un second agent indépendant, rétro-traduits pour les textes sensibles, contrôlés automatiquement**. Aucune relecture native ni juridique ; textes publiés sous la responsabilité du PM.
+
+Ce que le PM doit voir sur l'iPhone : Réglages > Langue propose maintenant six langues (Deutsch, English, Español, Français, Italiano, Português) plus « Langue du téléphone » ; un iPhone réglé dans l'une de ces langues affiche l'app dans cette langue (au lieu de l'anglais). Détail de la vérification demandée dans la PR.
+
+Ajouté :
+- **Catalogues** : `Localizable.xcstrings` (1 239 textes traduits par langue, état `translated`, pluriels `one` / `many` / `other` en es, it, pt et `one` / `other` en de, substitutions et valeurs positionnelles identiques au français) et `InfoPlist.xcstrings` (les 4 textes des fenêtres du système : caméra, galerie, localisation en deux niveaux). Injectés par `node scripts/i18n-exchange.mjs injecter --plateforme ios` ; aucun texte français ni anglais, aucune clé, aucun ordre de clé modifié.
+- **Déclaration** : `CFBundleLocalizations` (`project.yml`) = fr, en, es, it, pt, de ; registre `docs/contracts/i18n-languages.json` : es, it, pt, de passent de `planned` à `required` pour **iOS** (Android reste `planned` : autre PR).
+- **Repli anglais dans `L10n.string`** : une clé absente du paquet de la langue choisie (écran de diagnostic des builds de test, noms de langue et nom « Miff+ », qui ne se traduisent pas) s'affiche en **anglais** au lieu du nom de la clé. Sans cela, choisir « Español » dans Réglages > Langue aurait montré « ios_settings_language_german » à la place de « Deutsch ». Une clé inconnue partout reste affichée telle quelle.
+- **Tests** : `LocalizationTests` vérifie, pour chaque langue déclarée, que tous les textes existent (hors écran de diagnostic, dispensé par le registre), que les valeurs insérées sont celles du français (type et position, dans les formes de pluriel et les substitutions), que les pluriels ont les formes de la langue, que `CFBundleLocalizations` = langues `required` du registre, et le repli anglais. Les tests de contenu qui bouclent sur les langues livrées (ton, valeurs, notifications, paywall, couleurs, voyage, compte à rebours, À propos, etc.) s'appliquent maintenant aux six langues.
+
+Modifié :
+- **Catalogue** : le saut de ligne final de `Localizable.xcstrings` est rétabli (forme d'Xcode ; perdu à une fusion, ce qui faisait refuser le fichier par le script d'injection). Aller-retour JSON identique à l'octet près.
+- **Config d'échange** : `docs/i18n/echange/config.json`, préfixes de gel vidés (les clés `consent3_`, `miff_consent`, `notif_centre`, `feed_place_` sont traduites).
+
+Limites connues, à regarder sur l'iPhone :
+- Les notifications poussées par le serveur (clés résolues par le système) suivent la **langue du téléphone**, pas le choix fait dans l'app (ticket §4.1).
+- 6 à 14 textes par langue dépassent le budget de longueur (formules figées du glossaire : « entes queridos », « Bei Nahestehenden »...) : simples avertissements, à vérifier sur capture, surtout en allemand avec une grande taille de texte.
+- Ordre de fusion : **#298 d'abord, puis #302** (conflit attendu sur `feed_order_updated_one_a11y` : garder le texte français et anglais de #298 avec les six langues, déjà « a publié une photo » en es, it, pt, de). Toute PR qui ajoute des clés iOS doit les ajouter dans les six langues : le job « Parité des clés de traduction » échoue sinon.
+- Écran de diagnostic (builds de test) : certains textes ne passent pas par `L10n` et peuvent montrer le nom brut de la clé hors fr et en (aucun impact en production).
+- **Traductions périmées remises à jour** (français corrigé après coup dans #295 et #296, comparé clé par clé à la traduction) : `update_preview_visibility` et `update_preview_visibility_many` (la condition « qui partagent aussi leur position » est dans les quatre langues), `notif_prime_body` (fin « tu peux régler ce que tu reçois… et tout couper », variantes Android et iOS gardées), `notif_state_off_note`, `notif_settings_help_link`, `notif_help_lead` (« notifications » et non « rappels »), `feed_moment_since_today` en es et pt (« las 16:02 », « as 16:02 » : « Desde las 16:02 » ; une heure de 1 h à 1 h 59 donne « las 1:05 », limite assumée).
+- Espagnol d'Espagne (décision du PM) : « Ajustes », « Localización » pour les noms de menus iOS (glossaire G32, G113, §6). Photo : l'allemand dit « teilst » (G146) ; es et it citent le bouton exact « Guardar la foto » / « Salva la foto » dans le texte de la galerie.
+
 ### Textes français corrigés (lot 4C iOS, numéro provisoire ; décisions du PM du 2026-11-20, `docs/i18n/corrections-sources-fr-decidees.md`)
 
 Branche `ios/textes-fr-corriges`. **Rien n'est compilé en local** (la CI fait foi). Français et anglais seulement : aucune traduction es / it / pt / de n'est injectée ici.
