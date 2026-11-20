@@ -18,8 +18,11 @@ enum L10n {
         String(format: string(key), locale: AppLanguage.locale, arguments: arguments)
     }
 
-    /// Texte avec pluriel (variantes `one`, `other`... du catalogue). Le nombre est passe au format.
-    static func plural(_ key: String, count: Int) -> String {
-        String(format: string(key), locale: AppLanguage.locale, count)
+    /// Texte avec pluriel (variantes `one`, `other`... du catalogue). Le nombre qui decide de la forme est PREMIER (`%1$lld`) ; les
+    /// autres valeurs (`%2$lld`...), s'il y en a (« 2 lieux sur 3 »), suivent dans l'ordre. Dans le catalogue, un pluriel a plusieurs
+    /// valeurs s'ecrit avec des `substitutions` (le pluriel ne porte que sur le premier nombre).
+    static func plural(_ key: String, count: Int, bundle: Bundle = AppLanguage.bundle, _ others: CVarArg...) -> String {
+        let arguments: [CVarArg] = [count] + others
+        return String(format: string(key, bundle: bundle), locale: AppLanguage.locale, arguments: arguments)
     }
 }

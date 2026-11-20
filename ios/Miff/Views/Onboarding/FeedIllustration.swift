@@ -34,7 +34,7 @@ struct FeedIllustration: View {
         }
     }
 
-    /// La bulle verte « Tout le monde est en sécurité », son étoile et ses deux textes.
+    /// La bulle verte « Tout le monde va bien », son étoile et ses deux textes.
     private var bubble: some View {
         Group {
             BubbleShape()
@@ -86,7 +86,7 @@ struct MemberCardSpec {
     let battery: String
     let placeKey: String
     let placeIcon: MockIconKind
-    /// Le texte « Arrivé il y a 12 min » et le détail (photo du salon, trois actions) : seulement sur la première carte.
+    /// Le texte « Arrivée : il y a 12 min » et le détail (photo du salon, trois actions) : seulement sur la première carte.
     let showsDetails: Bool
 
     static let thomas = MemberCardSpec(

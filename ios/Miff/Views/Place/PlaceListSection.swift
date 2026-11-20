@@ -125,14 +125,19 @@ struct PlaceRows: View {
             }
         }
         if limitShown && ui.atRequestLimit {
-            Text("place_request_limit_member")
+            Text(verbatim: limitText)
                 .miffTextStyle(textBodyRegular14)
                 .foregroundColor(colorTextDescription.color)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .onAppear {
-                    MiffNoticeAnnouncements.announceOnce(L10n.string("place_request_limit_member"))
+                    MiffNoticeAnnouncements.announceOnce(limitText)
                 }
         }
+    }
+
+    /// « Tu as déjà 3 demandes en attente. » : le nombre est la limite (`PlaceRequestLimits.perMember`), jamais écrit dans le texte.
+    private var limitText: String {
+        L10n.plural("place_request_limit_member", count: PlaceRequestLimits.perMember)
     }
 
     /// Un membre : qui définit les lieux. Un créateur en formule gratuite : « 3 lieux sur 3 avec la formule gratuite ». Un créateur
@@ -142,7 +147,7 @@ struct PlaceRows: View {
             return L10n.string("place_list_member_hint")
         }
         if ui.showsFreeCounter {
-            return L10n.plural("place_list_counter_free", count: ui.distinctCount)
+            return L10n.plural("place_list_counter_free", count: ui.distinctCount, PlaceLimits.freePlaces)
         }
         return nil
     }

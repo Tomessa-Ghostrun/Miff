@@ -14,7 +14,7 @@ extension FeedBuilder {
         declared: [DangerAlertDoc] = []
     ) -> Bubble {
         // ALERTE : une alerte déclarée est montrée quoi que dise le reste, même quand MON partage est arrêté (une alerte est une déclaration volontaire à toute la
-        // Miff), et elle est TOUJOURS la première page, avant les rouges automatiques. La bulle ne dit jamais « Tout le monde est en sécurité » pendant une alerte.
+        // Miff), et elle est TOUJOURS la première page, avant les rouges automatiques. La bulle ne dit jamais « Tout le monde va bien » pendant une alerte.
         let declaredList = declaredPages(context, cards: cards, live: declared)
         if !declaredList.isEmpty {
             let automatic = context.input.waitingAgreement || !context.mySharing

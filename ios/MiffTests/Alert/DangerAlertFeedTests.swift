@@ -219,8 +219,13 @@ enum AlertCatalog {
     static func value(_ key: String, language: String, in strings: [String: [String: Any]]) -> String? {
         let localizations = strings[key]?["localizations"] as? [String: Any]
         let entry = localizations?[language] as? [String: Any]
-        let unit = entry?["stringUnit"] as? [String: Any]
-        return unit?["value"] as? String
+        if let unit = entry?["stringUnit"] as? [String: Any] {
+            return unit["value"] as? String
+        }
+        // Un texte au pluriel (« 1 alerte » / « 3 alertes ») : la forme « other » porte le nombre, comme le texte simple.
+        let variations = (entry?["variations"] as? [String: Any])?["plural"] as? [String: Any]
+        let other = variations?["other"] as? [String: Any]
+        return (other?["stringUnit"] as? [String: Any])?["value"] as? String
     }
 
     static func lookup(language: String) throws -> (String) -> String {

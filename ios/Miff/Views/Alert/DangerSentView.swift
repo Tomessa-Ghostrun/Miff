@@ -110,7 +110,7 @@ struct DangerSentView: View {
         case .refused:
             return L10n.string("alert_refused_title")
         case .quota:
-            return L10n.string("alert_quota_title")
+            return L10n.plural("alert_quota_title", count: DangerAlertRules.maxStartsPerDay)
         case .sent:
             return named("alert_sent_title", "alert_sent_title_no_name")
         case .sharingStopped:

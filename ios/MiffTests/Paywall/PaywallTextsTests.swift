@@ -30,7 +30,10 @@ final class PaywallTextsTests: XCTestCase {
         let strings = try XCTUnwrap(root["strings"] as? [String: [String: Any]])
         let entry = try XCTUnwrap(strings[key], "\(key) absent du catalogue")
         let localization = (entry["localizations"] as? [String: Any])?[language] as? [String: Any]
-        let unit = localization?["stringUnit"] as? [String: Any]
+        // Un texte au pluriel (« lieu » / « lieux ») : la forme « other » porte le nombre, comme le texte simple.
+        let variations = (localization?["variations"] as? [String: Any])?["plural"] as? [String: Any]
+        let plural = variations?["other"] as? [String: Any]
+        let unit = (localization?["stringUnit"] ?? plural?["stringUnit"]) as? [String: Any]
         return try XCTUnwrap(unit?["value"] as? String, "\(key) : pas de texte \(language)")
     }
 

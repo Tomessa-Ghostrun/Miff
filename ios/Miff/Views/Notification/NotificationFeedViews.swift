@@ -37,7 +37,7 @@ struct NotificationBell: View {
     }
 }
 
-/// « Un rappel si tu oublies de donner de tes nouvelles ? » : une carte discrète en haut du Feed, avec « Activer » et « Pas maintenant ».
+/// « Un rappel si tu n'as pas le temps de donner de tes nouvelles ? » : une carte discrète en haut du Feed, avec « Activer » et « Pas maintenant ».
 /// Pas de bouton de fermeture à part : l'un ou l'autre la fait partir, et elle ne revient pas.
 struct NotificationSecondChanceCard: View {
     let onActivate: () -> Void

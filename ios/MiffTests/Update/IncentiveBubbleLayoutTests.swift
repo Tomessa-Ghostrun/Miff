@@ -4,7 +4,7 @@ import UIKit
 import XCTest
 @testable import Miff
 
-// La bulle d'incitation (« Tu es passé en orange… ») compacte, de la hauteur de son texte, comme sur Android (retour du PM sur iPhone : elle
+// La bulle d'incitation (« Ton statut est passé à l'orange… ») compacte, de la hauteur de son texte, comme sur Android (retour du PM sur iPhone : elle
 // était beaucoup trop grosse). Règle pure + hauteur réelle des vrais textes du catalogue.
 final class IncentiveBubbleLayoutTests: XCTestCase {
     func testTheBodyIsAsTallAsItsTextAndNeverMoreThanTheLimit() {
