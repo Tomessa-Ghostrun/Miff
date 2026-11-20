@@ -5,7 +5,7 @@
 -->
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!-- Écran d'accueil -->
-    <string name="home_tagline">Savoir que vos proches vont bien, sans les déranger.</string>
+    <string name="home_tagline">Savoir que tes proches vont bien, sans les déranger.</string>
     <string name="home_title" tools:ignore="UnusedResources">Miff</string>
     <string name="home_logo_a11y">Logo de Miff</string>
 
@@ -114,7 +114,7 @@
 
     <!-- Authentification : inscription, connexion, panneau de consentement (AUTH-1) -->
     <string name="auth_signup_title">Crée ton compte</string>
-    <string name="auth_signin_title">Content de te revoir</string>
+    <string name="auth_signin_title">Ça fait plaisir de te revoir</string>
     <string name="auth_email_label">Adresse e-mail</string>
     <string name="auth_password_label">Mot de passe</string>
     <string name="auth_password_show_a11y">Afficher le mot de passe</string>
@@ -147,7 +147,7 @@
     <string name="auth_panel_continue">Continuer</string>
     <string name="auth_panel_cancel">Annuler</string>
     <string name="auth_panel_refused_notice">Pas de souci, ton compte n\'a pas été créé. Tu pourras le créer quand tu veux.</string>
-    <string name="auth_session_replaced_notice">Ton compte est maintenant utilisé sur un autre téléphone. Tu as été déconnecté(e) de celui-ci.</string>
+    <string name="auth_session_replaced_notice">Ton compte est maintenant utilisé sur un autre téléphone. Ta session a été fermée sur ce téléphone.</string>
     <string name="auth_session_gone_notice">Ton compte a changé sur un autre appareil (par exemple une suppression en cours). Ce téléphone a été déconnecté.</string>
     <string name="auth_loading_a11y">Chargement en cours</string>
     <string name="auth_retry_action">Réessayer</string>
@@ -159,7 +159,7 @@
     <string name="auth_reset_intro">Indique l\'adresse e-mail de ton compte. Si elle correspond à un compte, tu recevras un lien pour choisir un nouveau mot de passe.</string>
     <string name="auth_reset_action">Envoyer</string>
     <string name="auth_reset_resend_action">Renvoyer l\'e-mail</string>
-    <string name="auth_reset_sent">Si un compte existe avec cette adresse, un e-mail vient d\'être envoyé. Pense à regarder dans tes courriers indésirables. Si tu t\'es inscrit avec Apple ou Google, utilise plutôt le bouton correspondant sur l\'écran de connexion.</string>
+    <string name="auth_reset_sent">Si un compte existe avec cette adresse, un e-mail vient d\'être envoyé. Pense à regarder dans tes courriers indésirables. Si tu as créé ton compte avec Apple ou Google, utilise plutôt le bouton correspondant sur l\'écran de connexion.</string>
     <string name="auth_reset_resend_wait">Tu peux demander un nouvel e-mail dans quelques instants.</string>
     <string name="auth_reset_back_to_signin">Retour à la connexion</string>
 
@@ -168,8 +168,8 @@
     <string name="android_legal_privacy_path">/fr/confidentialite</string>
 
     <!-- Carrousel de bienvenue et consentement implicite (AUTH-1) -->
-    <string name="auth_consent_notice">En cliquant sur « Rejoindre » ou « Continuer avec Google », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d\'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages).</string>
-    <string name="auth_panel_notice">En cliquant sur « Continuer », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d\'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages).</string>
+    <string name="auth_consent_notice">En touchant « Rejoindre » ou « Continuer avec Google », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d\'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages).</string>
+    <string name="auth_panel_notice">En touchant « Continuer », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d\'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages).</string>
     <string name="onboarding_headline">Savoir qu’ils vont bien,\nsans les déranger</string>
     <string name="onboarding_start">Commencer</string>
     <string name="onboarding_have_account">J\'ai déjà un compte</string>
@@ -177,10 +177,10 @@
     <string name="onboarding_slide1_caption">Un coup d\'œil, et tu sais que tout va bien.</string>
     <string name="onboarding_slide2_caption">Tes lieux de confiance, repérés automatiquement.</string>
     <string name="onboarding_slide3_caption">C\'est toi qui décides ce que tu partages, et tu peux arrêter à tout moment.</string>
-    <string name="onboarding_slide1_illustration_a11y">Aperçu de l\'écran de ta Miff : tout le monde est en sécurité, Thomas est à la maison et Amandine à l\'école.</string>
+    <string name="onboarding_slide1_illustration_a11y">Aperçu de l\'écran de ta Miff : tout le monde va bien, Thomas est à la maison et Amandine à l\'école.</string>
     <string name="onboarding_slide2_illustration_a11y">Aperçu de l\'écran « Nouveau lieu » : le nom, l\'adresse, le périmètre sur une carte et le type de zone.</string>
     <string name="onboarding_slide3_illustration_a11y">Illustration : trois petits messages qui disent que tes proches vont bien.</string>
-    <string name="onboarding_sample_all_safe">Tout le monde est en sécurité</string>
+    <string name="onboarding_sample_all_safe">Tout le monde va bien</string>
     <string name="onboarding_sample_updated">Mis à jour il y a 2 min.</string>
     <string name="onboarding_sample_name_1">Thomas</string>
     <string name="onboarding_sample_name_2">Amandine</string>
@@ -200,18 +200,18 @@
     <string name="onboarding_sample_name_3">Maman</string>
     <string name="onboarding_sample_place_address_value">17 Avenue d\'Italie, 75013, Paris</string>
     <string name="android_onboarding_family_name">Famille Alberta</string>
-    <string name="android_onboarding_arrived_ago">Arrivé il y a 12 min</string>
+    <string name="android_onboarding_arrived_ago">Arrivée : il y a 12 min</string>
     <string name="android_onboarding_battery_1">85 %</string>
     <string name="android_onboarding_battery_2">22 %</string>
-    <string name="android_onboarding_name_hint">Choisissez un nom pour retrouver l\'endroit facilement</string>
+    <string name="android_onboarding_name_hint">Choisis un nom pour retrouver l\'endroit facilement</string>
     <string name="android_onboarding_name_counter">13/50</string>
-    <string name="android_onboarding_address_hint">Entrez l\'adresse exacte de ce lieu</string>
-    <string name="android_onboarding_radius_hint">Définissez le rayon autour du lieu</string>
+    <string name="android_onboarding_address_hint">Entre l\'adresse exacte de ce lieu</string>
+    <string name="android_onboarding_radius_hint">Définis le rayon autour du lieu</string>
     <string name="android_onboarding_radius_value">100 m</string>
     <string name="android_onboarding_type_title">Type</string>
-    <string name="android_onboarding_type_hint">Quel type de zone définissez-vous ?</string>
+    <string name="android_onboarding_type_hint">Quel type de zone définis-tu ?</string>
     <string name="android_onboarding_zone_trust">Zone de confiance</string>
-    <string name="android_onboarding_zone_trust_hint">Lieu sûr pour vos proches</string>
+    <string name="android_onboarding_zone_trust_hint">Lieu sûr pour tes proches</string>
     <string name="android_onboarding_zone_risk">Zone de danger</string>
     <string name="android_onboarding_zone_risk_hint">Lieu à éviter</string>
     <!-- Profil et téléphone : les deux étapes de création du profil (ONB-2) -->
@@ -246,7 +246,7 @@
     <string name="profile_phone_country_label">Pays</string>
     <string name="profile_phone_country_field_a11y">Pays : %1$s, indicatif %2$s. Appuie pour en choisir un autre.</string>
     <string name="profile_phone_number_label">Numéro de téléphone</string>
-    <string name="profile_phone_help">Saisis ton numéro sans le premier zéro.</string>
+    <string name="profile_phone_help">Saisis ton numéro sans l\'indicatif du pays.</string>
     <string name="profile_phone_visibility">Seuls les membres de tes Miffs verront ce numéro, pour pouvoir t\'appeler ou t\'écrire. Personne d\'autre.</string>
     <string name="profile_phone_invalid">Ce numéro ne semble pas correct.</string>
     <string name="profile_phone_picker_title">Choisis ton pays</string>
@@ -292,7 +292,7 @@
     <string name="settings_account_email_a11y">Adresse e-mail : %1$s. Elle ne peut pas être modifiée ici.</string>
     <string name="settings_account_sign_out_action">Se déconnecter</string>
     <string name="settings_account_sign_out_title">Te déconnecter ?</string>
-    <string name="settings_account_sign_out_body">Tes proches ne verront plus tes mises à jour tant que tu es déconnecté(e).</string>
+    <string name="settings_account_sign_out_body">Tes proches ne verront plus tes nouvelles tant que ta session est fermée.</string>
     <string name="settings_account_sign_out_cancel">Annuler</string>
 
     <!-- Miff : créer, rejoindre, écran de la Miff, partage du statut, accès perdu (ticket MIFF-1). Tutoiement, ton calme. -->
@@ -375,7 +375,7 @@
     <string name="miff_sharing_state_on">Activé</string>
     <string name="miff_sharing_state_off">Désactivé</string>
     <string name="miff_sharing_stop_title">Arrêter de partager ton statut avec cette Miff ?</string>
-    <string name="miff_sharing_stop_body">Ton statut, ta photo d\'update et ta dernière position seront supprimés pour ce cercle. Tu pourras reprendre quand tu veux.</string>
+    <string name="miff_sharing_stop_body">Ton statut, ta photo et ta dernière position seront supprimés pour ce cercle. Tu pourras reprendre quand tu veux.</string>
     <string name="miff_sharing_stop_action">Arrêter le partage</string>
     <string name="miff_sharing_resume_title">Reprendre le partage ?</string>
     <string name="miff_sharing_resume_action">Reprendre le partage</string>
@@ -411,7 +411,7 @@
     <string name="feed_refresh_started_a11y">Actualisation en cours</string>
     <string name="feed_refresh_done_a11y">Informations actualisées</string>
     <!-- FEED-REFRESH-POSITION : phrase calme (toast) quand « Actualiser » ne peut pas relire MA position faute d'accès à la localisation. Clé partagée avec iOS. -->
-    <string name="feed_refresh_position_unavailable">Ta position n\'a pas pu être actualisée. Pour cela, Miff a besoin que la localisation soit activée, sur « Toujours » et en précis. Tu peux régler ça dans les réglages de ton téléphone.</string>
+    <string name="feed_refresh_position_unavailable">Ta position n\'a pas pu être actualisée. Pour cela, Miff a besoin que la localisation soit activée, sur « Toujours » avec la position précise. Tu peux régler ça dans les réglages de ton téléphone.</string>
     <!-- FEED-ORDRE : annonce polie (lecteur d'écran) quand l'ordre des cartes change. %1$s = le prénom du proche. Clés partagées avec iOS. -->
     <string name="feed_order_updated_one_a11y">%1$s a donné des nouvelles</string>
     <string name="feed_order_updated_many_a11y">Le Feed a été mis à jour</string>
@@ -532,7 +532,7 @@
     <string name="settings_account_password_action">Changer mon mot de passe</string>
     <string name="settings_account_password_sending">Envoi en cours…</string>
     <string name="settings_account_password_sent">C\'est parti ! Un e-mail vient de t\'être envoyé. Pense à regarder dans tes courriers indésirables.</string>
-    <string name="settings_account_google">Connecté avec Google</string>
+    <string name="settings_account_google">Compte relié à Google</string>
     <string name="settings_privacy_title">Confidentialité</string>
     <string name="settings_privacy_subtitle">Statistiques, localisation, notifications et textes légaux</string>
     <string name="settings_privacy_analytics_title">Statistiques d\'usage et rapports de plantage anonymes</string>
@@ -542,7 +542,7 @@
     <string name="settings_privacy_location_title">Localisation</string>
     <string name="settings_privacy_location_body">Miff utilise la localisation de ton téléphone, même quand l\'app est fermée, pour repérer tes arrivées et tes départs des lieux de ta Miff. Seuls les membres d\'une Miff qui partagent aussi la leur voient ta dernière position connue, avec l\'heure, et l\'endroit de ta photo si tu en publies une. Aucun historique de trajets n\'est gardé sur nos serveurs. Tu peux arrêter de partager à tout moment : ta position est alors effacée.</string>
     <string name="settings_privacy_notifications_title">Notifications</string>
-    <string name="settings_privacy_notifications_body">Les notifications arrivent bientôt. Rien n\'est envoyé pour l\'instant.</string>
+    <string name="settings_privacy_notifications_body">Quand tu donnes de tes nouvelles ou que tu déclares une alerte, tes proches qui ont activé les notifications en sont prévenus, avec ton prénom seulement (ni photo, ni position) ; pour tes nouvelles, il faut aussi qu\'ils partagent leur position. Tes rappels sont préparés par ton téléphone. Tes arrivées et tes départs ne déclenchent aucune notification immédiate chez tes proches ; si ton statut reste orange ou rouge un moment, leur téléphone peut leur proposer de prendre de tes nouvelles. Si tu acceptes les notifications, Miff enregistre un identifiant technique de ton téléphone pour te les envoyer. Nos serveurs gardent aussi 30 jours une trace technique de chaque notification envoyée (type, Miff, personne qui a donné des nouvelles ou déclaré l\'alerte, date ; jamais de prénom, de photo ni de position). Tu peux tout couper à tout moment dans Réglages > Notifications ou dans les réglages de ton téléphone.</string>
     <string name="settings_privacy_open_phone_settings">Ouvrir les réglages du téléphone</string>
     <string name="settings_privacy_texts_title">Nos textes</string>
     <string name="settings_privacy_contact">Nous contacter</string>
@@ -632,7 +632,7 @@
     <string name="place_miffs_sheet_done">Terminé</string>
     <string name="place_miffs_last_joined">Dernière rejointe</string>
     <string name="place_miffs_count">%1$d Miffs sur %2$d au maximum</string>
-    <string name="place_miffs_max_reached">Un lieu peut être attaché à 5 Miffs au maximum.</string>
+    <string name="place_miffs_max_reached">Un lieu peut être attaché à %1$d Miffs au maximum.</string>
     <string name="place_miffs_none_selected">Choisis au moins une Miff.</string>
     <string name="place_address_title">Adresse</string>
     <string name="place_address_help">Entre l\'adresse exacte de ce lieu, puis choisis-la dans la liste.</string>
@@ -648,7 +648,7 @@
     <string name="place_radius_value">%1$d m</string>
     <string name="place_radius_a11y">Rayon</string>
     <string name="place_radius_state_a11y">%1$d mètres</string>
-    <string name="place_radius_small_note">En dessous de 100 m, la détection peut manquer un passage.</string>
+    <string name="place_radius_small_note">En dessous de 100 m, la détection peut ne pas repérer ton passage.</string>
     <string name="place_radius_pick_address">Choisis une adresse pour voir ton lieu sur la carte.</string>
     <string name="place_map_a11y">Carte : cercle de %1$d mètres autour de %2$s</string>
     <string name="place_map_unavailable">La carte n\'est pas disponible pour le moment. Ton lieu est bien placé, tu peux continuer.</string>
@@ -696,14 +696,18 @@
     <string name="place_request_form_title">Proposer un lieu</string>
     <string name="place_request_form_submit">Soumettre la demande</string>
     <string name="place_request_sending">On envoie ta demande…</string>
-    <string name="place_request_form_hint">Le créateur de la Miff verra ta demande et décidera de l\'ajouter ou non.</string>
+    <string name="place_request_form_hint">Le créateur de la Miff verra ta demande et décidera s\'il l\'ajoute.</string>
     <string name="place_request_sent">Demande envoyée. Elle est en attente dans la liste.</string>
-    <string name="place_request_sent_offline">Ta demande partira dès que tu seras connecté.</string>
+    <string name="place_request_sent_offline">Ta demande partira dès que tu auras du réseau.</string>
     <string name="place_request_badge_pending">En attente</string>
     <string name="place_request_detail_banner_member">En attente de réponse.</string>
     <string name="place_request_withdraw">Retirer ma demande</string>
     <string name="place_request_withdrawn">Demande retirée.</string>
-    <string name="place_request_limit_member">Tu as déjà 3 demandes en attente. Tu pourras en proposer d\'autres quand elles auront été traitées.</string>
+    <plurals name="place_request_limit_member">
+        <item quantity="one">Tu as déjà %1$d demande en attente. Tu pourras en proposer d\'autres quand elle aura été traitée.</item>
+        <item quantity="many">Tu as déjà %1$d demandes en attente. Tu pourras en proposer d\'autres quand elles auront été traitées.</item>
+        <item quantity="other">Tu as déjà %1$d demandes en attente. Tu pourras en proposer d\'autres quand elles auront été traitées.</item>
+    </plurals>
     <string name="place_request_limit_miff">Cette Miff a déjà plusieurs demandes en attente. Réessaie un peu plus tard.</string>
     <string name="place_request_unavailable">Les demandes de lieu ne sont pas encore disponibles. Réessaie un peu plus tard.</string>
     <string name="place_request_gone">Cette demande n\'est plus en attente.</string>
@@ -711,7 +715,7 @@
 
     <!-- LIEU-REQ-C : le créateur reçoit, accepte ou refuse une demande de lieu -->
     <string name="notif_n8_title">Un lieu à valider</string>
-    <string name="notif_n8_body">Un membre de ta Miff propose un lieu. Tu peux l\'accepter ou non depuis ton Profil.</string>
+    <string name="notif_n8_body">Un membre de ta Miff propose un lieu. Tu peux l\'accepter ou le refuser depuis ton Profil.</string>
     <string name="place_request_section_title">À valider</string>
     <string name="place_request_by">Demandé par %1$s</string>
     <string name="place_request_by_unknown">Demandé par un membre</string>
@@ -747,7 +751,7 @@
     <string name="place_detail_info_trusted">Quand tu arrives ou pars de ce lieu, ta Miff voit ton statut (par exemple « à la maison »), même quand l\'app est fermée.</string>
     <string name="place_detail_info_danger">Quand tu entres dans cette zone, ton statut passe en rouge pour ta Miff. Si tu donnes de tes nouvelles, il repasse au vert pendant 1 h.</string>
     <string name="place_paywall_close_a11y">Fermer</string>
-    <string name="place_paywall_limit_title">Tu as atteint 3 lieux</string>
+    <string name="place_paywall_limit_title">Tu as atteint %1$d lieux</string>
     <string name="place_paywall_limit_body">C\'est la limite de la formule gratuite. Avec Miff+, ajoute autant de lieux que tu veux.</string>
     <string name="place_paywall_danger_title">Les zones de danger font partie de Miff+</string>
     <string name="place_paywall_danger_body">Avec Miff+, tu peux définir des zones de danger autour des lieux à éviter.</string>
@@ -769,16 +773,16 @@
     <string name="place_list_row_nocategory_a11y">%1$s, %2$s</string>
     <string name="place_list_row_nocategory_noaddress_a11y">%1$s</string>
     <plurals name="place_list_counter_free">
-        <item quantity="one">%1$d lieu sur 3 avec la formule gratuite</item>
-        <item quantity="many">%1$d lieux sur 3 avec la formule gratuite</item>
-        <item quantity="other">%1$d lieux sur 3 avec la formule gratuite</item>
+        <item quantity="one">%1$d lieu sur %2$d avec la formule gratuite</item>
+        <item quantity="many">%1$d lieux sur %2$d avec la formule gratuite</item>
+        <item quantity="other">%1$d lieux sur %2$d avec la formule gratuite</item>
     </plurals>
     <!-- LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement -->
     <string name="permission_notifications_title">Te prévenir, seulement quand c\'est utile !</string>
-    <string name="permission_notifications_note">Pour l\'instant, Miff n\'envoie pas encore de notification. Les exemples ci-dessus montrent ce qui est prévu.</string>
+    <string name="permission_notifications_note">Les exemples ci-dessus montrent ce que tu pourrais recevoir. Tu peux tout couper à tout moment dans les réglages de ton téléphone.</string>
     <string name="permission_notifications_action">Autoriser</string>
     <string name="permission_location_title">Savoir que tu vas bien !</string>
-    <string name="permission_location_body">Miff a besoin de ta localisation pour permettre à tes proches de savoir que tu es ou non en sécurité.</string>
+    <string name="permission_location_body">Miff a besoin de ta localisation pour que tes proches sachent que tu vas bien.</string>
     <string name="permission_location_disclosure">Miff collecte la localisation de ton téléphone, y compris en arrière-plan, même quand l\'app est fermée ou que tu ne l\'utilises pas, pour repérer quand tu arrives dans un lieu de confiance ou que tu le quittes et pour que ta Miff voie ton statut et ta dernière position connue.</string>
     <string name="permission_location_closed_title">Même quand l\'app est fermée</string>
     <string name="permission_location_closed_body">Miff repère quand tu arrives ou pars de tes lieux, sans que tu aies à ouvrir l\'app.</string>
@@ -871,7 +875,7 @@
     <string name="settings_delete_reauth_later">Plus tard</string>
     <string name="settings_delete_reauth_later_hint">Si tu choisis « Plus tard », la suppression reprendra à ton prochain lancement de l’app.</string>
     <string name="settings_delete_reauth_password_wrong">Ce mot de passe ne correspond pas. Tu peux réessayer.</string>
-    <string name="settings_delete_reauth_wrong_account">Ce n’est pas le compte avec lequel tu es connecté(e). Choisis le bon compte pour continuer.</string>
+    <string name="settings_delete_reauth_wrong_account">Ce n’est pas le compte avec lequel tu as ouvert ta session. Choisis le bon compte pour continuer.</string>
     <string name="settings_delete_reauth_unavailable">On ne peut pas vérifier ton identité depuis ce téléphone. Écris-nous : %1$s.</string>
     <string name="settings_delete_progress_title">On supprime ton compte…</string>
     <string name="settings_delete_progress_hint">Garde l’app ouverte, ça ne prend qu’un instant.</string>
@@ -898,7 +902,7 @@
     <string name="settings_delete_reauth_expired">Ta session a expiré. Déconnecte-toi, reconnecte-toi, puis réessaie.</string>
     <string name="settings_delete_signin_again">Ta session s’est fermée avant la fin de la suppression de ton compte. Reconnecte-toi avec le même compte : on la termine.</string>
     <string name="settings_delete_signin_again_action">Me reconnecter</string>
-    <string name="settings_delete_you">Ton profil, ta photo et ton numéro de téléphone seront supprimés. Tu quitteras les Miffs que tu as rejointes : ton statut et ta photo de mise à jour n’y seront plus visibles.</string>
+    <string name="settings_delete_you">Ton profil, ta photo et ton numéro de téléphone seront supprimés. Tu quitteras les Miffs que tu as rejointes : ton statut et ta photo n’y seront plus visibles.</string>
     <string name="settings_delete_position">Ta dernière position connue est effacée de Miff.</string>
     <string name="settings_delete_owned_title">Tes Miffs</string>
     <string name="settings_delete_owned_title_one">Ta Miff</string>
@@ -953,7 +957,7 @@
 
     <!-- UPDATE-1 / UPDATE-2 / FEED-4 : l'Update (photo du moment, bulle d'incitation, photo dans le Feed). -->
     <string name="update_permission_title">Une photo pour tes proches</string>
-    <string name="update_permission_body">Pour te prendre en photo, ou photographier ce qui t\'entoure, Miff a besoin d\'accéder à ta caméra. La photo est visible des membres de tes Miffs pendant 24 h, puis elle n\'est plus lisible. Rien n\'est enregistré dans ta galerie.</string>
+    <string name="update_permission_body">Pour te prendre en photo, ou photographier ce qui t\'entoure, Miff a besoin d\'accéder à ta caméra. Si tu la publies, la photo est partagée avec l\'endroit où tu l\'as prise. Les membres de tes Miffs qui partagent aussi leur position peuvent la voir pendant 24 h, puis elle n\'est plus visible ; un membre peut toutefois en avoir gardé une copie. Rien n\'est enregistré dans ta galerie.</string>
     <string name="update_permission_continue">Continuer</string>
     <string name="update_permission_not_now">Pas maintenant</string>
     <string name="update_retry_title">On réessaie ?</string>
@@ -991,8 +995,8 @@
     <string name="update_description_counter_a11y">%1$d caractères sur %2$d</string>
     <string name="update_description_limit">Limite de %1$d caractères atteinte.</string>
     <string name="update_description_shown_a11y">Description : %1$s</string>
-    <string name="update_preview_visibility">Tes proches verront cette photo pendant 24 h.</string>
-    <string name="update_preview_visibility_many">Ta photo sera visible des membres de tes %1$d Miffs pendant 24 h.</string>
+    <string name="update_preview_visibility">Tes proches qui partagent aussi leur position verront cette photo pendant 24 h.</string>
+    <string name="update_preview_visibility_many">Ta photo sera visible pendant 24 h des membres de tes %1$d Miffs qui partagent aussi leur position.</string>
     <string name="update_preview_place">Publiée avec ta position. Ceux qui partagent aussi la leur peuvent voir où tu l\'as prise.</string>
     <string name="update_preview_stale">Cette photo date un peu : reprends-en une.</string>
     <string name="update_publishing">Partage en cours…</string>
@@ -1004,8 +1008,8 @@
     <string name="update_notice_position">Position introuvable pour le moment, réessaie dans un instant.</string>
     <string name="update_notice_agreement">Pour partager une photo avec ta position, ton accord au nouveau texte est nécessaire.</string>
     <string name="update_notice_failed">Ta photo n\'est pas partie. Réessaie dans un instant.</string>
-    <string name="update_bubble_orange">Tu es passé en orange, indique à la Miff que tout va bien en publiant une update</string>
-    <string name="update_bubble_red">Tu es passé en rouge, indique à la Miff que tout va bien en publiant une update</string>
+    <string name="update_bubble_orange">Ton statut est passé à l\'orange, indique à la Miff que tout va bien en donnant de tes nouvelles</string>
+    <string name="update_bubble_red">Ton statut est passé au rouge, indique à la Miff que tout va bien en donnant de tes nouvelles</string>
     <string name="tabbar_update_green_a11y">Donner des nouvelles, tout va bien</string>
     <string name="tabbar_update_orange_a11y">Donner des nouvelles, tu es en orange</string>
     <string name="tabbar_update_red_a11y">Donner des nouvelles, tu es en rouge</string>
@@ -1026,32 +1030,32 @@
     <string name="update_notice_location_off">Ta position n\'est pas accessible : la localisation du téléphone est éteinte, ou Miff n\'a pas l\'accès « Toujours » avec la position précise. Tu peux le régler dans les réglages, puis réessayer.</string>
 
     <!-- NOTIF-P0: notifications (centre, reglages, autorisation) -->
-    <string name="notif_n1_title">Tu es passé orange</string>
+    <string name="notif_n1_title">Ton statut est passé à l\'orange</string>
     <string name="notif_n1_body">Indique à ta Miff que tout va bien.</string>
-    <string name="notif_n2_title">Tu es passé rouge</string>
+    <string name="notif_n2_title">Ton statut est passé au rouge</string>
     <string name="notif_n2_body">Indique à ta Miff que tout va bien.</string>
     <string name="notif_n3_title">Ta Miff est passée en orange</string>
     <string name="notif_n3_body">Prends des nouvelles de tes proches.</string>
     <string name="notif_n4_title">Ta Miff est passée en rouge</string>
     <string name="notif_n4_body">Prends des nouvelles de tes proches.</string>
     <string name="notif_n6a_title">Tu es dans une zone de danger de ta Miff</string>
-    <string name="notif_n6a_body">Pendant que tu y es, tes proches voient un état différent.</string>
+    <string name="notif_n6a_body">Tant que tu es dans cette zone, tes proches voient un état différent.</string>
     <string name="notif_n7_title">Ton mode voyage est terminé</string>
     <string name="notif_n7_body">Ta carte reprend ses couleurs chez tes proches. Bon retour !</string>
     <string name="notif_prime_title">Un rappel, seulement quand c\'est utile</string>
-    <string name="notif_prime_body">Si tu oublies de donner de tes nouvelles, Miff te le rappelle doucement, et te prévient quand un proche donne des siennes. Pour t\'envoyer ces notifications, Miff enregistre un identifiant technique de ton téléphone, fourni par Google. Tu choisis ce que tu reçois dans les réglages.</string>
+    <string name="notif_prime_body">Si tu n\'as pas le temps de donner de tes nouvelles, Miff te le rappelle doucement, et te prévient quand un proche donne des siennes. Pour t\'envoyer ces notifications, Miff enregistre un identifiant technique de ton téléphone, fourni par Google. Tu peux régler ce que tu reçois dans les réglages, et tout couper à tout moment.</string>
     <string name="notif_prime_allow">Autoriser</string>
     <string name="notif_prime_later">Plus tard</string>
     <string name="notif_prime_example_when">Il y a 2 min</string>
-    <string name="notif_second_chance_title">Un rappel si tu oublies de donner de tes nouvelles ?</string>
+    <string name="notif_second_chance_title">Un rappel si tu n\'as pas le temps de donner de tes nouvelles ?</string>
     <string name="notif_second_chance_action">Activer</string>
     <string name="notif_second_chance_later">Pas maintenant</string>
     <string name="notif_state_allowed">Autorisées par ton téléphone</string>
     <string name="notif_state_off">Coupées dans ton téléphone</string>
-    <string name="notif_state_off_note">Tu ne recevras pas de rappel.</string>
+    <string name="notif_state_off_note">Tu ne recevras pas de notification.</string>
     <string name="notif_state_notasked">Pas encore activées</string>
     <string name="notif_state_open_settings">Ouvrir les réglages du téléphone</string>
-    <string name="notif_privacy_body">Les notifications sont préparées par ton téléphone : Miff n\'en envoie aucune à tes proches. Tu choisis ce que tu reçois dans Réglages > Notifications.</string>
+    <string name="notif_privacy_body">Quand tu donnes de tes nouvelles ou que tu déclares une alerte, tes proches qui ont activé les notifications en sont prévenus, avec ton prénom seulement (ni photo, ni position) ; pour tes nouvelles, il faut aussi qu\'ils partagent leur position. Tes rappels sont préparés par ton téléphone. Tes arrivées et tes départs ne déclenchent aucune notification immédiate chez tes proches ; si ton statut reste orange ou rouge un moment, leur téléphone peut leur proposer de prendre de tes nouvelles. Si tu acceptes les notifications, Miff enregistre un identifiant technique de ton téléphone pour te les envoyer. Nos serveurs gardent aussi 30 jours une trace technique de chaque notification envoyée (type, Miff, personne qui a donné des nouvelles ou déclaré l\'alerte, date ; jamais de prénom, de photo ni de position). Tu peux tout couper à tout moment dans Réglages > Notifications ou dans les réglages de ton téléphone.</string>
     <string name="notif_settings_title">Notifications</string>
     <string name="notif_settings_subtitle">Rappels et nouvelles de ta Miff</string>
     <string name="notif_settings_authorization">Autorisation du téléphone</string>
@@ -1076,19 +1080,19 @@
     <string name="notif_center_alert_end_body_unnamed">Cette personne a indiqué que tout va bien.</string>
     <string name="notif_settings_section_loved_ones">Pour tes proches</string>
     <string name="notif_settings_circle_update">Quand un proche donne des nouvelles</string>
-    <string name="notif_settings_circle_update_hint">Une notification quand un proche de ta Miff publie une update.</string>
+    <string name="notif_settings_circle_update_hint">Une notification quand un proche de ta Miff donne de ses nouvelles.</string>
     <string name="android_notif_push_identifier_note">Pour t\'envoyer ces notifications, Miff enregistre un identifiant technique de ton téléphone, fourni par Google.</string>
     <string name="android_notif_channel_updates">Nouvelles des proches</string>
-    <string name="android_notif_channel_updates_desc">Quand un proche de ta Miff donne des nouvelles en publiant une update.</string>
+    <string name="android_notif_channel_updates_desc">Quand un proche de ta Miff donne de ses nouvelles.</string>
     <string name="android_notif_channel_updates_quiet">Nouvelles des proches (nuit calme)</string>
     <string name="notif_settings_night_title">Nuit calme</string>
     <string name="notif_settings_night_body">De 22 h à 7 h, ni son ni vibration, sauf pour un passage au rouge.</string>
     <string name="notif_settings_see_all">Voir mes notifications</string>
-    <string name="notif_settings_help_link">Si les rappels n\'arrivent pas</string>
+    <string name="notif_settings_help_link">Si les notifications n\'arrivent pas</string>
     <string name="notif_help_title">Notifications coupées</string>
     <string name="notif_help_intro">Tu as coupé les notifications dans ton téléphone.</string>
     <string name="notif_help_choice">C\'est ton choix, et il compte.</string>
-    <string name="notif_help_lead">Pour recevoir un rappel quand tu oublies de donner de tes nouvelles :</string>
+    <string name="notif_help_lead">Pour réactiver les notifications de Miff :</string>
     <string name="notif_help_step_1">Ouvre les réglages du téléphone</string>
     <string name="notif_help_step_2">Choisis « Notifications »</string>
     <string name="notif_help_step_3">Active-les pour Miff</string>
@@ -1196,7 +1200,11 @@
     <string name="paywall_annual_savings" formatted="false">presque 30 % d\'économie</string>
     <string name="paywall_cancel_anytime">Annulable à tout moment</string>
     <string name="paywall_see_all_offers">Voir toutes les offres</string>
-    <string name="paywall_free_plan_stays">La formule gratuite reste disponible : 1 Miff et %1$d lieux de confiance.</string>
+    <plurals name="paywall_free_plan_stays">
+        <item quantity="one">La formule gratuite reste disponible : 1 Miff et %1$d lieu de confiance.</item>
+        <item quantity="many">La formule gratuite reste disponible : 1 Miff et %1$d lieux de confiance.</item>
+        <item quantity="other">La formule gratuite reste disponible : 1 Miff et %1$d lieux de confiance.</item>
+    </plurals>
     <string name="paywall_close_available_a11y">Tu peux maintenant fermer cet écran</string>
     <string name="paywall_loading">Chargement des offres…</string>
     <string name="paywall_unavailable">Les offres ne sont pas disponibles pour le moment. Vérifie ta connexion et réessaie.</string>
@@ -1331,14 +1339,14 @@
     <string name="alert_hold_miff">Alerte pour la Miff %1$s</string>
     <string name="alert_shutter_a11y_action">Déclarer une alerte</string>
     <string name="alert_already_active">Une alerte est déjà en cours pour la Miff %1$s</string>
-    <string name="alert_hint_tap">Touche pour publier une update</string>
+    <string name="alert_hint_tap">Touche pour donner de tes nouvelles</string>
     <string name="alert_hint_hold">Maintiens pour déclarer une alerte</string>
     <string name="alert_hint_more">En savoir plus</string>
     <string name="alert_info_title">Déclarer une alerte</string>
     <string name="alert_info_body">Maintiens le bouton 5 secondes pour prévenir tes proches. Ils reçoivent une notification et voient ta carte en haut de leur Miff. L\'alerte dure 7 jours au plus ; tu peux la terminer à tout moment. Une notification peut arriver en retard ou ne pas arriver.</string>
     <string name="alert_info_position">Ta position est partagée comme d\'habitude : une seule mesure au moment de l\'envoi, visible par les proches qui partagent aussi la leur.</string>
     <string name="alert_info_close">Compris</string>
-    <string name="alert_not_emergency_note">Miff n\'est pas un service d\'urgence. En cas de danger immédiat, appelle le 112.</string>
+    <string name="alert_not_emergency_note">Miff n\'est pas un service d\'urgence. En cas de danger immédiat, appelle les secours (le 112 en Europe).</string>
     <string name="alert_delivery_note">Tes proches verront ton alerte dans Miff et seront notifiés s\'ils ont activé les notifications.</string>
     <string name="alert_only_this_miff">Seule cette Miff est prévenue.</string>
     <string name="alert_confirm_start_title">Déclarer une alerte à tes proches ?</string>
@@ -1358,7 +1366,11 @@
     <string name="alert_sending_title_no_name">Envoi de l\'alerte…</string>
     <string name="alert_waiting_title">Pas de réseau pour le moment. Ton alerte partira dès que possible.</string>
     <string name="alert_refused_title">Ton alerte n\'est pas partie. Vérifie la date et l\'heure de ton téléphone, puis réessaie. Si tu es en danger, tu peux appeler directement les secours.</string>
-    <string name="alert_quota_title">Tu as atteint la limite de 3 alertes par jour. Si tu es en danger, appelle directement les secours.</string>
+    <plurals name="alert_quota_title">
+        <item quantity="one">Tu as atteint la limite de %1$d alerte par jour. Si tu es en danger, appelle directement les secours.</item>
+        <item quantity="many">Tu as atteint la limite de %1$d alertes par jour. Si tu es en danger, appelle directement les secours.</item>
+        <item quantity="other">Tu as atteint la limite de %1$d alertes par jour. Si tu es en danger, appelle directement les secours.</item>
+    </plurals>
     <string name="alert_refused_retry">Réessayer</string>
     <string name="alert_cancel_pending">Annuler l\'alerte</string>
     <string name="alert_stopped_title">Tu as arrêté de partager avec la Miff %1$s : reprends le partage pour alerter tes proches.</string>
@@ -1387,7 +1399,11 @@
     <string name="alert_banner_waiting">En attente d\'envoi</string>
     <string name="alert_banner_needs_confirmation">Ton alerte n\'est pas partie depuis un moment : elle attend ta décision.</string>
     <string name="alert_banner_refused">Ton alerte n\'est pas partie. Touche « Réessayer » pour la renvoyer.</string>
-    <string name="alert_banner_quota">La limite de 3 alertes par jour est atteinte. Si tu es en danger, ouvre les numéros d\'urgence.</string>
+    <plurals name="alert_banner_quota">
+        <item quantity="one">La limite de %1$d alerte par jour est atteinte. Si tu es en danger, ouvre les numéros d\'urgence.</item>
+        <item quantity="many">La limite de %1$d alertes par jour est atteinte. Si tu es en danger, ouvre les numéros d\'urgence.</item>
+        <item quantity="other">La limite de %1$d alertes par jour est atteinte. Si tu es en danger, ouvre les numéros d\'urgence.</item>
+    </plurals>
     <string name="alert_banner_end_pending">Fin de l\'alerte en attente de connexion</string>
     <string name="alert_banner_call">Appeler</string>
     <string name="alert_banner_see_miff">Voir la Miff %1$s</string>

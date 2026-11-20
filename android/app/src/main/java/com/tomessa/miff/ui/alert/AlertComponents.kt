@@ -28,6 +28,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.LiveRegionMode
@@ -44,6 +45,7 @@ import com.tomessa.miff.R
 import com.tomessa.miff.data.alert.EndStep
 import com.tomessa.miff.data.alert.MyAlert
 import com.tomessa.miff.data.alert.SendStep
+import com.tomessa.miff.domain.alert.AlertRules
 import com.tomessa.miff.ui.miff.MiffConfirmDialog
 import com.tomessa.miff.ui.theme.Spacing
 import com.tomessa.miff.ui.theme.colorActionPrimary
@@ -78,7 +80,7 @@ const val ALERT_HINT_MILLIS = 6_000L
 // --- Blue bubble of the onboarding (maquette 01) ---------------------------------------------------------------------------------------------
 
 /**
- * "Touche pour publier une update / Maintiens pour déclarer une alerte" (maquette 01, tutoiement instead of the infinitive: E1). Not blocking, no button but the discreet "En savoir
+ * "Touche pour donner de tes nouvelles / Maintiens pour déclarer une alerte" (maquette 01 said "publier une update": reworded by the decision I18N-4C; tutoiement instead of the infinitive: E1). Not blocking, no button but the discreet "En savoir
  * plus", hides itself after about 6 seconds ([ALERT_HINT_MILLIS]) and at the first touch elsewhere (the caller hides it). Announced politely to a screen reader, once.
  */
 @Composable
@@ -313,7 +315,11 @@ fun AlertBanner(
             }
 
             sending?.step == SendStep.QUOTA -> {
-                stringResource(R.string.alert_banner_quota)
+                pluralStringResource(
+                    R.plurals.alert_banner_quota,
+                    AlertRules.MAX_STARTS_PER_DAY,
+                    AlertRules.MAX_STARTS_PER_DAY,
+                )
             }
 
             sending != null -> {

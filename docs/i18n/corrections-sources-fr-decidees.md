@@ -497,7 +497,7 @@ Lecture : « conservée » = la traduction actuelle dit déjà ce que dit le nou
 
 | Langue | Texte actuel | Texte final |
 |---|---|---|
-| fr | En cliquant sur « Rejoindre » ou « Continuer avec Google », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages). | En touchant sur « Rejoindre » ou « Continuer avec Google », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages). |
+| fr | En cliquant sur « Rejoindre » ou « Continuer avec Google », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages). | En touchant « Rejoindre » ou « Continuer avec Google », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages). |
 | en | inchangé | (inchangé) |
 | es | conservée telle quelle | (conservée : déjà conforme au nouveau français) |
 | it | conservée telle quelle | (conservée : déjà conforme au nouveau français) |
@@ -508,7 +508,7 @@ Lecture : « conservée » = la traduction actuelle dit déjà ce que dit le nou
 
 | Langue | Texte actuel | Texte final |
 |---|---|---|
-| fr | En cliquant sur « Continuer », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages). | En touchant sur « Continuer », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages). |
+| fr | En cliquant sur « Continuer », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages). | En touchant « Continuer », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages). |
 | en | inchangé | (inchangé) |
 | es | conservée telle quelle | (conservée : déjà conforme au nouveau français) |
 | it | conservée telle quelle | (conservée : déjà conforme au nouveau français) |
@@ -519,7 +519,7 @@ Lecture : « conservée » = la traduction actuelle dit déjà ce que dit le nou
 
 | Langue | Texte actuel | Texte final |
 |---|---|---|
-| fr | En cliquant sur « Rejoindre », « Continuer avec Apple » ou « Continuer avec Google », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$s). | En touchant sur « Rejoindre », « Continuer avec Apple » ou « Continuer avec Google », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$s). |
+| fr | En cliquant sur « Rejoindre », « Continuer avec Apple » ou « Continuer avec Google », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$s). | En touchant « Rejoindre », « Continuer avec Apple » ou « Continuer avec Google », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$s). |
 | en | inchangé | (inchangé) |
 | es | conservée telle quelle | (conservée : déjà conforme au nouveau français) |
 | it | conservée telle quelle | (conservée : déjà conforme au nouveau français) |
@@ -530,7 +530,7 @@ Lecture : « conservée » = la traduction actuelle dit déjà ce que dit le nou
 
 | Langue | Texte actuel | Texte final |
 |---|---|---|
-| fr | En cliquant sur « Continuer », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$s). | En touchant sur « Continuer », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$s). |
+| fr | En cliquant sur « Continuer », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$s). | En touchant « Continuer », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$s). |
 | en | inchangé | (inchangé) |
 | es | conservée telle quelle | (conservée : déjà conforme au nouveau français) |
 | it | conservée telle quelle | (conservée : déjà conforme au nouveau français) |
@@ -879,3 +879,23 @@ G130 (« Tu es passé orange » : nouvelles formes es « Tu estado ha pasado a n
 - `node scripts/i18n-exchange.mjs controler` pour **es, it, pt, de** sur une racine privée qui contient le **nouveau français et le nouvel anglais** (copie de `origin/main` + les textes de ce document) : **0 erreur** (1 229 textes par langue ; avertissements de longueur et d'unités déjà présents avant, aucun nouveau). Les traductions de travail restent hors dépôt (`docs/i18n/echange/final/<l>/traduction-<l>.final.json`, sauvegarde `traduction-<l>.avant-corrections.json`).
 - Les 33 clés gelées (consentement v4 et autres) ne sont **pas** touchées par ces corrections.
 - Espaces insécables : les nouveaux textes es, it, pt, de mettent une espace insécable entre un nombre et son unité (« 24 h », « 30 días », « 24 Stunden ») ; le français et l'anglais gardent l'espace ordinaire déjà utilisée dans les catalogues.
+
+## Écarts décidés après coup (2026-11-20)
+
+Décisions du PM prises à la lecture de l'étape Android (PR #295) et de sa relecture indépendante. **Ces textes l'emportent sur ceux des tableaux ci-dessus** ; l'étape iOS applique les mêmes.
+
+| Clé | Écart | Texte final fr | Texte final en |
+|---|---|---|---|
+| `notif_prime_body` (§6, point 1) | Dernière phrase (Android) : proposition du §6 appliquée, l'alerte n'ayant pas d'interrupteur dédié | « … Tu peux régler ce que tu reçois dans les réglages, et tout couper à tout moment. » | « … You can adjust what you get in the settings, and turn everything off at any time. » |
+| `notif_help_lead` (§6, point 2) | Aligné sur ce que fait la réactivation (elle rétablit toutes les notifications de Miff, pas seulement le rappel) | « Pour réactiver les notifications de Miff : » | « To turn Miff's notifications back on: » |
+| `update_preview_visibility` (un seul cercle) | Même exactitude que la photo (§2.3) : seuls les membres qui partagent aussi leur position peuvent la voir (`photoLocationReadable`, `backend/firestore.rules`) | « Tes proches qui partagent aussi leur position verront cette photo pendant 24 h. » | « Your loved ones who also share their location will see this photo for 24 hours. » |
+| `update_preview_visibility_many` (§6, point 4) | Idem, plusieurs Miffs | « Ta photo sera visible pendant 24 h des membres de tes %1$d Miffs qui partagent aussi leur position. » | « Your photo will be visible for 24 hours to the members of your %1$d Miffs who also share their location. » |
+| `auth_consent_notice`, `auth_panel_notice` (et `ios_auth_consent_notice`, `ios_auth_panel_notice`) | « En touchant sur » est fautif : « En touchant « Rejoindre » ». Le §4 est corrigé en conséquence. L'anglais reste « By tapping » | « En touchant « Rejoindre » ou « Continuer avec Google », tu acceptes… » ; « En touchant « Continuer », tu acceptes… » | inchangé |
+| `notif_state_off_note` | « rappel » est trop étroit : les notifications coupées au niveau du téléphone concernent tout (rappels, nouvelles des proches, alerte) | « Tu ne recevras pas de notification. » | « You won't receive any notifications. » |
+| `notif_settings_help_link` | Idem : l'aide ouverte est celle des téléphones qui arrêtent l'app en arrière-plan, ce qui touche toutes les notifications | « Si les notifications n'arrivent pas » | « If notifications don't arrive » |
+
+Remarque : la clé voisine `notif_center_off_body` (« Tu ne recevras pas de rappel. ») a le même défaut ; elle n'est pas modifiée ici, à décider.
+
+**Exception explicite** : `permission_location_local_title` (« Pour toi seul(e) ») garde sa marque de genre. Elle fait partie du consentement version 4, gelé et validé par le PM : la corriger changerait le texte consenti. Correction à prévoir avec une éventuelle version 5 du consentement.
+
+**Écarts aux maquettes Figma** (CLAUDE.md : chaque écart listé et justifié) : voir `android/CHANGELOG.md`, version 0.55.0, section « Écarts aux maquettes Figma ».

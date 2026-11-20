@@ -55,6 +55,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.heading
@@ -379,7 +380,12 @@ private fun ScrollingOffer(
 @Composable
 private fun FreePlanSentence() {
     Text(
-        text = stringResource(R.string.paywall_free_plan_stays, PlaceLimits.FREE_PLACES),
+        text =
+            pluralStringResource(
+                R.plurals.paywall_free_plan_stays,
+                PlaceLimits.FREE_PLACES,
+                PlaceLimits.FREE_PLACES,
+            ),
         style = textBodyRegular14,
         color = colorTextDescription,
         textAlign = TextAlign.Center,

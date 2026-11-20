@@ -614,7 +614,7 @@ class SettingsScreensTest {
         composeRule.onNodeWithText(text(R.string.settings_account_sign_out_action)).performClick()
         assertEquals(1, requested)
         composeRule.onNodeWithText("Sign out?").assertExists()
-        composeRule.onNodeWithText("Your loved ones won't see your updates while you're signed out.").assertExists()
+        composeRule.onNodeWithText("Your loved ones won't see your news while you're signed out.").assertExists()
         shoot("account-sign-out-dialog")
         composeRule.onNodeWithText(text(R.string.settings_account_sign_out_cancel)).performClick()
         assertEquals(1, cancelled)

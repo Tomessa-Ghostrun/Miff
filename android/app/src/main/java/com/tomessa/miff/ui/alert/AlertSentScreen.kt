@@ -35,6 +35,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -53,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.alert.AlertDialTarget
+import com.tomessa.miff.domain.alert.AlertRules
 import com.tomessa.miff.domain.alert.EmergencyLabel
 import com.tomessa.miff.domain.alert.EmergencyNumber
 import com.tomessa.miff.ui.components.RecentsPrivacy
@@ -280,7 +282,11 @@ private fun TitleBlob(
             }
 
             SentPhase.QUOTA -> {
-                stringResource(R.string.alert_quota_title)
+                pluralStringResource(
+                    R.plurals.alert_quota_title,
+                    AlertRules.MAX_STARTS_PER_DAY,
+                    AlertRules.MAX_STARTS_PER_DAY,
+                )
             }
 
             SentPhase.UNAVAILABLE -> {
