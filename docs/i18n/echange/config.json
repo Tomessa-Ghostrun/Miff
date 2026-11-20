@@ -2,12 +2,7 @@
   "version": 1,
   "tailleLot": 100,
   "gel": {
-    "prefixes": [
-      "consent3_",
-      "miff_consent",
-      "notif_centre",
-      "feed_place_"
-    ],
+    "prefixes": [],
     "cles": []
   },
   "sensibles": {

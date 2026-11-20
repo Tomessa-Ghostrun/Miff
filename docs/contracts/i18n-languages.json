@@ -64,7 +64,7 @@
         "forbiddenTerms": []
       },
       "platforms": {
-        "android": { "status": "planned", "resDir": "values-es" },
+        "android": { "status": "required", "resDir": "values-es" },
         "ios": { "status": "planned", "code": "es" }
       }
     },
@@ -81,7 +81,7 @@
         "forbiddenTerms": []
       },
       "platforms": {
-        "android": { "status": "planned", "resDir": "values-it" },
+        "android": { "status": "required", "resDir": "values-it" },
         "ios": { "status": "planned", "code": "it" }
       }
     },
@@ -99,7 +99,7 @@
         "forbiddenTerms": []
       },
       "platforms": {
-        "android": { "status": "planned", "resDir": "values-pt" },
+        "android": { "status": "required", "resDir": "values-pt" },
         "ios": { "status": "planned", "code": "pt" }
       }
     },
@@ -116,7 +116,7 @@
         "forbiddenTerms": []
       },
       "platforms": {
-        "android": { "status": "planned", "resDir": "values-de" },
+        "android": { "status": "required", "resDir": "values-de" },
         "ios": { "status": "planned", "code": "de" }
       }
     }

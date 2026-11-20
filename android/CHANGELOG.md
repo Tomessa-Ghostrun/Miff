@@ -2,6 +2,29 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.58.0] - 2026-11-20 : Miff en espagnol, italien, portugais (Portugal) et allemand (I18N-4L, lot 4B Android)
+
+Ticket `docs/tickets/traduction-es-it-pt-de.md`, procédure `docs/i18n/procedure-lot4.md`. Branche `android/langues-es-it-pt-de`. **Numéro de version provisoire** (`main` est à 0.56.0 ; à renuméroter à la fusion). **Coût ajouté : 0 €** (aucun service de traduction, aucune bibliothèque).
+
+**Comment les textes ont été produits** : traduits par un agent, relus par un second agent indépendant, rétro-traduits pour les textes sensibles, contrôlés automatiquement. **Aucune relecture par un locuteur natif ni par un juriste** : risque assumé du ticket (R1), textes publiés sous la responsabilité du PM. Comptes rendus : `docs/i18n/relectures/lot4c-<langue>.md`.
+
+### Ajouté
+- **Quatre langues** : `values-es/` (espagnol neutre, « tú »), `values-it/` (italien, « tu »), `values-pt/` (portugais **du Portugal**, « tu » ; le dossier sans région sert aussi les téléphones en portugais du Brésil, qui lisent donc du portugais européen), `values-de/` (allemand, « du »). **1 210 textes Android par langue** (les 1 289 textes du lot contiennent aussi ceux qui sont propres à iOS), pluriels compris : `one`, `many`, `other` en es, it, pt (`many` identique à `other`), `one`, `other` en allemand. Écrits par `scripts/i18n-exchange.mjs injecter` à partir du fichier d'échange (jamais à la main) ; relancer la commande ne change rien.
+- **Réglages > Langue** : les six langues sont proposées (Deutsch, English, Español, Français, Italiano, Português), puis « Langue du téléphone ». Elles apparaissent d'elles-mêmes parce que leur dossier existe (`BuildConfig.PROVIDED_LANGUAGES`). Un téléphone en allemand ou en espagnol, sans choix fait dans l'app, suit le téléphone ; une langue non gérée (néerlandais, japonais…) donne l'anglais.
+- **Écran de diagnostic non traduit** (décision du PM du 2026-11-19) : les clés `diag_*` et `android_diag_*` restent en français et en anglais ; `app/lint.xml` ne les exempte **que** de `MissingTranslation` (les autres clés manquantes, dans les quatre langues, restent des erreurs de build).
+- **Tests** : `TranslationsCompletenessTest` (pour chaque langue : toutes les clés communes présentes, mêmes valeurs insérées que le français dans chaque forme de pluriel, formes de pluriel de la langue, aucune clé inconnue ni de diagnostic, aucun texte vide) ; `LocaleLoadingTest` (Robolectric : chaque langue charge ses textes, une région sert la même langue, repli anglais, pluriels 0, 1, 5 et 21 selon les règles de la langue).
+
+### Modifié
+- `docs/contracts/i18n-languages.json` : es, it, pt, de passent de `planned` à `required` **pour Android seulement** (iOS reste `planned` jusqu'à sa propre PR). Dès la fusion, toute PR qui ajoute une clé Android doit l'ajouter dans les six langues.
+- `docs/i18n/echange/config.json` : `gel.prefixes` vidé (les familles gelées par le lot 3 sont traduites) ; fichiers d'échange et instantané des PR ouvertes régénérés (`extraire`, `gel-prs`).
+
+### Limites connues et choix documentés
+- **Six textes volontairement identiques au français** (exceptions déjà déclarées au registre, une clé à la fois, aucun contrôle désactivé) : allemand « Abonnement », « Adresse » (deux clés), « Profil » ; espagnol « Gris » (deux clés).
+- **Budgets de longueur dépassés** (§6 de chaque `docs/i18n/relectures/lot4c-<langue>.md`) : une forme figée du glossaire n'est jamais raccourcie pour un budget ; ce sont des avertissements, à mesurer sur écran (OPPO, police à 1,3 et 2,0). Espagnol : 10 clés (« En casa de un ser querido », « Lugar que conviene evitar »…) ; italien : 8 (formules d'heure à « ore », « Ha creato la Miff »…) ; portugais : 8 ; allemand : 2 (« Wir erstellen deine Miff… », et un texte lu seulement).
+- **Portugais du Brésil** : un téléphone en `pt-BR` sans choix dans l'app lit le portugais du Portugal avec les règles de pluriel brésiliennes (« 0 dia ») ; en choisissant « Português » dans l'app, l'app applique `pt-PT` (« 0 dias »).
+- **Texte modifié après traduction** : `feed_order_updated_one_a11y` change de français dans les PR FEED-ORDRE-PHOTO (#300 Android, #298 iOS) ; sa traduction sera à revoir à ce moment-là.
+- **Textes légaux et fiches des stores** : inchangés (français et anglais seulement, ticket §2.2).
+
 ## [0.56.0] - 2026-11-20 : textes français corrigés (tutoiement, ton, exactitude) et limites lues dans les règles, pas écrites en dur (I18N-4C)
 
 Document de décision `docs/i18n/corrections-sources-fr-decidees.md` (PR docs #294, décisions D1 à D12 du PM du 2026-11-20). Branche `android/textes-fr-corriges`, PR brouillon. **Numéro de version provisoire** (0.54.0 est pris par la PR #293 ; à renuméroter à la fusion). **Coût ajouté : 0 €** (aucun service, aucune bibliothèque). **À savoir : français et anglais seulement ; aucune traduction es / it / pt / de n'est touchée** (elles seront injectées après, avec les textes corrigés ici).
