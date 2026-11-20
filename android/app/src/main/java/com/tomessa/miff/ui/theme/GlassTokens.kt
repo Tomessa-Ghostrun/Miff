@@ -69,8 +69,12 @@ fun glassPalette(variant: GlassVariant): GlassPalette =
         GlassVariant.ON_PHOTO -> GlassPaletteOnPhoto
     }
 
-/** `tabbar/blur-radius`: 28 dp (it was 20 dp: with a lighter veil, the blur is what keeps the text behind from competing with the icons). */
-val GlassBlurRadius = 28.dp
+/**
+ * `tabbar/blur-radius`: 12 dp, a LIGHT blur (decision of the PM, 2026-11-20: "un léger flou"). History: 20 dp, then 28 dp on 2026-11-11 (with a lighter veil the
+ * blur was what kept the text behind from competing with the icons). The contrast figures of the spec are those of flat backgrounds: they do not depend on
+ * this radius (TabBarGlassContrastTest); a sharper text behind an icon is the price of the lighter blur.
+ */
+val GlassBlurRadius = 12.dp
 
 /** The hairline of the glass. */
 val GlassBorderWidth = 1.dp

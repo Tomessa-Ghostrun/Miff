@@ -89,7 +89,6 @@ class GlassTabBarTest {
     private val modern =
         GlassConditions(
             sdkInt = 33,
-            powerSaveMode = false,
             animationsRemoved = false,
             contrastIncreased = false,
             lowRamDevice = false,
@@ -263,6 +262,93 @@ class GlassTabBarTest {
     }
 
     @Test
+    fun theHostWithTheBlurSwitchedOff_recordsNothingAndBlursNothing_aLightBarIsTheVeilAlone() {
+        // The fallback (GlassPolicy.BLUR_ALLOWED = false): no Haze state given to the bar, so nothing is recorded or blurred; its colour is the veil
+        // over what is behind, the same at every frame.
+        var level: GlassLevel? = null
+        var source: Any? = Unit
+        composeRule.setContent {
+            MiffTheme {
+                CompositionLocalProvider(LocalDensity provides Density(density, 1f)) {
+                    GlassTabHost(
+                        variant = GlassVariant.LIGHT,
+                        barVisible = true,
+                        conditions = modern,
+                        blurAllowed = false,
+                        bar = { glass ->
+                            level = glass.level
+                            source = glass.hazeState
+                            MainTabBar(config = internal, selected = MainTab.FEED, onSelect = {}, glass = glass)
+                        },
+                    ) {
+                        Box(Modifier.fillMaxSize().background(Color.Black))
+                    }
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        assertEquals(GlassLevel.TRANSLUCENT, level)
+        assertEquals(null, source)
+        shoot("glass-light-translucent-over-black")
+        val (x, y) = veilPoint()
+        assertColor("translucent over black", over(GlassPaletteLight.tint, Color.Black), pixel(x, y))
+        assertEquals("the same pixel at the next frame", pixel(x, y), pixel(x, y))
+    }
+
+    // --- The shadow: outside the shape only, never under the veil ---------------------------------------------------------------------
+
+    /** The bar over WHITE: the veil (white 32 %) over white is white, so ANY darker pixel inside the bar is a shadow drawn under the veil. */
+    @Test
+    fun translucentLevels_drawTheirShadowOutsideTheBarOnly_nothingUnderTheVeil() {
+        listOf(GlassLevel.BLUR, GlassLevel.TRANSLUCENT, GlassLevel.NO_BLUR).forEach { level ->
+            showBar(TabBarGlass(GlassVariant.LIGHT, level), Color.White)
+            if (level == GlassLevel.TRANSLUCENT) shoot("glass-shadow-outside-only")
+            val bar = composeRule.onNodeWithTag(TAB_BAR_TAG).getUnclippedBoundsInRoot()
+            val feed = bounds(R.string.tabbar_feed_a11y)
+            val middle = (bar.left + bar.right) / 2
+            val inside =
+                listOf(
+                    // Where the shadow would show through: just inside the bottom edge, just inside the top edge, between the entries.
+                    middle to bar.bottom - 2.dp,
+                    middle to bar.top + 2.dp,
+                    (middle - 60.dp) to bar.bottom - 3.dp,
+                    (feed.left - 12.dp) to (bar.top + bar.bottom) / 2,
+                )
+            inside.forEach { (x, y) ->
+                val p = pixel(x, y)
+                assertTrue(
+                    "$level: the bar is white over white at ($x, $y), got ${Integer.toHexString(p)}",
+                    brightness(p) >= 253,
+                )
+            }
+            // Under the bar the shadow IS drawn (the bar keeps its elevation look): darker than the page.
+            val below = pixel(middle, bar.bottom + 3.dp)
+            assertTrue("$level: a shadow under the bar, got ${Integer.toHexString(below)}", brightness(below) < 250)
+        }
+    }
+
+    @Test
+    fun theOpaqueLevel_keepsTheShadowOfThePlatform_itHidesWhatIsUnderIt() {
+        showBar(TabBarGlass(GlassVariant.LIGHT, GlassLevel.OPAQUE), Color.White)
+        val bar = composeRule.onNodeWithTag(TAB_BAR_TAG).getUnclippedBoundsInRoot()
+        val (x, y) = veilPoint()
+        assertColor("opaque bar", Color.White, pixel(x, y), tolerance = 0)
+        assertTrue(
+            "the opaque bar has a shadow under it",
+            brightness(pixel((bar.left + bar.right) / 2, bar.bottom + 3.dp)) < 255,
+        )
+    }
+
+    private fun brightness(argb: Int): Int = ((argb shr 16 and 0xFF) + (argb shr 8 and 0xFF) + (argb and 0xFF)) / 3
+
+    @Test
+    fun lightBar_translucent_hasTheVeilOfTheBlur_overAnyBackground() {
+        showBar(TabBarGlass(GlassVariant.LIGHT, GlassLevel.TRANSLUCENT), Color(0xFF808080))
+        val (x, y) = veilPoint()
+        assertColor("translucent over mid grey", over(GlassPaletteLight.tint, Color(0xFF808080)), pixel(x, y))
+    }
+
+    @Test
     fun theHost_neverBlursTheViewfinder_nor_anOpaqueOrOldPhone() {
         val seen = mutableListOf<Pair<String, GlassLevel>>()
 
@@ -289,12 +375,16 @@ class GlassTabBarTest {
             MiffTheme {
                 host("viewfinder", GlassVariant.ON_PHOTO, modern)()
                 host("api30", GlassVariant.LIGHT, modern.copy(sdkInt = 30))()
-                host("saver", GlassVariant.LIGHT, modern.copy(powerSaveMode = true))()
+                host("noAnimations", GlassVariant.LIGHT, modern.copy(animationsRemoved = true))()
             }
         }
         composeRule.waitForIdle()
         assertEquals(
-            listOf("viewfinder" to GlassLevel.NO_BLUR, "api30" to GlassLevel.NO_BLUR, "saver" to GlassLevel.OPAQUE),
+            listOf(
+                "viewfinder" to GlassLevel.NO_BLUR,
+                "api30" to GlassLevel.NO_BLUR,
+                "noAnimations" to GlassLevel.OPAQUE,
+            ),
             seen.distinct(),
         )
     }
@@ -302,19 +392,19 @@ class GlassTabBarTest {
     // --- Fallbacks read from the system ------------------------------------------------------------------------------------------------
 
     @Test
-    fun theReader_seesBatterySaver_andRemovedAnimations_inTheSystem() {
+    fun theReader_seesRemovedAnimations_inTheSystem_butNotTheBatterySaver() {
         val c = context()
         val before = GlassConditionsReader.read(c)
-        assertFalse(before.powerSaveMode)
         assertFalse(before.animationsRemoved)
+        // Decision of the PM, 2026-11-20: the battery saver is not read any more, the conditions do not move when it is switched on.
         shadowOf(c.getSystemService(PowerManager::class.java)).setIsPowerSaveMode(true)
-        assertTrue(GlassConditionsReader.read(c).powerSaveMode)
+        assertEquals(before, GlassConditionsReader.read(c))
         Settings.Global.putFloat(c.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 0f)
         assertTrue(GlassConditionsReader.read(c).animationsRemoved)
     }
 
     @Test
-    fun theBar_becomesOpaque_whenBatterySaverIsSwitchedOnWhileTheAppIsOpen() {
+    fun theBar_staysTranslucent_whenBatterySaverIsSwitchedOnWhileTheAppIsOpen() {
         composeRule.setContent {
             MiffTheme {
                 CompositionLocalProvider(LocalDensity provides Density(density, 1f)) {
@@ -334,13 +424,18 @@ class GlassTabBarTest {
         }
         composeRule.waitForIdle()
         val (x, y) = veilPoint()
-        assertTrue("with nothing asked, the bar is translucent", pixel(x, y) != Color.White.toArgb())
+        val translucent = pixel(x, y)
+        assertTrue("with nothing asked, the bar is translucent", translucent != Color.White.toArgb())
         shadowOf(context().getSystemService(PowerManager::class.java)).setIsPowerSaveMode(true)
         context().sendBroadcast(Intent(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED))
         shadowOf(android.os.Looper.getMainLooper()).idle()
         composeRule.waitForIdle()
         shoot("glass-light-batterysaver")
-        assertColor("opaque with battery saver", Color.White, pixel(x, y), tolerance = 0)
+        assertTrue(
+            "still translucent with battery saver (PM decision, 2026-11-20)",
+            pixel(x, y) != Color.White.toArgb(),
+        )
+        assertEquals("the same glass with battery saver", translucent, pixel(x, y))
     }
 
     // --- The central button ------------------------------------------------------------------------------------------------------------
@@ -459,7 +554,7 @@ class GlassTabBarTest {
                     GlassTabHost(
                         variant = GlassVariant.LIGHT,
                         barVisible = true,
-                        conditions = modern.copy(powerSaveMode = true),
+                        conditions = modern.copy(animationsRemoved = true),
                         bar = { glass ->
                             MainTabBar(config = internal, selected = MainTab.FEED, onSelect = {}, glass = glass)
                         },

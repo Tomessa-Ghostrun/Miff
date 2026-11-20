@@ -40,6 +40,7 @@ import com.tomessa.miff.ui.theme.colorStatusDanger
 import com.tomessa.miff.ui.theme.colorStatusSafe
 import com.tomessa.miff.ui.theme.colorStatusWarning
 import com.tomessa.miff.ui.theme.glassPalette
+import com.tomessa.miff.ui.theme.miffOuterShadow
 import com.tomessa.miff.ui.theme.miffShadow
 import com.tomessa.miff.ui.theme.rememberGlassConditions
 import dev.chrisbanes.haze.HazeInput
@@ -77,7 +78,8 @@ val LocalTabBarInset = compositionLocalOf { 0.dp }
 
 /**
  * Lays out the tabs full screen with the bar over them, at the bottom. The content is recorded for the blur ONLY while the level
- * is [GlassLevel.BLUR] (the recording has a cost: nothing is done when the bar is opaque, unblurred or hidden).
+ * is [GlassLevel.BLUR] (the recording has a cost: nothing is done when the bar is translucent without blur, opaque, unblurred or hidden).
+ * With the switch off ([GlassPolicy.BLUR_ALLOWED] = false) the level of a Light bar is [GlassLevel.TRANSLUCENT]: no recording, no blur.
  *
  * The bar is measured, and its height is given to the tabs through [LocalTabBarInset], so that the bar never hides content.
  */
@@ -125,8 +127,11 @@ internal fun glassVeil(
     palette: GlassPalette,
 ): Color =
     when (level) {
-        GlassLevel.BLUR -> palette.tint
+        // TRANSLUCENT = the very same veil as BLUR, without the blur under it: what the bar looks like when the blur is switched off.
+        GlassLevel.BLUR, GlassLevel.TRANSLUCENT -> palette.tint
+
         GlassLevel.NO_BLUR -> palette.tintNoBlur
+
         GlassLevel.OPAQUE -> palette.surfaceOpaque
     }
 
@@ -136,6 +141,11 @@ const val TAB_BAR_TAG = "main_tab_bar"
 /**
  * The glass: shadow, rounded clip, blur of what is behind (BLUR only), veil, hairline. At the OPAQUE level nothing is transparent
  * and there is no hairline (the mockups: a plain white or `#222222` bar with the shadow).
+ *
+ * THE SHADOW. A TRANSLUCENT level (BLUR, TRANSLUCENT, NO_BLUR) gets [miffOuterShadow]: a shadow drawn ONLY outside the shape, so that nothing is ever
+ * drawn under the veil. The elevation shadow of the platform ([miffShadow]) was seen through the veil on the OPPO (ColorOS), darkening the bar everywhere
+ * but in a clear rectangle (measured on the PM's capture: bar 240-242 of luminance over a page at 249, instead of 251). The OPAQUE level hides what is
+ * under it, so it keeps the platform shadow.
  *
  * The WHOLE bar is this ONE surface, drawn once, on the row that holds the three entries: the entries add nothing to it (no background but the pad of the
  * tab in use, and the plate of the central button). Do not stack a second layer under or over the bar.
@@ -155,8 +165,14 @@ fun Modifier.glassSurface(
         }
     val hairline =
         if (glass.level == GlassLevel.OPAQUE) Modifier else Modifier.border(GlassBorderWidth, palette.border, shape)
+    val shadow =
+        if (glass.level == GlassLevel.OPAQUE) {
+            Modifier.miffShadow(ShadowDefault, shape)
+        } else {
+            Modifier.miffOuterShadow(ShadowDefault, shape)
+        }
     return this
-        .miffShadow(ShadowDefault, shape)
+        .then(shadow)
         .clip(shape)
         .then(blurred)
         .background(veil)
