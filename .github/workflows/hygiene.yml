@@ -92,8 +92,8 @@ jobs:
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 24
-      - name: Tests du script de parité
-        run: node --test "scripts/tests/check-i18n-parity.test.mjs" "scripts/tests/check-i18n-languages.test.mjs"
+      - name: Tests du script de parité et de l’outillage d’échange de traductions
+        run: node --test "scripts/tests/check-i18n-parity.test.mjs" "scripts/tests/check-i18n-languages.test.mjs" "scripts/tests/i18n-exchange.test.mjs"
       # Registre des langues : docs/contracts/i18n-languages.json. fr et en (required) bloquent ; es, it, pt, de (planned) avertissent seulement.
       - name: Parité des clés Android / iOS et contrôles par langue
         run: node scripts/check-i18n-parity.mjs --summary "$RUNNER_TEMP/i18n-summary.md"

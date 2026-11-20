@@ -148,3 +148,5 @@ Revenir de `required` à `planned` (une langue qui échoue à la recette) est po
 - Les textes communs aux deux plateformes sont traduits **une seule fois** puis copiés des deux côtés (même valeur, mêmes valeurs insérées) ; les clés `android_*` et `ios_*` sont traduites directement.
 
 Le contrat des clés (`docs/contracts/i18n-keys.md`) renvoie ici pour la marche à suivre.
+
+**Exception de l'écran de diagnostic (2026-11-19).** Les clés `diag_*`, `ios_diag_*` et `android_diag_*` (écran interne des versions de test) restent en français et en anglais : le registre porte, pour chacune des langues es, it, pt et de, l'exception `{"lang": "es", "keyPattern": "^(?:ios_|android_)?diag_", "check": "missing-key"}` (aucune clé manquante signalée, sur les deux plateformes). Le français et l'anglais ne sont pas concernés. Côté Android, le lint `MissingTranslation` est une erreur : la PR de réinjection ignore ces clés dans `android/app/lint.xml` (voir `docs/i18n/procedure-lot4.md` §3 bis).

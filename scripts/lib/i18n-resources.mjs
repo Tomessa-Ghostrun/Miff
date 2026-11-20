@@ -84,7 +84,7 @@ export function androidEscapeProblems(raw) {
 
 // Valeur insérée : %[n$][drapeaux][largeur][.précision][longueur]type ; %% = pourcent littéral ; %#@nom@ = substitution iOS.
 // `%arg` : valeur d'une substitution iOS dans le texte d'une forme de pluriel.
-const PLACEHOLDER = /%%|%#@(\w+)@|%(arg)\b|%(?:(\d+)\$)?([-#+0,(]*)(\d+)?(?:\.\d+)?(?:hh|h|ll|l|q|L|z|t|j)?([a-zA-Z@])/g;
+export const PLACEHOLDER = /%%|%#@(\w+)@|%(arg)\b|%(?:(\d+)\$)?([-#+0,(]*)(\d+)?(?:\.\d+)?(?:hh|h|ll|l|q|L|z|t|j)?([a-zA-Z@])/g;
 
 /** Normalise le type : `s`, `S` et `@` = texte ; `d`, `i`, `u` (avec `l`, `ll`...) = entier. */
 function normalizeType(type) {

@@ -57,7 +57,7 @@ export function termRegex(term) {
   return new RegExp(term.pattern, term.flags ?? 'u');
 }
 
-function isException(registry, { lang, platform, key, check, match }) {
+export function isException(registry, { lang, platform, key, check, match }) {
   return (registry.exceptions ?? []).some((e) => e.lang === lang && e.check === check
     && (e.platform === undefined || e.platform === platform)
     && (e.match === undefined || e.match === match)
