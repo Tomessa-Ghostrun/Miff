@@ -2,6 +2,16 @@
 
 ## Non publié
 
+### Profil : plus d'espace vide énorme sous la carte de la Miff (retour du PM, TestFlight 43)
+
+Ce que le PM doit voir : **sur l'onglet Profil, les pastilles de pagination sont de nouveau juste sous la carte de la Miff (8 pt), et « Répartition de ton temps » et la suite remontent avec elles**. Rien d'autre ne change d'aspect. **Rien n'est compilé en local** (la CI fait foi).
+
+Corrigé :
+- Cause (la plus probable, non vérifiable sans l'appareil) : la hauteur commune des cartes du carrousel était la plus grande hauteur JAMAIS mesurée et ne rétrécissait plus. Une carte mesurée avant d'avoir sa vraie largeur (première mise en page, largeur nulle ou étroite) est très haute (le texte passe à la ligne mot à mot) : cette hauteur transitoire était gardée à vie, d'où les ~200 pt de vide sous la carte.
+- Une carte dont la largeur est inférieure à 100 pt ne publie plus de hauteur (`CarouselCardHeight.minMeasurableWidth`). La mesure porte aussi la largeur : quand la largeur des cartes change (vraie largeur qui arrive, rotation), la hauteur est recalculée, même vers le bas.
+- Inchangé : la hauteur ne rétrécit toujours pas tant que la taille du texte ET la largeur restent les mêmes (pas de clignotement quand « Touche pour ouvrir » devient « 4 membres » ou que les photos arrivent).
+- Tests : `ProfileCarouselHeightTests` (mesure sans largeur ignorée, plus haute carte retenue, hauteur qui suit une nouvelle largeur ou taille de texte, rejeu du cas transitoire, pas de saut à largeur égale).
+
 ### « Tirer pour actualiser » : indicateur piloté par le tirage, visible sur iPhone (retour du PM, build contenant #263, PR #263)
 
 Ce que le PM doit voir : **dès qu'on tire le Feed, une pastille ronde apparaît sous l'en-tête et se remplit avec la distance (une flèche vers le bas, qui se retourne quand c'est assez tiré), puis une roue qui tourne au relâchement, au moins 0,8 s**. Recette : `docs/qa/checklists/feed-refresh-position-ios-recette-pm.md` (§1, §18 à §21). **Rien n'est compilé en local** (la CI fait foi, avec 3 captures forcées : `90b-fr-feed-tirage`, `90c-fr-feed-tirage-pret`, `90d-fr-feed-roue`).
