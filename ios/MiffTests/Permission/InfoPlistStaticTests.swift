@@ -109,7 +109,7 @@ final class InfoPlistStaticTests: XCTestCase {
 
     /// Les textes que le système montre (caméra, galerie, localisation) sont prêts pour les langues du registre : toute langue du catalogue
     /// est une langue du registre, une langue qui a UN de ces textes les a TOUS (jamais une demande d'autorisation à moitié traduite), et
-    /// fr et en les ont tous. Les textes de es, it, pt, de arrivent au lot 4 du ticket I18N-4L.
+    /// fr et en les ont tous ; es, it, pt et de les ont depuis le lot 4 iOS du ticket I18N-4L (les quatre textes, dont les deux de localisation).
     func testTheSystemTextsAreReadyForTheLanguagesOfTheRegistry() throws {
         let url = iosRoot.appendingPathComponent("Miff/Resources/InfoPlist.xcstrings")
         let root = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
@@ -129,6 +129,40 @@ final class InfoPlistStaticTests: XCTestCase {
                 let value = (localization?["stringUnit"] as? [String: Any])?["value"] as? String ?? ""
                 XCTAssertFalse(value.isEmpty, "\(key) : texte \(language) manquant")
             }
+        }
+    }
+
+    /// Le FOND des quatre textes du système, dans chaque langue du registre (une traduction ne doit pas perdre ce que dit le français) : la photo
+    /// et les deux textes de localisation citent les 24 heures ; le texte « Toujours » dit que la position sert en arrière-plan ; la galerie ne
+    /// cite aucun chiffre (la photo n'y est enregistrée qu'au toucher). Motifs choisis pour ne pas casser sur une bonne traduction.
+    func testTheSystemTextsKeepTheSubstanceOfTheFrenchInEveryLanguage() throws {
+        let url = iosRoot.appendingPathComponent("Miff/Resources/InfoPlist.xcstrings")
+        let root = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])
+        let strings = try XCTUnwrap(root["strings"] as? [String: [String: Any]])
+        let background = [
+            "fr": "arrière-plan", "en": "background", "es": "segundo plano",
+            "it": "background", "pt": "segundo plano", "de": "Hintergrund"
+        ]
+        func text(_ key: String, _ language: String) throws -> String {
+            let entry = try XCTUnwrap(strings[key], key)
+            let localization = (entry["localizations"] as? [String: Any])?[language] as? [String: Any]
+            let unit = localization?["stringUnit"] as? [String: Any]
+            return try XCTUnwrap(unit?["value"] as? String, "\(key) \(language)")
+        }
+
+        for language in try I18nRegistry.requiredCodes() {
+            let withHours = [
+                "NSCameraUsageDescription", "NSLocationWhenInUseUsageDescription",
+                "NSLocationAlwaysAndWhenInUseUsageDescription"
+            ]
+            for key in withHours {
+                XCTAssertTrue(try text(key, language).contains("24"), "\(key) (\(language)) : les 24 heures manquent")
+            }
+            let always = try text("NSLocationAlwaysAndWhenInUseUsageDescription", language)
+            let word = try XCTUnwrap(background[language], "mot « arrière-plan » à déclarer pour \(language)")
+            XCTAssertTrue(always.contains(word), "NSLocationAlways (\(language)) : l'arrière-plan manque")
+            let library = try text("NSPhotoLibraryAddUsageDescription", language)
+            XCTAssertNil(library.rangeOfCharacter(from: .decimalDigits), "NSPhotoLibraryAdd (\(language)) : chiffre")
         }
     }
 
