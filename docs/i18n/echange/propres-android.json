@@ -1,0 +1,1208 @@
+{
+  "meta": {
+    "version": 1,
+    "langueSource": "fr",
+    "langueRepli": "en",
+    "notation": "Notation Android native."
+  },
+  "textes": [
+    {
+      "cle": "android_diag_appcheck_off_description",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Test de l'application stricte (build de debug seulement) : avec cet interrupteur, le prochain lancement de l'app n'envoie aucun jeton App Check. Une fois App Check appliqué dans la console, le serveur doit alors refuser les requêtes.",
+      "en": "Test of the enforcement (debug build only): with this switch on, the next launch of the app sends no App Check token at all. Once App Check is enforced in the console, the server must then refuse the requests.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "App Check",
+        "prefixe": "android"
+      },
+      "longueurMax": 349,
+      "courte": false,
+      "gele": false,
+      "interne": true
+    },
+    {
+      "cle": "android_diag_appcheck_off_switch",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Sans App Check (au prochain lancement)",
+      "en": "Without App Check (next launch)",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "App Check",
+        "prefixe": "android"
+      },
+      "longueurMax": 57,
+      "courte": false,
+      "gele": false,
+      "interne": true
+    },
+    {
+      "cle": "android_diag_appcheck_off_pending",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Enregistré. Ferme complètement l'app puis rouvre-la : elle n'enverra alors aucun jeton.",
+      "en": "Saved. Close the app completely, then reopen it: it will then send no token.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "App Check",
+        "prefixe": "android"
+      },
+      "longueurMax": 130,
+      "courte": false,
+      "gele": false,
+      "interne": true
+    },
+    {
+      "cle": "android_diag_appcheck_off_active",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Actif : ce lancement n'envoie aucun jeton App Check (au mieux : l'app a essayé d'oublier le dernier jeton gardé par le SDK ; en cas de doute, efface les données de l'app ou attends plus d'1 h). Pour la preuve, fie-toi à la console App Check (requêtes non vérifiées). Désactive l'interrupteur puis relance l'app pour revenir à la normale.",
+      "en": "Active: this launch sends no App Check token (best effort: the app tried to forget the last token the SDK kept; if in doubt, clear the app data or wait more than one hour). For the proof, rely on the App Check console (unverified requests). Turn the switch off and relaunch to get back to normal.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "App Check",
+        "prefixe": "android"
+      },
+      "longueurMax": 505,
+      "courte": false,
+      "gele": false,
+      "interne": true
+    },
+    {
+      "cle": "android_diag_appcheck_off_ending",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Désactivé. Ce lancement n'envoie encore aucun jeton : ferme complètement l'app puis rouvre-la.",
+      "en": "Switched off. This launch still sends no token: close the app completely and reopen it.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "App Check",
+        "prefixe": "android"
+      },
+      "longueurMax": 141,
+      "courte": false,
+      "gele": false,
+      "interne": true
+    },
+    {
+      "cle": "android_legal_terms_path",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "/fr/cgu",
+      "en": "/en/terms",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Android seulement : adresses des pages légales (le domaine vient de BuildConfig.LEGAL_BASE_URL)",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/auth/AuthComponents.kt"
+          ]
+        }
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_legal_privacy_path",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "/fr/confidentialite",
+      "en": "/en/privacy",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Android seulement : adresses des pages légales (le domaine vient de BuildConfig.LEGAL_BASE_URL)",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/auth/AuthComponents.kt"
+          ]
+        }
+      },
+      "longueurMax": 28,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_onboarding_family_name",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Famille Alberta",
+      "en": "Alberta family",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Carrousel de bienvenue et consentement implicite (AUTH-1)",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/onboarding/WelcomeIllustrations.kt"
+          ]
+        }
+      },
+      "longueurMax": 22,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_onboarding_arrived_ago",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Arrivé il y a 12 min",
+      "en": "Arrived 12 min ago",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Carrousel de bienvenue et consentement implicite (AUTH-1)",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/onboarding/WelcomeIllustrations.kt"
+          ]
+        }
+      },
+      "longueurMax": 30,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_onboarding_battery_1",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "85 %",
+      "en": "85%",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Carrousel de bienvenue et consentement implicite (AUTH-1)",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/onboarding/WelcomeIllustrations.kt"
+          ]
+        }
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_onboarding_battery_2",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "22 %",
+      "en": "22%",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Carrousel de bienvenue et consentement implicite (AUTH-1)",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/onboarding/WelcomeIllustrations.kt"
+          ]
+        }
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_onboarding_name_hint",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Choisissez un nom pour retrouver l'endroit facilement",
+      "en": "Choose a name to find the place easily",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Carrousel de bienvenue et consentement implicite (AUTH-1)",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/onboarding/WelcomeIllustrations.kt"
+          ]
+        }
+      },
+      "longueurMax": 79,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_onboarding_name_counter",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "13/50",
+      "en": "13/50",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Carrousel de bienvenue et consentement implicite (AUTH-1)",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/onboarding/WelcomeIllustrations.kt"
+          ]
+        }
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_onboarding_address_hint",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Entrez l'adresse exacte de ce lieu",
+      "en": "Enter the exact address of this place",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Carrousel de bienvenue et consentement implicite (AUTH-1)",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/onboarding/WelcomeIllustrations.kt"
+          ]
+        }
+      },
+      "longueurMax": 51,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_onboarding_radius_hint",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Définissez le rayon autour du lieu",
+      "en": "Set the radius around the place",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Carrousel de bienvenue et consentement implicite (AUTH-1)",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/onboarding/WelcomeIllustrations.kt"
+          ]
+        }
+      },
+      "longueurMax": 51,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_onboarding_radius_value",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "100 m",
+      "en": "100 m",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Carrousel de bienvenue et consentement implicite (AUTH-1)",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/onboarding/WelcomeIllustrations.kt"
+          ]
+        }
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false,
+      "invariableProbable": true
+    },
+    {
+      "cle": "android_onboarding_type_title",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Type",
+      "en": "Type",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Carrousel de bienvenue et consentement implicite (AUTH-1)",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/onboarding/WelcomeIllustrations.kt"
+          ]
+        }
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false,
+      "invariableProbable": true
+    },
+    {
+      "cle": "android_onboarding_type_hint",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Quel type de zone définissez-vous ?",
+      "en": "What type of zone are you setting?",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Carrousel de bienvenue et consentement implicite (AUTH-1)",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/onboarding/WelcomeIllustrations.kt"
+          ]
+        }
+      },
+      "longueurMax": 52,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_onboarding_zone_trust",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Zone de confiance",
+      "en": "Trusted zone",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Carrousel de bienvenue et consentement implicite (AUTH-1)",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/onboarding/WelcomeIllustrations.kt"
+          ]
+        }
+      },
+      "longueurMax": 25,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_onboarding_zone_trust_hint",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Lieu sûr pour vos proches",
+      "en": "Safe place for your loved ones",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Carrousel de bienvenue et consentement implicite (AUTH-1)",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/onboarding/WelcomeIllustrations.kt"
+          ]
+        }
+      },
+      "longueurMax": 37,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_onboarding_zone_risk",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Zone de danger",
+      "en": "Danger zone",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Carrousel de bienvenue et consentement implicite (AUTH-1)",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/onboarding/WelcomeIllustrations.kt"
+          ]
+        }
+      },
+      "longueurMax": 21,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_onboarding_zone_risk_hint",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Lieu à éviter",
+      "en": "Place to avoid",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Carrousel de bienvenue et consentement implicite (AUTH-1)",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/onboarding/WelcomeIllustrations.kt"
+          ]
+        }
+      },
+      "longueurMax": 19,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_permission_location_system_step_1",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Touche le bouton : l'écran qui règle l'accès à ta position s'ouvre",
+      "en": "Tap the button: the screen that sets your location access opens",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/permission/PermissionScreens.kt"
+          ]
+        }
+      },
+      "longueurMax": 99,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_permission_location_system_step_2",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Choisis Toujours autoriser (ou Autoriser tout le temps)",
+      "en": "Choose Allow all the time",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/permission/PermissionScreens.kt"
+          ]
+        }
+      },
+      "longueurMax": 82,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_permission_location_system_step_3",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Garde Position exacte (ou précise) activée",
+      "en": "Keep precise location turned on",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/permission/PermissionScreens.kt"
+          ]
+        }
+      },
+      "longueurMax": 63,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_notif_push_identifier_note",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Pour t'envoyer ces notifications, Miff enregistre un identifiant technique de ton téléphone, fourni par Google.",
+      "en": "To send you these notifications, Miff registers a technical identifier of your phone, provided by Google.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/notification/NotificationFeedParts.kt",
+            "ui/notification/NotificationSettingsScreen.kt"
+          ]
+        }
+      },
+      "longueurMax": 166,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_notif_channel_updates",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Nouvelles des proches",
+      "en": "News from your loved ones",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "data/notification/NotificationPlatform.kt"
+          ]
+        }
+      },
+      "longueurMax": 31,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_notif_channel_updates_desc",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Quand un proche de ta Miff donne des nouvelles en publiant une update.",
+      "en": "When someone in your Miff gives news by posting an update.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "data/notification/NotificationPlatform.kt"
+          ]
+        }
+      },
+      "longueurMax": 105,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_notif_channel_updates_quiet",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Nouvelles des proches (nuit calme)",
+      "en": "News from your loved ones (quiet night)",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "data/notification/NotificationPlatform.kt"
+          ]
+        }
+      },
+      "longueurMax": 51,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_notif_channel_reminders",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Rappels pour toi",
+      "en": "Reminders for you",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "NOTIF-P1A : « Depuis ta dernière visite » (ticket notifications-p1-derniere-visite.md, décisions du …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "data/notification/NotificationPlatform.kt"
+          ]
+        }
+      },
+      "longueurMax": 24,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_notif_channel_reminders_desc",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Un petit rappel pour donner de tes nouvelles quand tu passes orange ou rouge.",
+      "en": "A gentle reminder to check in when you turn orange or red.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "NOTIF-P1A : « Depuis ta dernière visite » (ticket notifications-p1-derniere-visite.md, décisions du …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "data/notification/NotificationPlatform.kt"
+          ]
+        }
+      },
+      "longueurMax": 115,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_notif_channel_reminders_quiet",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Rappels pour toi (nuit calme)",
+      "en": "Reminders for you (quiet night)",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "NOTIF-P1A : « Depuis ta dernière visite » (ticket notifications-p1-derniere-visite.md, décisions du …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "data/notification/NotificationPlatform.kt"
+          ]
+        }
+      },
+      "longueurMax": 43,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_notif_channel_circle",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Nouvelles de ta Miff",
+      "en": "News from your Miff",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "NOTIF-P1A : « Depuis ta dernière visite » (ticket notifications-p1-derniere-visite.md, décisions du …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "data/notification/NotificationPlatform.kt"
+          ]
+        }
+      },
+      "longueurMax": 30,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_notif_channel_circle_desc",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Quand ta Miff change d'état, ou quand tu entres dans une zone de danger de ta Miff.",
+      "en": "When your Miff changes status, or when you enter a danger zone of your Miff.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "NOTIF-P1A : « Depuis ta dernière visite » (ticket notifications-p1-derniere-visite.md, décisions du …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "data/notification/NotificationPlatform.kt"
+          ]
+        }
+      },
+      "longueurMax": 124,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_notif_channel_circle_quiet",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Nouvelles de ta Miff (nuit calme)",
+      "en": "News from your Miff (quiet night)",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "NOTIF-P1A : « Depuis ta dernière visite » (ticket notifications-p1-derniere-visite.md, décisions du …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "data/notification/NotificationPlatform.kt"
+          ]
+        }
+      },
+      "longueurMax": 49,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_notif_channel_quiet_desc",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Les mêmes notifications, sans son ni vibration, pour la nuit.",
+      "en": "The same notifications, without sound or vibration, for the night.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "NOTIF-P1A : « Depuis ta dernière visite » (ticket notifications-p1-derniere-visite.md, décisions du …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "data/notification/NotificationPlatform.kt"
+          ]
+        }
+      },
+      "longueurMax": 91,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_notif_channel_blocked",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Ce type est coupé dans le téléphone",
+      "en": "This type is turned off in your phone",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "NOTIF-P1A : « Depuis ta dernière visite » (ticket notifications-p1-derniere-visite.md, décisions du …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/notification/NotificationSettingsScreen.kt"
+          ]
+        }
+      },
+      "longueurMax": 52,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_diag_review_title",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Fenêtre d'avis (essai)",
+      "en": "Review window (test)",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Debug build only (diagnostic screen): ignored by the parity check (prefix android_).",
+        "prefixe": "android"
+      },
+      "longueurMax": 33,
+      "courte": false,
+      "gele": false,
+      "interne": true
+    },
+    {
+      "cle": "android_diag_review_force",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Afficher la fenêtre au prochain retour dans l'app",
+      "en": "Show the window at the next return to the app",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Debug build only (diagnostic screen): ignored by the parity check (prefix android_).",
+        "prefixe": "android"
+      },
+      "longueurMax": 73,
+      "courte": false,
+      "gele": false,
+      "interne": true
+    },
+    {
+      "cle": "android_diag_review_force_armed",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Prête : mets l'app en arrière-plan puis rouvre-la (la fenêtre ne couvre jamais l'Update).",
+      "en": "Ready: send the app to the background, then reopen it (the window never covers the Update).",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Debug build only (diagnostic screen): ignored by the parity check (prefix android_).",
+        "prefixe": "android"
+      },
+      "longueurMax": 133,
+      "courte": false,
+      "gele": false,
+      "interne": true
+    },
+    {
+      "cle": "android_diag_review_reset",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Remettre à zéro l'état de la fenêtre",
+      "en": "Reset the state of the window",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Debug build only (diagnostic screen): ignored by the parity check (prefix android_).",
+        "prefixe": "android"
+      },
+      "longueurMax": 54,
+      "courte": false,
+      "gele": false,
+      "interne": true
+    },
+    {
+      "cle": "android_diag_review_reset_done",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "État remis à zéro : la fenêtre repart de zéro (7 jours, 30 jours, 90 jours).",
+      "en": "State reset: the window starts from zero (7 days, 30 days, 90 days).",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Debug build only (diagnostic screen): ignored by the parity check (prefix android_).",
+        "prefixe": "android"
+      },
+      "longueurMax": 114,
+      "courte": false,
+      "gele": false,
+      "interne": true
+    },
+    {
+      "cle": "android_paywall_store_name",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Google Play",
+      "en": "Google Play",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "PAY-UI : ecran d'offre Miff+ (ticket paywall-v2.md) ; cles ajoutees par la PR iOS pour la parite, a reprendre …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/paywall/PaywallScreen.kt"
+          ]
+        }
+      },
+      "longueurMax": 16,
+      "courte": false,
+      "gele": false,
+      "invariableProbable": true
+    },
+    {
+      "cle": "android_notif_channel_alerts",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Alertes d'un proche",
+      "en": "Alerts from a loved one",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "ALERTE « Je suis en danger » (docs/tickets/alerte-danger.md, AD-A1 / AD-A2). Mêmes clés qu'iOS (préfixe …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "data/notification/NotificationPlatform.kt"
+          ]
+        }
+      },
+      "longueurMax": 28,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_notif_channel_alerts_desc",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Quand un proche déclare une alerte dans l'une de tes Miffs.",
+      "en": "When a loved one declares an alert in one of your Miffs.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "ALERTE « Je suis en danger » (docs/tickets/alerte-danger.md, AD-A1 / AD-A2). Mêmes clés qu'iOS (préfixe …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "data/notification/NotificationPlatform.kt"
+          ]
+        }
+      },
+      "longueurMax": 88,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_about_copy_hint",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Touche pour copier",
+      "en": "Tap to copy",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "ABOUT-1A : textes propres a Android de Reglages > A propos et aide (lignes de cartes et d'adresses, detail …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/settings/AboutScreen.kt"
+          ]
+        }
+      },
+      "longueurMax": 27,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_about_contact_subtitle",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Une question, un souci, une idée : écris-nous.",
+      "en": "A question, a problem, an idea: write to us.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "ABOUT-1A : textes propres a Android de Reglages > A propos et aide (lignes de cartes et d'adresses, detail …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/settings/AboutScreen.kt"
+          ]
+        }
+      },
+      "longueurMax": 69,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_about_licenses_footnote",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Les licences sont reprises des descriptions publiques de chaque bibliothèque.",
+      "en": "The licenses are taken from the public description of each library.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "ABOUT-1A : textes propres a Android de Reglages > A propos et aide (lignes de cartes et d'adresses, detail …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/settings/LicensesScreens.kt"
+          ]
+        }
+      },
+      "longueurMax": 115,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_about_licenses_includes",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Ce que cela comprend",
+      "en": "What it includes",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "ABOUT-1A : textes propres a Android de Reglages > A propos et aide (lignes de cartes et d'adresses, detail …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/settings/LicensesScreens.kt"
+          ]
+        }
+      },
+      "longueurMax": 30,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_about_licenses_text_unavailable",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Ce texte n'a pas pu être affiché pour le moment.",
+      "en": "This text couldn't be shown just now.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "ABOUT-1A : textes propres a Android de Reglages > A propos et aide (lignes de cartes et d'adresses, detail …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/settings/LicensesScreens.kt"
+          ]
+        }
+      },
+      "longueurMax": 72,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "android_about_licenses_unavailable",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "La liste n'a pas pu être affichée pour le moment.",
+      "en": "The list couldn't be shown just now.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "ABOUT-1A : textes propres a Android de Reglages > A propos et aide (lignes de cartes et d'adresses, detail …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/settings/LicensesScreens.kt"
+          ]
+        }
+      },
+      "longueurMax": 73,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "android_about_licenses_map_engine",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Moteur de carte : MapLibre Native",
+      "en": "Map engine: MapLibre Native",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "ABOUT-1A : textes propres a Android de Reglages > A propos et aide (lignes de cartes et d'adresses, detail …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/settings/LicensesScreens.kt"
+          ]
+        }
+      },
+      "longueurMax": 49,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_about_licenses_map_tiles",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Carte : OpenFreeMap, © OpenMapTiles, données © contributeurs OpenStreetMap",
+      "en": "Map: OpenFreeMap, © OpenMapTiles, data © OpenStreetMap contributors",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "ABOUT-1A : textes propres a Android de Reglages > A propos et aide (lignes de cartes et d'adresses, detail …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/settings/LicensesScreens.kt"
+          ]
+        }
+      },
+      "longueurMax": 111,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_about_licenses_address_search",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Adresses : service Photon de komoot, données © contributeurs OpenStreetMap",
+      "en": "Addresses: Photon service by komoot, data © OpenStreetMap contributors",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "ABOUT-1A : textes propres a Android de Reglages > A propos et aide (lignes de cartes et d'adresses, detail …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/settings/LicensesScreens.kt"
+          ]
+        }
+      },
+      "longueurMax": 111,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_about_licenses_map_tiles_notice",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Les cartes s'affichent avec les tuiles d'OpenFreeMap (https://openfreemap.org), qui utilisent le schéma © OpenMapTiles. Les données sont © contributeurs OpenStreetMap, disponibles sous la licence ODbL 1.0 (https://opendatacommons.org/licenses/odbl/1-0/). La mention reste visible sous chaque carte.",
+      "en": "Maps are drawn with the tiles of OpenFreeMap (https://openfreemap.org), which use the © OpenMapTiles schema. The data is © OpenStreetMap contributors, available under the ODbL 1.0 license (https://opendatacommons.org/licenses/odbl/1-0/). The credit stays visible under every map.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "ABOUT-1A : textes propres a Android de Reglages > A propos et aide (lignes de cartes et d'adresses, detail …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/settings/LicensesScreens.kt"
+          ]
+        }
+      },
+      "longueurMax": 447,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "android_about_licenses_address_search_notice",
+      "plateformes": [
+        "android"
+      ],
+      "type": "string",
+      "fr": "Les adresses proposées pendant la frappe viennent de Photon, le service public de komoot (https://photon.komoot.io), dont le logiciel est publié sous licence Apache 2.0. Ses données sont © contributeurs OpenStreetMap, disponibles sous la licence ODbL 1.0 (https://opendatacommons.org/licenses/odbl/1-0/).",
+      "en": "The addresses suggested while you type come from Photon, the public service of komoot (https://photon.komoot.io), whose software is published under the Apache 2.0 license. Its data is © OpenStreetMap contributors, available under the ODbL 1.0 license (https://opendatacommons.org/licenses/odbl/1-0/).",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "ABOUT-1A : textes propres a Android de Reglages > A propos et aide (lignes de cartes et d'adresses, detail …",
+        "prefixe": "android",
+        "usages": {
+          "android": [
+            "ui/settings/LicensesScreens.kt"
+          ]
+        }
+      },
+      "longueurMax": 456,
+      "courte": false,
+      "gele": false
+    }
+  ]
+}
