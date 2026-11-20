@@ -5,4 +5,13 @@
         <ignore path="**/mipmap-anydpi-v26/**" />
         <ignore path="src/main/res/mipmap-anydpi-v26" />
     </issue>
+    <!--
+        MissingTranslation: the internal diagnostic screen (keys diag_* and android_diag_*, debug builds only) stays in French and English on purpose
+        (PM decision of 2026-11-19, docs/i18n/procedure-lot4.md section 3 bis, ticket I18N-4L): the six languages of the registry do not carry it. This is the ONLY
+        exception: every other missing translation in every language stays a build error (lint { error += MissingTranslation } in build.gradle.kts).
+        The lint message quotes the key name ("diag_xxx" is not translated into ...), so the pattern anchors on the opening quote.
+    -->
+    <issue id="MissingTranslation">
+        <ignore regexp="&quot;(android_)?diag_" />
+    </issue>
 </lint>

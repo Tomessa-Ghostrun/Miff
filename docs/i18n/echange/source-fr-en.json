@@ -5,23 +5,23 @@
     "langueRepli": "en",
     "notation": "Valeurs insérées des textes communs en notation Android (%1$s, %2$d, %2$02d, %s, %d). iOS les reçoit converties (%@, %lld) par le script.",
     "comptes": {
-      "communs": 1215,
+      "communs": 1244,
       "propresAndroid": 56,
-      "propresIos": 87,
+      "propresIos": 86,
       "infoPlist": 4,
-      "parLangue": 1362,
-      "gelees": 33,
-      "gelees_communs": 30,
-      "divergentes": 13,
-      "pluriels": 10,
-      "sensibles": 573,
-      "internes": 100,
+      "parLangue": 1390,
+      "gelees": 1,
+      "gelees_communs": 1,
+      "divergentes": 14,
+      "pluriels": 14,
+      "sensibles": 584,
+      "internes": 101,
       "sensiblesRenforces": 82,
       "motifs": 3,
-      "invariablesProbables": 41,
+      "invariablesProbables": 39,
       "mots": {
-        "fr": 10487,
-        "en": 9926
+        "fr": 11536,
+        "en": 10889
       }
     }
   },
@@ -33,7 +33,7 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Savoir que vos proches vont bien, sans les déranger.",
+      "fr": "Savoir que tes proches vont bien, sans les déranger.",
       "en": "Know your loved ones are fine, without bothering them.",
       "placeholders": [],
       "contexte": {
@@ -2195,7 +2195,7 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Content de te revoir",
+      "fr": "Ça fait plaisir de te revoir",
       "en": "Good to see you again",
       "placeholders": [],
       "contexte": {
@@ -2210,7 +2210,7 @@
           ]
         }
       },
-      "longueurMax": 30,
+      "longueurMax": 42,
       "courte": false,
       "gele": false
     },
@@ -3089,7 +3089,7 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Ton compte est maintenant utilisé sur un autre téléphone. Tu as été déconnecté(e) de celui-ci.",
+      "fr": "Ton compte est maintenant utilisé sur un autre téléphone. Ta session a été fermée sur ce téléphone.",
       "en": "Your account is now being used on another phone. You've been signed out of this one.",
       "placeholders": [],
       "contexte": {
@@ -3104,7 +3104,7 @@
           ]
         }
       },
-      "longueurMax": 141,
+      "longueurMax": 148,
       "courte": false,
       "gele": false
     },
@@ -3363,7 +3363,7 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Si un compte existe avec cette adresse, un e-mail vient d'être envoyé. Pense à regarder dans tes courriers indésirables. Si tu t'es inscrit avec Apple ou Google, utilise plutôt le bouton correspondant sur l'écran de connexion.",
+      "fr": "Si un compte existe avec cette adresse, un e-mail vient d'être envoyé. Pense à regarder dans tes courriers indésirables. Si tu as créé ton compte avec Apple ou Google, utilise plutôt le bouton correspondant sur l'écran de connexion.",
       "en": "If an account exists with this address, an e-mail has just been sent. Remember to check your spam folder. If you signed up with Apple or Google, use the matching button on the sign-in screen instead.",
       "placeholders": [],
       "contexte": {
@@ -3378,7 +3378,7 @@
           ]
         }
       },
-      "longueurMax": 339,
+      "longueurMax": 348,
       "courte": false,
       "gele": false
     },
@@ -3442,7 +3442,7 @@
         "ios"
       ],
       "type": "string",
-      "fr": "En cliquant sur « Rejoindre » ou « Continuer avec Google », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages).",
+      "fr": "En touchant « Rejoindre » ou « Continuer avec Google », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages).",
       "en": "By tapping “Join” or “Continue with Google”, you accept our %1$s and our %2$s, as well as the sharing of your anonymous usage statistics and crash reports (you can change this at any time in the Settings).",
       "placeholders": [
         "%1$s",
@@ -3457,7 +3457,7 @@
           ]
         }
       },
-      "longueurMax": 334,
+      "longueurMax": 328,
       "courte": false,
       "gele": false,
       "sensible": true
@@ -3469,7 +3469,7 @@
         "ios"
       ],
       "type": "string",
-      "fr": "En cliquant sur « Continuer », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages).",
+      "fr": "En touchant « Continuer », tu acceptes nos %1$s et notre %2$s, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages).",
       "en": "By tapping “Continue”, you accept our %1$s and our %2$s, as well as the sharing of your anonymous usage statistics and crash reports (you can change this at any time in the Settings).",
       "placeholders": [
         "%1$s",
@@ -3484,7 +3484,7 @@
           ]
         }
       },
-      "longueurMax": 291,
+      "longueurMax": 285,
       "courte": false,
       "gele": false,
       "sensible": true
@@ -3657,8 +3657,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Aperçu de l'écran de ta Miff : tout le monde est en sécurité, Thomas est à la maison et Amandine à l'école.",
-      "en": "Preview of your Miff screen: everyone is safe, Thomas is at home and Amandine is at school.",
+      "fr": "Aperçu de l'écran de ta Miff : tout le monde va bien, Thomas est à la maison et Amandine à l'école.",
+      "en": "Preview of your Miff screen: everyone is fine, Thomas is at home and Amandine is at school.",
       "placeholders": [],
       "contexte": {
         "ecran": "Carrousel de bienvenue et consentement implicite (AUTH-1)",
@@ -3672,7 +3672,7 @@
           ]
         }
       },
-      "longueurMax": 160,
+      "longueurMax": 148,
       "courte": false,
       "gele": false
     },
@@ -3735,8 +3735,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Tout le monde est en sécurité",
-      "en": "Everyone is safe",
+      "fr": "Tout le monde va bien",
+      "en": "Everyone is fine",
       "placeholders": [],
       "contexte": {
         "ecran": "Carrousel de bienvenue et consentement implicite (AUTH-1)",
@@ -3750,7 +3750,7 @@
           ]
         }
       },
-      "longueurMax": 43,
+      "longueurMax": 31,
       "courte": false,
       "gele": false
     },
@@ -5048,8 +5048,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Saisis ton numéro sans le premier zéro.",
-      "en": "Enter your number without the leading zero.",
+      "fr": "Saisis ton numéro sans l'indicatif du pays.",
+      "en": "Enter your number without the country code.",
       "placeholders": [],
       "contexte": {
         "ecran": "Profil et téléphone : les deux étapes de création du profil (ONB-2)",
@@ -5065,7 +5065,7 @@
           ]
         }
       },
-      "longueurMax": 58,
+      "longueurMax": 64,
       "courte": false,
       "gele": false
     },
@@ -6207,8 +6207,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Tes proches ne verront plus tes mises à jour tant que tu es déconnecté(e).",
-      "en": "Your loved ones won't see your updates while you're signed out.",
+      "fr": "Tes proches ne verront plus tes nouvelles tant que ta session est fermée.",
+      "en": "Your loved ones won't see your news while you're signed out.",
       "placeholders": [],
       "contexte": {
         "ecran": "Barre d'onglets, Feed provisoire, onglet Profil, Réglages (ONB-3a)",
@@ -6222,7 +6222,7 @@
           ]
         }
       },
-      "longueurMax": 111,
+      "longueurMax": 109,
       "courte": false,
       "gele": false
     },
@@ -8098,8 +8098,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Ton statut, ta photo d'update et ta dernière position seront supprimés pour ce cercle. Tu pourras reprendre quand tu veux.",
-      "en": "Your status, update photo and last known location will be deleted for this circle. You can resume whenever you like.",
+      "fr": "Ton statut, ta photo et ta dernière position seront supprimés pour ce cercle. Tu pourras reprendre quand tu veux.",
+      "en": "Your status, photo and last known location will be deleted for this circle. You can resume whenever you like.",
       "placeholders": [],
       "contexte": {
         "ecran": "Partager mon statut (arrêter / reprendre à tout moment)",
@@ -8113,7 +8113,7 @@
           ]
         }
       },
-      "longueurMax": 183,
+      "longueurMax": 169,
       "courte": false,
       "gele": false,
       "sensible": true
@@ -8913,8 +8913,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Ta position n'a pas pu être actualisée. Pour cela, Miff a besoin que la localisation soit activée, sur « Toujours » et en précis. Tu peux régler ça dans les réglages de ton téléphone.",
-      "en": "Your position couldn't be refreshed. For that, Miff needs location turned on, set to \"Always\" and precise. You can change this in your phone's settings.",
+      "fr": "Ta position n'a pas pu être actualisée. Pour cela, Miff a besoin que la localisation soit activée, sur « Toujours » avec la position précise. Tu peux régler ça dans les réglages de ton téléphone.",
+      "en": "Your position couldn't be refreshed. For that, Miff needs location turned on, set to \"Always\" with precise location. You can change this in your phone's settings.",
       "placeholders": [],
       "contexte": {
         "ecran": "FEED-REFRESH-POSITION : phrase calme (toast) quand « Actualiser » ne peut pas relire MA position faute …",
@@ -8925,7 +8925,7 @@
           ]
         }
       },
-      "longueurMax": 274,
+      "longueurMax": 292,
       "courte": false,
       "gele": false,
       "sensible": true,
@@ -8964,7 +8964,11 @@
       },
       "longueurMax": 39,
       "courte": false,
-      "gele": false
+      "gele": true,
+      "geleRaisons": [
+        "PR #298 ouverte (modifie le texte)",
+        "PR #300 ouverte (modifie le texte)"
+      ]
     },
     {
       "cle": "feed_order_updated_many_a11y",
@@ -9896,7 +9900,7 @@
       "sensible": true
     },
     {
-      "cle": "feed_place_noun_home",
+      "cle": "feed_place_leave_home",
       "plateformes": [
         "android",
         "ios"
@@ -9906,28 +9910,24 @@
       "en": "home",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
             "ui/feed/FeedTexts.kt"
           ],
           "ios": [
-            "Models/Feed/FeedTexts.swift"
+            "Models/Feed/FeedTexts+Places.swift"
           ]
-        }
+        },
+        "commentaire": "Complément de lieu COMPLET qui suit « a quitté » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5."
       },
       "longueurMax": 15,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe feed_place_*",
-        "PR #282 ouverte (supprime la clé)",
-        "PR #286 ouverte (supprime la clé)"
-      ]
+      "gele": false
     },
     {
-      "cle": "feed_place_noun_work",
+      "cle": "feed_place_leave_work",
       "plateformes": [
         "android",
         "ios"
@@ -9937,28 +9937,24 @@
       "en": "work",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
             "ui/feed/FeedTexts.kt"
           ],
           "ios": [
-            "Models/Feed/FeedTexts.swift"
+            "Models/Feed/FeedTexts+Places.swift"
           ]
-        }
+        },
+        "commentaire": "Complément de lieu COMPLET qui suit « a quitté » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5."
       },
       "longueurMax": 15,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe feed_place_*",
-        "PR #282 ouverte (supprime la clé)",
-        "PR #286 ouverte (supprime la clé)"
-      ]
+      "gele": false
     },
     {
-      "cle": "feed_place_noun_school",
+      "cle": "feed_place_leave_school",
       "plateformes": [
         "android",
         "ios"
@@ -9968,28 +9964,24 @@
       "en": "school",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
             "ui/feed/FeedTexts.kt"
           ],
           "ios": [
-            "Models/Feed/FeedTexts.swift"
+            "Models/Feed/FeedTexts+Places.swift"
           ]
-        }
+        },
+        "commentaire": "Complément de lieu COMPLET qui suit « a quitté » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5."
       },
       "longueurMax": 15,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe feed_place_*",
-        "PR #282 ouverte (supprime la clé)",
-        "PR #286 ouverte (supprime la clé)"
-      ]
+      "gele": false
     },
     {
-      "cle": "feed_place_noun_sport",
+      "cle": "feed_place_leave_sport",
       "plateformes": [
         "android",
         "ios"
@@ -9999,28 +9991,24 @@
       "en": "the gym",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
             "ui/feed/FeedTexts.kt"
           ],
           "ios": [
-            "Models/Feed/FeedTexts.swift"
+            "Models/Feed/FeedTexts+Places.swift"
           ]
-        }
+        },
+        "commentaire": "Complément de lieu COMPLET qui suit « a quitté » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5."
       },
       "longueurMax": 15,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe feed_place_*",
-        "PR #282 ouverte (supprime la clé)",
-        "PR #286 ouverte (supprime la clé)"
-      ]
+      "gele": false
     },
     {
-      "cle": "feed_place_noun_relative",
+      "cle": "feed_place_leave_relative",
       "plateformes": [
         "android",
         "ios"
@@ -10030,28 +10018,24 @@
       "en": "a loved one's place",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
             "ui/feed/FeedTexts.kt"
           ],
           "ios": [
-            "Models/Feed/FeedTexts.swift"
+            "Models/Feed/FeedTexts+Places.swift"
           ]
-        }
+        },
+        "commentaire": "Complément de lieu COMPLET qui suit « a quitté » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5."
       },
       "longueurMax": 34,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe feed_place_*",
-        "PR #282 ouverte (supprime la clé)",
-        "PR #286 ouverte (supprime la clé)"
-      ]
+      "gele": false
     },
     {
-      "cle": "feed_place_noun_generic",
+      "cle": "feed_place_leave_generic",
       "plateformes": [
         "android",
         "ios"
@@ -10061,25 +10045,248 @@
       "en": "a trusted place",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
             "ui/feed/FeedTexts.kt"
           ],
           "ios": [
-            "Models/Feed/FeedTexts.swift"
+            "Models/Feed/FeedTexts+Places.swift"
           ]
-        }
+        },
+        "commentaire": "Complément de lieu COMPLET qui suit « a quitté » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5."
       },
       "longueurMax": 30,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe feed_place_*",
-        "PR #282 ouverte (supprime la clé)",
-        "PR #286 ouverte (supprime la clé)"
-      ]
+      "gele": false
+    },
+    {
+      "cle": "feed_place_leave_named",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "%1$s",
+      "en": "%1$s",
+      "placeholders": [
+        "%1$s"
+      ],
+      "contexte": {
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
+        "prefixe": "feed",
+        "usages": {
+          "android": [
+            "ui/feed/FeedTexts.kt"
+          ],
+          "ios": [
+            "Models/Feed/FeedTexts+Places.swift"
+          ]
+        },
+        "commentaire": "Complément de lieu COMPLET après « a quitté » quand la personne a nommé le lieu (argument : ce nom, jamais traduit ni décliné). Aujourd'hui : le nom seul."
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "feed_place_arrive_home",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "la maison",
+      "en": "home",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
+        "prefixe": "feed",
+        "usages": {
+          "android": [
+            "ui/feed/FeedTexts.kt"
+          ],
+          "ios": [
+            "Models/Feed/FeedTexts+Places.swift"
+          ]
+        },
+        "commentaire": "Complément de lieu COMPLET qui suit « a rejoint » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5.",
+        "anglaisIos": "at home"
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "feed_place_arrive_work",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "le travail",
+      "en": "work",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
+        "prefixe": "feed",
+        "usages": {
+          "android": [
+            "ui/feed/FeedTexts.kt"
+          ],
+          "ios": [
+            "Models/Feed/FeedTexts+Places.swift"
+          ]
+        },
+        "commentaire": "Complément de lieu COMPLET qui suit « a rejoint » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5.",
+        "anglaisIos": "at work"
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "feed_place_arrive_school",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "l'école",
+      "en": "school",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
+        "prefixe": "feed",
+        "usages": {
+          "android": [
+            "ui/feed/FeedTexts.kt"
+          ],
+          "ios": [
+            "Models/Feed/FeedTexts+Places.swift"
+          ]
+        },
+        "commentaire": "Complément de lieu COMPLET qui suit « a rejoint » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5.",
+        "anglaisIos": "at school"
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "feed_place_arrive_sport",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "le sport",
+      "en": "the gym",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
+        "prefixe": "feed",
+        "usages": {
+          "android": [
+            "ui/feed/FeedTexts.kt"
+          ],
+          "ios": [
+            "Models/Feed/FeedTexts+Places.swift"
+          ]
+        },
+        "commentaire": "Complément de lieu COMPLET qui suit « a rejoint » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5.",
+        "anglaisIos": "at the gym"
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "feed_place_arrive_relative",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "le domicile d'un proche",
+      "en": "a loved one's place",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
+        "prefixe": "feed",
+        "usages": {
+          "android": [
+            "ui/feed/FeedTexts.kt"
+          ],
+          "ios": [
+            "Models/Feed/FeedTexts+Places.swift"
+          ]
+        },
+        "commentaire": "Complément de lieu COMPLET qui suit « a rejoint » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5.",
+        "anglaisIos": "at a loved one's place"
+      },
+      "longueurMax": 34,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "feed_place_arrive_generic",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "un lieu de confiance",
+      "en": "a trusted place",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
+        "prefixe": "feed",
+        "usages": {
+          "android": [
+            "ui/feed/FeedTexts.kt"
+          ],
+          "ios": [
+            "Models/Feed/FeedTexts+Places.swift"
+          ]
+        },
+        "commentaire": "Complément de lieu COMPLET qui suit « a rejoint » (préposition et article compris, jamais collés par le code). Une clé par catégorie et par sens : voir docs/i18n/glossaire.md §5.",
+        "anglaisIos": "at a trusted place"
+      },
+      "longueurMax": 30,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "feed_place_arrive_named",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "%1$s",
+      "en": "%1$s",
+      "placeholders": [
+        "%1$s"
+      ],
+      "contexte": {
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
+        "prefixe": "feed",
+        "usages": {
+          "android": [
+            "ui/feed/FeedTexts.kt"
+          ],
+          "ios": [
+            "Models/Feed/FeedTexts+Places.swift"
+          ]
+        },
+        "commentaire": "Complément de lieu COMPLET après « a rejoint » quand la personne a nommé le lieu (argument : ce nom, jamais traduit ni décliné). Aujourd'hui : le nom seul.",
+        "anglaisIos": "at %1$s"
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false
     },
     {
       "cle": "feed_time_since_minutes",
@@ -10094,7 +10301,7 @@
         "%1$d"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed"
       },
       "longueurMax": 22,
@@ -10115,7 +10322,7 @@
         "%1$d"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed"
       },
       "longueurMax": 19,
@@ -10136,7 +10343,7 @@
         "%1$s"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10165,7 +10372,7 @@
         "%1$d"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed"
       },
       "longueurMax": 33,
@@ -10186,7 +10393,7 @@
         "%1$d"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed"
       },
       "longueurMax": 30,
@@ -10207,7 +10414,7 @@
         "%1$s"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10236,7 +10443,7 @@
         "%1$s"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10265,7 +10472,7 @@
         "%1$d"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10293,7 +10500,7 @@
         "%1$d"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10321,7 +10528,7 @@
         "%1$d"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10349,7 +10556,7 @@
         "%1$d"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10375,7 +10582,7 @@
       "en": "All good",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10406,7 +10613,7 @@
         "%1$d"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10435,7 +10642,7 @@
         "%1$d"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10465,7 +10672,7 @@
         "%2$d"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10492,7 +10699,7 @@
       "en": "No news yet",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10521,7 +10728,7 @@
       "en": "As soon as your loved ones share news, you'll see it here.",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10548,7 +10755,7 @@
       "en": "No one else in this Miff yet",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10581,7 +10788,7 @@
         "%3$s"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10611,7 +10818,7 @@
         "%2$s"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10641,7 +10848,7 @@
         "%2$s"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10670,7 +10877,7 @@
         "%1$s"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10697,7 +10904,7 @@
       "en": "A zone set by your Miff",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10727,7 +10934,7 @@
         "%2$s"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10756,7 +10963,7 @@
         "%1$s"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10783,7 +10990,7 @@
       "en": "You're in a danger zone of your Miff",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10810,7 +11017,7 @@
       "en": "Your loved ones can see it too",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10837,7 +11044,7 @@
       "en": "Contact",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10866,7 +11073,7 @@
         "%1$s"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10896,7 +11103,7 @@
         "%2$d"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10923,7 +11130,7 @@
       "en": "Previous alert",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10950,7 +11157,7 @@
       "en": "Next alert",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -10979,7 +11186,7 @@
         "%1$s"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -11006,7 +11213,7 @@
       "en": "You stopped sharing.",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -11035,7 +11242,7 @@
       "en": "Resume sharing to see your loved ones' news.",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -11062,7 +11269,7 @@
       "en": "Resume sharing",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -11091,7 +11298,7 @@
         "%1$s"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -11117,7 +11324,7 @@
       "en": "Sharing your status…",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -11145,7 +11352,7 @@
         "%1$s"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -11173,7 +11380,7 @@
         "%1$s"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -11201,7 +11408,7 @@
         "%1$s"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -11231,7 +11438,7 @@
         "%2$s"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -11260,7 +11467,7 @@
         "%1$s"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -11287,7 +11494,7 @@
       "en": "Open in Maps",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -11314,7 +11521,7 @@
       "en": "Close",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -11343,7 +11550,7 @@
         "%1$s"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -11372,7 +11579,7 @@
         "%1$s"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -11401,7 +11608,7 @@
         "%1$s"
       ],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -11428,7 +11635,7 @@
       "en": "No connection right now. Try again once you're back online.",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -11455,7 +11662,7 @@
       "en": "Can't show the position right now. Try again in a moment.",
       "placeholders": [],
       "contexte": {
-        "ecran": "Loisir, Autre, sans catégorie : le nom du lieu de confiance seul (décision du PM, 2026-11-08).",
+        "ecran": "Ce qui suit « a quitté » (leave) et « a rejoint » (arrive) : un complément COMPLET par verbe, préposition …",
         "prefixe": "feed",
         "usages": {
           "android": [
@@ -11809,7 +12016,7 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Connecté avec Google",
+      "fr": "Compte relié à Google",
       "en": "Signed in with Google",
       "placeholders": [],
       "contexte": {
@@ -11824,7 +12031,7 @@
           ]
         }
       },
-      "longueurMax": 30,
+      "longueurMax": 31,
       "courte": false,
       "gele": false
     },
@@ -12010,8 +12217,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Miff utilise la localisation de ton téléphone, même quand l'app est fermée, pour repérer tes arrivées et tes départs des lieux de ta Miff. Seuls les membres d'une Miff qui partagent aussi la leur voient ta dernière position connue, avec l'heure. Aucun historique de trajets n'est gardé. Tu peux arrêter de partager à tout moment : ta position est alors effacée.",
-      "en": "Miff uses your phone's location, even when the app is closed, to notice your arrivals and departures at the places of your Miff. Only the members of a Miff who also share theirs see your last known location, with the time. No history of trips is kept. You can stop sharing at any time: your location is then erased.",
+      "fr": "Miff utilise la localisation de ton téléphone, même quand l'app est fermée, pour repérer tes arrivées et tes départs des lieux de ta Miff. Seuls les membres d'une Miff qui partagent aussi la leur voient ta dernière position connue, avec l'heure, et l'endroit de ta photo si tu en publies une. Aucun historique de trajets n'est gardé sur nos serveurs. Tu peux arrêter de partager à tout moment : ta position est alors effacée.",
+      "en": "Miff uses your phone's location, even when the app is closed, to notice your arrivals and departures at the places of your Miff. Only the members of a Miff who also share theirs see your last known location, with the time, and the place of your photo if you publish one. No history of trips is kept on our servers. You can stop sharing at any time: your location is then erased.",
       "placeholders": [],
       "contexte": {
         "ecran": "Réglages : Mon compte (mot de passe) et Confidentialité (ONB-3b)",
@@ -12025,13 +12232,9 @@
           ]
         }
       },
-      "longueurMax": 541,
+      "longueurMax": 637,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "PR #287 ouverte (modifie le texte)",
-        "PR #290 ouverte (modifie le texte)"
-      ],
+      "gele": false,
       "sensible": true
     },
     {
@@ -12068,14 +12271,14 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Les notifications arrivent bientôt. Rien n'est envoyé pour l'instant.",
-      "en": "Notifications are coming soon. Nothing is sent for now.",
+      "fr": "Quand tu donnes de tes nouvelles ou que tu déclares une alerte, tes proches qui ont activé les notifications en sont prévenus, avec ton prénom seulement (ni photo, ni position) ; pour tes nouvelles, il faut aussi qu'ils partagent leur position. Tes rappels sont préparés par ton téléphone. Tes arrivées et tes départs ne déclenchent aucune notification immédiate chez tes proches ; si ton statut reste orange ou rouge un moment, leur téléphone peut leur proposer de prendre de tes nouvelles. Si tu acceptes les notifications, Miff enregistre un identifiant technique de ton téléphone pour te les envoyer. Nos serveurs gardent aussi 30 jours une trace technique de chaque notification envoyée (type, Miff, personne qui a donné des nouvelles ou déclaré l'alerte, date ; jamais de prénom, de photo ni de position). Tu peux tout couper à tout moment dans Réglages > Notifications ou dans les réglages de ton téléphone.",
+      "en": "When you share your news or declare an alert, your loved ones who have notifications turned on are notified, with your first name only (no photo, no location); for your news, they must also share their location. Your reminders are prepared by your phone. Your arrivals and departures trigger no immediate notification for your loved ones; if your status stays orange or red for a while, their phone may suggest they check in on you. If you accept notifications, Miff saves a technical identifier of your phone to send them to you. Our servers also keep a technical record of each notification sent for 30 days (type, Miff, person who shared news or declared the alert, date; never a first name, photo or location). You can turn everything off at any time in Settings > Notifications or in your phone's settings.",
       "placeholders": [],
       "contexte": {
         "ecran": "Réglages : Mon compte (mot de passe) et Confidentialité (ONB-3b)",
         "prefixe": "settings"
       },
-      "longueurMax": 103,
+      "longueurMax": 1371,
       "courte": false,
       "gele": false
     },
@@ -14300,9 +14503,11 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Un lieu peut être attaché à 5 Miffs au maximum.",
-      "en": "A place can be attached to 5 Miffs at most.",
-      "placeholders": [],
+      "fr": "Un lieu peut être attaché à %1$d Miffs au maximum.",
+      "en": "A place can be attached to %1$d Miffs at most.",
+      "placeholders": [
+        "%1$d"
+      ],
       "contexte": {
         "ecran": "LOC-1: places of trust (form, list, detail, offer). Same keys as the iOS catalog (check-i18n-parity).",
         "prefixe": "place",
@@ -14315,7 +14520,7 @@
           ]
         }
       },
-      "longueurMax": 70,
+      "longueurMax": 75,
       "courte": false,
       "gele": false
     },
@@ -14722,7 +14927,7 @@
         "ios"
       ],
       "type": "string",
-      "fr": "En dessous de 100 m, la détection peut manquer un passage.",
+      "fr": "En dessous de 100 m, la détection peut ne pas repérer ton passage.",
       "en": "Below 100 m, detection may miss a visit.",
       "placeholders": [],
       "contexte": {
@@ -14737,7 +14942,7 @@
           ]
         }
       },
-      "longueurMax": 87,
+      "longueurMax": 99,
       "courte": false,
       "gele": false
     },
@@ -15921,7 +16126,7 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Le créateur de la Miff verra ta demande et décidera de l'ajouter ou non.",
+      "fr": "Le créateur de la Miff verra ta demande et décidera s'il l'ajoute.",
       "en": "The Miff's creator will see your request and decide whether to add it.",
       "placeholders": [],
       "contexte": {
@@ -15936,7 +16141,7 @@
           ]
         }
       },
-      "longueurMax": 108,
+      "longueurMax": 99,
       "courte": false,
       "gele": false
     },
@@ -15973,7 +16178,7 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Ta demande partira dès que tu seras connecté.",
+      "fr": "Ta demande partira dès que tu auras du réseau.",
       "en": "Your request will be sent as soon as you're back online.",
       "placeholders": [],
       "contexte": {
@@ -15988,7 +16193,7 @@
           ]
         }
       },
-      "longueurMax": 67,
+      "longueurMax": 69,
       "courte": false,
       "gele": false
     },
@@ -16103,10 +16308,19 @@
         "android",
         "ios"
       ],
-      "type": "string",
-      "fr": "Tu as déjà 3 demandes en attente. Tu pourras en proposer d'autres quand elles auront été traitées.",
-      "en": "You already have 3 pending requests. You can suggest more once they've been handled.",
-      "placeholders": [],
+      "type": "plural",
+      "fr": {
+        "one": "Tu as déjà %1$d demande en attente. Tu pourras en proposer d'autres quand elle aura été traitée.",
+        "many": "Tu as déjà %1$d demandes en attente. Tu pourras en proposer d'autres quand elles auront été traitées.",
+        "other": "Tu as déjà %1$d demandes en attente. Tu pourras en proposer d'autres quand elles auront été traitées."
+      },
+      "en": {
+        "one": "You already have %1$d pending request. You can suggest more once it's been handled.",
+        "other": "You already have %1$d pending requests. You can suggest more once they've been handled."
+      },
+      "placeholders": [
+        "%1$d"
+      ],
       "contexte": {
         "ecran": "LIEU-REQ-B : un membre non créateur demande l'ajout d'un lieu (demande en attente, visible du seul créateur)",
         "prefixe": "place",
@@ -16121,7 +16335,11 @@
           ]
         }
       },
-      "longueurMax": 147,
+      "longueurMax": {
+        "one": 144,
+        "many": 151,
+        "other": 151
+      },
       "courte": false,
       "gele": false
     },
@@ -16260,8 +16478,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Un membre de ta Miff propose un lieu. Tu peux l'accepter ou non depuis ton Profil.",
-      "en": "A member of your Miff suggested a place. You can accept it or not from your Profile.",
+      "fr": "Un membre de ta Miff propose un lieu. Tu peux l'accepter ou le refuser depuis ton Profil.",
+      "en": "A member of your Miff suggested a place. You can accept or decline it from your Profile.",
       "placeholders": [],
       "contexte": {
         "ecran": "LIEU-REQ-C : le créateur reçoit, accepte ou refuse une demande de lieu",
@@ -16275,7 +16493,7 @@
           ]
         }
       },
-      "longueurMax": 123,
+      "longueurMax": 133,
       "courte": false,
       "gele": false,
       "sensible": true
@@ -17218,14 +17436,16 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Tu as atteint 3 lieux",
-      "en": "You've reached 3 places",
-      "placeholders": [],
+      "fr": "Tu as atteint %1$d lieux",
+      "en": "You've reached %1$d places",
+      "placeholders": [
+        "%1$d"
+      ],
       "contexte": {
         "ecran": "LIEU-REQ-C : le créateur reçoit, accepte ou refuse une demande de lieu",
         "prefixe": "place"
       },
-      "longueurMax": 31,
+      "longueurMax": 36,
       "courte": false,
       "gele": false,
       "sensible": true
@@ -17736,16 +17956,17 @@
       ],
       "type": "plural",
       "fr": {
-        "one": "%1$d lieu sur 3 avec la formule gratuite",
-        "many": "%1$d lieux sur 3 avec la formule gratuite",
-        "other": "%1$d lieux sur 3 avec la formule gratuite"
+        "one": "%1$d lieu sur %2$d avec la formule gratuite",
+        "many": "%1$d lieux sur %2$d avec la formule gratuite",
+        "other": "%1$d lieux sur %2$d avec la formule gratuite"
       },
       "en": {
-        "one": "%1$d of 3 places on the free plan",
-        "other": "%1$d of 3 places on the free plan"
+        "one": "%1$d of %2$d places on the free plan",
+        "other": "%1$d of %2$d places on the free plan"
       },
       "placeholders": [
-        "%1$d"
+        "%1$d",
+        "%2$d"
       ],
       "contexte": {
         "ecran": "LIEU-REQ-C : le créateur reçoit, accepte ou refuse une demande de lieu",
@@ -17760,12 +17981,39 @@
         }
       },
       "longueurMax": {
-        "one": 60,
-        "many": 61,
-        "other": 61
+        "one": 64,
+        "many": 66,
+        "other": 66
       },
       "courte": false,
-      "gele": false
+      "gele": false,
+      "divergent": {
+        "ios": {
+          "type": "substituted",
+          "fr": {
+            "modele": "%#@arg1@ sur %2$d avec la formule gratuite",
+            "formes": {
+              "arg1": {
+                "one": "%arg lieu",
+                "many": "%arg lieux",
+                "other": "%arg lieux"
+              }
+            }
+          },
+          "en": {
+            "modele": "%#@arg1@ of %2$d places on the free plan",
+            "formes": {
+              "arg1": {
+                "one": "%arg",
+                "other": "%arg"
+              }
+            }
+          },
+          "placeholders": [
+            "%2$d"
+          ]
+        }
+      }
     },
     {
       "cle": "permission_notifications_title",
@@ -17793,14 +18041,14 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Pour l'instant, Miff n'envoie pas encore de notification. Les exemples ci-dessus montrent ce qui est prévu.",
-      "en": "For now, Miff doesn't send notifications yet. The examples above show what is planned.",
+      "fr": "Les exemples ci-dessus montrent ce que tu pourrais recevoir. Tu peux tout couper à tout moment dans les réglages de ton téléphone.",
+      "en": "The examples above show what you could receive. You can turn everything off at any time in your phone's settings.",
       "placeholders": [],
       "contexte": {
         "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
         "prefixe": "permission"
       },
-      "longueurMax": 160,
+      "longueurMax": 195,
       "courte": false,
       "gele": false,
       "sensible": true
@@ -17858,8 +18106,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Miff a besoin de ta localisation pour permettre à tes proches de savoir que tu es ou non en sécurité.",
-      "en": "Miff needs your location so your loved ones can know whether you're safe.",
+      "fr": "Miff a besoin de ta localisation pour que tes proches sachent que tu vas bien.",
+      "en": "Miff needs your location so your loved ones know you're doing well.",
       "placeholders": [],
       "contexte": {
         "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
@@ -17873,7 +18121,7 @@
           ]
         }
       },
-      "longueurMax": 151,
+      "longueurMax": 117,
       "courte": false,
       "gele": false,
       "sensible": true
@@ -17990,8 +18238,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Les membres de ta Miff qui partagent aussi voient ton statut (par exemple « à la maison ») et ta dernière position connue, avec l'heure. Pas d'historique.",
-      "en": "The members of your Miff who also share see your status (for example \"at home\") and your last known location, with the time. No history.",
+      "fr": "Les membres de ta Miff qui partagent aussi voient ton statut (par exemple « à la maison ») et ta dernière position connue, avec l'heure. Aucun historique de trajets sur nos serveurs.",
+      "en": "The members of your Miff who also share see your status (for example \"at home\") and your last known location, with the time. No history of trips on our servers.",
       "placeholders": [],
       "contexte": {
         "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
@@ -18005,13 +18253,63 @@
           ]
         }
       },
-      "longueurMax": 231,
+      "longueurMax": 273,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "PR #287 ouverte (modifie le texte)",
-        "PR #290 ouverte (modifie le texte)"
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "permission_location_local_title",
+      "plateformes": [
+        "android",
+        "ios"
       ],
+      "type": "string",
+      "fr": "Pour toi seul(e)",
+      "en": "For you only",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
+        "prefixe": "permission",
+        "usages": {
+          "android": [
+            "ui/permission/PermissionScreens.kt"
+          ],
+          "ios": [
+            "Views/Permission/PermissionScreens.swift"
+          ]
+        }
+      },
+      "longueurMax": 24,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "permission_location_local_body",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Sur ton téléphone seulement, Miff note aussi tes arrivées et départs pour te montrer comment ton temps se répartit. Rien n'est envoyé.",
+      "en": "On your phone only, Miff also notes your arrivals and departures to show you how your time is spread. Nothing is sent.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
+        "prefixe": "permission",
+        "usages": {
+          "android": [
+            "ui/permission/PermissionScreens.kt"
+          ],
+          "ios": [
+            "Views/Permission/PermissionScreens.swift"
+          ]
+        }
+      },
+      "longueurMax": 201,
+      "courte": false,
+      "gele": false,
       "sensible": true
     },
     {
@@ -18339,10 +18637,7 @@
       },
       "longueurMax": 51,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe miff_consent*"
-      ],
+      "gele": false,
       "sensible": true
     },
     {
@@ -18352,8 +18647,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "En créant cette Miff, tu partages ton statut et ta dernière position connue avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff.",
-      "en": "By creating this Miff, you share your status and your last known location with its members; you can stop at any time in the Miff's settings.",
+      "fr": "En créant cette Miff, tu partages ton statut, ta dernière position connue et, si tu publies une photo, l'endroit où elle a été prise, avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff.",
+      "en": "By creating this Miff, you share your status, your last known location and, if you publish a photo, the place where it was taken, with its members; you can stop at any time in the Miff's settings.",
       "placeholders": [],
       "contexte": {
         "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
@@ -18368,14 +18663,9 @@
           ]
         }
       },
-      "longueurMax": 231,
+      "longueurMax": 318,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe miff_consent*",
-        "PR #287 ouverte (modifie le texte)",
-        "PR #290 ouverte (modifie le texte)"
-      ],
+      "gele": false,
       "sensible": true
     },
     {
@@ -18385,8 +18675,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "En rejoignant cette Miff, tu partages ton statut et ta dernière position connue avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff.",
-      "en": "By joining this Miff, you share your status and your last known location with its members; you can stop at any time in the Miff's settings.",
+      "fr": "En rejoignant cette Miff, tu partages ton statut, ta dernière position connue et, si tu publies une photo, l'endroit où elle a été prise, avec ses membres ; tu peux arrêter à tout moment dans les réglages de la Miff.",
+      "en": "By joining this Miff, you share your status, your last known location and, if you publish a photo, the place where it was taken, with its members; you can stop at any time in the Miff's settings.",
       "placeholders": [],
       "contexte": {
         "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
@@ -18400,14 +18690,9 @@
           ]
         }
       },
-      "longueurMax": 237,
+      "longueurMax": 324,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe miff_consent*",
-        "PR #287 ouverte (modifie le texte)",
-        "PR #290 ouverte (modifie le texte)"
-      ],
+      "gele": false,
       "sensible": true
     },
     {
@@ -18417,8 +18702,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Tu partages à nouveau ton statut et ta dernière position connue avec les membres de cette Miff ; tu peux arrêter à tout moment.",
-      "en": "You are sharing your status and your last known location with the members of this Miff again; you can stop at any time.",
+      "fr": "Tu partages à nouveau ton statut, ta dernière position connue et, si tu publies une photo, l'endroit où elle a été prise, avec les membres de cette Miff ; tu peux arrêter à tout moment.",
+      "en": "You are sharing your status, your last known location and, if you publish a photo, the place where it was taken, with the members of this Miff again; you can stop at any time.",
       "placeholders": [],
       "contexte": {
         "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
@@ -18432,14 +18717,9 @@
           ]
         }
       },
-      "longueurMax": 190,
+      "longueurMax": 277,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe miff_consent*",
-        "PR #287 ouverte (modifie le texte)",
-        "PR #290 ouverte (modifie le texte)"
-      ],
+      "gele": false,
       "sensible": true
     },
     {
@@ -18466,10 +18746,7 @@
       },
       "longueurMax": 40,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe miff_consent*"
-      ],
+      "gele": false,
       "sensible": true
     },
     {
@@ -18479,8 +18756,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Miff garde seulement ta dernière position connue, avec l'heure de la mesure. Pas d'historique de trajets : chaque position remplace la précédente. Ce n'est pas un suivi en direct.",
-      "en": "Miff only keeps your last known location, with the time it was measured. No history of trips: each location replaces the previous one. This is not live tracking.",
+      "fr": "Miff garde seulement ta dernière position connue, avec l'heure de la mesure, sur ses serveurs. Aucun historique de trajets sur nos serveurs : chaque position remplace la précédente. Ce n'est pas un suivi en direct.",
+      "en": "Miff only keeps your last known location, with the time it was measured, on its servers. No history of trips on our servers: each location replaces the previous one. This is not live tracking.",
       "placeholders": [],
       "contexte": {
         "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
@@ -18494,14 +18771,117 @@
           ]
         }
       },
-      "longueurMax": 268,
+      "longueurMax": 321,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe miff_consent*",
-        "PR #287 ouverte (modifie le texte)",
-        "PR #290 ouverte (modifie le texte)"
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "miff_consent3_photo_title",
+      "plateformes": [
+        "android",
+        "ios"
       ],
+      "type": "string",
+      "fr": "L'endroit de ta photo",
+      "en": "The place of your photo",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
+        "prefixe": "miff",
+        "usages": {
+          "android": [
+            "ui/miff/ConsentCards.kt"
+          ],
+          "ios": [
+            "Views/Miff/ConsentCards.swift"
+          ]
+        }
+      },
+      "longueurMax": 31,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "miff_consent3_photo_body",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Quand tu publies une photo, l'endroit où tu l'as prise y est joint, avec l'heure de la mesure. Les membres qui partagent aussi leur position le voient pendant 24 h, puis la photo n'est plus lisible.",
+      "en": "When you publish a photo, the place where you took it is attached to it, with the time of the measurement. The members who also share their location can see it for 24 hours, then the photo can no longer be read.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
+        "prefixe": "miff",
+        "usages": {
+          "android": [
+            "ui/miff/ConsentCards.kt"
+          ],
+          "ios": [
+            "Views/Miff/ConsentCards.swift"
+          ]
+        }
+      },
+      "longueurMax": 297,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "miff_consent3_local_title",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Sur ton téléphone seulement",
+      "en": "On your phone only",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
+        "prefixe": "miff",
+        "usages": {
+          "android": [
+            "ui/miff/ConsentCards.kt"
+          ],
+          "ios": [
+            "Views/Miff/ConsentCards.swift"
+          ]
+        }
+      },
+      "longueurMax": 40,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "miff_consent3_local_body",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Pour te montrer comment ton temps se répartit, ton téléphone note aussi tes arrivées et tes départs de tes lieux, pendant 35 jours, sans position ni adresse. Rien n'est envoyé et personne d'autre ne le voit. Tu peux l'effacer dans Réglages > Confidentialité.",
+      "en": "To show you how your time is spread, your phone also notes your arrivals at and departures from your places, for 35 days, with no position or address. Nothing is sent and nobody else can see it. You can erase it in Settings > Privacy.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
+        "prefixe": "miff",
+        "usages": {
+          "android": [
+            "ui/miff/ConsentCards.kt"
+          ],
+          "ios": [
+            "Views/Miff/ConsentCards.swift"
+          ]
+        }
+      },
+      "longueurMax": 387,
+      "courte": false,
+      "gele": false,
       "sensible": true
     },
     {
@@ -18528,10 +18908,7 @@
       },
       "longueurMax": 16,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe miff_consent*"
-      ],
+      "gele": false,
       "sensible": true
     },
     {
@@ -18558,10 +18935,7 @@
       },
       "longueurMax": 162,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe miff_consent*"
-      ],
+      "gele": false,
       "sensible": true
     },
     {
@@ -18588,10 +18962,7 @@
       },
       "longueurMax": 40,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe miff_consent*"
-      ],
+      "gele": false,
       "sensible": true
     },
     {
@@ -18618,10 +18989,7 @@
       },
       "longueurMax": 129,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe miff_consent*"
-      ],
+      "gele": false,
       "sensible": true
     },
     {
@@ -18648,10 +19016,7 @@
       },
       "longueurMax": 37,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe miff_consent*"
-      ],
+      "gele": false,
       "sensible": true
     },
     {
@@ -18661,8 +19026,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Si tu arrêtes de partager, quittes la Miff ou supprimes ton compte, ta position est effacée. Après 24 h, elle est masquée et seule sa date reste visible.",
-      "en": "If you stop sharing, leave the Miff or delete your account, your location is erased. After 24 h it is hidden and only its date remains visible.",
+      "fr": "Si tu arrêtes de partager, quittes la Miff ou supprimes ton compte, ta position et ta photo avec son endroit sont effacées. Après 24 h, ta position est masquée et seule sa date reste visible.",
+      "en": "If you stop sharing, leave the Miff or delete your account, your location and your photo with its place are erased. After 24 h your location is hidden and only its date remains visible.",
       "placeholders": [],
       "contexte": {
         "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
@@ -18676,14 +19041,9 @@
           ]
         }
       },
-      "longueurMax": 229,
+      "longueurMax": 286,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe miff_consent*",
-        "PR #287 ouverte (modifie le texte)",
-        "PR #290 ouverte (modifie le texte)"
-      ],
+      "gele": false,
       "sensible": true
     },
     {
@@ -18710,10 +19070,7 @@
       },
       "longueurMax": 57,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe miff_consent*"
-      ],
+      "gele": false,
       "sensible": true
     },
     {
@@ -18740,10 +19097,7 @@
       },
       "longueurMax": 121,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe miff_consent*"
-      ],
+      "gele": false,
       "sensible": true
     },
     {
@@ -18770,10 +19124,7 @@
       },
       "longueurMax": 27,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe miff_consent*"
-      ],
+      "gele": false,
       "sensible": true
     },
     {
@@ -18800,10 +19151,7 @@
       },
       "longueurMax": 175,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe miff_consent*"
-      ],
+      "gele": false,
       "sensible": true
     },
     {
@@ -18830,10 +19178,7 @@
       },
       "longueurMax": 175,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "préfixe miff_consent*"
-      ],
+      "gele": false,
       "sensible": true
     },
     {
@@ -18870,8 +19215,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Pour « %1$s », Miff peut maintenant garder ta dernière position connue, avec l'heure de la mesure. Les membres de cette Miff qui partagent aussi la leur peuvent la voir. Pas d'historique, jamais en direct, et elle est effacée si tu arrêtes de partager. Pour continuer à partager avec cette Miff, nous avons besoin de ton accord.",
-      "en": "For \"%1$s\", Miff can now keep your last known location, with the time it was measured. The members of this Miff who also share theirs can see it. No history, never live, and it is erased if you stop sharing. To keep sharing with this Miff, we need your agreement.",
+      "fr": "Pour « %1$s », Miff peut maintenant garder ta dernière position connue, avec l'heure de la mesure, et, si tu publies une photo, l'endroit où elle a été prise. Les membres de cette Miff qui partagent aussi la leur peuvent les voir. Aucun historique de trajets sur nos serveurs, jamais en direct. Si tu arrêtes de partager, ta position et ta photo sont effacées. Pour continuer à partager avec cette Miff, nous avons besoin de ton accord.",
+      "en": "For \"%1$s\", Miff can now keep your last known location, with the time it was measured, and, if you publish a photo, the place where it was taken. The members of this Miff who also share theirs can see them. No history of trips on our servers, never live. If you stop sharing, your location and your photo are erased. To keep sharing with this Miff, we need your agreement.",
       "placeholders": [
         "%1$s"
       ],
@@ -18887,13 +19232,9 @@
           ]
         }
       },
-      "longueurMax": 492,
+      "longueurMax": 654,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "PR #287 ouverte (modifie le texte)",
-        "PR #290 ouverte (modifie le texte)"
-      ],
+      "gele": false,
       "sensible": true
     },
     {
@@ -18903,8 +19244,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Pour cette Miff, Miff peut maintenant garder ta dernière position connue, avec l'heure de la mesure. Les membres de cette Miff qui partagent aussi la leur peuvent la voir. Pas d'historique, jamais en direct, et elle est effacée si tu arrêtes de partager. Pour continuer à partager avec cette Miff, nous avons besoin de ton accord.",
-      "en": "For this Miff, Miff can now keep your last known location, with the time it was measured. The members of this Miff who also share theirs can see it. No history, never live, and it is erased if you stop sharing. To keep sharing with this Miff, we need your agreement.",
+      "fr": "Pour cette Miff, Miff peut maintenant garder ta dernière position connue, avec l'heure de la mesure, et, si tu publies une photo, l'endroit où elle a été prise. Les membres de cette Miff qui partagent aussi la leur peuvent les voir. Aucun historique de trajets sur nos serveurs, jamais en direct. Si tu arrêtes de partager, ta position et ta photo sont effacées. Pour continuer à partager avec cette Miff, nous avons besoin de ton accord.",
+      "en": "For this Miff, Miff can now keep your last known location, with the time it was measured, and, if you publish a photo, the place where it was taken. The members of this Miff who also share theirs can see them. No history of trips on our servers, never live. If you stop sharing, your location and your photo are erased. To keep sharing with this Miff, we need your agreement.",
       "placeholders": [],
       "contexte": {
         "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
@@ -18918,13 +19259,9 @@
           ]
         }
       },
-      "longueurMax": 495,
+      "longueurMax": 657,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "PR #287 ouverte (modifie le texte)",
-        "PR #290 ouverte (modifie le texte)"
-      ],
+      "gele": false,
       "sensible": true
     },
     {
@@ -18934,8 +19271,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Pour tes Miffs, Miff peut maintenant garder ta dernière position connue, avec l'heure de la mesure. Les membres de chaque Miff qui partagent aussi la leur peuvent la voir. Pas d'historique, jamais en direct, et elle est effacée si tu arrêtes de partager. Pour continuer à partager avec ces Miffs, nous avons besoin de ton accord.",
-      "en": "For your Miffs, Miff can now keep your last known location, with the time it was measured. The members of each Miff who also share theirs can see it. No history, never live, and it is erased if you stop sharing. To keep sharing with these Miffs, we need your agreement.",
+      "fr": "Pour tes Miffs, Miff peut maintenant garder ta dernière position connue, avec l'heure de la mesure, et, si tu publies une photo, l'endroit où elle a été prise. Les membres de chaque Miff qui partagent aussi la leur peuvent les voir. Aucun historique de trajets sur nos serveurs, jamais en direct. Si tu arrêtes de partager, ta position et ta photo sont effacées. Pour continuer à partager avec ces Miffs, nous avons besoin de ton accord.",
+      "en": "For your Miffs, Miff can now keep your last known location, with the time it was measured, and, if you publish a photo, the place where it was taken. The members of each Miff who also share theirs can see them. No history of trips on our servers, never live. If you stop sharing, your location and your photo are erased. To keep sharing with these Miffs, we need your agreement.",
       "placeholders": [],
       "contexte": {
         "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
@@ -18949,13 +19286,9 @@
           ]
         }
       },
-      "longueurMax": 493,
+      "longueurMax": 655,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "PR #287 ouverte (modifie le texte)",
-        "PR #290 ouverte (modifie le texte)"
-      ],
+      "gele": false,
       "sensible": true
     },
     {
@@ -19089,6 +19422,245 @@
         }
       },
       "longueurMax": 102,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "miff_clarify_title",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Une précision sur ce que tu partages",
+      "en": "A clarification about what you share",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
+        "prefixe": "miff",
+        "usages": {
+          "android": [
+            "ui/permission/PermissionScreens.kt",
+            "ui/settings/LocationPrivacy.kt"
+          ],
+          "ios": [
+            "Views/Permission/ClarifyScreen.swift",
+            "Views/Settings/AccountAndPrivacyViews.swift"
+          ]
+        }
+      },
+      "longueurMax": 54,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "miff_clarify_body_one",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Pour « %1$s », nous précisons ce que Miff garde. Sur nos serveurs : ta dernière position connue, et l'endroit de ta photo, lisible pendant 24 h, sans aucun historique de trajets. Sur ton téléphone seulement : un journal de tes arrivées et départs (35 jours, sans position ni adresse) qui dessine ta répartition du temps ; tu peux l'effacer dans Réglages > Confidentialité.",
+      "en": "For \"%1$s\", we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo, readable for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your time breakdown; you can erase it in Settings > Privacy.",
+      "placeholders": [
+        "%1$s"
+      ],
+      "contexte": {
+        "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
+        "prefixe": "miff",
+        "usages": {
+          "android": [
+            "ui/permission/PermissionScreens.kt"
+          ],
+          "ios": [
+            "Views/Permission/ClarifyScreen.swift"
+          ]
+        }
+      },
+      "longueurMax": 558,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "miff_clarify_body_unnamed",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Pour cette Miff, nous précisons ce que Miff garde. Sur nos serveurs : ta dernière position connue, et l'endroit de ta photo, lisible pendant 24 h, sans aucun historique de trajets. Sur ton téléphone seulement : un journal de tes arrivées et départs (35 jours, sans position ni adresse) qui dessine ta répartition du temps ; tu peux l'effacer dans Réglages > Confidentialité.",
+      "en": "For this Miff, we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo, readable for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your time breakdown; you can erase it in Settings > Privacy.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
+        "prefixe": "miff",
+        "usages": {
+          "android": [
+            "ui/permission/PermissionScreens.kt"
+          ],
+          "ios": [
+            "Views/Permission/ClarifyScreen.swift"
+          ]
+        }
+      },
+      "longueurMax": 561,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "miff_clarify_body_many",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Pour tes Miffs, nous précisons ce que Miff garde. Sur nos serveurs : ta dernière position connue, et l'endroit de ta photo, lisible pendant 24 h, sans aucun historique de trajets. Sur ton téléphone seulement : un journal de tes arrivées et départs (35 jours, sans position ni adresse) qui dessine ta répartition du temps ; tu peux l'effacer dans Réglages > Confidentialité.",
+      "en": "For your Miffs, we are clarifying what Miff keeps. On our servers: your last known location, and the place of your photo, readable for 24 hours, with no history of trips. On your phone only: a log of your arrivals and departures (35 days, no position or address) that draws your time breakdown; you can erase it in Settings > Privacy.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
+        "prefixe": "miff",
+        "usages": {
+          "android": [
+            "ui/permission/PermissionScreens.kt"
+          ],
+          "ios": [
+            "Views/Permission/ClarifyScreen.swift"
+          ]
+        }
+      },
+      "longueurMax": 559,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "miff_clarify_continue",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Tout continue comme avant.",
+      "en": "Everything goes on as before.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
+        "prefixe": "miff",
+        "usages": {
+          "android": [
+            "ui/permission/PermissionScreens.kt"
+          ],
+          "ios": [
+            "Views/Permission/ClarifyScreen.swift"
+          ]
+        }
+      },
+      "longueurMax": 39,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "miff_clarify_accept",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "J'ai compris",
+      "en": "Got it",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
+        "prefixe": "miff",
+        "usages": {
+          "android": [
+            "ui/permission/PermissionScreens.kt"
+          ],
+          "ios": [
+            "Views/Permission/ClarifyScreen.swift"
+          ]
+        }
+      },
+      "longueurMax": 18,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "miff_clarify_later",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Plus tard",
+      "en": "Later",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
+        "prefixe": "miff",
+        "usages": {
+          "android": [
+            "ui/permission/PermissionScreens.kt"
+          ],
+          "ios": [
+            "Views/Permission/ClarifyScreen.swift"
+          ]
+        }
+      },
+      "longueurMax": 15,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "miff_clarify_saving",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "On enregistre…",
+      "en": "Saving…",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
+        "prefixe": "miff",
+        "usages": {
+          "android": [
+            "ui/permission/PermissionScreens.kt"
+          ],
+          "ios": [
+            "Views/Permission/ClarifyScreen.swift"
+          ]
+        }
+      },
+      "longueurMax": 21,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "miff_clarify_error_extra",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Ce n'est pas enregistré, mais tout continue comme avant.",
+      "en": "This is not saved, but everything goes on as before.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "LOC-2a : écrans de permissions, consentement version 2026-11-v03, renouvellement du consentement",
+        "prefixe": "miff",
+        "usages": {
+          "android": [
+            "ui/permission/PermissionScreens.kt"
+          ],
+          "ios": [
+            "Views/Permission/ClarifyScreen.swift"
+          ]
+        }
+      },
+      "longueurMax": 84,
       "courte": false,
       "gele": false,
       "sensible": true
@@ -19886,7 +20458,7 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Ce n’est pas le compte avec lequel tu es connecté(e). Choisis le bon compte pour continuer.",
+      "fr": "Ce n’est pas le compte avec lequel tu as ouvert ta session. Choisis le bon compte pour continuer.",
       "en": "That isn’t the account you’re signed in with. Choose the right account to continue.",
       "placeholders": [],
       "contexte": {
@@ -19901,7 +20473,7 @@
           ]
         }
       },
-      "longueurMax": 136,
+      "longueurMax": 145,
       "courte": false,
       "gele": false,
       "sensible": true
@@ -20621,8 +21193,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Ton profil, ta photo et ton numéro de téléphone seront supprimés. Tu quitteras les Miffs que tu as rejointes : ton statut et ta photo de mise à jour n’y seront plus visibles.",
-      "en": "Your profile, photo and phone number will be deleted. You will leave the Miffs you joined: your status and update photo will no longer be visible there.",
+      "fr": "Ton profil, ta photo et ton numéro de téléphone seront supprimés. Tu quitteras les Miffs que tu as rejointes : ton statut et ta photo n’y seront plus visibles.",
+      "en": "Your profile, photo and phone number will be deleted. You will leave the Miffs you joined: your status and photo will no longer be visible there.",
       "placeholders": [],
       "contexte": {
         "ecran": "AUTH-5a : suppression de compte (ticket docs/tickets/suppression-compte.md, §8 + textes ajoutés par les …",
@@ -20636,7 +21208,7 @@
           ]
         }
       },
-      "longueurMax": 261,
+      "longueurMax": 238,
       "courte": false,
       "gele": false,
       "sensible": true
@@ -21302,7 +21874,8 @@
             "ui/settings/LocationPrivacy.kt"
           ],
           "ios": [
-            "Views/Feed/AgreementCard.swift"
+            "Views/Feed/AgreementCard.swift",
+            "Views/Settings/AccountAndPrivacyViews.swift"
           ]
         }
       },
@@ -21432,6 +22005,32 @@
         }
       },
       "longueurMax": 201,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "settings_privacy_clarify_body",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Miff a précisé ce qu'il garde sur nos serveurs et sur ton téléphone seulement. Tout continue comme avant : tu peux lire cette précision et l'accepter quand tu veux.",
+      "en": "Miff has clarified what it keeps on our servers and on your phone only. Everything goes on as before: you can read this clarification and accept it whenever you like.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "LOC-2b: \"En attente de ton accord\" (design 23), help for the phones that stop apps in the background",
+        "prefixe": "settings",
+        "usages": {
+          "android": [
+            "ui/settings/LocationPrivacy.kt"
+          ],
+          "ios": [
+            "Views/Settings/AccountAndPrivacyViews.swift"
+          ]
+        }
+      },
+      "longueurMax": 246,
       "courte": false,
       "gele": false
     },
@@ -21839,8 +22438,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Pour te prendre en photo, ou photographier ce qui t'entoure, Miff a besoin d'accéder à ta caméra. La photo est visible des membres de tes Miffs pendant 24 h, puis elle n'est plus lisible. Rien n'est enregistré dans ta galerie.",
-      "en": "To take a photo of you, or of what's around you, Miff needs access to your camera. The photo can be seen by the members of your Miffs for 24 hours, then it can no longer be read. Nothing is saved to your gallery.",
+      "fr": "Pour te prendre en photo, ou photographier ce qui t'entoure, Miff a besoin d'accéder à ta caméra. Si tu la publies, la photo est partagée avec l'endroit où tu l'as prise. Les membres de tes Miffs qui partagent aussi leur position peuvent la voir pendant 24 h, puis elle n'est plus visible ; un membre peut toutefois en avoir gardé une copie. Rien n'est enregistré dans ta galerie.",
+      "en": "To take a photo of you, or of what's around you, Miff needs access to your camera. If you publish it, the photo is shared with the place where you took it. Members of your Miffs who also share their location can see it for 24 hours, then it is no longer visible; a member may still have kept a copy. Nothing is saved to your gallery.",
       "placeholders": [],
       "contexte": {
         "ecran": "UPDATE-1 / UPDATE-2 / FEED-4 : l'Update (photo du moment, bulle d'incitation, photo dans le Feed).",
@@ -21854,7 +22453,7 @@
           ]
         }
       },
-      "longueurMax": 339,
+      "longueurMax": 570,
       "courte": false,
       "gele": false
     },
@@ -22835,8 +23434,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Tes proches verront cette photo pendant 24 h.",
-      "en": "Your loved ones will see this photo for 24 hours.",
+      "fr": "Tes proches qui partagent aussi leur position verront cette photo pendant 24 h.",
+      "en": "Your loved ones who also share their location will see this photo for 24 hours.",
       "placeholders": [],
       "contexte": {
         "ecran": "UPDATE-1 / UPDATE-2 / FEED-4 : l'Update (photo du moment, bulle d'incitation, photo dans le Feed).",
@@ -22850,7 +23449,7 @@
           ]
         }
       },
-      "longueurMax": 67,
+      "longueurMax": 118,
       "courte": false,
       "gele": false
     },
@@ -22861,8 +23460,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Ta photo sera visible des membres de tes %1$d Miffs pendant 24 h.",
-      "en": "Your photo will be visible to the members of your %1$d Miffs for 24 hours.",
+      "fr": "Ta photo sera visible pendant 24 h des membres de tes %1$d Miffs qui partagent aussi leur position.",
+      "en": "Your photo will be visible for 24 hours to the members of your %1$d Miffs who also share their location.",
       "placeholders": [
         "%1$d"
       ],
@@ -22878,7 +23477,7 @@
           ]
         }
       },
-      "longueurMax": 97,
+      "longueurMax": 148,
       "courte": false,
       "gele": false
     },
@@ -23178,8 +23777,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Tu es passé en orange, indique à la Miff que tout va bien en publiant une update",
-      "en": "You've turned orange: let your Miff know all is well by posting an update",
+      "fr": "Ton statut est passé à l'orange, indique à la Miff que tout va bien en donnant de tes nouvelles",
+      "en": "Your status has turned orange: let your Miff know all is well by sharing your news",
       "placeholders": [],
       "contexte": {
         "ecran": "UPDATE-1 / UPDATE-2 / FEED-4 : l'Update (photo du moment, bulle d'incitation, photo dans le Feed).",
@@ -23194,7 +23793,7 @@
           ]
         }
       },
-      "longueurMax": 120,
+      "longueurMax": 142,
       "courte": false,
       "gele": false
     },
@@ -23205,8 +23804,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Tu es passé en rouge, indique à la Miff que tout va bien en publiant une update",
-      "en": "You've turned red: let your Miff know all is well by posting an update",
+      "fr": "Ton statut est passé au rouge, indique à la Miff que tout va bien en donnant de tes nouvelles",
+      "en": "Your status has turned red: let your Miff know all is well by sharing your news",
       "placeholders": [],
       "contexte": {
         "ecran": "UPDATE-1 / UPDATE-2 / FEED-4 : l'Update (photo du moment, bulle d'incitation, photo dans le Feed).",
@@ -23221,7 +23820,7 @@
           ]
         }
       },
-      "longueurMax": 118,
+      "longueurMax": 139,
       "courte": false,
       "gele": false
     },
@@ -23713,8 +24312,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Tu es passé orange",
-      "en": "You've turned orange",
+      "fr": "Ton statut est passé à l'orange",
+      "en": "Your status has turned orange",
       "placeholders": [],
       "contexte": {
         "ecran": "NOTIF-P0: notifications (centre, reglages, autorisation)",
@@ -23730,7 +24329,7 @@
           ]
         }
       },
-      "longueurMax": 27,
+      "longueurMax": 46,
       "courte": false,
       "gele": false,
       "sensible": true
@@ -23771,8 +24370,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Tu es passé rouge",
-      "en": "You've turned red",
+      "fr": "Ton statut est passé au rouge",
+      "en": "Your status has turned red",
       "placeholders": [],
       "contexte": {
         "ecran": "NOTIF-P0: notifications (centre, reglages, autorisation)",
@@ -23786,7 +24385,7 @@
           ]
         }
       },
-      "longueurMax": 25,
+      "longueurMax": 43,
       "courte": false,
       "gele": false,
       "sensible": true
@@ -23960,7 +24559,7 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Pendant que tu y es, tes proches voient un état différent.",
+      "fr": "Tant que tu es dans cette zone, tes proches voient un état différent.",
       "en": "While you're there, your circle sees a different status.",
       "placeholders": [],
       "contexte": {
@@ -23975,7 +24574,7 @@
           ]
         }
       },
-      "longueurMax": 87,
+      "longueurMax": 103,
       "courte": false,
       "gele": false,
       "sensible": true
@@ -24076,8 +24675,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Si tu oublies de donner de tes nouvelles, Miff te le rappelle doucement, et te prévient quand un proche donne des siennes. Pour t'envoyer ces notifications, Miff enregistre un identifiant technique de ton téléphone, fourni par Google. Tu choisis ce que tu reçois dans les réglages.",
-      "en": "If you forget to check in, Miff gently reminds you, and lets you know when someone in your circle gives news. To send you these notifications, Miff registers a technical identifier of your phone, provided by Google. You choose what you get in the settings.",
+      "fr": "Si tu n'as pas le temps de donner de tes nouvelles, Miff te le rappelle doucement, et te prévient quand un proche donne des siennes. Pour t'envoyer ces notifications, Miff enregistre un identifiant technique de ton téléphone, fourni par Google. Tu peux régler ce que tu reçois dans les réglages, et tout couper à tout moment.",
+      "en": "If you don't have time to check in, Miff gently reminds you, and lets you know when someone in your circle gives news. To send you these notifications, Miff registers a technical identifier of your phone, provided by Google. You can adjust what you get in the settings, and turn everything off at any time.",
       "placeholders": [],
       "contexte": {
         "ecran": "NOTIF-P0: notifications (centre, reglages, autorisation)",
@@ -24091,15 +24690,15 @@
           ]
         }
       },
-      "longueurMax": 421,
+      "longueurMax": 487,
       "courte": false,
       "gele": false,
       "sensible": true,
       "divergent": {
         "ios": {
           "type": "string",
-          "fr": "Si tu oublies de donner de tes nouvelles, Miff te le rappelle doucement, et te dit quand ta Miff change d'état. Tu choisis ce que tu reçois dans les réglages.",
-          "en": "If you forget to check in, Miff gently reminds you, and lets you know when your Miff changes status. You choose what you get in the settings.",
+          "fr": "Si tu n'as pas le temps de donner de tes nouvelles, Miff te le rappelle doucement, et te prévient quand ta Miff passe à l'orange ou au rouge. Tu peux régler ce que tu reçois dans les réglages, et tout couper à tout moment.",
+          "en": "If you don't have time to check in, Miff gently reminds you, and lets you know when your Miff turns orange or red. You can adjust what you get in the settings, and turn everything off at any time.",
           "placeholders": []
         }
       }
@@ -24192,8 +24791,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Un rappel si tu oublies de donner de tes nouvelles ?",
-      "en": "A reminder if you forget to check in?",
+      "fr": "Un rappel si tu n'as pas le temps de donner de tes nouvelles ?",
+      "en": "A reminder if you don't have time to check in?",
       "placeholders": [],
       "contexte": {
         "ecran": "NOTIF-P0: notifications (centre, reglages, autorisation)",
@@ -24207,7 +24806,7 @@
           ]
         }
       },
-      "longueurMax": 78,
+      "longueurMax": 93,
       "courte": false,
       "gele": false,
       "sensible": true
@@ -24327,8 +24926,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Tu ne recevras pas de rappel.",
-      "en": "You won't get reminders.",
+      "fr": "Tu ne recevras pas de notification.",
+      "en": "You won't receive any notifications.",
       "placeholders": [],
       "contexte": {
         "ecran": "NOTIF-P0: notifications (centre, reglages, autorisation)",
@@ -24339,7 +24938,7 @@
           ]
         }
       },
-      "longueurMax": 43,
+      "longueurMax": 52,
       "courte": false,
       "gele": false,
       "sensible": true
@@ -24409,8 +25008,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Les notifications sont préparées par ton téléphone : Miff n'en envoie aucune à tes proches. Tu choisis ce que tu reçois dans Réglages > Notifications.",
-      "en": "Notifications are prepared by your phone: Miff doesn't send any to your loved ones. You choose what you get in Settings > Notifications.",
+      "fr": "Quand tu donnes de tes nouvelles ou que tu déclares une alerte, tes proches qui ont activé les notifications en sont prévenus, avec ton prénom seulement (ni photo, ni position) ; pour tes nouvelles, il faut aussi qu'ils partagent leur position. Tes rappels sont préparés par ton téléphone. Tes arrivées et tes départs ne déclenchent aucune notification immédiate chez tes proches ; si ton statut reste orange ou rouge un moment, leur téléphone peut leur proposer de prendre de tes nouvelles. Si tu acceptes les notifications, Miff enregistre un identifiant technique de ton téléphone pour te les envoyer. Nos serveurs gardent aussi 30 jours une trace technique de chaque notification envoyée (type, Miff, personne qui a donné des nouvelles ou déclaré l'alerte, date ; jamais de prénom, de photo ni de position). Tu peux tout couper à tout moment dans Réglages > Notifications ou dans les réglages de ton téléphone.",
+      "en": "When you share your news or declare an alert, your loved ones who have notifications turned on are notified, with your first name only (no photo, no location); for your news, they must also share their location. Your reminders are prepared by your phone. Your arrivals and departures trigger no immediate notification for your loved ones; if your status stays orange or red for a while, their phone may suggest they check in on you. If you accept notifications, Miff saves a technical identifier of your phone to send them to you. Our servers also keep a technical record of each notification sent for 30 days (type, Miff, person who shared news or declared the alert, date; never a first name, photo or location). You can turn everything off at any time in Settings > Notifications or in your phone's settings.",
       "placeholders": [],
       "contexte": {
         "ecran": "NOTIF-P0: notifications (centre, reglages, autorisation)",
@@ -24424,7 +25023,7 @@
           ]
         }
       },
-      "longueurMax": 225,
+      "longueurMax": 1371,
       "courte": false,
       "gele": false,
       "sensible": true
@@ -24863,6 +25462,102 @@
       "sensible": true
     },
     {
+      "cle": "notif_center_alert_start_title_unnamed",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Un proche a déclaré une alerte",
+      "en": "Someone in your circle declared an alert",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
+        "prefixe": "notif",
+        "usages": {
+          "android": [
+            "data/notification/NotificationTexts.kt"
+          ]
+        }
+      },
+      "longueurMax": 45,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "notif_center_alert_start_body_unnamed",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Prends de ses nouvelles : contacte ce proche ou ouvre Miff.",
+      "en": "Check in with them: contact this loved one or open Miff.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
+        "prefixe": "notif",
+        "usages": {
+          "android": [
+            "data/notification/NotificationTexts.kt"
+          ]
+        }
+      },
+      "longueurMax": 88,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "notif_center_alert_end_title_unnamed",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Un proche a mis fin à son alerte",
+      "en": "Someone in your circle ended their alert",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
+        "prefixe": "notif",
+        "usages": {
+          "android": [
+            "data/notification/NotificationTexts.kt"
+          ]
+        }
+      },
+      "longueurMax": 48,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
+      "cle": "notif_center_alert_end_body_unnamed",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Cette personne a indiqué que tout va bien.",
+      "en": "They said they're okay.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
+        "prefixe": "notif",
+        "usages": {
+          "android": [
+            "data/notification/NotificationTexts.kt"
+          ]
+        }
+      },
+      "longueurMax": 63,
+      "courte": false,
+      "gele": false,
+      "sensible": true
+    },
+    {
       "cle": "notif_settings_section_loved_ones",
       "plateformes": [
         "android",
@@ -24873,7 +25568,7 @@
       "en": "For your loved ones",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -24897,7 +25592,7 @@
       "en": "When someone in your circle checks in",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -24917,11 +25612,11 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Une notification quand un proche de ta Miff publie une update.",
-      "en": "A notification when someone in your Miff posts an update.",
+      "fr": "Une notification quand un proche de ta Miff donne de ses nouvelles.",
+      "en": "A notification when someone in your Miff shares their news.",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -24929,7 +25624,7 @@
           ]
         }
       },
-      "longueurMax": 93,
+      "longueurMax": 100,
       "courte": false,
       "gele": false,
       "sensible": true
@@ -24945,7 +25640,7 @@
       "en": "Quiet night",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -24972,7 +25667,7 @@
       "en": "From 10 pm to 7 am, no sound or vibration, except when someone turns red.",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -24999,7 +25694,7 @@
       "en": "See my notifications",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25022,11 +25717,11 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Si les rappels n'arrivent pas",
-      "en": "If reminders don't arrive",
+      "fr": "Si les notifications n'arrivent pas",
+      "en": "If notifications don't arrive",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25038,7 +25733,7 @@
           ]
         }
       },
-      "longueurMax": 43,
+      "longueurMax": 52,
       "courte": false,
       "gele": false,
       "sensible": true
@@ -25054,7 +25749,7 @@
       "en": "Notifications turned off",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25081,7 +25776,7 @@
       "en": "You turned notifications off in your phone.",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25108,7 +25803,7 @@
       "en": "That's your choice, and it matters.",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25131,11 +25826,11 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Pour recevoir un rappel quand tu oublies de donner de tes nouvelles :",
-      "en": "To get a reminder when you forget to check in:",
+      "fr": "Pour réactiver les notifications de Miff :",
+      "en": "To turn Miff's notifications back on:",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25146,7 +25841,7 @@
           ]
         }
       },
-      "longueurMax": 103,
+      "longueurMax": 63,
       "courte": false,
       "gele": false,
       "sensible": true
@@ -25162,7 +25857,7 @@
       "en": "Open your phone's settings",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25189,14 +25884,11 @@
       "en": "Choose “Notifications”",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
             "ui/notification/NotificationsHelpScreen.kt"
-          ],
-          "ios": [
-            "Views/Notification/NotificationHelpView.swift"
           ]
         }
       },
@@ -25216,7 +25908,7 @@
       "en": "Turn them on for Miff",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25243,7 +25935,7 @@
       "en": "You can always check in from the app.",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25270,7 +25962,7 @@
       "en": "Notifications",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25307,7 +25999,7 @@
         "%d"
       ],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25338,7 +26030,7 @@
       "en": "Notifications",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25366,7 +26058,7 @@
       "en": "Nothing to report",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25393,7 +26085,7 @@
       "en": "Here you'll find your reminders and news from your Miff.",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25420,7 +26112,7 @@
       "en": "Notifications are off",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25444,10 +26136,10 @@
       ],
       "type": "string",
       "fr": "Tu ne recevras pas de rappel.",
-      "en": "You won't get reminders.",
+      "en": "You won't receive any notifications.",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25456,7 +26148,8 @@
           "ios": [
             "Views/Notification/NotificationCenterLockedView.swift"
           ]
-        }
+        },
+        "anglaisIos": "You won't get reminders."
       },
       "longueurMax": 43,
       "courte": false,
@@ -25474,7 +26167,7 @@
       "en": "Turn them on",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25498,7 +26191,7 @@
       "en": "Turn them on to get a reminder when it matters.",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25525,7 +26218,7 @@
       "en": "Turn on",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif"
       },
       "longueurMax": 14,
@@ -25544,7 +26237,7 @@
       "en": "Today",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25571,7 +26264,7 @@
       "en": "Yesterday",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25598,7 +26291,7 @@
       "en": "Earlier",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25625,7 +26318,7 @@
       "en": "More options",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25652,7 +26345,7 @@
       "en": "Mark all as read",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25679,7 +26372,7 @@
       "en": "Clear all",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25706,7 +26399,7 @@
       "en": "Clear all notifications?",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25733,7 +26426,7 @@
       "en": "This changes nothing for your Miff.",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25760,7 +26453,7 @@
       "en": "Clear",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25787,7 +26480,7 @@
       "en": "Delete this notification",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25811,7 +26504,7 @@
       "en": "unread",
       "placeholders": [],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25840,7 +26533,7 @@
         "%1$s"
       ],
       "contexte": {
-        "ecran": "N9, « un proche a donné des nouvelles » (SRV-2, ticket notification-update-membres.md). %1$s = le prénom de …",
+        "ecran": "CNC-A : les lignes du centre pour une alerte quand le prénom est introuvable (parti, compte supprimé, fiche …",
         "prefixe": "notif",
         "usages": {
           "android": [
@@ -25936,14 +26629,12 @@
           "ios": [
             "Models/Notification/LastVisitTexts.swift"
           ]
-        }
+        },
+        "anglaisIos": "%1$s arrived %2$s %3$s"
       },
       "longueurMax": 36,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "PR #282 ouverte (modifie le texte)"
-      ],
+      "gele": false,
       "sensible": true
     },
     {
@@ -27391,9 +28082,16 @@
         "android",
         "ios"
       ],
-      "type": "string",
-      "fr": "La formule gratuite reste disponible : 1 Miff et %1$d lieux de confiance.",
-      "en": "The free plan is still available: 1 Miff and %1$d trusted places.",
+      "type": "plural",
+      "fr": {
+        "one": "La formule gratuite reste disponible : 1 Miff et %1$d lieu de confiance.",
+        "many": "La formule gratuite reste disponible : 1 Miff et %1$d lieux de confiance.",
+        "other": "La formule gratuite reste disponible : 1 Miff et %1$d lieux de confiance."
+      },
+      "en": {
+        "one": "The free plan is still available: 1 Miff and %1$d trusted place.",
+        "other": "The free plan is still available: 1 Miff and %1$d trusted places."
+      },
       "placeholders": [
         "%1$d"
       ],
@@ -27409,7 +28107,11 @@
           ]
         }
       },
-      "longueurMax": 109,
+      "longueurMax": {
+        "one": 108,
+        "many": 109,
+        "other": 109
+      },
       "courte": false,
       "gele": false,
       "sensible": true
@@ -29776,8 +30478,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Pour calculer la répartition de ton temps, ton téléphone garde pendant 35 jours les moments où tu arrives dans un de tes lieux et où tu en pars, sans position ni adresse. Rien n'est envoyé : personne d'autre ne peut les voir.",
-      "en": "To work out how your time is spread, your phone keeps for 35 days the moments you arrive at and leave your places, with no position or address. Nothing is sent: nobody else can see it.",
+      "fr": "Pour calculer la répartition de ton temps, ton téléphone garde pendant 35 jours les moments où tu arrives dans un de tes lieux et où tu en pars, sans position ni adresse. Rien n'est envoyé : personne d'autre ne peut les voir. Arrêter de partager ne l'efface pas : c'est ici que tu peux le faire.",
+      "en": "To work out how your time is spread, your phone keeps for 35 days the moments you arrive at and leave your places, with no position or address. Nothing is sent: nobody else can see them. Stopping sharing does not erase it: you can do it here.",
       "placeholders": [],
       "contexte": {
         "ecran": "Répartition de ton temps (docs/tickets/profil-repartition-temps.md, TIME-2) : carte du Profil et réglage de …",
@@ -29791,13 +30493,9 @@
           ]
         }
       },
-      "longueurMax": 337,
+      "longueurMax": 442,
       "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "PR #287 ouverte (modifie le texte)",
-        "PR #290 ouverte (modifie le texte)"
-      ]
+      "gele": false
     },
     {
       "cle": "settings_privacy_time_erase",
@@ -29822,6 +30520,32 @@
         }
       },
       "longueurMax": 46,
+      "courte": false,
+      "gele": false
+    },
+    {
+      "cle": "settings_privacy_time_erase_note",
+      "plateformes": [
+        "android",
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Efface les arrivées et départs que Miff garde sur ton téléphone pour la répartition de ton temps. Cela ne change rien pour tes proches.",
+      "en": "Erases the arrivals and departures Miff keeps on your phone for your time breakdown. This changes nothing for your loved ones.",
+      "placeholders": [],
+      "contexte": {
+        "ecran": "Répartition de ton temps (docs/tickets/profil-repartition-temps.md, TIME-2) : carte du Profil et réglage de …",
+        "prefixe": "settings",
+        "usages": {
+          "android": [
+            "ui/settings/PrivacyScreen.kt"
+          ],
+          "ios": [
+            "Views/Settings/AccountAndPrivacyViews.swift"
+          ]
+        }
+      },
+      "longueurMax": 202,
       "courte": false,
       "gele": false
     },
@@ -30447,8 +31171,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Touche pour publier une update",
-      "en": "Tap to publish an update",
+      "fr": "Touche pour donner de tes nouvelles",
+      "en": "Tap to share your news",
       "placeholders": [],
       "contexte": {
         "ecran": "ALERTE « Je suis en danger » (docs/tickets/alerte-danger.md, AD-A1 / AD-A2). Mêmes clés qu'iOS (préfixe …",
@@ -30462,7 +31186,7 @@
           ]
         }
       },
-      "longueurMax": 45,
+      "longueurMax": 52,
       "courte": false,
       "gele": false,
       "sensible": true,
@@ -30643,8 +31367,8 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Miff n'est pas un service d'urgence. En cas de danger immédiat, appelle le 112.",
-      "en": "Miff is not an emergency service. If you're in immediate danger, call 112.",
+      "fr": "Miff n'est pas un service d'urgence. En cas de danger immédiat, appelle les secours (le 112 en Europe).",
+      "en": "Miff is not an emergency service. If you're in immediate danger, call the emergency services (112 in Europe).",
       "placeholders": [],
       "contexte": {
         "ecran": "ALERTE « Je suis en danger » (docs/tickets/alerte-danger.md, AD-A1 / AD-A2). Mêmes clés qu'iOS (préfixe …",
@@ -30660,7 +31384,7 @@
           ]
         }
       },
-      "longueurMax": 118,
+      "longueurMax": 154,
       "courte": false,
       "gele": false,
       "sensible": true,
@@ -31209,10 +31933,19 @@
         "android",
         "ios"
       ],
-      "type": "string",
-      "fr": "Tu as atteint la limite de 3 alertes par jour. Si tu es en danger, appelle directement les secours.",
-      "en": "You've reached the limit of 3 alerts a day. If you're in danger, call the emergency services directly.",
-      "placeholders": [],
+      "type": "plural",
+      "fr": {
+        "one": "Tu as atteint la limite de %1$d alerte par jour. Si tu es en danger, appelle directement les secours.",
+        "many": "Tu as atteint la limite de %1$d alertes par jour. Si tu es en danger, appelle directement les secours.",
+        "other": "Tu as atteint la limite de %1$d alertes par jour. Si tu es en danger, appelle directement les secours."
+      },
+      "en": {
+        "one": "You've reached the limit of %1$d alert a day. If you're in danger, call the emergency services directly.",
+        "other": "You've reached the limit of %1$d alerts a day. If you're in danger, call the emergency services directly."
+      },
+      "placeholders": [
+        "%1$d"
+      ],
       "contexte": {
         "ecran": "ALERTE « Je suis en danger » (docs/tickets/alerte-danger.md, AD-A1 / AD-A2). Mêmes clés qu'iOS (préfixe …",
         "prefixe": "alert",
@@ -31225,7 +31958,11 @@
           ]
         }
       },
-      "longueurMax": 148,
+      "longueurMax": {
+        "one": 151,
+        "many": 153,
+        "other": 153
+      },
       "courte": false,
       "gele": false,
       "sensible": true,
@@ -32034,10 +32771,19 @@
         "android",
         "ios"
       ],
-      "type": "string",
-      "fr": "La limite de 3 alertes par jour est atteinte. Si tu es en danger, ouvre les numéros d'urgence.",
-      "en": "The limit of 3 alerts a day is reached. If you're in danger, open the emergency numbers.",
-      "placeholders": [],
+      "type": "plural",
+      "fr": {
+        "one": "La limite de %1$d alerte par jour est atteinte. Si tu es en danger, ouvre les numéros d'urgence.",
+        "many": "La limite de %1$d alertes par jour est atteinte. Si tu es en danger, ouvre les numéros d'urgence.",
+        "other": "La limite de %1$d alertes par jour est atteinte. Si tu es en danger, ouvre les numéros d'urgence."
+      },
+      "en": {
+        "one": "The limit of %1$d alert a day is reached. If you're in danger, open the emergency numbers.",
+        "other": "The limit of %1$d alerts a day is reached. If you're in danger, open the emergency numbers."
+      },
+      "placeholders": [
+        "%1$d"
+      ],
       "contexte": {
         "ecran": "ALERTE « Je suis en danger » (docs/tickets/alerte-danger.md, AD-A1 / AD-A2). Mêmes clés qu'iOS (préfixe …",
         "prefixe": "alert",
@@ -32050,7 +32796,11 @@
           ]
         }
       },
-      "longueurMax": 141,
+      "longueurMax": {
+        "one": 144,
+        "many": 145,
+        "other": 145
+      },
       "courte": false,
       "gele": false,
       "sensible": true,
@@ -32358,7 +33108,8 @@
         "prefixe": "notif",
         "usages": {
           "android": [
-            "data/notification/NotificationPresenter.kt"
+            "data/notification/NotificationPresenter.kt",
+            "ui/notification/NotificationCenterScreen.kt"
           ]
         }
       },
@@ -32385,7 +33136,8 @@
         "prefixe": "notif",
         "usages": {
           "android": [
-            "data/notification/NotificationPresenter.kt"
+            "data/notification/NotificationPresenter.kt",
+            "ui/notification/NotificationCenterScreen.kt"
           ]
         }
       },
@@ -32412,7 +33164,8 @@
         "prefixe": "notif",
         "usages": {
           "android": [
-            "data/notification/NotificationPresenter.kt"
+            "data/notification/NotificationPresenter.kt",
+            "ui/notification/NotificationCenterScreen.kt"
           ]
         }
       },
@@ -32439,7 +33192,8 @@
         "prefixe": "notif",
         "usages": {
           "android": [
-            "data/notification/NotificationPresenter.kt"
+            "data/notification/NotificationPresenter.kt",
+            "ui/notification/NotificationCenterScreen.kt"
           ]
         }
       },

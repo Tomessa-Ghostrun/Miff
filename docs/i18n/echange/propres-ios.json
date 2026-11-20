@@ -7,13 +7,13 @@
   },
   "textes": [
     {
-      "cle": "ios_notif_debug_counters",
+      "cle": "ios_diag_notif_counters",
       "plateformes": [
         "ios"
       ],
       "type": "string",
-      "fr": "Recette : %1$lld fausse(s) alerte(s) sur %2$lld rappel(s) « ta Miff est passée » jugé(s). Compté sur ce téléphone, jamais envoyé.",
-      "en": "Testing: %1$lld false alert(s) out of %2$lld “your Miff has turned” reminder(s) judged. Counted on this phone, never sent.",
+      "fr": "Recette, rappels « ta Miff est passée » jugés inutiles : %1$lld sur %2$lld. Compté sur ce téléphone, jamais envoyé.",
+      "en": "Testing, “your Miff has turned” reminders judged unnecessary: %1$lld out of %2$lld. Counted on this phone, never sent.",
       "placeholders": [
         "%1$d",
         "%2$d"
@@ -21,9 +21,10 @@
       "contexte": {
         "prefixe": "ios"
       },
-      "longueurMax": 193,
+      "longueurMax": 172,
       "courte": false,
-      "gele": false
+      "gele": false,
+      "interne": true
     },
     {
       "cle": "ios_auth_consent_notice",
@@ -31,7 +32,7 @@
         "ios"
       ],
       "type": "string",
-      "fr": "En cliquant sur « Rejoindre », « Continuer avec Apple » ou « Continuer avec Google », tu acceptes nos %1$@ et notre %2$@, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$@).",
+      "fr": "En touchant « Rejoindre », « Continuer avec Apple » ou « Continuer avec Google », tu acceptes nos %1$@ et notre %2$@, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$@).",
       "en": "By tapping “Join”, “Continue with Apple” or “Continue with Google”, you accept our %1$@ and our %2$@, as well as the sharing of your anonymous usage statistics and crash reports (you can withdraw this at any time by writing to %3$@).",
       "placeholders": [
         "%1$s",
@@ -41,7 +42,7 @@
       "contexte": {
         "prefixe": "ios"
       },
-      "longueurMax": 387,
+      "longueurMax": 381,
       "courte": false,
       "gele": false
     },
@@ -51,7 +52,7 @@
         "ios"
       ],
       "type": "string",
-      "fr": "En cliquant sur « Continuer », tu acceptes nos %1$@ et notre %2$@, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$@).",
+      "fr": "En touchant « Continuer », tu acceptes nos %1$@ et notre %2$@, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$@).",
       "en": "By tapping “Continue”, you accept our %1$@ and our %2$@, as well as the sharing of your anonymous usage statistics and crash reports (you can withdraw this at any time by writing to %3$@).",
       "placeholders": [
         "%1$s",
@@ -61,7 +62,7 @@
       "contexte": {
         "prefixe": "ios"
       },
-      "longueurMax": 304,
+      "longueurMax": 298,
       "courte": false,
       "gele": false
     },
@@ -386,13 +387,13 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Entrez l'adresse exacte de ce lieu",
+      "fr": "Entre l'adresse exacte de ce lieu",
       "en": "Enter the exact address of this place",
       "placeholders": [],
       "contexte": {
         "prefixe": "ios"
       },
-      "longueurMax": 51,
+      "longueurMax": 49,
       "courte": false,
       "gele": false
     },
@@ -402,13 +403,13 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Arrivé il y a 12 min",
+      "fr": "Arrivée : il y a 12 min",
       "en": "Arrived 12 min ago",
       "placeholders": [],
       "contexte": {
         "prefixe": "ios"
       },
-      "longueurMax": 30,
+      "longueurMax": 34,
       "courte": false,
       "gele": false
     },
@@ -482,13 +483,13 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Choisissez un nom pour retrouver l'endroit facilement",
+      "fr": "Choisis un nom pour retrouver l'endroit facilement",
       "en": "Choose a name to find the place easily",
       "placeholders": [],
       "contexte": {
         "prefixe": "ios"
       },
-      "longueurMax": 79,
+      "longueurMax": 75,
       "courte": false,
       "gele": false
     },
@@ -498,13 +499,13 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Définissez le rayon autour du lieu",
+      "fr": "Définis le rayon autour du lieu",
       "en": "Set the radius around the place",
       "placeholders": [],
       "contexte": {
         "prefixe": "ios"
       },
-      "longueurMax": 51,
+      "longueurMax": 46,
       "courte": false,
       "gele": false
     },
@@ -531,13 +532,13 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Quel type de zone définissez-vous ?",
+      "fr": "Quel type de zone définis-tu ?",
       "en": "What type of zone are you setting?",
       "placeholders": [],
       "contexte": {
         "prefixe": "ios"
       },
-      "longueurMax": 52,
+      "longueurMax": 45,
       "courte": false,
       "gele": false
     },
@@ -612,7 +613,7 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Lieu sûr pour vos proches",
+      "fr": "Lieu sûr pour tes proches",
       "en": "Safe place for your loved ones",
       "placeholders": [],
       "contexte": {
@@ -654,46 +655,6 @@
       "longueurMax": 15,
       "courte": false,
       "gele": false,
-      "invariableProbable": true
-    },
-    {
-      "cle": "ios_settings_language_english",
-      "plateformes": [
-        "ios"
-      ],
-      "type": "string",
-      "fr": "English",
-      "en": "English",
-      "placeholders": [],
-      "contexte": {
-        "prefixe": "ios"
-      },
-      "longueurMax": 15,
-      "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "PR #282 ouverte (modifie le texte)"
-      ],
-      "invariableProbable": true
-    },
-    {
-      "cle": "ios_settings_language_french",
-      "plateformes": [
-        "ios"
-      ],
-      "type": "string",
-      "fr": "Français",
-      "en": "Français",
-      "placeholders": [],
-      "contexte": {
-        "prefixe": "ios"
-      },
-      "longueurMax": 15,
-      "courte": false,
-      "gele": true,
-      "geleRaisons": [
-        "PR #282 ouverte (modifie le texte)"
-      ],
       "invariableProbable": true
     },
     {
@@ -1141,13 +1102,13 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Connecté avec Apple",
+      "fr": "Compte relié à Apple",
       "en": "Signed in with Apple",
       "placeholders": [],
       "contexte": {
         "prefixe": "ios"
       },
-      "longueurMax": 28,
+      "longueurMax": 30,
       "courte": false,
       "gele": false
     },
@@ -1440,6 +1401,22 @@
       "gele": false
     },
     {
+      "cle": "ios_notif_help_step_2",
+      "plateformes": [
+        "ios"
+      ],
+      "type": "string",
+      "fr": "Choisis « Notifications »",
+      "en": "Choose “Notifications”",
+      "placeholders": [],
+      "contexte": {
+        "prefixe": "ios"
+      },
+      "longueurMax": 37,
+      "courte": false,
+      "gele": false
+    },
+    {
       "cle": "ios_notif_delete",
       "plateformes": [
         "ios"
@@ -1461,11 +1438,11 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Miff utilise la caméra seulement quand tu ouvres l'écran « Donner des nouvelles », pour prendre une photo de toi ou de ce qui t'entoure. La photo est publiée avec ta position et visible des membres de tes Miffs pendant 24 h, puis elle n'est plus lisible. Rien n'est enregistré dans ta photothèque.",
-      "en": "Miff uses the camera only when you open the “Share news” screen, to take a photo of you or of what's around you. The photo is published with your position and can be seen by the members of your Miffs for 24 hours, then it can no longer be read. Nothing is saved to your photo library.",
+      "fr": "Miff utilise la caméra seulement quand tu ouvres l'écran « Donner des nouvelles », pour prendre une photo de toi ou de ce qui t'entoure. Si tu la publies, elle est partagée avec l'endroit où tu l'as prise. Les membres de tes Miffs qui partagent aussi leur position peuvent la voir pendant 24 h, puis elle n'est plus visible ; un membre peut toutefois en avoir gardé une copie. Rien n'est enregistré dans ta photothèque.",
+      "en": "Miff uses the camera only when you open the “Share news” screen, to take a photo of you or of what's around you. If you publish it, it is shared with the place where you took it. Members of your Miffs who also share their location can see it for 24 hours, then it is no longer visible; a member may still have kept a copy. Nothing is saved to your photo library.",
       "placeholders": [],
       "contexte": {},
-      "longueurMax": 445,
+      "longueurMax": 628,
       "courte": false,
       "table": "InfoPlist.xcstrings",
       "gele": false,
@@ -1493,17 +1470,14 @@
         "ios"
       ],
       "type": "string",
-      "fr": "Pour signaler à ta Miff que tu arrives dans un lieu de confiance ou que tu le quittes, même quand l'app est fermée, Miff a besoin de ta position en arrière-plan. Les membres de ta Miff qui partagent aussi voient ton statut et ta dernière position connue, avec l'heure, sans historique. Quand tu publies une photo, l'endroit où tu l'as prise y est joint, visible pendant 24 h des membres qui partagent aussi leur position. Tu peux arrêter à tout moment.",
-      "en": "To let your Miff know when you arrive at or leave a trusted place, even when the app is closed, Miff needs your location in the background. The members of your Miff who also share can see your status and your last known location, with the time, with no history. When you publish a photo, the place where you took it is attached to it, visible for 24 hours to the members who also share their location. You can stop at any time.",
+      "fr": "Pour signaler à ta Miff que tu arrives dans un lieu de confiance ou que tu le quittes, même quand l'app est fermée, Miff a besoin de ta position en arrière-plan. Les membres de ta Miff qui partagent aussi voient ton statut et ta dernière position connue, avec l'heure, sans historique de trajets sur nos serveurs. Quand tu publies une photo, l'endroit où tu l'as prise y est joint, visible pendant 24 h des membres qui partagent aussi leur position. Sur ton téléphone seulement, Miff note aussi tes arrivées et départs pour te montrer comment ton temps se répartit. Tu peux arrêter à tout moment.",
+      "en": "To let your Miff know when you arrive at or leave a trusted place, even when the app is closed, Miff needs your location in the background. The members of your Miff who also share can see your status and your last known location, with the time, with no history of trips on our servers. When you publish a photo, the place where you took it is attached to it, visible for 24 hours to the members who also share their location. On your phone only, Miff also notes your arrivals and departures to show you how your time is spread. You can stop at any time.",
       "placeholders": [],
       "contexte": {},
-      "longueurMax": 678,
+      "longueurMax": 894,
       "courte": false,
       "table": "InfoPlist.xcstrings",
-      "gele": true,
-      "geleRaisons": [
-        "PR #290 ouverte (modifie le texte)"
-      ],
+      "gele": false,
       "sensible": true
     },
     {
