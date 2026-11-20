@@ -149,7 +149,19 @@ class FeedScreenTest {
         access: MemberLocationAccess = MemberLocationAccess.BACKGROUND,
         updatedAgo: Long = minute,
         lastUpdateAgo: Long = ago,
-    ) = MemberStatus(presence, placeId, now - ago, now - lastUpdateAgo, false, battery, access, now - updatedAgo)
+        // FEED-ORDRE-PHOTO: the order follows the last photo only; by default a card is dated by the same moment as its news (a photo published then).
+        photoAgo: Long? = ago,
+    ) = MemberStatus(
+        presence,
+        placeId,
+        now - ago,
+        now - lastUpdateAgo,
+        false,
+        battery,
+        access,
+        now - updatedAgo,
+        photoAtMillis = photoAgo?.let { now - it },
+    )
 
     private val places =
         listOf(
@@ -574,7 +586,7 @@ class FeedScreenTest {
     @Test
     fun cards_areByLatestNews_meLikeTheOthers() {
         feed(ready(nominal))
-        // FEED-ORDRE: Thomas (12 min), me (3 h), Amandine (6 h): I am no longer the last one by right.
+        // FEED-ORDRE-PHOTO: Thomas (photo 12 min ago), me (3 h), Amandine (6 h): the most recent photo first, I am no longer the last one by right.
         assertTrue(cardTop("Thomas") < cardTop("Camille"))
         assertTrue(cardTop("Camille") < cardTop("Amandine"))
     }
@@ -597,7 +609,7 @@ class FeedScreenTest {
         assertTrue(cardTop("Thomas") < cardTop("Amandine"))
         // A finger is down (no release: a cancel at the end, so that nothing is tapped).
         composeRule.onRoot().performTouchInput { down(Offset(10f, 10f)) }
-        // Amandine gives news while the finger is down: she is now the most recent one.
+        // Amandine publishes a photo while the finger is down: hers is now the most recent one.
         current =
             ready(
                 content(

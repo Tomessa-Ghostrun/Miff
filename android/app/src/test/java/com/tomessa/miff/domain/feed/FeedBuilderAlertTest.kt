@@ -33,7 +33,17 @@ class FeedBuilderAlertTest {
     ) = MiffMember(uid, first, "X", null, if (uid == me) MiffRole.OWNER else MiffRole.MEMBER, sharing, phone)
 
     private fun green(updateAgo: Long = 12 * minute) =
-        MemberStatus(PresenceValue.IN_TRUSTED, "p1", now - updateAgo, now - updateAgo, false, 80, null, now - minute)
+        MemberStatus(
+            PresenceValue.IN_TRUSTED,
+            "p1",
+            now - updateAgo,
+            now - updateAgo,
+            false,
+            80,
+            null,
+            now - minute,
+            photoAtMillis = now - updateAgo,
+        )
 
     /** Out of every place and silent for 5 hours: red by the usual rules, and the bubble of encouragement speaks. */
     private fun silent() =
@@ -102,7 +112,7 @@ class FeedBuilderAlertTest {
         assertEquals(StatusLevel.RED, first.level)
         assertEquals(StateLabel.AlertActive, first.label)
         assertEquals(TimeLine.Since(Moment.of(now - 58 * minute, now, zone)), first.time)
-        // the others keep their usual order (most recent news first), nothing else is reordered
+        // the others keep their usual order (most recent PHOTO first, FEED-ORDRE-PHOTO), nothing else is reordered
         assertEquals(
             listOf("a", "t", "me"),
             content.cards

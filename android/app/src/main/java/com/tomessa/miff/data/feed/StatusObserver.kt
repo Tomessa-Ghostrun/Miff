@@ -1,6 +1,8 @@
 package com.tomessa.miff.data.feed
 
+import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.DocumentSnapshot.ServerTimestampBehavior
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.MetadataChanges
 import com.tomessa.miff.domain.feed.MemberStatus
@@ -100,5 +102,16 @@ private fun readStatus(doc: DocumentSnapshot): Pair<String, MemberStatus>? {
             // MODE VOYAGE: the end of the trip and the day chosen; absent from every other status.
             travelUntilMillis = doc.getTimestamp("travelUntil")?.toDate()?.time,
             travelUntilDay = doc.getString("travelUntilDay"),
+            // FEED-ORDRE-PHOTO: the date of the last photo, the only thing the order of the cards follows. ESTIMATE: my own publication still waiting for the server is
+            // read as "now" (my card rises at once, then the server value replaces it without changing the relative order). Absent from every status written before
+            // this key existed: tolerated (no date).
+            photoAtMillis = photoAtMillisOf(doc.get("photoAt", ServerTimestampBehavior.ESTIMATE)),
         )
 }
+
+/**
+ * FEED-ORDRE-PHOTO (criterion B13, decision 10): `photoAt` as the Feed reads it. A time is read to the MILLISECOND (the same truncation as iOS: two photos that
+ * differ only by microseconds are equal). Absent, null, or anything that is not a time (a status written by a modified client) is "no date": never a failure,
+ * never a correction, and the rest of the status is still read.
+ */
+internal fun photoAtMillisOf(value: Any?): Long? = (value as? Timestamp)?.toDate()?.time
