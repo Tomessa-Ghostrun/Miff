@@ -262,6 +262,46 @@ class GlassTabBarTest {
     }
 
     @Test
+    fun theShippedHost_recordsNothingAndBlursNothing_aLightBarIsTheVeilAlone() {
+        // The build ships with the blur off (GlassPolicy.BLUR_ALLOWED): no Haze state given to the bar, so nothing is recorded or blurred.
+        // A bar that cannot be partially redrawn or stale: its colour is the veil over what is behind, the same at every frame.
+        var level: GlassLevel? = null
+        var source: Any? = Unit
+        composeRule.setContent {
+            MiffTheme {
+                CompositionLocalProvider(LocalDensity provides Density(density, 1f)) {
+                    GlassTabHost(
+                        variant = GlassVariant.LIGHT,
+                        barVisible = true,
+                        conditions = modern,
+                        bar = { glass ->
+                            level = glass.level
+                            source = glass.hazeState
+                            MainTabBar(config = internal, selected = MainTab.FEED, onSelect = {}, glass = glass)
+                        },
+                    ) {
+                        Box(Modifier.fillMaxSize().background(Color.Black))
+                    }
+                }
+            }
+        }
+        composeRule.waitForIdle()
+        assertEquals(GlassLevel.TRANSLUCENT, level)
+        assertEquals(null, source)
+        shoot("glass-light-translucent-over-black")
+        val (x, y) = veilPoint()
+        assertColor("translucent over black", over(GlassPaletteLight.tint, Color.Black), pixel(x, y))
+        assertEquals("the same pixel at the next frame", pixel(x, y), pixel(x, y))
+    }
+
+    @Test
+    fun lightBar_translucent_hasTheVeilOfTheBlur_overAnyBackground() {
+        showBar(TabBarGlass(GlassVariant.LIGHT, GlassLevel.TRANSLUCENT), Color(0xFF808080))
+        val (x, y) = veilPoint()
+        assertColor("translucent over mid grey", over(GlassPaletteLight.tint, Color(0xFF808080)), pixel(x, y))
+    }
+
+    @Test
     fun theHost_neverBlursTheViewfinder_nor_anOpaqueOrOldPhone() {
         val seen = mutableListOf<Pair<String, GlassLevel>>()
 

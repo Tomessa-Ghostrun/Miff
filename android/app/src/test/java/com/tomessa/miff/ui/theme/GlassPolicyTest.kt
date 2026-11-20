@@ -14,6 +14,7 @@ class GlassPolicyTest {
             lowRamDevice = false,
         )
 
+    /** The blur switch is passed explicitly: these tests are about the rules, not about the value the build ships with. */
     private fun level(
         conditions: GlassConditions,
         variant: GlassVariant = GlassVariant.LIGHT,
@@ -21,8 +22,16 @@ class GlassPolicyTest {
     ) = GlassPolicy.level(conditions, variant, blurAllowed)
 
     @Test
-    fun androidTheOppoRuns_asksNothing_blursTheFeedAndTheProfile() {
+    fun androidTheOppoRuns_asksNothing_blursTheFeedAndTheProfile_whenTheBlurIsAllowed() {
         assertEquals(GlassLevel.BLUR, level(modern))
+    }
+
+    @Test
+    fun theShippedBuild_hasNoBlur_aLightBarIsTheTranslucentVeilAlone() {
+        // Decision of 2026-11-20: a clear rectangle and a changing opacity were seen on the OPPO WITH the blur (battery saver or not), cause never proven.
+        // The shipped switch is off: Feed and Profile get the same white 32 % veil, with nothing recorded and nothing blurred.
+        assertFalse("the blur ships switched off", GlassPolicy.BLUR_ALLOWED)
+        assertEquals(GlassLevel.TRANSLUCENT, GlassPolicy.level(modern, GlassVariant.LIGHT))
     }
 
     @Test
@@ -86,15 +95,20 @@ class GlassPolicyTest {
     }
 
     @Test
-    fun theSwitch_turnsTheBlurOffEverywhere_withoutMakingTheBarOpaque() {
-        assertEquals(GlassLevel.NO_BLUR, level(modern, blurAllowed = false))
+    fun theSwitch_turnsTheBlurOffEverywhere_theBarStaysTranslucent_neverOpaque() {
+        assertEquals(GlassLevel.TRANSLUCENT, level(modern, blurAllowed = false))
+        // Whatever the switch, the other fallbacks decide as before.
+        assertEquals(GlassLevel.NO_BLUR, level(modern, GlassVariant.ON_PHOTO, blurAllowed = false))
+        assertEquals(GlassLevel.NO_BLUR, level(modern.copy(sdkInt = 30), blurAllowed = false))
+        assertEquals(GlassLevel.NO_BLUR, level(modern.copy(lowRamDevice = true), blurAllowed = false))
         assertEquals(GlassLevel.OPAQUE, level(modern.copy(animationsRemoved = true), blurAllowed = false))
+        assertEquals(GlassLevel.OPAQUE, level(modern.copy(contrastIncreased = true), blurAllowed = false))
     }
 
     @Test
     fun theShippedSwitch_decidesTheDefault_whicheverWayItIsSet() {
-        // The switch is the emergency plan B (BLUR_ALLOWED = false if the OPPO drops frames): the build must stay green either way.
-        val expected = if (GlassPolicy.BLUR_ALLOWED) GlassLevel.BLUR else GlassLevel.NO_BLUR
+        // The switch is shipped at false (see GlassPolicy.BLUR_ALLOWED): the build must stay green either way.
+        val expected = if (GlassPolicy.BLUR_ALLOWED) GlassLevel.BLUR else GlassLevel.TRANSLUCENT
         assertEquals(expected, GlassPolicy.level(modern, GlassVariant.LIGHT))
         assertEquals(31, GlassPolicy.MIN_BLUR_SDK)
     }

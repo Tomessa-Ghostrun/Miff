@@ -22,12 +22,15 @@ import com.tomessa.miff.ui.splash.ReduceMotion
 
 /**
  * How much "glass" the tab bar may be on this phone right now (design/tab-bar-liquid-glass.md sections 4, 9 and 10).
- * - [BLUR]: the background behind the bar is blurred, plus a veil (Android 12 and up, nothing asked against it).
+ * - [BLUR]: the background behind the bar is blurred, plus a veil (Android 12 and up, nothing asked against it). NOT the shipped default any
+ *   more: see [GlassPolicy.BLUR_ALLOWED].
+ * - [TRANSLUCENT]: the SAME light veil as [BLUR] (white 32 %) over the live content, with NOTHING recorded and NOTHING blurred: no Haze node, no
+ *   render effect, nothing that can be partially redrawn or stale. This is what a Light bar is in the shipped build.
  * - [NO_BLUR]: nothing is blurred, a denser veil instead (before Android 12, a modest phone, the camera viewfinder).
  * - [OPAQUE]: no transparency at all (animations removed, increased contrast). The battery saver is deliberately NOT a reason: the PM
  *   prefers the bar to stay translucent then (decision of 2026-11-20, design/tab-bar-liquid-glass.md section 9).
  */
-enum class GlassLevel { BLUR, NO_BLUR, OPAQUE }
+enum class GlassLevel { BLUR, TRANSLUCENT, NO_BLUR, OPAQUE }
 
 /** What the decision reads from the phone: plain values, so that the rules are testable without a device. */
 data class GlassConditions(
@@ -41,18 +44,20 @@ data class GlassConditions(
 
 object GlassPolicy {
     /**
-     * THE SWITCH of the fallback: set to `false` and rebuild to ship the bar WITHOUT any blur (the denser veil of [GlassLevel.NO_BLUR]
-     * everywhere, and the recording of the content for the blur is never done). To use if the recipe on the OPPO Find X5 Lite shows
-     * dropped frames while scrolling, or if the blur library has to be dropped (plan B of the ticket).
+     * THE SWITCH of the blur. SHIPPED AT `false` (decision of 2026-11-20, after two recipes on the OPPO Find X5 Lite, Android 13, ColorOS, in which
+     * a clear rectangle over the row of icons and an opacity that kept changing were seen WITH the blur, with or without the battery saver):
+     * a Light bar is then [GlassLevel.TRANSLUCENT], the same white 32 % veil with nothing recorded and nothing blurred (nothing left that can
+     * be stale or partially redrawn), instead of [GlassLevel.BLUR]. The cause of the defect of the blur was never PROVEN (no device on the
+     * development machine): set to `true` and rebuild to get the blur back, once an APK with it has been seen clean on the OPPO.
      */
-    const val BLUR_ALLOWED = true
+    const val BLUR_ALLOWED = false
 
     /** `RenderEffect` (the blur of the platform) exists from Android 12 (API 31). Below, Haze would use RenderScript (deprecated): not used. */
     const val MIN_BLUR_SDK = 31
 
     /**
      * Opaque first (what the person asked the system for: animations removed, increased contrast; NEVER the battery saver, see
-     * [GlassLevel.OPAQUE]), then "nothing to blur" cases, then the blur. The viewfinder is a
+     * [GlassLevel.OPAQUE]), then "nothing to blur" cases, then the blur (or, with the switch off, the translucent veil alone). The viewfinder is a
      * `SurfaceView`, which cannot be captured, and a blur of a 30 images per second video would heat the phone: the variant ON_PHOTO
      * therefore never blurs (the preview of a still photo gets the same bar, for consistency).
      */
@@ -64,8 +69,9 @@ object GlassPolicy {
         when {
             conditions.animationsRemoved -> GlassLevel.OPAQUE
             conditions.contrastIncreased -> GlassLevel.OPAQUE
-            !blurAllowed || conditions.lowRamDevice || conditions.sdkInt < MIN_BLUR_SDK -> GlassLevel.NO_BLUR
+            conditions.lowRamDevice || conditions.sdkInt < MIN_BLUR_SDK -> GlassLevel.NO_BLUR
             variant == GlassVariant.ON_PHOTO -> GlassLevel.NO_BLUR
+            !blurAllowed -> GlassLevel.TRANSLUCENT
             else -> GlassLevel.BLUR
         }
 }

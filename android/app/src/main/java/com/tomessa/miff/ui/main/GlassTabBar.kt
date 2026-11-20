@@ -77,7 +77,8 @@ val LocalTabBarInset = compositionLocalOf { 0.dp }
 
 /**
  * Lays out the tabs full screen with the bar over them, at the bottom. The content is recorded for the blur ONLY while the level
- * is [GlassLevel.BLUR] (the recording has a cost: nothing is done when the bar is opaque, unblurred or hidden).
+ * is [GlassLevel.BLUR] (the recording has a cost: nothing is done when the bar is translucent without blur, opaque, unblurred or hidden).
+ * In the shipped build ([GlassPolicy.BLUR_ALLOWED] = false) the level of a Light bar is [GlassLevel.TRANSLUCENT]: no recording, no blur.
  *
  * The bar is measured, and its height is given to the tabs through [LocalTabBarInset], so that the bar never hides content.
  */
@@ -125,8 +126,11 @@ internal fun glassVeil(
     palette: GlassPalette,
 ): Color =
     when (level) {
-        GlassLevel.BLUR -> palette.tint
+        // TRANSLUCENT = the very same veil as BLUR, without the blur under it: what the bar looks like when the blur is switched off.
+        GlassLevel.BLUR, GlassLevel.TRANSLUCENT -> palette.tint
+
         GlassLevel.NO_BLUR -> palette.tintNoBlur
+
         GlassLevel.OPAQUE -> palette.surfaceOpaque
     }
 
