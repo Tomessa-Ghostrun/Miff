@@ -20156,13 +20156,13 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "If you don't have time to check in, Miff gently reminds you, and lets you know when your Miff changes status. You can adjust what you get in the settings, and turn everything off at any time."
+            "value": "If you don't have time to check in, Miff gently reminds you, and lets you know when your Miff turns orange or red. You can adjust what you get in the settings, and turn everything off at any time."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Si tu n'as pas le temps de donner de tes nouvelles, Miff te le rappelle doucement, et te dit quand ta Miff change d'état. Tu peux régler ce que tu reçois dans les réglages, et tout couper à tout moment."
+            "value": "Si tu n'as pas le temps de donner de tes nouvelles, Miff te le rappelle doucement, et te prévient quand ta Miff passe à l'orange ou au rouge. Tu peux régler ce que tu reçois dans les réglages, et tout couper à tout moment."
           }
         }
       }

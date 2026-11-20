@@ -1,6 +1,6 @@
 import CoreGraphics
 
-// La taille de la bulle d'incitation (« Tu es passé en orange… »), en règle PURE et testable. Retour du PM (iPhone) : la bulle était BEAUCOUP trop
+// La taille de la bulle d'incitation (« Ton statut est passé à l'orange… »), en règle PURE et testable. Retour du PM (iPhone) : la bulle était BEAUCOUP trop
 // grosse ; elle doit avoir le design d'Android (`IncentiveBubble` d'`UpdateBubble.kt`) : compacte, de la hauteur de son texte (marge de 16 pt
 // en haut et en bas, texte italique 16 / 22), jamais plus haute que 40 % de l'écran, le texte défilant À L'INTÉRIEUR au-delà (grand texte),
 // jamais un grand rectangle vide. La hauteur est MESURÉE (celle du texte), jamais laissée à un conteneur gourmand.
