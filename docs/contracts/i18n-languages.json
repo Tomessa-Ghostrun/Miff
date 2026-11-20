@@ -65,7 +65,7 @@
       },
       "platforms": {
         "android": { "status": "required", "resDir": "values-es" },
-        "ios": { "status": "planned", "code": "es" }
+        "ios": { "status": "required", "code": "es" }
       }
     },
     {
@@ -82,7 +82,7 @@
       },
       "platforms": {
         "android": { "status": "required", "resDir": "values-it" },
-        "ios": { "status": "planned", "code": "it" }
+        "ios": { "status": "required", "code": "it" }
       }
     },
     {
@@ -100,7 +100,7 @@
       },
       "platforms": {
         "android": { "status": "required", "resDir": "values-pt" },
-        "ios": { "status": "planned", "code": "pt" }
+        "ios": { "status": "required", "code": "pt" }
       }
     },
     {
@@ -117,7 +117,7 @@
       },
       "platforms": {
         "android": { "status": "required", "resDir": "values-de" },
-        "ios": { "status": "planned", "code": "de" }
+        "ios": { "status": "required", "code": "de" }
       }
     }
   ]

@@ -17,8 +17,11 @@ enum FeedFirestoreMapping {
         }
     }
 
-    private static func millis(_ value: Any?) -> Int? {
-        (value as? Timestamp).map { Int($0.dateValue().timeIntervalSince1970 * 1000) }
+    /// Un horodatage en millisecondes TRONQUÉES (jamais arrondies) : secondes et nanosecondes en entiers, comme `Timestamp.toDate().time` d'Android,
+    /// donc deux dates qui ne diffèrent que par les microsecondes sont égales sur les deux plateformes (FEED-ORDRE-PHOTO, T17). Une valeur qui
+    /// n'est pas un horodatage est nil.
+    static func millis(_ value: Any?) -> Int? {
+        (value as? Timestamp).map { Int($0.seconds) * 1000 + Int($0.nanoseconds) / 1_000_000 }
     }
 
     /// Les champs d'un document `status/{uid}`. Les clés sont toujours présentes dans les règles ; ce qui manque est nil.
@@ -36,7 +39,9 @@ enum FeedFirestoreMapping {
                 updatedAtMillis: millis(fields["updatedAt"]),
                 // MODE VOYAGE : la fin du voyage et le jour choisi ; absents de tout autre statut.
                 travelUntilMillis: millis(fields["travelUntil"]),
-                travelUntilDay: fields["travelUntilDay"] as? String
+                travelUntilDay: fields["travelUntilDay"] as? String,
+                // FEED-ORDRE-PHOTO : la date de la dernière photo ; absente des statuts d'avant cette clé, nil si ce n'est pas un horodatage.
+                photoAtMillis: millis(fields["photoAt"])
             )
         )
     }

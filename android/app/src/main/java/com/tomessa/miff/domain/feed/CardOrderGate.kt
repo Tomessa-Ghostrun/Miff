@@ -17,7 +17,7 @@ class CardOrderView(
 
 /**
  * What the screen reader is told (polite, never interrupting) when the order really changes: [mover] is the member who rose to a new place ("{Prénom}
- * a donné des nouvelles"); null when several cards moved ("Le Feed a été mis à jour"). [id] grows with each announcement, so that the screen says each
+ * a publié une photo"); null when several cards moved ("Le Feed a été mis à jour"). [id] grows with each announcement, so that the screen says each
  * one once, even when two are alike.
  */
 class OrderAnnouncement(
@@ -92,7 +92,7 @@ class CardOrderGate {
         animate = !direct
         if (!direct) {
             // Nothing is said when the order of the members present before AND after did not change, nor for my own card moving alone. A member is named
-            // only when he or she arrives at the TOP of the list ("{Prénom} a donné des nouvelles"); any other movement is "Le Feed a été mis à jour".
+            // only when he or she arrives at the TOP of the list ("{Prénom} a publié une photo"); any other movement is "Le Feed a été mis à jour".
             val change = CardOrderChange.of(before, live)
             if (change != null && (change.mover == null || change.mover != myUid)) {
                 announcement = OrderAnnouncement(++announcements, change.mover?.takeIf { it == live.firstOrNull() })

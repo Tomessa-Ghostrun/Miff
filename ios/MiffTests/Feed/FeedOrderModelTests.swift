@@ -41,7 +41,7 @@ final class FeedOrderModelTests: XCTestCase {
 
         XCTAssertEqual(model.order.shown, ["c", "a", "b", "me"])
         XCTAssertEqual(announced.count, 1, "une seule annonce par application d'ordre")
-        XCTAssertTrue(announced[0].contains("Inès"), "elle dit qui a donné des nouvelles")
+        XCTAssertTrue(announced[0].contains("Inès"), "elle dit qui a publié une photo")
     }
 
     func testWithoutAGestureTheOrderIsAppliedAtOnce() {

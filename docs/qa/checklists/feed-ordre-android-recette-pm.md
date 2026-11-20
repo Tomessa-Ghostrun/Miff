@@ -2,7 +2,7 @@
 
 **Pour qui** : vous, sur l'OPPO Find X5 Lite (Android 13), avec **deux comptes dans la même Miff** (votre OPPO + un second téléphone ou l'iPhone 11 Pro). Aucune connaissance technique requise.
 **Durée** : 10 à 15 minutes. **Ce qu'on vérifie** : les cartes du Feed sont classées du proche qui a **publié une photo le plus récemment** au plus ancien, **ma carte comprise**, et la liste ne bouge jamais sous votre doigt.
-**Avant** : (1) **les règles Firestore de la PR « Feed : ordre par photo » doivent être déployées** (par vous, avant d'installer l'APK : sinon la publication d'une photo est refusée) ; (2) installer l'APK de la PR « Android : ordre du Feed par photo » (artefact de la CI, jamais un APK construit à la main) ; (3) **chaque compte de test publie d'abord une photo** (l'ordre ne connaît aucune date avant : tous les membres sont « sans date » après la mise à jour). Ticket : `docs/tickets/feed-ordre-photo.md` (il remplace `feed-ordre-derniere-update.md` pour la date de tri).
+**Avant** : (1) **les règles Firestore de la PR « Feed : ordre par photo » doivent être déployées** (par vous, avant d'installer l'APK : sinon la photo part quand même, mais sans date, donc sans classement) ; (2) installer l'APK de la PR « Android : ordre du Feed par photo » (artefact de la CI, jamais un APK construit à la main) ; (3) **chaque compte de test publie d'abord une photo** (l'ordre ne connaît aucune date avant : tous les membres sont « sans date » après la mise à jour). Ticket : `docs/tickets/feed-ordre-photo.md` (il remplace `feed-ordre-derniere-update.md` pour la date de tri).
 **À savoir** : seule une **nouvelle photo** change l'ordre. Une arrivée à la maison, une update sans photo, la batterie, un voyage ou l'expiration d'une photo (24 h) **ne déplacent aucune carte**. Les membres qui n'ont jamais publié de photo (ou « Partage désactivé ») sont **après** les autres, dans l'ordre d'arrivée dans la Miff.
 
 ## 1. L'ordre
@@ -29,7 +29,7 @@ Le second compte publie une photo (écran Update) pendant que vous êtes sur le 
 | 11 | Revenir sur le Feed depuis l'onglet Update ou Profil, ou depuis une autre app : l'ordre est **déjà à jour**, sans glissement | [ ] |
 | 12 | Tirer pour actualiser : l'ordre à jour apparaît directement, sans attendre | [ ] |
 | 13 | Ma propre photo (écran Update) : au retour sur le Feed, ma carte est **déjà à sa place** (en tête) | [ ] |
-| 14 | **Publication acceptée** : la photo se publie sans message d'erreur (si une erreur apparaît, les règles ne sont probablement pas déployées : arrêtez et prévenez-moi) | [ ] |
+| 14 | **Publication acceptée** : la photo se publie sans message d'erreur **et** votre carte remonte en tête (si la photo part mais que votre carte ne bouge pas, ou si une erreur apparaît, les règles ne sont probablement pas déployées : arrêtez et prévenez-moi). **Après le déploiement des règles, fermer complètement l'application puis la relancer** avant ce test : si la photo a déjà été publiée avant le déploiement, l'application évite de redemander la date pendant 1 h, puis la redemande (une carte qui ne remonte pas dans cette heure est normale sans relance) | [ ] |
 
 ## 3. Animations réduites et lecteur d'écran (TalkBack, si vous l'utilisez)
 

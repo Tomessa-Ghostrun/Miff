@@ -203,16 +203,23 @@ internal fun membersFromSnapshot(snapshot: QuerySnapshot): List<MiffMember> =
                 ),
                 joinedAt,
             )
-        }.sortedWith(
-            compareBy<OrderedMember> {
-                it.member.role != MiffRole.OWNER
-            }.thenBy { it.joinedAt }.thenBy { it.member.uid },
-        ).map { it.member }
+        }.inArrivalOrder()
 
-private class OrderedMember(
+internal class OrderedMember(
     val member: MiffMember,
     val joinedAt: Long,
 )
+
+/**
+ * The order of arrival: the creator first, then by `joinedAt`, then by identifier (the last tie-break, so that two members who joined at the same moment keep the
+ * same order at every launch). It is the reference of the Feed for "same date" and "no date" (FEED-ORDRE-PHOTO, decisions 3 and 4).
+ */
+internal fun List<OrderedMember>.inArrivalOrder(): List<MiffMember> =
+    sortedWith(
+        compareBy<OrderedMember> { it.member.role != MiffRole.OWNER }
+            .thenBy { it.joinedAt }
+            .thenBy { it.member.uid },
+    ).map { it.member }
 
 /** What one of the three listeners last said. */
 internal class ObservedPiece<T>(
