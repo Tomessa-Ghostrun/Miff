@@ -33,6 +33,11 @@ struct DocWrite: Equatable, CustomStringConvertible {
         self.data = data
     }
 
+    /// La même écriture SANS une clé (jamais une clé de plus) : le rejeu d'un lot refusé, sans le champ que les règles ne connaissent pas encore.
+    func removing(_ key: String) -> DocWrite {
+        DocWrite(path: path, kind: kind, data: data.filter { $0.key != key })
+    }
+
     /// Le chemin d'un code (`joinCodes/{code}`) est un secret : rien n'en est montré.
     var description: String {
         "DocWrite(\(kind))"

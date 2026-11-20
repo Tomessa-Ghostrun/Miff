@@ -102,7 +102,7 @@ enum FeedBuilder {
             places: Dictionary(input.places.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
         )
         // L'ordre d'ARRIVÉE (les autres, puis moi) nourrit la bulle et les alertes, qui ne dépendent pas du tri du Feed (ticket FEED-ORDRE,
-        // A10) ; les cartes montrées sont triées par la date de la dernière update (`sortedByLastUpdate`).
+        // A10) ; les cartes montrées sont triées par la date de la dernière photo publiée (`sortedByPhoto`, FEED-ORDRE-PHOTO).
         // ALERTE : les alertes en cours, de membres de cette Miff seulement, la plus ancienne d'abord (stable). Une alerte l'emporte sur la couleur et
         // l'étiquette de sa carte, et sa carte passe PREMIÈRE.
         let memberUids = Set(input.members.map { $0.uid })
@@ -112,7 +112,7 @@ enum FeedBuilder {
             let base = card(member, context)
             return alertByUid[member.uid].map { withAlert(base, $0, context) } ?? base
         }
-        let cards = alertsFirst(sortedByLastUpdate(input.members, cards: arrival, statuses: statuses), live: liveAlerts)
+        let cards = alertsFirst(sortedByPhoto(input.members, cards: arrival, statuses: statuses), live: liveAlerts)
         let mine = cards.first { $0.isMe }
         let miffColor = miffLevel(arrival.map { $0.level })
         let latestUpdate = statuses.values.compactMap { $0.updatedAtMillis }.max()
@@ -149,7 +149,7 @@ enum FeedBuilder {
     }
 
     /// L'ordre d'ARRIVÉE (décision du PM, 2026-11-07, D43) : les AUTRES membres d'abord, dans l'ordre où la liste les donne (le créateur,
-    /// puis l'ordre d'arrivée), et MOI EN DERNIER. Il ne place plus les cartes du Feed (voir `sortedByLastUpdate`) : il garde son rôle pour
+    /// puis l'ordre d'arrivée), et MOI EN DERNIER. Il ne place plus les cartes du Feed (voir `sortedByPhoto`) : il garde son rôle pour
     /// la bulle et les alertes, dont l'égalité se règle « par l'ordre des cartes » (ticket FEED-ORDRE, A10 : alertes inchangées).
     static func orderMembers(_ members: [MiffMember], myUid: String) -> [MiffMember] {
         members.filter { $0.uid != myUid } + members.filter { $0.uid == myUid }

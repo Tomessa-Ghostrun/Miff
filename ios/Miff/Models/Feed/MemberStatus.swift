@@ -30,6 +30,8 @@ struct RawStatus {
     /// MODE VOYAGE : la fin du voyage (un instant) et le jour choisi (`AAAA-MM-JJ`, affichage seul), quand la présence est `travel`.
     var travelUntilMillis: Int?
     var travelUntilDay: String?
+    /// FEED-ORDRE-PHOTO : l'heure du serveur de la dernière photo publiée (`photoAt`) ; nil si la clé manque ou n'est pas un horodatage.
+    var photoAtMillis: Int?
 }
 
 /// Le document `miffs/{id}/status/{uid}` d'un membre, tel que le Feed le lit (backend/data-model.md §2.7). Heures en
@@ -46,6 +48,10 @@ struct MemberStatus: Equatable, CustomStringConvertible {
     /// MODE VOYAGE : la fin du voyage et le jour choisi, quand `presence` est `travel` ; nil sinon.
     var travelUntilMillis: Int?
     var travelUntilDay: String?
+    /// FEED-ORDRE-PHOTO : l'heure du serveur de la DERNIÈRE PHOTO publiée (`photoAt`), la seule date qui classe les cartes du Feed. nil : jamais
+    /// de photo dans cette Miff, statut créé avant cette clé, ou ancienne version de l'app (tolérance : jamais un refus, jamais un plantage).
+    /// Elle garde sa valeur quand la photo expire (`hasPhoto` repasse à faux).
+    var photoAtMillis: Int?
 
     var description: String {
         "MemberStatus(redacted)"
@@ -75,7 +81,8 @@ struct MemberStatus: Equatable, CustomStringConvertible {
             locationAccess: MemberLocationAccess.fromWire(raw.locationAccess),
             updatedAtMillis: raw.updatedAtMillis,
             travelUntilMillis: isTravel ? raw.travelUntilMillis : nil,
-            travelUntilDay: isTravel ? raw.travelUntilDay : nil
+            travelUntilDay: isTravel ? raw.travelUntilDay : nil,
+            photoAtMillis: raw.photoAtMillis
         )
     }
 }

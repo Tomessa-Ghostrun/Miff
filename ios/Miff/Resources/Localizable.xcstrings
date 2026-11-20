@@ -7094,7 +7094,7 @@
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ shared an update"
+            "value": "%@ shared a photo"
           }
         },
         "es": {
@@ -7106,7 +7106,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@ a donné des nouvelles"
+            "value": "%@ a publié une photo"
           }
         },
         "it": {
