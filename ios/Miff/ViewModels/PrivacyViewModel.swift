@@ -29,6 +29,9 @@ struct PrivacyDependencies {
     let pending: PendingWithdrawals
     let network: NetworkMonitor
     let currentUid: () -> String?
+    /// Annonce vocale (VoiceOver) du nouvel état : l'interrupteur est une ligne-bouton dessinée d'après l'état du compte, son changement ne
+    /// s'annonce pas tout seul.
+    var announce: (String) -> Void = { _ in }
 }
 
 /// Réglages > Confidentialité, l'interrupteur « statistiques d'usage et rapports de plantage anonymes » (ticket ONB-3b, critère RG6 / B5) :
@@ -120,10 +123,12 @@ final class PrivacyViewModel: ObservableObject {
         let privacy = dependencies.privacy
         let withdrawals = dependencies.withdrawals
         let currentUid = dependencies.currentUid
+        let announce = dependencies.announce
         Task { [weak self] in
             let result = await withdrawals.accept(uid: me)
             if result == .done && currentUid() == me {
                 privacy.applyAccountConsent(true)
+                announce(Self.spoken(isOn: true))
                 self?.finishWriting(message: nil)
             } else {
                 self?.finishWriting(message: Self.message(for: result))
@@ -134,6 +139,10 @@ final class PrivacyViewModel: ObservableObject {
     private func withdraw(_ me: String) {
         // Tout de suite, quoi que dise le réseau : la personne a demandé que rien ne soit collecté.
         dependencies.privacy.applyAccountConsent(false)
+        // La marque est posée ICI, de façon synchrone et sur le disque, avant toute attente : une app tuée juste après le toucher ne
+        // reprend pas la collecte au démarrage suivant (`mark` ne fait rien si elle existe déjà ; `ConsentWithdrawals` la repose sans effet).
+        dependencies.pending.mark(uid: me)
+        dependencies.announce(Self.spoken(isOn: false))
         state.isWriting = true
         state.message = nil
         Task { [weak self, withdrawals = dependencies.withdrawals] in
@@ -146,6 +155,12 @@ final class PrivacyViewModel: ObservableObject {
     private func finishWriting(message: PrivacyMessage?) {
         state.isWriting = false
         state.message = message
+    }
+
+    /// Ce que VoiceOver dit après un changement : le nom de la ligne et son nouvel état.
+    private static func spoken(isOn: Bool) -> String {
+        let state = L10n.string(isOn ? "miff_sharing_state_on" : "miff_sharing_state_off")
+        return L10n.string("settings_privacy_analytics_title") + ", " + state
     }
 
     private static func message(for result: ProfileWriteResult) -> PrivacyMessage? {

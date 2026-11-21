@@ -5,6 +5,8 @@ import Foundation
 enum FirestoreErrorNumber {
     static let domain = "FIRFirestoreErrorDomain"
     static let cancelled = 1
+    static let aborted = 10
+    static let internalError = 13
     static let deadlineExceeded = 4
     static let permissionDenied = 7
     static let resourceExhausted = 8
@@ -29,6 +31,22 @@ func interpretWriteError(_ error: Error) -> ProfileWriteResult {
     default:
         return .failed
     }
+}
+
+/// Comme `interpretWriteError`, pour le choix « statistiques et plantages » : un retrait ne doit pas être abandonné sur une erreur qui passe
+/// (transaction avortée par un conflit, erreur interne du serveur, quota momentanément dépassé) : ce sont des « pas maintenant »,
+/// reprises avec des pauses croissantes. Seul un vrai refus du serveur (règles, App Check, session) arrête les essais.
+func interpretConsentWriteError(_ error: Error) -> ProfileWriteResult {
+    let nsError = error as NSError
+    if nsError.domain == FirestoreErrorNumber.domain {
+        switch nsError.code {
+        case FirestoreErrorNumber.aborted, FirestoreErrorNumber.internalError, FirestoreErrorNumber.resourceExhausted:
+            return .offline
+        default:
+            break
+        }
+    }
+    return interpretWriteError(error)
 }
 
 extension ProfileSeed {

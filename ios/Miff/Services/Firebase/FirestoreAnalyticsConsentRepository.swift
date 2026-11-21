@@ -52,7 +52,7 @@ final class FirestoreAnalyticsConsentRepository: AnalyticsConsentRepository {
         } catch is OperationTimedOut {
             return .offline
         } catch {
-            return interpretWriteError(error)
+            return interpretConsentWriteError(error)
         }
     }
 

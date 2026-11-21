@@ -27,6 +27,7 @@ final class PrivacyViewModelTests: XCTestCase {
     private let sleeper = ManualSleeper()
     private let storage = MemoryWithdrawalStorage()
     private var signedIn: String? = "uid-1"
+    private var announcements: [String] = []
 
     private lazy var privacy = PrivacySettings(store: store, analytics: analytics, crashReports: crash)
     private lazy var pending = PendingWithdrawals(storage: storage, nowMillis: { 1 })
@@ -55,7 +56,8 @@ final class PrivacyViewModelTests: XCTestCase {
                 withdrawals: withdrawals ?? self.withdrawals,
                 pending: pending ?? self.pending,
                 network: network,
-                currentUid: { [unowned self] in self.signedIn }
+                currentUid: { [unowned self] in self.signedIn },
+                announce: { [unowned self] in self.announcements.append($0) }
             )
         )
     }
@@ -105,6 +107,43 @@ final class PrivacyViewModelTests: XCTestCase {
         XCTAssertEqual(store.value(forKey: PrivacySettings.analyticsKey, default: true), false)
         XCTAssertEqual(store.value(forKey: PrivacySettings.crashReportsKey, default: true), false)
         XCTAssertTrue(model.state.isWriting)
+    }
+
+    func testTheMarkIsOnTheDiskBeforeWithdrawReturnsTheHand() {
+        startCollecting()
+        let model = makeModel()
+
+        model.toggleAnalytics()
+
+        // Avant toute attente (réseau, tâche de fond) : une app tuée juste après le toucher ne reprend pas la collecte au démarrage.
+        XCTAssertTrue(pending.isPending(uid: "uid-1"))
+        XCTAssertFalse(storage.entries.isEmpty)
+        XCTAssertEqual(repository.calls.count, 0)
+    }
+
+    func testTheNewStateIsAnnouncedToVoiceOverAfterAWithdrawalAndAfterAnAcceptance() async {
+        startCollecting()
+        let model = makeModel()
+        let title = L10n.string("settings_privacy_analytics_title")
+
+        model.toggleAnalytics()
+        await waitUntil { !model.state.isWriting }
+        XCTAssertEqual(announcements, [title + ", " + L10n.string("miff_sharing_state_off")])
+
+        model.toggleAnalytics()
+        await waitUntil { !model.state.isWriting }
+        XCTAssertEqual(announcements.last, title + ", " + L10n.string("miff_sharing_state_on"))
+        XCTAssertEqual(announcements.count, 2)
+    }
+
+    func testNothingIsAnnouncedWhenTheAcceptanceFails() async {
+        repository.results = [.refused]
+        let model = makeModel()
+
+        model.toggleAnalytics()
+        await waitUntil { !model.state.isWriting }
+
+        XCTAssertTrue(announcements.isEmpty)
     }
 
     func testWithdrawingOnlineIsRecordedInTheAccountAndTheMarkGoesAway() async {

@@ -181,7 +181,8 @@ struct PrivacyView: View {
             action: { model.toggleAnalytics() }
         )
         if let message = model.state.message {
-            MiffNotice(text: L10n.string(Self.messageKey(message)), isError: true)
+            // Des textes déjà calmes (« Pas de connexion pour le moment… ») : sans rouge, rien n'est cassé et rien n'a changé.
+            MiffNotice(text: L10n.string(Self.messageKey(message)))
         }
         if model.state.withdrawalPending {
             MiffNotice(text: L10n.string("settings_privacy_withdrawal_not_recorded"))

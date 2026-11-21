@@ -47,7 +47,8 @@ extension AppEnvironment {
                 withdrawals: privacyServices.withdrawals,
                 pending: privacyServices.pending,
                 network: network,
-                currentUid: { session.currentUid }
+                currentUid: { session.currentUid },
+                announce: { Announcer.announce($0) }
             )
         )
     }
