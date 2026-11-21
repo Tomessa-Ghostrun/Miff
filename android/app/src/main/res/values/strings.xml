@@ -1468,7 +1468,7 @@
     <string name="settings_subscription_trial_noprice">Free trial until %1$s. The yearly subscription starts after that, unless you cancel before.</string>
     <string name="settings_subscription_renews">Active. Next renewal on %1$s (%2$s).</string>
     <string name="settings_subscription_renews_noprice">Active. Next renewal on %1$s.</string>
-    <string name="settings_subscription_ends">Miff+ ends on %1$s. You keep everything until then.</string>
+    <string name="settings_subscription_ends">You cancelled Miff+: it stays active until %1$s, without renewal.</string>
     <string name="settings_subscription_grace">The payment for your subscription didn\'t go through. Everything still works: update your payment method before %1$s.</string>
     <string name="settings_subscription_on_hold">Miff+ is on hold: the payment didn\'t go through. Your benefits will be back as soon as it\'s sorted.</string>
     <string name="settings_subscription_expired">Your Miff+ subscription has ended. You can start it again whenever you like.</string>

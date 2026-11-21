@@ -8,6 +8,7 @@ import com.tomessa.miff.domain.billing.PurchaseOutcome
 import com.tomessa.miff.domain.billing.RestoreOutcome
 import com.tomessa.miff.domain.billing.chooseOffers
 import com.tomessa.miff.domain.paywall.MonotonicClock
+import com.tomessa.miff.domain.subscription.StoreState
 import com.tomessa.miff.domain.subscription.SubscriptionStatus
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -20,7 +21,9 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import java.lang.ref.WeakReference
+import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicLong
 
 /** What the screens see of the work in progress (a purchase or a restoration). */
 sealed interface PurchaseSession {
@@ -74,18 +77,21 @@ class PremiumCoordinator(
     val session: StateFlow<PurchaseSession> = mutableSession.asStateFlow()
 
     private val busy = AtomicBoolean(false)
-    private var serial = 0L
+    private val serial = AtomicLong(0L)
 
     /** The purchase sheet that is waiting for its answer (set BEFORE the sheet opens), completed by the first event of the store. */
     @Volatile private var awaiting: CompletableDeferred<PurchaseEvent>? = null
 
     private val syncLock = Mutex()
-    private var lastSyncAt: Long? = null
-    private var lastReconcileAt: Long? = null
-    private var reconcileUid: String? = null
+
+    @Volatile private var lastSyncAt: Long? = null
+
+    @Volatile private var lastReconcileAt: Long? = null
+
+    @Volatile private var reconcileUid: String? = null
 
     // Purchases (kept in memory only) that the server said belong to another Miff account: not sent again by the silent paths.
-    private val refusedTokens = mutableSetOf<String>()
+    private val refusedTokens: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     init {
         // Listens from the start: an event that comes while nobody waits (a pending payment confirmed later, a purchase made from the Play Store) is checked silently.
@@ -174,7 +180,7 @@ class PremiumCoordinator(
         outcome: PurchaseOutcome?,
         restore: RestoreOutcome?,
     ) {
-        mutableSession.value = PurchaseSession.Finished(++serial, outcome, restore)
+        mutableSession.value = PurchaseSession.Finished(serial.incrementAndGet(), outcome, restore)
         busy.set(false)
     }
 
@@ -236,7 +242,19 @@ class PremiumCoordinator(
     /** "Already owned": the store already has this subscription for the account; the purchase it lists is checked like a new one. */
     private suspend fun adoptOwned(): PurchaseOutcome {
         val owned = gateway.ownedPurchases() as? OwnedResult.Loaded ?: return PurchaseOutcome.NETWORK
-        return handleUpdated(owned.purchases)
+        val outcome = handleUpdated(owned.purchases)
+        // "Already owned" with nothing listed: a subscription ON HOLD (the store does not list it): said as such, never "the purchase could not be finalised".
+        if (outcome == PurchaseOutcome.FAILED && owned.purchases.isEmpty() &&
+            serverStateIsOnHold()
+        ) {
+            return PurchaseOutcome.ON_HOLD
+        }
+        return outcome
+    }
+
+    private suspend fun serverStateIsOnHold(): Boolean {
+        val status = subscriptions.load() as? SubscriptionStatus.Store ?: return false
+        return status.state == StoreState.ON_HOLD
     }
 
     private suspend fun verify(purchase: OwnedPurchase): PurchaseOutcome =
@@ -256,13 +274,10 @@ class PremiumCoordinator(
             refusedTokens.remove(paid.token)
             return when (val result = syncSpaced(paid.token, patient = true)) {
                 is SyncResult.Synced -> {
-                    if (grantsAccess(
-                            result.state,
-                        )
-                    ) {
-                        RestoreOutcome.FOUND
-                    } else {
-                        RestoreOutcome.NONE_FOUND
+                    when {
+                        grantsAccess(result.state) -> RestoreOutcome.FOUND
+                        result.state == STATE_ON_HOLD -> RestoreOutcome.ON_HOLD
+                        else -> RestoreOutcome.NONE_FOUND
                     }
                 }
 
@@ -286,7 +301,11 @@ class PremiumCoordinator(
         if (owned.purchases.any { it.state == OwnedState.PENDING }) return RestoreOutcome.PENDING
         // Nothing in the store: the server may still know a subscription (bought on another device or in another store, or put on hold by the store, which the list omits).
         val status = subscriptions.load() ?: return RestoreOutcome.NETWORK
-        return if (status.hasAccess) RestoreOutcome.FOUND else RestoreOutcome.NONE_FOUND
+        return when {
+            status.hasAccess -> RestoreOutcome.FOUND
+            (status as? SubscriptionStatus.Store)?.state == StoreState.ON_HOLD -> RestoreOutcome.ON_HOLD
+            else -> RestoreOutcome.NONE_FOUND
+        }
     }
 
     // ---------------------------------------------------------------------------------------------------------------------
@@ -327,7 +346,9 @@ class PremiumCoordinator(
     }
 
     private suspend fun silentSync(token: String) {
-        if (syncSpaced(token, patient = false) == SyncResult.AlreadyLinked) refusedTokens.add(token)
+        // A purchase of another account, or one the server refuses for good (unknown product, other package...), is not sent again by itself: only an explicit restoration does.
+        val result = syncSpaced(token, patient = false)
+        if (result == SyncResult.AlreadyLinked || result == SyncResult.Rejected) refusedTokens.add(token)
     }
 
     // ---------------------------------------------------------------------------------------------------------------------
@@ -351,12 +372,13 @@ class PremiumCoordinator(
                     clock.waitFor(wait)
                 }
             }
-            lastSyncAt = clock.nowMillis()
+            // The minute of the server starts when it ANSWERED (an answer, a refusal, "too soon"): a call that never reached it (no network) does not use the minute.
             var result = backend.sync(token)
+            if (result != SyncResult.Unavailable) lastSyncAt = clock.nowMillis()
             if (result == SyncResult.RateLimited && patient) {
                 clock.waitFor(syncSpacingMillis)
-                lastSyncAt = clock.nowMillis()
                 result = backend.sync(token)
+                if (result != SyncResult.Unavailable) lastSyncAt = clock.nowMillis()
             }
             result
         }
@@ -364,6 +386,7 @@ class PremiumCoordinator(
     private fun outcomeOfState(state: String?): PurchaseOutcome =
         when {
             state == STATE_PENDING -> PurchaseOutcome.PENDING
+            state == STATE_ON_HOLD -> PurchaseOutcome.ON_HOLD
             grantsAccess(state) -> PurchaseOutcome.GRANTED
             else -> PurchaseOutcome.FAILED
         }
@@ -384,6 +407,7 @@ class PremiumCoordinator(
         const val PURCHASE_WAIT_MAX_MILLIS = 20 * 60_000L
 
         private const val STATE_PENDING = "pending"
+        private const val STATE_ON_HOLD = "on_hold"
         private val GRANTING_STATES = setOf("trial", "active", "canceled", "grace")
     }
 }

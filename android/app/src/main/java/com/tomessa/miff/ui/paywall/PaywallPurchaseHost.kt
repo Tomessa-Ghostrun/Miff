@@ -10,10 +10,13 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.data.billing.PremiumCoordinator
 import com.tomessa.miff.domain.analytics.AnalyticsTracker
+import com.tomessa.miff.domain.billing.MiffPlusProducts
 import com.tomessa.miff.domain.paywall.MonotonicClock
 import com.tomessa.miff.domain.place.PaywallReason
+import com.tomessa.miff.ui.auth.LegalLinks
 import com.tomessa.miff.ui.place.PaywallDestination
 
 /** The purchase buttons of the offer screen (they do something only when the purchase is switched on). */
@@ -23,6 +26,7 @@ class PaywallStoreActions(
     val onBuyMonthly: () -> Unit,
     val onRetry: () -> Unit,
     val onRestore: () -> Unit,
+    val onManage: () -> Unit = {},
 )
 
 /**
@@ -56,6 +60,10 @@ internal fun PurchasePaywallDestination(
                 onBuyMonthly = { activity?.let(model::buyMonthly) },
                 onRetry = model::retry,
                 onRestore = model::restore,
+                // A subscription on hold is mended on the page of the store (the same page as Settings > Abonnement).
+                onManage = {
+                    activity?.let { LegalLinks.open(it, MiffPlusProducts.manageUrl(BuildConfig.APPLICATION_ID)) }
+                },
             ),
     )
 }

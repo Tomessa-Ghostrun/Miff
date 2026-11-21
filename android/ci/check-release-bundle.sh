@@ -27,6 +27,16 @@ if unzip -p "$bundle" 'base/dex/*.dex' | grep -a -c -E 'DIAGNOSTICPROBE|DebugApp
 fi
 echo "Aucune trace du diagnostic, du fournisseur App Check de debug, du journal de detection, de la fenetre d'avis ni de la mesure du demarrage ($dex_count fichier(s) dex inspecte(s))."
 
+# 1 bis. Achat de Miff+ ETEINT (cas par defaut, premium_purchase = false) : R8 retire tout le code d'achat ; aucune trace des noms des fonctions de facturation ni de la
+# bibliotheque. Avec MIFF_PREMIUM_PURCHASE=true (bundle d'essai de la piste interne, choisi par le PM) ce controle ne s'applique pas.
+if [ "${MIFF_PREMIUM_PURCHASE:-false}" != "true" ]; then
+  if unzip -p "$bundle" 'base/dex/*.dex' | grep -a -c -E 'preparerAchat|synchroniserAchat|supprimerDonneesAbonnement|PlayBillingGateway|PremiumCoordinator|com/android/billingclient/api/BillingClient' | grep -q -v '^0$'; then
+    echo "::error title=Achat Miff+ dans le bundle::Le bundle (premium_purchase = false) contient du code d'achat (fonctions de facturation ou bibliotheque Play Billing) : l'achat doit etre ETEINT et retire par R8."
+    exit 1
+  fi
+  echo "Achat de Miff+ eteint : aucune trace du code d'achat dans le bundle."
+fi
+
 # 2. L'activite de la bibliotheque d'avis ne doit pas etre declaree.
 if unzip -p "$bundle" base/manifest/AndroidManifest.xml | grep -a -c 'PlayCoreDialogWrapperActivity' | grep -q -v '^0$'; then
   echo "::error title=Activite de la fenetre d'avis::Le manifeste du bundle declare PlayCoreDialogWrapperActivity : verifier android/app/src/release/AndroidManifest.xml."

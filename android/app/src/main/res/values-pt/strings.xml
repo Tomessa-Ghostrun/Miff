@@ -1366,7 +1366,7 @@
     <string name="settings_subscription_trial_noprice">Teste gratuito até %1$s. Depois começa a subscrição anual, a não ser que a canceles antes.</string>
     <string name="settings_subscription_renews">Ativa. Próxima renovação a %1$s (%2$s).</string>
     <string name="settings_subscription_renews_noprice">Ativa. Próxima renovação a %1$s.</string>
-    <string name="settings_subscription_ends">A Miff+ termina a %1$s. Manténs tudo até essa data.</string>
+    <string name="settings_subscription_ends">Cancelaste a Miff+: continua ativa até %1$s, sem renovação.</string>
     <string name="settings_subscription_grace">O pagamento da tua subscrição não foi concluído. Tudo continua a funcionar: atualiza o teu método de pagamento antes de %1$s.</string>
     <string name="settings_subscription_on_hold">A Miff+ está em pausa: o pagamento não foi concluído. As tuas vantagens voltam assim que ficar resolvido.</string>
     <string name="settings_subscription_expired">A tua subscrição Miff+ terminou. Podes retomá-la quando quiseres.</string>

@@ -23,6 +23,9 @@ enum class PurchaseOutcome {
     /** No connection or a service that did not answer: nothing is lost, a paid purchase is checked again at the next opening. */
     NETWORK,
 
+    /** The store says "already owned" but the subscription is ON HOLD (payment failing; the store does not list it): the offer says so and points to the page of the store. */
+    ON_HOLD,
+
     /** Anything else. */
     FAILED,
 }
@@ -40,6 +43,9 @@ enum class RestoreOutcome {
 
     /** A payment of the store account is still pending: nothing is granted until it is confirmed. */
     PENDING,
+
+    /** The store lists nothing but the server knows a subscription ON HOLD. */
+    ON_HOLD,
 
     NETWORK,
 

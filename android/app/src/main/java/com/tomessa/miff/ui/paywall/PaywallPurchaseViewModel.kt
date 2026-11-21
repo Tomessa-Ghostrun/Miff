@@ -74,7 +74,14 @@ class PaywallPurchaseViewModel(
 
     /** "Réessayer": the offers again when there are none, else just the calm sentence goes away (the buttons are still there). */
     fun retry() {
-        if (offers == null) load() else mutableState.update { it.copy(notice = null) }
+        // No offers, or the store said "not available" at purchase time: ask again; otherwise just the calm sentence goes away (the buttons are still there).
+        if (offers == null ||
+            mutableState.value.offer == PaywallOffer.Unavailable
+        ) {
+            load()
+        } else {
+            mutableState.update { it.copy(notice = null) }
+        }
     }
 
     fun startTrial(activity: Activity) = buy(activity) { it.annualTrial }
@@ -127,18 +134,37 @@ class PaywallPurchaseViewModel(
         mutableState.update { current ->
             val idle = current.copy(progress = PaywallProgress.NONE)
             when (outcome) {
-                PurchaseOutcome.GRANTED -> idle.copy(offer = PaywallOffer.Subscribed, notice = null)
+                PurchaseOutcome.GRANTED -> {
+                    idle.copy(offer = PaywallOffer.Subscribed, notice = null)
+                }
 
-                PurchaseOutcome.PENDING -> idle.copy(notice = PaywallNotice.PENDING)
+                PurchaseOutcome.PENDING -> {
+                    idle.copy(notice = PaywallNotice.PENDING)
+                }
 
                 // The person closed the sheet of the store: back to the offer, with no message at all.
-                PurchaseOutcome.CANCELED -> idle.copy(notice = null)
+                PurchaseOutcome.CANCELED -> {
+                    idle.copy(notice = null)
+                }
 
-                PurchaseOutcome.OTHER_ACCOUNT -> idle.copy(notice = PaywallNotice.OTHER_ACCOUNT)
+                PurchaseOutcome.OTHER_ACCOUNT -> {
+                    idle.copy(notice = PaywallNotice.OTHER_ACCOUNT)
+                }
 
-                PurchaseOutcome.UNAVAILABLE -> idle.copy(offer = PaywallOffer.Unavailable, notice = null)
+                PurchaseOutcome.UNAVAILABLE -> {
+                    idle.copy(offer = PaywallOffer.Unavailable, notice = null).also {
+                        offers =
+                            null
+                    }
+                }
 
-                PurchaseOutcome.NETWORK, PurchaseOutcome.FAILED -> idle.copy(notice = PaywallNotice.ERROR)
+                PurchaseOutcome.ON_HOLD -> {
+                    idle.copy(notice = PaywallNotice.ON_HOLD)
+                }
+
+                PurchaseOutcome.NETWORK, PurchaseOutcome.FAILED -> {
+                    idle.copy(notice = PaywallNotice.ERROR)
+                }
             }
         }
     }
@@ -151,6 +177,7 @@ class PaywallPurchaseViewModel(
                 RestoreOutcome.NONE_FOUND -> idle.copy(notice = PaywallNotice.RESTORE_NONE)
                 RestoreOutcome.OTHER_ACCOUNT -> idle.copy(notice = PaywallNotice.OTHER_ACCOUNT)
                 RestoreOutcome.PENDING -> idle.copy(notice = PaywallNotice.PENDING)
+                RestoreOutcome.ON_HOLD -> idle.copy(notice = PaywallNotice.ON_HOLD)
                 RestoreOutcome.NETWORK, RestoreOutcome.FAILED -> idle.copy(notice = PaywallNotice.ERROR)
             }
         }

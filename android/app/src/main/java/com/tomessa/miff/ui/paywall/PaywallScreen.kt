@@ -75,6 +75,7 @@ import com.tomessa.miff.domain.paywall.PaywallNotice
 import com.tomessa.miff.domain.paywall.PaywallOffer
 import com.tomessa.miff.domain.paywall.PaywallPrice
 import com.tomessa.miff.domain.paywall.PaywallProgress
+import com.tomessa.miff.domain.paywall.PaywallSavings
 import com.tomessa.miff.domain.paywall.PaywallUiState
 import com.tomessa.miff.domain.place.PlaceLimits
 import com.tomessa.miff.ui.auth.LegalLinks
@@ -124,6 +125,8 @@ data class PaywallActions(
     val onBuyMonthly: () -> Unit = {},
     val onRetry: () -> Unit = {},
     val onRestore: () -> Unit = {},
+    /** "Gérer mon abonnement" (a subscription on hold): the page of the store. */
+    val onManage: () -> Unit = {},
     /** "Continuer" of the confirmation (a person who has Miff+). Closes the screen, like the cross. */
     val onContinue: () -> Unit = onClose,
 )
@@ -579,6 +582,7 @@ private fun StatusLine(
                         PaywallNotice.ERROR -> R.string.paywall_error_calm
                         PaywallNotice.RESTORE_NONE -> R.string.paywall_restore_none
                         PaywallNotice.OTHER_ACCOUNT -> R.string.paywall_other_account
+                        PaywallNotice.ON_HOLD -> R.string.settings_subscription_on_hold
                     },
                     // "Restore: nothing found" names the store; "already used by another account" gives the contact; the other sentences have no placeholder.
                     if (notice == PaywallNotice.OTHER_ACCOUNT) {
@@ -592,7 +596,10 @@ private fun StatusLine(
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
-        if (notice != PaywallNotice.PENDING && notice != PaywallNotice.OTHER_ACCOUNT) {
+        if (notice == PaywallNotice.ON_HOLD) {
+            // A subscription put on hold by the store (payment failing) is mended on the page of the store, never bought a second time.
+            LinkButton(text = stringResource(R.string.settings_subscription_manage), onClick = actions.onManage)
+        } else if (notice != PaywallNotice.PENDING && notice != PaywallNotice.OTHER_ACCOUNT) {
             LinkButton(
                 text = stringResource(R.string.paywall_retry),
                 onClick = if (notice == PaywallNotice.RESTORE_NONE) actions.onRestore else actions.onRetry,
@@ -645,7 +652,7 @@ private fun Plans(
     state: PaywallUiState,
     actions: PaywallActions,
 ) {
-    WithBubble(stringResource(R.string.paywall_annual_savings)) {
+    val annualButton: @Composable () -> Unit = {
         PlanButton(
             title = stringResource(R.string.paywall_plan_annual_title, annual.formatted),
             note = annual.perMonth()?.let { stringResource(R.string.paywall_monthly_equivalent, it) },
@@ -653,6 +660,12 @@ private fun Plans(
             enabled = !state.busy,
             onClick = actions.onBuyAnnual,
         )
+    }
+    // "presque 30 % d'économie" is written once, but the prices are the store's: the label is only shown while the saving computed from them stays true (>= 25 %).
+    if (PaywallSavings.isWorthShowing(annual, monthly)) {
+        WithBubble(stringResource(R.string.paywall_annual_savings), content = annualButton)
+    } else {
+        annualButton()
     }
     PlanButton(
         title = stringResource(R.string.paywall_plan_monthly_title, monthly.formatted),

@@ -1450,7 +1450,7 @@
     <string name="settings_subscription_trial_noprice">Essai gratuit jusqu\'au %1$s. L\'abonnement annuel démarre ensuite, sauf si tu l\'annules avant.</string>
     <string name="settings_subscription_renews">Actif. Prochain renouvellement le %1$s (%2$s).</string>
     <string name="settings_subscription_renews_noprice">Actif. Prochain renouvellement le %1$s.</string>
-    <string name="settings_subscription_ends">Miff+ se termine le %1$s. Tu gardes tout jusqu\'à cette date.</string>
+    <string name="settings_subscription_ends">Tu as résilié Miff+ : il reste actif jusqu\'au %1$s, sans renouvellement.</string>
     <string name="settings_subscription_grace">Le paiement de ton abonnement n\'a pas abouti. Tout fonctionne encore : mets à jour ton moyen de paiement avant le %1$s.</string>
     <string name="settings_subscription_on_hold">Miff+ est en pause : le paiement n\'a pas abouti. Tes avantages reviendront dès que ce sera réglé.</string>
     <string name="settings_subscription_expired">Ton abonnement Miff+ est terminé. Tu peux le reprendre quand tu veux.</string>

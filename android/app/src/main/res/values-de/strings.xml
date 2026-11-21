@@ -1349,12 +1349,12 @@
     <!-- SRV-8A (premium purchase, docs/tickets/premium-achat-reel.md): Abonnement screen states, reminder at the deletion of the account, refusal of a purchase already used by another account. Prices and dates arrive as arguments: never written in a translation. -->
     <string name="paywall_other_account">Dieses Abonnement wird bereits mit einem anderen Miff-Konto verwendet. Um es zu übertragen, schreib uns: %1$s.</string>
     <string name="settings_subscription_free">Du nutzt die kostenlose Version. Miff+ schaltet unbegrenzt viele vertraute Orte und Miffs frei – und die Gefahrenzonen.</string>
-    <string name="settings_subscription_trial">Kostenlos testen bis %1$s. Danach %2$s pro Jahr, es sei denn, du kündigst vorher.</string>
-    <string name="settings_subscription_trial_noprice">Kostenlos testen bis %1$s. Danach beginnt das Jahresabonnement, es sei denn, du kündigst vorher.</string>
+    <string name="settings_subscription_trial">Kostenlose Testphase bis %1$s. Danach %2$s pro Jahr, es sei denn, du kündigst vorher.</string>
+    <string name="settings_subscription_trial_noprice">Kostenlose Testphase bis %1$s. Danach beginnt das Jahresabonnement, es sei denn, du kündigst vorher.</string>
     <string name="settings_subscription_renews">Aktiv. Nächste Verlängerung am %1$s (%2$s).</string>
     <string name="settings_subscription_renews_noprice">Aktiv. Nächste Verlängerung am %1$s.</string>
-    <string name="settings_subscription_ends">Miff+ endet am %1$s. Bis dahin behältst du alles.</string>
-    <string name="settings_subscription_grace">Die Zahlung für dein Abonnement ist nicht durchgegangen. Es funktioniert noch alles: Aktualisiere deine Zahlungsmethode bis zum %1$s.</string>
+    <string name="settings_subscription_ends">Du hast Miff+ gekündigt: Es bleibt bis zum %1$s aktiv, ohne Verlängerung.</string>
+    <string name="settings_subscription_grace">Die Zahlung für dein Abonnement ist nicht durchgegangen. Es funktioniert noch alles: Aktualisiere deine Zahlungsmethode vor dem %1$s.</string>
     <string name="settings_subscription_on_hold">Miff+ ist pausiert: Die Zahlung ist nicht durchgegangen. Deine Vorteile sind wieder da, sobald das geklärt ist.</string>
     <string name="settings_subscription_expired">Dein Miff+-Abonnement ist beendet. Du kannst es jederzeit wieder aufnehmen.</string>
     <string name="settings_subscription_revoked">Dein Miff+-Abonnement wurde erstattet: Die Vorteile sind nicht mehr aktiv.</string>
@@ -1367,9 +1367,9 @@
     <string name="settings_subscription_other_store">Dein Abonnement wurde im App Store abgeschlossen: Du kannst es in den Einstellungen deiner Apple-ID verwalten.</string>
     <string name="settings_subscription_test_note">Testkauf: keine echte Zahlung.</string>
     <string name="settings_delete_sub_title">Dein Abonnement ist nicht gekündigt</string>
-    <string name="settings_delete_sub_body_play">Dein Konto zu löschen kündigt dein Miff+-Abonnement nicht. Damit nichts mehr abgebucht wird, kündige es bei Google Play.</string>
-    <string name="settings_delete_sub_body_appstore">Dein Konto zu löschen kündigt dein Miff+-Abonnement nicht. Damit nichts mehr abgebucht wird, kündige es im App Store.</string>
-    <string name="settings_delete_sub_body_unknown">Falls du ein Miff+-Abonnement hast, kündigt das Löschen deines Kontos es nicht. Damit nichts mehr abgebucht wird, kündige es bei Google Play oder im App Store, wo du es abgeschlossen hast.</string>
+    <string name="settings_delete_sub_body_play">Wenn du dein Konto löschst, wird dein Miff+-Abonnement nicht gekündigt. Damit nichts mehr abgebucht wird, kündige es bei Google Play.</string>
+    <string name="settings_delete_sub_body_appstore">Wenn du dein Konto löschst, wird dein Miff+-Abonnement nicht gekündigt. Damit nichts mehr abgebucht wird, kündige es im App Store.</string>
+    <string name="settings_delete_sub_body_unknown">Falls du ein Miff+-Abonnement hast, wird es durch das Löschen deines Kontos nicht gekündigt. Damit nichts mehr abgebucht wird, kündige es bei Google Play oder im App Store, wo du es abgeschlossen hast.</string>
     <string name="settings_delete_sub_trial">Deine Testphase läuft weiter, bis du sie kündigst: Wenn sie endet, beginnt das Jahresabonnement.</string>
     <string name="settings_delete_sub_manage">Mein Abonnement verwalten</string>
 </resources>

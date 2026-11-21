@@ -53922,7 +53922,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kostenlos testen bis %1$@. Danach %2$@ pro Jahr, es sei denn, du kündigst vorher."
+            "value": "Kostenlose Testphase bis %1$@. Danach %2$@ pro Jahr, es sei denn, du kündigst vorher."
           }
         },
         "en": {
@@ -53946,7 +53946,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prova gratuita fino al giorno %1$@. Poi %2$@ all'anno, a meno che tu non la annulli prima."
+            "value": "Prova gratuita fino al giorno %1$@. Poi %2$@ all’anno, a meno che tu non la annulli prima."
           }
         },
         "pt": {
@@ -53964,7 +53964,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kostenlos testen bis %1$@. Danach beginnt das Jahresabonnement, es sei denn, du kündigst vorher."
+            "value": "Kostenlose Testphase bis %1$@. Danach beginnt das Jahresabonnement, es sei denn, du kündigst vorher."
           }
         },
         "en": {
@@ -53988,7 +53988,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Prova gratuita fino al giorno %1$@. Poi inizia l'abbonamento annuale, a meno che tu non lo annulli prima."
+            "value": "Prova gratuita fino al giorno %1$@. Poi inizia l’abbonamento annuale, a meno che tu non lo annulli prima."
           }
         },
         "pt": {
@@ -54089,37 +54089,37 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Miff+ endet am %1$@. Bis dahin behältst du alles."
+            "value": "Du hast Miff+ gekündigt: Es bleibt bis zum %1$@ aktiv, ohne Verlängerung."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Miff+ ends on %1$@. You keep everything until then."
+            "value": "You cancelled Miff+: it stays active until %1$@, without renewal."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Miff+ termina el %1$@. Conservas todo hasta esa fecha."
+            "value": "Has cancelado Miff+: sigue activo hasta el %1$@, sin renovación."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Miff+ se termine le %1$@. Tu gardes tout jusqu'à cette date."
+            "value": "Tu as résilié Miff+ : il reste actif jusqu'au %1$@, sans renouvellement."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Miff+ termina il %1$@. Conservi tutto fino a quella data."
+            "value": "Hai annullato Miff+: resta attivo fino al giorno %1$@, senza rinnovo."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "A Miff+ termina a %1$@. Manténs tudo até essa data."
+            "value": "Cancelaste a Miff+: continua ativa até %1$@, sem renovação."
           }
         }
       }
@@ -54130,7 +54130,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Die Zahlung für dein Abonnement ist nicht durchgegangen. Es funktioniert noch alles: Aktualisiere deine Zahlungsmethode bis zum %1$@."
+            "value": "Die Zahlung für dein Abonnement ist nicht durchgegangen. Es funktioniert noch alles: Aktualisiere deine Zahlungsmethode vor dem %1$@."
           }
         },
         "en": {
@@ -54483,7 +54483,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Al momento non è stato possibile leggere il tuo abbonamento. Riprova tra un momento."
+            "value": "Al momento non è stato possibile consultare il tuo abbonamento. Riprova tra un momento."
           }
         },
         "pt": {
@@ -54565,7 +54565,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Il tuo abbonamento è stato sottoscritto nell'App Store: puoi gestirlo nelle impostazioni del tuo ID Apple."
+            "value": "Il tuo abbonamento è stato sottoscritto nell’App Store: puoi gestirlo nelle impostazioni del tuo ID Apple."
           }
         },
         "pt": {
@@ -54648,7 +54648,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Il tuo abbonamento non è disdetto"
+            "value": "Il tuo abbonamento non è stato annullato"
           }
         },
         "pt": {
@@ -54665,7 +54665,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dein Konto zu löschen kündigt dein Miff+-Abonnement nicht. Damit nichts mehr abgebucht wird, kündige es bei Google Play."
+            "value": "Wenn du dein Konto löschst, wird dein Miff+-Abonnement nicht gekündigt. Damit nichts mehr abgebucht wird, kündige es bei Google Play."
           }
         },
         "en": {
@@ -54689,7 +54689,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Eliminare il tuo account non disdice il tuo abbonamento Miff+. Per interrompere gli addebiti, disdicilo su Google Play."
+            "value": "Eliminare il tuo account non annulla il tuo abbonamento Miff+. Per interrompere gli addebiti, annullalo su Google Play."
           }
         },
         "pt": {
@@ -54706,7 +54706,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dein Konto zu löschen kündigt dein Miff+-Abonnement nicht. Damit nichts mehr abgebucht wird, kündige es im App Store."
+            "value": "Wenn du dein Konto löschst, wird dein Miff+-Abonnement nicht gekündigt. Damit nichts mehr abgebucht wird, kündige es im App Store."
           }
         },
         "en": {
@@ -54730,7 +54730,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Eliminare il tuo account non disdice il tuo abbonamento Miff+. Per interrompere gli addebiti, disdicilo nell'App Store."
+            "value": "Eliminare il tuo account non annulla il tuo abbonamento Miff+. Per interrompere gli addebiti, annullalo nell’App Store."
           }
         },
         "pt": {
@@ -54748,7 +54748,7 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Falls du ein Miff+-Abonnement hast, kündigt das Löschen deines Kontos es nicht. Damit nichts mehr abgebucht wird, kündige es bei Google Play oder im App Store, wo du es abgeschlossen hast."
+            "value": "Falls du ein Miff+-Abonnement hast, wird es durch das Löschen deines Kontos nicht gekündigt. Damit nichts mehr abgebucht wird, kündige es bei Google Play oder im App Store, wo du es abgeschlossen hast."
           }
         },
         "en": {
@@ -54772,7 +54772,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Se hai un abbonamento Miff+, eliminare il tuo account non lo disdice. Per interrompere gli addebiti, disdicilo su Google Play o nell'App Store, dove lo hai sottoscritto."
+            "value": "Se hai un abbonamento Miff+, eliminare il tuo account non lo annulla. Per interrompere gli addebiti, annullalo su Google Play o nell’App Store, dove lo hai sottoscritto."
           }
         },
         "pt": {
@@ -54813,7 +54813,7 @@
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "La tua prova gratuita prosegue finché non la disdici: al termine inizia l'abbonamento annuale."
+            "value": "La tua prova gratuita prosegue finché non la annulli: al termine inizia l’abbonamento annuale."
           }
         },
         "pt": {

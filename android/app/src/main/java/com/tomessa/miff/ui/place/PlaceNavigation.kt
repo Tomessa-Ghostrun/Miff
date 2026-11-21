@@ -346,6 +346,7 @@ internal fun PaywallDestination(
                 onBuyMonthly = store?.onBuyMonthly ?: {},
                 onRetry = store?.onRetry ?: {},
                 onRestore = store?.onRestore ?: {},
+                onManage = store?.onManage ?: {},
             ),
         onShown = { tracker.track(AnalyticsEvent.PaywallShown(trigger)) },
     )

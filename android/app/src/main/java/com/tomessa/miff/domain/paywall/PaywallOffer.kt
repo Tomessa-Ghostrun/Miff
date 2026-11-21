@@ -81,6 +81,9 @@ enum class PaywallNotice {
 
     /** The subscription of this store account is already used by ANOTHER Miff account (one purchase = one account): a calm refusal with the contact, nothing said about the other account. */
     OTHER_ACCOUNT,
+
+    /** The store account owns a subscription that the store put ON HOLD (payment failing): said with the sentence of the Abonnement screen and a link to the page of the store. */
+    ON_HOLD,
 }
 
 /** The whole state of the offer screen (a pure value: the screens are tested with simulated states, ticket paywall-v2 section 5.1). */

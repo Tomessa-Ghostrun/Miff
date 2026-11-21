@@ -168,6 +168,7 @@ import com.tomessa.miff.ui.update.UpdateStage
 import com.tomessa.miff.ui.update.UpdateTab
 import com.tomessa.miff.ui.update.UpdateViewModel
 import com.tomessa.miff.ui.update.glassVariantFor
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
@@ -242,7 +243,15 @@ fun MainShell(
 private fun PremiumReconcile(container: AppContainer) {
     val premium = container.premium ?: return
     val tick by container.foregroundTicks.ticks.collectAsStateWithLifecycle()
-    LaunchedEffect(premium, tick) { premium.reconcile() }
+    LaunchedEffect(premium, tick) {
+        try {
+            premium.reconcile()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // A silent look must never take the app down: nothing is shown, the next opening looks again.
+        }
+    }
 }
 
 /**

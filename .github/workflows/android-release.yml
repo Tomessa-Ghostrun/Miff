@@ -303,15 +303,28 @@ jobs:
 
       - name: Contrôler le contenu du bundle (debug absent, permissions, pages de 16 Ko)
         if: env.MIFF_RELEASE_CONFIGURED == 'true'
+        # PREMIUM_PURCHASE est dans l'environnement (valide true ou false plus haut) : avec false, le script verifie en plus qu'aucun code d'achat n'est reste dans le bundle.
+        env:
+          MIFF_PREMIUM_PURCHASE: ${{ inputs.premium_purchase }}
         run: bash ci/check-release-bundle.sh app/build/outputs/bundle/release/app-release.aab
 
       # actions/upload-artifact v7.0.2. Le bundle ne contient aucun secret (la clé privée n'y est jamais) ; dans un dépôt public, tout compte GitHub
       # connecté peut télécharger un artefact : durée courte.
       - name: Publier le bundle (14 jours)
-        if: env.MIFF_RELEASE_CONFIGURED == 'true'
+        if: env.MIFF_RELEASE_CONFIGURED == 'true' && env.PREMIUM_PURCHASE != 'true'
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: miff-release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 14
+          if-no-files-found: error
+
+      # Bundle avec l'ACHAT ALLUME : un nom d'artefact DIFFERENT, pour qu'on ne le confonde jamais avec le bundle de production (achat eteint).
+      - name: Publier le bundle ACHAT ALLUME (14 jours)
+        if: env.MIFF_RELEASE_CONFIGURED == 'true' && env.PREMIUM_PURCHASE == 'true'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: miff-release-aab-ACHAT-ALLUME
           path: android/app/build/outputs/bundle/release/app-release.aab
           retention-days: 14
           if-no-files-found: error
@@ -323,6 +336,12 @@ jobs:
           sha=$(sha256sum app/build/outputs/bundle/release/app-release.aab | cut -d' ' -f1)
           size=$(stat -c %s app/build/outputs/bundle/release/app-release.aab)
           {
+            if [ "$PREMIUM_PURCHASE" = "true" ]; then
+              echo "## ACHAT ALLUMÉ : bundle d'essai (piste interne), ne pas promouvoir en production sans décision du PM"
+              echo
+              echo "L'artefact s'appelle miff-release-aab-ACHAT-ALLUME."
+              echo
+            fi
             echo "## Bundle Android signé"
             echo
             echo "- Version : **${VERSION_NAME}** (numéro interne **${VERSION_CODE}**)"

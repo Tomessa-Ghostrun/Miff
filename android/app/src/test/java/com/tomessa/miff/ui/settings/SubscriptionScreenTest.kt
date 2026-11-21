@@ -137,7 +137,7 @@ class SubscriptionScreenTest {
     @Test
     fun aCancelledSubscription_keepsEverythingUntilTheEnd() {
         show(store(StoreState.CANCELED))
-        see("Miff+ ends on $date. You keep everything until then.")
+        see("You cancelled Miff+: it stays active until $date, without renewal.")
         see("Manage my subscription")
     }
 

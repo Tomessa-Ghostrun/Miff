@@ -163,7 +163,7 @@ class SubscriptionViewModel(
                         RestoreOutcome.OTHER_ACCOUNT -> SubscriptionNotice.OTHER_ACCOUNT
                         RestoreOutcome.PENDING -> SubscriptionNotice.PENDING
                         RestoreOutcome.NETWORK, RestoreOutcome.FAILED -> SubscriptionNotice.REFRESH_FAILED
-                        RestoreOutcome.FOUND, null -> null
+                        RestoreOutcome.FOUND, RestoreOutcome.ON_HOLD, null -> null
                     }
                 mutableState.update { it.copy(refreshing = false, notice = notice) }
                 // What the server knows may have changed (a purchase made from the offer, or found by a restoration): read it again.
