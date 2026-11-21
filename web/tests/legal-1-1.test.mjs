@@ -299,6 +299,8 @@ test('PROCEDURE 1.3 - les chaînes de contrôle de docs/dev/publication-textes-l
   // La procédure garde la même version et la même date que les textes (un seul endroit : les constantes en tête de ce fichier).
   assert.ok(procedure.includes(`Version ${VERSION} — dernière mise à jour : ${DATE_FR}`));
   assert.ok(procedure.includes(`Version ${VERSION} — last updated: ${DATE_EN}`));
+  // Le contrôle Select-String du §2 cherche la version en cours (et pas la précédente).
+  assert.ok(procedure.includes(`-Pattern "^\\*\\*Version ${VERSION.replace('.', '\\.')} "`),'le Select-String du §2 doit chercher la version en cours');
   assert.doesNotMatch(procedure.replace(/jamais `--force`|Pas de `--force`, jamais|jamais `firebase use`/g, ''), /--force|firebase(\.cmd)? use/);
   for (const command of procedure.match(/firebase\.cmd (deploy|hosting:channel:deploy)[^\n]*/g)) assert.match(command, /--project miff-3d283/);
 });
@@ -333,7 +335,8 @@ test('VERSION 1.3 - le retrait des statistiques se fait dans les Réglages sur i
 
 test('VERSION 1.3 - la marque de retrait en attente est décrite : empreinte à sens unique et heure, jamais envoyée, exclue des sauvegardes, effacée à l\'enregistrement ou à la suppression du compte, gardée après une déconnexion (FR et EN)', () => {
   for (const pattern of [
-    /Si tu retires cet accord sans réseau/,
+    /Si ton retrait n.a pas pu être enregistré tout de suite dans ton compte \(pas de réseau, ou le serveur n.a pas pris ton choix\)/,
+    /dès que le réseau est revenu et que tu es connecté\(e\) dans l.app/,
     /marque de retrait en attente/,
     /empreinte à sens unique de l.identifiant de ton compte \(une pseudonymisation/,
     /et l.heure du retrait, rien d.autre \(ni nom, ni adresse e-mail, ni position\)/,
@@ -346,7 +349,8 @@ test('VERSION 1.3 - la marque de retrait en attente est décrite : empreinte à 
     /la marque de retrait en attente \(une empreinte à sens unique de ton compte et l.heure : article 3\)/,
   ]) assert.match(POLICY_FR, pattern);
   for (const pattern of [
-    /If you withdraw this agreement without a network/,
+    /If your withdrawal could not be recorded in your account right away \(no network, or the server did not take your choice\)/,
+    /as soon as the network is back and you are signed in in the app/,
     /pending-withdrawal mark/,
     /one-way fingerprint of your account identifier \(a pseudonymisation/,
     /and the time of the withdrawal, nothing else \(no name, no e-mail address, no location\)/,
