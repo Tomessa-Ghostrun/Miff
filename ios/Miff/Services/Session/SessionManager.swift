@@ -86,6 +86,11 @@ struct SessionDependencies {
     var deletionMarker: AccountDeletionMarker?
     /// Les réglages gardés pour un compte, effacés quand ce compte est supprimé.
     var localData: [LocalDataEraser] = []
+    /// Les retraits du consentement « statistiques et plantages » que le compte ne connaît pas encore (la personne a coupé sans réseau) :
+    /// tant qu'un retrait attend CE compte, la collecte reste éteinte à chaque démarrage, quoi que dise le compte (ONB-3b).
+    var withdrawals: PendingWithdrawals?
+    /// Appelé avec l'identifiant du compte une fois celui-ci lu : un retrait en attente est alors enregistré en arrière-plan.
+    var onAccountResolved: (String) -> Void = { _ in }
 }
 
 /// L'unique responsable de « qui est connecté et où s'ouvre l'app » (tickets Authentification §5, §7.6, §7.8 et §8).
@@ -130,6 +135,8 @@ final class SessionManager {
     /// Suppression du compte (AUTH-5c).
     let deletionMarker: AccountDeletionMarker?
     let localData: [LocalDataEraser]
+    let withdrawals: PendingWithdrawals?
+    let onAccountResolved: (String) -> Void
 
     /// Appelé à chaque changement d'état (un seul observateur : l'interface).
     var onStateChange: ((SessionState) -> Void)?
@@ -216,6 +223,8 @@ final class SessionManager {
         generationCounter = dependencies.generationCounter
         deletionMarker = dependencies.deletionMarker
         localData = dependencies.localData
+        withdrawals = dependencies.withdrawals
+        onAccountResolved = dependencies.onAccountResolved
         // Un remplacement découvert après un refus d'écriture lance la même déconnexion forcée que l'écoute de la session.
         device.setReplacedHandler { [weak self] in
             Task { @MainActor in

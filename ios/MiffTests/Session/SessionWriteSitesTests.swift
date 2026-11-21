@@ -63,7 +63,10 @@ final class SessionWriteSitesTests: XCTestCase {
             "Services/Firebase/FirestoreDeviceTokenRegistry.swift",
             // ALERTE : l'alerte de danger (`miffs/{miffId}/alerts/{uid}`) et son compteur d'envois, écrits par TRANSACTION (jamais par lot) ;
             // ni statut ni position : le document porte `deviceId` (les règles le comparent à la session active).
-            "Services/Firebase/FirestoreDangerAlertStore.swift"
+            "Services/Firebase/FirestoreDangerAlertStore.swift",
+            // ONB-3b : le choix « statistiques et rapports de plantage » (`users/{uid}.analyticsConsent`, quatre clés sur un choix), écrit
+            // par TRANSACTION (jamais par lot). Ni statut ni position : un retrait ne dépend pas de la session de l'appareil.
+            "Services/Firebase/FirestoreAnalyticsConsentRepository.swift"
         ]
         let writers = all.filter { _, lines in
             lines.contains { $0.contains("setData(") || $0.contains("updateData(") || $0.contains(".deleteDocument(") }

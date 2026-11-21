@@ -36,6 +36,8 @@ final class AccountLocalStorageGuardTests: XCTestCase {
         "Services/Storage/PendingDeletionFileStore.swift": "marqueurs de suppression de Miff : AccountLocalData",
         "Services/Miff/ClarifyAskStore.swift": "compteur de la carte « Une précision » : AccountLocalData",
         "Services/Storage/ProfileDraftFileStore.swift": "brouillon du profil : drafts.clear",
+        "Services/Storage/WithdrawalFileStorage.swift":
+            "retraits de consentement en attente (empreinte, rien de personnel) : eraseAfterAccountDeletion",
         "Models/Main/AppLanguage.swift": "langue d'affichage : préférence de l'appareil, rien de personnel, gardée",
         "Services/Update/PublishLedger.swift": "carnet de l'Update : AccountLocalData (updateLedger)",
         "Services/Tracking/FileDetectionJournal.swift": "journal : AccountLocalData (detectionJournal)",

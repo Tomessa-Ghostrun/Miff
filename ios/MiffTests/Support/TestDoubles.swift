@@ -437,7 +437,9 @@ final class SessionHarness {
         generationCounter: GenerationCounter? = nil,
         deletionMarker: AccountDeletionMarker? = nil,
         localData: [LocalDataEraser] = [],
-        timeline: Timeline = Timeline()
+        timeline: Timeline = Timeline(),
+        withdrawals: PendingWithdrawals? = nil,
+        onAccountResolved: @escaping (String) -> Void = { _ in }
     ) {
         self.timeline = timeline
         let gateway = FakeAuthGateway(timeline: timeline)
@@ -473,7 +475,9 @@ final class SessionHarness {
                 drafts: drafts,
                 generationCounter: generationCounter,
                 deletionMarker: deletionMarker,
-                localData: localData
+                localData: localData,
+                withdrawals: withdrawals,
+                onAccountResolved: onAccountResolved
             )
         )
         accounts.onLoad = { [weak self] in

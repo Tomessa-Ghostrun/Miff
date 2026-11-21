@@ -102,14 +102,14 @@ struct AccountView: View {
     }
 }
 
-/// Réglages > Confidentialité (ticket Profil / Réglages, critère B5) : ce que Miff fait de la localisation, l'état des autorisations du
+/// Réglages > Confidentialité (ticket Profil / Réglages, critères B5 et RG6) : l'interrupteur « statistiques d'usage et rapports de plantage
+/// anonymes » (le même choix et les mêmes textes qu'Android), ce que Miff fait de la localisation, l'état des autorisations du
 /// téléphone (lu ici, jamais demandé) avec un accès aux réglages de l'iPhone, l'état des notifications, l'aide à la détection
 /// et les textes légaux. « Nous contacter » n'est plus ici : il est dans « À propos et aide » (décision du PM du 2026-11-13). L'état est relu à chaque retour dans l'app : la personne change une autorisation dans les
 /// réglages de l'iPhone puis revient.
 ///
-/// PAS ENCORE ICI (écart au ticket, listé dans la PR) : l'interrupteur « statistiques et rapports de plantage », qui demande son propre
-/// chantier (retrait du consentement du compte, avec reprise hors connexion). En attendant le retrait se demande par e-mail, comme le
-/// dit déjà le texte de consentement d'iOS.
+/// L'interrupteur agit tout de suite : retirer coupe la collecte sur l'iPhone avant même que le compte l'enregistre (voir
+/// `PrivacyViewModel` et `ConsentWithdrawals`).
 struct PrivacyView: View {
     let permissions: DevicePermissions
     /// CONS-4-I : les Miffs sous le texte de la version 3 (« Revoir et accepter » de la carte « Une précision », sans pause ni pastille).
@@ -117,15 +117,34 @@ struct PrivacyView: View {
     let onBack: () -> Void
     let onOpenDetectionHelp: () -> Void
     /// Efface le journal local des changements de présence (la répartition du temps du Profil repart de zéro). Local : rien n'est envoyé.
-    var onEraseTimeHistory: () -> Void = {}
+    let onEraseTimeHistory: () -> Void
 
+    /// Créé UNE fois par l'écran (autoclosure du `StateObject`) : l'état d'écriture ne repart pas de zéro à chaque redessin du parent.
+    @StateObject private var model: PrivacyViewModel
     @State private var permission: PrivacyPermissionState?
     @State private var confirmsErase = false
     @State private var erased = false
     @Environment(\.scenePhase) private var scenePhase
 
+    init(
+        permissions: DevicePermissions,
+        awaiting: AwaitingAgreement,
+        model: @autoclosure @escaping () -> PrivacyViewModel,
+        onBack: @escaping () -> Void,
+        onOpenDetectionHelp: @escaping () -> Void,
+        onEraseTimeHistory: @escaping () -> Void = {}
+    ) {
+        self.permissions = permissions
+        self.awaiting = awaiting
+        self.onBack = onBack
+        self.onOpenDetectionHelp = onOpenDetectionHelp
+        self.onEraseTimeHistory = onEraseTimeHistory
+        _model = StateObject(wrappedValue: model())
+    }
+
     var body: some View {
         MiffFrame(title: L10n.string("settings_privacy_title"), onBack: onBack, usesCanvas: true) {
+            analytics
             location
             notifications
             timeHistory
@@ -145,6 +164,44 @@ struct PrivacyView: View {
 
     private func refresh() async {
         permission = PrivacyPermissionState(snapshot: await permissions.snapshot())
+    }
+
+    /// « Statistiques d'usage et rapports de plantage anonymes » : toute la ligne est l'interrupteur, dessiné d'après l'état du compte (il ne
+    /// bouge qu'une fois le choix pris : accepter exige que le compte l'enregistre). Retiré sans réseau : la collecte est coupée quand même
+    /// et le message dit calmement que le choix sera enregistré au retour du réseau.
+    @ViewBuilder
+    private var analytics: some View {
+        let enabled = model.state.analyticsEnabled
+        MiffSwitchRow(
+            title: L10n.string("settings_privacy_analytics_title"),
+            description: L10n.string("settings_privacy_analytics_body"),
+            isOn: enabled,
+            isEnabled: !model.state.isWriting,
+            stateText: L10n.string(enabled ? "miff_sharing_state_on" : "miff_sharing_state_off"),
+            action: { model.toggleAnalytics() }
+        )
+        if let message = model.state.message {
+            MiffNotice(text: L10n.string(Self.messageKey(message)), isError: true)
+        }
+        if model.state.withdrawalPending {
+            MiffNotice(text: L10n.string("settings_privacy_withdrawal_not_recorded"))
+            Button {
+                model.retryWithdrawal()
+            } label: {
+                Text("settings_privacy_retry_action")
+            }
+            .buttonStyle(.miffSecondaryFullWidth)
+            .disabled(model.state.isWriting)
+        }
+    }
+
+    private static func messageKey(_ message: PrivacyMessage) -> String {
+        switch message {
+        case .network:
+            return "auth_error_network"
+        case .saveFailed:
+            return "profile_save_failed"
+        }
     }
 
     @ViewBuilder

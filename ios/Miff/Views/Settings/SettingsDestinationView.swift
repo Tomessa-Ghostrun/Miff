@@ -54,6 +54,8 @@ struct SettingsDestinationView: View {
             PrivacyView(
                 permissions: environment.devicePermissions,
                 awaiting: environment.awaitingAgreement,
+                // ONB-3b : l'interrupteur « statistiques et rapports de plantage » (retrait du consentement du compte, reprise hors connexion).
+                model: environment.makePrivacyViewModel(),
                 onBack: onBack,
                 onOpenDetectionHelp: { navigate(.detectionHelp) },
                 // TIME-3 (D15) : « Effacer mon historique de temps » : le journal local des changements de présence part ; aucune écriture serveur.

@@ -54,6 +54,8 @@ struct PlaceServices {
 @MainActor
 final class AppEnvironment {
     let privacySettings: PrivacySettings
+    /// Les retraits du consentement aux statistiques que le compte ne connaît pas encore, et leur enregistrement (ONB-3b).
+    let privacyServices: PrivacyServices
     let analyticsTracker: AnalyticsTracker
     let session: SessionManager
     let sessionState: SessionObservable
@@ -161,6 +163,7 @@ final class AppEnvironment {
         // Un seul purgeur de cache pour toute l'app : la session, l'annuaire des Miffs et le dépôt purgent le MÊME cache.
         let cache = FirestoreCachePurger(flags: flagStore)
         let networkMonitor = NWNetworkMonitor()
+        let privacyServices = PrivacyServices.make(network: networkMonitor, currentUid: { gateway.currentUid })
         // Un compte, un seul appareil (SESS-3) : l'identifiant de session vit dans un fichier privé, exclu des sauvegardes et effacé
         // avec l'app (jamais dans le Trousseau, qui survit à la désinstallation).
         let device = DeviceSession(remote: FirestoreDeviceSessionRemote(), store: DeviceIdFileStore())
@@ -210,7 +213,7 @@ final class AppEnvironment {
         // ralentit le compilateur.
         var allTeardowns: [SessionTeardown] = [pushServices.teardown]
         allTeardowns += Self.teardowns(drafts, miff, places, trackingServices, updateServices)
-        allTeardowns += [notifs.teardown]
+        allTeardowns += [notifs.teardown, privacyServices.teardown]
         allTeardowns += review.teardowns
         allTeardowns += dangerTeardowns
         var allErasers: [LocalDataEraser] = pushServices.erasers
@@ -230,7 +233,9 @@ final class AppEnvironment {
                 localData: AccountDeletionServices.localData(
                     updateLedger: updateServices.ledger, presenceHistory: trackingServices.history,
                     extra: allErasers
-                )
+                ),
+                withdrawals: privacyServices.pending,
+                onAccountResolved: { uid in privacyServices.resume(uid: uid) }
             )
         )
         // SRV-2I : pendant la fin de la session, le registre des appareils n'écrit rien (voir `PushServices.make`).
@@ -263,6 +268,7 @@ final class AppEnvironment {
         dangerShell = DangerAlertShell(signal: DangerAlertSignal())
         #endif
         privacySettings = privacy
+        self.privacyServices = privacyServices
         analyticsTracker = tracker
         session = manager
         sessionState = SessionObservable(manager: manager)

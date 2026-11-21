@@ -12039,37 +12039,37 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wenn du auf „Beitreten“, „Weiter mit Apple“ oder „Weiter mit Google“ tippst, stimmst du unseren %1$@ und unserer %2$@ sowie der Weitergabe deiner anonymen Nutzungsstatistiken und Absturzberichte zu (das kannst du jederzeit zurückziehen, indem du an %3$@ schreibst)."
+            "value": "Wenn du auf „Beitreten“, „Weiter mit Apple“ oder „Weiter mit Google“ tippst, stimmst du unseren %1$@ und unserer %2$@ sowie der Weitergabe deiner anonymen Nutzungsstatistiken und Absturzberichte zu (jederzeit in den Einstellungen änderbar)."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "By tapping “Join”, “Continue with Apple” or “Continue with Google”, you accept our %1$@ and our %2$@, as well as the sharing of your anonymous usage statistics and crash reports (you can withdraw this at any time by writing to %3$@)."
+            "value": "By tapping “Join”, “Continue with Apple” or “Continue with Google”, you accept our %1$@ and our %2$@, as well as the sharing of your anonymous usage statistics and crash reports (you can change this at any time in the Settings)."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Al tocar «Unirse», «Continuar con Apple» o «Continuar con Google», aceptas nuestras %1$@ y nuestra %2$@, así como compartir tus estadísticas de uso e informes de fallos anónimos (puedes retirarlo en cualquier momento escribiendo a %3$@)."
+            "value": "Al tocar «Unirse», «Continuar con Apple» o «Continuar con Google», aceptas nuestras %1$@ y nuestra %2$@, así como compartir tus estadísticas de uso e informes de fallos anónimos (puedes cambiarlo en cualquier momento en Ajustes)."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "En touchant « Rejoindre », « Continuer avec Apple » ou « Continuer avec Google », tu acceptes nos %1$@ et notre %2$@, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$@)."
+            "value": "En touchant « Rejoindre », « Continuer avec Apple » ou « Continuer avec Google », tu acceptes nos %1$@ et notre %2$@, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages)."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Toccando «Unisciti», «Continua con Apple» o «Continua con Google», accetti le nostre %1$@ e la nostra %2$@, oltre alla condivisione delle tue statistiche d’uso e dei report di crash anonimi (puoi revocarla in qualsiasi momento scrivendo a %3$@)."
+            "value": "Toccando «Unisciti», «Continua con Apple» o «Continua con Google», accetti le nostre %1$@ e la nostra %2$@, oltre alla condivisione delle tue statistiche d’uso e dei report di crash anonimi (modificabile in qualsiasi momento nelle Impostazioni)."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ao tocares em «Aderir», «Continuar com a Apple» ou «Continuar com o Google», aceitas as nossas %1$@ e a nossa %2$@, bem como a partilha das tuas estatísticas de utilização e relatórios de falhas anónimos (podes retirá-la a qualquer momento: escreve para %3$@)."
+            "value": "Ao tocares em «Aderir», «Continuar com a Apple» ou «Continuar com o Google», aceitas as nossas %1$@ e a nossa %2$@, bem como a partilha das tuas estatísticas de utilização e relatórios de falhas anónimos (podes alterar isto a qualquer momento nas Definições)."
           }
         }
       }
@@ -12080,37 +12080,37 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wenn du auf „Weiter“ tippst, stimmst du unseren %1$@ und unserer %2$@ sowie der Weitergabe deiner anonymen Nutzungsstatistiken und Absturzberichte zu (das kannst du jederzeit zurückziehen, indem du an %3$@ schreibst)."
+            "value": "Wenn du auf „Weiter“ tippst, stimmst du unseren %1$@ und unserer %2$@ sowie der Weitergabe deiner anonymen Nutzungsstatistiken und Absturzberichte zu (jederzeit in den Einstellungen änderbar)."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "By tapping “Continue”, you accept our %1$@ and our %2$@, as well as the sharing of your anonymous usage statistics and crash reports (you can withdraw this at any time by writing to %3$@)."
+            "value": "By tapping “Continue”, you accept our %1$@ and our %2$@, as well as the sharing of your anonymous usage statistics and crash reports (you can change this at any time in the Settings)."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Al tocar «Continuar», aceptas nuestras %1$@ y nuestra %2$@, así como compartir tus estadísticas de uso e informes de fallos anónimos (puedes retirarlo en cualquier momento escribiendo a %3$@)."
+            "value": "Al tocar «Continuar», aceptas nuestras %1$@ y nuestra %2$@, así como compartir tus estadísticas de uso e informes de fallos anónimos (puedes cambiarlo en cualquier momento en Ajustes)."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "En touchant « Continuer », tu acceptes nos %1$@ et notre %2$@, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (tu peux le retirer à tout moment en écrivant à %3$@)."
+            "value": "En touchant « Continuer », tu acceptes nos %1$@ et notre %2$@, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages)."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Toccando «Continua», accetti le nostre %1$@ e la nostra %2$@, oltre alla condivisione delle tue statistiche d’uso e dei report di crash anonimi (puoi revocarla in qualsiasi momento scrivendo a %3$@)."
+            "value": "Toccando «Continua», accetti le nostre %1$@ e la nostra %2$@, oltre alla condivisione delle tue statistiche d’uso e dei report di crash anonimi (modificabile in qualsiasi momento nelle Impostazioni)."
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ao tocares em «Continuar», aceitas as nossas %1$@ e a nossa %2$@, bem como a partilha das tuas estatísticas de utilização e relatórios de falhas anónimos (podes retirá-la a qualquer momento: escreve para %3$@)."
+            "value": "Ao tocares em «Continuar», aceitas as nossas %1$@ e a nossa %2$@, bem como a partilha das tuas estatísticas de utilização e relatórios de falhas anónimos (podes alterar isto a qualquer momento nas Definições)."
           }
         }
       }
