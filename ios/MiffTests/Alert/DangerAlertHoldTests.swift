@@ -15,13 +15,18 @@ final class DangerAlertHoldTests: XCTestCase {
     func testTheNumbersAreTheTicketsOnes() {
         XCTAssertEqual(DangerAlertRules.armMillis, 400)
         XCTAssertEqual(DangerAlertRules.holdMillis, 5_000)
-        XCTAssertEqual(DangerAlertRules.holdSlopPoints, 44)
     }
 
-    func testAFingerDriftingMoreThanTheSlopCancels() {
-        XCTAssertFalse(DangerAlertHold.movedTooFar(dx: 30, dy: 30))
-        XCTAssertTrue(DangerAlertHold.movedTooFar(dx: 40, dy: 40))
-        XCTAssertTrue(DangerAlertHold.movedTooFar(dx: 0, dy: -45))
+    /// Retour du PM : aucune distance n'annule plus le geste (le doigt peut sortir du bouton). Le suiveur ne reçoit que des instants : tant qu'il n'est ni
+    /// relâché ni annulé par le système, le geste armé va jusqu'au bout, où que soit le doigt.
+    func testAnArmedGestureGoesToTheEndWhateverTheFingerDoes() {
+        var tracker = DangerHoldTracker()
+        tracker.begin(atMillis: 0)
+
+        XCTAssertEqual(tracker.advance(nowMillis: 400), .armed)
+        XCTAssertEqual(tracker.advance(nowMillis: 2_000), .nothing)
+        XCTAssertEqual(tracker.advance(nowMillis: 400 + 4_999), .nothing)
+        XCTAssertEqual(tracker.advance(nowMillis: 400 + 5_000), .done)
     }
 
     func testAShortTouchIsATapAndNothingIsArmed() {

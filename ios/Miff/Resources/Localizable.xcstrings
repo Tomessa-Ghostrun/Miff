@@ -24652,37 +24652,37 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Vertraute Orte von %@"
+            "value": "Die Orte der Miff"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Trusted places of %@"
+            "value": "The Miff's places"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lugares de confianza de %@"
+            "value": "Los lugares de la Miff"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Lieux de confiance de %@"
+            "value": "Les lieux de la Miff"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Luoghi di fiducia di %@"
+            "value": "I luoghi della Miff"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Locais de confiança de %@"
+            "value": "Os locais da Miff"
           }
         }
       }
@@ -50911,25 +50911,25 @@
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "¿Terminar la alerta?"
+            "value": "¿Poner fin a la alerta?"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Terminer l'alerte ?"
+            "value": "Mettre fin à l'alerte ?"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Terminare l’allerta?"
+            "value": "Mettere fine all’allerta?"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Terminar o alerta?"
+            "value": "Pôr fim ao alerta?"
           }
         }
       }
@@ -52430,37 +52430,37 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Du hast der Miff %1$@ eine Warnung gesendet."
+            "value": "Warnung beenden?"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You alerted the people of the Miff “%1$@”."
+            "value": "End the alert?"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Has avisado a los seres queridos de la Miff %1$@."
+            "value": "¿Poner fin a la alerta?"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu as alerté les proches de la Miff %1$@."
+            "value": "Mettre fin à l'alerte ?"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hai avvisato i tuoi cari della Miff %1$@."
+            "value": "Mettere fine all’allerta?"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alertaste os entes queridos da Miff %1$@."
+            "value": "Pôr fim ao alerta?"
           }
         }
       }
@@ -52471,37 +52471,37 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Halte 5 Sekunden gedrückt, um die Warnung zu beenden, wenn du nicht mehr in Gefahr bist."
+            "value": "Halte 5 Sekunden gedrückt, um die Warnung zu beenden. Deine Liebsten erfahren dann, dass du jetzt in Sicherheit bist"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hold for 5 seconds to end the alert if you're no longer in danger."
+            "value": "Hold for 5 seconds to end the alert. Your loved ones will know you're now safe"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mantén pulsado 5 segundos para terminar la alerta si ya no estás en peligro."
+            "value": "Mantén pulsado 5 segundos para poner fin a la alerta. Tus seres queridos sabrán que ya estás a salvo"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Maintiens 5 secondes pour terminer l'alerte si tu n'es plus en danger."
+            "value": "Maintiens 5 secondes pour mettre fin à l'alerte, tes proches sauront que tu es désormais en sécurité"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tieni premuto per 5 secondi per terminare l’allerta se non sei più in pericolo."
+            "value": "Tieni premuto per 5 secondi per mettere fine all’allerta. I tuoi cari sapranno che ora sei al sicuro"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mantém premido durante 5 segundos para terminar o alerta se já não estiveres em perigo."
+            "value": "Mantém premido durante 5 segundos para pôr fim ao alerta. Os teus entes queridos saberão que já estás em segurança"
           }
         }
       }
@@ -53387,37 +53387,37 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Du hast deiner Miff eine Warnung gesendet."
+            "value": "Warnung beenden?"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You alerted the people of your Miff."
+            "value": "End the alert?"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Has avisado a los seres queridos de tu Miff."
+            "value": "¿Poner fin a la alerta?"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu as alerté les proches de ta Miff."
+            "value": "Mettre fin à l'alerte ?"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hai avvisato i tuoi cari della tua Miff."
+            "value": "Mettere fine all’allerta?"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alertaste os entes queridos da tua Miff."
+            "value": "Pôr fim ao alerta?"
           }
         }
       }

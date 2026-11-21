@@ -26,7 +26,7 @@ struct ProfilePlacesActions {
     )
 }
 
-/// « Lieux de confiance de <la Miff> » sur l'onglet Profil (maquette 17, décision du PM du 2026-11-11) : les lieux de la Miff dont le
+/// « Les lieux de la Miff » (le titre ne nomme plus la Miff, retour du PM) sur l'onglet Profil (maquette 17, décision du PM du 2026-11-11) : les lieux de la Miff dont le
 /// carrousel montre la carte, pour TOUS les membres de cette Miff.
 ///
 /// - Un membre LIT seulement : la liste, le détail d'un lieu (sans « Modifier »), jamais « Ajouter un lieu », jamais le compteur de la
@@ -45,7 +45,7 @@ struct ProfilePlacesSection: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text(verbatim: L10n.format("place_profile_title_named", presentation.miffName))
+            Text(verbatim: L10n.string("place_profile_title_named"))
                 .miffTextStyle(textDisplayTitle)
                 .foregroundColor(colorTextForm.color)
                 .fixedSize(horizontal: false, vertical: true)
