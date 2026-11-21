@@ -464,6 +464,23 @@ Côté règles, une alerte coûte **3 lectures de règles à la création**, **1
 
 **Signaux de bascule ou de revue** : (1) écritures totales **> ~40 000 par jour** : passer à une ligne **par Miff et par jour** regroupée (une écriture au lieu de N ; le client lit déjà par curseur, la forme s'adapte grâce à `v`) ; (2) lectures du centre par ouverture **> 15** ; (3) écritures du journal par jour **> 3 × l'attendu** ; (4) facture Blaze **> 5 $ par mois** ; (5) règle TTL non active.
 
+## 5 decies. Cloud Functions : le premium réel Miff+ (SRV-7, NON DÉPLOYÉ)
+
+**En une phrase** : 0 € de fonctions et quelques lectures par abonné et par mois ; **la seule chose à surveiller de près est l'adresse publique d'Apple**, qui peut recevoir n'importe quoi d'Internet.
+
+| Quoi regarder | Où | Valeur normale | Que faire si ça sort |
+|---|---|---|---|
+| Invocations de `recevoirNotificationsApple` | Firebase > Functions > tableau de bord | quelques-unes par abonné et par mois (≈ 1 000 abonnés : ≈ 1 000 par mois) | un pic sans achat récent = scan ou abus : l'adresse est publique par conception ; `maxInstances` 3 et les alertes de budget limitent la dépense ; vérifier `billing.apple.signature-invalide` dans les journaux |
+| Journaux `billing.sync.refuse` avec `motif: acces_refuse` ou `indisponible` | Functions > Journaux | aucun | droits du compte `billing-sync` (Play Console, Secret Manager) ou panne d'un store : `deploiement-functions.md` §12.7 |
+| Journaux `billing.google.notif` en erreur répétée | idem | aucun | le message est relancé pendant 24 h au plus, puis abandonné : copier à Claude |
+| Quota de l'API Google Play Developer | Google Cloud > API et services > Google Play Android Developer API > Quotas | très loin du plafond (1 relecture par notification, 1 par synchronisation, 1 par minute et par compte au plus) | « une utilisation inefficace peut conduire à des restrictions » (Google) : ne jamais ajouter de scrutation |
+| Lectures / écritures Firestore dues aux achats | journaux `billing.*` (champs `lectures`, `ecritures`) | notification : 4 à 5 lectures et 3 écritures ; message rejoué : 1 lecture | si les nombres explosent, un message tourne en boucle : supprimer `recevoirNotificationsGooglePlay` (§12.15) |
+| Facture Blaze | Facturation > Rapports | 0 € | **> 5 €/mois = revue** (`deploiement-functions.md` §8) |
+
+Budgets mesurés et estimation pour 1 000 abonnés : `backend/data-model.md` §2.22 à §2.25 et §12.
+
+---
+
 ## 6. Ce que les agents font de leur côté
 
 - `backend-data` garde ces seuils et la procédure à jour (`backend/data-model.md` §12) et prépare, si le signal se confirme, la condition d'e-mail vérifié (gratuite) ou le plan de fonction « rejoindre » (Blaze).

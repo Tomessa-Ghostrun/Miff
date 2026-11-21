@@ -157,8 +157,8 @@ test('code : serviceAccount accepté seulement avec un nom de compte dédié exp
   for (const { f, texte } of sources) assert.deepEqual(problemesServiceAccount(code(texte)), [], f);
 });
 
-test('fonctions exportées = la liste décidée par les tickets : `notifierAlerte` (AD-B2) et `notifierUpdate` (SRV-4B) ; en ajouter une exige de modifier ce test, en PR (`ping`, retirée, ne doit pas revenir)', () => {
-  assert.deepEqual(Object.keys(exportees).sort(), ['notifierAlerte', 'notifierUpdate']);
+test('fonctions exportées = la liste décidée par les tickets : `notifierAlerte` (AD-B2), `notifierUpdate` (SRV-4B) et les cinq fonctions du premium réel (SRV-7) ; en ajouter une exige de modifier ce test, en PR (`ping`, retirée, ne doit pas revenir)', () => {
+  assert.deepEqual(Object.keys(exportees).sort(), ['notifierAlerte', 'notifierUpdate', 'preparerAchat', 'recevoirNotificationsApple', 'recevoirNotificationsGooglePlay', 'supprimerDonneesAbonnement', 'synchroniserAchat']);
 });
 
 test('identité : AUCUNE fonction ne peut tourner avec l\'identité par défaut du projet (compte Compute) ; toutes exigent un compte dédié DU PROJET Miff', () => {
@@ -189,9 +189,16 @@ test('notifierUpdate (SRV-4B) : déclenchée par Firestore sur photos/{uid} uniq
 });
 
 test('comptes de service : le compte de service est écrit en littéral dans le fichier de chaque déclencheur et nulle part ailleurs (décision du PM : notifierAlerte réutilise notify-update)', () => {
+  const facturation = 'serviceAccount: "billing-sync@miff-3d283.iam.gserviceaccount.com"';
   const attendu = {
     'notifierUpdate.ts': 'serviceAccount: "notify-update@miff-3d283.iam.gserviceaccount.com"',
     'notifierAlerte.ts': 'serviceAccount: "notify-update@miff-3d283.iam.gserviceaccount.com"',
+    // SRV-7 : UN compte dédié `billing-sync` pour les cinq fonctions de facturation (voir le test « premium réel » plus bas).
+    'preparerAchat.ts': facturation,
+    'synchroniserAchat.ts': facturation,
+    'supprimerDonneesAbonnement.ts': facturation,
+    'recevoirNotificationsGooglePlay.ts': facturation,
+    'recevoirNotificationsApple.ts': facturation,
   };
   for (const { f, texte } of sources) {
     const m = code(texte).match(/\bserviceAccount\s*:\s*"([^"]+)"/g) ?? [];
@@ -262,7 +269,9 @@ test("DESC-R : la description facultative d'une photo n'entre jamais dans la fon
 
 test('notifierUpdate : jamais de sujet FCM (topic) ni d\'envoi multiple : un message par appareil', () => {
   for (const { f, texte } of sources) {
-    assert.doesNotMatch(code(texte), /\btopic\b|subscribeToTopic|sendEachForMulticast|sendMulticast|sendAll\b/, `${f} : sujets et envois multiples interdits`);
+    // `topic` est aussi le nom de l'option d'un déclencheur Pub/Sub (SRV-7, sujet `play-rtdn`) : permis dans ce seul fichier, qui n'envoie aucun message FCM.
+    const motif = nomDe(f) === 'recevoirNotificationsGooglePlay.ts' ? /subscribeToTopic|sendEachForMulticast|sendMulticast|sendAll\b/ : /\btopic\b|subscribeToTopic|sendEachForMulticast|sendMulticast|sendAll\b/;
+    assert.doesNotMatch(code(texte), motif, `${f} : sujets et envois multiples interdits`);
   }
 });
 
@@ -293,7 +302,13 @@ test('M8 : chemins Firestore touchés par les fonctions = liste fermée ; écrit
     // CNC-B : un `tx.set` de plus par traitement = la ligne du journal du destinataire (dans la boucle de la transaction de réservation).
     if (nomDe(f) === 'notifTraitement.ts') assert.deepEqual(ecritures, ['.set(', '.set(', '.delete('], f);
     else if (nomDe(f) === 'alerteTraitement.ts') assert.deepEqual(ecritures, ['.set(', '.set(', '.set('], `${f} : trois tx.set (début : état ; fin : état ; journal des destinataires), aucune suppression`);
-    else assert.deepEqual(ecritures, [], `${f} : aucune écriture Firestore hors notifTraitement.ts et alerteTraitement.ts`);
+    // SRV-7 : écritures du premium réel, TOUTES dans achatTraitement.ts (liste figée, dans l'ordre du fichier) : preparerAchat (set du compte), reserverSynchro (update ou set du compte),
+    // appliquer (message traité, compte créé, achat, acces), supprimerDonneesAbonnement (lot : suppression du compte, des achats, mise à jour de l'accès).
+    else if (nomDe(f) === 'achatTraitement.ts') assert.deepEqual(ecritures, ['.set(', '.update(', '.set(', '.set(', '.set(', '.set(', '.set(', '.batch(', '.delete(', '.delete(', '.update('], f);
+    // Ces fichiers n'ont que des `.set(`/`.update(` qui ne sont PAS Firestore (Map.set, empreinte .update, en-tête de réponse HTTP) : prouvé par l'absence de tout accès à Firestore.
+    else if (['achatApple.ts', 'achatRegles.ts', 'jetonsGoogle.ts', 'recevoirNotificationsApple.ts'].includes(nomDe(f))) {
+      assert.doesNotMatch(code(texte), /firebase-admin|\.doc\(|\.collection\(|runTransaction|getFirestore/, `${f} : aucun accès à Firestore`);
+    } else assert.deepEqual(ecritures, [], `${f} : aucune écriture Firestore hors notifTraitement.ts, alerteTraitement.ts et achatTraitement.ts`);
   }
   assert.equal((traitementAlerte.match(/\.runTransaction\(/g) ?? []).length, 1);
   assert.match(traitementAlerte, /tx\.set\(refEtat,/);
@@ -308,7 +323,8 @@ test('M8 : chemins Firestore touchés par les fonctions = liste fermée ; écrit
 test("code : pas de fonction HTTP publique (onRequest) ni de onCall hors de appelable.ts (App Check et connexion toujours exigés)", () => {
   for (const { f, texte } of sources) {
     const c = code(texte);
-    assert.doesNotMatch(c, /\bonRequest\b/, `${f} : onRequest interdit sans décision de ticket (pas d'App Check)`);
+    // SRV-7 : UNE seule fonction HTTP publique (point d'entrée d'Apple, protégé par la signature JWS) ; liste FONCTIONS_HTTP_PUBLIQUES_AUTORISEES de options.ts.
+    if (nomDe(f) !== 'recevoirNotificationsApple.ts') assert.doesNotMatch(c, /\bonRequest\b/, `${f} : onRequest interdit sans décision de ticket (pas d'App Check)`);
     if (nomDe(f) !== 'appelable.ts') assert.doesNotMatch(c, /\bonCall\b/, `${f} : utiliser appelable() de appelable.ts`);
   }
   const a = code(sources.find((s) => nomDe(s.f) === 'appelable.ts').texte);
@@ -317,9 +333,10 @@ test("code : pas de fonction HTTP publique (onRequest) ni de onCall hors de appe
   assert.match(a, /sign_in_provider\s*===\s*"anonymous"/, 'la connexion anonyme est refusée explicitement');
 });
 
-test('options.ts : retry autorisé = liste vide, minInstances 0, enforceAppCheck global', () => {
+test('options.ts : retry autorisé = la seule fonction RTDN, minInstances 0, enforceAppCheck global', () => {
   const o = code(readFileSync(join(srcDir, 'options.ts'), 'utf8'));
-  assert.match(o, /FONCTIONS_AVEC_RETRY_AUTORISEES:\s*readonly string\[\]\s*=\s*\[\s*\]/);
+  // SRV-7 : une seule reprise autorisée, celle du traitement idempotent des messages RTDN de Google Play.
+  assert.match(o, /FONCTIONS_AVEC_RETRY_AUTORISEES:\s*readonly string\[\]\s*=\s*\[\s*"recevoirNotificationsGooglePlay",?\s*\]/);
   assert.match(o, /minInstances:\s*LIMITES\.minInstances/);
   assert.match(o, /minInstances:\s*0/);
   assert.match(o, /enforceAppCheck:\s*true/);

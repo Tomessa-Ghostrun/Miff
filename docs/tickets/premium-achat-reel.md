@@ -4,6 +4,7 @@
 **Rédigé le** : 2026-11-12.
 **Demande du PM** : rédiger le ticket du premium réel maintenant que Blaze est activé (décision du 2026-11-11).
 **Décisions amont** : offre Miff+ décidée le 2026-10-31 (`docs/specs/paywall-premium.md`) ; Blaze adopté le 2026-11-11 (le PM souscrit lui-même, avec alertes de budget) ; étude de référence `docs/dev/etude-serveur-notifications-premium.md` (option A, tickets SRV-7 et SRV-8) ; règles des fonctions `docs/dev/deploiement-functions.md`.
+**SRV-7 implémenté le 2026-11-21 (PR `backend/premium-srv7`, NON DÉPLOYÉ)** : les cinq fonctions, le modèle de données, les tests et la procédure de déploiement sont écrits ; **les écarts avec ce ticket, ce qui est vérifié sur la documentation officielle et ce qui reste une hypothèse sont au §22**. Procédure du PM : `docs/dev/deploiement-functions.md` §12 ; modèle : `backend/data-model.md` §2.3 et §2.22 à §2.25.
 **Ticket Notion** : à créer ou relier par le PM (je n'écris rien dans Notion). Statut Notion suggéré : « A cadrer ».
 
 ## Décisions du PM, 2026-11-12
@@ -168,7 +169,7 @@ Bibliothèque : Play Billing Library (la documentation du 2026-11-12 affiche la 
 2. **Avant l'achat** : appel de la fonction `preparerAchat` (réseau requis) pour obtenir l'identifiant d'achat ; en cas d'échec, message calme (« Pas de connexion pour le moment, réessaie dans un instant ») et aucun achat lancé.
 3. **Achat** : `launchBillingFlow` avec l'identifiant d'achat (`setObfuscatedAccountId`). Résultats : annulé par la personne (aucun message d'erreur), erreur, **en attente** (paiement différé : message « Ton paiement est en cours de validation par Google Play », **aucun droit accordé** tant que l'état n'est pas « acheté » [Vérifié]), **acheté**.
 4. **Après « acheté »** : l'app envoie le jeton d'achat à `synchroniserAchat`. Le serveur vérifie, accorde, puis **accuse réception de l'achat auprès de Google** (acknowledge). **Délai : 3 jours, sinon Google rembourse et révoque l'achat automatiquement** [Vérifié] ; l'accusé de réception **côté serveur** (méthode `purchases.subscriptions.acknowledge`, toujours en usage [Vérifié]) a l'avantage de fonctionner **même si l'app est fermée juste après le paiement**, via la notification temps réel. Le client **n'accuse pas réception lui-même** (évite un double accusé). Les renouvellements n'ont pas besoin d'accusé [Vérifié].
-5. **Rejet** : si la vérification échoue (mauvais identifiant, mauvais package, achat de test non autorisé), le serveur **n'accorde rien, n'accuse pas réception et révoque et rembourse tout de suite** (`purchases.subscriptionsv2.revoke` avec remboursement complet), comme le recommande Google ; il ne laisse **pas** expirer le délai de 3 jours [Vérifié].
+5. **Rejet** : si la vérification échoue (mauvais identifiant, mauvais package, achat de test non autorisé), le serveur **n'accorde rien et n'accuse pas réception**. **[Écart décidé à l'implémentation de SRV-7, voir §22] Il ne révoque ni ne rembourse lui-même** : Google recommande de révoquer tout de suite avec `purchases.subscriptionsv2.revoke` et `fullRefund` [Vérifié], mais cet appel, déclenché par une entrée de l'appelant, permettrait à quiconque détient le jeton d'un autre acheteur (ou à un client buggé) de faire révoquer et rembourser un achat **légitime** ; un achat non acquitté est remboursé et révoqué par Google **au bout de 3 jours** [Vérifié] ; une révocation immédiate reste possible à la main dans la Play Console.
 6. **Restauration** : à chaque ouverture de l'app connectée, `queryPurchasesAsync` ; s'il existe un achat actif et que `entitlements/{uid}` est absent, expiré ou plus ancien, appel de `synchroniserAchat` (réparation automatique, c'est le filet contre une notification perdue, §10). Bouton **« Actualiser mon abonnement »** sur l'écran Abonnement (et dans le paywall pour la personne qui réinstalle). Attention : un abonnement en **suspension (« on hold »)** n'est **pas** renvoyé par `queryPurchasesAsync` [Vérifié] : l'app s'appuie alors sur l'état du serveur.
 7. **Changer de forfait** : **pas dans l'app en v1**. Lien vers la page de gestion du store : `https://play.google.com/store/account/subscriptions?sku=miff_plus&package=com.tomessa.miff` (où la personne peut annuler, reprendre, changer) [Vérifié]. (En v2, passage mensuel vers annuel avec un mode de remplacement : Google en propose cinq, dont proratisation du temps restant ou facturation du complément ; le choix sera fait avec des essais [Vérifié pour la liste].)
 8. **Fonctions de Google à régler dans la Play Console** : période de grâce **activée** (par défaut) et suspension du compte (« account hold ») **activée** avec sa durée automatique (**60 jours moins la période de grâce** par défaut) [Vérifié] ; **ne pas activer la mise en pause** par l'utilisateur (moins d'états à gérer).
@@ -366,7 +367,7 @@ Ces textes ne sont **pas relus par un juriste** (risque assumé). Les prix et la
 7. **Déclarations** : fiche « Data safety » et page de suppression de compte (déjà prévue) à compléter avec les achats (SRV-3).
 
 ### 14.3 Firebase / Google Cloud (après accord sur ce ticket)
-Créer le compte de service et ses rôles, le sujet Pub/Sub, le secret Apple, la règle de durée de vie de `billingEvents` et `entitlements` (champ de purge), vérifier les alertes de budget (déjà posées) ; **chaque déploiement sur « oui » du PM**, commande tapée par lui. Détail à écrire dans `deploiement-functions.md` par la PR SRV-7.
+Créer le compte de service et ses rôles, le sujet Pub/Sub, le secret Apple, la règle de durée de vie de `billingEvents` et `entitlements` (champ de purge), vérifier les alertes de budget (déjà posées) ; **chaque déploiement sur « oui » du PM**, commande tapée par lui. Détail : **écrit au §12 de `deploiement-functions.md` (SRV-7)**.
 
 ---
 
@@ -540,3 +541,71 @@ Process par ticket (CLAUDE.md) : challenge, validation PM, dev Android puis iOS 
 **Non lu ou non vérifié (liste unique)** : tarifs Pub/Sub et gestionnaire de secrets ; authentification sans clé de l'API Google Play ; région du déclencheur Pub/Sub à Paris ; existence du prix de 59,88 € chez Apple ; emplacement de plusieurs réglages Apple (délai de grâce, offre d'introduction, URL de notification) ; qui collecte la TVA pour chaque store ; règles de rétractation de Google Play ; droit français et européen (rétractation, reconduction tacite, statut de vendeur, « trader ») ; cadence de renouvellement en bac à sable Apple ; valeur par défaut de la période de grâce ; éligibilité à l'essai d'Apple quand un abonnement mensuel payant a précédé ; granularité par collection du rôle Firestore.
 
 *Ce document ne modifie ni le code, ni les règles Firestore, ni Notion, ni les textes légaux, et ne prétend à aucune relecture juridique : les points RGPD (sous-traitants Apple et Google, données d'achat), consommateurs (rétractation, reconduction tacite), fiscaux et de statut du vendeur restent des risques assumés par le PM (décision du 2026-10-23).*
+
+---
+
+## 22. Implémentation de SRV-7 (2026-11-21, PR `backend/premium-srv7`, NON DÉPLOYÉ) : écarts avec ce ticket, vérifications, hypothèses
+
+Cette section **fait foi** en cas de différence avec les §3 à §14. Code : `backend/functions/src/` (`achat*.ts`, `configApple.ts`, `jetonsGoogle.ts`, `appleRacines.ts`, cinq fichiers de déclencheur) ; tests : `functions/test/unit/` (`achat-regles`, `achat-apple`, `garde-facturation`), `functions/test/integration/` (`achat-traitement`, `surface-emulateur`), `tests/rules/38-facturation.test.js`.
+
+### 22.1 Écarts décidés à l'implémentation (à valider en relisant la PR)
+
+| # | Ticket | Implémenté | Pourquoi |
+|---|---|---|---|
+| E1 | §6.5 : rejet = **révoquer et rembourser** tout de suite | **Jamais de révocation ni de remboursement par le serveur** ; un achat refusé n'est pas acquitté (Google le rembourse seul sous 3 jours) | Un appel de révocation déclenché par une entrée de l'appelant est une arme : faire révoquer l'achat légitime d'un autre acheteur dont on aurait le jeton. Coût du choix : jusqu'à 3 jours de remboursement différé pour un achat refusé |
+| E2 | §9.2 : `billingPurchases` conserve le **jeton d'achat** | **Aucune référence d'achat conservée** (clé = SHA-256) | Minimisation. Chaque événement du store porte déjà la référence ; aucune fonction planifiée n'en a besoin (§10 : pas de réconciliation en v1) |
+| E3 | §10 : 3 instances au plus | **3** pour les cinq fonctions (conforme) ; mission : « 5 au plus » = plafond du test | Plafonne la dépense si l'adresse publique d'Apple est martelée |
+| E4 | §10 : secret lié à la fonction ? (ambigu) | Clé Apple lue **à la demande** dans le gestionnaire de secrets (API REST, secret `apple-iap-key`), **aucun `secrets:` lié aux fonctions** ; configuration non secrète dans `billingConfig/apple` (Firestore) | Le déploiement ne dépend pas de la clé Apple : **Android peut partir avant Apple** ; la rotation ne demande aucun redéploiement |
+| E5 | §10/§11 : option jeton App Check à usage unique « recommandée » | **Non activée** en v1 (option prête dans `appelable()`) | Bêta ; exige une modification des deux apps et un rôle de plus ; un jeton App Check volé ne suffit pas (connexion exigée) ; limite de 1 appel par minute par compte |
+| E6 | §10 : accusé de réception « côté serveur, même si l'app est fermée » | **Conforme** : par la notification (`purchases.subscriptions.acknowledge`) ; l'app n'acquitte jamais | |
+| E7 | §5 : comptes supprimés | Lien orphelin repris par un autre compte qui présente la preuve (jeton Google / transaction signée Apple) ; une **notification** ne ressuscite jamais les données d'un compte supprimé | Restauration après suppression de compte (§9.5) sans trou de sécurité |
+| E8 | §9.1 : champ de purge | `entitlements.purgeAt` (suppression de compte, +30 jours), `billingPurchases.purgeAt` (+90 jours après l'échéance), `billingEvents.purgeAt` (+7 jours) : **trois règles TTL à poser par le PM** | |
+
+### 22.2 Vérifié sur les pages officielles lues le 2026-11-21 (liens au §21)
+
+- `purchases.subscriptionsv2.get` : chemin, portée `androidpublisher`, champs `subscriptionState` (9 valeurs), `lineItems[].expiryTime`, `autoRenewingPlan.autoRenewEnabled`, `offerPhase.freeTrial`, `offerDetails.basePlanId`, `externalAccountIdentifiers.obfuscatedExternalAccountId`, `testPurchase`, `acknowledgementState`, `linkedPurchaseToken` ; **il n'existe pas de champ `latestOrderId`** (c'est `latestSuccessfulOrderId`, non utilisé).
+- **Un abonnement révoqué est relu comme `SUBSCRIPTION_STATE_EXPIRED`** (page « cycle de vie ») : le libellé « remboursé » repose donc sur le message type 12 ou « achat annulé » ; le code coupe l'accès à ce message sans attendre la relecture.
+- Période de grâce : `expiryTime` est **prolongé** par Google jusqu'à la fin de la grâce ; suspension (on hold) : `expiryTime` **dans le passé** ; la grâce est activée par défaut ; suspension = 60 jours moins la grâce.
+- Messages RTDN : `version`, `packageName`, `eventTimeMillis`, `subscriptionNotification { notificationType, purchaseToken }` (**pas de `subscriptionId`** dans la référence actuelle), `voidedPurchaseNotification { purchaseToken, orderId, productType (1 = abonnement), refundType }`, `testNotification` ; **`messageId` à dédoublonner** (recommandation Google) ; types 1 à 13, 17 à 22.
+- `purchases.subscriptions.acknowledge` : chemin et corps `{}` ; **toujours en usage** (« subscriptionId n'est plus nécessaire depuis le 2025-05-21 » : le code l'envoie quand même, sans effet) ; ne pas acquitter sous 3 jours = remboursement et révocation automatiques.
+- `purchases.subscriptionsv2.revoke` : existe (`fullRefund`, `proratedRefund`, `itemBasedRefund`) ; **non utilisé** (E1).
+- Compte de service dans la Play Console : invitation avec les deux droits ; **plus besoin de lier un projet Cloud** (« You no longer need to link your developer account to a Google Cloud Project ») ; aucun délai de prise en compte n'est donné.
+- **Apple** (lu dans la bibliothèque officielle `@apple/app-store-server-library` 3.1.0 et dans la page du dépôt) : `SignedDataVerifier(racines DER, vérifications en ligne, environnement, bundleId, appAppleId)` ; **`appAppleId` obligatoire en production** ; chaîne de **3 certificats** (x5c), extensions `1.2.840.113635.100.6.11.1` (feuille) et `1.2.840.113635.100.6.2.1` (intermédiaire) exigées ; **les environnements Xcode et LocalTesting ne sont pas signés par Apple** et la bibliothèque saute alors toute vérification (le code les refuse avant) ; `AppStoreServerAPIClient(clé, keyId, issuerId, bundleId, environnement)` et `getAllSubscriptionStatuses(idTransaction)` ; statuts 1 à 5 ; champs de la transaction (`appAccountToken`, `inAppOwnershipType`, `revocationDate`, `offerType`, `offerDiscountType`, `environment`) et du renouvellement (`autoRenewStatus`, `gracePeriodExpiresDate`) ; notification V2 `notificationType`, `subtype`, `notificationUUID`, `data { environment, bundleId, appAppleId, signedTransactionInfo, signedRenewalInfo, status }`. **Racine « Apple Root CA - G3 »** téléchargée sur le site de l'autorité de certification d'Apple, empreinte SHA-256 `63:34:3A:BF:…:91:79` (à comparer à la page d'Apple).
+- **Testé avec la VRAIE bibliothèque d'Apple** : une chaîne de test (générée à l'exécution avec `openssl`, aucune clé dans le dépôt) imite celle d'Apple ; contenu modifié, autre autorité, algorithme forcé (`none`, `HS256`), chaîne incomplète, extensions absentes, mauvais bundle, mauvais identifiant d'app en production, environnement Xcode : **tous refusés** (`functions/test/unit/achat-apple.test.mjs`).
+- Replay protection App Check : bêta, rôle « Firebase App Check Token Verifier », jetons à usage limité côté clients (E5).
+- Cloud Run : le serveur de métadonnées fournit un jeton d'accès au compte du service ; la page ne dit rien d'un paramètre de portée (voir H1).
+
+### 22.3 Hypothèses non vérifiées (à confirmer en conditions réelles)
+
+| # | Hypothèse | Si c'est faux | Où |
+|---|---|---|---|
+| **H1 (BK9)** | La fonction obtient un jeton de portée `androidpublisher` **sans clé**, par l'environnement ; sinon par le repli **usurpation d'identité de soi-même** (IAM Credentials) | Journal `acces_refuse` ; deux étapes du PM sans redéploiement : `deploiement-functions.md` §12.7. Dernier recours (décision écrite du PM, jamais par défaut) : une clé de compte de service, interdite par `secrets.md` | `jetonsGoogle.ts` |
+| H2 | Le déclencheur Pub/Sub est accepté en `europe-west9` (Eventarc gère Paris pour Firestore ; la page des emplacements ne liste pas Paris pour les fonctions Pub/Sub) | Échec du déploiement avec un message de région : repli `europe-west1` pour **cette** fonction (code, test, doc) | `recevoirNotificationsGooglePlay.ts` |
+| H3 | L'offre d'introduction d'Apple de Miff+ est **uniquement** l'essai gratuit (`offerType = 1` donne `trial`) | Une offre « payez moins » serait affichée comme essai : adapter `etatDepuisApple` | `achatRegles.ts` |
+| H4 | Le service `recevoirNotificationsApple` est joignable sans connexion avec `invoker: "public"` posé par la CLI | Apple recevrait 403 : le PM pose l'accès public sur ce seul service | déploiement |
+| H5 | Les vérifications en ligne (révocation des certificats, appel OCSP vers les serveurs d'Apple) depuis la fonction aboutissent dans le délai de 30 s | Notification refusée en 503 (Apple réessaie) : à constater au premier essai ; repli : désactiver ces vérifications pour les notifications (la relecture par l'API reste la source de vérité) | `achatApple.ts` |
+| H6 | `appAccountToken` de la transaction est renvoyé en minuscules (comparaison insensible à la casse dans le code) | sans effet | `achatRegles.ts` |
+| H7 | Les prix Apple (palier de 59,88 €) : non traité côté serveur (jamais de prix en Firestore) | Q7 | — |
+| H8 | Tarifs Pub/Sub et gestionnaire de secrets : ordre de grandeur négligeable, non lus | lecture de la facture | `data-model.md` §12 |
+
+### 22.4 Critères d'acceptation du serveur (§16) : où ils sont prouvés
+
+| Critère | Preuve |
+|---|---|
+| BK1 | `achat-traitement` (BK1), `surface-emulateur` (App Check et connexion exigés, anonyme refusé, identifiant jamais pris dans l'entrée) |
+| BK2 | `achat-traitement` (BK2 : identifiant de l'appelant, autre compte, inconnu / absent, jeton inconnu, limite 1/min, entrées) |
+| BK3 | `achat-apple` (vrai vérificateur) + `achat-traitement` (BK3) |
+| BK4 | `achat-traitement` (BK4, lien orphelin compris) |
+| BK5 | `achat-regles` (une fixture par état et par store) + `achat-traitement` (BK5, par le chemin des notifications) |
+| BK6 | `achat-traitement` (BK6 : rejeu, simultané, désordre, autre package, test, type inconnu, erreurs passagères et définitives, achat inconnu, nouveau jeton) |
+| BK7 | `achat-traitement` (BK7 : signature invalide sans aucun accès Firestore, compte inconnu, rejeu, erreurs) + `surface-emulateur` (méthode, taille, forme) |
+| BK8 | `achat-regles`, `achat-traitement` (BK8 : Google type 12 et « voided », Apple REFUND puis REFUND_REVERSED) |
+| **BK9** | **NON PROUVÉ : hypothèse H1, à confirmer au premier appel réel** |
+| BK10 | `achat-regles` + `achat-traitement` (BK10) |
+| BK11 | `tests/rules/38-facturation.test.js` (BL1 à BL10) |
+| BK12 | `garde-facturation` (liste blanche des codes, aucun champ ni variable interdits) + `achat-traitement` (aucune référence d'achat conservée) |
+| BK13 | `garde-couts` + `garde-facturation` (limites, compte dédié, une seule fonction HTTP, reprise seulement pour RTDN) |
+| BK14 | `garde-facturation` (aucun secret lié, aucune clé, lecture du secret à un seul endroit) ; le secret n'est lisible que par `billing-sync` : **à vérifier par le PM** (§12.11) |
+| BK15 | `achat-traitement` (BK15) |
+
+**Ce qui n'est PAS vérifiable hors production** : tout appel réel à Google Play, à Apple et au gestionnaire de secrets ; le déclencheur Pub/Sub ; l'effet des règles TTL ; la prise en compte de l'invitation dans la Play Console ; App Check réel (l'émulateur accepte des jetons non signés : le refus **sans** jeton est prouvé, pas la validation d'un vrai jeton).

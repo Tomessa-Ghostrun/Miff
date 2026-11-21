@@ -20,6 +20,8 @@
 
 > **Deuxième fonction, `notifierAlerte` (AD-B2, alerte « Je suis en danger », NON DÉPLOYÉE)** : sa procédure complète (règle TTL, ordre règles puis fonction, droit `run.invoker` du compte `notify-update` sur le service `notifieralerte`, contrôles, arrêt rapide ; **aucun nouveau compte de service**) est dans [`deploiement-alerte-danger.md`](deploiement-alerte-danger.md). Le reste de ce document (interdits, checklist, journaux, retour arrière) s'applique aux deux fonctions.
 
+> **Cinq fonctions de facturation, `preparerAchat`, `synchroniserAchat`, `recevoirNotificationsGooglePlay`, `recevoirNotificationsApple` et `supprimerDonneesAbonnement` (SRV-7, premium réel Miff+, NON DÉPLOYÉES)** : leur procédure complète (compte de service `billing-sync` **sans clé**, sujet Pub/Sub `play-rtdn`, secret Apple saisi par le PM, trois règles TTL, ordre, droits `run.invoker`, vérifications, arrêt rapide) est au **§12 de ce document**. Ce qui change pour le reste du document : **un compte de plus** (`billing-sync`, 3 rôles de projet) ; **une seule fonction avec nouvelle tentative automatique** (celle de Pub/Sub, idempotente) ; **une fonction HTTP joignable sans connexion ni App Check** (le point d'entrée d'Apple, protégé par la signature) ; un secret **hors de la fonction** (lu à la demande dans le gestionnaire de secrets).
+
 ---
 
 ## 0. Les interdits
@@ -172,6 +174,7 @@ La fonction ne trouve des destinataires que si les **règles Firestore des jeton
 | 7 | **Pour `notifierUpdate` seulement** : le compte de service dédié existe avec ses **4 rôles de projet** et sans clé (section 1.4, étapes A à D). **Le droit `Cloud Run Invoker` sur le service n'est PAS à poser avant** : il se pose après le premier déploiement (étape D bis ; pour un redéploiement, il est déjà en place) | Google Cloud > IAM | La ligne `notify-update@miff-3d283…` montre exactement 4 rôles |
 | 8 | **Pour `notifierUpdate` seulement** : les règles des jetons d'appareil sont déployées (section 1.4 F) ; la règle TTL `notifState` est posée **après la première notification** (section 1.4 E) | `deploiement-regles.md`, console Firestore | Règles publiées ; règle TTL visible dès que la collection existe |
 | 9 | **Pour `notifierUpdate` seulement** : les textes légaux (SRV-3) sont publiés et aucune fiche de store ne dit encore « pas de notification » (ticket §15/§16, P6) | Conversation avec Claude | « Oui » du PM écrit |
+| 10 | **Pour les 5 fonctions de facturation (SRV-7) seulement** : API activées, compte `billing-sync` avec **3 rôles** et sans clé, sujet `play-rtdn` avec **un seul éditeur** (Google Play), **§12.2 à 12.5 faits** ; commande avec `--only` **nommant les 5 fonctions** | Google Cloud > IAM, Pub/Sub | Les 3 rôles et le sujet sont visibles ; aucune clé |
 
 ---
 
@@ -323,7 +326,7 @@ Chaque garde-fou ci-dessous est dans `backend/functions/src/options.ts` et **vé
 | **3 instances au plus** par fonction (`maxInstances`) | Plafonne la dépense en cas d'emballement ou d'abus : c'est le frein principal | Avec 128 Mio chaque instance traite **une** demande à la fois : au plus ~3 demandes simultanées, les suivantes attendent jusqu'à 30 s et **peuvent être refusées (code 429)** | Réponses `429` dans les journaux, notifications en retard : relever à 5 pour **cette** fonction (plafond du test : 5). **`notifierUpdate` est déjà à 5** (le ticket parlait de 10 ; 5 suffit : 1 demande à la fois par instance, ~0,3 à 1 s par événement, soit plus de 100 000 événements par heure pour une estimation de 20 000 **par jour** à 10 000 utilisateurs actifs par jour). Relever au-delà de 5 (jusqu'à 10) = modifier `LIMITES.maxInstancesPlafond` ET le test, en PR, avec le nombre de `429` qui le justifie |
 | **Mémoire 128 Mio** | La moins chère possible | Une fonction qui charge le SDK Admin (Firestore, FCM) peut manquer de mémoire | « Memory limit exceeded » dans les journaux : 256 Mio pour **cette** fonction (plafond du test). **`notifierUpdate` est déjà à 256 Mio** (SDK Admin Firestore + messagerie ; les événements portent la photo, jusqu'à 150 Ko, en mémoire) |
 | **Délai 30 s** | Une fonction bloquée ne facture pas plus de 30 s | Un traitement long est coupé | Journaux « timeout » : relever (plafond du test : 60 s), ou découper le travail |
-| **Pas de nouvelle tentative automatique** (`retry` désactivé) | Évite la boucle « échec → réessai → échec » qui fait exploser une facture | Un échec passager (service FCM indisponible quelques secondes) = **notification perdue** (`notifierUpdate` retente elle-même l'envoi 2 fois au plus, dans la même exécution, mais ne relance jamais l'exécution entière) | Des notifications manquantes avec un `ERROR` transitoire dans les journaux : activer `retry` pour **cette** fonction seulement, la rendre idempotente (sans double envoi) et l'ajouter à la liste `FONCTIONS_AVEC_RETRY_AUTORISEES` avec la raison |
+| **Pas de nouvelle tentative automatique** (`retry` désactivé) — **sauf `recevoirNotificationsGooglePlay` (SRV-7)**, autorisée dans `FONCTIONS_AVEC_RETRY_AUTORISEES` : traitement idempotent, erreur définitive consommée, erreur passagère abandonnée au bout de 24 h | Évite la boucle « échec → réessai → échec » qui fait exploser une facture | Un échec passager (service FCM indisponible quelques secondes) = **notification perdue** (`notifierUpdate` retente elle-même l'envoi 2 fois au plus, dans la même exécution, mais ne relance jamais l'exécution entière) | Des notifications manquantes avec un `ERROR` transitoire dans les journaux : activer `retry` pour **cette** fonction seulement, la rendre idempotente (sans double envoi) et l'ajouter à la liste `FONCTIONS_AVEC_RETRY_AUTORISEES` avec la raison |
 | **Aucune instance permanente** (`minInstances: 0`) | Pas de facture quand personne n'appelle | Le premier appel après une pause est plus lent (démarrage à froid, de l'ordre de la seconde : non mesuré) | Plaintes de lenteur sur les notifications de géofence : 1 instance minimale pour la fonction concernée = coût fixe à chiffrer avec le PM |
 | **Région Paris (europe-west9)**, 2e génération | Même région que la base (délais courts, données en UE) | Paris n'accepte que la 2e génération (c'est celle utilisée). Les déclencheurs Firestore doivent être dans la région de la base : c'est cohérent. FCM et les services de notification d'Apple restent des sous-traitants hors UE possibles (risque RGPD assumé, `data-model.md` §11) | Indisponibilité de la région : repli europe-west1 (Belgique), à décider |
 | **Node.js 24** (repli prévu : Node 22 si la CLI refuse 24, voir §3) | Supporté par Firebase jusqu'à fin 2028 (dates affichées par la CLI : abandon annoncé 2028-04-30, arrêt 2028-10-31 ; Node 20 est arrêté depuis le 2026-10-30) | Dépendances à mettre à jour (Dependabot ouvre les PR chaque lundi) | E-mail de Google « runtime déprécié » ou PR Dependabot de changement de Node |
@@ -443,3 +446,186 @@ Méthode A ou B de la section 7. Après un retour arrière ou une suppression : 
 **Confirmé le 2026-11-13, au premier déploiement** (essai de bout en bout, iPhone compte A publie, OPPO compte B reçoit) :
 - Le **rôle FCM** du compte de service : `roles/firebasecloudmessaging.admin` **suffit seul** (1 envoi réussi).
 - Le **déclencheur de production** (Eventarc) avec le compte dédié : les 4 rôles de projet (dont `eventarc.eventReceiver`) **ne suffisent pas** : il faut en plus `Cloud Run Invoker` (`roles/run.invoker`) **sur le service `notifierupdate`** (section 1.4, étape D bis). Sans lui : « The request was not authenticated… lacks {run.routes.invoke} permission ». Ce point, noté « à confirmer au premier déploiement », est **confirmé le 2026-11-13**.
+
+---
+
+## 12. Le premium réel Miff+ (SRV-7) : cinq fonctions, un compte de service, un sujet, un secret, trois règles TTL
+
+Ticket : `docs/tickets/premium-achat-reel.md` (§10, §14, §16). Modèle de données : `backend/data-model.md` §2.3 et §2.22 à §2.25. **État : code écrit et testé, NON DÉPLOYÉ.** Aucun compte, aucune clé, aucun secret n'a été créé par un agent ; **toutes les étapes ci-dessous sont à faire par le PM**, qui tape lui-même chaque commande (jamais la CI, jamais un agent).
+
+### 12.1 Ce que ça fait (en clair)
+
+Quand quelqu'un achète Miff+ dans l'app (Google Play ou App Store), **un serveur Miff vérifie l'achat auprès du store** et allume (ou éteint) le droit Miff+ de ce compte tout seul : essai, actif, annulé (accès jusqu'à la fin de la période payée), période de grâce (accès conservé), suspendu (accès coupé), remboursé (accès coupé tout de suite), expiré. **Une app ne peut jamais s'accorder Miff+ elle-même** : les règles Firestore l'interdisent et seul le serveur écrit le droit. Le Miff+ accordé « à la main » (`docs/dev/premium-manuel.md`) continue de fonctionner (il n'est écrasé que par un achat qui va plus loin).
+
+| Fonction | Déclencheur | Rôle |
+|---|---|---|
+| `preparerAchat` | appelable (connexion + App Check) | donne à l'utilisateur son **identifiant d'achat aléatoire** (transmis au store à l'achat, pour retrouver son compte sans jamais envoyer son e-mail ni son UID) |
+| `synchroniserAchat` | appelable | vérifie un achat présenté par l'app (jeton Google / transaction signée Apple), le lie au compte, accorde le droit, **acquitte l'achat chez Google** (sinon Google rembourse sous 3 jours) ; **1 appel par minute et par compte** |
+| `recevoirNotificationsGooglePlay` | message Pub/Sub `play-rtdn` | reçoit les changements d'état de Google (renouvellement, annulation, paiement refusé, remboursement) et **relit l'état chez Google** |
+| `recevoirNotificationsApple` | **adresse HTTPS publique** | reçoit les notifications d'Apple, **vérifie leur signature** et relit l'état chez Apple. **Seul point d'entrée du projet joignable sans connexion ni App Check** |
+| `supprimerDonneesAbonnement` | appelable | purge à la suppression du compte (identifiant d'achat, liens ; droit inactif et supprimé 30 jours après) |
+
+**Limites (garde-fous vérifiés par `garde-couts.test.mjs` et `garde-facturation.test.mjs`)** : région `europe-west9`, 2e génération, Node 24, **3 instances au plus, 256 Mio, 30 s, 0 instance permanente**, compte `billing-sync@miff-3d283.iam.gserviceaccount.com` **sans clé**, **nouvelle tentative automatique seulement pour la fonction Pub/Sub** (traitement idempotent ; message abandonné au bout de 24 h), jamais de révocation ni de remboursement par le serveur.
+
+### 12.2 L'ordre complet, avec ce qui est bloquant
+
+| # | Action du PM | Bloquant pour | Délai probable (estimation) |
+|---|---|---|---|
+| 1 | API Google à activer (§12.3) | le déploiement | 5 min |
+| 2 | Compte de service `billing-sync` + 3 rôles (§12.4) | le déploiement | 15 min |
+| 3 | Sujet Pub/Sub `play-rtdn` + droit de publication à Google Play (§12.5) | le déploiement (le déclencheur) | 10 min |
+| 4 | Déployer les 5 fonctions, **après CI verte, revue de sécurité et « oui » écrit** (§12.8) | tout le reste | 10 à 20 min (1re construction) |
+| 5 | Droit `Cloud Run Invoker` sur le service `recevoirnotificationsgoogleplay` (§12.9) | la réception des messages Google | 5 min |
+| 6 | Inviter `billing-sync` dans la Play Console (§12.6) | tout appel à l'API Google Play | 10 min ; **prise en compte non précisée par Google** (quelques minutes à quelques heures : non vérifié) |
+| 7 | Règle TTL de `entitlements.purgeAt` (§12.10) | rien (hygiène) ; à poser avant l'ouverture publique | 5 min |
+| 8 | Play Console : produits, notifications en temps réel, testeurs (ticket §14.2) | l'essai Android de bout en bout | **dépend de SRV-8A** : les fonctions de monétisation de la Play Console n'apparaissent qu'après publication d'une version contenant la Billing Library (piste interne suffisante) |
+| 9 | Règles TTL de `billingEvents.purgeAt` et `billingPurchases.purgeAt`, après le premier message (§12.10) | rien (hygiène) | 5 min, après le 1er achat de test |
+| 10 | **Apple** : accord « Paid Apps », produits, clé « In-App Purchase » (ticket §14.1) | tout le côté iOS | **jours** : coordonnées bancaires et fiscales saisies par vous seul ; relecture des produits par Apple (24 à 48 h habituellement : non vérifié) |
+| 11 | **Apple** : secret `apple-iap-key` + document `billingConfig/apple` (§12.11) | les achats iOS (Android n'est pas touché) | 15 min, une fois la clé Apple créée |
+| 12 | **Apple** : adresse des notifications dans App Store Connect (§12.12) | les notifications iOS | 5 min, après l'étape 4 |
+
+**Les étapes 1 à 5 ne dépendent d'aucun compte de store** : on peut déployer le serveur dès maintenant, bien avant que les produits existent. **Android passe en premier** (aucun secret). **Apple peut attendre** : sans l'étape 11, une demande iOS reçoit un refus calme « indisponible » et les notifications d'Apple reçoivent 503 (Apple réessaie 5 fois sur 72 h en production), sans rien casser côté Google.
+
+### 12.3 Étape 1 : activer les API (projet `miff-3d283`)
+
+Console Google Cloud (https://console.cloud.google.com/apis/library, **projet `miff-3d283` en haut de la page**) : rechercher et **Activer** :
+1. **Google Play Android Developer API** (`androidpublisher.googleapis.com`) : obligatoire.
+2. **Cloud Pub/Sub API** (`pubsub.googleapis.com`) : obligatoire (souvent déjà active : Eventarc l'utilise).
+3. **Secret Manager API** (`secretmanager.googleapis.com`) : **seulement pour Apple** (étape 11).
+4. **IAM Service Account Credentials API** (`iamcredentials.googleapis.com`) : **seulement si le repli du §12.7 est nécessaire**.
+
+Activer une API ne coûte rien en soi. Libellés recopiés de la documentation (en anglais) : en cas de doute, **copiez ce que vous voyez à Claude**.
+
+### 12.4 Étape 2 : le compte de service `billing-sync` (sans clé) et ses rôles
+
+Même procédure que le §1.4 (étapes A à C), avec ces valeurs :
+- **Nom** : `billing-sync` (adresse complète `billing-sync@miff-3d283.iam.gserviceaccount.com`, écrite dans le code : une autre adresse serait refusée par les tests). Description : `Fonctions de facturation Miff+ : lit et écrit Firestore, appelle Google Play et Apple`.
+- **Ne créez aucune clé** (onglet « Clés » vide). Si on vous propose de télécharger un fichier `.json`, **refusez**.
+- **Rôles de projet : exactement ces 3** (IAM > Accorder l'accès) :
+
+| Rôle | À quoi il sert |
+|---|---|
+| **Utilisateur Cloud Datastore** (`roles/datastore.user`) | lire et écrire Firestore (accès de l'Admin SDK). **Attention** : un compte de service ignore les règles de sécurité, donc ce rôle donne accès à **toute** la base (positions comprises) : c'est le prix de l'écriture de `entitlements` par le serveur ; réduit par un code court, des entrées bornées et des tests (risque R2 du ticket). La granularité par collection n'est pas confirmée par Google : non vérifié |
+| **Récepteur d'événements Eventarc** (`roles/eventarc.eventReceiver`) | recevoir les messages du sujet Pub/Sub |
+| **Rédacteur de journaux** (`roles/logging.logWriter`) | écrire ses journaux (sans donnée personnelle) |
+
+**Pas de rôle FCM** (cette fonction n'envoie aucune notification). **Jamais** Éditeur, Propriétaire, Administrateur, ni `Cloud Run Invoker` au niveau du projet.
+- **Donnez-vous** le rôle « Utilisateur du compte de service » sur ce compte (étape C du §1.4) : sans lui, le déploiement échoue.
+- **Plus tard, par fonction** (étapes 5 et 11) : `Cloud Run Invoker` sur **un seul** service Cloud Run, et « Accesseur de secrets » sur **un seul** secret.
+
+### 12.5 Étape 3 : le sujet Pub/Sub `play-rtdn` et son éditeur
+
+Google Play publie ses notifications dans un sujet Pub/Sub **que vous créez**. Seul l'éditeur nommé ci-dessous doit pouvoir y publier.
+1. https://console.cloud.google.com/cloudpubsub/topic/list (projet `miff-3d283`) > **Créer un sujet** (« Create topic ») : **ID du sujet** `play-rtdn` ; **décochez** « Ajouter un abonnement par défaut » (le déploiement crée le sien) ; chiffrement : par défaut. **Créer.**
+   - Ou dans Cloud Shell : `gcloud pubsub topics create play-rtdn --project=miff-3d283`
+2. Ouvrez le sujet > onglet **Autorisations** (« Permissions ») > **Ajouter un compte principal** : `google-play-developer-notifications@system.gserviceaccount.com`, rôle **Éditeur Pub/Sub** (« Pub/Sub Publisher »). **Enregistrer.** Source : documentation Google Play Billing, section « Grant publish rights on your topic ».
+3. **N'ajoutez personne d'autre** : un message falsifié ne peut de toute façon rien accorder (le serveur ne croit jamais le contenu d'un message, il relit l'état chez Google), mais le sujet n'a pas besoin d'autre éditeur.
+4. Le **nom complet** à saisir plus tard dans la Play Console est `projects/miff-3d283/topics/play-rtdn`.
+
+### 12.6 Étape 6 : inviter `billing-sync` dans la Play Console (droits sur les abonnements)
+
+Play Console > **Utilisateurs et autorisations** > **Inviter de nouveaux utilisateurs** : adresse e-mail `billing-sync@miff-3d283.iam.gserviceaccount.com` ; droits **« Afficher les données financières, les commandes et les réponses aux enquêtes d'annulation »** et **« Gérer les commandes et abonnements »** (au niveau du compte développeur ou de l'app Miff seulement : pas besoin de plus). **Inviter.** Google ne demande **plus** de lier la Play Console à un projet Cloud (documentation : « You no longer need to link your developer account to a Google Cloud Project »). **Le délai de prise en compte n'est pas précisé par Google.** Source : https://developers.google.com/android-publisher/getting_started
+
+### 12.7 Hypothèse à confirmer au premier essai réel : l'accès à l'API Google Play SANS clé (critère BK9)
+
+**Ce qui est vérifié** : la documentation Google décrit l'invitation d'un compte de service dans la Play Console et la portée `https://www.googleapis.com/auth/androidpublisher`. **Ce qui n'est PAS vérifié** (aucune page de Google ne le dit) : qu'une fonction qui tourne sous l'identité du compte `billing-sync` (sans clé) obtient automatiquement un jeton de **cette** portée. Le code essaie dans cet ordre, **sans aucune clé** :
+1. le jeton de l'environnement avec la portée `androidpublisher` ;
+2. si Google Play répond 401 ou 403, **le compte se fait émettre lui-même** un jeton de la bonne portée (service IAM Credentials : « usurpation d'identité de soi-même », documentée par Google) et **retient ce repli** pour la vie de l'instance.
+
+**Comment savoir où l'on en est** : après le premier appel réel (message de test ou achat de test), les journaux de `synchroniserAchat` / `recevoirNotificationsGooglePlay` affichent :
+- `billing.sync.ok` ou `billing.google.notif` `resultat: ok` : **ça marche** (BK9 confirmé : notez la date dans la conversation) ;
+- `billing.sync.refuse` / `billing.google.notif` avec `motif: acces_refuse` : **deux causes possibles, dans cet ordre** : (a) l'invitation de l'étape 6 n'est pas encore prise en compte ou les droits sont incomplets (attendez, vérifiez la page « Utilisateurs et autorisations ») ; (b) le repli est nécessaire : **activez l'API « IAM Service Account Credentials »** (§12.3, point 4) et, sur la page du compte `billing-sync` > **Autorisations** > **Accorder l'accès**, donnez à **`billing-sync@miff-3d283.iam.gserviceaccount.com` lui-même** le rôle **« Créateur de jetons de compte de service »** (`roles/iam.serviceAccountTokenCreator`) **sur ce compte seulement** (jamais au niveau du projet), puis réessayez. **Aucun redéploiement n'est nécessaire.** Si l'erreur persiste : copiez le message à Claude, **n'élargissez aucun rôle**.
+
+### 12.8 Étape 4 : le déploiement
+
+**Prérequis** : étapes 1 à 3 faites, §2 (checklist) vérifiée, **PR fusionnée, CI verte, revue de sécurité faite, « oui » du PM écrit pour ce commit**, alerte de budget en place (§1.1), plafond de dépense des fonctions (§1.2). **Textes légaux** : ils n'ont pas à être publiés pour déployer ces fonctions (aucun achat n'existe tant que SRV-8A / SRV-8I ne sont pas livrés) mais **avant l'ouverture des achats** (SRV-3).
+
+```bash
+cd C:\dev\miff-deploy\backend
+npm ci
+npx firebase deploy --only functions:preparerAchat,functions:synchroniserAchat,functions:supprimerDonneesAbonnement,functions:recevoirNotificationsGooglePlay,functions:recevoirNotificationsApple --project miff-3d283 --dry-run
+```
+Si l'essai à blanc réussit, relancez **la même commande sans `--dry-run`**. (`--only functions:nom1,functions:nom2…` ne touche aucune autre fonction, ni `notifierUpdate` ni `notifierAlerte`.) Les questions possibles sont celles du §3 ; réponses : voir le tableau. **Une demande de suppression de fonctions absentes du code : répondez NON.** **Rien n'est facturé à l'instance permanente** (aucune), et aucune question ne doit parler d'instances minimales (sinon, annulez).
+
+**Ce que la CLI affiche** : pour `recevoirNotificationsApple`, une ligne `Function URL (recevoirNotificationsApple(europe-west9)): https://…` : **copiez cette adresse** (étape 12). Elle est aussi dans Firebase > Functions.
+
+**Erreurs possibles** : (a) « Permission denied » liée à l'agent de service Eventarc ou Pub/Sub : un droit que Google vient d'accorder met quelques minutes à se propager : **attendez et relancez la même commande**, ne donnez aucun rôle « pour faire passer » ; (b) « Topic not found » : le sujet de l'étape 3 n'existe pas ; (c) « region not supported » pour le déclencheur Pub/Sub : **hypothèse non vérifiée** (Eventarc gère Paris pour Firestore, déjà utilisé par `notifierUpdate`, mais la page de Google ne liste pas explicitement `europe-west9` pour les déclencheurs Pub/Sub) ; **ne forcez rien**, copiez le message à Claude (repli prévu : région `europe-west1` pour cette seule fonction, modification du code et des tests en PR).
+
+### 12.9 Étape 5 : `Cloud Run Invoker` sur le service `recevoirnotificationsgoogleplay` (APRÈS le premier déploiement)
+
+Même mécanisme que `notifierupdate` (§1.4, étape D bis) : le déclencheur Pub/Sub appelle le service Cloud Run de la fonction **en se faisant passer pour `billing-sync`**, qui doit avoir le droit de l'appeler **sur ce seul service**.
+
+```bash
+gcloud run services add-iam-policy-binding recevoirnotificationsgoogleplay --region=europe-west9 --member="serviceAccount:billing-sync@miff-3d283.iam.gserviceaccount.com" --role="roles/run.invoker" --project=miff-3d283
+```
+(ou console : Cloud Run > cocher `recevoirnotificationsgoogleplay` > Permissions > Ajouter un compte principal.) **Jamais** « Allow public access » sur ce service. Sans ce droit, les journaux affichent « The request was not authenticated… lacks {run.routes.invoke} permission » et **aucun message n'est traité** (les messages restent dans Pub/Sub et sont relivrés dès que le droit est posé, pendant 7 jours). **Les trois fonctions appelables et `recevoirNotificationsApple` n'ont pas besoin de ce droit** : leurs services sont publics par conception (la sécurité est dans le code : connexion + App Check pour les appelables, signature pour Apple).
+
+### 12.10 Les règles de durée de vie (TTL) : trois, à poser par le PM
+
+Console Google Cloud > Firestore > **Time-to-live** (libellé non vérifié ; en cas de doute, copiez ce que vous voyez). Pour chacune : **Créer une règle** > groupe de collections + champ :
+
+| Groupe de collections | Champ | Effet | Quand |
+|---|---|---|---|
+| `entitlements` | `purgeAt` | supprime l'accès 30 jours après une suppression de compte (seuls les comptes supprimés ont ce champ : un accès actif ou manuel n'est **jamais** supprimé) | maintenant (la collection existe) |
+| `billingEvents` | `purgeAt` | supprime l'identifiant d'un message traité 7 jours après | **après le premier message traité** (la collection n'existe pas avant) |
+| `billingPurchases` | `purgeAt` | supprime un lien d'achat 90 jours après l'échéance | **après le premier achat de test** |
+
+La suppression est « typiquement dans les 24 h » après l'échéance (documentation Google) et n'est pas gratuite à l'usage sur Blaze (négligeable : quelques suppressions par abonné et par an). **Tant que la règle n'existe pas, rien ne casse** : les lignes restent, voilà tout.
+
+### 12.11 Étape 11 : Apple, le secret et la configuration (quand la clé Apple existe)
+
+**Prérequis** : la clé « In-App Purchase » (`.p8`) créée dans App Store Connect (ticket §14.1, point 7) ; vous avez noté son **identifiant de clé** (10 caractères), l'**Issuer ID** (un UUID) et l'**identifiant Apple de l'app** (un nombre, App Store Connect > Informations sur l'app). **La clé `.p8` ne passe ni par le dépôt, ni par une conversation, ni par un e-mail, ni par une capture d'écran.**
+1. **Créer le secret** (Secret Manager > **Créer un secret**, projet `miff-3d283`) : **nom** `apple-iap-key` (exactement) ; **valeur** : **Importer un fichier** et choisir votre `.p8` (ne le collez pas) ; **région** : « Gérée par l'utilisateur » > `europe-west9` (les données restent en Europe) ; **Créer.** Ou dans Cloud Shell, avec le fichier téléversé ou en local sur votre poste : `gcloud secrets create apple-iap-key --replication-policy=user-managed --locations=europe-west9 --data-file=CHEMIN\VERS\AuthKey_XXXX.p8 --project=miff-3d283`. **Supprimez ensuite toute copie** du `.p8` hors de votre gestionnaire de mots de passe.
+2. **Droit de lecture, sur CE secret seulement** : ouvrir le secret > **Autorisations** > **Accorder l'accès** : `billing-sync@miff-3d283.iam.gserviceaccount.com`, rôle **« Accesseur de secrets Secret Manager »** (`roles/secretmanager.secretAccessor`). **Jamais** ce rôle au niveau du projet.
+3. **Configuration non secrète** : Firestore (console Firebase, projet **Miff**) > **Démarrer une collection** `billingConfig` > document **`apple`** avec **trois champs** exactement : `keyId` (texte, 10 caractères majuscules/chiffres), `issuerId` (texte, l'UUID), `appAppleId` (**nombre** entier). Les apps n'y ont **aucun accès** (règles : tout refusé). La configuration est relue au plus toutes les 5 minutes : **aucun redéploiement**.
+4. **Rotation** (clé compromise ou renouvelée) : App Store Connect > révoquer la clé et en créer une autre ; Secret Manager > `apple-iap-key` > **Nouvelle version** ; mettre à jour `keyId` dans `billingConfig/apple`. Aucun redéploiement (cache de 5 minutes). **En cas de fuite : révoquer d'abord** (`docs/dev/secrets.md`).
+
+### 12.12 Étape 12 : l'adresse des notifications Apple
+
+App Store Connect > l'app Miff > **Informations sur l'app** > **Notifications du serveur App Store** (version 2) : coller **l'adresse copiée au §12.8** dans **l'URL de production** ET **l'URL du bac à sable** (une seule fonction traite les deux environnements : elle lit l'environnement dans la notification signée). Emplacement exact des champs : non vérifié, copiez ce que vous voyez. Apple n'attend pas de jeton : **l'adresse est publique par conception**, la sécurité est la vérification de la signature (chaîne de certificats jusqu'à la racine d'Apple, fonction testée avec de fausses chaînes).
+
+### 12.13 Vérifications après le déploiement
+
+| # | Vérification | Où | OK si |
+|---|---|---|---|
+| 1 | Les 5 fonctions sont en ligne | Firebase > Functions, ou `npx firebase functions:list --project miff-3d283` | `preparerAchat`, `synchroniserAchat`, `supprimerDonneesAbonnement`, `recevoirNotificationsGooglePlay`, `recevoirNotificationsApple`, région **europe-west9**, 2e génération, Node.js 24 |
+| 2 | Limites et compte | détail de chaque fonction | instances maximales **3**, mémoire **256 Mio**, délai **30 s**, instances minimales **0**, compte **`billing-sync@miff-3d283…`** (jamais « Compute Engine default ») |
+| 3 | Exposition | Cloud Run > chaque service > Sécurité | **`recevoirnotificationsapple`** et les trois appelables sont ouverts à l'infrastructure (« Autoriser l'accès non authentifié ») **par conception** : les appelables exigent App Check et la connexion **dans le code**, Apple s'authentifie par la **signature** ; **`recevoirnotificationsgoogleplay` n'est PAS public** (invoker : `billing-sync` seulement) |
+| 4 | Aucune clé | page du compte `billing-sync` > Clés | vide |
+| 5 | Message de test Google | Play Console > Monétiser > Configuration > Notifications en temps réel > **Envoyer un message de test** (après l'étape 8) | journal `billing.google.ignore` avec `motif: test_notification`, aucune erreur « not authenticated » |
+| 6 | Appel de bout en bout (Android, testeur de licence, **carte de test**, jamais un vrai achat) | journaux (§12.14) puis Firestore | `billing.sync.ok` ; `entitlements/{uid}` à jour (`source: google_play`, `test: true`) ; `billingPurchases` présent **sans jeton** ; l'achat est **acquitté** dans la Play Console |
+| 7 | Refus d'un autre compte | essai avec un second compte Miff sur le même achat | refus calme (`billing.sync.refuse`, `motif: deja_lie`), aucun détail sur l'autre compte |
+| 8 | Journaux sans donnée personnelle | Firebase > Functions > Journaux | seulement des codes `billing.*`, jamais de jeton, d'identifiant, d'UID ni d'e-mail |
+| 9 | Pas de dépense | Facturation > Rapports (le lendemain) | 0 € |
+
+### 12.14 Lire les journaux de facturation
+
+| Code | Veut dire | Si ça se répète |
+|---|---|---|
+| `billing.prepare.ok` | identifiant d'achat remis | rien |
+| `billing.sync.ok` | achat vérifié et accordé (champs `lectures`, `ecritures`) | rien |
+| `billing.sync.refuse` + `motif` | refus attendu : `deja_lie`, `limite_frequence`, `achat_inconnu`, `produit_inconnu`, `partage_famille`, `jeton_invalide`, `signature_invalide` ; **à regarder** : `acces_refuse` (droits Google ou Apple), `non_configure` (Apple pas encore configuré), `indisponible` (store en panne) | `acces_refuse` : §12.7 ; `non_configure` : §12.11 |
+| `billing.google.notif` | message Google traité | rien |
+| `billing.google.ignore` + `motif` | message ignoré : `test_notification`, `autre_package`, `deja_vu`, `entree_invalide`, `type_ignore` | `autre_package` répété : vérifier la configuration de la Play Console |
+| `billing.apple.notif` / `billing.apple.ignore` | notification Apple traitée / ignorée (`deja_vu`, `type_ignore`) | rien |
+| `billing.apple.signature-invalide` | notification refusée (signature) | **à regarder si répété** : quelqu'un envoie n'importe quoi à l'adresse publique ; plafond d'instances et alertes de budget en place |
+| `billing.suppression.ok` | données d'abonnement d'un compte supprimées | rien |
+| `billing.*.erreur` | erreur inattendue (Firestore...) | copier à Claude |
+
+### 12.15 L'arrêter rapidement
+
+| Besoin | Action | Délai |
+|---|---|---|
+| **Plus aucun droit accordé par le serveur** | supprimer `recevoirNotificationsGooglePlay` et `recevoirNotificationsApple` puis les 3 autres : `npx firebase functions:delete <nom> --region europe-west9 --project miff-3d283` (relire le nom avant de confirmer). **Les droits déjà écrits restent** (Firestore) ; le Miff+ accordé à la main fonctionne toujours | 1 à 2 minutes par fonction |
+| **Couper l'accès de Google Play seul** | Play Console > Utilisateurs et autorisations > retirer `billing-sync` | immédiat |
+| **Couper Apple seul** | Secret Manager > `apple-iap-key` > désactiver la version, ou supprimer `billingConfig/apple` | immédiat (5 min de cache) |
+| **Limiter le coût** | plafond de dépense Cloud Functions (§1.2), `maxInstances` déjà à 3 | n/a |
+| **Retour arrière du code** | §7 (redéployer le commit précédent) ; les documents `billing*` restants ne contiennent aucune donnée personnelle hors UID et état | quelques minutes |
+
+### 12.16 Ce qui N'EST PAS fait (et pourquoi)
+
+- **Jeton App Check à usage unique** (`consumeAppCheckToken`) : **non activé** en v1. Il est en bêta, exige que les apps demandent des jetons « à usage limité » (iOS : `requireLimitedUseAppCheckTokens`, Android : `limitedUseAppCheckTokens`) et que `billing-sync` ait le rôle « Firebase App Check Token Verifier » ; il ajoute un aller-retour réseau. Un jeton App Check volé ne suffit pas (il faut aussi la connexion du compte) et `synchroniserAchat` est limitée à 1 appel par minute et par compte. **Signal pour l'activer** : appels abusifs constatés dans les journaux. Le code est prêt (option de `appelable()`), **il faudra alors modifier le code, les tests et les deux apps**.
+- **Fonction planifiée de réconciliation** : aucune (le filet est la synchronisation à l'ouverture de l'app et les relances des stores). À ajouter seulement si les journaux montrent des états périmés (compteur Scheduler partagé avec Ghostrun : §8).
+- **Révocation / remboursement par le serveur** : jamais (voir `docs/tickets/premium-achat-reel.md`, écart motivé avec le §6.5).
+- **Partage en famille (Apple) / bibliothèque familiale (Google)** : une transaction partagée est refusée (`partage_famille`), décision Q6.
+- **Dépendances ajoutées par SRV-7** (versions exactes, `package-lock.json`) : la bibliothèque **officielle** d'Apple `@apple/app-store-server-library` 3.1.0 (dépôt `apple/app-store-server-library-node`, licence MIT ; elle apporte `jsonwebtoken`, `jsrsasign`, `node-fetch`, `base64url`, soit **18 paquets de plus**) et `google-auth-library` 11.3.4 (déjà présente dans l'arbre de `firebase-admin`, simplement épinglée). **Aucun script d'installation de plus** (seuls `@firebase/util` et `protobufjs` en ont, comme avant : §9 bis) ; `npm audit` : 0 vulnérabilité connue le 2026-11-21. À relire à chaque PR Dependabot de ces paquets (ils vérifient des signatures de paiement).

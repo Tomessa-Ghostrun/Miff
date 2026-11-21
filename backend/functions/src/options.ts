@@ -32,14 +32,25 @@ export const LIMITES = {
  * Une tentative rejouee en boucle sur une erreur permanente est le scenario classique de facture surprise.
  * Une fonction qui en a besoin doit etre ajoutee ici avec sa raison (et idempotente), jamais en silence.
  */
-export const FONCTIONS_AVEC_RETRY_AUTORISEES: readonly string[] = [];
+export const FONCTIONS_AVEC_RETRY_AUTORISEES: readonly string[] = [
+  // SRV-7 : traitement IDEMPOTENT PAR CONSTRUCTION (chaque execution relit l'etat chez Google et ecrit cet etat ; un message deja traite est ignore par
+  // son identifiant ; une erreur definitive est consommee sans relance, une erreur passagere est abandonnee au bout de 24 h : achatTraitement.ts).
+  "recevoirNotificationsGooglePlay",
+];
 
 /**
  * Types de declencheurs autorises : fonction appelable (callableTrigger) et evenement (eventTrigger, ex. ecriture Firestore).
  * Tout autre type (HTTP public sans App Check, planifie, file de taches, blocage d'authentification) exige un ticket qui
  * l'ajoute ICI et dans le test, avec sa raison (ex. SRV-6 : fonction planifiee).
  */
-export const DECLENCHEURS_AUTORISES: readonly string[] = ["callableTrigger", "eventTrigger"];
+export const DECLENCHEURS_AUTORISES: readonly string[] = ["callableTrigger", "eventTrigger", "httpsTrigger"];
+
+/**
+ * Fonctions HTTP PUBLIQUES (httpsTrigger, joignables sans connexion ni App Check) : UNE SEULE, SRV-7. Apple envoie ses notifications serveur V2 a une URL publique
+ * que l'on ne peut pas proteger par un jeton : la protection est la verification de la signature JWS (chaine de certificats Apple), faite AVANT tout acces a Firestore
+ * (achatApple.ts, recevoirNotificationsApple.ts). Toute autre fonction HTTP publique est refusee par garde-couts.test.mjs.
+ */
+export const FONCTIONS_HTTP_PUBLIQUES_AUTORISEES: readonly string[] = ["recevoirNotificationsApple"];
 
 /**
  * Fonctions autorisees a tourner avec l'identite PAR DEFAUT du projet : AUCUNE. La seule qui en beneficiait (`ping`, fonction de demonstration
@@ -75,5 +86,22 @@ setGlobalOptions({
  */
 export const LIMITES_NOTIFICATION = {
   maxInstances: LIMITES.maxInstancesPlafond,
+  memory: "256MiB",
+} as const;
+
+// ---------------------------------------------------------------------------------------------------------------------------------
+// Premium reel (SRV-7, ticket docs/tickets/premium-achat-reel.md §10) : cinq fonctions, UN compte de service dedie `billing-sync`, sans cle.
+// Litteral du compte ecrit dans le fichier de chaque declencheur (exige par garde-couts.test.mjs) ; la constante ci-dessous sert a l'usurpation
+// d'identite de repli (jetonsGoogle.ts) et est comparee a ces litteraux par le test.
+// ---------------------------------------------------------------------------------------------------------------------------------
+export const COMPTE_SERVICE_FACTURATION = "billing-sync@miff-3d283.iam.gserviceaccount.com";
+
+/**
+ * Limites des fonctions de facturation : 3 instances au plus (valeur globale), 256 Mio (le SDK Admin + la bibliotheque Apple depassent probablement
+ * 128 Mio : a mesurer), 30 s. Volume attendu : quelques appels par abonne et par mois (ticket §17) ; 3 instances suffisent largement, et un plafond bas
+ * borne la depense si le point d'entree public d'Apple est martele.
+ */
+export const LIMITES_FACTURATION = {
+  maxInstances: LIMITES.maxInstances,
   memory: "256MiB",
 } as const;
