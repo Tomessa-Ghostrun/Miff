@@ -1,5 +1,7 @@
 # Publier les textes légaux en version 1.1 (site Firebase Hosting) : procédure pour le PM
 
+> **ARCHIVE (2026-11-21) : ne plus suivre ce document.** La version 1.2 (21 novembre 2026) le remplace : `docs/dev/publication-textes-legaux-v1-2.md` (mêmes commandes, contrôles de version, de date et de contenu mis à jour). Gardé pour l'historique de la 1.1 ; ses chaînes (« 19 novembre 2026 », « Version 1.1 ») ne correspondent plus aux textes.
+
 Préparé le 2026-11-19 par `release-manager`. **C'est toi, et toi seul, qui tapes les commandes de déploiement** : aucun agent ne déploie, ne se connecte à Firebase ni ne soumet quoi que ce soit à un store. Chaque commande Firebase porte `--project miff-3d283` (jamais `ghostrun-app`, même s'il est visible depuis ton compte Google).
 
 ## 0. Ce que tu publies, en clair

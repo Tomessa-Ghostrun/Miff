@@ -165,11 +165,11 @@ cd web
 
 ### Republication des textes en version 1.1 (19 novembre 2026)
 
-Le site est en ligne depuis le 13 novembre 2026 (textes 1.0). Pour publier la **version 1.1** (description de la photo, journal local du temps, alerte « Je suis en danger »), suivre **`docs/dev/publication-textes-legaux-v1-1.md`** (commandes PowerShell, essai à blanc, contrôles en lecture seule, retour arrière). Même règles : seul le PM déploie, jamais depuis la CI, toujours `--project miff-3d283`, clé web en variable temporaire.
+Le site est en ligne depuis le 13 novembre 2026 (textes 1.0). Pour publier la **version 1.1** (description de la photo, journal local du temps, alerte « Je suis en danger »), suivre **`docs/dev/publication-textes-legaux-v1-1.md`** (archive : remplacée par la 1.2 ci-dessous ; commandes PowerShell, essai à blanc, contrôles en lecture seule, retour arrière). Même règles : seul le PM déploie, jamais depuis la CI, toujours `--project miff-3d283`, clé web en variable temporaire.
 
 ### Republication des textes en version 1.2 (21 novembre 2026)
 
-Version 1.2 (date de la dernière photo, registre serveur de 30 jours des notifications, consentement v4, langues) : **préparée, pas publiée**. Mêmes commandes que ci-dessus (`docs/dev/publication-textes-legaux-v1-1.md`) ; l'ordre et les points à valider sont dans `docs/legal/maj-2026-11-21-a-publier.md` (le texte est publié **avant** le déploiement des fonctions du registre). Si le jour de publication n'est pas le 21 novembre, remettre le jour réel dans les quatre textes de `docs/legal/` et dans `web/tests/legal-1-1.test.mjs`.
+Version 1.2 (date de la dernière photo, registre serveur de 30 jours des notifications, consentement v4, langues) : **préparée, pas publiée**. Suivre **`docs/dev/publication-textes-legaux-v1-2.md`** (mêmes commandes que ci-dessus, contrôles de la 1.2, retour arrière ; la procédure de la 1.1 est gardée en archive) ; l'ordre et les points à valider sont dans `docs/legal/maj-2026-11-21-a-publier.md` (le texte est publié **avant** le déploiement des fonctions du registre). Si le jour de publication n'est pas le 21 novembre, remettre le jour réel dans les quatre textes de `docs/legal/` et dans `web/tests/legal-1-1.test.mjs`.
 
 ### Première mise en ligne (13 novembre 2026) : déroulé complet, dans l'ordre
 

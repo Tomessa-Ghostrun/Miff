@@ -1,6 +1,7 @@
 // Textes légaux en version 1.1 (2026-11-19) puis 1.2 (2026-11-21, tests « VERSION 1.2 » en fin de fichier) : version et date visibles, alerte « Je suis en danger »,
 // journal local du temps et description de photo décrits sans mensonge. Tests sans dépendance (node:test).
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { buildTemp, htmlPages, visibleText } from './helpers.mjs';
 
@@ -264,4 +265,29 @@ test('VERSION 1.2 - réserves de mise en service et corrections de la revue d\'e
   assert.match(POLICY_EN, /On iPhone, as long as this switch is not delivered/);
   assert.match(TERMS_FR, /sur iPhone, tant que cet interrupteur n.est pas livré/);
   assert.match(TERMS_EN, /on iPhone, as long as this switch is not delivered/);
+});
+
+test('PROCEDURE 1.2 - les chaînes de contrôle de docs/dev/publication-textes-legaux-v1-2.md existent bien dans les pages construites (et celles à retirer en sont absentes)', () => {
+  const procedure = readFileSync(new URL('../../docs/dev/publication-textes-legaux-v1-2.md', import.meta.url), 'utf8');
+  const pairs = (block) => [...block.matchAll(/@\("([^"]+)", "([^"]+)"\)/g)].map((m) => {
+    const page = m[1].replace(/^\//, '').split(String.fromCharCode(92)).join('/');
+    return [page.endsWith('.html') ? page : `${page}.html`, m[2]];
+  });
+  // Blocs « $presents » (au §4 et au §7.1) et « $absents » (au §4) de la procédure.
+  const presentBlocks = [...procedure.matchAll(/\$presents = @\(([\s\S]*?)\n\)/g)].map((m) => m[1]);
+  const absentBlocks = [...procedure.matchAll(/\$absents = @\(([\s\S]*?)\n\)/g)].map((m) => m[1]);
+  assert.equal(presentBlocks.length, 2, 'la procédure doit avoir deux listes de chaînes à retrouver (§4 et §7.1)');
+  assert.equal(absentBlocks.length, 1, 'la procédure doit avoir une liste de chaînes à retirer (§4)');
+  for (const [file, expected] of presentBlocks.flatMap(pairs)) {
+    assert.ok(byName[file], `procédure : page inconnue ${file}`);
+    assert.ok(byName[file].html.includes(expected), `procédure : « ${expected} » absent de ${file}`);
+  }
+  for (const [file, forbidden] of absentBlocks.flatMap(pairs)) {
+    assert.ok(byName[file], `procédure : page inconnue ${file}`);
+    assert.ok(!byName[file].html.includes(forbidden), `procédure : « ${forbidden} » ne doit plus figurer dans ${file}`);
+  }
+  // La procédure cite la bonne date, le bon message de déploiement, et ne contient ni --force ni « firebase use ».
+  assert.match(procedure, /--message "Textes legaux 1\.2 du 21 novembre 2026"/);
+  assert.doesNotMatch(procedure.replace(/jamais `--force`|Pas de `--force`, jamais|jamais `firebase use`/g, ''), /--force|firebase(\.cmd)? use/);
+  for (const command of procedure.match(/firebase\.cmd (deploy|hosting:channel:deploy)[^\n]*/g)) assert.match(command, /--project miff-3d283/);
 });
