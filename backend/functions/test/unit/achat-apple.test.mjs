@@ -80,13 +80,13 @@ const transaction = (over = {}) => ({
   type: 'Auto-Renewable Subscription',
   expiresDate: T.getTime() + 365 * 86_400_000,
   purchaseDate: T.getTime(),
-  appAccountToken: '123e4567-e89b-42d3-a456-426614174000',
+  appAccountToken: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee',
   inAppOwnershipType: 'PURCHASED',
   environment: 'Sandbox',
   signedDate: T.getTime(),
   ...over,
 });
-const config = async () => ({ cle: 'cle-de-test', keyId: 'ABCDE12345', issuerId: '123e4567-e89b-42d3-a456-426614174000', appAppleId: ID_APP });
+const config = async () => ({ cle: 'cle-de-test', keyId: 'ABCDE12345', issuerId: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee', appAppleId: ID_APP });
 const client = (extra = {}, racinesTest) => A.creerClientApple({ config, racines: racinesTest ?? [pki.racineDer], verificationsEnLigne: false, ...extra });
 
 t('transaction valide (bac a sable) : identite de l\'achat renvoyee', async () => {
@@ -202,7 +202,7 @@ const avecApi = (reponse) => client({ fabriqueApi: () => ({ getAllSubscriptionSt
 t("lireEtat : l'etat vient de l'API (statut + transaction + renouvellement signes) et s'applique aux regles de correspondance", async () => {
   const e = await avecApi(reponseApi()).lireEtat('Sandbox', ID_ORIGINE, T);
   assert.deepEqual({ state: e.state, active: e.active, plan: e.plan, test: e.test, store: e.store, willRenew: e.willRenew }, { state: 'active', active: true, plan: 'yearly', test: true, store: 'app_store', willRenew: true });
-  assert.equal(e.idCompte, '123e4567-e89b-42d3-a456-426614174000');
+  assert.equal(e.idCompte, 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee');
   const grace = await avecApi(reponseApi({}, { status: 4, signedRenewalInfo: pki.signer({ autoRenewStatus: 1, environment: 'Sandbox', gracePeriodExpiresDate: T.getTime() + 5 * 86_400_000, signedDate: T.getTime() }) })).lireEtat('Sandbox', ID_ORIGINE, T);
   assert.deepEqual({ state: grace.state, active: grace.active }, { state: 'grace', active: true });
   const rembourse = await avecApi(reponseApi({}, { status: 5, signedTransactionInfo: pki.signer(transaction({ revocationDate: T.getTime() - 1000, revocationReason: 0 })) })).lireEtat('Sandbox', ID_ORIGINE, T);
@@ -235,7 +235,7 @@ t("lireEtat : erreurs de l'API Apple -> 404 achat_inconnu, 401/403 acces_refuse,
 
 t("production : si le PM corrige `appAppleId` dans la configuration, l'ancien identifiant n'est plus utilise (un verificateur par identifiant d'app)", async () => {
   let id = ID_APP + 1; // mauvais identifiant saisi au depart
-  const c = A.creerClientApple({ config: async () => ({ cle: 'x', keyId: 'ABCDE12345', issuerId: '123e4567-e89b-42d3-a456-426614174000', appAppleId: id }), racines: [pki.racineDer], verificationsEnLigne: false });
+  const c = A.creerClientApple({ config: async () => ({ cle: 'x', keyId: 'ABCDE12345', issuerId: 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee', appAppleId: id }), racines: [pki.racineDer], verificationsEnLigne: false });
   const n = pki.signer({ notificationType: 'DID_RENEW', notificationUUID: '8a7b4f50-1111-4222-8333-444455556666', version: '2.0', signedDate: T.getTime(), data: { environment: 'Production', appAppleId: ID_APP, bundleId: 'com.tomessa.miff', signedTransactionInfo: pki.signer(transaction({ environment: 'Production' })) } });
   assert.equal(await raison(() => c.verifierNotification(n)), 'signature_invalide');
   id = ID_APP; // corrige

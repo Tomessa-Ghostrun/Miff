@@ -43,8 +43,8 @@ test("formes d'entree : une transaction signee (JWS) a trois segments base64url 
   for (const mauvais of ['', 'a.b', 'aaaa.bbbb', 'aaaa.bbbb.cc dd', 'aaaa.bbbb.cccc.dddd', `aaaa.${'b'.repeat(16 * 1024)}.cccc`, 5, null]) assert.ok(!R.jwsValide(mauvais), String(mauvais).slice(0, 30));
   assert.ok(R.idTransactionAppleValide('2000000123456789'));
   for (const mauvais of ['', 'abc', '12 34', '../1', '1'.repeat(21), 12]) assert.ok(!R.idTransactionAppleValide(mauvais));
-  assert.ok(R.uuidValide('123e4567-e89b-42d3-a456-426614174000'));
-  assert.ok(!R.uuidValide('123e4567e89b42d3a456426614174000') && !R.uuidValide('../x'));
+  assert.ok(R.uuidValide('aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee'));
+  assert.ok(!R.uuidValide('aaaaaaaabbbb4ccc8dddeeeeeeeeeeee') && !R.uuidValide('../x'));
 });
 
 // --- Google : une fixture par etat (BK5) -----------------------------------------------------------------------------------------------
@@ -60,7 +60,7 @@ const google = (over = {}, ligne = {}) => ({
       ...ligne,
     },
   ],
-  externalAccountIdentifiers: { obfuscatedExternalAccountId: '123E4567-E89B-42D3-A456-426614174000' },
+  externalAccountIdentifiers: { obfuscatedExternalAccountId: 'AAAAAAAA-BBBB-4CCC-8DDD-EEEEEEEEEEEE' },
   acknowledgementState: 'ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED',
   ...over,
 });
@@ -72,7 +72,7 @@ test('Google : actif (mensuel) -> active, droit accorde, echeance du store, reno
     { state: 'active', active: true, trial: false, willRenew: true, plan: 'monthly', test: false, store: 'google_play', produit: 'miff_plus' },
   );
   assert.equal(e.expiresAt.getTime(), plus(30).getTime());
-  assert.equal(e.idCompte, '123e4567-e89b-42d3-a456-426614174000', 'identifiant d\'achat compare en minuscules');
+  assert.equal(e.idCompte, 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee', 'identifiant d\'achat compare en minuscules');
   assert.equal(e.observeA, T.getTime());
   assert.equal(e.accuser, false);
 });
@@ -124,8 +124,8 @@ test("Google : un droit « actif » dont l'echeance est deja passee (lecture per
 });
 
 test('Google : achat de test marque ; achat a acquitter signale ; achat precedent (changement de forfait) signale ; forfait inconnu = plan nul', () => {
-  const e = R.etatDepuisGoogle(google({ testPurchase: {}, acknowledgementState: 'ACKNOWLEDGEMENT_STATE_PENDING', linkedPurchaseToken: 'ancien-jeton-0123456789' }, { offerDetails: { basePlanId: 'autre' } }), T);
-  assert.deepEqual({ test: e.test, accuser: e.accuser, lien: e.lienPrecedent, plan: e.plan }, { test: true, accuser: true, lien: 'ancien-jeton-0123456789', plan: null });
+  const e = R.etatDepuisGoogle(google({ testPurchase: {}, acknowledgementState: 'ACKNOWLEDGEMENT_STATE_PENDING', linkedPurchaseToken: 'ancien-jeton-aaaaaaaaaa' }, { offerDetails: { basePlanId: 'autre' } }), T);
+  assert.deepEqual({ test: e.test, accuser: e.accuser, lien: e.lienPrecedent, plan: e.plan }, { test: true, accuser: true, lien: 'ancien-jeton-aaaaaaaaaa', plan: null });
 });
 
 test("Google : sans identifiant d'achat (achat fait hors de l'app) -> idCompte nul", () => {
@@ -154,7 +154,7 @@ const apple = (over = {}) => ({
   productId: 'com.tomessa.miff.plus.annual',
   type: 'Auto-Renewable Subscription',
   expiresDate: plus(365).getTime(),
-  appAccountToken: '123E4567-E89B-42D3-A456-426614174000',
+  appAccountToken: 'AAAAAAAA-BBBB-4CCC-8DDD-EEEEEEEEEEEE',
   inAppOwnershipType: 'PURCHASED',
   environment: 'Production',
   signedDate: T.getTime() - 1000,
@@ -165,7 +165,7 @@ const renouvellement = (over = {}) => ({ autoRenewStatus: 1, signedDate: T.getTi
 test("Apple : statut 1 (actif) annuel -> active ; avec offre d'introduction -> trial ; renouvellement coupe -> canceled", () => {
   let e = R.etatDepuisApple(1, apple(), renouvellement(), T);
   assert.deepEqual({ state: e.state, active: e.active, trial: e.trial, willRenew: e.willRenew, plan: e.plan, test: e.test, store: e.store }, { state: 'active', active: true, trial: false, willRenew: true, plan: 'yearly', test: false, store: 'app_store' });
-  assert.equal(e.idCompte, '123e4567-e89b-42d3-a456-426614174000');
+  assert.equal(e.idCompte, 'aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee');
   assert.equal(e.observeA, T.getTime() - 500, "heure signee par Apple, la plus recente des deux");
   e = R.etatDepuisApple(1, apple({ offerType: 1, offerDiscountType: 'FREE_TRIAL', expiresDate: plus(7).getTime() }), renouvellement(), T);
   assert.deepEqual({ state: e.state, trial: e.trial, active: e.active }, { state: 'trial', trial: true, active: true });
