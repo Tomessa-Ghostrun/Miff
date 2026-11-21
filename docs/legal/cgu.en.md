@@ -1,8 +1,11 @@
 # Miff Terms of Use
 
-**Version 1.2 — last updated: November 21, 2026**
+**Version 1.3 — last updated: November 22, 2026**
 
-> **What has changed since version 1.1 (November 19, 2026)**
+> **What has changed since version 1.2 (November 21, 2026)**
+> - **On iPhone as on Android, you can turn off usage statistics and crash reports at any time in the app Settings**: you no longer need to write to us to withdraw this agreement (article 3, and the Privacy Policy). The sign-up sentence also quotes "Continue with Apple" on iPhone.
+>
+> **What had changed in version 1.2 (November 21, 2026), since version 1.1 (November 19, 2026)**
 > - Stopping sharing and deleting your account also erase **the date of your last photo**, recorded in your status to order the cards in the Feed (article 6).
 > - Our server keeps **a 30-day technical trace** of each notification sent to a loved one, with no first name, photo, place or location; they can erase it (article 6, and the Privacy Policy).
 > - The app is also available in Spanish, Italian, Portuguese (Portugal) and German, but **these terms remain in French and English** (article 17).
@@ -38,12 +41,12 @@ Miff is an app to **know your loved ones are okay, without bothering them**.
 
 ## 3. Accepting these terms
 
-At sign-up, you tap the **"Join"** button (or "Continue with Google"). Just above it, a sentence tells you: "By tapping “Join” or “Continue with Google”, you accept our Terms of Use and our Privacy Policy, as well as the sharing of your anonymous usage statistics and crash reports (you can change this at any time in the Settings)."
+At sign-up, you tap the **"Join"** button (or "Continue with Google", or "Continue with Apple" on iPhone). Just above it, a sentence tells you: "By tapping “Join” or “Continue with Google”, you accept our Terms of Use and our Privacy Policy, as well as the sharing of your anonymous usage statistics and crash reports (you can change this at any time in the Settings)." On iPhone, it also quotes "Continue with Apple".
 
 In practice:
-- **There is no checkbox**: your click on "Join" (or "Continue with Google") counts as acceptance of these terms and of the Privacy Policy. If you do not agree, do not click and do not use the app.
-- **If you sign in with Google from the "Sign in" screen and do not have a Miff account yet**, a screen shows you the same sentence (“By tapping “Continue”, you accept…”) before going any further, with two buttons: "Continue" and "Cancel". If you tap "Cancel" (or the phone's back button), the account that was just created is deleted and nothing is kept.
-- **The same click turns on the sharing of usage statistics and crash reports** (see the Privacy Policy). It is turned on from the start, but **you can turn it off at any time in Settings** (a single choice for statistics and crash reports; on iPhone, as long as this switch is not delivered, by writing to tomessa.mfouka@gmail.com), with no consequence for your account or your use of Miff.
+- **There is no checkbox**: your click on "Join" (or "Continue with Google", or "Continue with Apple" on iPhone) counts as acceptance of these terms and of the Privacy Policy. If you do not agree, do not click and do not use the app.
+- **If you sign in with Google (or, on iPhone, with Apple) from the "Sign in" screen and do not have a Miff account yet**, a screen shows you the same sentence (“By tapping “Continue”, you accept…”) before going any further, with two buttons: "Continue" and "Cancel". If you tap "Cancel" (or, on Android, the phone's back button), the account that was just created is deleted and nothing is kept.
+- **The same click turns on the sharing of usage statistics and crash reports** (see the Privacy Policy). It is turned on from the start, but **you can turn it off at any time in Settings** (on iPhone as on Android; a single choice for statistics and crash reports), with no consequence for your account or your use of Miff.
 - **Sharing your location is not covered**: it requires a separate agreement, given Miff by Miff (article 6).
 - We record the date and version of the terms you accepted.
 

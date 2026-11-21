@@ -169,7 +169,11 @@ Le site est en ligne depuis le 13 novembre 2026 (textes 1.0). Pour publier la **
 
 ### Republication des textes en version 1.2 (21 novembre 2026)
 
-Version 1.2 (date de la dernière photo, registre serveur de 30 jours des notifications, consentement v4, langues) : **préparée, pas publiée**. Suivre **`docs/dev/publication-textes-legaux-v1-2.md`** (mêmes commandes que ci-dessus, contrôles de la 1.2, retour arrière ; la procédure de la 1.1 est gardée en archive) ; l'ordre et les points à valider sont dans `docs/legal/maj-2026-11-21-a-publier.md` (le texte est publié **avant** le déploiement des fonctions du registre). Si le jour de publication n'est pas le 21 novembre, remettre le jour réel dans les quatre textes de `docs/legal/` et dans `web/tests/legal-1-1.test.mjs`.
+Version 1.2 (date de la dernière photo, registre serveur de 30 jours des notifications, consentement v4, langues) : **remplacée par la 1.3 ci-dessous** (archive : ne plus suivre). Procédure d'origine : **`docs/dev/publication-textes-legaux-v1-2.md`** (mêmes commandes que ci-dessus, contrôles de la 1.2, retour arrière ; la procédure de la 1.1 est gardée en archive) ; l'ordre et les points à valider sont dans `docs/legal/maj-2026-11-21-a-publier.md` (le texte est publié **avant** le déploiement des fonctions du registre). Si le jour de publication n'est pas le 21 novembre, remettre le jour réel dans les quatre textes de `docs/legal/` et dans `web/tests/legal-1-1.test.mjs`.
+
+### Republication des textes en version 1.3 (22 novembre 2026)
+
+Version 1.3 (le retrait des statistiques d'usage et des rapports de plantage se fait dans les Réglages sur iPhone comme sur Android, marque de retrait en attente, phrase d'inscription de l'iPhone ; elle contient tout ce que contenait la 1.2) : **préparée, pas publiée**. Suivre **`docs/dev/publication-textes-legaux-v1-3.md`** (mêmes commandes que ci-dessus ; la procédure de la 1.2 est gardée en archive) ; l'ordre et les points à valider sont dans `docs/legal/maj-1-3-a-publier.md` (le texte est publié **avant** la distribution du build iPhone avec l'interrupteur des statistiques, PR #311). Si le jour de publication n'est pas le 22 novembre, remettre le jour réel dans les quatre textes de `docs/legal/` et dans les constantes `VERSION`, `DATE_FR` et `DATE_EN` en tête de `web/tests/legal-1-1.test.mjs`.
 
 ### Première mise en ligne (13 novembre 2026) : déroulé complet, dans l'ordre
 
