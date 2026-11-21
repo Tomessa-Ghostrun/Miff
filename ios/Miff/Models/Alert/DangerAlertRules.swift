@@ -16,8 +16,8 @@ enum DangerAlertRules {
     static let armMillis = 400
     /// Puis la personne maintient ce temps (ticket : « maintien 5 s », à régler en recette).
     static let holdMillis = 5_000
-    /// De combien le doigt peut s'éloigner du bouton avant l'annulation (44 pt, ticket 7.2).
-    static let holdSlopPoints: Double = 44
+    // Retour du PM (recette) : AUCUNE distance n'annule le geste. Il faut poser le doigt SUR le bouton pour l'engager, mais une fois engagé, le doigt peut
+    // sortir du bouton : seuls le relâchement, l'arrière-plan, un appel entrant ou une annulation du système l'arrêtent.
 
     private static let hour = 3_600_000
     private static let day = 24 * hour
@@ -52,8 +52,8 @@ enum DangerAlertRules {
     /// Le téléphone ne juge une case périmée que passé 24 h PLUS cette marge (son horloge n'est pas celle du serveur) ; une case que le
     /// serveur juge périmée est toujours honorée.
     static let quotaSafetyMillis = 2 * 60_000
-    /// La bulle bleue de l'onboarding se retire d'elle-même après ce temps (ticket 7.1).
-    static let hintSeconds = 6.0
+    /// La bulle bleue de l'onboarding ne prend jamais plus de cette part de l'écran en hauteur : au-delà (grandes tailles de texte), son contenu défile dedans.
+    static let hintMaxScreenShare = 0.45
     /// Entre deux vérifications de l'horloge d'une alerte (une alerte qui a dépassé sa date disparaît d'elle-même).
     static let tickSeconds = 60.0
 

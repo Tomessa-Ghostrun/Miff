@@ -1,5 +1,6 @@
 #if ALERT_DANGER
 import Foundation
+import SwiftUI
 
 // ALERTE « Je suis en danger » (docs/tickets/alerte-danger.md, section 17). AUCUNE couleur nouvelle : les fonds sont ceux du design system (mêmes
 // valeurs que `ui/theme/AlertColor.kt` d'Android).
@@ -16,4 +17,16 @@ let colorOnAlert = colorTextOnAction
 let colorAlertBannerProgress = ColorToken(hex: 0xFFFFFF, alpha: 0.28)
 /// Le voile sombre derrière les phrases posées sur la photo du viseur en mode alerte (le texte blanc y reste lisible sur une photo claire).
 let colorAlertOnPhotoScrim = ColorToken(hex: 0x000000, alpha: 0.55)
+
+// Le TITRE de la bannière d'une alerte en cours (« Mettre fin à l'alerte ? ») : DEUX FOIS la taille d'avant (textBodyBold16 : 16 pt) pour hiérarchiser le message
+// (retour du PM en recette). L'interligne reste serré (40 pt, pas 44) pour que deux lignes ne gonflent pas la bannière. Dynamic Type : la courbe du style
+// système « title » (plus douce que « body » : un titre de 32 pt qui suivrait « body » dépasserait 90 pt aux tailles d'accessibilité), et la bannière
+// plafonne tout le bandeau à `DangerBannerView.maxDynamicType`. Style propre à l'alerte : il n'entre pas dans `TextStyleTokens.all`.
+let textAlertBannerTitle = TextStyleToken(
+    name: "textAlertBannerTitle",
+    face: .hankenBold,
+    size: textBodyBold16.size * 2,
+    lineHeight: 40,
+    dynamicTypeStyle: .title
+)
 #endif

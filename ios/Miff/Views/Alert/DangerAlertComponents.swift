@@ -8,15 +8,26 @@ import UIKit
 
 // MARK: - La bulle bleue de l'onboarding (maquette 01)
 
+/// La hauteur du contenu de la bulle (marges comprises), mesurée.
+private struct HintHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = max(value, nextValue())
+    }
+}
+
 /// « Touche pour donner de tes nouvelles / Maintiens pour déclarer une alerte » (maquette 01, au tutoiement : écart E1). Non bloquante, sans bouton hormis
-/// le discret « En savoir plus », elle se retire d'elle-même après environ 6 secondes et au premier toucher ailleurs (l'appelant la retire). Annoncée
-/// poliment une seule fois au lecteur d'écran.
+/// le discret « En savoir plus ». AUCUNE minuterie (retour du PM en recette) : elle reste affichée, lisible et annoncée, jusqu'à la première interaction avec le
+/// bouton de capture (clic ou maintien), que l'appelant (`DangerHintSlot`) constate pour la retirer. Annoncée poliment une seule fois au lecteur d'écran.
 struct DangerHintBubble: View {
     let onMore: () -> Void
-    let onGone: () -> Void
-    var visibleSeconds = DangerAlertRules.hintSeconds
+    /// Le plus que la bulle peut prendre (environ 45 % de l'écran, `DangerAlertRules.hintMaxScreenShare`) : aux grandes tailles de texte, son contenu défile
+    /// À L'INTÉRIEUR au-delà, et la bulle ne masque jamais le viseur ni le bouton de capture. Sans limite par défaut (nil : compacte).
+    var maxHeight: CGFloat?
+    @State private var contentHeight: CGFloat = 0
 
-    var body: some View {
+    private var content: some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
             VStack(alignment: .leading, spacing: 0) {
                 line("alert_hint_tap")
@@ -33,22 +44,45 @@ struct DangerHintBubble: View {
             }
             .buttonStyle(.plain)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, Spacing.sm + Spacing.xs)
+        // Sa hauteur est MESURÉE : la bulle est de la hauteur de son contenu, jamais plus ; défilante seulement au-delà de la limite.
+        .fixedSize(horizontal: false, vertical: true)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous).fill(colorActionPrimary.withAlpha(0.92).color)
-        )
-        .overlay(RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(colorActionPrimary.color, lineWidth: 2))
-        .task {
-            UIAccessibility.post(
-                notification: .announcement,
-                argument: L10n.string("alert_hint_tap") + ". " + L10n.string("alert_hint_hold")
-            )
-            try? await Task.sleep(nanoseconds: UInt64(visibleSeconds * 1_000_000_000))
-            if !Task.isCancelled {
-                onGone()
+            GeometryReader { proxy in
+                Color.clear.preference(key: HintHeightKey.self, value: proxy.size.height)
             }
+        )
+    }
+
+    @ViewBuilder
+    private var scrollingContent: some View {
+        if let maxHeight, IncentiveBubbleLayout.scrolls(content: contentHeight, maxBodyHeight: maxHeight) {
+            ScrollView(.vertical) {
+                content
+            }
+            .frame(height: IncentiveBubbleLayout.bodyHeight(content: contentHeight, maxBodyHeight: maxHeight))
+        } else {
+            content
         }
+    }
+
+    var body: some View {
+        scrollingContent
+            .onPreferenceChange(HintHeightKey.self) { contentHeight = $0 }
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous).fill(colorActionPrimary.withAlpha(0.92).color)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10, style: .continuous).stroke(colorActionPrimary.color, lineWidth: 2)
+            )
+            .task {
+                UIAccessibility.post(
+                    notification: .announcement,
+                    argument: L10n.string("alert_hint_tap") + ". " + L10n.string("alert_hint_hold")
+                )
+            }
     }
 
     private func line(_ key: String) -> some View {
