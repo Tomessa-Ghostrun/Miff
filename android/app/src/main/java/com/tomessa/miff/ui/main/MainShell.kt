@@ -75,6 +75,7 @@ import com.tomessa.miff.ui.alert.AlertSentHost
 import com.tomessa.miff.ui.alert.AlertSentRoute
 import com.tomessa.miff.ui.alert.AlertUpdateHooks
 import com.tomessa.miff.ui.alert.AlertViewModel
+import com.tomessa.miff.ui.alert.shouldOfferSeeMiff
 import com.tomessa.miff.ui.components.ConnectionGate
 import com.tomessa.miff.ui.components.ConnectionHost
 import com.tomessa.miff.ui.components.LocalBottomOverlayPadding
@@ -1140,8 +1141,9 @@ fun MainTabs(
                                 onRetry = alertVm::onRetry,
                                 // The cross: the sending that is waiting or refused is given up (the server is asked before the pointer is erased).
                                 onClose = alertVm::onCancelPending,
-                                // The Feed shows ANOTHER Miff than the one of the alert: "Voir la Miff {nom}" brings the Feed back to it (ticket 7.4).
-                                showSeeMiff = ready?.activeId?.let { it != originId } == true,
+                                // "Voir la Miff {nom}" names the Miff of origin (the title of the banner no longer does): it is offered when the Feed shows ANOTHER Miff, and as soon as the
+                                // person has several Miffs, so that she always sees which circle was alerted (decision of the coordinator, review of #306: less risk of a false feeling of safety).
+                                showSeeMiff = shouldOfferSeeMiff(ready?.miffs?.size ?: 0, ready?.activeId, originId),
                                 onCall = { alert?.let { it.onOpenSent(originId, false, false) } },
                                 onSeeMiff = {
                                     onSelectMiff(originId)

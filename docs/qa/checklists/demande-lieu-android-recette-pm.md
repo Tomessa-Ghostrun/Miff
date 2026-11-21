@@ -12,7 +12,7 @@
 
 ## Partie A : le MEMBRE demande un lieu (compte B)
 
-1. [ ] Onglet **Profil**, liste « Lieux de confiance de <Miff> » : le bouton s'appelle **« Demander l'ajout d'un lieu »** (même place et même aspect que « Ajouter un lieu » du créateur), **un seul** bouton, jamais « Ajouter un lieu ».
+1. [ ] Onglet **Profil**, liste « Les lieux de la Miff » : le bouton s'appelle **« Demander l'ajout d'un lieu »** (même place et même aspect que « Ajouter un lieu » du créateur), **un seul** bouton, jamais « Ajouter un lieu ».
 2. [ ] Touchez-le : le formulaire s'ouvre avec le titre **« Proposer un lieu »**, la Miff en une puce (pas de sélecteur), le nom, l'adresse, le périmètre sur la carte, le type **« Zone de confiance »** par défaut, la **catégorie** (comme pour un lieu, « Maison » par défaut). Sous le bouton : « Le créateur de la Miff verra ta demande et décidera de l'ajouter ou non. » ; le bouton s'appelle **« Soumettre la demande »**.
 3. [ ] Tapez un nom et choisissez une adresse : le bouton devient actif. Touchez-le : retour à la liste, message **« Demande envoyée. Elle est en attente dans la liste. »**
 4. [ ] Votre demande est **en première position**, avant les lieux de la Miff, dans une **carte à fond pâle et contour en pointillés**, avec la pastille **« En attente »** (jamais de rouge ni d'orange).

@@ -21,7 +21,10 @@ object AlertRules {
     /** Then the person holds this long (ticket: "maintien 5 s"; to be tuned at the acceptance test). */
     const val HOLD_MILLIS = 5_000L
 
-    /** How far the finger may drift from the button before the gesture is cancelled (48 dp, ticket 7.2). */
+    /**
+     * How far the finger may drift from where it went down BEFORE the screen is armed (the first [ARM_MILLIS]) before the touch is read as a swipe and cancelled (48 dp, ticket 7.2).
+     * Once armed, the finger is free to leave the button: only the release stops the hold (recette of the PM, 2026-11-20).
+     */
     const val HOLD_SLOP_DP = 48
 
     private const val HOUR = 3_600_000L

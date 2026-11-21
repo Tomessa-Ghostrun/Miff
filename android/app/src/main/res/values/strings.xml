@@ -712,7 +712,7 @@
     <string name="place_list_title_named">Places of %1$s</string>
     <string name="place_list_member_hint">Your Miff\'s places, set by its creator.</string>
     <string name="place_list_empty_member">No trusted place yet.</string>
-    <string name="place_profile_title_named">Trusted places of %1$s</string>
+    <string name="place_profile_title_named">The Miff\'s places</string>
     <string name="place_profile_unavailable">The places aren\'t available right now.</string>
     <string name="place_list_row_type_a11y">%1$s, %2$s</string>
     <string name="place_list_add_action">Add a place</string>
@@ -1412,8 +1412,8 @@
     <string name="alert_emergency_fire">Fire brigade</string>
     <string name="alert_emergency_european">European emergency number</string>
     <string name="alert_emergency_international">International emergency number</string>
-    <string name="alert_banner_title">You alerted the people of the Miff “%1$s”.</string>
-    <string name="alert_banner_body">Hold for 5 seconds to end the alert if you\'re no longer in danger.</string>
+    <string name="alert_banner_title">End the alert?</string>
+    <string name="alert_banner_body">Hold for 5 seconds to end the alert. Your loved ones will know you\'re now safe</string>
     <string name="alert_banner_sending">Sending your alert to the Miff “%1$s”…</string>
     <string name="alert_banner_waiting">Waiting to be sent</string>
     <string name="alert_banner_needs_confirmation">Your alert hasn\'t gone for a while: it\'s waiting for your decision.</string>
@@ -1438,7 +1438,7 @@
     <string name="notif_alert_end_body">%1$s said they\'re okay.</string>
     <string name="android_notif_channel_alerts">Alerts from a loved one</string>
     <string name="android_notif_channel_alerts_desc">When a loved one declares an alert in one of your Miffs.</string>
-    <string name="alert_banner_title_no_name">You alerted the people of your Miff.</string>
+    <string name="alert_banner_title_no_name">End the alert?</string>
     <string name="alert_banner_sending_no_name">Sending your alert…</string>
     <string name="alert_banner_emergency">Emergency numbers</string>
     <string name="alert_banner_retry">Try again</string>

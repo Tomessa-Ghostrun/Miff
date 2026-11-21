@@ -34,7 +34,7 @@ import com.tomessa.miff.ui.theme.textDisplayTitle
  */
 
 /**
- * "Lieux de confiance de <la Miff>" on the Profile tab (mockup 17; decision of the PM of 2026-11-11): the places of the Miff whose card the carousel
+ * "Les lieux de la Miff" (the title no longer names the Miff, PM 2026-11-20) on the Profile tab (mockup 17; decision of the PM of 2026-11-11): the places of the Miff whose card the carousel
  * shows, for EVERY member of that Miff.
  *
  * - A member only READS: the list, the detail of a place (without "Modifier"), never "Ajouter un lieu", never the counter of the free plan, never an
@@ -76,7 +76,7 @@ fun ProfilePlacesSection(
             }
 
             MiffPlacesView.Unavailable -> {
-                PlacesTitle(miff.name)
+                PlacesTitle()
                 Text(
                     text = stringResource(R.string.place_profile_unavailable),
                     style = textBodyRegular,
@@ -87,7 +87,7 @@ fun ProfilePlacesSection(
             }
 
             is MiffPlacesView.Ready -> {
-                PlacesTitle(miff.name)
+                PlacesTitle()
                 // The creator's requests: those of people still in the Miff, oldest first, with who asked.
                 val received =
                     if (isCreator) {
@@ -136,9 +136,9 @@ fun ProfilePlacesSection(
 }
 
 @Composable
-private fun PlacesTitle(miffName: String) {
+private fun PlacesTitle() {
     Text(
-        text = stringResource(R.string.place_profile_title_named, miffName),
+        text = stringResource(R.string.place_profile_title_named),
         style = textDisplayTitle,
         color = colorTextForm,
         modifier = Modifier.semantics { heading() },

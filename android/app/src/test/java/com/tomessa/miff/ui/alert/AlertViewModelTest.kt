@@ -76,7 +76,10 @@ class AlertViewModelTest {
         owner: Boolean = false,
     ) = MiffMember(uid, first, "X", null, if (owner) MiffRole.OWNER else MiffRole.MEMBER, true, "+33612345678")
 
-    private fun vm(faces: MemberFacesReader): AlertViewModel {
+    private fun vm(
+        faces: MemberFacesReader,
+        local: MemoryAlertLocalStore = MemoryAlertLocalStore(),
+    ): AlertViewModel {
         val controller =
             AlertController(
                 store = NoStore(),
@@ -89,7 +92,32 @@ class AlertViewModelTest {
                 currentUid = { "me" },
                 scope = kotlinx.coroutines.CoroutineScope(dispatcher),
             )
-        return AlertViewModel(controller, MemoryAlertLocalStore(), faces, { "me" }, { "FR" })
+        return AlertViewModel(controller, local, faces, { "me" }, { "FR" })
+    }
+
+    // ---- the blue bubble of the onboarding: remembered on the phone, never back (decision of the PM, 2026-11-20) ------------------------
+
+    @Test
+    fun theBlueBubbleIsThereUntilTheFirstInteraction_thenItIsRememberedAndNeverComesBack() {
+        val local = MemoryAlertLocalStore()
+        val model = vm(SlowFaces(), local)
+        assertFalse(model.hintDone.value)
+        model.onHintDone()
+        assertTrue(model.hintDone.value)
+        assertTrue(local.hintDone())
+        // a second interaction changes nothing; a new launch (a new view model on the same phone) does not bring it back
+        model.onHintDone()
+        assertTrue(vm(SlowFaces(), local).hintDone.value)
+    }
+
+    @Test
+    fun theBlueBubbleIndicatorIsAboutTheInstallation_soSignOutKeepsIt() {
+        val local = MemoryAlertLocalStore()
+        vm(SlowFaces(), local).onHintDone()
+        local.clearAccount()
+        assertTrue(local.hintDone())
+        assertEquals(null, local.pointer())
+        assertEquals(null, local.adoptedFor())
     }
 
     @Test

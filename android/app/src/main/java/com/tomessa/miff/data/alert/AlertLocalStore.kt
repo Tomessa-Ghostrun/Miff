@@ -42,7 +42,7 @@ interface AlertLocalStore {
 
     fun clearPointer()
 
-    /** The blue bubble of the onboarding has done its job (ticket 7.1, AD8). */
+    /** The blue bubble of the onboarding has done its job: the first interaction with the capture button (ticket 7.1, AD8). */
     fun hintDone(): Boolean
 
     fun markHintDone()

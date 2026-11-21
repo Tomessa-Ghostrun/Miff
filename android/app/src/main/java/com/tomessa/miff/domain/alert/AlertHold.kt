@@ -8,7 +8,7 @@ package com.tomessa.miff.domain.alert
  * - [HoldPhase.Pressing] for [AlertRules.ARM_MILLIS]: nothing changes on the screen (a simple long press is not an alert, and a tap is a photo);
  * - [HoldPhase.Holding] for [AlertRules.HOLD_MILLIS]: the screen is in alert mode, the red bar fills up ([HoldPhase.Holding.fraction] from 0 to 1);
  * - [HoldPhase.Done]: 5 seconds were held: the alert leaves (or ends).
- * Releasing at any time before [HoldPhase.Done] cancels, silently.
+ * Releasing at any time before [HoldPhase.Done] cancels, silently. Once in [HoldPhase.Holding] the finger may leave the button: only the release stops it.
  */
 sealed interface HoldPhase {
     data object Pressing : HoldPhase
@@ -33,7 +33,7 @@ object AlertHold {
             else -> HoldPhase.Holding(((heldMillis - armMillis).toFloat() / holdMillis.toFloat()).coerceIn(0f, 1f))
         }
 
-    /** True when the finger moved too far from where it went down (in px; [slopPx] is 48 dp): the gesture is cancelled, as if it was released. */
+    /** True when the finger moved too far from where it went down (in px; [slopPx] is 48 dp): BEFORE the arming only (a swipe, not a hold) the touch is cancelled; once armed it is not read. */
     fun movedTooFar(
         dxPx: Float,
         dyPx: Float,

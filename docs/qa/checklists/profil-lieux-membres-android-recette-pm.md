@@ -10,7 +10,7 @@
 
 ## Partie A : avec le compte MEMBRE (pas le créateur)
 
-1. [ ] Onglet **Profil**, sous le carrousel « Mes Miffs » : un titre **« Lieux de confiance de <nom de la Miff> »**, une phrase « Les lieux de ta Miff, définis par son créateur. », puis la liste des lieux (emoji de catégorie, nom, adresse).
+1. [ ] Onglet **Profil**, sous le carrousel « Mes Miffs » : un titre **« Les lieux de la Miff »**, une phrase « Les lieux de ta Miff, définis par son créateur. », puis la liste des lieux (emoji de catégorie, nom, adresse).
 2. [ ] **Aucun** bouton « Ajouter un lieu », **aucun** compteur « n lieux sur 3 avec la formule gratuite », **aucune** pastille ou offre « Miff+ » dans ce bloc (même si ce compte est gratuit).
 3. [ ] Une **zone de danger** (si la Miff en a une) porte l'étiquette **« Zone de danger »**, sans autre mot alarmant.
 4. [ ] Touchez un lieu : le détail s'ouvre (carte, adresse, « Voir sur la carte », rayon, type, catégorie, « Visible par… », « Créé par… ») **sans bouton « Modifier »** en haut à droite, sans suppression, sans autre action d'édition. Retour : la liste est inchangée.
@@ -20,14 +20,14 @@
 
 ## Partie B : avec le compte CRÉATEUR (rien ne doit avoir changé pour lui)
 
-1. [ ] Même titre « Lieux de confiance de <nom de la Miff> », la liste, puis **« Ajouter un lieu »** ; compte gratuit : le compteur « n lieux sur 3 avec la formule gratuite » ; à 3 lieux, « Ajouter un lieu » porte la pastille **Miff+** et ouvre l'offre.
+1. [ ] Même titre « Les lieux de la Miff », la liste, puis **« Ajouter un lieu »** ; compte gratuit : le compteur « n lieux sur 3 avec la formule gratuite » ; à 3 lieux, « Ajouter un lieu » porte la pastille **Miff+** et ouvre l'offre.
 2. [ ] Touchez un lieu : le détail a le bouton **« Modifier »** ; modifiez le nom, enregistrez : la liste du Profil montre le **nouveau nom** en revenant (en un court instant), avec la phrase « Le lieu « … » est enregistré. »
 3. [ ] « Ajouter un lieu » puis enregistrer : le nouveau lieu apparaît dans la liste ; **supprimer** un lieu depuis « Modifier » : il disparaît de la liste.
 4. [ ] Passez sur le compte membre (ou son téléphone) puis, **dans les 5 minutes**, revenez sur le Profil : il peut encore voir l'ancienne liste ; **au-delà de 5 minutes** (ou après avoir quitté et rouvert l'onglet Feed), la nouvelle liste. C'est voulu (économie de lectures) : dites-nous si c'est gênant.
 
 ## Partie C : plusieurs Miffs (compte Miff+)
 
-1. [ ] Glissez le carrousel d'une Miff à l'autre : **le titre et la liste suivent la carte affichée** (« Lieux de confiance de <autre Miff> »).
+1. [ ] Glissez le carrousel d'une Miff à l'autre : **le titre et la liste suivent la carte affichée** (le titre « Les lieux de la Miff » ne change pas, la liste suit la carte).
 2. [ ] Sur une Miff **dont vous n'êtes pas le créateur**, aucun « Ajouter un lieu » ni compteur ni « Miff+ » ; sur une Miff **dont vous êtes le créateur**, ils sont là.
 3. [ ] Sur la carte « Créer une Miff » (la dernière), la liste reste celle de la dernière Miff regardée (son nom est dans le titre).
 4. [ ] Repasser d'une carte à l'autre plusieurs fois de suite ne fait **pas** clignoter la liste (réutilisée pendant 5 minutes).
@@ -37,5 +37,5 @@
 
 1. [ ] **TalkBack** : le titre est annoncé comme un titre ; chaque ligne est lue d'un bloc (« Maison de Papa, catégorie Maison, 26 rue du Volnay… ») ; une zone de danger finit par **« Zone de danger »** ; le bouton « Réessayer » est annoncé comme un bouton ; le détail d'un lieu (membre) n'a aucun bouton « Modifier » à explorer.
 2. [ ] **Grand texte** (taille de police au maximum) : le titre passe à la ligne, rien n'est coupé, les lignes restent touchables.
-3. [ ] **Anglais** (langue du téléphone en anglais) : « Trusted places of … », « No trusted place yet. », « The places aren't available right now. ».
+3. [ ] **Anglais** (langue du téléphone en anglais) : « The Miff's places », « No trusted place yet. », « The places aren't available right now. ».
 4. [ ] Mode sombre et mode clair : lisible.
