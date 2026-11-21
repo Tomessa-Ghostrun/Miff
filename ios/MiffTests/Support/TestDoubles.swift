@@ -98,34 +98,6 @@ final class EventLogSink: AnalyticsSink {
     }
 }
 
-final class FakeNetwork: NetworkMonitor {
-    /// Chaque changement est annoncé aux flux ouverts par `onlineChanges()`.
-    var online: Bool {
-        didSet {
-            for continuation in continuations {
-                continuation.yield(online)
-            }
-        }
-    }
-
-    private var continuations: [AsyncStream<Bool>.Continuation] = []
-
-    init(online: Bool = true) {
-        self.online = online
-    }
-
-    func isOnline() -> Bool {
-        online
-    }
-
-    func onlineChanges() -> AsyncStream<Bool> {
-        AsyncStream { continuation in
-            self.continuations.append(continuation)
-            continuation.yield(self.online)
-        }
-    }
-}
-
 /// Chronologie partagée des appels dont l'ordre compte (vidage, purge, déconnexion...).
 final class Timeline {
     private(set) var entries: [String] = []
