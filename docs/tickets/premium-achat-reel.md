@@ -466,7 +466,7 @@ Créer le compte de service et ses rôles, le sujet Pub/Sub, le secret Apple, la
 | **SRV-8A** (Android) | Billing Library, **achat branché sur l'écran de PAY-UI-A** (pas de nouvel écran d'offre), écran Abonnement, restauration, rappel de suppression de compte ; textes FR/EN ; clés de traduction `settings_subscription_*` | SRV-7 déployé sur « oui » ; **PAY-UI-A livré** ; maquettes du paywall reçues (règle du 2026-10-28) ; maquettes de l'écran Abonnement à demander au PM |
 | **SRV-8I** (iOS) | StoreKit 2, mêmes écrans, `Transaction.updates`, restauration par action | SRV-8A (parité), compte sandbox, TestFlight |
 | **SRV-3** (textes) | CGU art. 9, politique, pages web, déclarations des stores | Q5, Q8 ; parallèle à SRV-8 |
-| **PREM-FIN** (suite) | Mise en veille de **30 jours** (décidée), préavis, choix de ce qu'on garde, suppression des excédents, « Prévenir mes proches » (`miff.md` R9) : cadrage dans `docs/tickets/prem-fin.md` | Q5 tranchée ; **avant l'ouverture publique** |
+| **PREM-FIN** (suite) | Mise en veille de **30 jours** (décidée), préavis, choix de ce qu'on garde, suppression des excédents, « Prévenir mes proches » (`miff.md` R9) : ticket complet dans `docs/tickets/prem-fin.md` (2026-11-21) | Q5 tranchée ; **avant l'ouverture publique** |
 
 Process par ticket (CLAUDE.md) : challenge, validation PM, dev Android puis iOS (une branche et une PR par plateforme, jamais de push sur `main`), revue de code en contexte neuf + revue sécurité, QA, recette PM, merge sur « oui ». Statuts Notion changés par Claude selon la décision du PM du 2026-11-06.
 
