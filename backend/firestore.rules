@@ -143,6 +143,13 @@ rules_version = '2';
 //     suppression par le propriétaire seul ; create et update refusés à tout client. 0 lecture de règles. Durée de vie 30 jours par règle TTL (groupe de collections `notifications`, champ
 //     `expireAt`, à poser par le PM AVANT le déploiement des règles). Aucune règle existante n'est modifiée. Risque RGPD assumé (data-model.md §11) : nouvelle donnée serveur (identifiants + date).
 //
+// 19. Premium réel Miff+ (SRV-7, ticket docs/tickets/premium-achat-reel.md §9, data-model.md §2.3 et §2.22 à §2.25) — COMMENTAIRE SEUL, AUCUNE RÈGLE MODIFIÉE (aucun déploiement des règles nécessaire pour SRV-7).
+//     `entitlements/{uid}` reste en lecture propriétaire seul / écriture refusée à tout client : il est écrit par les fonctions de facturation (Admin SDK, compte `billing-sync`) ou, pour un
+//     accord « à la main », par le PM dans la console. Le document porte désormais jusqu'à 9 champs (state, plan, trial, willRenew, test en plus des 4 d'origine ; purgeAt après une suppression
+//     de compte) : les règles et `isPremiumOneRead` ne lisent toujours que `active` et `expiresAt`. Collections RÉSERVÉES AU SERVEUR, sans aucune règle (refus par défaut, comme `notifState`) :
+//     `billingAccounts/{uid}` (identifiant d'achat aléatoire), `billingPurchases/{cle}` (achats liés, clé = SHA-256), `billingEvents/{id}` (messages déjà traités, TTL 7 jours), `billingConfig/apple`
+//     (configuration NON secrète de l'API Apple). Tests : tests/rules/38-facturation.test.js (plan §32). Risques RGPD / stores assumés : data-model.md §11.
+//
 // Coût : chaque get()/exists()/getAfter()/existsAfter() dans une règle est
 // facturé comme une lecture (même si la requête est refusée) et est limité à
 // 10 appels par requête simple, 20 par batch/transaction. Les écritures

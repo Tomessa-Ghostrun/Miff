@@ -43,7 +43,8 @@ test('SRV-1 - functions/package.json : runtime Node 24 cohérent avec firebase.j
 });
 
 test("SRV-1 - dépendances minimales et versions EXACTES (pas de ^ ni ~) : en ajouter une est une décision visible en revue", () => {
-  assert.deepEqual(Object.keys(functionsPackage.dependencies).sort(), ['firebase-admin', 'firebase-functions']);
+  // SRV-7 : la bibliotheque OFFICIELLE d'Apple (verification des JWS) et la bibliotheque d'authentification de Google (deja dependance de firebase-admin : memes versions, pas de doublon).
+  assert.deepEqual(Object.keys(functionsPackage.dependencies).sort(), ['@apple/app-store-server-library', 'firebase-admin', 'firebase-functions', 'google-auth-library']);
   assert.deepEqual(Object.keys(functionsPackage.devDependencies).sort(), ['@types/node', 'typescript']);
   for (const [nom, version] of Object.entries({ ...functionsPackage.dependencies, ...functionsPackage.devDependencies })) {
     assert.match(version, EXACT, `${nom} : version épinglée attendue (reçu ${version})`);
