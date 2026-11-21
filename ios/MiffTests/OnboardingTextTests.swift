@@ -72,15 +72,35 @@ final class OnboardingTextTests: XCTestCase {
         XCTAssertTrue(panel.contains("« Continuer »"))
     }
 
-    func testTheConsentLinesDoNotPromiseASettingsScreenIosDoesNotHaveYet() throws {
+    func testTheConsentLinesSayTheChoiceCanBeChangedAtAnyTimeInTheSettings() throws {
         let strings = try catalog()
 
-        // Pas d'écran Réglages sur iOS pour l'instant : le retrait du consentement passe par l'adresse de contact.
+        // Réglages > Confidentialité a son interrupteur (ONB-3b) : la phrase le promet comme sur Android, dans chaque langue, avec le nom que
+        // cette langue donne aux Réglages. Plus d'adresse où écrire pour retirer son accord : la phrase n'a que deux valeurs.
         for key in ["ios_auth_consent_notice", "ios_auth_panel_notice"] {
             for language in try I18nRegistry.shipped() {
                 let value = try XCTUnwrap(text(key, language, in: strings), key)
-                XCTAssertFalse(value.contains("Réglages") || value.contains("Settings"), "\(key) (\(language))")
-                XCTAssertTrue(value.contains("%3$@"), "\(key) (\(language)) : l'adresse de contact manque")
+                let settings = try XCTUnwrap(text("settings_title", language, in: strings), language)
+                XCTAssertTrue(value.contains(settings), "\(key) (\(language)) : les Réglages ne sont pas cités")
+                XCTAssertFalse(value.contains("%3$@"), "\(key) (\(language)) : plus d'adresse de contact")
+            }
+        }
+    }
+
+    func testTheIosConsentLinesEndLikeTheAndroidOnesInEveryLanguage() throws {
+        let strings = try catalog()
+
+        // Même fin de phrase qu'Android (la parenthèse sur les Réglages), dans les six langues ; seul le début diffère (le bouton Apple).
+        let pairs = [
+            ("ios_auth_consent_notice", "auth_consent_notice"),
+            ("ios_auth_panel_notice", "auth_panel_notice")
+        ]
+        for (ios, android) in pairs {
+            for language in try I18nRegistry.shipped() {
+                let iosText = try XCTUnwrap(text(ios, language, in: strings), ios)
+                let androidText = try XCTUnwrap(text(android, language, in: strings), android)
+                let open = try XCTUnwrap(androidText.range(of: "(", options: .backwards), android)
+                XCTAssertTrue(iosText.hasSuffix(String(androidText[open.lowerBound...])), "\(ios) (\(language))")
             }
         }
     }

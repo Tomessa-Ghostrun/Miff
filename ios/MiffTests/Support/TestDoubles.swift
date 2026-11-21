@@ -98,34 +98,6 @@ final class EventLogSink: AnalyticsSink {
     }
 }
 
-final class FakeNetwork: NetworkMonitor {
-    /// Chaque changement est annoncé aux flux ouverts par `onlineChanges()`.
-    var online: Bool {
-        didSet {
-            for continuation in continuations {
-                continuation.yield(online)
-            }
-        }
-    }
-
-    private var continuations: [AsyncStream<Bool>.Continuation] = []
-
-    init(online: Bool = true) {
-        self.online = online
-    }
-
-    func isOnline() -> Bool {
-        online
-    }
-
-    func onlineChanges() -> AsyncStream<Bool> {
-        AsyncStream { continuation in
-            self.continuations.append(continuation)
-            continuation.yield(self.online)
-        }
-    }
-}
-
 /// Chronologie partagée des appels dont l'ordre compte (vidage, purge, déconnexion...).
 final class Timeline {
     private(set) var entries: [String] = []
@@ -437,7 +409,9 @@ final class SessionHarness {
         generationCounter: GenerationCounter? = nil,
         deletionMarker: AccountDeletionMarker? = nil,
         localData: [LocalDataEraser] = [],
-        timeline: Timeline = Timeline()
+        timeline: Timeline = Timeline(),
+        withdrawals: PendingWithdrawals? = nil,
+        onAccountResolved: @escaping (String) -> Void = { _ in }
     ) {
         self.timeline = timeline
         let gateway = FakeAuthGateway(timeline: timeline)
@@ -473,7 +447,9 @@ final class SessionHarness {
                 drafts: drafts,
                 generationCounter: generationCounter,
                 deletionMarker: deletionMarker,
-                localData: localData
+                localData: localData,
+                withdrawals: withdrawals,
+                onAccountResolved: onAccountResolved
             )
         )
         accounts.onLoad = { [weak self] in

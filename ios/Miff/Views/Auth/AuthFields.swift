@@ -174,8 +174,8 @@ private struct FieldModifiers: ViewModifier {
 /// La ligne explicative au-dessus du bouton principal (aucune case à cocher) : les conditions d'utilisation et la politique
 /// de confidentialité sont des liens dans la phrase (gras, bleus). Pour le lecteur d'écran, les deux liens sont aussi
 /// proposés comme actions de la ligne, pour les atteindre sans avoir à viser quelques mots du doigt. `sentenceKey` désigne
-/// une phrase à trois valeurs : le nom des conditions, celui de la politique, puis l'adresse où écrire pour retirer le
-/// consentement aux statistiques (iOS n'a pas encore d'écran Réglages : voir `ios/README.md`).
+/// une phrase à deux valeurs : le nom des conditions, puis celui de la politique. Elle dit que le choix des statistiques est modifiable à
+/// tout moment dans les Réglages (Réglages > Confidentialité : l'interrupteur existe, voir `PrivacyView`).
 struct ConsentNotice: View {
     let sentenceKey: String
 
@@ -188,7 +188,7 @@ struct ConsentNotice: View {
     var body: some View {
         let terms = L10n.string("auth_consent_terms_link")
         let privacy = L10n.string("auth_consent_privacy_link")
-        let sentence = L10n.format(sentenceKey, terms, privacy, AppLinks.supportEmail)
+        let sentence = L10n.format(sentenceKey, terms, privacy)
         return Text(attributed(sentence, terms: terms, privacy: privacy))
             .miffTextStyle(textBodyRegular14)
             .foregroundColor(colorTextPrimary.color)

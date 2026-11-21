@@ -293,7 +293,18 @@ struct MiffSwitchRow: View {
         .accessibilityLabel(Text(verbatim: title))
         .accessibilityValue(Text(verbatim: stateText))
         .accessibilityHint(Text(verbatim: description))
-        .accessibilityAddTraits(.isButton)
+        .modifier(MiffSwitchTraits())
+    }
+}
+
+/// VoiceOver : la ligne est un INTERRUPTEUR (trait « interrupteur » dès iOS 17) ; avant, un bouton dont la valeur dit l'état.
+private struct MiffSwitchTraits: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 17.0, *) {
+            content.accessibilityAddTraits(.isToggle)
+        } else {
+            content.accessibilityAddTraits(.isButton)
+        }
     }
 }
 

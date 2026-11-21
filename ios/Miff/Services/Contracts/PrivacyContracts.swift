@@ -29,3 +29,14 @@ extension CollectionSwitch {
         // Rien à oublier par défaut.
     }
 }
+
+/// Écrit le choix « statistiques d'usage et rapports de plantage anonymes » dans le COMPTE (`users/{uid}.analyticsConsent`). C'est le choix
+/// du compte qui compte au démarrage suivant (voir `SessionManager`).
+///
+/// Comme toutes les écritures du profil, elle passe par une TRANSACTION (voir `UserProfileRepository`) : elle n'existe qu'en ligne et ne
+/// laisse rien en file derrière elle, donc « pas d'accusé » veut dire « rien d'écrit », et un retrait ne peut jamais partir plus tard, tout
+/// seul, après que la personne s'est déconnectée. Aucune valeur n'est jamais mise dans une erreur.
+protocol AnalyticsConsentRepository {
+    /// `enable` vrai = la personne accepte, faux = elle retire. `.done` aussi quand le compte était déjà dans cet état.
+    func set(uid: String, enable: Bool) async -> ProfileWriteResult
+}
