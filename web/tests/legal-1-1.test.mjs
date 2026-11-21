@@ -14,12 +14,12 @@ const POLICY_FR = text('fr/confidentialite.html');
 const TERMS_EN = text('en/terms.html');
 const POLICY_EN = text('en/privacy.html');
 
-test('TEXTES LEGAUX 1.1 - la version et la date sont visibles en tête des quatre pages, identiques dans les deux langues', () => {
+test('TEXTES LEGAUX 1.2 - la version et la date sont visibles en tête des quatre pages, identiques dans les deux langues', () => {
   const expected = [
-    ['fr/cgu.html', TERMS_FR, /Version 1\.1 — dernière mise à jour : 19 novembre 2026/],
-    ['fr/confidentialite.html', POLICY_FR, /Version 1\.1 — dernière mise à jour : 19 novembre 2026/],
-    ['en/terms.html', TERMS_EN, /Version 1\.1 — last updated: November 19, 2026/],
-    ['en/privacy.html', POLICY_EN, /Version 1\.1 — last updated: November 19, 2026/],
+    ['fr/cgu.html', TERMS_FR, /Version 1.2 — dernière mise à jour : 21 novembre 2026/],
+    ['fr/confidentialite.html', POLICY_FR, /Version 1.2 — dernière mise à jour : 21 novembre 2026/],
+    ['en/terms.html', TERMS_EN, /Version 1.2 — last updated: November 21, 2026/],
+    ['en/privacy.html', POLICY_EN, /Version 1.2 — last updated: November 21, 2026/],
   ];
   for (const [name, content, pattern] of expected) {
     const position = content.search(pattern);
@@ -178,4 +178,73 @@ test("REVUE 2026-11-19 - formulations exactes : position tentée à l'envoi, pas
   // m9 : une Miff supprimée cite l'alerte.
   assert.match(POLICY_FR, /photo avec son endroit ou alerte/);
   assert.match(POLICY_EN, /photo with its place or alert/);
+});
+
+// Version 1.2 (2026-11-21) : date de la dernière photo, registre serveur de 30 jours des notifications, langues. Les textes ne mentent ni par
+// excès (aucune promesse de relecture, aucun « aucun historique des notifications ») ni par défaut (ce que le serveur garde est dit).
+test('VERSION 1.2 - la date de la dernière photo est décrite : conservée tant que le partage est actif, effacée avec le statut, jamais affichée comme une date (FR et EN)', () => {
+  for (const pattern of [
+    /Date de ta dernière photo/,
+    /Une seule date par Miff où tu partages/,
+    /Elle reste enregistrée après que la photo a disparu \(24 heures\)/,
+    /ranger les cartes du Feed/,
+    /Conservée tant que ton partage avec la Miff est actif/,
+    /le statut est recréé sans cette date/,
+  ]) assert.match(POLICY_FR, pattern);
+  for (const pattern of [
+    /Date of your last photo/,
+    /A single date per Miff where you share/,
+    /It stays recorded after the photo has gone \(24 hours\)/,
+    /order the cards in the Feed/,
+    /Kept as long as your sharing with the Miff is active/,
+    /the status is recreated without this date/,
+  ]) assert.match(POLICY_EN, pattern);
+  assert.match(TERMS_FR, /la date de ta dernière photo/);
+  assert.match(TERMS_EN, /the date of your last photo/);
+});
+
+test('VERSION 1.2 - le registre serveur de 30 jours des notifications est décrit sans prénom, photo, lieu ni position, effaçable, sans promesse de relecture juridique (FR et EN)', () => {
+  for (const pattern of [
+    /Registre des notifications envoyées/,
+    /Jamais de prénom, de nom, de photo, de description, de lieu, de position ni de nom de Miff/,
+    /n.est lisible que par la personne à qui la notification est envoyée/,
+    /mis en service progressivement/,
+    /rien n.est reconstitué pour les notifications passées/,
+    /« Supprimer » une notification, ou « Tout effacer »/,
+    /Il n.est pas supprimé quand tu te déconnectes/,
+    /la seule trace des notifications envoyées est le registre technique de 30 jours/i,
+  ]) assert.match(POLICY_FR, pattern);
+  for (const pattern of [
+    /Record of notifications sent/,
+    /Never a first name, last name, photo, description, place, location or Miff name/,
+    /can only be read by the person to whom the notification is sent/,
+    /being put into service gradually/,
+    /nothing is reconstructed for past notifications/,
+    /"Delete this notification", or "Clear all"/,
+    /It is not deleted when you sign out/,
+    /The only trace of the notifications sent is the 30-day technical record/,
+  ]) assert.match(POLICY_EN, pattern);
+  // L'ancienne promesse est fausse depuis le journal : elle ne doit plus figurer.
+  assert.doesNotMatch(POLICY_FR, /Nous ne gardons aucun historique des notifications envoyées/);
+  assert.doesNotMatch(POLICY_FR, /Nous ne gardons \*\*aucun historique\*\* des notifications/);
+  assert.doesNotMatch(POLICY_EN, /We keep no history of the notifications sent/);
+  assert.doesNotMatch(POLICY_EN, /We keep \*\*no history\*\* of notifications sent/);
+  assert.match(TERMS_FR, /trace technique de 30 jours/);
+  assert.match(TERMS_EN, /30-day technical trace/);
+  assert.match(text('fr/supprimer-mon-compte.html'), /registre de 30 jours des notifications envoyées à ton compte/);
+  assert.match(text('en/delete-account.html'), /30-day record of the notifications sent to your account/);
+});
+
+test('VERSION 1.2 - consentement à la localisation v4 et langues : le texte dit la version 4, la limite des comptes en version 3, et que le légal reste en FR + EN (FR et EN)', () => {
+  assert.match(POLICY_FR, /version 4\s*\(\s*2026-11-v04/);
+  assert.match(POLICY_FR, /Si tu avais accepté la version 3\s*,\s*ton partage continue sans aucune pause/);
+  assert.match(POLICY_FR, /Une précision sur ce que tu partages/);
+  assert.match(POLICY_EN, /version 4\s*\(\s*2026-11-v04/);
+  assert.match(POLICY_EN, /If you had accepted version 3\s*,\s*your sharing goes on with no pause/);
+  for (const content of [POLICY_FR, TERMS_FR]) assert.match(content, /Cette politique et les Conditions d.utilisation n.existent qu.en français et en anglais|ces conditions et la Politique de confidentialité n.existent qu.en français et en anglais/);
+  for (const content of [POLICY_EN, TERMS_EN]) assert.match(content, /only exist in French and English/);
+  // Le texte quote la phrase de l'app (« En touchant ») : plus « En cliquant ».
+  assert.doesNotMatch(POLICY_FR + TERMS_FR, /En cliquant sur/);
+  // Aucune relecture juridique prétendue (déjà testé plus haut pour toute la page) : le journal des changements en tête n'en parle pas.
+  assert.doesNotMatch(POLICY_FR.slice(0, 2500) + POLICY_EN.slice(0, 2500), /juriste|lawyer|attorney/i);
 });

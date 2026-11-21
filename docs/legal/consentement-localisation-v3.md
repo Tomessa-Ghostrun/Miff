@@ -1,5 +1,7 @@
 # Texte de consentement à la localisation, version 3 (proposition)
 
+> **ARCHIVÉ le 2026-11-21 : remplacé par la version 4 (`2026-11-v04`), voir `consentement-localisation-v4.md`.** Ce document garde ce que les comptes **restés en version 3** ont vu (les chaînes `miff_consent3_*` livrées avant la version 4 ne citaient pas l'endroit de la photo ; risque J66, assumé par le PM le 2026-11-19, `README.md` §4). Le plan « version 4 » du §1 bis est **appliqué** : version `2026-11-v04` livrée dans les deux apps (décision du PM du 2026-11-19, option D ; le seuil des règles pour la photo reste à 03, aucun changement de règles). Les points ouverts O1 à O6 ci-dessous sont conservés pour mémoire.
+
 Proposé le 2026-11-04 par l'agent `release-manager`, **amendé le 2026-11-06** pour citer la photo localisée (décision du PM : une photo est toujours publiée avec l'endroit où elle a été prise ; voir §1 bis). **Statut : proposition, à valider par le PM. Rien n'est publié** (l'app Android du dépôt contient déjà la version 3 d'origine, sans la photo localisée ; iOS : PR #74 en brouillon ; aucune app n'est publiée sur un store ; des builds de test ont pu être distribués : voir §1 bis). Ce texte n'a **pas été relu par un juriste** (décision du PM du 2026-10-23 : risque assumé, R15) et ne doit jamais être présenté comme tel.
 
 ## 1. Pourquoi une version 3
