@@ -609,3 +609,20 @@ Cette section **fait foi** en cas de différence avec les §3 à §14. Code : `b
 | BK15 | `achat-traitement` (BK15) |
 
 **Ce qui n'est PAS vérifiable hors production** : tout appel réel à Google Play, à Apple et au gestionnaire de secrets ; le déclencheur Pub/Sub ; l'effet des règles TTL ; la prise en compte de l'invitation dans la Play Console ; App Check réel (l'émulateur accepte des jetons non signés : le refus **sans** jeton est prouvé, pas la validation d'un vrai jeton).
+
+### 22.5 Revue de sécurité de la PR : ce qui a été examiné, ce qui reste ouvert
+
+**Faite par l'agent qui a écrit le code (relecture adversaire, 2026-11-21). La relecture par un sous-agent indépendant en contexte neuf n'a PAS pu être lancée depuis cette session (aucun outil de sous-agent disponible) : elle reste à faire avant le « prêt à merger ».** Points examinés, avec la parade et le test :
+
+| Menace | Parade | Preuve |
+|---|---|---|
+| **Usurpation d'achat** (présenter l'achat d'un autre) | le store est la preuve ; l'identifiant d'achat lu chez le store doit être celui de l'appelant ; un achat déjà lié à un compte existant est refusé ; un achat sans identifiant n'est lié qu'à qui présente le jeton / la transaction signée | achat-traitement (BK2, BK3, BK4) |
+| **Falsification d'une notification ou d'une transaction Apple** | JWS vérifié par la bibliothèque officielle contre la racine d'Apple, bundle, environnement et identifiant d'app contrôlés ; Xcode / LocalTesting refusés ; l'état vient de l'API Apple, pas de la notification | achat-apple (vrai vérificateur, PKI de test) |
+| **Falsification d'un message Google** | message = signal ; état relu chez Google ; autre package, type inconnu, forme invalide : ignorés sans appel | achat-traitement (BK6) |
+| **Rejeu** | identifiant de message traité (`billingEvents`), état plus ancien ignoré, écriture idempotente ; un achat révoqué par Google ne revit pas | achat-traitement (BK6, BK8) |
+| **Confusion de comptes** | l'UID ne vient JAMAIS de l'entrée (toujours `request.auth`, ou le lien, ou l'identifiant d'achat lu chez le store) ; une notification ne change jamais le compte d'un achat lié, ne ressuscite pas un compte supprimé ; la clé Apple contient l'environnement | achat-traitement, surface-emulateur |
+| **Injection d'identifiant** | tout identifiant qui entre dans un chemin est validé (`^[A-Za-z0-9]{1,128}$`, hexadécimal sur 64 caractères, `^[A-Za-z0-9-]{1,64}$`) ; le jeton d'achat est encodé avant d'entrer dans une URL ; package et bundle sont des constantes ; l'entrée des appelables a des clés exactes | achat-regles, achat-traitement, garde-facturation |
+| **Abus de quotas et de coût** | App Check + connexion (anonyme refusé) ; 1 synchronisation par minute et par compte consommée AVANT l'appel au store ; requête Apple mal formée rejetée avant tout accès Firestore ; 3 instances au plus ; une suppression sans objet n'écrit rien ; journaux à codes fixes | surface-emulateur, garde-couts, garde-facturation |
+| **Écriture directe de `entitlements`** | règles : aucune écriture client (inchangées, tests BL2, BL10) ; collections `billing*` sans aucune règle (BL3, BL4) ; chemins construits dans un seul fichier, accès écrit seulement par `achatTraitement.ts` | tests/rules/38, garde-facturation |
+
+**Risques résiduels connus (à décider ou assumer par le PM)** : (1) **un attaquant disposant de nombreux comptes** (App Check et connexion exigés, création de compte limitée par Firebase) contourne la limite par compte et peut consommer le quota de l'API Google Play : parade partielle `maxInstances` 3 et surveillance (`docs/dev/surveillance-quotas.md` §5 decies) ; un plafond GLOBAL demanderait un compteur Firestore très sollicité, non fait en v1 ; (2) le compte `billing-sync` ignore les règles Firestore (accès à toute la base) : accepté (R2) ; (3) un achat de **test** accorde un vrai accès marqué `test` (R10) ; (4) un compte Auth supprimé sans appel à `supprimerDonneesAbonnement` laisse des documents orphelins (purge par TTL pour ce qui a un `purgeAt`, sinon à la main) ; (5) hypothèses H1 à H5 du §22.3.

@@ -37,6 +37,16 @@ export interface OptionsConfigApple {
   projet?: string;
 }
 
+/** Repli : l'identifiant du projet dans `FIREBASE_CONFIG` (JSON pose par la plateforme). Jamais une entree de l'appelant. */
+function projetDeLaConfigurationFirebase(): string {
+  try {
+    const id = (JSON.parse(process.env["FIREBASE_CONFIG"] ?? "{}") as { projectId?: unknown }).projectId;
+    return typeof id === "string" ? id : "";
+  } catch {
+    return "";
+  }
+}
+
 export function creerChargeurConfigApple(options: OptionsConfigApple): ChargerConfigApple {
   const jetons = options.jetons ?? creerFournisseurJetons();
   const appeler = options.fetch ?? fetch;
@@ -78,7 +88,7 @@ export function creerChargeurConfigApple(options: OptionsConfigApple): ChargerCo
     const t = maintenant().getTime();
     if (cache && cache.expire > t) return cache.config;
     if (echec && echec.expire > t) throw echec.erreur;
-    const projet = options.projet ?? process.env["GCLOUD_PROJECT"] ?? process.env["GOOGLE_CLOUD_PROJECT"] ?? "";
+    const projet = options.projet ?? process.env["GCLOUD_PROJECT"] ?? process.env["GOOGLE_CLOUD_PROJECT"] ?? projetDeLaConfigurationFirebase();
     if (!FORME_PROJET.test(projet)) throw new ErreurAchat("non_configure");
     let config: ConfigApple | null = null;
     try {

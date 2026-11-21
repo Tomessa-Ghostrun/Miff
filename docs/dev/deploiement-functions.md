@@ -608,7 +608,7 @@ App Store Connect > l'app Miff > **Informations sur l'app** > **Notifications du
 | `billing.google.notif` | message Google traité | rien |
 | `billing.google.ignore` + `motif` | message ignoré : `test_notification`, `autre_package`, `deja_vu`, `entree_invalide`, `type_ignore` | `autre_package` répété : vérifier la configuration de la Play Console |
 | `billing.apple.notif` / `billing.apple.ignore` | notification Apple traitée / ignorée (`deja_vu`, `type_ignore`) | rien |
-| `billing.apple.signature-invalide` | notification refusée (signature) | **à regarder si répété** : quelqu'un envoie n'importe quoi à l'adresse publique ; plafond d'instances et alertes de budget en place |
+| `billing.apple.signature-invalide` | notification refusée (signature) | **à regarder si répété** : quelqu'un envoie n'importe quoi à l'adresse publique (plafond d'instances et alertes de budget en place) ; **s'il apparaît dès la première vraie notification d'Apple en production**, vérifiez `appAppleId` (un nombre, pas un texte) et `keyId` dans `billingConfig/apple` |
 | `billing.suppression.ok` | données d'abonnement d'un compte supprimées | rien |
 | `billing.*.erreur` | erreur inattendue (Firestore...) | copier à Claude |
 

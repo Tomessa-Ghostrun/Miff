@@ -193,7 +193,7 @@ const messageRtdn = (jeton, type = 4, over = {}) => ({
 });
 const messageBrut = (doc, over = {}) => ({ messageId: MESSAGE_ID(2), publishTime: iso(T0.getTime()), data: Buffer.from(JSON.stringify(doc)).toString('base64'), ...over });
 const cleG = (jeton) => R.cleAchat('google_play', jeton);
-const cleA = (id) => R.cleAchat('app_store', id);
+const cleA = (id, env = 'Sandbox') => R.cleAchat('app_store', T.cleApple(env, id));
 
 // --- BK1 : identifiant d'achat -------------------------------------------------------------------------------------------------------------
 
@@ -792,4 +792,21 @@ test("une notification ne change JAMAIS le compte auquel un achat est lie, meme 
   await T.traiterMessageGoogle(creerDeps({ google }), messageRtdn(JETON, 2, { messageId: MESSAGE_ID(71) }));
   assert.equal((await lire(`billingPurchases/${cleG(JETON)}`)).uid, ALICE);
   assert.equal(await lire(`entitlements/${BOB}`), null);
+});
+
+test("supprimerDonneesAbonnement : rien a supprimer (compte qui n'a jamais rien achete, ou deja purge) -> AUCUNE ecriture, meme appelee plusieurs fois", async () => {
+  const { proxy, compteurs } = espionner(db);
+  const deps = { ...creerDeps(), db: proxy };
+  await T.supprimerDonneesAbonnement(deps, 'dave');
+  await T.supprimerDonneesAbonnement(deps, 'dave');
+  assert.equal(compteurs.ecritures, 0);
+  assert.equal((await db.collection('billingAccounts').get()).size, 0);
+});
+
+test("Apple : la cle d'un achat contient l'ENVIRONNEMENT (un identifiant du bac a sable ne designe jamais un achat de production, meme en cas de collision)", async () => {
+  const idAlice = await preparer();
+  await syncA(creerDeps({ apple: appleOk(idAlice) }), ALICE);
+  assert.ok(await lire(`billingPurchases/${cleA(ID_APPLE, 'Sandbox')}`));
+  assert.equal(await lire(`billingPurchases/${cleA(ID_APPLE, 'Production')}`), null);
+  assert.notEqual(cleA(ID_APPLE, 'Sandbox'), cleA(ID_APPLE, 'Production'));
 });

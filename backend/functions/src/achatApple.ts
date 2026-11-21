@@ -78,20 +78,22 @@ export function creerClientApple(options: OptionsClientApple): ClientApple {
   const charger = options.bibliotheque ?? (() => import("@apple/app-store-server-library"));
   const racines = options.racines ?? racinesApple();
   const enLigne = options.verificationsEnLigne ?? true;
-  const verificateurs = new Map<EnvApple, SignedDataVerifier>();
+  /** Un verificateur par environnement ET par identifiant d'app : si le PM corrige `appAppleId` dans la configuration, l'ancien verificateur n'est plus reutilise. */
+  const verificateurs = new Map<string, SignedDataVerifier>();
 
   async function verificateur(env: EnvApple): Promise<{ v: SignedDataVerifier; bib: BibliothequeApple }> {
     const bib = await charger();
-    const connu = verificateurs.get(env);
-    if (connu) return { v: connu, bib };
     let appAppleId: number | undefined;
     if (env === "Production") {
       const config = await options.config();
       if (config === null || config.appAppleId === null) throw new ErreurAchat("non_configure");
       appAppleId = config.appAppleId;
     }
+    const cle = `${env}:${appAppleId ?? ""}`;
+    const connu = verificateurs.get(cle);
+    if (connu) return { v: connu, bib };
     const cree = new bib.SignedDataVerifier(racines, enLigne, env === "Production" ? bib.Environment.PRODUCTION : bib.Environment.SANDBOX, BUNDLE_APPLE, appAppleId);
-    verificateurs.set(env, cree);
+    verificateurs.set(cle, cree);
     return { v: cree, bib };
   }
 

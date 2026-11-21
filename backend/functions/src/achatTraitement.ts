@@ -58,6 +58,8 @@ interface Bilan {
 const nouveauBilan = (): Bilan => ({ lectures: 0, ecritures: 0 });
 
 const ts = (d: Date): Timestamp => Timestamp.fromDate(d);
+/** Reference d'un achat Apple pour la cle : l'ENVIRONNEMENT en fait partie (un identifiant du bac a sable ne doit jamais pouvoir designer un achat de production, meme par collision). */
+export const cleApple = (environnement: string, idTransactionOrigine: string): string => `${environnement}:${idTransactionOrigine}`;
 const dateDe = (v: unknown): Date | null => (v instanceof Timestamp ? v.toDate() : null);
 const ETATS: readonly Etat[] = ["trial", "active", "canceled", "grace", "on_hold", "expired", "revoked", "pending"];
 const ETATS_AVEC_DROIT: readonly Etat[] = ["trial", "active", "canceled", "grace"];
@@ -118,7 +120,7 @@ export async function synchroniserAchat(deps: DepsAchat, uid: string, entree: En
     } else {
       const identite = await deps.apple.verifierTransactionApp(entree.signedTransaction);
       etat = await deps.apple.lireEtat(identite.environnement, identite.idTransactionOrigine, deps.maintenant());
-      cle = cleAchat("app_store", identite.idTransactionOrigine);
+      cle = cleAchat("app_store", cleApple(identite.environnement, identite.idTransactionOrigine));
     }
     if (etat.famille) throw new ErreurAchat("partage_famille");
     const resultat = await appliquer(deps, bilan, { cle, etat, appelant: uid, evenementId: null, cleLiee });
@@ -477,7 +479,7 @@ export async function traiterNotificationApple(deps: DepsAchat, signedPayload: s
   }
   try {
     const etat = await deps.apple.lireEtat(notification.environnement, notification.idTransactionOrigine, deps.maintenant());
-    const resultat = await appliquer(deps, bilan, { cle: cleAchat("app_store", notification.idTransactionOrigine), etat, appelant: null, evenementId, cleLiee: null });
+    const resultat = await appliquer(deps, bilan, { cle: cleAchat("app_store", cleApple(notification.environnement, notification.idTransactionOrigine)), etat, appelant: null, evenementId, cleLiee: null });
     journaliser("info", "billing.apple.notif", {
       resultat: resultat.statut === "inconnu" ? "refuse" : "ok",
       ...(resultat.statut === "inconnu" ? { motif: "compte_inconnu" as const } : {}),
@@ -513,10 +515,19 @@ export async function supprimerDonneesAbonnement(deps: DepsAchat, uid: string): 
   bilan.lectures += Math.max(1, achats.size);
   const refAcces = deps.db.doc(cheminAcces(uid));
   const acces = await refAcces.get();
-  bilan.lectures += 1;
+  const refCompte = deps.db.doc(cheminCompte(uid));
+  const compte = await refCompte.get();
+  bilan.lectures += 2;
+  // Rien a supprimer (compte qui n'a jamais rien achete, ou deja purge) : aucune ecriture (une suppression d'un document absent est tout de meme facturee ; l'appel est repetable a volonte).
+  if (!compte.exists && achats.empty && !acces.exists) {
+    journaliser("info", "billing.suppression.ok", { resultat: "ok", lectures: bilan.lectures, ecritures: 0 });
+    return;
+  }
   const lot = deps.db.batch();
-  lot.delete(deps.db.doc(cheminCompte(uid)));
-  bilan.ecritures += 1;
+  if (compte.exists) {
+    lot.delete(refCompte);
+    bilan.ecritures += 1;
+  }
   for (const doc of achats.docs) {
     lot.delete(doc.ref);
     bilan.ecritures += 1;

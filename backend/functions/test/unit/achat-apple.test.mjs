@@ -33,7 +33,6 @@ before(() => {
   pki = creerPki();
   autrePki = creerPki();
 });
-const sansOpenssl = { skip: undefined };
 const t = (nom, fn) => test(nom, async (ctx) => {
   if (!pki) return ctx.skip("openssl absent (local seulement)");
   await fn();
@@ -232,4 +231,13 @@ t("lireEtat : erreurs de l'API Apple -> 404 achat_inconnu, 401/403 acces_refuse,
     }
   }
   assert.equal(await raison(() => client({ config: async () => null }).lireEtat('Sandbox', ID_ORIGINE, T)), 'non_configure');
+});
+
+t("production : si le PM corrige `appAppleId` dans la configuration, l'ancien identifiant n'est plus utilise (un verificateur par identifiant d'app)", async () => {
+  let id = ID_APP + 1; // mauvais identifiant saisi au depart
+  const c = A.creerClientApple({ config: async () => ({ cle: 'x', keyId: 'ABCDE12345', issuerId: '123e4567-e89b-42d3-a456-426614174000', appAppleId: id }), racines: [pki.racineDer], verificationsEnLigne: false });
+  const n = pki.signer({ notificationType: 'DID_RENEW', notificationUUID: '8a7b4f50-1111-4222-8333-444455556666', version: '2.0', signedDate: T.getTime(), data: { environment: 'Production', appAppleId: ID_APP, bundleId: 'com.tomessa.miff', signedTransactionInfo: pki.signer(transaction({ environment: 'Production' })) } });
+  assert.equal(await raison(() => c.verifierNotification(n)), 'signature_invalide');
+  id = ID_APP; // corrige
+  assert.equal((await c.verifierNotification(n)).environnement, 'Production');
 });

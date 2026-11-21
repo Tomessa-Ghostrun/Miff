@@ -967,7 +967,7 @@ Ticket : `docs/tickets/premium-achat-reel.md` (§5, §9). **Aucune règle** ne m
 Durée de vie : jusqu'à la suppression du compte (`supprimerDonneesAbonnement`). Index : requête d'égalité sur `purchaseId` (index simple automatique ; **aucun index composite**).
 
 **2.23 `billingPurchases/{cle}` — un achat du store lié à un compte** (SENSIBILITÉ MOYENNE : état d'abonnement rattaché à un UID)
-`cle` = **SHA-256 hexadécimal de « store + saut de ligne + référence »** (référence = jeton d'achat Google ou identifiant de **transaction d'origine** Apple). **La référence n'est PAS conservée** (minimisation ; les événements du store la portent à chaque fois, et rien n'oblige à la garder : écart avec le ticket §9.2, qui prévoyait de conserver le jeton pour rappeler Google).
+`cle` = **SHA-256 hexadécimal de « store + saut de ligne + référence »** (référence = jeton d'achat Google, ou, pour Apple, `Production:` ou `Sandbox:` suivi de l'identifiant de **transaction d'origine** : l'environnement fait partie de la clé). **La référence n'est PAS conservée** (minimisation ; les événements du store la portent à chaque fois, et rien n'oblige à la garder : écart avec le ticket §9.2, qui prévoyait de conserver le jeton pour rappeler Google).
 | Champ | Type | Note |
 |---|---|---|
 | `v` | int | `1` |
