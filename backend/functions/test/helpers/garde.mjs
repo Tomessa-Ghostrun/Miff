@@ -3,9 +3,9 @@
 // Les valeurs de référence viennent de src/options.ts (compilé dans lib/) : un seul endroit pour les décider.
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
-const { LIMITES, FONCTIONS_AVEC_RETRY_AUTORISEES, FONCTIONS_IDENTITE_PAR_DEFAUT_AUTORISEES, DECLENCHEURS_AUTORISES } = require('../../lib/options.js');
+const { LIMITES, FONCTIONS_AVEC_RETRY_AUTORISEES, FONCTIONS_IDENTITE_PAR_DEFAUT_AUTORISEES, DECLENCHEURS_AUTORISES, FONCTIONS_HTTP_PUBLIQUES_AUTORISEES } = require('../../lib/options.js');
 
-export { LIMITES, DECLENCHEURS_AUTORISES };
+export { LIMITES, DECLENCHEURS_AUTORISES, FONCTIONS_HTTP_PUBLIQUES_AUTORISEES };
 
 /**
  * Compte de service d'execution : soit absent (compte par defaut, tolere TANT QUE la fonction ne touche ni Firestore ni FCM),
@@ -48,6 +48,10 @@ export function problemesDeGardeFous(nom, endpoint) {
   const declencheurs = Object.keys(endpoint).filter((k) => /Trigger$/.test(k) && endpoint[k] != null);
   if (declencheurs.length !== 1 || !DECLENCHEURS_AUTORISES.includes(declencheurs[0])) {
     dit(`déclencheur non autorisé (${declencheurs.join(', ') || 'aucun'}) : seuls ${DECLENCHEURS_AUTORISES.join(' et ')} sont permis tant qu'un ticket n'en ajoute pas d'autres`);
+  }
+  // SRV-7 : UNE seule fonction peut etre joignable sans connexion ni App Check (le point d'entree d'Apple, protege par la signature JWS) : liste de options.ts.
+  if (declencheurs[0] === 'httpsTrigger' && !FONCTIONS_HTTP_PUBLIQUES_AUTORISEES.includes(nom)) {
+    dit('fonction HTTP publique interdite (sauf liste FONCTIONS_HTTP_PUBLIQUES_AUTORISEES de src/options.ts, avec raison)');
   }
   // Le SDK représente « non défini » par une valeur spéciale (ResetValue) qui se sérialise en null.
   const compte = endpoint.serviceAccountEmail;

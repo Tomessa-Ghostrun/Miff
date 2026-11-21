@@ -1,3 +1,9 @@
 # Faux positif unique et vérifié : jeton de notification FACTICE d'un jeu d'essai des règles (SRV-2R), commit 0c6b2fad (PR backend/jetons-appareil).
 # Le fichier a été corrigé dans le commit suivant (valeur à faible entropie) ; seule cette empreinte exacte est ignorée, aucune règle n'est assouplie.
 0c6b2fad6a46488b669d5c61e300615fda0b2b3a:backend/tests/helpers/fixtures.js:generic-api-key:88
+
+# Faux positifs vérifiés (SRV-7, PR backend/premium-srv7, commit 12b54c8a) : identifiants d'achat FACTICES d'un jeu d'essai (UUID de test et faux jeton d'achat précédent « ancien-jeton-… »),
+# dans des tests unitaires sans aucun secret. Les valeurs ont été remplacées par des valeurs à faible entropie dans le commit suivant ; seules ces trois empreintes exactes sont ignorées, aucune règle n'est assouplie.
+12b54c8ad9bbd760769e0e9239c8095d50e636de:backend/functions/test/unit/achat-apple.test.mjs:generic-api-key:84
+12b54c8ad9bbd760769e0e9239c8095d50e636de:backend/functions/test/unit/achat-regles.test.mjs:generic-api-key:127
+12b54c8ad9bbd760769e0e9239c8095d50e636de:backend/functions/test/unit/achat-regles.test.mjs:generic-api-key:157
