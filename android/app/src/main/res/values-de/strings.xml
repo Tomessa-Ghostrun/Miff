@@ -594,7 +594,7 @@
     <string name="place_list_title_named">Orte von %1$s</string>
     <string name="place_list_member_hint">Die Orte deiner Miff, festgelegt von der Person, die sie erstellt hat.</string>
     <string name="place_list_empty_member">Noch kein vertrauter Ort.</string>
-    <string name="place_profile_title_named">Vertraute Orte von %1$s</string>
+    <string name="place_profile_title_named">Die Orte der Miff</string>
     <string name="place_profile_unavailable">Die Orte sind gerade nicht verfügbar.</string>
     <string name="place_list_row_type_a11y">%1$s, %2$s</string>
     <string name="place_list_add_action">Ort hinzufügen</string>
@@ -1296,8 +1296,8 @@
     <string name="alert_emergency_fire">Feuerwehr</string>
     <string name="alert_emergency_european">Europäische Notrufnummer</string>
     <string name="alert_emergency_international">Internationale Notrufnummer</string>
-    <string name="alert_banner_title">Du hast der Miff %1$s eine Warnung gesendet.</string>
-    <string name="alert_banner_body">Halte 5&#160;Sekunden gedrückt, um die Warnung zu beenden, wenn du nicht mehr in Gefahr bist.</string>
+    <string name="alert_banner_title">Warnung beenden?</string>
+    <string name="alert_banner_body">Halte 5 Sekunden gedrückt, um die Warnung zu beenden. Deine Liebsten erfahren dann, dass du jetzt in Sicherheit bist</string>
     <string name="alert_banner_sending">Deine Warnung wird an die Miff %1$s gesendet…</string>
     <string name="alert_banner_waiting">Wartet auf Versand</string>
     <string name="alert_banner_needs_confirmation">Deine Warnung wurde schon länger nicht gesendet und wartet auf deine Entscheidung.</string>
@@ -1322,7 +1322,7 @@
     <string name="notif_alert_end_body">%1$s hat angegeben, dass alles gut ist.</string>
     <string name="android_notif_channel_alerts">Warnungen deiner Liebsten</string>
     <string name="android_notif_channel_alerts_desc">Wenn eine dir nahestehende Person in einer deiner Miffs eine Warnung sendet.</string>
-    <string name="alert_banner_title_no_name">Du hast deiner Miff eine Warnung gesendet.</string>
+    <string name="alert_banner_title_no_name">Warnung beenden?</string>
     <string name="alert_banner_sending_no_name">Deine Warnung wird gesendet…</string>
     <string name="alert_banner_emergency">Notrufnummern</string>
     <string name="alert_banner_retry">Nochmal</string>

@@ -596,7 +596,7 @@
     <string name="place_list_title_named">Locais de %1$s</string>
     <string name="place_list_member_hint">Os locais da tua Miff, definidos por quem a criou.</string>
     <string name="place_list_empty_member">Ainda não há nenhum local de confiança.</string>
-    <string name="place_profile_title_named">Locais de confiança de %1$s</string>
+    <string name="place_profile_title_named">Os locais da Miff</string>
     <string name="place_profile_unavailable">Os locais não estão disponíveis de momento.</string>
     <string name="place_list_row_type_a11y">%1$s, %2$s</string>
     <string name="place_list_add_action">Adicionar um local</string>
@@ -1269,7 +1269,7 @@
     <string name="alert_confirm_start_body_miff">Os membros da Miff %1$s vão receber uma notificação.</string>
     <string name="alert_confirm_start_action">Enviar o alerta</string>
     <string name="alert_confirm_cancel">Cancelar</string>
-    <string name="alert_confirm_end_title">Terminar o alerta?</string>
+    <string name="alert_confirm_end_title">Pôr fim ao alerta?</string>
     <string name="alert_confirm_end_body">Os entes queridos da Miff %1$s serão informados de que terminas o alerta.</string>
     <string name="alert_confirm_end_action">Terminar o alerta</string>
     <string name="alert_confirm_end_keep">Manter o alerta</string>
@@ -1308,8 +1308,8 @@
     <string name="alert_emergency_fire">Bombeiros</string>
     <string name="alert_emergency_european">Emergência europeia</string>
     <string name="alert_emergency_international">Número de emergência internacional</string>
-    <string name="alert_banner_title">Alertaste os entes queridos da Miff %1$s.</string>
-    <string name="alert_banner_body">Mantém premido durante 5 segundos para terminar o alerta se já não estiveres em perigo.</string>
+    <string name="alert_banner_title">Pôr fim ao alerta?</string>
+    <string name="alert_banner_body">Mantém premido durante 5 segundos para pôr fim ao alerta. Os teus entes queridos saberão que já estás em segurança</string>
     <string name="alert_banner_sending">A enviar o teu alerta à Miff %1$s…</string>
     <string name="alert_banner_waiting">À espera de ser enviado</string>
     <string name="alert_banner_needs_confirmation">O teu alerta está por enviar há algum tempo: aguarda a tua decisão.</string>
@@ -1335,7 +1335,7 @@
     <string name="notif_alert_end_body">%1$s indicou que está tudo bem.</string>
     <string name="android_notif_channel_alerts">Alertas de um ente querido</string>
     <string name="android_notif_channel_alerts_desc">Quando um ente querido declara um alerta numa das tuas Miffs.</string>
-    <string name="alert_banner_title_no_name">Alertaste os entes queridos da tua Miff.</string>
+    <string name="alert_banner_title_no_name">Pôr fim ao alerta?</string>
     <string name="alert_banner_sending_no_name">A enviar o teu alerta…</string>
     <string name="alert_banner_emergency">Números de emergência</string>
     <string name="alert_banner_retry">Tentar de novo</string>
