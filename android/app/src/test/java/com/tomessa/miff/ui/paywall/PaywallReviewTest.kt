@@ -1,36 +1,15 @@
 package com.tomessa.miff.ui.paywall
 
-import android.app.Activity
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import androidx.compose.ui.test.performScrollTo
-import com.tomessa.miff.data.billing.CatalogResult
-import com.tomessa.miff.data.billing.PremiumCoordinator
-import com.tomessa.miff.data.billing.PurchaseEvent
-import com.tomessa.miff.data.subscription.SubscriptionRepository
 import com.tomessa.miff.domain.paywall.MonotonicClock
 import com.tomessa.miff.domain.paywall.PaywallNotice
 import com.tomessa.miff.domain.paywall.PaywallOffer
 import com.tomessa.miff.domain.paywall.PaywallPrice
 import com.tomessa.miff.domain.paywall.PaywallUiState
-import com.tomessa.miff.testsupport.FakeBillingBackend
-import com.tomessa.miff.testsupport.FakeBillingGateway
-import com.tomessa.miff.testsupport.FakeEntitlementStore
-import com.tomessa.miff.testsupport.miffPlusStoreOffers
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runCurrent
-import kotlinx.coroutines.test.runTest
-import kotlinx.coroutines.test.setMain
-import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -81,7 +60,7 @@ class PaywallReviewTest {
     @Test
     fun theSavingLabel_isHidden_whenTheAnnualPriceSavesTooLittle() {
         show(PaywallUiState(PaywallOffer.Plans(PaywallPrice("70,00 €", 70_000_000L, "EUR"), monthly)))
-        rule.onNodeWithText("Annual · 70,00 € per year", substring = true).performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("Annual · 70,00 € per year", substring = true).assertIsDisplayed()
         rule.onNodeWithText("almost 30% off").assertDoesNotExist()
     }
 }
