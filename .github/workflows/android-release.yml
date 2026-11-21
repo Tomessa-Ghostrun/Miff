@@ -49,6 +49,16 @@ on:
           - "true"
           - "false"
         default: "true"
+      premium_purchase:
+        description: >-
+          Allumer l'ACHAT de Miff+ (Google Play Billing) dans ce bundle (SRV-8A). false par defaut : le bundle montre « Miff+ arrive bientot » sans prix ni bouton,
+          comme avant. A mettre sur true SEULEMENT apres que le PM a deploye les cinq fonctions de facturation ET cree les produits dans la Play Console
+          (docs/dev/premium-achat-android-test.md). Avec false, le code d'achat est RETIRE du bundle par R8 (le manifeste declare quand meme la permission de facturation) : pour debloquer les produits dans la Play Console, publier plutot un bundle avec true.
+        type: choice
+        options:
+          - "false"
+          - "true"
+        default: "false"
 
 permissions:
   contents: read
@@ -75,6 +85,7 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           REF_NAME: ${{ github.ref }}
           OFFSET: ${{ inputs.version_code_offset }}
+          PREMIUM_PURCHASE: ${{ inputs.premium_purchase }}
           ANDROID_UPLOAD_KEYSTORE_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_B64 }}
           ANDROID_UPLOAD_STORE_PASSWORD: ${{ secrets.ANDROID_UPLOAD_STORE_PASSWORD }}
           ANDROID_UPLOAD_KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
@@ -96,6 +107,13 @@ jobs:
             echo "::error title=Décalage invalide::version_code_offset doit être un nombre entier (0 à 9999999)."
             exit 1
           fi
+          # Un choix du menu (true ou false), valide quand meme sur TOUTE la chaine : il n'entre dans une commande que sous cette forme.
+          if ! [[ "$PREMIUM_PURCHASE" =~ ^(true|false)$ ]]; then
+            echo "::error title=Valeur invalide::premium_purchase doit valoir true ou false."
+            exit 1
+          fi
+          # Valeur deja validee (true ou false seulement) : les etapes suivantes la lisent dans l'environnement.
+          echo "PREMIUM_PURCHASE=$PREMIUM_PURCHASE" >> "$GITHUB_ENV"
           missing=""
           [ -n "$ANDROID_UPLOAD_KEYSTORE_B64" ] || missing="$missing ANDROID_UPLOAD_KEYSTORE_B64"
           [ -n "$ANDROID_UPLOAD_STORE_PASSWORD" ] || missing="$missing ANDROID_UPLOAD_STORE_PASSWORD"
@@ -236,9 +254,17 @@ jobs:
         run: |
           set +x
           start=$(date +%s)
+          # L'achat de Miff+ n'est allume dans le bundle que si le PM l'a demande (false par defaut, valeur validee plus haut) : le build de release refuse le drapeau
+          # sans la deuxieme propriete (build.gradle.kts).
+          purchase_flags=""
+          if [ "$PREMIUM_PURCHASE" = "true" ]; then
+            purchase_flags="-Pmiff.premiumPurchase=true -Pmiff.allowPremiumPurchaseInRelease=true"
+          fi
+          # shellcheck disable=SC2086
           ./gradlew bundleRelease --console=plain --no-configuration-cache --no-build-cache \
             -Pmiff.versionCode="$VERSION_CODE" \
-            -Pmiff.uploadCrashlyticsMapping="$UPLOAD_MAPPING"
+            -Pmiff.uploadCrashlyticsMapping="$UPLOAD_MAPPING" \
+            $purchase_flags
           echo "BUILD_SECONDS=$(( $(date +%s) - start ))" >> "$GITHUB_ENV"
 
       - name: Vérifier la signature (clé d'envoi, jamais la clé de debug)
@@ -300,6 +326,7 @@ jobs:
             echo "## Bundle Android signé"
             echo
             echo "- Version : **${VERSION_NAME}** (numéro interne **${VERSION_CODE}**)"
+            echo "- Achat de Miff+ dans ce bundle : **${PREMIUM_PURCHASE}**"
             echo "- Fichier : \`miff-release-aab\` > \`app-release.aab\` (${size} octets, SHA-256 \`${sha}\`)"
             echo "- Signé avec la **clé d'envoi** (SHA-1 \`${UPLOAD_SHA1}\`, SHA-256 \`${UPLOAD_SHA256}\`) : ce sont des empreintes publiques."
             echo "- Contrôles passés : aucun code de debug, permissions exactes, bibliothèques natives alignées sur 16 Ko."

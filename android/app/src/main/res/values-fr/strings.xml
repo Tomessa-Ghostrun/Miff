@@ -1443,4 +1443,30 @@
     <string name="android_about_licenses_address_search">Adresses : service Photon de komoot, données © contributeurs OpenStreetMap</string>
     <string name="android_about_licenses_map_tiles_notice">Les cartes s\'affichent avec les tuiles d\'OpenFreeMap (https://openfreemap.org), qui utilisent le schéma © OpenMapTiles. Les données sont © contributeurs OpenStreetMap, disponibles sous la licence ODbL 1.0 (https://opendatacommons.org/licenses/odbl/1-0/). La mention reste visible sous chaque carte.</string>
     <string name="android_about_licenses_address_search_notice">Les adresses proposées pendant la frappe viennent de Photon, le service public de komoot (https://photon.komoot.io), dont le logiciel est publié sous licence Apache 2.0. Ses données sont © contributeurs OpenStreetMap, disponibles sous la licence ODbL 1.0 (https://opendatacommons.org/licenses/odbl/1-0/).</string>
+    <!-- SRV-8A (premium purchase, docs/tickets/premium-achat-reel.md): Abonnement screen states, reminder at the deletion of the account, refusal of a purchase already used by another account. Prices and dates arrive as arguments: never written in a translation. -->
+    <string name="paywall_other_account">Cet abonnement est déjà utilisé avec un autre compte Miff. Pour le déplacer, écris-nous : %1$s.</string>
+    <string name="settings_subscription_free">Tu es sur la formule gratuite. Miff+ débloque des lieux de confiance et des Miffs en nombre illimité, ainsi que les zones de danger.</string>
+    <string name="settings_subscription_trial">Essai gratuit jusqu\'au %1$s. Ensuite %2$s par an, sauf si tu l\'annules avant.</string>
+    <string name="settings_subscription_trial_noprice">Essai gratuit jusqu\'au %1$s. L\'abonnement annuel démarre ensuite, sauf si tu l\'annules avant.</string>
+    <string name="settings_subscription_renews">Actif. Prochain renouvellement le %1$s (%2$s).</string>
+    <string name="settings_subscription_renews_noprice">Actif. Prochain renouvellement le %1$s.</string>
+    <string name="settings_subscription_ends">Miff+ se termine le %1$s. Tu gardes tout jusqu\'à cette date.</string>
+    <string name="settings_subscription_grace">Le paiement de ton abonnement n\'a pas abouti. Tout fonctionne encore : mets à jour ton moyen de paiement avant le %1$s.</string>
+    <string name="settings_subscription_on_hold">Miff+ est en pause : le paiement n\'a pas abouti. Tes avantages reviendront dès que ce sera réglé.</string>
+    <string name="settings_subscription_expired">Ton abonnement Miff+ est terminé. Tu peux le reprendre quand tu veux.</string>
+    <string name="settings_subscription_revoked">Ton abonnement Miff+ a été remboursé : les avantages ne sont plus actifs.</string>
+    <string name="settings_subscription_manage">Gérer mon abonnement</string>
+    <string name="settings_subscription_refresh">Actualiser mon abonnement</string>
+    <string name="settings_subscription_discover">Découvrir Miff+</string>
+    <string name="settings_subscription_resume">Reprendre Miff+</string>
+    <string name="settings_subscription_unreadable">On n\'a pas pu lire ton abonnement pour le moment. Réessaie dans un instant.</string>
+    <string name="settings_subscription_refresh_failed">On n\'a pas pu actualiser ton abonnement pour le moment. Réessaie dans un instant.</string>
+    <string name="settings_subscription_other_store">Ton abonnement a été souscrit dans l\'App Store : tu peux le gérer dans les réglages de ton identifiant Apple.</string>
+    <string name="settings_subscription_test_note">Achat de test : aucun paiement réel.</string>
+    <string name="settings_delete_sub_title">Ton abonnement n\'est pas résilié</string>
+    <string name="settings_delete_sub_body_play">Supprimer ton compte ne résilie pas ton abonnement Miff+. Pour ne plus être facturé, résilie-le dans Google Play.</string>
+    <string name="settings_delete_sub_body_appstore">Supprimer ton compte ne résilie pas ton abonnement Miff+. Pour ne plus être facturé, résilie-le dans l\'App Store.</string>
+    <string name="settings_delete_sub_body_unknown">Si tu as un abonnement Miff+, supprimer ton compte ne le résilie pas. Pour ne plus être facturé, résilie-le dans Google Play ou dans l\'App Store, là où tu l\'as souscrit.</string>
+    <string name="settings_delete_sub_trial">Ton essai gratuit se poursuit tant que tu ne l\'as pas résilié : à sa fin, l\'abonnement annuel démarre.</string>
+    <string name="settings_delete_sub_manage">Gérer mon abonnement</string>
 </resources>

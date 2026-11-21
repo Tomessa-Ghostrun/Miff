@@ -23,6 +23,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.tomessa.miff.AppContainer
 import com.tomessa.miff.R
+import com.tomessa.miff.data.billing.PremiumCoordinator
 import com.tomessa.miff.domain.analytics.AnalyticsEvent
 import com.tomessa.miff.domain.analytics.AnalyticsTracker
 import com.tomessa.miff.domain.paywall.MonotonicClock
@@ -32,7 +33,9 @@ import com.tomessa.miff.ui.main.TabsRoute
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
 import com.tomessa.miff.ui.paywall.PaywallActions
 import com.tomessa.miff.ui.paywall.PaywallScreen
+import com.tomessa.miff.ui.paywall.PaywallStoreActions
 import com.tomessa.miff.ui.paywall.PaywallViewModel
+import com.tomessa.miff.ui.paywall.PurchasePaywallDestination
 import com.tomessa.miff.ui.paywall.currentPaywallState
 import com.tomessa.miff.ui.profile.ProfileRequestsViewModel
 import com.tomessa.miff.ui.profile.profileRequestsFactory
@@ -67,7 +70,7 @@ data class PlaceDetailRoute(
     val placeId: String,
 )
 
-/** The offer, with the reason it shows ([reason] is "limit", "danger" or "miff": a fixed word, nothing else travels). */
+/** The offer, with the reason it shows ([reason] is "limit", "danger", "miff" or "subscription": a fixed word, nothing else travels). */
 @Serializable
 data class PlacePaywallRoute(
     val reason: String,
@@ -77,6 +80,7 @@ data class PlacePaywallRoute(
         when (reason) {
             "limit" -> PaywallReason.LIMIT
             "miff" -> PaywallReason.MIFF
+            "subscription" -> PaywallReason.SUBSCRIPTION
             else -> PaywallReason.DANGER
         }
 
@@ -87,6 +91,7 @@ data class PlacePaywallRoute(
                     PaywallReason.LIMIT -> "limit"
                     PaywallReason.MIFF -> "miff"
                     PaywallReason.DANGER -> "danger"
+                    PaywallReason.SUBSCRIPTION -> "subscription"
                 },
             )
     }
@@ -98,6 +103,7 @@ internal fun paywallTrigger(reason: PaywallReason): AnalyticsEvent.PaywallTrigge
         PaywallReason.LIMIT -> AnalyticsEvent.PaywallTrigger.EXTRA_TRUSTED_PLACE
         PaywallReason.MIFF -> AnalyticsEvent.PaywallTrigger.EXTRA_MIFF
         PaywallReason.DANGER -> AnalyticsEvent.PaywallTrigger.DANGER_ZONE
+        PaywallReason.SUBSCRIPTION -> AnalyticsEvent.PaywallTrigger.SUBSCRIPTION
     }
 
 /**
@@ -269,7 +275,7 @@ fun NavGraphBuilder.placeRoutes(
             onPaywall = navController::openRequestOffer,
         )
     }
-    paywallRoute(container.analyticsTracker, container.paywallClock, navController)
+    paywallRoute(container.analyticsTracker, container.paywallClock, navController, container.premium)
 }
 
 /**
@@ -281,16 +287,29 @@ fun NavGraphBuilder.paywallRoute(
     tracker: AnalyticsTracker,
     clock: MonotonicClock,
     navController: NavController,
+    /** The purchase of Miff+ (SRV-8A); null while it is switched off (BuildConfig.PREMIUM_PURCHASE): the offer is then "Miff+ arrive bientôt". */
+    premium: PremiumCoordinator? = null,
 ) {
     composable<PlacePaywallRoute> { entry ->
         val paywall = entry.toRoute<PlacePaywallRoute>()
-        PaywallDestination(
-            reason = paywall.paywallReason(),
-            tracker = tracker,
-            clock = clock,
-            state = currentPaywallState(),
-            onClose = { navController.popBackStackIfSafe() },
-        )
+        if (premium == null) {
+            // The purchase is switched off (BuildConfig.PREMIUM_PURCHASE): "Miff+ arrive bientôt", no price, no button (what every distributed build shows until the server is deployed).
+            PaywallDestination(
+                reason = paywall.paywallReason(),
+                tracker = tracker,
+                clock = clock,
+                state = currentPaywallState(),
+                onClose = { navController.popBackStackIfSafe() },
+            )
+        } else {
+            PurchasePaywallDestination(
+                reason = paywall.paywallReason(),
+                tracker = tracker,
+                clock = clock,
+                premium = premium,
+                onClose = { navController.popBackStackIfSafe() },
+            )
+        }
     }
 }
 
@@ -302,6 +321,8 @@ internal fun PaywallDestination(
     clock: MonotonicClock,
     state: PaywallUiState,
     onClose: () -> Unit,
+    /** The purchase buttons (null while the purchase is switched off: they do nothing). */
+    store: PaywallStoreActions? = null,
 ) {
     val model: PaywallViewModel = viewModel(factory = viewModelFactory { initializer { PaywallViewModel(clock) } })
     val trigger = paywallTrigger(reason)
@@ -320,6 +341,11 @@ internal fun PaywallDestination(
                         onClose()
                     }
                 },
+                onStartTrial = store?.onStartTrial ?: {},
+                onBuyAnnual = store?.onBuyAnnual ?: {},
+                onBuyMonthly = store?.onBuyMonthly ?: {},
+                onRetry = store?.onRetry ?: {},
+                onRestore = store?.onRestore ?: {},
             ),
         onShown = { tracker.track(AnalyticsEvent.PaywallShown(trigger)) },
     )

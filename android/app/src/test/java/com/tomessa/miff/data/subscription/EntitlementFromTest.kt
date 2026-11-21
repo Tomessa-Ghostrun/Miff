@@ -1,15 +1,16 @@
 package com.tomessa.miff.data.subscription
 
 import com.google.firebase.Timestamp
+import com.tomessa.miff.domain.subscription.EntitlementDocument
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import java.util.Date
 
 /**
- * `entitlements/{uid}` is typed BY HAND in the console: only the exact types count, anything else reads as a missing
- * field and never throws (the account then stays without the "Abonnement" line, like the security rules, which compare
- * `active == true` and `expiresAt > request.time`).
+ * `entitlements/{uid}` is written by the SERVER (a real purchase) or typed BY HAND in the console: only the exact types count, anything else reads as a missing field and never
+ * throws (the account then stays on the free plan, like the security rules, which compare `active == true` and `expiresAt > request.time`). A document with fields this version
+ * does not know, or without the fields of the purchase (the first documents of the team), never breaks the screen (criterion AN7).
  */
 class EntitlementFromTest {
     private val expiry = Timestamp(Date(1_800_000_000_000L))
@@ -26,13 +27,72 @@ class EntitlementFromTest {
     }
 
     @Test
-    fun aWellFormedDocument_isRead() {
+    fun aWellFormedOldDocument_isRead_unknownFieldsIgnored() {
         assertEquals(
             EntitlementDocument(active = true, expiresAtMillis = 1_800_000_000_000L, source = "manual"),
             entitlementFrom(
-                mapOf("active" to true, "expiresAt" to expiry, "source" to "manual", "updatedAt" to expiry),
+                mapOf(
+                    "active" to true,
+                    "expiresAt" to expiry,
+                    "source" to "manual",
+                    "updatedAt" to expiry,
+                    "somethingNew" to 12,
+                ),
             ),
         )
+    }
+
+    @Test
+    fun aDocumentOfAPurchase_isReadWithAllItsFields() {
+        assertEquals(
+            EntitlementDocument(
+                active = true,
+                expiresAtMillis = 1_800_000_000_000L,
+                source = "google_play",
+                state = "trial",
+                plan = "yearly",
+                trial = true,
+                willRenew = true,
+                test = false,
+            ),
+            entitlementFrom(
+                mapOf(
+                    "active" to true,
+                    "expiresAt" to expiry,
+                    "source" to "google_play",
+                    "updatedAt" to expiry,
+                    "state" to "trial",
+                    "plan" to "yearly",
+                    "trial" to true,
+                    "willRenew" to true,
+                    "test" to false,
+                    "purgeAt" to expiry,
+                ),
+            ),
+        )
+    }
+
+    @Test
+    fun theNewFieldsWithTheWrongType_readAsMissing_neverAnError() {
+        val read =
+            entitlementFrom(
+                mapOf(
+                    "active" to true,
+                    "expiresAt" to expiry,
+                    "source" to "google_play",
+                    "state" to 3,
+                    "plan" to true,
+                    "trial" to "true",
+                    "willRenew" to 1,
+                    "test" to "yes",
+                ),
+            )!!
+        assertNull(read.state)
+        assertNull(read.plan)
+        assertNull(read.trial)
+        assertNull(read.willRenew)
+        assertNull(read.test)
+        assertEquals(true, read.active)
     }
 
     @Test

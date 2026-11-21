@@ -1359,4 +1359,30 @@
     <string name="android_about_licenses_address_search">Moradas: serviço Photon da komoot, dados © contribuidores do OpenStreetMap</string>
     <string name="android_about_licenses_map_tiles_notice">Os mapas são apresentados com os mosaicos do OpenFreeMap (https://openfreemap.org), que usam o esquema © OpenMapTiles. Os dados são © contribuidores do OpenStreetMap, disponíveis sob a licença ODbL 1.0 (https://opendatacommons.org/licenses/odbl/1-0/). A menção permanece visível sob cada mapa.</string>
     <string name="android_about_licenses_address_search_notice">As moradas sugeridas enquanto escreves vêm do Photon, o serviço público da komoot (https://photon.komoot.io), cujo software é publicado sob a licença Apache 2.0. Os seus dados são © contribuidores do OpenStreetMap, disponíveis sob a licença ODbL 1.0 (https://opendatacommons.org/licenses/odbl/1-0/).</string>
+    <!-- SRV-8A (premium purchase, docs/tickets/premium-achat-reel.md): Abonnement screen states, reminder at the deletion of the account, refusal of a purchase already used by another account. Prices and dates arrive as arguments: never written in a translation. -->
+    <string name="paywall_other_account">Esta subscrição já está a ser usada com outra conta da Miff. Para a mover, escreve-nos: %1$s.</string>
+    <string name="settings_subscription_free">Estás no plano gratuito. A Miff+ desbloqueia locais de confiança e Miffs sem limite, e ainda as zonas de perigo.</string>
+    <string name="settings_subscription_trial">Teste gratuito até %1$s. Depois, %2$s por ano, a não ser que o canceles antes.</string>
+    <string name="settings_subscription_trial_noprice">Teste gratuito até %1$s. Depois começa a subscrição anual, a não ser que a canceles antes.</string>
+    <string name="settings_subscription_renews">Ativa. Próxima renovação a %1$s (%2$s).</string>
+    <string name="settings_subscription_renews_noprice">Ativa. Próxima renovação a %1$s.</string>
+    <string name="settings_subscription_ends">A Miff+ termina a %1$s. Manténs tudo até essa data.</string>
+    <string name="settings_subscription_grace">O pagamento da tua subscrição não foi concluído. Tudo continua a funcionar: atualiza o teu método de pagamento antes de %1$s.</string>
+    <string name="settings_subscription_on_hold">A Miff+ está em pausa: o pagamento não foi concluído. As tuas vantagens voltam assim que ficar resolvido.</string>
+    <string name="settings_subscription_expired">A tua subscrição Miff+ terminou. Podes retomá-la quando quiseres.</string>
+    <string name="settings_subscription_revoked">A tua subscrição Miff+ foi reembolsada: as vantagens já não estão ativas.</string>
+    <string name="settings_subscription_manage">Gerir a minha subscrição</string>
+    <string name="settings_subscription_refresh">Atualizar a minha subscrição</string>
+    <string name="settings_subscription_discover">Descobrir a Miff+</string>
+    <string name="settings_subscription_resume">Retomar a Miff+</string>
+    <string name="settings_subscription_unreadable">De momento não conseguimos consultar a tua subscrição. Tenta novamente daqui a pouco.</string>
+    <string name="settings_subscription_refresh_failed">De momento não conseguimos atualizar a tua subscrição. Tenta novamente daqui a pouco.</string>
+    <string name="settings_subscription_other_store">A tua subscrição foi feita na App Store: podes geri-la nas definições do teu ID Apple.</string>
+    <string name="settings_subscription_test_note">Compra de teste: nenhum pagamento real.</string>
+    <string name="settings_delete_sub_title">A tua subscrição não está cancelada</string>
+    <string name="settings_delete_sub_body_play">Eliminar a tua conta não cancela a tua subscrição Miff+. Para não haver mais cobranças, cancela-a no Google Play.</string>
+    <string name="settings_delete_sub_body_appstore">Eliminar a tua conta não cancela a tua subscrição Miff+. Para não haver mais cobranças, cancela-a na App Store.</string>
+    <string name="settings_delete_sub_body_unknown">Se tens uma subscrição Miff+, eliminar a tua conta não a cancela. Para não haver mais cobranças, cancela-a no Google Play ou na App Store, onde a fizeste.</string>
+    <string name="settings_delete_sub_trial">O teu teste gratuito continua até o cancelares: quando terminar, começa a subscrição anual.</string>
+    <string name="settings_delete_sub_manage">Gerir a minha subscrição</string>
 </resources>

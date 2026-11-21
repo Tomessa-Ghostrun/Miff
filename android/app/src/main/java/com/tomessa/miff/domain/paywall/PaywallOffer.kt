@@ -35,8 +35,9 @@ data class PaywallPrice(
 }
 
 /**
- * What the offer screen shows in place of the offer. The store (SRV-8A) will fill the first three; until then production only ever has
- * [ComingSoon] (the premium is granted by hand, nothing is sold: no price, no trial button, no lie).
+ * What the offer screen shows in place of the offer. Google Play (SRV-8A, [com.tomessa.miff.ui.paywall.PaywallPurchaseViewModel]) fills all of them but [ComingSoon]; a build in
+ * which the purchase is switched off (`BuildConfig.PREMIUM_PURCHASE`, false in a distributed build until the server is deployed) only ever has [ComingSoon] (nothing is sold:
+ * no price, no trial button, no lie).
  */
 sealed interface PaywallOffer {
     /** The ONLY variant visible in production until the purchase exists: "Miff+ arrive bientôt", no price, no button. */
@@ -77,6 +78,9 @@ enum class PaywallNotice {
 
     /** A restoration found no Miff+ subscription on this store account. */
     RESTORE_NONE,
+
+    /** The subscription of this store account is already used by ANOTHER Miff account (one purchase = one account): a calm refusal with the contact, nothing said about the other account. */
+    OTHER_ACCOUNT,
 }
 
 /** The whole state of the offer screen (a pure value: the screens are tested with simulated states, ticket paywall-v2 section 5.1). */

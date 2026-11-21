@@ -1,0 +1,55 @@
+# Tester l'achat de Miff+ sur Android (SRV-8A)
+
+**À qui ça sert** : au PM, pour essayer l'achat de Miff+ sur son OPPO Find X5 Lite, d'abord **sans Google Play** (faux magasin, aucun risque), puis **pour de vrai** avec un compte testeur (Google Play, mais **sans débit réel**).
+**Ticket** : `docs/tickets/premium-achat-reel.md` (§6, §8, §14.2, §16 critères AN1 à AN15) et `docs/tickets/paywall-v2.md`. **Serveur** : PR SRV-7 (`backend/premium-srv7`), procédure de déploiement `docs/dev/deploiement-functions.md` §12. Rédigé le 2026-11-21.
+
+**Règle d'or** : aucune coordonnée bancaire n'est saisie par un agent, aucune commande de déploiement n'est lancée par un agent. Tout ce qui suit et qui touche à une console ou à un déploiement est **à faire par vous**, une étape à la fois. Libellés recopiés de la documentation de Google : ils peuvent différer à l'écran, **copiez ce que vous voyez à Claude** en cas de doute. Vérifiez à chaque page que l'application est **Miff** (`com.tomessa.miff`) et le projet **`miff-3d283`** (jamais Ghostrun).
+
+---
+
+## 1. Ce qui existe dans l'app
+
+| Interrupteur | Où | Valeur par défaut |
+|---|---|---|
+| `BuildConfig.PREMIUM_PURCHASE` (`-Pmiff.premiumPurchase=true`) | tout l'achat : prix et boutons de l'offre, écran Abonnement complet, rappel à la suppression du compte | **vrai en debug, faux en release** : un build distribué montre toujours « Miff+ arrive bientôt », sans prix ni bouton, tant que vous ne l'avez pas allumé |
+| `BuildConfig.BILLING_FAKE` (`-Pmiff.billingFake=false`) | faux magasin + faux serveur + faux droits (dossier `src/debug`, **absent de tout release**, le CI le vérifie) | **vrai en debug**, faux partout ailleurs |
+
+Un build de **release** refuse `premiumPurchase=true` sauf si on ajoute `-Pmiff.allowPremiumPurchaseInRelease=true` : c'est ce que fait le workflow `android-release` quand vous choisissez **`premium_purchase = true`** (voir §3, étape 7).
+
+---
+
+## 2. Essayer l'interface SANS Google Play (APK debug, aucun risque)
+
+L'APK debug des PR (artefact du workflow `android`) contient un **faux magasin** : aucune console, aucun produit, aucun paiement, et **rien n'est accordé** sur le vrai serveur (le faux ne fait aucun appel réseau pour les droits). Les limites de lieux et de Miffs ne changent donc pas : ce test sert à **voir les écrans et les messages**, pas à débloquer des fonctions.
+
+1. Installer l'APK debug, se connecter, aller dans **Réglages > Diagnostic** (ou appui de 10 secondes n'importe où) : carte **« Achat Miff+ (faux magasin) »**. Elle permet de choisir : ce que le magasin propose (essai possible, sans essai, produit indisponible, erreur réseau), ce que donnera le **prochain achat** (réussi, en attente, annulé, erreur du store, déjà possédé, non disponible, déjà utilisé par un autre compte, serveur injoignable avant l'achat, serveur muet à la vérification), et **l'état de l'abonnement** (essai, actif annuel ou mensuel, annulé non expiré, période de grâce, suspendu, expiré, remboursé, accordé à la main, ancien document de l'équipe, aucun).
+2. Ouvrir l'offre (Feed : 4e lieu, ou **Réglages > Abonnement > Découvrir Miff+**) : prix et boutons apparaissent, l'achat joue le scénario choisi.
+3. **Réglages > Abonnement** : un message par état (§8 du ticket), « Gérer mon abonnement » ouvre la vraie page des abonnements de Google Play, « Actualiser mon abonnement » rejoue la restauration.
+4. **Réglages > Mon compte > Supprimer mon compte** : avec un état « essai » ou « actif », le bloc « Ton abonnement n'est pas résilié » apparaît (plus fort pendant l'essai).
+
+---
+
+## 3. Essayer pour de vrai avec un compte testeur (piste interne, **sans débit**)
+
+**Pourquoi c'est long** : Google n'active les produits d'abonnement dans la Play Console qu'**après** l'envoi d'une première version contenant la bibliothèque de facturation. Aujourd'hui l'app n'existe pas encore dans la Play Console. Ordre à suivre (les numéros du §12.2 de `deploiement-functions.md` sont rappelés) :
+
+1. **Serveur déployé** (sur votre « oui » écrit pour ce commit, commande tapée par vous) : étapes 1 à 5 du §12.2 : API Google activées, compte de service `billing-sync` sans clé, sujet `play-rtdn`, déploiement des cinq fonctions, droit sur `recevoirnotificationsgoogleplay`. **Sans cela, l'app répond « indisponible » à l'achat**, rien ne casse.
+2. **Créer l'application Miff dans la Play Console** (`com.tomessa.miff`, gratuite, « Play App Signing » activé : c'est le défaut) si ce n'est pas déjà fait. Voir `docs/release/checklist-android.md` pour la fiche et la clé d'envoi.
+3. **Faire connaître à Firebase la clé de signature de Google Play** : avec Play App Signing, l'APK installé depuis Google Play est signé par **Google**, pas par votre clé d'envoi. Dans la Play Console (**Intégrité de l'application** / « App integrity » > signature de l'application), recopier les empreintes **SHA-1 et SHA-256 du certificat de signature de l'application** dans les réglages de l'app Android de Firebase (projet `miff-3d283`), sinon « Continuer avec Google » et App Check (Play Integrity) refuseront l'app installée depuis Google Play.
+4. **Premier bundle** : lancer le workflow **`android-release`** depuis `main` (après fusion de cette PR) avec **`premium_purchase = true`** (le serveur est déjà déployé à l'étape 1) : c'est le bundle qui contient réellement le code de facturation, ce que Google exige pour débloquer les produits. **Avec `false`, le code d'achat est retiré du bundle** (le manifeste déclare seulement la permission `com.android.vending.BILLING`) : à n'utiliser que pour un bundle de test qui ne doit pas montrer de prix. Tant que les produits n'existent pas (étape 5), un testeur voit simplement « Les offres ne sont pas disponibles pour le moment », sans prix ni bouton. Déposer le fichier à la main sur la **piste de test interne** (Play Console > Tests > Test interne > Créer une release).
+5. **Produits** (Play Console > Monétiser > Produits > Abonnements, ticket §14.2 point 3) : abonnement **`miff_plus`** (identifiant **définitif**), forfaits de base **`annuel`** (1 an, 59,88 €, renouvellement automatique) et **`mensuel`** (1 mois, 6,99 €), prix saisis hors taxe, **offre « essai gratuit 7 jours »** sur `annuel` (éligibilité « nouveaux clients »), période de grâce et suspension (valeurs par défaut) ; **activer** les forfaits. **Ne pas activer la mise en pause.** L'app **refuse d'afficher** un prix si le forfait n'est pas exactement d'**1 an** (annuel) ou d'**1 mois** (mensuel), ou si l'essai n'est pas de **7 jours** (elle n'affiche alors pas d'essai).
+6. **Notifications en temps réel et accès du serveur** (ticket §14.2 points 4 et 5, `deploiement-functions.md` §12.5 et §12.6) : activer l'API, inviter `billing-sync@miff-3d283.iam.gserviceaccount.com` avec les deux droits indiqués, saisir `projects/miff-3d283/topics/play-rtdn`, envoyer le message de test. **Le délai de prise en compte de l'invitation n'est pas précisé par Google** (minutes à heures).
+7. **Testeurs** : Play Console > Paramètres > **Test de licence** : ajouter le compte Google de test (**c'est ce qui évite tout débit réel**, les cartes de test sont proposées au paiement). Ajouter le même compte à la liste des testeurs de la **piste interne** et lui faire ouvrir le lien d'adhésion. **Sur l'OPPO, ce compte doit être le compte Google principal du Play Store.**
+8. **Installer** : la version de l'étape 4 est déjà celle qui achète (si vous avez dû republier, relancer `android-release` avec `premium_purchase = true` : le numéro de version interne est incrémenté tout seul). **Installer depuis Google Play** (pas depuis un fichier) sur l'OPPO.
+9. **Parcours à vérifier** (critères AN2 à AN13 du ticket) : offre avec essai (prix lus dans Google Play, pas de prix inventé) > achat avec la carte de test « approuve toujours » > Miff+ s'allume en quelques secondes (3e lieu, 2e Miff, zone de danger) > Réglages > Abonnement dit « Essai gratuit jusqu'au … » > « Gérer mon abonnement » ouvre la page de l'abonnement dans Google Play > carte « paiement lent » (« en cours de validation », aucun droit) > carte « refuse toujours » (grâce puis suspension : accès conservé puis coupé, message sobre) > désinstaller, réinstaller, rouvrir (retrouvé tout seul) > supprimer le compte (rappel d'abonnement).
+10. **Renouvellements accélérés pour les testeurs** : mensuel toutes les 5 minutes, annuel toutes les 30 minutes, essai 3 minutes, grâce 5 minutes, suspension 10 minutes, au plus 6 renouvellements (ticket §16).
+
+**À ne jamais faire** : acheter avec un compte qui n'est **pas** testeur de licence (débit réel), saisir une clé ou un fichier JSON quelque part, passer le workflow `android-release` en `premium_purchase = true` **avant** le déploiement du serveur (l'app afficherait des prix mais l'achat échouerait calmement : « indisponible »).
+
+---
+
+## 4. Ce que le test ne prouve pas (à savoir)
+
+- **BK9** (l'appel du serveur à l'API Google Play **sans clé**) n'est prouvé que par le premier achat réel : si le journal dit `acces_refuse`, voir `deploiement-functions.md` §12.7 (deux étapes de votre part, sans redéploiement).
+- Un achat de **test** accorde un **vrai** Miff+ (marqué `test`) sur le projet Firebase unique : l'écran Abonnement le dit (« Achat de test : aucun paiement réel »). Le serveur a un **coupe-circuit** (`billingConfig/options.acceptTest`, `deploiement-functions.md` §12.11 bis) : s'il est coupé, un achat de test n'accorde plus rien et l'app répond avec sa phrase calme d'erreur (« Si un paiement a été effectué, ton abonnement apparaîtra automatiquement… » : c'est le cas attendu pour un achat de test refusé).
+- Le faux magasin ne reproduit pas la feuille de paiement de Google : elle est jouée par un délai de moins d'une seconde.

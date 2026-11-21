@@ -26,6 +26,7 @@ playServicesLocation = "21.4.0"
 camerax = "1.6.2"
 haze = "2.0.1"
 playReview = "2.0.2"
+billing = "9.1.0"
 
 [libraries]
 androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
@@ -54,6 +55,10 @@ firebase-analytics = { module = "com.google.firebase:firebase-analytics" }
 # other Firebase libraries and stays pinned by firebaseBom). Free (FCM has no fee), same Google Android SDK terms as firebase-auth and firestore already used, no permission
 # of its own asked of the person. Used for DATA-ONLY messages: the app composes the notification itself, FCM never displays anything.
 firebase-messaging = { module = "com.google.firebase:firebase-messaging" }
+# Miff+ purchase (SRV-8A, docs/tickets/premium-achat-reel.md): the verification of a purchase is done by the SERVER, the app only calls two callable functions
+# (preparerAchat: random purchase id, synchroniserAchat: the purchase token to check). Same Google Android SDK terms as the other Firebase libraries, version from the BOM,
+# free, no key, no permission of its own. App Check is attached to each call by the library (the functions refuse a call without it).
+firebase-functions = { module = "com.google.firebase:firebase-functions" }
 androidx-credentials = { module = "androidx.credentials:credentials", version.ref = "credentials" }
 androidx-credentials-play-services-auth = { module = "androidx.credentials:credentials-play-services-auth", version.ref = "credentials" }
 google-googleid = { module = "com.google.android.libraries.identity.googleid:googleid", version.ref = "googleid" }
@@ -88,6 +93,12 @@ haze-blur = { module = "dev.chrisbanes.haze:haze-blur", version.ref = "haze" }
 # Free (Play Core SDK terms of service, no key, no fee), no permission of its own, aar of about 180 KB, minSdk 21. Why not `review-ktx`: it only adds two suspend wrappers and drags old
 # transitive dependencies (androidx.fragment 1.1.0, kotlin-stdlib-jdk7 1.3.72, coroutines 1.5.0); we already have kotlinx-coroutines-play-services, whose Task.await() does the same job.
 play-review = { module = "com.google.android.play:review", version.ref = "playReview" }
+# Google Play Billing Library (SRV-8A): the ONLY way to sell a subscription on Google Play (Google Payments policy, section 2: digital goods go through Play Billing). Kotlin
+# extensions (billing-ktx, about 70 KB: suspend versions of the same calls) on top of the main artifact. 9.1.0 = latest stable (2026-06-18, checked on Google Maven and in the release
+# notes of developer.android.com on 2026-11-21); version 8 or later is required by Google Play for every new app and update since 2026-08-31. Free (no fee of its own: Google keeps its
+# commission on sales), maintained by Google, no key. It adds ONE normal permission to the manifest (com.android.vending.BILLING: granted at install, never asked of the person) and
+# nothing else of the "sensitive" family checked by the CI.
+billing-ktx = { module = "com.android.billingclient:billing-ktx", version.ref = "billing" }
 junit = { module = "junit:junit", version.ref = "junit" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 androidx-compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
