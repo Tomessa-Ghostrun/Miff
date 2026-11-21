@@ -1,4 +1,4 @@
-// Textes légaux en version 1.1 (publication du 2026-11-19) : version et date visibles, alerte « Je suis en danger »,
+// Textes légaux en version 1.1 (2026-11-19) puis 1.2 (2026-11-21, tests « VERSION 1.2 » en fin de fichier) : version et date visibles, alerte « Je suis en danger »,
 // journal local du temps et description de photo décrits sans mensonge. Tests sans dépendance (node:test).
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
@@ -210,7 +210,7 @@ test('VERSION 1.2 - le registre serveur de 30 jours des notifications est décri
     /n.est lisible que par la personne à qui la notification est envoyée/,
     /mis en service progressivement/,
     /rien n.est reconstitué pour les notifications passées/,
-    /« Supprimer » une notification, ou « Tout effacer »/,
+    /« Supprimer cette notification », ou « Tout effacer »/,
     /Il n.est pas supprimé quand tu te déconnectes/,
     /la seule trace des notifications envoyées est le registre technique de 30 jours/i,
   ]) assert.match(POLICY_FR, pattern);
@@ -247,4 +247,21 @@ test('VERSION 1.2 - consentement à la localisation v4 et langues : le texte dit
   assert.doesNotMatch(POLICY_FR + TERMS_FR, /En cliquant sur/);
   // Aucune relecture juridique prétendue (déjà testé plus haut pour toute la page) : le journal des changements en tête n'en parle pas.
   assert.doesNotMatch(POLICY_FR.slice(0, 2500) + POLICY_EN.slice(0, 2500), /juriste|lawyer|attorney/i);
+});
+
+test('VERSION 1.2 - réserves de mise en service et corrections de la revue d\'exactitude (FR et EN)', () => {
+  // Le registre est publiable avant sa mise en service : la réserve est répétée, pas seulement dans le tableau.
+  assert.match(POLICY_FR, /Ce registre est mis en service progressivement : tant que notre serveur ne l.écrit pas, rien n.est enregistré/);
+  assert.match(POLICY_EN, /This record is being put into service gradually: as long as our server does not write it, nothing is recorded/);
+  // L'effacement dépend de la version de l'app qui gère le registre.
+  assert.match(POLICY_FR, /avec une version plus ancienne, seule la suppression automatique à 30 jours s.applique/);
+  assert.match(POLICY_EN, /with an older version, only the automatic deletion after 30 days applies/);
+  // Le message de notification ne contient pas d'heure d'envoi (clé absente du message).
+  assert.doesNotMatch(POLICY_FR, /l.heure d.envoi/);
+  assert.doesNotMatch(POLICY_EN, /the time it was sent/);
+  // iPhone : le retrait des statistiques se fait par e-mail tant que l'interrupteur n'est pas livré.
+  assert.match(POLICY_FR, /Sur iPhone, tant que cet interrupteur n.est pas livré/);
+  assert.match(POLICY_EN, /On iPhone, as long as this switch is not delivered/);
+  assert.match(TERMS_FR, /sur iPhone, tant que cet interrupteur n.est pas livré/);
+  assert.match(TERMS_EN, /on iPhone, as long as this switch is not delivered/);
 });
