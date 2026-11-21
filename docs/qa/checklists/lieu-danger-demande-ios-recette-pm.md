@@ -13,7 +13,7 @@
 
 Compte **membre**, non Miff+, dans une Miff dont il n'est pas le créateur.
 
-1. [ ] Profil, liste « Lieux de confiance de <Miff> » : **« Demander l'ajout d'un lieu »** ouvre « Proposer un lieu ».
+1. [ ] Profil, liste « Les lieux de la Miff » (le titre ne nomme plus la Miff) : **« Demander l'ajout d'un lieu »** ouvre « Proposer un lieu ».
 2. [ ] Dans « Type », la carte **« Zone de danger » n'a PAS de pastille « Miff+ »** et n'est pas annoncée « Fait partie de Miff+ » par VoiceOver.
 3. [ ] Touchez **« Zone de danger »** : elle se coche, **aucune offre Miff+ ne s'ouvre**, aucun mot sur un abonnement.
 4. [ ] Remplissez nom, adresse, rayon, catégorie, puis **« Soumettre la demande »** : retour à la liste, la demande apparaît en tête avec la pastille **« En attente »** (bleu pâle, pointillés), l'étiquette « Zone de danger », et **aucun mot sur Miff+**.

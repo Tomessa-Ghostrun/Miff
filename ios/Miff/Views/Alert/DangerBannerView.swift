@@ -3,7 +3,8 @@ import SwiftUI
 import UIKit
 
 // La bannière d'une alerte en cours (maquette 05, docs/tickets/alerte-danger.md 7.4 ; miroir d'`AlertBanner` d'Android), posée au-dessus de la barre d'onglets,
-// sur tous les onglets. Elle NOMME toujours la Miff d'origine (« Tu as alerté les proches de la Miff {nom} »). Maintenir le corps 5 secondes termine l'alerte (un
+// sur tous les onglets. Pendant l'alerte en cours, elle pose la question en GRAND titre (« Mettre fin à l'alerte ? », deux fois la taille d'avant) puis la consigne (« Maintiens
+// 5 secondes pour mettre fin à l'alerte… ») : textes donnés par le PM en recette, sans nom de Miff (pendant l'ENVOI, elle nomme encore la Miff d'origine). Maintenir le corps 5 secondes termine l'alerte (un
 // voile clair se remplit depuis le début, le même haptique) ; « Appeler » rouvre l'écran des numéros ; « Voir la Miff {nom} » montre la Miff d'origine quand le Feed
 // en montre une autre. Pas de croix tant que l'alerte est en cours : elle part à la fin ou à l'échéance. Tant que l'alerte est encore EN ROUTE (pas de réseau,
 // refusée, limite du jour, plus de 15 minutes), la bannière le dit calmement ET offre une croix pour l'ABANDONNER (retour de la recette du PM) : l'abandon n'efface
@@ -52,13 +53,26 @@ struct DangerBannerView: View {
         sendStep.map { $0 != .sending } ?? false
     }
 
+    /// Le plus haut Dynamic Type que suit TOUT le bandeau (titre, consigne, boutons) : au-delà, un titre de 32 pt de départ, une consigne de plus de cent
+    /// caractères et un lien « Voir la Miff {nom} » à nom long remplissent l'écran, et le geste de fin (maintien sur le bandeau) devient impraticable.
+    static let maxDynamicType = DynamicTypeSize.accessibility1
+
+    /// Le grand titre (« Mettre fin à l'alerte ? ») est celui de l'alerte EN COURS ; l'envoi, lui, garde le titre de taille normale.
+    private var hasBigTitle: Bool {
+        if case .sending = alert {
+            return false
+        }
+        return true
+    }
+
     private var title: String {
         if case .sending = alert {
             let fallback = L10n.string("alert_banner_sending_no_name")
             return miffName.map { L10n.format("alert_banner_sending", $0) } ?? fallback
         }
-        let fallback = L10n.string("alert_banner_title_no_name")
-        return miffName.map { L10n.format("alert_banner_title", $0) } ?? fallback
+        // Retour du PM : la question « Mettre fin à l'alerte ? » ne nomme plus la Miff : c'est le lien « Voir la Miff {nom} » qui la nomme (affiché dès que la
+        // personne a plusieurs Miffs, `DangerBannerRules.showsSeeMiff`).
+        return L10n.string("alert_banner_title")
     }
 
     private var note: String? {
@@ -103,6 +117,11 @@ struct DangerBannerView: View {
                 .onAppear {
                     hold.onDone = actions.onEnd
                 }
+                // Le geste disparaît de la vue quand la fin est en cours (`endable` faux) : un doigt encore posé ne le préviendrait jamais de son
+                // relâchement, il serait alors bloqué « doigt posé » pour la prochaine tentative (fin hors ligne). On le remet à zéro.
+                .onChange(of: endable) { _ in
+                    hold.cancel()
+                }
         }
     }
 
@@ -114,30 +133,43 @@ struct DangerBannerView: View {
                     closeButton
                 }
             }
-            HStack(spacing: Spacing.md) {
-                if sendStep == .refused {
-                    action("alert_banner_retry", actions.onRetry)
-                }
-                // « Appeler » est pour les proches de la Miff une fois l'alerte active ; avant, l'écran offre les numéros d'urgence (et, pour la
-                // question des 15 minutes, la décision). Aucun bouton ne renvoie quoi que ce soit en disant « Appeler ».
-                action(secondActionKey, actions.onCall)
-                if showSeeMiff, let miffName {
-                    action(L10n.format("alert_banner_see_miff", miffName), actions.onSeeMiff, verbatim: true)
-                }
-            }
+            actionRow
         }
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, Spacing.sm + Spacing.xs)
         .frame(maxWidth: .infinity, alignment: .leading)
+        .dynamicTypeSize(...Self.maxDynamicType)
+    }
+
+    /// Les actions côte à côte quand elles tiennent ; sinon l'une sous l'autre (grand texte ou nom de Miff long : le lien passe à la ligne, jamais coupé).
+    private var actionRow: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: Spacing.md) {
+                actionItems
+            }
+            VStack(alignment: .leading, spacing: 0) {
+                actionItems
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var actionItems: some View {
+        if sendStep == .refused {
+            action("alert_banner_retry", actions.onRetry)
+        }
+        // « Appeler » est pour les proches de la Miff une fois l'alerte active ; avant, l'écran offre les numéros d'urgence (et, pour la
+        // question des 15 minutes, la décision). Aucun bouton ne renvoie quoi que ce soit en disant « Appeler ».
+        action(secondActionKey, actions.onCall)
+        if showSeeMiff, let miffName {
+            action(L10n.format("alert_banner_see_miff", miffName), actions.onSeeMiff, verbatim: true)
+        }
     }
 
     /// Le texte, lu d'un bloc ; l'action « Terminer l'alerte » du lecteur d'écran y est posée.
     private var textBlock: some View {
         VStack(alignment: .leading, spacing: Spacing.xs) {
-            Text(verbatim: title)
-                .miffTextStyle(textBodyBold16)
-                .foregroundColor(colorOnAlert.color)
-                .accessibilityAddTraits(.isHeader)
+            titleText
             if let note {
                 Text(verbatim: note)
                     .miffTextStyle(textBodyRegular14)
@@ -147,6 +179,24 @@ struct DangerBannerView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
         .modifier(EndAccessibleAction(enabled: endable, perform: actions.onEndAccessible))
+    }
+
+    /// Le titre : DEUX FOIS plus grand qu'avant pendant l'alerte en cours (retour du PM : la question d'abord, la consigne ensuite). Il passe à la ligne
+    /// (jamais tronqué : `fixedSize` vertical) et suit Dynamic Type jusqu'à `maxDynamicType` (posé sur tout le bandeau).
+    @ViewBuilder
+    private var titleText: some View {
+        if hasBigTitle {
+            Text(verbatim: title)
+                .miffTextStyle(textAlertBannerTitle)
+                .foregroundColor(colorOnAlert.color)
+                .fixedSize(horizontal: false, vertical: true)
+                .accessibilityAddTraits(.isHeader)
+        } else {
+            Text(verbatim: title)
+                .miffTextStyle(textBodyBold16)
+                .foregroundColor(colorOnAlert.color)
+                .accessibilityAddTraits(.isHeader)
+        }
     }
 
     private var closeButton: some View {
@@ -178,6 +228,7 @@ struct DangerBannerView: View {
                 .underline()
                 .miffTextStyle(textBodyBold14)
                 .foregroundColor(colorOnAlert.color)
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(minHeight: Spacing.minTouchTarget, alignment: .leading)
                 .contentShape(Rectangle())
         }

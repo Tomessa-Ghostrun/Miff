@@ -6,12 +6,17 @@ import XCTest
 /// (`AccountLocalData`, `SessionTeardown` ou `SessionManager.eraseAfterAccountDeletion`) ou décider qu'il ne contient rien de
 /// personnel, puis l'ajouter ici avec sa raison.
 final class AccountLocalStorageGuardTests: XCTestCase {
+    /// Le pointeur de l'alerte est effacé ; le fichier `hint-done` de la bulle bleue est GARDÉ VOLONTAIREMENT (repère d'installation, comme le carrousel :
+    /// un octet, rien de personnel, ticket alerte-danger §7.1) et part avec la désinstallation.
+    private static let dangerStoreNote: String =
+        "pointeur de l'alerte : teardown, AccountLocalData ; hint-done : gardé volontairement (installation, §7.1)"
+
     /// Chaque stockage connu, avec ce qui l'efface (ou pourquoi il reste).
     private let known: [String: String] = [
         "App/AppEnvironment.swift": "branchement des réglages ; rien de plus",
         "App/AppEnvironment+AccountDeletion.swift": "branchement des effaceurs (AccountLocalData)",
         "App/MiffServices.swift": "Miff active (UserDefaultsActiveMiffStore) : AccountLocalData",
-        "Services/Storage/DangerAlertFileStore.swift": "pointeur de l'alerte : teardown, AccountLocalData",
+        "Services/Storage/DangerAlertFileStore.swift": AccountLocalStorageGuardTests.dangerStoreNote,
         "Services/Notification/LastVisitFileStore.swift": "dernière image vue des proches : teardown, AccountLocalData",
         "Services/Notification/NotificationCenterFileStore.swift": "centre : teardown, AccountLocalData",
         "Services/Notification/NotificationJournalCursorFileStore.swift":

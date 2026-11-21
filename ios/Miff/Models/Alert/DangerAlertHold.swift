@@ -31,11 +31,6 @@ enum DangerAlertHold {
         let fraction = Double(heldMillis - armMillis) / Double(max(holdMillis, 1))
         return .holding(fraction: min(max(fraction, 0), 1))
     }
-
-    /// Vrai quand le doigt s'est trop éloigné de l'endroit où il s'est posé : le geste est annulé, comme s'il était relâché.
-    static func movedTooFar(dx: Double, dy: Double, slop: Double = DangerAlertRules.holdSlopPoints) -> Bool {
-        dx * dx + dy * dy > slop * slop
-    }
 }
 
 /// Ce que devient un toucher sur le bouton, décidé à chaque événement. `DangerHoldTracker` ne connaît ni l'écran ni l'horloge du système :
@@ -49,7 +44,8 @@ enum DangerHoldOutcome: Equatable {
     case armed
     /// Les 5 secondes sont tenues : l'alerte part.
     case done
-    /// Un geste armé est annulé avant la fin (relâché, éloigné, app en arrière-plan, appel entrant) : sans message.
+    /// Un geste armé est annulé avant la fin (relâché, app en arrière-plan, appel entrant, annulation du système) : sans message. Le doigt qui sort du
+    /// bouton n'annule PAS.
     case cancelled
 }
 
@@ -128,7 +124,7 @@ struct DangerHoldTracker {
         return nowMillis - startedAtMillis < armMillis ? .tap : .cancelled
     }
 
-    /// Tout ce qui annule un geste (doigt éloigné, app en arrière-plan, fenêtre qui perd le focus) : un geste armé est annulé sans message,
+    /// Tout ce qui annule un geste (app en arrière-plan, fenêtre qui perd le focus, annulation du système) : un geste armé est annulé sans message,
     /// un toucher pas encore armé n'est ni une photo ni une alerte.
     mutating func cancel() -> DangerHoldOutcome {
         defer {
