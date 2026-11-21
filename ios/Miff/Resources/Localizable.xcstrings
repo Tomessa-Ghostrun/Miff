@@ -53831,6 +53831,1039 @@
           }
         }
       }
+    },
+    "paywall_other_account": {
+      "extractionState": "manual",
+      "comment": "Argument : l'adresse de contact (jamais écrite dans la traduction). Un achat = un compte Miff : refus calme, rien n'est dit sur l'autre compte.",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dieses Abonnement wird bereits mit einem anderen Miff-Konto verwendet. Um es zu übertragen, schreib uns: %1$@."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This subscription is already used with another Miff account. To move it, write to us: %1$@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta suscripción ya se usa con otra cuenta de Miff. Para moverla, escríbenos: %1$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cet abonnement est déjà utilisé avec un autre compte Miff. Pour le déplacer, écris-nous : %1$@."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Questo abbonamento è già in uso con un altro account Miff. Per spostarlo, scrivici: %1$@."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esta subscrição já está a ser usada com outra conta da Miff. Para a mover, escreve-nos: %1$@."
+          }
+        }
+      }
+    },
+    "settings_subscription_free": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du nutzt die kostenlose Version. Miff+ schaltet unbegrenzt viele vertraute Orte und Miffs frei – und die Gefahrenzonen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You're on the free plan. Miff+ unlocks unlimited trusted places and Miffs, and danger zones."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estás en el plan gratuito. Miff+ desbloquea lugares de confianza y Miffs sin límite, además de las zonas de peligro."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu es sur la formule gratuite. Miff+ débloque des lieux de confiance et des Miffs en nombre illimité, ainsi que les zones de danger."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hai il piano gratuito. Miff+ sblocca luoghi di fiducia e Miff illimitati, oltre alle zone di pericolo."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estás no plano gratuito. A Miff+ desbloqueia locais de confiança e Miffs sem limite, e ainda as zonas de perigo."
+          }
+        }
+      }
+    },
+    "settings_subscription_trial": {
+      "extractionState": "manual",
+      "comment": "Arguments : 1 = date de fin de l'essai (format long de la langue, formatée par le système), 2 = prix annuel écrit par le store (jamais dans la traduction).",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kostenlose Testphase bis %1$@. Danach %2$@ pro Jahr, es sei denn, du kündigst vorher."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free trial until %1$@. Then %2$@ per year, unless you cancel before."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prueba gratuita hasta el %1$@. Después, %2$@ al año, salvo que la canceles antes."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Essai gratuit jusqu'au %1$@. Ensuite %2$@ par an, sauf si tu l'annules avant."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prova gratuita fino al giorno %1$@. Poi %2$@ all’anno, a meno che tu non la annulli prima."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teste gratuito até %1$@. Depois, %2$@ por ano, a não ser que o canceles antes."
+          }
+        }
+      }
+    },
+    "settings_subscription_trial_noprice": {
+      "extractionState": "manual",
+      "comment": "Même phrase sans prix, quand le store n'a pas pu être joint. Argument : date de fin de l'essai.",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kostenlose Testphase bis %1$@. Danach beginnt das Jahresabonnement, es sei denn, du kündigst vorher."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free trial until %1$@. The yearly subscription starts after that, unless you cancel before."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prueba gratuita hasta el %1$@. Después empieza la suscripción anual, salvo que la canceles antes."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Essai gratuit jusqu'au %1$@. L'abonnement annuel démarre ensuite, sauf si tu l'annules avant."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prova gratuita fino al giorno %1$@. Poi inizia l’abbonamento annuale, a meno che tu non lo annulli prima."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teste gratuito até %1$@. Depois começa a subscrição anual, a não ser que a canceles antes."
+          }
+        }
+      }
+    },
+    "settings_subscription_renews": {
+      "extractionState": "manual",
+      "comment": "Arguments : 1 = date du prochain renouvellement (format long, formatée par le système), 2 = prix écrit par le store.",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktiv. Nächste Verlängerung am %1$@ (%2$@)."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active. Next renewal on %1$@ (%2$@)."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activa. Próxima renovación el %1$@ (%2$@)."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actif. Prochain renouvellement le %1$@ (%2$@)."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attivo. Prossimo rinnovo il %1$@ (%2$@)."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ativa. Próxima renovação a %1$@ (%2$@)."
+          }
+        }
+      }
+    },
+    "settings_subscription_renews_noprice": {
+      "extractionState": "manual",
+      "comment": "Même phrase sans prix, quand le store n'a pas pu être joint.",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktiv. Nächste Verlängerung am %1$@."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active. Next renewal on %1$@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activa. Próxima renovación el %1$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actif. Prochain renouvellement le %1$@."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attivo. Prossimo rinnovo il %1$@."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ativa. Próxima renovação a %1$@."
+          }
+        }
+      }
+    },
+    "settings_subscription_ends": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Du hast Miff+ gekündigt: Es bleibt bis zum %1$@ aktiv, ohne Verlängerung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You cancelled Miff+: it stays active until %1$@, without renewal."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Has cancelado Miff+: sigue activo hasta el %1$@, sin renovación."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu as résilié Miff+ : il reste actif jusqu'au %1$@, sans renouvellement."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hai annullato Miff+: resta attivo fino al giorno %1$@, senza rinnovo."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelaste a Miff+: continua ativa até %1$@, sem renovação."
+          }
+        }
+      }
+    },
+    "settings_subscription_grace": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Zahlung für dein Abonnement ist nicht durchgegangen. Es funktioniert noch alles: Aktualisiere deine Zahlungsmethode vor dem %1$@."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The payment for your subscription didn't go through. Everything still works: update your payment method before %1$@."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El pago de tu suscripción no se ha completado. Todo sigue funcionando: actualiza tu método de pago antes del %1$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le paiement de ton abonnement n'a pas abouti. Tout fonctionne encore : mets à jour ton moyen de paiement avant le %1$@."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il pagamento del tuo abbonamento non è andato a buon fine. Tutto funziona ancora: aggiorna il metodo di pagamento prima del %1$@."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O pagamento da tua subscrição não foi concluído. Tudo continua a funcionar: atualiza o teu método de pagamento antes de %1$@."
+          }
+        }
+      }
+    },
+    "settings_subscription_on_hold": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff+ ist pausiert: Die Zahlung ist nicht durchgegangen. Deine Vorteile sind wieder da, sobald das geklärt ist."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff+ is on hold: the payment didn't go through. Your benefits will be back as soon as it's sorted."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff+ está en pausa: el pago no se ha completado. Tus ventajas volverán en cuanto se resuelva."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff+ est en pause : le paiement n'a pas abouti. Tes avantages reviendront dès que ce sera réglé."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff+ è in pausa: il pagamento non è andato a buon fine. I tuoi vantaggi torneranno non appena sarà risolto."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A Miff+ está em pausa: o pagamento não foi concluído. As tuas vantagens voltam assim que ficar resolvido."
+          }
+        }
+      }
+    },
+    "settings_subscription_expired": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Miff+-Abonnement ist beendet. Du kannst es jederzeit wieder aufnehmen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Miff+ subscription has ended. You can start it again whenever you like."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu suscripción de Miff+ ha terminado. Puedes retomarla cuando quieras."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton abonnement Miff+ est terminé. Tu peux le reprendre quand tu veux."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il tuo abbonamento Miff+ è terminato. Puoi riprenderlo quando vuoi."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A tua subscrição Miff+ terminou. Podes retomá-la quando quiseres."
+          }
+        }
+      }
+    },
+    "settings_subscription_revoked": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Miff+-Abonnement wurde erstattet: Die Vorteile sind nicht mehr aktiv."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your Miff+ subscription was refunded: the benefits are no longer active."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu suscripción de Miff+ se ha reembolsado: las ventajas ya no están activas."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton abonnement Miff+ a été remboursé : les avantages ne sont plus actifs."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il tuo abbonamento Miff+ è stato rimborsato: i vantaggi non sono più attivi."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A tua subscrição Miff+ foi reembolsada: as vantagens já não estão ativas."
+          }
+        }
+      }
+    },
+    "settings_subscription_manage": {
+      "extractionState": "manual",
+      "comment": "Ouvre la page des abonnements du magasin (annuler, reprendre, changer de formule se font là, jamais dans l'app).",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mein Abonnement verwalten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage my subscription"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestionar mi suscripción"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gérer mon abonnement"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestisci il mio abbonamento"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gerir a minha subscrição"
+          }
+        }
+      }
+    },
+    "settings_subscription_refresh": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mein Abonnement aktualisieren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Refresh my subscription"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actualizar mi suscripción"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actualiser mon abonnement"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aggiorna il mio abbonamento"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Atualizar a minha subscrição"
+          }
+        }
+      }
+    },
+    "settings_subscription_discover": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff+ entdecken"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discover Miff+"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descubrir Miff+"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Découvrir Miff+"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scopri Miff+"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descobrir a Miff+"
+          }
+        }
+      }
+    },
+    "settings_subscription_resume": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff+ wieder aufnehmen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Get Miff+ again"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retomar Miff+"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reprendre Miff+"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riprendi Miff+"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retomar a Miff+"
+          }
+        }
+      }
+    },
+    "settings_subscription_unreadable": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wir konnten dein Abonnement gerade nicht abrufen. Versuch es in einem Moment noch einmal."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We couldn't read your subscription right now. Please try again in a moment."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hemos podido consultar tu suscripción por ahora. Inténtalo de nuevo en un momento."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On n'a pas pu lire ton abonnement pour le moment. Réessaie dans un instant."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Al momento non è stato possibile consultare il tuo abbonamento. Riprova tra un momento."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De momento não conseguimos consultar a tua subscrição. Tenta novamente daqui a pouco."
+          }
+        }
+      }
+    },
+    "settings_subscription_refresh_failed": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wir konnten dein Abonnement gerade nicht aktualisieren. Versuch es in einem Moment noch einmal."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We couldn't refresh your subscription right now. Please try again in a moment."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hemos podido actualizar tu suscripción por ahora. Inténtalo de nuevo en un momento."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On n'a pas pu actualiser ton abonnement pour le moment. Réessaie dans un instant."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Al momento non è stato possibile aggiornare il tuo abbonamento. Riprova tra un momento."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De momento não conseguimos atualizar a tua subscrição. Tenta novamente daqui a pouco."
+          }
+        }
+      }
+    },
+    "settings_subscription_other_store": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Abonnement wurde im App Store abgeschlossen: Du kannst es in den Einstellungen deiner Apple-ID verwalten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your subscription was taken out in the App Store: you can manage it in your Apple ID settings."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu suscripción se contrató en la App Store: puedes gestionarla en los ajustes de tu ID de Apple."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton abonnement a été souscrit dans l'App Store : tu peux le gérer dans les réglages de ton identifiant Apple."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il tuo abbonamento è stato sottoscritto nell’App Store: puoi gestirlo nelle impostazioni del tuo ID Apple."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A tua subscrição foi feita na App Store: podes geri-la nas definições do teu ID Apple."
+          }
+        }
+      }
+    },
+    "settings_subscription_test_note": {
+      "extractionState": "manual",
+      "comment": "Achat de test (testeur de licence, bac à sable) : dit clairement pour que personne ne le prenne pour un vrai paiement.",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testkauf: keine echte Zahlung."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Test purchase: no real payment."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compra de prueba: no hay ningún pago real."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Achat de test : aucun paiement réel."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acquisto di prova: nessun pagamento reale."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compra de teste: nenhum pagamento real."
+          }
+        }
+      }
+    },
+    "settings_delete_sub_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Abonnement ist nicht gekündigt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your subscription is not cancelled"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu suscripción no está cancelada"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton abonnement n'est pas résilié"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il tuo abbonamento non è stato annullato"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A tua subscrição não está cancelada"
+          }
+        }
+      }
+    },
+    "settings_delete_sub_body_play": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wenn du dein Konto löschst, wird dein Miff+-Abonnement nicht gekündigt. Damit nichts mehr abgebucht wird, kündige es bei Google Play."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleting your account does not cancel your Miff+ subscription. To stop being charged, cancel it in Google Play."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminar tu cuenta no cancela tu suscripción de Miff+. Para que dejen de cobrarte, cancélala en Google Play."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer ton compte ne résilie pas ton abonnement Miff+. Pour ne plus être facturé, résilie-le dans Google Play."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminare il tuo account non annulla il tuo abbonamento Miff+. Per interrompere gli addebiti, annullalo su Google Play."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminar a tua conta não cancela a tua subscrição Miff+. Para não haver mais cobranças, cancela-a no Google Play."
+          }
+        }
+      }
+    },
+    "settings_delete_sub_body_appstore": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wenn du dein Konto löschst, wird dein Miff+-Abonnement nicht gekündigt. Damit nichts mehr abgebucht wird, kündige es im App Store."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deleting your account does not cancel your Miff+ subscription. To stop being charged, cancel it in the App Store."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminar tu cuenta no cancela tu suscripción de Miff+. Para que dejen de cobrarte, cancélala en la App Store."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supprimer ton compte ne résilie pas ton abonnement Miff+. Pour ne plus être facturé, résilie-le dans l'App Store."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminare il tuo account non annulla il tuo abbonamento Miff+. Per interrompere gli addebiti, annullalo nell’App Store."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eliminar a tua conta não cancela a tua subscrição Miff+. Para não haver mais cobranças, cancela-a na App Store."
+          }
+        }
+      }
+    },
+    "settings_delete_sub_body_unknown": {
+      "extractionState": "manual",
+      "comment": "Phrase prudente quand le serveur n'a pas pu dire s'il y a un abonnement (hors connexion) : jamais de silence sur un abonnement qui continue d'être facturé.",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Falls du ein Miff+-Abonnement hast, wird es durch das Löschen deines Kontos nicht gekündigt. Damit nichts mehr abgebucht wird, kündige es bei Google Play oder im App Store, wo du es abgeschlossen hast."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "If you have a Miff+ subscription, deleting your account does not cancel it. To stop being charged, cancel it in Google Play or the App Store, wherever you took it out."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si tienes una suscripción de Miff+, eliminar tu cuenta no la cancela. Para que dejen de cobrarte, cancélala en Google Play o en la App Store, donde la contrataste."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si tu as un abonnement Miff+, supprimer ton compte ne le résilie pas. Pour ne plus être facturé, résilie-le dans Google Play ou dans l'App Store, là où tu l'as souscrit."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se hai un abbonamento Miff+, eliminare il tuo account non lo annulla. Per interrompere gli addebiti, annullalo su Google Play o nell’App Store, dove lo hai sottoscritto."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se tens uma subscrição Miff+, eliminar a tua conta não a cancela. Para não haver mais cobranças, cancela-a no Google Play ou na App Store, onde a fizeste."
+          }
+        }
+      }
+    },
+    "settings_delete_sub_trial": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deine Testphase läuft weiter, bis du sie kündigst: Wenn sie endet, beginnt das Jahresabonnement."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your free trial continues until you cancel it: when it ends, the annual subscription starts."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu prueba gratuita continúa hasta que la canceles: al terminar, empieza la suscripción anual."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton essai gratuit se poursuit tant que tu ne l'as pas résilié : à sa fin, l'abonnement annuel démarre."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La tua prova gratuita prosegue finché non la annulli: al termine inizia l’abbonamento annuale."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O teu teste gratuito continua até o cancelares: quando terminar, começa a subscrição anual."
+          }
+        }
+      }
+    },
+    "settings_delete_sub_manage": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mein Abonnement verwalten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Manage my subscription"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestionar mi suscripción"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gérer mon abonnement"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gestisci il mio abbonamento"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gerir a minha subscrição"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

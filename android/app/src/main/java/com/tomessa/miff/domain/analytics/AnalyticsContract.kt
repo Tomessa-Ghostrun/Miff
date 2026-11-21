@@ -53,7 +53,10 @@ object AnalyticsContract {
     const val EVENT_DIAGNOSTIC_TEST = "analytics_diagnostic_test"
 
     private val signInMethods = ParamSpec.Text(setOf("email", "google", "apple"))
-    private val paywallTriggers = ParamSpec.Text(setOf("extra_miff", "extra_trusted_place", "danger_zone"))
+    private val paywallTriggers =
+        ParamSpec.Text(
+            setOf("extra_miff", "extra_trusted_place", "danger_zone", "subscription"),
+        )
 
     /** The eight product events of contract version 1. */
     private val productEvents: List<AnalyticsEventSpec> =

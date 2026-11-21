@@ -1359,4 +1359,30 @@
     <string name="android_about_licenses_address_search">Indirizzi: servizio Photon di komoot, dati © contributori di OpenStreetMap</string>
     <string name="android_about_licenses_map_tiles_notice">Le mappe vengono mostrate con le tessere di OpenFreeMap (https://openfreemap.org), che usano lo schema © OpenMapTiles. I dati sono © contributori di OpenStreetMap, disponibili con licenza ODbL 1.0 (https://opendatacommons.org/licenses/odbl/1-0/). L’indicazione della fonte resta visibile sotto ogni mappa.</string>
     <string name="android_about_licenses_address_search_notice">Gli indirizzi suggeriti mentre scrivi provengono da Photon, il servizio pubblico di komoot (https://photon.komoot.io), il cui software è pubblicato con licenza Apache 2.0. I suoi dati sono © contributori di OpenStreetMap, disponibili con licenza ODbL 1.0 (https://opendatacommons.org/licenses/odbl/1-0/).</string>
+    <!-- SRV-8A (premium purchase, docs/tickets/premium-achat-reel.md): Abonnement screen states, reminder at the deletion of the account, refusal of a purchase already used by another account. Prices and dates arrive as arguments: never written in a translation. -->
+    <string name="paywall_other_account">Questo abbonamento è già in uso con un altro account Miff. Per spostarlo, scrivici: %1$s.</string>
+    <string name="settings_subscription_free">Hai il piano gratuito. Miff+ sblocca luoghi di fiducia e Miff illimitati, oltre alle zone di pericolo.</string>
+    <string name="settings_subscription_trial">Prova gratuita fino al giorno %1$s. Poi %2$s all’anno, a meno che tu non la annulli prima.</string>
+    <string name="settings_subscription_trial_noprice">Prova gratuita fino al giorno %1$s. Poi inizia l’abbonamento annuale, a meno che tu non lo annulli prima.</string>
+    <string name="settings_subscription_renews">Attivo. Prossimo rinnovo il %1$s (%2$s).</string>
+    <string name="settings_subscription_renews_noprice">Attivo. Prossimo rinnovo il %1$s.</string>
+    <string name="settings_subscription_ends">Hai annullato Miff+: resta attivo fino al giorno %1$s, senza rinnovo.</string>
+    <string name="settings_subscription_grace">Il pagamento del tuo abbonamento non è andato a buon fine. Tutto funziona ancora: aggiorna il metodo di pagamento prima del %1$s.</string>
+    <string name="settings_subscription_on_hold">Miff+ è in pausa: il pagamento non è andato a buon fine. I tuoi vantaggi torneranno non appena sarà risolto.</string>
+    <string name="settings_subscription_expired">Il tuo abbonamento Miff+ è terminato. Puoi riprenderlo quando vuoi.</string>
+    <string name="settings_subscription_revoked">Il tuo abbonamento Miff+ è stato rimborsato: i vantaggi non sono più attivi.</string>
+    <string name="settings_subscription_manage">Gestisci il mio abbonamento</string>
+    <string name="settings_subscription_refresh">Aggiorna il mio abbonamento</string>
+    <string name="settings_subscription_discover">Scopri Miff+</string>
+    <string name="settings_subscription_resume">Riprendi Miff+</string>
+    <string name="settings_subscription_unreadable">Al momento non è stato possibile consultare il tuo abbonamento. Riprova tra un momento.</string>
+    <string name="settings_subscription_refresh_failed">Al momento non è stato possibile aggiornare il tuo abbonamento. Riprova tra un momento.</string>
+    <string name="settings_subscription_other_store">Il tuo abbonamento è stato sottoscritto nell’App Store: puoi gestirlo nelle impostazioni del tuo ID Apple.</string>
+    <string name="settings_subscription_test_note">Acquisto di prova: nessun pagamento reale.</string>
+    <string name="settings_delete_sub_title">Il tuo abbonamento non è stato annullato</string>
+    <string name="settings_delete_sub_body_play">Eliminare il tuo account non annulla il tuo abbonamento Miff+. Per interrompere gli addebiti, annullalo su Google Play.</string>
+    <string name="settings_delete_sub_body_appstore">Eliminare il tuo account non annulla il tuo abbonamento Miff+. Per interrompere gli addebiti, annullalo nell’App Store.</string>
+    <string name="settings_delete_sub_body_unknown">Se hai un abbonamento Miff+, eliminare il tuo account non lo annulla. Per interrompere gli addebiti, annullalo su Google Play o nell’App Store, dove lo hai sottoscritto.</string>
+    <string name="settings_delete_sub_trial">La tua prova gratuita prosegue finché non la annulli: al termine inizia l’abbonamento annuale.</string>
+    <string name="settings_delete_sub_manage">Gestisci il mio abbonamento</string>
 </resources>

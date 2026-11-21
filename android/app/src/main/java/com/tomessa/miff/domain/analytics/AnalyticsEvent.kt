@@ -32,6 +32,9 @@ sealed class AnalyticsEvent(
 
         /** A danger zone asked by a free account (value added to the contract on 2026-11-12, ticket paywall-v2 Q-PAY5). */
         DANGER_ZONE("danger_zone"),
+
+        /** The offer opened on purpose from Settings > Abonnement (SRV-8A, ticket premium-achat-reel.md; value added to the contract on 2026-11-21). */
+        SUBSCRIPTION("subscription"),
     }
 
     /** [slideIndex] must be 0, 1 or 2 (anything else is refused by the allow-list). */

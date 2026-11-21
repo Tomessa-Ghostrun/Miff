@@ -4,6 +4,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Source
 import com.tomessa.miff.data.notification.JournalGateway
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withTimeoutOrNull
 
 /*
  * SECURITY, for this file: only the account's own documents (`users/{uid}` and its sub-collections) are touched, always with the
@@ -43,6 +44,12 @@ class FirestoreAccountDataStore(
     private val alertsEnabled: Boolean = false,
     /** CNC-A: the journal of the notifications `users/{uid}/notifications`, emptied before the profile when it is given (null while its switch is off). Never throws. */
     private val journal: JournalGateway? = null,
+    /**
+     * SRV-8A (premium purchase): asks the server to delete the purchase id and the links of billing of the account (`supprimerDonneesAbonnement`; it needs the sign-in, so it
+     * runs BEFORE the profile and the authentication account). Returns false on a failure, never throws; null while the purchase is switched off. It does NOT cancel the
+     * subscription in the store (the information screen says so). A failure is TOLERATED: what is left is purged by the TTL rules and holds no personal data.
+     */
+    private val subscriptionData: (suspend () -> Boolean)? = null,
 ) : AccountDataStore {
     // The instance is resolved at each use: it is replaced after a cache purge.
     private fun user(uid: String) = firestore().collection("users").document(uid)
@@ -77,6 +84,8 @@ class FirestoreAccountDataStore(
     }
 
     override suspend fun deleteProfile(uid: String) {
+        // Billing first (it needs the sign-in): bounded, tolerated, nothing to do when the purchase is switched off.
+        subscriptionData?.let { purge -> withTimeoutOrNull(SUBSCRIPTION_PURGE_TIMEOUT_MS) { purge() } }
         // Before `users/{uid}` (contract 2.21): the entries of the journal. Tolerated: it never throws, and what is left is deleted by the TTL and readable by nobody.
         journal?.deleteAll(uid)
         val db = firestore()
@@ -99,6 +108,9 @@ class FirestoreAccountDataStore(
         )
     }
 }
+
+/** The purge of the billing data is a courtesy of the deletion, not a condition of it: it never holds the deletion for long. */
+private const val SUBSCRIPTION_PURGE_TIMEOUT_MS = 8_000L
 
 /**
  * ALERTE (backend/data-model.md 2.20): the daily counter of the alerts goes with the profile, in the same transaction, when the function is on. The rules may REFUSE that deletion

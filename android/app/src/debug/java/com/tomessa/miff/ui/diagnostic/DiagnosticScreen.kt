@@ -124,6 +124,9 @@ fun DiagnosticScreen(
             // Review window (docs/tickets/pop-ins-avis.md): show it now / reset it, for the recette (debug build only).
             ReviewDebugCard()
 
+            // Miff+ purchase (SRV-8A, docs/dev/premium-achat-android-test.md): the fake store, the fake server and the fake entitlement (debug build only).
+            BillingDebugCard()
+
             SectionCard(stringResource(R.string.diag_test1_title)) {
                 Body(stringResource(R.string.diag_test1_description))
                 MiffButton(

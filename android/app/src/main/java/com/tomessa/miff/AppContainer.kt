@@ -34,6 +34,9 @@ import com.tomessa.miff.data.auth.PasswordResetGateway
 import com.tomessa.miff.data.auth.PendingConsentStore
 import com.tomessa.miff.data.auth.SharedPreferencesPendingConsentStore
 import com.tomessa.miff.data.auth.UserProfileRepository
+import com.tomessa.miff.data.billing.BillingStack
+import com.tomessa.miff.data.billing.BillingStacks
+import com.tomessa.miff.data.billing.PremiumCoordinator
 import com.tomessa.miff.data.feed.CachedPhotoReader
 import com.tomessa.miff.data.feed.FeedRefresher
 import com.tomessa.miff.data.feed.FirestoreCircleStatusReader
@@ -1116,6 +1119,9 @@ class AppContainer(
             alertsEnabled = BuildConfig.ALERT_DANGER,
             // CNC-A (contract 2.21, point 4): the journal of the notifications is emptied BEFORE the profile; a failure is tolerated (the TTL removes what is left). Nothing when the journal is off.
             journal = if (BuildConfig.NOTIF_JOURNAL) FirestoreJournalGateway() else null,
+            // SRV-8A (backend/data-model.md, deletion of the account, point 3 bis): the purchase id and the links of billing are deleted by the server BEFORE the profile and the
+            // authentication account (the function needs the sign-in); a failure is tolerated. Nothing while the purchase is switched off.
+            subscriptionData = if (BuildConfig.PREMIUM_PURCHASE) billingStack.backend::purgeSubscriptionData else null,
         )
     }
 
@@ -1181,9 +1187,38 @@ class AppContainer(
         )
     }
 
-    /** The read-only "Abonnement" line of the Settings (ticket ABO-1): one read of `entitlements/{uid}` per opening of the Settings. */
+    /**
+     * The store, the Miff server and the place of the rights for the purchase of Miff+ (SRV-8A). Built ONLY when [BuildConfig.PREMIUM_PURCHASE] is on (false in a distributed
+     * build until the PM has deployed the five functions of billing): while it is off nothing here is created, no connection to Google Play is opened and the offer stays
+     * "Miff+ arrive bientôt". In the debug build it is a FAKE trio by default (src/debug).
+     */
+    private val billingStack: BillingStack by lazy { BillingStacks.create(context) }
+
+    /** What the app knows of the Miff+ of the account (ABO-1, then SRV-8A): ONE read of `entitlements/{uid}` each time it is asked, no listener. */
     val subscriptionRepository: SubscriptionRepository by lazy {
-        SubscriptionRepository(store = FirestoreSubscriptionStore(), currentUid = { authGateway.currentUid })
+        SubscriptionRepository(
+            store = if (BuildConfig.PREMIUM_PURCHASE) billingStack.entitlements else FirestoreSubscriptionStore(),
+            currentUid = { authGateway.currentUid },
+        )
+    }
+
+    /**
+     * THE purchase of Miff+ (SRV-8A, docs/tickets/premium-achat-reel.md): null while the purchase is switched off ([BuildConfig.PREMIUM_PURCHASE]). It lives as long as the
+     * app: the result of a payment is taken into account even if the offer was closed meanwhile.
+     */
+    val premium: PremiumCoordinator? by lazy {
+        if (BuildConfig.PREMIUM_PURCHASE) {
+            PremiumCoordinator(
+                gateway = billingStack.gateway,
+                backend = billingStack.backend,
+                subscriptions = subscriptionRepository,
+                currentUid = { authGateway.currentUid },
+                scope = CoroutineScope(SupervisorJob() + Dispatchers.Default + CoroutineExceptionHandler { _, _ -> }),
+                clock = paywallClock,
+            )
+        } else {
+            null
+        }
     }
 
     /** TIME-1 / TIME-2: the journal of the presence and the window of the chart go with the session (the engine erases the journal too, in its own stop). */

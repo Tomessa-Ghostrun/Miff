@@ -34,6 +34,20 @@ val alertDangerProperty: String? = providers.gradleProperty("miff.alertDanger").
 // once the PM has deployed the backend. Checked by NotifJournalGuardTest.
 val notifJournalProperty: String? = providers.gradleProperty("miff.notifJournal").orNull
 
+// MIFF+ PURCHASE (ticket docs/tickets/premium-achat-reel.md, SRV-8A, decision of the PM of 2026-11-21). BuildConfig.PREMIUM_PURCHASE is the SWITCH of the real purchase: the offer
+// with prices and buttons, the call to the Google Play Billing Library, the two functions of the server (preparerAchat, synchroniserAchat), the Abonnement screen of the Settings with
+// its states, the reminder at the deletion of the account. It is TRUE in the debug build (internal tests) and FALSE in release and releaseLike: until the five functions of billing
+// are deployed by the PM AND the products exist in the Play Console, a distributed build shows the offer as "Miff+ arrive bientôt" with no price and no button, exactly as before.
+// -Pmiff.premiumPurchase=true|false forces it either way for a TEST; a RELEASE build (release, releaseLike) refuses "true" unless -Pmiff.allowPremiumPurchaseInRelease=true is ALSO
+// given, on purpose (the release workflow gives both when the PM chooses "premium_purchase = true", docs/dev/premium-achat-android-test.md). Checked by PremiumPurchaseGuardTest.
+val premiumPurchaseProperty: String? = providers.gradleProperty("miff.premiumPurchase").orNull
+
+// FAKE STORE (debug only). BuildConfig.BILLING_FAKE = true in the debug build: the purchase is played by a FAKE store, a fake server and a fake entitlement (src/debug), so that the
+// whole interface can be tried without the app being in the Play Console (no real product, no payment, nothing granted: the fake never writes anything). -Pmiff.billingFake=false makes the
+// debug build talk to the REAL Google Play Billing Library (to test with a licence tester on an internal-track install). It is ALWAYS false in release and releaseLike: the fake is
+// not even compiled there (src/release has its own factory) and the CI looks for its marker in the bundle.
+val billingFakeProperty: String? = providers.gradleProperty("miff.billingFake").orNull
+
 // VERSIONS (docs/release/checklist-android.md). Nothing is frozen here any more:
 // - versionName = the first "## [x.y.z]" heading of android/CHANGELOG.md (one place: the changelog the team already keeps), or -Pmiff.versionName=... for a test.
 // - versionCode = -Pmiff.versionCode=N when given (the release workflow gives its own run number: Google Play only accepts a code HIGHER than every one it has
@@ -169,6 +183,16 @@ android {
             notifJournalProperty == null || notifJournalProperty == "true" || notifJournalProperty == "false",
         ) { "miff.notifJournal must be true or false" }
         buildConfigField("boolean", "NOTIF_JOURNAL", notifJournalProperty ?: "false")
+        // Miff+ purchase: off unless the flag says otherwise; the debug build turns it on (see buildTypes).
+        require(
+            premiumPurchaseProperty == null || premiumPurchaseProperty == "true" || premiumPurchaseProperty == "false",
+        ) { "miff.premiumPurchase must be true or false" }
+        buildConfigField("boolean", "PREMIUM_PURCHASE", premiumPurchaseProperty ?: "false")
+        // The fake store exists in the debug build only (see buildTypes).
+        require(
+            billingFakeProperty == null || billingFakeProperty == "true" || billingFakeProperty == "false",
+        ) { "miff.billingFake must be true or false" }
+        buildConfigField("boolean", "BILLING_FAKE", "false")
         // Review window, "Peux faire mieux..." (decision of the PM, 2026-11-08): the EXTERNAL FEEDBACK FORM the PM will provide. ONE place: the default value of
         // "miff.feedbackFormUrl" just below: the public Google Forms address given by the PM on 2026-11-13 (a public address, not a secret). Override it with
         // -Pmiff.feedbackFormUrl=... for a test; an EMPTY value (-Pmiff.feedbackFormUrl=) makes the window show its "Merci de nous le dire !" screen with "Nous écrire"
@@ -215,6 +239,8 @@ android {
             buildConfigField("boolean", "REVIEW_PROMPT", reviewPromptProperty ?: "true")
             buildConfigField("boolean", "ALERT_DANGER", alertDangerProperty ?: "true")
             buildConfigField("boolean", "NOTIF_JOURNAL", notifJournalProperty ?: "true")
+            buildConfigField("boolean", "PREMIUM_PURCHASE", premiumPurchaseProperty ?: "true")
+            buildConfigField("boolean", "BILLING_FAKE", billingFakeProperty ?: "true")
             // en-XA (long accented text) and ar-XB (right-to-left) pseudo-locales, to test layouts without translations.
             isPseudoLocalesEnabled = true
         }
@@ -363,6 +389,10 @@ dependencies {
     implementation(libs.firebase.analytics)
     // Push (SRV-2): data-only messages from the server, see data/push. Version from the BOM.
     implementation(libs.firebase.messaging)
+    // Miff+ purchase (SRV-8A): the two callable functions of billing. Version from the BOM. Justification: see libs.versions.toml.
+    implementation(libs.firebase.functions)
+    // Google Play Billing Library (SRV-8A): the purchase of the subscription. The code that uses it is behind BuildConfig.PREMIUM_PURCHASE (false in release until the PM deploys the server).
+    implementation(libs.billing.ktx)
     // App Check: Play Integrity in release, debug provider in debug (never shipped in release).
     releaseImplementation(libs.firebase.appcheck.playintegrity)
     add("releaseLikeImplementation", libs.firebase.appcheck.playintegrity)
@@ -438,6 +468,23 @@ run {
                     "miff.notifJournal=true is not allowed in a release build (the journal of the notifications must " +
                         "not be read by distributed builds until the PM has deployed the rules and the functions). " +
                         "Add -Pmiff.allowNotifJournalInRelease=true only after that deployment.",
+                )
+            }
+        }
+    }
+}
+
+run {
+    val purchaseOnInRelease = premiumPurchaseProperty == "true"
+    val allowedInRelease = providers.gradleProperty("miff.allowPremiumPurchaseInRelease").orNull == "true"
+    if (purchaseOnInRelease && !allowedInRelease) {
+        tasks.matching { it.name == "preReleaseBuild" || it.name == "preReleaseLikeBuild" }.configureEach {
+            doFirst {
+                throw GradleException(
+                    "miff.premiumPurchase=true is not allowed in a release build (the purchase of Miff+ must be " +
+                        "absent from distributed builds until the PM has deployed the five functions of billing " +
+                        "and created the products in the Play Console). " +
+                        "Add -Pmiff.allowPremiumPurchaseInRelease=true only after that.",
                 )
             }
         }

@@ -1461,4 +1461,30 @@
     <string name="android_about_licenses_address_search">Addresses: Photon service by komoot, data © OpenStreetMap contributors</string>
     <string name="android_about_licenses_map_tiles_notice">Maps are drawn with the tiles of OpenFreeMap (https://openfreemap.org), which use the © OpenMapTiles schema. The data is © OpenStreetMap contributors, available under the ODbL 1.0 license (https://opendatacommons.org/licenses/odbl/1-0/). The credit stays visible under every map.</string>
     <string name="android_about_licenses_address_search_notice">The addresses suggested while you type come from Photon, the public service of komoot (https://photon.komoot.io), whose software is published under the Apache 2.0 license. Its data is © OpenStreetMap contributors, available under the ODbL 1.0 license (https://opendatacommons.org/licenses/odbl/1-0/).</string>
+    <!-- SRV-8A (premium purchase, docs/tickets/premium-achat-reel.md): Abonnement screen states, reminder at the deletion of the account, refusal of a purchase already used by another account. Prices and dates arrive as arguments: never written in a translation. -->
+    <string name="paywall_other_account">This subscription is already used with another Miff account. To move it, write to us: %1$s.</string>
+    <string name="settings_subscription_free">You\'re on the free plan. Miff+ unlocks unlimited trusted places and Miffs, and danger zones.</string>
+    <string name="settings_subscription_trial">Free trial until %1$s. Then %2$s per year, unless you cancel before.</string>
+    <string name="settings_subscription_trial_noprice">Free trial until %1$s. The yearly subscription starts after that, unless you cancel before.</string>
+    <string name="settings_subscription_renews">Active. Next renewal on %1$s (%2$s).</string>
+    <string name="settings_subscription_renews_noprice">Active. Next renewal on %1$s.</string>
+    <string name="settings_subscription_ends">You cancelled Miff+: it stays active until %1$s, without renewal.</string>
+    <string name="settings_subscription_grace">The payment for your subscription didn\'t go through. Everything still works: update your payment method before %1$s.</string>
+    <string name="settings_subscription_on_hold">Miff+ is on hold: the payment didn\'t go through. Your benefits will be back as soon as it\'s sorted.</string>
+    <string name="settings_subscription_expired">Your Miff+ subscription has ended. You can start it again whenever you like.</string>
+    <string name="settings_subscription_revoked">Your Miff+ subscription was refunded: the benefits are no longer active.</string>
+    <string name="settings_subscription_manage">Manage my subscription</string>
+    <string name="settings_subscription_refresh">Refresh my subscription</string>
+    <string name="settings_subscription_discover">Discover Miff+</string>
+    <string name="settings_subscription_resume">Get Miff+ again</string>
+    <string name="settings_subscription_unreadable">We couldn\'t read your subscription right now. Please try again in a moment.</string>
+    <string name="settings_subscription_refresh_failed">We couldn\'t refresh your subscription right now. Please try again in a moment.</string>
+    <string name="settings_subscription_other_store">Your subscription was taken out in the App Store: you can manage it in your Apple ID settings.</string>
+    <string name="settings_subscription_test_note">Test purchase: no real payment.</string>
+    <string name="settings_delete_sub_title">Your subscription is not cancelled</string>
+    <string name="settings_delete_sub_body_play">Deleting your account does not cancel your Miff+ subscription. To stop being charged, cancel it in Google Play.</string>
+    <string name="settings_delete_sub_body_appstore">Deleting your account does not cancel your Miff+ subscription. To stop being charged, cancel it in the App Store.</string>
+    <string name="settings_delete_sub_body_unknown">If you have a Miff+ subscription, deleting your account does not cancel it. To stop being charged, cancel it in Google Play or the App Store, wherever you took it out.</string>
+    <string name="settings_delete_sub_trial">Your free trial continues until you cancel it: when it ends, the annual subscription starts.</string>
+    <string name="settings_delete_sub_manage">Manage my subscription</string>
 </resources>

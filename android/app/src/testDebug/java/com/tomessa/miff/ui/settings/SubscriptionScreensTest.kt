@@ -21,7 +21,9 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import com.tomessa.miff.R
-import com.tomessa.miff.domain.subscription.SubscriptionInfo
+import com.tomessa.miff.domain.subscription.StoreState
+import com.tomessa.miff.domain.subscription.SubscriptionSource
+import com.tomessa.miff.domain.subscription.SubscriptionStatus
 import com.tomessa.miff.ui.theme.MiffTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -35,7 +37,7 @@ import java.time.ZonedDateTime
 
 /**
  * ABO-1 on the JVM (Robolectric): the "Abonnement" line of the full Settings (present only when given), its absence otherwise,
- * and the read-only screen (offer name, date, source, "coming soon" sentence; no price, no purchase button).
+ * and the screen of an access granted by hand, shown as before when the purchase is switched off (offer name, date, source; no price, no purchase button).
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -57,6 +59,16 @@ class SubscriptionScreensTest {
             .of(2027, 1, 12, 10, 0, 0, 0, ZoneId.systemDefault())
             .toInstant()
             .toEpochMilli()
+
+    /** The screen as the purchase being switched OFF shows it: no refresh, no offer (a grant by hand has nothing to buy or refresh). */
+    @Composable
+    private fun Screen(
+        status: SubscriptionStatus,
+        onBack: () -> Unit = {},
+    ) = SubscriptionScreen(
+        SubscriptionUiState(loading = false, status = status),
+        SubscriptionActions(onBack = onBack, onManage = {}, onOffer = {}, onRefresh = null, onRetry = {}),
+    )
 
     // --- The line in the Settings list (criterion F1) -----------------------------------------------------------------------------
 
@@ -102,7 +114,7 @@ class SubscriptionScreensTest {
 
     @Test
     fun screen_forAManualGrant_saysTheOffer_theDate_andWhoGrantedIt_inEnglish() {
-        show { SubscriptionScreen(SubscriptionInfo(expiry, grantedByTeam = true), onBack = {}) }
+        show { Screen(SubscriptionStatus.Manual(expiry)) }
         composeRule.onNodeWithText("Miff+").assertExists()
         composeRule.onNodeWithText("Active until January 12, 2027").assertExists()
         composeRule.onNodeWithText("Granted by the Miff team").assertExists()
@@ -115,7 +127,7 @@ class SubscriptionScreensTest {
     @Test
     @Config(qualifiers = "fr-w360dp-h800dp-port-xxhdpi")
     fun screen_inFrench_writesTheDateInFull_andNeverSaysPremium() {
-        show { SubscriptionScreen(SubscriptionInfo(expiry, grantedByTeam = true), onBack = {}) }
+        show { Screen(SubscriptionStatus.Manual(expiry)) }
         composeRule.onNodeWithText("Miff+").assertExists()
         composeRule.onNodeWithText("Actif jusqu'au 12 janvier 2027").assertExists()
         composeRule.onNodeWithText("Accordé par l'équipe Miff").assertExists()
@@ -126,7 +138,11 @@ class SubscriptionScreensTest {
 
     @Test
     fun screen_forAnotherSource_usesTheNeutralLabel_andNeverClaimsATeamGrant() {
-        show { SubscriptionScreen(SubscriptionInfo(expiry, grantedByTeam = false), onBack = {}) }
+        show {
+            Screen(
+                SubscriptionStatus.Store(SubscriptionSource.OTHER, StoreState.ACTIVE, null, expiry, test = false),
+            )
+        }
         composeRule.onNodeWithText(text(R.string.settings_subscription_source_other)).assertExists()
         composeRule.onAllNodesWithText(text(R.string.settings_subscription_source_manual)).assertCountEquals(0)
         // Nothing is said about stores for another source: the sentence only describes an access granted by hand.
@@ -137,7 +153,7 @@ class SubscriptionScreensTest {
     @Test
     fun screen_isReadOnly_noPrice_noTrial_noPurchaseNorChangeNorStopButton_onlyTheBackArrow() {
         var back = 0
-        show { SubscriptionScreen(SubscriptionInfo(expiry, grantedByTeam = true), onBack = { back++ }) }
+        show { Screen(SubscriptionStatus.Manual(expiry)) { back++ } }
         listOf(
             "€",
             "$",
@@ -164,7 +180,7 @@ class SubscriptionScreensTest {
     fun screen_atTheLargestFontSize_keepsEverythingReachable() {
         show {
             CompositionLocalProvider(LocalDensity provides Density(LocalDensity.current.density, fontScale = 2f)) {
-                SubscriptionScreen(SubscriptionInfo(expiry, grantedByTeam = true), onBack = {})
+                Screen(SubscriptionStatus.Manual(expiry))
             }
         }
         composeRule.onNodeWithText("Active until January 12, 2027").assertExists()

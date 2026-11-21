@@ -194,6 +194,8 @@ iOS 16 minimum respecté. **Aucune compilation locale** : tout se vérifie en CI
 
 ---
 
+**Note de revue de SRV-8A pour SRV-8I (2026-11-21)** : (1) la **restauration** (« Restaurer mes achats », `AppStore.sync()` sur action de la personne) est **obligatoire sur Apple** ; (2) ne pas répéter ces écarts relevés sur Android : un achat « déjà possédé » dont l'abonnement est **suspendu** (non listé par le store) doit dire l'état suspendu avec le lien de gestion, jamais « l'achat n'a pas pu être finalisé » ; la pastille « presque 30 % d'économie » ne s'affiche que si l'économie calculée avec les prix du store est ≥ 25 % ; « Réessayer » après un produit « non disponible » doit relancer le chargement des offres ; (3) **limite connue** : un refus définitif du serveur (achat refusé : produit inconnu, autre package, partage en famille, achat de test refusé) montre la même phrase calme que l'erreur réseau (« si un paiement a été effectué, ton abonnement apparaîtra automatiquement ») : un message distinct demande une **nouvelle clé de texte**, donc une passe de traduction ; à traiter avec SRV-8I et la prochaine passe de traductions.
+
 ## 8. États d'abonnement : droits et ce que montre l'app
 
 Le droit Miff+ dépend uniquement de `entitlements/{uid}` : `active == true` **et** `expiresAt > heure serveur` (les règles le vérifient, aucune fonction n'est nécessaire pour « éteindre » à l'échéance, `data-model.md` §2.3). Le serveur calcule donc `active` et `expiresAt` à partir de l'état du store, et un champ d'**état** informatif pour l'affichage.

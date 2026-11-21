@@ -21,11 +21,21 @@ if [ "$dex_count" -lt 1 ]; then
 fi
 
 # 1. Aucun code reserve au debug ni aux builds de test.
-if unzip -p "$bundle" 'base/dex/*.dex' | grep -a -c -E 'DIAGNOSTICPROBE|DebugAppCheck|DETECTIONJOURNAL|REVIEWPROMPTPROBE|STARTUPMETRICSOVERLAY|DEBUGAPPCHECKOFF|DIAGNOSTICHOLDGESTURE' | grep -q -v '^0$'; then
-  echo "::error title=Code de debug dans le bundle::Le bundle contient DIAGNOSTICPROBE, DebugAppCheck, DETECTIONJOURNAL, REVIEWPROMPTPROBE, STARTUPMETRICSOVERLAY, DEBUGAPPCHECKOFF ou DIAGNOSTICHOLDGESTURE : l'ecran de diagnostic, le fournisseur App Check de debug, l'interrupteur « sans App Check », le journal de detection, la fenetre d'avis, la mesure du demarrage ou le geste secret d'appui de 10 s a fuite dans le release."
+if unzip -p "$bundle" 'base/dex/*.dex' | grep -a -c -E 'DIAGNOSTICPROBE|DebugAppCheck|DETECTIONJOURNAL|REVIEWPROMPTPROBE|STARTUPMETRICSOVERLAY|DEBUGAPPCHECKOFF|DIAGNOSTICHOLDGESTURE|FAKEBILLINGPROBE' | grep -q -v '^0$'; then
+  echo "::error title=Code de debug dans le bundle::Le bundle contient DIAGNOSTICPROBE, DebugAppCheck, DETECTIONJOURNAL, REVIEWPROMPTPROBE, STARTUPMETRICSOVERLAY, DEBUGAPPCHECKOFF, DIAGNOSTICHOLDGESTURE ou FAKEBILLINGPROBE : l'ecran de diagnostic, le fournisseur App Check de debug, l'interrupteur « sans App Check », le journal de detection, la fenetre d'avis, la mesure du demarrage, le geste secret d'appui de 10 s ou le FAUX store de l'achat Miff+ (src/debug) a fuite dans le release."
   exit 1
 fi
 echo "Aucune trace du diagnostic, du fournisseur App Check de debug, du journal de detection, de la fenetre d'avis ni de la mesure du demarrage ($dex_count fichier(s) dex inspecte(s))."
+
+# 1 bis. Achat de Miff+ ETEINT (cas par defaut, premium_purchase = false) : R8 retire tout le code d'achat ; aucune trace des noms des fonctions de facturation ni de la
+# bibliotheque. Avec MIFF_PREMIUM_PURCHASE=true (bundle d'essai de la piste interne, choisi par le PM) ce controle ne s'applique pas.
+if [ "${MIFF_PREMIUM_PURCHASE:-false}" != "true" ]; then
+  if unzip -p "$bundle" 'base/dex/*.dex' | grep -a -c -E 'preparerAchat|synchroniserAchat|supprimerDonneesAbonnement|PlayBillingGateway|PremiumCoordinator|com/android/billingclient/api/BillingClient' | grep -q -v '^0$'; then
+    echo "::error title=Achat Miff+ dans le bundle::Le bundle (premium_purchase = false) contient du code d'achat (fonctions de facturation ou bibliotheque Play Billing) : l'achat doit etre ETEINT et retire par R8."
+    exit 1
+  fi
+  echo "Achat de Miff+ eteint : aucune trace du code d'achat dans le bundle."
+fi
 
 # 2. L'activite de la bibliotheque d'avis ne doit pas etre declaree.
 if unzip -p "$bundle" base/manifest/AndroidManifest.xml | grep -a -c 'PlayCoreDialogWrapperActivity' | grep -q -v '^0$'; then
