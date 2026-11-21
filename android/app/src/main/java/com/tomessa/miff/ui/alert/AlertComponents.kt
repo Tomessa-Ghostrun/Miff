@@ -43,6 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.tomessa.miff.R
 import com.tomessa.miff.data.alert.EndStep
 import com.tomessa.miff.data.alert.MyAlert
@@ -59,7 +60,6 @@ import com.tomessa.miff.ui.theme.textBodyBold14
 import com.tomessa.miff.ui.theme.textBodyBold16
 import com.tomessa.miff.ui.theme.textBodyRegular14
 import com.tomessa.miff.ui.theme.textTitleBold24
-import com.tomessa.miff.ui.theme.textTitleBold32
 
 /*
  * The pieces of the alert that sit on other screens (docs/tickets/alerte-danger.md 7.1, 7.2, 7.4, 13): the blue bubble of the onboarding, its "En savoir plus" sheet, the red mode
@@ -76,6 +76,12 @@ const val ALERT_BANNER_SEE_TAG = "alert_banner_see_miff"
 const val ALERT_BANNER_RETRY_TAG = "alert_banner_retry"
 const val ALERT_BANNER_CLOSE_TAG = "alert_banner_close"
 const val ALERT_BANNER_TITLE_TAG = "alert_banner_title"
+
+/**
+ * The TITLE of the banner of an alert in progress: twice the size of before (textBodyBold16: 16 sp), 32 / 40 (decision of the PM, 2026-11-20). A token OWN to the alert, like iOS's
+ * `textAlertBannerTitle` (DangerAlertTokens.swift): it is NOT in the shared set of `Type.kt`, which iOS compares to its own (ColorTokensTests.testTextStylesAreIdenticalToAndroid).
+ */
+private val textAlertBannerTitle = textTitleBold24.copy(fontSize = 32.sp, lineHeight = 40.sp)
 
 /** The most of the screen the banner of an alert in progress, and the blue bubble of the onboarding, may take (the texts scroll inside beyond that; the Update's bubble stops at 40 %). */
 private const val BANNER_MAX_SCREEN_SHARE = 0.45f
@@ -391,7 +397,7 @@ fun AlertBanner(
             ) {
                 Text(
                     text = title,
-                    style = if (endQuestion) textTitleBold32 else textBodyBold16,
+                    style = if (endQuestion) textAlertBannerTitle else textBodyBold16,
                     color = colorOnAlert,
                     modifier = Modifier.semantics { heading() }.testTag(ALERT_BANNER_TITLE_TAG),
                 )

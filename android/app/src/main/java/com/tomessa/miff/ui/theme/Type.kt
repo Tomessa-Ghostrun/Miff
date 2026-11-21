@@ -65,7 +65,6 @@ val textDisplayHeadline = style(FontFamilyBaloo, 24, 30)
 val textDisplayTitle = style(FontFamilyBaloo, 20, 26)
 val textDisplayLabel = style(FontFamilyBaloo, 16, 22)
 
-val textTitleBold32 = style(FontFamilyHanken, 32, 40, FontWeight.Bold)
 val textTitleBold24 = style(FontFamilyHanken, 24, 30, FontWeight.Bold)
 val textTitleBold20 = style(FontFamilyHanken, 20, 26, FontWeight.Bold)
 val textBodyLarge = style(FontFamilyHanken, 20, 26)
