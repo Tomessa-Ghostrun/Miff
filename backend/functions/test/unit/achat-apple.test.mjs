@@ -166,6 +166,15 @@ t('notification valide : identifiant, type, sous-type, environnement et transact
   });
 });
 
+t('notification « summary » (prolongation en masse) : verifiee, sans transaction -> identifiant d\'origine nul (le serveur repond 200 sans rien faire)', async () => {
+  const summary = (bundleId) => ({ notificationType: 'RENEWAL_EXTENSION', subtype: 'SUMMARY', notificationUUID: '8a7b4f50-1111-4222-8333-444455556666', version: '2.0', signedDate: T.getTime(), summary: { environment: 'Sandbox', bundleId, productId: 'com.tomessa.miff.plus.annual', requestIdentifier: 'abc', storefrontCountryCodes: ['FRA'], succeededCount: 1, failedCount: 0 } });
+  const n = await client().verifierNotification(pki.signer(summary('com.tomessa.miff')));
+  assert.equal(n.idTransactionOrigine, null);
+  assert.equal(n.type, 'RENEWAL_EXTENSION');
+  assert.equal(n.environnement, 'Sandbox');
+  assert.equal(await raison(() => client().verifierNotification(pki.signer(summary('com.autre.app')))), 'signature_invalide');
+});
+
 t('notification sans transaction (essai « TEST ») : identifiant d\'origine nul', async () => {
   const n = await client().verifierNotification(pki.signer(notification({ notificationType: 'TEST', subtype: undefined }, { signedTransactionInfo: undefined })));
   assert.equal(n.idTransactionOrigine, null);

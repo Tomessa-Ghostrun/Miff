@@ -35,7 +35,8 @@ test('BK13 - les cinq fonctions de facturation respectent les garde-fous (region
     assert.deepEqual(e.region, ['europe-west9'], nom);
     assert.ok(e.maxInstances <= LIMITES.maxInstancesPlafond && e.maxInstances === 3, `${nom} : 3 instances au plus (plafond du test : 5)`);
     assert.equal(e.availableMemoryMb, 256, nom);
-    assert.equal(e.timeoutSeconds, 30, nom);
+    // Le point d'entree d'Apple a 60 s (plafond du garde-fou) : le controle de revocation des certificats (OCSP) a son propre delai de 30 s ; les quatre autres restent a 30 s.
+    assert.equal(e.timeoutSeconds, nom === 'recevoirNotificationsApple' ? LIMITES.timeoutSecondsPlafond : 30, nom);
     assert.ok(!e.minInstances, `${nom} : aucune instance permanente`);
     assert.equal(e.serviceAccountEmail, COMPTE, `${nom} : compte dedie billing-sync`);
     assert.equal(e.platform, 'gcfv2');
@@ -90,6 +91,23 @@ test("fonctions appelables : App Check et connexion exiges par la fabrique commu
   assert.match(a, /\{\s*\.\.\.options,\s*enforceAppCheck:\s*true,\s*cors:\s*false\s*\}/, 'les options de la fonction ne peuvent jamais desactiver App Check (posees APRES)');
 });
 
+// --- C1 : verifications en ligne des certificats Apple -----------------------------------------------------------------------------------
+
+test("C1 - les verifications EN LIGNE (revocation, date du jour) des certificats Apple sont actives par defaut dans le code ; jamais desactivees dans src/ (seuls les tests les coupent)", () => {
+  assert.match(source('achatApple.ts'), /const enLigne = options\.verificationsEnLigne \?\? true;/, "valeur par defaut : vrai");
+  for (const { f, texte } of sources) {
+    const c = code(texte);
+    assert.doesNotMatch(c, /verificationsEnLigne\s*:\s*false|enableOnlineChecks\s*:\s*false|enLigne\s*=\s*false/, `${f} : verifications en ligne desactivees`);
+    if (nomDe(f) !== 'achatApple.ts') assert.doesNotMatch(c, /SignedDataVerifier/, `${f} : seul achatApple.ts construit un verificateur`);
+  }
+  // Le verificateur recoit bien ce booleen (et non une constante).
+  assert.match(source('achatApple.ts'), /new bib\.SignedDataVerifier\(racines, enLigne,/);
+  // Aucun appelant de creerClientApple dans src/ ne passe l'option.
+  assert.doesNotMatch(source('achatDeps.ts'), /verificationsEnLigne/);
+  // Le test lui-meme sait detecter l'erreur (garde-fou du garde-fou).
+  assert.match('{ verificationsEnLigne: false }', /verificationsEnLigne\s*:\s*false/);
+});
+
 // --- BK14 : secrets -------------------------------------------------------------------------------------------------------------------------
 
 test("BK14 - aucun secret lie a une fonction, aucune cle dans le code ; la cle Apple n'est lue qu'a UN endroit (configApple.ts), par le gestionnaire de secrets, jamais journalisee", () => {
@@ -140,7 +158,7 @@ test('BK12 - la liste des motifs de journal ne contient QUE des mots fixes (aucu
   const { MOTIFS } = require('../../lib/journal.js');
   for (const motif of MOTIFS) assert.match(motif, /^[a-z_]{3,24}$/, motif);
   const { ErreurAchat } = require('../../lib/achatErreurs.js');
-  for (const raison of ['entree_invalide', 'jeton_invalide', 'signature_invalide', 'achat_inconnu', 'produit_inconnu', 'autre_package', 'deja_lie', 'limite_frequence', 'partage_famille', 'non_configure', 'acces_refuse', 'indisponible', 'reponse_invalide']) {
+  for (const raison of ['entree_invalide', 'jeton_invalide', 'signature_invalide', 'achat_inconnu', 'produit_inconnu', 'autre_package', 'deja_lie', 'limite_frequence', 'partage_famille', 'test_refuse', 'non_configure', 'acces_refuse', 'indisponible', 'reponse_invalide']) {
     assert.ok(MOTIFS.includes(raison), `${raison} doit etre un motif de journal valide`);
     assert.equal(new ErreurAchat(raison).raison, raison);
   }

@@ -54,8 +54,9 @@ export function environnementDeclare(jws: string): EnvApple | null {
   try {
     const segments = jws.split(".");
     if (segments.length !== 3) return null;
-    const charge = JSON.parse(Buffer.from(segments[1] as string, "base64url").toString("utf8")) as { environment?: unknown; data?: { environment?: unknown } };
-    const env = charge.environment ?? charge.data?.environment;
+    const charge = JSON.parse(Buffer.from(segments[1] as string, "base64url").toString("utf8")) as { environment?: unknown; data?: { environment?: unknown }; summary?: { environment?: unknown } };
+    // Notification « summary » (reponse a une demande de prolongation en masse) : l'environnement est dans `summary`.
+    const env = charge.environment ?? charge.data?.environment ?? charge.summary?.environment;
     return env === "Production" || env === "Sandbox" ? env : null;
   } catch {
     return null;

@@ -13,6 +13,7 @@ export type RaisonAchat =
   | "deja_lie"
   | "limite_frequence"
   | "partage_famille"
+  | "test_refuse"
   | "non_configure"
   | "acces_refuse"
   | "indisponible"
@@ -51,6 +52,7 @@ export function versErreurAppelable(erreur: unknown): HttpsError {
     case "produit_inconnu":
     case "autre_package":
     case "partage_famille":
+    case "test_refuse":
       return new HttpsError("failed-precondition", "Cet achat ne peut pas etre associe a Miff+.", details);
     case "non_configure":
     case "acces_refuse":

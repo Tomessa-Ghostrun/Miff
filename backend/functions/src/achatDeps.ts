@@ -9,7 +9,7 @@ import type { DepsAchat } from "./achatTraitement.js";
 import { ErreurAchat } from "./achatErreurs.js";
 import { creerClientGoogle, type ClientGoogle } from "./achatGoogle.js";
 import { appAdmin } from "./appAdmin.js";
-import { creerChargeurConfigApple } from "./configApple.js";
+import { creerChargeurConfigApple, creerLecteurAcceptTest } from "./configApple.js";
 
 let instance: DepsAchat | undefined;
 
@@ -25,6 +25,6 @@ export function creerDepsAchat(): DepsAchat {
         lireEtat: async () => { throw new ErreurAchat("non_configure"); },
       }
     : creerClientApple({ config: creerChargeurConfigApple({ db }) });
-  instance = { db, google, apple, maintenant: () => new Date(), uuid: () => randomUUID() };
+  instance = { db, google, apple, maintenant: () => new Date(), uuid: () => randomUUID(), acceptTest: creerLecteurAcceptTest({ db }) };
   return instance;
 }

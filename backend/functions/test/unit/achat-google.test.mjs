@@ -218,3 +218,28 @@ test("configApple : droit refuse (403) -> acces_refuse, MEMORISE 30 s (un point 
   assert.equal(sansProjet.raison, 'non_configure');
   for (const e of [r, r2, panne, sansProjet]) assert.ok(!JSON.stringify(e).includes('TEST-NON-SECRET'), 'jamais la cle dans une erreur');
 });
+
+// --- coupe-circuit des achats de test (revue C2) ---------------------------------------------------------------------------------------
+
+test("acceptTest : DEFAUT VRAI (document ou champ absent, valeur non booleenne) ; seul un `false` booleen le coupe ; cache de 5 minutes ; panne de lecture = exception (jamais « vrai » par defaut)", async () => {
+  let t = new Date('2026-12-01T12:00:00Z');
+  const mk = (donnees) => {
+    const db = fauxDb(donnees);
+    return { db, lire: C.creerLecteurAcceptTest({ db, maintenant: () => t }) };
+  };
+  assert.equal(await mk(null).lire(), true);
+  assert.equal(await mk({}).lire(), true);
+  assert.equal(await mk({ acceptTest: 'false' }).lire(), true, 'un texte n\'est pas un false');
+  assert.equal(await mk({ acceptTest: 0 }).lire(), true);
+  assert.equal(await mk({ acceptTest: true }).lire(), true);
+  const coupe = mk({ acceptTest: false });
+  assert.equal(await coupe.lire(), false);
+  assert.deepEqual(coupe.db.lectures, ['billingConfig/options']);
+  await coupe.lire();
+  assert.equal(coupe.db.lectures.length, 1, 'cache');
+  t = new Date(t.getTime() + 6 * 60_000);
+  await coupe.lire();
+  assert.equal(coupe.db.lectures.length, 2, 'relu apres 5 minutes');
+  const panne = C.creerLecteurAcceptTest({ db: { doc: () => ({ get: async () => { throw new Error('panne'); } }) }, maintenant: () => t });
+  await assert.rejects(panne);
+});

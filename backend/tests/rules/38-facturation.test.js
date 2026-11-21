@@ -27,6 +27,7 @@ const DOCS_SERVEUR = [
   [`billingPurchases/${CLE}`, { v: 1, uid: 'alice', store: 'google_play', produit: 'miff_plus', plan: 'monthly', state: 'active', active: true, expiresAt: futur(30), willRenew: true, trial: false, test: false, observeA: 1, createdAt: inMs(0), updatedAt: inMs(0), purgeAt: futur(120) }],
   ['billingEvents/g-136969346945', { purgeAt: futur(7) }],
   ['billingConfig/apple', { keyId: 'ABCDE12345', issuerId: '123e4567-e89b-42d3-a456-426614174000', appAppleId: 1234567890 }],
+  ['billingConfig/options', { acceptTest: false }],
 ];
 
 s.tc('BL1', 'LECTURE de son accès : alice lit `entitlements/alice` (achat réel à 9 champs, ou ancien accord manuel à 4 champs) ; la liste de la collection, la lecture d\'un autre compte et le visiteur sont refusés', async (h) => {

@@ -49,6 +49,19 @@ export interface DepsAchat {
   maintenant: () => Date;
   /** UUID aleatoire (v4) : `crypto.randomUUID`. Injecte pour les tests. */
   uuid: () => string;
+  /** Coupe-circuit des achats de TEST (`billingConfig/options.acceptTest`, defaut vrai, cache 5 minutes). */
+  acceptTest: () => Promise<boolean>;
+}
+
+/**
+ * Interrupteur des achats de test (revue de securite C2). Tant qu'il est vrai (defaut : les stores exigent d'accepter le bac a sable en revue), rien ne change.
+ * Faux : un achat `test: true` n'accorde PLUS l'acces. Synchronisation : refus (`test_refuse`). Notification : l'etat est neutralise (acces coupe, comme un remboursement),
+ * pour qu'un acces de test deja accorde cesse aussi.
+ */
+async function appliquerInterrupteurTest(deps: DepsAchat, etat: EtatStore, mode: "refuser" | "neutraliser"): Promise<EtatStore> {
+  if (!etat.test || (await deps.acceptTest())) return etat;
+  if (mode === "refuser") throw new ErreurAchat("test_refuse");
+  return { ...etat, state: "revoked", active: false, expiresAt: deps.maintenant(), willRenew: false, trial: false, accuser: false };
 }
 
 interface Bilan {
@@ -123,6 +136,7 @@ export async function synchroniserAchat(deps: DepsAchat, uid: string, entree: En
       cle = cleAchat("app_store", cleApple(identite.environnement, identite.idTransactionOrigine));
     }
     if (etat.famille) throw new ErreurAchat("partage_famille");
+    etat = await appliquerInterrupteurTest(deps, etat, "refuser");
     const resultat = await appliquer(deps, bilan, { cle, etat, appelant: uid, evenementId: null, cleLiee });
     if (resultat.accuser && entree.store === "google_play") await deps.google.accuser(entree.purchaseToken);
     journaliser("info", "billing.sync.ok", { resultat: "ok", lectures: bilan.lectures, ecritures: bilan.ecritures });
@@ -399,18 +413,21 @@ export async function traiterMessageGoogle(deps: DepsAchat, message: MessageGoog
     return;
   }
   const evenementId = `g-${message.messageId}`;
-  const vu = await deps.db.doc(cheminEvenement(evenementId)).get();
-  bilan.lectures += 1;
-  if (vu.exists) {
-    journaliser("info", "billing.google.ignore", { resultat: "ok", motif: "deja_vu", lectures: bilan.lectures });
-    return;
-  }
   const publie = message.publishTime === undefined ? Number.NaN : Date.parse(message.publishTime);
   const tropVieux = !Number.isNaN(publie) && deps.maintenant().getTime() - publie > DUREE_MAX_REPRISE_MS;
   try {
+    // La lecture « message deja traite ? » est DANS le try (revue C3) : une exception brute de Firestore ne sort jamais telle quelle (chemin, identifiant dans les journaux de la plateforme)
+    // et suit la meme regle d'abandon a 24 h.
+    const vu = await deps.db.doc(cheminEvenement(evenementId)).get();
+    bilan.lectures += 1;
+    if (vu.exists) {
+      journaliser("info", "billing.google.ignore", { resultat: "ok", motif: "deja_vu", lectures: bilan.lectures });
+      return;
+    }
     const revoque = notification.sorte === "annule" || notification.type === TYPE_GOOGLE_REVOQUE;
     const lecture = deps.maintenant();
-    const etat = etatDepuisGoogle(await deps.google.lire(notification.jeton), lecture, { revoque });
+    let etat = etatDepuisGoogle(await deps.google.lire(notification.jeton), lecture, { revoque });
+    etat = await appliquerInterrupteurTest(deps, etat, "neutraliser");
     const resultat = await appliquer(deps, bilan, {
       cle: cleAchat("google_play", notification.jeton),
       etat,
@@ -451,12 +468,12 @@ export async function traiterNotificationApple(deps: DepsAchat, signedPayload: s
   try {
     notification = await deps.apple.verifierNotification(signedPayload);
   } catch (e) {
-    if (e instanceof ErreurAchat && e.transitoire) {
-      journaliser("warn", "billing.apple.notif", { resultat: "erreur", motif: "indisponible" });
-      return { http: 503 };
-    }
-    if (e instanceof ErreurAchat && e.raison === "non_configure") {
-      journaliser("warn", "billing.apple.notif", { resultat: "erreur", motif: "non_configure" });
+    // Revue C5 : SEULE une signature invalide donne « refuse » (400, code `signature-invalide`). Tout ce qui tient a NOTRE configuration ou a une panne (droit sur le secret refuse,
+    // secret ou configuration absents, panne reseau, reponse illisible) donne 503 avec son motif distinct : Apple reessaie, et le journal ne crie pas « signature invalide » a tort.
+    // Une exception inattendue (Firestore...) est relancee : le point d'entree repond 500 avec un journal fixe.
+    if (!(e instanceof ErreurAchat)) throw e;
+    if (e.raison !== "signature_invalide") {
+      journaliser("warn", "billing.apple.notif", { resultat: "erreur", motif: e.raison });
       return { http: 503 };
     }
     journaliser("warn", "billing.apple.signature-invalide", { resultat: "refuse", motif: "signature_invalide" });
@@ -478,7 +495,8 @@ export async function traiterNotificationApple(deps: DepsAchat, signedPayload: s
     return { http: 200 };
   }
   try {
-    const etat = await deps.apple.lireEtat(notification.environnement, notification.idTransactionOrigine, deps.maintenant());
+    let etat = await deps.apple.lireEtat(notification.environnement, notification.idTransactionOrigine, deps.maintenant());
+    etat = await appliquerInterrupteurTest(deps, etat, "neutraliser");
     const resultat = await appliquer(deps, bilan, { cle: cleAchat("app_store", cleApple(notification.environnement, notification.idTransactionOrigine)), etat, appelant: null, evenementId, cleLiee: null });
     journaliser("info", "billing.apple.notif", {
       resultat: resultat.statut === "inconnu" ? "refuse" : "ok",
@@ -518,8 +536,10 @@ export async function supprimerDonneesAbonnement(deps: DepsAchat, uid: string): 
   const refCompte = deps.db.doc(cheminCompte(uid));
   const compte = await refCompte.get();
   bilan.lectures += 2;
-  // Rien a supprimer (compte qui n'a jamais rien achete, ou deja purge) : aucune ecriture (une suppression d'un document absent est tout de meme facturee ; l'appel est repetable a volonte).
-  if (!compte.exists && achats.empty && !acces.exists) {
+  // Revue C4 : l'acces est deja « inactif avec date de purge » (suppression deja faite) : on ne le reecrit pas (la date de purge d'origine est conservee).
+  const accesDejaPurge = !acces.exists || (acces.get("active") === false && acces.get("purgeAt") instanceof Timestamp);
+  // Rien a supprimer (aucun compte ni achat, acces absent ou deja purge) : AUCUNE ecriture (une suppression d'un document absent est tout de meme facturee ; l'appel est repetable a volonte).
+  if (!compte.exists && achats.empty && accesDejaPurge) {
     journaliser("info", "billing.suppression.ok", { resultat: "ok", lectures: bilan.lectures, ecritures: 0 });
     return;
   }
@@ -532,7 +552,7 @@ export async function supprimerDonneesAbonnement(deps: DepsAchat, uid: string): 
     lot.delete(doc.ref);
     bilan.ecritures += 1;
   }
-  if (acces.exists) {
+  if (!accesDejaPurge) {
     lot.update(refAcces, {
       active: false,
       state: "expired",

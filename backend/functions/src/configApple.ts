@@ -6,7 +6,7 @@
 //    (le deploiement ne depend donc pas de lui : Android peut etre mis en ligne avant la cle Apple). La valeur n'est jamais journalisee ni ecrite ailleurs qu'en memoire.
 // Tant que la configuration est incomplete, Apple est « non configure » : les achats Apple sont refuses calmement, Google n'est pas touche.
 import type { DocumentSnapshot, Firestore } from "firebase-admin/firestore";
-import { CHEMIN_CONFIG_APPLE } from "./achatChemins.js";
+import { CHEMIN_CONFIG_APPLE, CHEMIN_CONFIG_OPTIONS } from "./achatChemins.js";
 import { ErreurAchat } from "./achatErreurs.js";
 import { creerFournisseurJetons, PORTEE_CLOUD, type FournisseurJetons } from "./jetonsGoogle.js";
 
@@ -45,6 +45,24 @@ function projetDeLaConfigurationFirebase(): string {
   } catch {
     return "";
   }
+}
+
+/**
+ * Coupe-circuit des achats de TEST (revue de securite C2) : `billingConfig/options.acceptTest`. DEFAUT = VRAI (document absent, champ absent ou non booleen) : les stores exigent
+ * d'accepter le bac a sable (Apple) et les testeurs de licence (Google) pendant leur revue. Seul un `false` BOOLEEN explicite le coupe. Lu au plus toutes les 5 minutes par instance.
+ * Erreur de lecture : l'exception remonte (jamais « vrai » par defaut sur une panne : un achat de test ne s'accorde pas sur une lecture ratee).
+ */
+export function creerLecteurAcceptTest(options: { db: Firestore; maintenant?: () => Date }): () => Promise<boolean> {
+  const maintenant = options.maintenant ?? (() => new Date());
+  let cache: { valeur: boolean; expire: number } | null = null;
+  return async () => {
+    const t = maintenant().getTime();
+    if (cache && cache.expire > t) return cache.valeur;
+    const doc = await options.db.doc(CHEMIN_CONFIG_OPTIONS).get();
+    const valeur = !(doc.exists && doc.get("acceptTest") === false);
+    cache = { valeur, expire: t + DUREE_CACHE_MS };
+    return valeur;
+  };
 }
 
 export function creerChargeurConfigApple(options: OptionsConfigApple): ChargerConfigApple {

@@ -45,8 +45,11 @@ const MESSAGE_ID = (n) => String(136969346945 + n);
 
 /** Horloge pilotable. */
 let maintenant;
+/** Coupe-circuit des achats de test (billingConfig/options.acceptTest) : vrai par defaut. */
+let accepteTest = true;
 beforeEach(() => {
   maintenant = new Date(T0);
+  accepteTest = true;
 });
 const avancer = (ms) => {
   maintenant = new Date(maintenant.getTime() + ms);
@@ -157,7 +160,7 @@ function espionner(base) {
 /** Compteur UNIQUE pour toute la suite : deux appels a creerDeps ne doivent jamais fabriquer le meme identifiant (en production ce sont des UUID aleatoires). */
 let compteurUuid = 0;
 function creerDeps({ google = fauxGoogle(), apple = fauxApple(), base = db } = {}) {
-  return { db: base, google, apple, maintenant: () => new Date(maintenant), uuid: () => `00000000-0000-4000-8000-${String(++compteurUuid).padStart(12, '0')}` };
+  return { db: base, google, apple, maintenant: () => new Date(maintenant), uuid: () => `00000000-0000-4000-8000-${String(++compteurUuid).padStart(12, '0')}`, acceptTest: async () => accepteTest };
 }
 
 const lire = async (chemin) => {
@@ -809,4 +812,83 @@ test("Apple : la cle d'un achat contient l'ENVIRONNEMENT (un identifiant du bac 
   assert.ok(await lire(`billingPurchases/${cleA(ID_APPLE, 'Sandbox')}`));
   assert.equal(await lire(`billingPurchases/${cleA(ID_APPLE, 'Production')}`), null);
   assert.notEqual(cleA(ID_APPLE, 'Sandbox'), cleA(ID_APPLE, 'Production'));
+});
+
+// --- Revue de securite : C2 (coupe-circuit des achats de test), C3, C4, C5 ---------------------------------------------------------------
+
+test("C2 - acceptTest vrai (defaut) : un achat de test accorde l'acces, marque `test` ; acceptTest faux : la synchronisation d'un achat de test est refusee (test_refuse), rien n'est ecrit ni acquitte ; un achat reel passe toujours", async () => {
+  const idAlice = await preparer();
+  const google = fauxGoogle({ [JETON]: repGoogle(idAlice, { testPurchase: true }), [JETON2]: repGoogle(idAlice) });
+  await sync(creerDeps({ google }), ALICE);
+  assert.equal((await lire(`entitlements/${ALICE}`)).test, true);
+  await viderSaufComptes();
+  google.accuses.length = 0;
+  accepteTest = false;
+  avancer(2 * 60_000);
+  assert.equal(await raison(() => sync(creerDeps({ google }), ALICE)), 'test_refuse');
+  assert.equal(await lire(`entitlements/${ALICE}`), null);
+  assert.equal(await lire(`billingPurchases/${cleG(JETON)}`), null);
+  assert.deepEqual(google.accuses, []);
+  avancer(2 * 60_000);
+  assert.equal((await sync(creerDeps({ google }), ALICE, JETON2)).state, 'active', 'achat reel : non concerne');
+  assert.equal((await lire(`entitlements/${ALICE}`)).test, false);
+  // Apple (bac a sable)
+  await viderSaufComptes();
+  avancer(2 * 60_000);
+  assert.equal(await raison(() => syncA(creerDeps({ apple: appleOk(idAlice) }), ALICE)), 'test_refuse');
+  assert.equal(await lire(`billingPurchases/${cleA(ID_APPLE)}`), null);
+});
+
+test("C2 - acceptTest faux : une NOTIFICATION coupe aussi l'acces de test deja accorde (comme un remboursement) et n'acquitte rien ; un achat de test inconnu n'ecrit rien", async () => {
+  const idAlice = await preparer();
+  const google = fauxGoogle({ [JETON]: repGoogle(idAlice, { testPurchase: true }) });
+  const deps = creerDeps({ google });
+  await sync(deps, ALICE);
+  assert.equal((await lire(`entitlements/${ALICE}`)).active, true);
+  accepteTest = false;
+  avancer(5 * 60_000);
+  google.accuses.length = 0;
+  await T.traiterMessageGoogle(deps, messageRtdn(JETON, 2, { messageId: MESSAGE_ID(81) }));
+  const a = await lire(`entitlements/${ALICE}`);
+  assert.deepEqual({ active: a.active, state: a.state }, { active: false, state: 'revoked' });
+  assert.deepEqual(google.accuses, []);
+});
+
+test("C3 - une exception Firestore pendant la lecture « message deja traite ? » : message FIXE (aucun chemin), relance ; abandon silencieux au-dela de 24 h", async () => {
+  const google = fauxGoogle({ [JETON]: repGoogle(null) });
+  const casse = { ...creerDeps({ google }), db: new Proxy(db, { get: (c, p) => (p === 'doc' ? () => ({ get: () => Promise.reject(new Error('detail avec billingEvents/g-1 et alice')) }) : typeof c[p] === 'function' ? c[p].bind(c) : c[p]) }) };
+  await assert.rejects(() => T.traiterMessageGoogle(casse, messageRtdn(JETON, 2)), (e) => e.message === 'billing.erreur');
+  avancer(25 * 3600_000);
+  await T.traiterMessageGoogle(casse, messageRtdn(JETON, 2, { publishTime: iso(T0.getTime()) }));
+});
+
+test("C4 - supprimerDonneesAbonnement : acces deja inactif avec purgeAt, ni compte ni achat -> AUCUNE ecriture ; la date de purge d'origine est conservee", async () => {
+  const purge = Timestamp.fromMillis(T0.getTime() + 10 * JOUR);
+  await db.doc(`entitlements/${ALICE}`).set({ active: false, expiresAt: Timestamp.fromMillis(T0.getTime() - JOUR), source: 'google_play', updatedAt: Timestamp.fromMillis(T0.getTime()), state: 'expired', purgeAt: purge });
+  const { proxy, compteurs } = espionner(db);
+  const deps = { ...creerDeps(), db: proxy };
+  await T.supprimerDonneesAbonnement(deps, ALICE);
+  assert.equal(compteurs.ecritures, 0);
+  assert.equal(ms((await lire(`entitlements/${ALICE}`)).purgeAt), purge.toMillis());
+  // Compte present, acces deja purge : le compte est supprime, l'acces n'est pas reecrit.
+  await preparer(ALICE);
+  await T.supprimerDonneesAbonnement(creerDeps(), ALICE);
+  assert.equal(await lire(`billingAccounts/${ALICE}`), null);
+  assert.equal(ms((await lire(`entitlements/${ALICE}`)).purgeAt), purge.toMillis());
+});
+
+test("C5 - Apple : acces au secret refuse, configuration absente ou panne -> 503 avec leur motif (jamais « signature invalide »/400) ; seule une vraie signature invalide donne 400 ; exception inattendue relancee", async () => {
+  for (const raisonErreur of ['acces_refuse', 'non_configure', 'reponse_invalide']) {
+    const apple = fauxApple({ notifications: { P: new E.ErreurAchat(raisonErreur) } });
+    assert.deepEqual(await T.traiterNotificationApple(creerDeps({ apple }), 'P'), { http: 503 }, raisonErreur);
+  }
+  assert.deepEqual(await T.traiterNotificationApple(creerDeps({ apple: fauxApple() }), 'inconnu'), { http: 400 });
+  const apple = fauxApple({ notifications: { P: new Error('Firestore detail') } });
+  await assert.rejects(() => T.traiterNotificationApple(creerDeps({ apple }), 'P'));
+});
+
+test("C5 - Apple : notification sans transaction (type « summary », test) : 200, rien d'ecrit", async () => {
+  const apple = fauxApple({ notifications: { S: notifApple({ type: 'RENEWAL_EXTENSION', idTransactionOrigine: null, uuid: '44444444-4444-4444-8444-444444444444' }) } });
+  assert.deepEqual(await T.traiterNotificationApple(creerDeps({ apple }), 'S'), { http: 200 });
+  assert.equal((await db.collection('billingEvents').get()).size, 0);
 });

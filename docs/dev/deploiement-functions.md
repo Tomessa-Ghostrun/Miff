@@ -465,7 +465,7 @@ Quand quelqu'un achète Miff+ dans l'app (Google Play ou App Store), **un serveu
 | `recevoirNotificationsApple` | **adresse HTTPS publique** | reçoit les notifications d'Apple, **vérifie leur signature** et relit l'état chez Apple. **Seul point d'entrée du projet joignable sans connexion ni App Check** |
 | `supprimerDonneesAbonnement` | appelable | purge à la suppression du compte (identifiant d'achat, liens ; droit inactif et supprimé 30 jours après) |
 
-**Limites (garde-fous vérifiés par `garde-couts.test.mjs` et `garde-facturation.test.mjs`)** : région `europe-west9`, 2e génération, Node 24, **3 instances au plus, 256 Mio, 30 s, 0 instance permanente**, compte `billing-sync@miff-3d283.iam.gserviceaccount.com` **sans clé**, **nouvelle tentative automatique seulement pour la fonction Pub/Sub** (traitement idempotent ; message abandonné au bout de 24 h), jamais de révocation ni de remboursement par le serveur.
+**Limites (garde-fous vérifiés par `garde-couts.test.mjs` et `garde-facturation.test.mjs`)** : région `europe-west9`, 2e génération, Node 24, **3 instances au plus, 256 Mio, 30 s (60 s pour `recevoirNotificationsApple` seulement : le contrôle de révocation des certificats d'Apple a son propre délai de 30 s), 0 instance permanente**, compte `billing-sync@miff-3d283.iam.gserviceaccount.com` **sans clé**, **nouvelle tentative automatique seulement pour la fonction Pub/Sub** (traitement idempotent ; message abandonné au bout de 24 h), jamais de révocation ni de remboursement par le serveur.
 
 ### 12.2 L'ordre complet, avec ce qui est bloquant
 
@@ -580,6 +580,14 @@ La suppression est « typiquement dans les 24 h » après l'échéance (document
 3. **Configuration non secrète** : Firestore (console Firebase, projet **Miff**) > **Démarrer une collection** `billingConfig` > document **`apple`** avec **trois champs** exactement : `keyId` (texte, 10 caractères majuscules/chiffres), `issuerId` (texte, l'UUID), `appAppleId` (**nombre** entier). Les apps n'y ont **aucun accès** (règles : tout refusé). La configuration est relue au plus toutes les 5 minutes : **aucun redéploiement**.
 4. **Rotation** (clé compromise ou renouvelée) : App Store Connect > révoquer la clé et en créer une autre ; Secret Manager > `apple-iap-key` > **Nouvelle version** ; mettre à jour `keyId` dans `billingConfig/apple`. Aucun redéploiement (cache de 5 minutes). **En cas de fuite : révoquer d'abord** (`docs/dev/secrets.md`).
 
+### 12.11 bis Le coupe-circuit des achats de test (`acceptTest`) : quand le couper, comment
+
+Un achat de test (testeur de licence Google, bac à sable Apple, **TestFlight : toujours en bac à sable**) accorde un **vrai** Miff+ marqué `test: true`, parce qu'il n'y a qu'un projet Firebase. **Tant que seuls des testeurs de confiance installent l'app, c'est voulu** (et les stores **exigent** que le bac à sable fonctionne pendant leur revue : le défaut est donc **accepté**).
+
+**Condition** : **ne pas ouvrir de TestFlight public (lien public) ni de piste de test ouverte Google Play avant d'avoir décidé de passer `acceptTest` à `false`** : n'importe quel participant pourrait alors s'offrir du Miff+ avec un achat de test. Le bon moment : **juste avant l'ouverture publique, une fois les stores validés**, ou dès qu'un projet Firebase de développement séparé existe.
+
+**Pour le couper** (par le PM, console Firebase, projet **Miff**) : Firestore > collection **`billingConfig`** > document **`options`** (le créer s'il n'existe pas) > champ **`acceptTest`**, type **booléen**, valeur **`false`** (un texte « false » ne compte pas). Effet en **5 minutes au plus** (cache), **sans redéploiement** : les nouveaux achats de test sont refusés (`billing.sync.refuse`, `motif: test_refuse`) et un accès de test déjà accordé est coupé au prochain événement du store. **Pour le rétablir** : `true` ou supprimer le champ. **Les apps affichent leur message calme habituel** (« Cet achat ne peut pas être associé à Miff+ »).
+
 ### 12.12 Étape 12 : l'adresse des notifications Apple
 
 App Store Connect > l'app Miff > **Informations sur l'app** > **Notifications du serveur App Store** (version 2) : coller **l'adresse copiée au §12.8** dans **l'URL de production** ET **l'URL du bac à sable** (une seule fonction traite les deux environnements : elle lit l'environnement dans la notification signée). Emplacement exact des champs : non vérifié, copiez ce que vous voyez. Apple n'attend pas de jeton : **l'adresse est publique par conception**, la sécurité est la vérification de la signature (chaîne de certificats jusqu'à la racine d'Apple, fonction testée avec de fausses chaînes).
@@ -589,7 +597,7 @@ App Store Connect > l'app Miff > **Informations sur l'app** > **Notifications du
 | # | Vérification | Où | OK si |
 |---|---|---|---|
 | 1 | Les 5 fonctions sont en ligne | Firebase > Functions, ou `npx firebase functions:list --project miff-3d283` | `preparerAchat`, `synchroniserAchat`, `supprimerDonneesAbonnement`, `recevoirNotificationsGooglePlay`, `recevoirNotificationsApple`, région **europe-west9**, 2e génération, Node.js 24 |
-| 2 | Limites et compte | détail de chaque fonction | instances maximales **3**, mémoire **256 Mio**, délai **30 s**, instances minimales **0**, compte **`billing-sync@miff-3d283…`** (jamais « Compute Engine default ») |
+| 2 | Limites et compte | détail de chaque fonction | instances maximales **3**, mémoire **256 Mio**, délai **30 s** (**60 s** pour `recevoirNotificationsApple`), instances minimales **0**, compte **`billing-sync@miff-3d283…`** (jamais « Compute Engine default ») |
 | 3 | Exposition | Cloud Run > chaque service > Sécurité | **`recevoirnotificationsapple`** et les trois appelables sont ouverts à l'infrastructure (« Autoriser l'accès non authentifié ») **par conception** : les appelables exigent App Check et la connexion **dans le code**, Apple s'authentifie par la **signature** ; **`recevoirnotificationsgoogleplay` n'est PAS public** (invoker : `billing-sync` seulement) |
 | 4 | Aucune clé | page du compte `billing-sync` > Clés | vide |
 | 5 | Message de test Google | Play Console > Monétiser > Configuration > Notifications en temps réel > **Envoyer un message de test** (après l'étape 8) | journal `billing.google.ignore` avec `motif: test_notification`, aucune erreur « not authenticated » |
@@ -604,10 +612,10 @@ App Store Connect > l'app Miff > **Informations sur l'app** > **Notifications du
 |---|---|---|
 | `billing.prepare.ok` | identifiant d'achat remis | rien |
 | `billing.sync.ok` | achat vérifié et accordé (champs `lectures`, `ecritures`) | rien |
-| `billing.sync.refuse` + `motif` | refus attendu : `deja_lie`, `limite_frequence`, `achat_inconnu`, `produit_inconnu`, `partage_famille`, `jeton_invalide`, `signature_invalide` ; **à regarder** : `acces_refuse` (droits Google ou Apple), `non_configure` (Apple pas encore configuré), `indisponible` (store en panne) | `acces_refuse` : §12.7 ; `non_configure` : §12.11 |
+| `billing.sync.refuse` + `motif` | refus attendu : `deja_lie`, `limite_frequence`, `achat_inconnu`, `produit_inconnu`, `partage_famille`, `test_refuse` (§12.11 bis), `jeton_invalide`, `signature_invalide` ; **à regarder** : `acces_refuse` (droits Google ou Apple), `non_configure` (Apple pas encore configuré), `indisponible` (store en panne) | `acces_refuse` : §12.7 ; `non_configure` : §12.11 |
 | `billing.google.notif` | message Google traité | rien |
 | `billing.google.ignore` + `motif` | message ignoré : `test_notification`, `autre_package`, `deja_vu`, `entree_invalide`, `type_ignore` | `autre_package` répété : vérifier la configuration de la Play Console |
-| `billing.apple.notif` / `billing.apple.ignore` | notification Apple traitée / ignorée (`deja_vu`, `type_ignore`) | rien |
+| `billing.apple.notif` / `billing.apple.ignore` | notification Apple traitée / ignorée (`deja_vu`, `type_ignore`). **`billing.apple.notif` avec `resultat: erreur` et un motif `acces_refuse`, `non_configure` ou `indisponible`** = le serveur répond 503 (Apple réessaie) : droit sur le secret, configuration ou panne, **jamais** « signature invalide ». **Les notifications de type « summary »** (réponse d'Apple à une prolongation de renouvellement en masse, que Miff ne demande jamais) sont **vérifiées puis ignorées avec 200** (`type_ignore`) | rien ; `acces_refuse` / `non_configure` répétés : §12.11 |
 | `billing.apple.signature-invalide` | notification refusée (signature) | **à regarder si répété** : quelqu'un envoie n'importe quoi à l'adresse publique (plafond d'instances et alertes de budget en place) ; **s'il apparaît dès la première vraie notification d'Apple en production**, vérifiez `appAppleId` (un nombre, pas un texte) et `keyId` dans `billingConfig/apple` |
 | `billing.suppression.ok` | données d'abonnement d'un compte supprimées | rien |
 | `billing.*.erreur` | erreur inattendue (Firestore...) | copier à Claude |

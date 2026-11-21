@@ -7,7 +7,7 @@ import { creerDepsAchat } from "./achatDeps.js";
 import { jwsValide } from "./achatRegles.js";
 import { traiterNotificationApple } from "./achatTraitement.js";
 import { journaliser } from "./journal.js";
-import { LIMITES_FACTURATION } from "./options.js";
+import { LIMITES, LIMITES_FACTURATION } from "./options.js";
 
 /** Une notification Apple fait quelques Kio ; au-dela de 32 Kio, ce n'est pas Apple. */
 const TAILLE_MAX_CORPS = 32 * 1024;
@@ -18,6 +18,8 @@ export const recevoirNotificationsApple = onRequest(
     serviceAccount: "billing-sync@miff-3d283.iam.gserviceaccount.com",
     maxInstances: LIMITES_FACTURATION.maxInstances,
     memory: LIMITES_FACTURATION.memory,
+    // 60 s (plafond du garde-fou) et non 30 s : les verifications en ligne des certificats d'Apple (OCSP) ont un delai propre de 30 s (revue C5/H5) ; les autres fonctions restent a 30 s.
+    timeoutSeconds: LIMITES.timeoutSecondsPlafond,
     invoker: "public",
     cors: false,
   },

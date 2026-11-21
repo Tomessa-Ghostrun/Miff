@@ -18,7 +18,7 @@ export const MOTIFS = [
   "sans_changement", "expiration", "debut_non_notifie",
   // Premium reel (SRV-7) : raisons FERMEES d'un refus ou d'un abandon (jamais le detail d'un jeton, d'une transaction, d'un identifiant d'achat ni d'un compte).
   "entree_invalide", "jeton_invalide", "signature_invalide", "achat_inconnu", "produit_inconnu", "autre_package", "deja_lie", "limite_frequence",
-  "partage_famille", "non_configure", "acces_refuse", "indisponible", "reponse_invalide", "ancien", "type_ignore", "test_notification", "compte_inconnu",
+  "partage_famille", "test_refuse", "non_configure", "acces_refuse", "indisponible", "reponse_invalide", "ancien", "type_ignore", "test_notification", "compte_inconnu",
   "attente", "abandon", "methode", "taille",
 ] as const;
 

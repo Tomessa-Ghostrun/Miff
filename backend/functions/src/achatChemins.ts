@@ -15,6 +15,7 @@ export const COLLECTION_COMPTES = "billingAccounts";
 export const COLLECTION_ACHATS = "billingPurchases";
 export const COLLECTION_EVENEMENTS = "billingEvents";
 export const CHEMIN_CONFIG_APPLE = "billingConfig/apple";
+export const CHEMIN_CONFIG_OPTIONS = "billingConfig/options";
 
 export function uidValide(uid: unknown): uid is string {
   return typeof uid === "string" && FORME_UID.test(uid);
