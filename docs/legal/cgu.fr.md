@@ -1,8 +1,11 @@
 # Conditions Générales d'Utilisation de Miff
 
-**Version 1.2 — dernière mise à jour : 21 novembre 2026**
+**Version 1.3 — dernière mise à jour : 22 novembre 2026**
 
-> **Ce qui a changé depuis la version 1.1 (19 novembre 2026)**
+> **Ce qui a changé depuis la version 1.2 (21 novembre 2026)**
+> - **Sur iPhone comme sur Android, tu peux désactiver à tout moment les statistiques d'usage et les rapports de plantage dans les Réglages de l'app** : il n'est plus nécessaire d'écrire pour retirer cet accord (article 3, et la Politique de confidentialité). La phrase d'inscription cite aussi « Continuer avec Apple » sur iPhone.
+>
+> **Ce qui avait changé dans la version 1.2 (21 novembre 2026), depuis la version 1.1 (19 novembre 2026)**
 > - L'arrêt du partage et la suppression du compte effacent aussi **la date de ta dernière photo**, enregistrée dans ton statut pour classer les cartes du Feed (article 6).
 > - Notre serveur garde **une trace technique de 30 jours** de chaque notification envoyée à un proche, sans prénom, photo, lieu ni position ; tu peux l'effacer (article 6, et la Politique de confidentialité).
 > - L'app existe aussi en espagnol, italien, portugais (Portugal) et allemand, mais **ces conditions restent en français et en anglais** (article 17).
@@ -38,12 +41,12 @@ Miff est une app pour **savoir que tes proches vont bien, sans les déranger**.
 
 ## 3. Accepter ces conditions
 
-À l'inscription, tu touches le bouton **« Rejoindre »** (ou « Continuer avec Google »). Juste au-dessus, une phrase te dit : « En touchant « Rejoindre » ou « Continuer avec Google », tu acceptes nos Conditions d'utilisation et notre Politique de confidentialité, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages). »
+À l'inscription, tu touches le bouton **« Rejoindre »** (ou « Continuer avec Google », ou « Continuer avec Apple » sur iPhone). Juste au-dessus, une phrase te dit : « En touchant « Rejoindre » ou « Continuer avec Google », tu acceptes nos Conditions d'utilisation et notre Politique de confidentialité, ainsi que le partage de tes statistiques d'usage et rapports de plantage anonymes (modifiable à tout moment dans les Réglages). » Sur iPhone, elle cite aussi « Continuer avec Apple ».
 
 Concrètement :
-- **Il n'y a pas de case à cocher** : ton clic sur « Rejoindre » (ou « Continuer avec Google ») vaut acceptation de ces conditions et de la Politique de confidentialité. Si tu n'es pas d'accord, ne clique pas et n'utilise pas l'app.
-- **Si tu te connectes avec Google depuis l'écran « Se connecter » et que tu n'as pas encore de compte Miff**, un écran te présente la même phrase (« En touchant « Continuer », tu acceptes… ») avant d'aller plus loin, avec deux boutons : « Continuer » et « Annuler ». Si tu touches « Annuler » (ou le bouton retour du téléphone), le compte tout juste créé est supprimé et rien n'est conservé.
-- **Le même clic active le partage de statistiques d'usage et de rapports de plantage** (voir la Politique de confidentialité). C'est activé d'emblée, mais **tu peux le désactiver à tout moment dans les Réglages** (un seul choix pour les statistiques et les rapports de plantage ; sur iPhone, tant que cet interrupteur n'est pas livré, en nous écrivant à tomessa.mfouka@gmail.com), sans conséquence sur ton compte ni sur ton usage de Miff.
+- **Il n'y a pas de case à cocher** : ton clic sur « Rejoindre » (ou « Continuer avec Google », ou « Continuer avec Apple » sur iPhone) vaut acceptation de ces conditions et de la Politique de confidentialité. Si tu n'es pas d'accord, ne clique pas et n'utilise pas l'app.
+- **Si tu te connectes avec Google (ou, sur iPhone, avec Apple) depuis l'écran « Se connecter » et que tu n'as pas encore de compte Miff**, un écran te présente la même phrase (« En touchant « Continuer », tu acceptes… ») avant d'aller plus loin, avec deux boutons : « Continuer » et « Annuler ». Si tu touches « Annuler » (ou le bouton retour du téléphone), le compte tout juste créé est supprimé et rien n'est conservé.
+- **Le même clic active le partage de statistiques d'usage et de rapports de plantage** (voir la Politique de confidentialité). C'est activé d'emblée, mais **tu peux le désactiver à tout moment dans les Réglages** (sur iPhone comme sur Android ; un seul choix pour les statistiques et les rapports de plantage), sans conséquence sur ton compte ni sur ton usage de Miff.
 - **Le partage de ta localisation n'est pas concerné** : il demande un accord distinct, donné Miff par Miff (article 6).
 - Nous enregistrons la date et la version des conditions que tu as acceptées.
 

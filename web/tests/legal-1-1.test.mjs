@@ -1,9 +1,17 @@
-// Textes légaux en version 1.1 (2026-11-19) puis 1.2 (2026-11-21, tests « VERSION 1.2 » en fin de fichier) : version et date visibles, alerte « Je suis en danger »,
+// Textes légaux en version 1.1 (2026-11-19), 1.2 (2026-11-21, tests « VERSION 1.2 ») puis 1.3 (2026-11-22, tests « VERSION 1.3 » en fin de fichier) : version et date visibles, alerte « Je suis en danger »,
 // journal local du temps et description de photo décrits sans mensonge. Tests sans dépendance (node:test).
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { buildTemp, htmlPages, visibleText } from './helpers.mjs';
+
+// Version et date des quatre textes : UN SEUL endroit à changer ici si la publication n'a pas lieu le jour prévu
+// (avec la ligne « **Version … — dernière mise à jour : … **» en tête des quatre fichiers de docs/legal/).
+const VERSION = '1.3';
+const DATE_FR = '22 novembre 2026';
+const DATE_EN = 'November 22, 2026';
+const versionFr = new RegExp(`Version ${VERSION.replace('.', '\\.')} — dernière mise à jour : ${DATE_FR}`);
+const versionEn = new RegExp(`Version ${VERSION.replace('.', '\\.')} — last updated: ${DATE_EN}`);
 
 const site = buildTemp();
 const pages = htmlPages(site.out);
@@ -15,12 +23,12 @@ const POLICY_FR = text('fr/confidentialite.html');
 const TERMS_EN = text('en/terms.html');
 const POLICY_EN = text('en/privacy.html');
 
-test('TEXTES LEGAUX 1.2 - la version et la date sont visibles en tête des quatre pages, identiques dans les deux langues', () => {
+test('TEXTES LEGAUX 1.3 - la version et la date sont visibles en tête des quatre pages, identiques dans les deux langues', () => {
   const expected = [
-    ['fr/cgu.html', TERMS_FR, /Version 1.2 — dernière mise à jour : 21 novembre 2026/],
-    ['fr/confidentialite.html', POLICY_FR, /Version 1.2 — dernière mise à jour : 21 novembre 2026/],
-    ['en/terms.html', TERMS_EN, /Version 1.2 — last updated: November 21, 2026/],
-    ['en/privacy.html', POLICY_EN, /Version 1.2 — last updated: November 21, 2026/],
+    ['fr/cgu.html', TERMS_FR, versionFr],
+    ['fr/confidentialite.html', POLICY_FR, versionFr],
+    ['en/terms.html', TERMS_EN, versionEn],
+    ['en/privacy.html', POLICY_EN, versionEn],
   ];
   for (const [name, content, pattern] of expected) {
     const position = content.search(pattern);
@@ -260,15 +268,15 @@ test('VERSION 1.2 - réserves de mise en service et corrections de la revue d\'e
   // Le message de notification ne contient pas d'heure d'envoi (clé absente du message).
   assert.doesNotMatch(POLICY_FR, /l.heure d.envoi/);
   assert.doesNotMatch(POLICY_EN, /the time it was sent/);
-  // iPhone : le retrait des statistiques se fait par e-mail tant que l'interrupteur n'est pas livré.
-  assert.match(POLICY_FR, /Sur iPhone, tant que cet interrupteur n.est pas livré/);
-  assert.match(POLICY_EN, /On iPhone, as long as this switch is not delivered/);
-  assert.match(TERMS_FR, /sur iPhone, tant que cet interrupteur n.est pas livré/);
-  assert.match(TERMS_EN, /on iPhone, as long as this switch is not delivered/);
+  // iPhone : depuis la 1.3, l'interrupteur existe dans les Réglages (PR #311) : l'ancienne réserve « par e-mail tant que l'interrupteur n'est pas livré » ne doit plus figurer.
+  assert.doesNotMatch(POLICY_FR, /tant que cet interrupteur n.est pas livré/);
+  assert.doesNotMatch(POLICY_EN, /as long as this switch is not delivered/);
+  assert.doesNotMatch(TERMS_FR, /tant que cet interrupteur n.est pas livré/);
+  assert.doesNotMatch(TERMS_EN, /as long as this switch is not delivered/);
 });
 
-test('PROCEDURE 1.2 - les chaînes de contrôle de docs/dev/publication-textes-legaux-v1-2.md existent bien dans les pages construites (et celles à retirer en sont absentes)', () => {
-  const procedure = readFileSync(new URL('../../docs/dev/publication-textes-legaux-v1-2.md', import.meta.url), 'utf8');
+test('PROCEDURE 1.3 - les chaînes de contrôle de docs/dev/publication-textes-legaux-v1-3.md existent bien dans les pages construites (et celles à retirer en sont absentes)', () => {
+  const procedure = readFileSync(new URL('../../docs/dev/publication-textes-legaux-v1-3.md', import.meta.url), 'utf8');
   const pairs = (block) => [...block.matchAll(/@\("([^"]+)", "([^"]+)"\)/g)].map((m) => {
     const page = m[1].replace(/^\//, '').split(String.fromCharCode(92)).join('/');
     return [page.endsWith('.html') ? page : `${page}.html`, m[2]];
@@ -287,7 +295,77 @@ test('PROCEDURE 1.2 - les chaînes de contrôle de docs/dev/publication-textes-l
     assert.ok(!byName[file].html.includes(forbidden), `procédure : « ${forbidden} » ne doit plus figurer dans ${file}`);
   }
   // La procédure cite la bonne date, le bon message de déploiement, et ne contient ni --force ni « firebase use ».
-  assert.match(procedure, /--message "Textes legaux 1\.2 du 21 novembre 2026"/);
+  assert.ok(procedure.includes(`--message "Textes legaux ${VERSION} du ${DATE_FR}"`), 'la procédure doit citer le message de déploiement de la version et de la date en cours');
+  // La procédure garde la même version et la même date que les textes (un seul endroit : les constantes en tête de ce fichier).
+  assert.ok(procedure.includes(`Version ${VERSION} — dernière mise à jour : ${DATE_FR}`));
+  assert.ok(procedure.includes(`Version ${VERSION} — last updated: ${DATE_EN}`));
   assert.doesNotMatch(procedure.replace(/jamais `--force`|Pas de `--force`, jamais|jamais `firebase use`/g, ''), /--force|firebase(\.cmd)? use/);
   for (const command of procedure.match(/firebase\.cmd (deploy|hosting:channel:deploy)[^\n]*/g)) assert.match(command, /--project miff-3d283/);
+});
+
+// Version 1.3 (2026-11-22) : l'interrupteur « statistiques d'usage et rapports de plantage » existe aussi sur iPhone (PR #311, ONB-3b iPhone) : le retrait se fait dans l'app
+// sur les deux plateformes, plus par e-mail ; la marque de retrait en attente (retrait fait hors ligne) est décrite ; rien n'est annoncé qui ne soit pas en service (Miff+, prix).
+test('VERSION 1.3 - le retrait des statistiques se fait dans les Réglages sur iPhone comme sur Android, et la phrase d\'inscription cite « Continuer avec Apple » sur iPhone (FR et EN)', () => {
+  for (const pattern of [
+    /sur iPhone comme sur Android\s*,\s*tu peux désactiver à tout moment les statistiques d.usage et les rapports de plantage/,
+    /Réglages > Confidentialité/,
+    /Sur iPhone\s*,\s*elle cite aussi « Continuer avec Apple »/,
+    /« En touchant « Rejoindre », « Continuer avec Apple » ou « Continuer avec Google », tu acceptes/,
+    /ou « Continuer avec Apple » sur iPhone/,
+    /Si tu te connectes avec Google \(ou, sur iPhone, avec Apple\)/,
+  ]) assert.match(POLICY_FR, pattern);
+  for (const pattern of [
+    /on iPhone as on Android\s*,\s*you can turn off usage statistics and crash reports at any time/,
+    /Settings > Privacy/,
+    /On iPhone\s*,\s*it also quotes "Continue with Apple"/,
+    /By tapping “Join”, “Continue with Apple” or “Continue with Google”, you accept/,
+    /or "Continue with Apple" on iPhone/,
+    /If you sign in with Google \(or, on iPhone, with Apple\)/,
+  ]) assert.match(POLICY_EN, pattern);
+  assert.match(TERMS_FR, /sur iPhone comme sur Android ; un seul choix pour les statistiques et les rapports de plantage/);
+  assert.match(TERMS_FR, /Sur iPhone, elle cite aussi « Continuer avec Apple »/);
+  assert.match(TERMS_EN, /on iPhone as on Android; a single choice for statistics and crash reports/);
+  assert.match(TERMS_EN, /On iPhone, it also quotes "Continue with Apple"/);
+  // Plus aucun retrait par e-mail réservé à l'iPhone dans le texte du retrait (l'adresse de contact reste celle de l'article 8 pour toute demande).
+  for (const content of [POLICY_FR, TERMS_FR]) assert.doesNotMatch(content, /retirer ton accord à tout moment en écrivant à/);
+  for (const content of [POLICY_EN, TERMS_EN]) assert.doesNotMatch(content, /withdraw your agreement at any time by writing to/);
+});
+
+test('VERSION 1.3 - la marque de retrait en attente est décrite : empreinte à sens unique et heure, jamais envoyée, exclue des sauvegardes, effacée à l\'enregistrement ou à la suppression du compte, gardée après une déconnexion (FR et EN)', () => {
+  for (const pattern of [
+    /Si tu retires cet accord sans réseau/,
+    /marque de retrait en attente/,
+    /empreinte à sens unique de l.identifiant de ton compte \(une pseudonymisation/,
+    /et l.heure du retrait, rien d.autre \(ni nom, ni adresse e-mail, ni position\)/,
+    /Elle n.est jamais envoyée/,
+    /exclue des sauvegardes de ton téléphone/,
+    /Elle est effacée dès que ton retrait est enregistré dans ton compte, quand tu acceptes de nouveau/,
+    /Elle n.est pas effacée par une simple déconnexion/,
+    /Marque de retrait en attente \(sur ton téléphone seulement\)/,
+    /au plus 20 comptes sont retenus sur un même téléphone/,
+    /la marque de retrait en attente \(une empreinte à sens unique de ton compte et l.heure : article 3\)/,
+  ]) assert.match(POLICY_FR, pattern);
+  for (const pattern of [
+    /If you withdraw this agreement without a network/,
+    /pending-withdrawal mark/,
+    /one-way fingerprint of your account identifier \(a pseudonymisation/,
+    /and the time of the withdrawal, nothing else \(no name, no e-mail address, no location\)/,
+    /It is never sent/,
+    /excluded from your phone.s backups/,
+    /It is erased as soon as your withdrawal is recorded in your account, when you accept again/,
+    /It is not erased by a simple sign-out/,
+    /Pending-withdrawal mark \(on your phone only\)/,
+    /at most 20 accounts are remembered on one phone/,
+    /the pending-withdrawal mark \(a one-way fingerprint of your account and the time: article 3\)/,
+  ]) assert.match(POLICY_EN, pattern);
+  // La marque ne contient jamais de position ni de prénom, et n'est pas annoncée comme anonyme : c'est une pseudonymisation.
+  assert.doesNotMatch(POLICY_FR, /marque de retrait en attente[^|]{0,200}anonymis/);
+  assert.doesNotMatch(POLICY_EN, /pending-withdrawal mark[^|]{0,200}anonymi[sz]/);
+});
+
+test('VERSION 1.3 - rien n\'est annoncé qui ne soit pas en service : ni prix, ni essai, ni achat de Miff+, ni « aucune référence d\'achat » (FR et EN)', () => {
+  for (const [name, content] of [['CGU FR', TERMS_FR], ['politique FR', POLICY_FR], ['CGU EN', TERMS_EN], ['politique EN', POLICY_EN]]) {
+    assert.doesNotMatch(content, /59,88|4,99|6,99|59\.88|4\.99|6\.99/, `${name} : un prix ne doit pas figurer (l'achat réel n'est pas en service)`);
+    assert.doesNotMatch(content, /aucune référence d.achat|no purchase reference|jeton d.achat|purchase token/i, `${name} : l'achat réel n'est pas en service`);
+  }
 });
