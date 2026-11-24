@@ -384,8 +384,10 @@ extension SessionManager {
         if snapshot.profileExists {
             pending.clear()
             drafts?.clear()
-            privacy.applyAccountConsent(snapshot.analyticsConsentEnabled)
-            if let method, snapshot.analyticsConsentEnabled {
+            // Un retrait fait sans réseau et pas encore enregistré l'emporte sur ce que dit encore le compte.
+            let collect = snapshot.analyticsConsentEnabled && withdrawals?.isPending(uid: uid) != true
+            privacy.applyAccountConsent(collect)
+            if let method, collect {
                 tracker.track(.signInCompleted(method: method))
             }
         } else {
@@ -406,6 +408,9 @@ extension SessionManager {
             flags.set(true, forKey: Self.keyReturningUser)
         }
         setState(.ready(destination))
+        if snapshot.profileExists {
+            onAccountResolved(uid)
+        }
     }
 
     private func entryDestination() -> AppDestination {

@@ -44,6 +44,7 @@ extension SessionManager: AccountDeletionSession {
         }
         drafts?.clear()
         pending.clear()
+        withdrawals?.clear(uid: uid)
         privacy.eraseCollectedData()
         setSnapshot(nil)
         bumpGeneration()

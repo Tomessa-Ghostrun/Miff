@@ -39,10 +39,16 @@
 	     le numéro, par les membres de ses Miffs (backend/data-model.md). Le numéro n'est jamais vérifié par SMS.
 
 	     Données d'USAGE, SEULEMENT après le geste « Rejoindre » / « Continuer » (qui vaut accord, décision du PM du
-	     2026-10-28) ou le choix enregistré du compte, retirable dans les Réglages ; jamais liées à l'identité :
+	     2026-10-28) ou le choix enregistré du compte, retirable À TOUT MOMENT dans Réglages > Confidentialité (ONB-3b : un
+	     interrupteur unique pour les deux SDK, qui coupe la collecte tout de suite, efface les rapports de plantage pas encore
+	     envoyés et écrit le retrait dans `users/{uid}.analyticsConsent`, quatre clés sur un choix : un état et deux dates, déjà
+	     liées au compte comme le reste du profil, aucune catégorie de plus) ; jamais liées à l'identité :
 	     - Analytics (FirebaseAnalyticsCore) : interactions avec le produit (événements de la liste blanche),
 	       identifiant d'instance de l'app, données de diagnostic techniques.
-	     - Crashlytics : rapports de plantage et données de diagnostic. -->
+	     - Crashlytics : rapports de plantage et données de diagnostic.
+	     Un retrait fait sans réseau laisse une marque sur l'appareil (fichier privé exclu des sauvegardes : empreinte à sens unique
+	     du compte et heure, jamais envoyée) : le fichier est écrit avec `Data.write` et lu avec `Data(contentsOf:)`, sans aucune des
+	     API « à raison obligatoire » d'Apple (aucun horodatage de fichier lu), donc aucune déclaration de plus ci-dessous. -->
 	<key>NSPrivacyTracking</key>
 	<false/>
 	<key>NSPrivacyTrackingDomains</key>

@@ -39,5 +39,11 @@ enum FirebaseBootstrap {
         }
         AppCheck.setAppCheckProviderFactory(AppCheckFactory.make())
         FirebaseApp.configure(options: options)
+        // Durcissement (ONB-3b) : la clé de l'Info.plist ne suffit pas seule. Un `setAnalyticsCollectionEnabled(true)` ou un
+        // `setCrashlyticsCollectionEnabled(true)` fait à une exécution précédente est CONSERVÉ par le SDK et l'emporte sur l'Info.plist au
+        // lancement suivant (documentation Firebase). La collecte est donc mise en pause TOUT DE SUITE, avant la lecture du choix du compte ;
+        // la pause n'efface aucun rapport de plantage resté sur le disque.
+        FirebaseAnalyticsSwitch().pause()
+        FirebaseCrashlyticsSwitch().pause()
     }
 }
