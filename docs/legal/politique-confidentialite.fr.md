@@ -1,6 +1,6 @@
 # Politique de confidentialité de Miff
 
-**Version 1.3 — dernière mise à jour : 22 novembre 2026**
+**Version 1.3 — dernière mise à jour : 24 novembre 2026**
 
 > **Ce qui a changé depuis la version 1.2 (21 novembre 2026)**
 > - **Les statistiques d'usage et les rapports de plantage se retirent dans les Réglages de l'app, sur iPhone comme sur Android** (Réglages > Confidentialité) : il n'est plus nécessaire d'écrire pour retirer cet accord (article 3, article 8).

@@ -1,4 +1,4 @@
-# Mise à jour des textes légaux du 22 novembre 2026 (version 1.3) : ce qui change, dans quel ordre publier, ce que tu dois valider
+# Mise à jour des textes légaux du 24 novembre 2026 (version 1.3) : ce qui change, dans quel ordre publier, ce que tu dois valider
 
 Préparé le 2026-11-22 par `release-manager`. **Rien n'est publié.** C'est toi, et toi seul, qui publies le site (aucun agent ne publie ni ne déploie). Ces textes sont écrits par l'équipe d'agents et publiés sous ta responsabilité ; **aucun juriste ne les a relus et aucun texte ne le prétend** (décision du 2026-10-23, risque assumé).
 
@@ -13,7 +13,7 @@ Pourquoi maintenant : la PR iPhone **#311** (branche `ios/interrupteur-statistiq
 3. **La phrase d'inscription de l'iPhone.** Elle cite aussi « Continuer avec Apple » (`ios_auth_consent_notice`) ; la politique et les conditions le disent maintenant (article 3 des deux, résumé point 8), ainsi que l'écran de consentement affiché à une personne nouvelle arrivée par Apple depuis « Se connecter » (comme pour Google).
 4. **Rien sur Miff+, ni sur les prix.** L'achat réel n'est pas en service : le serveur de facturation (SRV-7) est écrit mais **non déployé**, et les apps n'ont pas l'achat. Les textes n'annoncent donc rien. Un test vérifie qu'aucun prix (59,88 / 4,99 / 6,99) ni « aucune référence d'achat » n'apparaît dans les quatre textes.
 
-Version **1.3**, date **22 novembre 2026** (la date est écrite en tête de chaque texte, et en un seul endroit dans le test : `VERSION` / `DATE_FR` / `DATE_EN` de `web/tests/legal-1-1.test.mjs`). Un court encadré « Ce qui a changé depuis la version 1.2 » est en tête de chaque texte, suivi de celui de la 1.2 gardé pour mémoire. `termsVersion` dans les apps reste « 1.0 » (aucune acceptation forcée). Éditeur et contact inchangés (provisoires).
+Version **1.3**, date **24 novembre 2026** (la date est écrite en tête de chaque texte, et en un seul endroit dans le test : `VERSION` / `DATE_FR` / `DATE_EN` de `web/tests/legal-1-1.test.mjs`). Un court encadré « Ce qui a changé depuis la version 1.2 » est en tête de chaque texte, suivi de celui de la 1.2 gardé pour mémoire. `termsVersion` dans les apps reste « 1.0 » (aucune acceptation forcée). Éditeur et contact inchangés (provisoires).
 
 ## 2. Dans quel ordre publier (chaque étape sur ton « oui »)
 
@@ -31,7 +31,7 @@ Version **1.3**, date **22 novembre 2026** (la date est écrite en tête de chaq
 
 1. **L'écart entre le texte et le build iPhone (J73).** Es-tu d'accord pour publier la 1.3 juste avant de distribuer le build de la PR #311 (écart de quelques heures à quelques jours), plutôt que de la retarder jusqu'à la distribution ? Alternative : publier la 1.3 en même temps que la distribution, et ne pas distribuer l'iPhone avant.
 2. **La marque de retrait en attente (J74).** Je l'ai écrite comme une pseudonymisation locale, jamais envoyée, exclue des sauvegardes, conservée à la déconnexion. Dis-moi si tu préfères une formulation plus courte dans la politique (la donnée est, par nature, peu sensible : une empreinte et une heure, sur le téléphone).
-3. **Les points de la 1.2 restent ouverts** (`maj-2026-11-21-a-publier.md` §3, points 1 à 3) : base légale du registre (« Contrat » par défaut), risque J68 (date de la dernière photo) à assumer ou non, état des 1.1 et 1.2 en ligne, et le jour de publication (le 22 novembre est écrit : **dis-moi s'il change**).
+3. **Les points de la 1.2 restent ouverts** (`maj-2026-11-21-a-publier.md` §3, points 1 à 3) : base légale du registre (« Contrat » par défaut), risque J68 (date de la dernière photo) à assumer ou non, état des 1.1 et 1.2 en ligne, et le jour de publication (le 24 novembre est écrit : **dis-moi s'il change**).
 4. **Le point 4 de la 1.2 (J72) est résolu côté textes** : plus d'« interrupteur à livrer ou risque à assumer » une fois la PR #311 fusionnée et distribuée.
 
 ## 4. Ce que cette mise à jour ne fait pas

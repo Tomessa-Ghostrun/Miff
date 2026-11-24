@@ -1,6 +1,6 @@
 # Miff Privacy Policy
 
-**Version 1.3 — last updated: November 22, 2026**
+**Version 1.3 — last updated: November 24, 2026**
 
 > **What has changed since version 1.2 (November 21, 2026)**
 > - **Usage statistics and crash reports can be turned off in the app Settings, on iPhone as on Android** (Settings > Privacy): you no longer need to write to us to withdraw this agreement (article 3, article 8).

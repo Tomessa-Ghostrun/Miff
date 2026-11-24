@@ -8,7 +8,7 @@ Les textes sont écrits par l'équipe d'agents et publiés sous ta responsabilit
 
 ## 0. Ce que tu publies, en clair
 
-- Tu publies la **version 1.3, datée du 22 novembre 2026** des conditions d'utilisation et de la politique de confidentialité (français et anglais). Résumé en français simple et points à valider : `docs/legal/maj-1-3-a-publier.md`. Détail technique : `docs/legal/README.md` §16.
+- Tu publies la **version 1.3, datée du 24 novembre 2026** des conditions d'utilisation et de la politique de confidentialité (français et anglais). Résumé en français simple et points à valider : `docs/legal/maj-1-3-a-publier.md`. Détail technique : `docs/legal/README.md` §16.
 - **Ce que la 1.3 ajoute à la 1.2** : (1) sur **iPhone comme sur Android**, le retrait des statistiques d'usage et des rapports de plantage se fait **dans les Réglages de l'app** (Réglages > Confidentialité) : les textes ne disent plus « écris-nous » pour l'iPhone ; (2) la **marque de retrait en attente** gardée sur le téléphone quand on retire cet accord sans réseau (empreinte à sens unique du compte et heure, jamais envoyée, effacée à l'enregistrement du retrait ou à la suppression du compte, conservée après une simple déconnexion) ; (3) la phrase d'inscription de l'iPhone, qui cite aussi « Continuer avec Apple ». **Rien sur Miff+ ni sur les prix** : l'achat réel n'est pas en service, le texte n'annonce rien qui n'y soit pas.
 - **Ce que la 1.2 ajoutait** (tu le publies donc aussi si elle n'était pas en ligne) : (1) la date de ta dernière photo (sert au seul classement des cartes du Feed) ; (2) le **registre de 30 jours** des notifications envoyées, côté serveur ; (3) le texte de consentement à la localisation en **version 4** ; (4) la précision que les textes légaux restent **en français et en anglais seulement** (l'app existe en 6 langues).
 - **Pages modifiées** : `/fr/cgu`, `/en/terms`, `/fr/confidentialite`, `/en/privacy`, `/fr/supprimer-mon-compte`, `/en/delete-account`. La page d'accueil et `/reset-password` ne changent pas.
@@ -23,7 +23,7 @@ Les textes sont écrits par l'équipe d'agents et publiés sous ta responsabilit
 |---|---|---|
 | 1 | **Note ce qui est en ligne aujourd'hui** : ouvre `https://miff-3d283.web.app/fr/cgu` en navigation privée et recopie la ligne « Version … — dernière mise à jour : … » (1.0 du 13 novembre, 1.1 du 19 novembre ou 1.2 du 21 novembre). Console Firebase (projet **Miff / `miff-3d283`**) > Hosting > historique des versions : note aussi la date de la dernière version publiée | Sans cette note, le retour arrière (§8) est plus difficile à choisir |
 | 2 | La pull request des textes 1.3 (branche `docs/legal-1-3`) est **fusionnée dans `main`**, et la **CI de `main` est verte** (GitHub > Actions > dernier run sur `main` : coche verte, notamment `web` et `hygiene`) | Ne rien déployer : le dossier de déploiement lit `main` |
-| 3 | **Nous sommes bien le 22 novembre 2026** (`Get-Date -Format "dd/MM/yyyy"` dans PowerShell). Les quatre textes affichent « 22 novembre 2026 ». Si tu publies un autre jour, **dis-le à Claude avant** : il remet le bon jour dans les quatre textes et dans le test `web/tests/legal-1-1.test.mjs` (les constantes `VERSION`, `DATE_FR` et `DATE_EN` en tête du fichier) | Ne pas publier avec une date fausse |
+| 3 | **Nous sommes bien le 24 novembre 2026** (`Get-Date -Format "dd/MM/yyyy"` dans PowerShell). Les quatre textes affichent « 24 novembre 2026 ». Si tu publies un autre jour, **dis-le à Claude avant** : il remet le bon jour dans les quatre textes et dans le test `web/tests/legal-1-1.test.mjs` (les constantes `VERSION`, `DATE_FR` et `DATE_EN` en tête du fichier) | Ne pas publier avec une date fausse |
 | 4 | Tu es **d'accord avec les textes** et tu as répondu aux points de `maj-1-3-a-publier.md` §3 : base légale du registre (« Contrat » par défaut), risque J68 (date de dernière photo) assumé ou non, état des 1.1 et 1.2 en ligne, et l'écart d'une journée ou deux entre la publication et le build iPhone (J73) | Dis-le à Claude : on corrige avant |
 | 5 | La **règle TTL** `notifications.expireAt` est posée et « Active » (`docs/dev/deploiement-centre-notifications.md` §1). Sans elle, « 30 jours » dans le texte serait faux **dès que le serveur écrira le registre** : ce n'est pas bloquant pour publier le site, mais c'est bloquant pour l'étape 4 | Fais-la avant l'étape 4 (jamais avant d'avoir publié le site) |
 | 6 | La **clé web** de Firebase (celle qui commence par `AIza`) est dans ton gestionnaire de mots de passe : console Firebase > Paramètres du projet > Général > Vos applications > application Web « Miff Web » > `apiKey` | Elle n'est pas un secret, mais elle ne s'écrit **jamais** dans un fichier, un message ni une capture |
@@ -48,7 +48,7 @@ La dernière ligne affiche l'identifiant du commit. **Note les 8 premiers caract
 Select-String -Path docs\legal\cgu.fr.md, docs\legal\cgu.en.md, docs\legal\politique-confidentialite.fr.md, docs\legal\politique-confidentialite.en.md -Pattern "^\*\*Version 1\.3 "
 ```
 
-Chaque ligne doit finir par « 22 novembre 2026** » (FR) ou « November 22, 2026** » (EN). Si une ligne dit « 1.1 » ou « 1.2 » ou qu'il manque un fichier, **arrête-toi** : `main` ne contient pas encore la PR des textes 1.3.
+Chaque ligne doit finir par « 24 novembre 2026** » (FR) ou « November 24, 2026** » (EN). Si une ligne dit « 1.1 » ou « 1.2 » ou qu'il manque un fichier, **arrête-toi** : `main` ne contient pas encore la PR des textes 1.3.
 
 Vérifie que l'outil Firebase est là et que ton compte est connecté :
 
@@ -70,9 +70,9 @@ node --test "web/tests/*.test.mjs"
 node scripts/check-forbidden-files.mjs
 ```
 
-Attendu : « fail 0 » (87 tests réussis au 2026-11-22 ; le nombre peut grandir, jamais « fail » supérieur à 0) et « Fichiers interdits : aucun ». Ces tests **vérifient déjà** : la version 1.3 et la date du 22 novembre en tête des quatre pages, le retrait des statistiques dans les Réglages sur iPhone comme sur Android (et l'absence de l'ancienne phrase « écris-nous » pour l'iPhone), la marque de retrait en attente, « Continuer avec Apple » sur iPhone, le registre de 30 jours (sans prénom, photo, lieu ni position), la date de la dernière photo, le consentement version 4, les textes légaux en FR et EN seulement, l'absence de tout prix et de toute annonce de Miff+ dans les textes, et l'absence de toute relecture juridique prétendue. Si un test échoue, **ne continue pas** : copie la sortie à Claude.
+Attendu : « fail 0 » (87 tests réussis au 2026-11-22 ; le nombre peut grandir, jamais « fail » supérieur à 0) et « Fichiers interdits : aucun ». Ces tests **vérifient déjà** : la version 1.3 et la date du 24 novembre en tête des quatre pages, le retrait des statistiques dans les Réglages sur iPhone comme sur Android (et l'absence de l'ancienne phrase « écris-nous » pour l'iPhone), la marque de retrait en attente, « Continuer avec Apple » sur iPhone, le registre de 30 jours (sans prénom, photo, lieu ni position), la date de la dernière photo, le consentement version 4, les textes légaux en FR et EN seulement, l'absence de tout prix et de toute annonce de Miff+ dans les textes, et l'absence de toute relecture juridique prétendue. Si un test échoue, **ne continue pas** : copie la sortie à Claude.
 
-Prévisualisation locale (facultative, 3 minutes) : `node scripts/preview-web.mjs`, ouvre `http://127.0.0.1:5000/fr/cgu`, vérifie « Version 1.3 — dernière mise à jour : 22 novembre 2026 » en haut, puis `Ctrl+C` pour arrêter.
+Prévisualisation locale (facultative, 3 minutes) : `node scripts/preview-web.mjs`, ouvre `http://127.0.0.1:5000/fr/cgu`, vérifie « Version 1.3 — dernière mise à jour : 24 novembre 2026 » en haut, puis `Ctrl+C` pour arrêter.
 
 ## 4. Construire le vrai site avec la clé (variable temporaire)
 
@@ -99,11 +99,11 @@ Attendu : « Garde-fou de déploiement : OK ». S'il refuse, **ne le contourne p
 ```powershell
 cd C:\dev\miff-deploy\web\public
 $presents = @(
-  @("fr\cgu.html", "Version 1.3 — dernière mise à jour : 22 novembre 2026"),
+  @("fr\cgu.html", "Version 1.3 — dernière mise à jour : 24 novembre 2026"),
   @("fr\cgu.html", "garde une trace technique de 30 jours"),
   @("fr\cgu.html", "la date de ta dernière photo"),
   @("fr\cgu.html", "sur iPhone comme sur Android"),
-  @("fr\confidentialite.html", "Version 1.3 — dernière mise à jour : 22 novembre 2026"),
+  @("fr\confidentialite.html", "Version 1.3 — dernière mise à jour : 24 novembre 2026"),
   @("fr\confidentialite.html", "Registre des notifications envoyées"),
   @("fr\confidentialite.html", "registre de 30 jours"),
   @("fr\confidentialite.html", "Date de ta dernière photo"),
@@ -113,11 +113,11 @@ $presents = @(
   @("fr\confidentialite.html", "marque de retrait en attente"),
   @("fr\supprimer-mon-compte.html", "registre de 30 jours"),
   @("fr\supprimer-mon-compte.html", "la date de ta dernière photo"),
-  @("en\terms.html", "Version 1.3 — last updated: November 22, 2026"),
+  @("en\terms.html", "Version 1.3 — last updated: November 24, 2026"),
   @("en\terms.html", "keeps a 30-day technical trace"),
   @("en\terms.html", "the date of your last photo"),
   @("en\terms.html", "on iPhone as on Android"),
-  @("en\privacy.html", "Version 1.3 — last updated: November 22, 2026"),
+  @("en\privacy.html", "Version 1.3 — last updated: November 24, 2026"),
   @("en\privacy.html", "Record of notifications sent"),
   @("en\privacy.html", "30-day record"),
   @("en\privacy.html", "Date of your last photo"),
@@ -169,7 +169,7 @@ Dis d'abord à Claude : **« oui, déploie, commit XXXXXXXX »** (avec les 8 car
 
 ```powershell
 cd C:\dev\miff-deploy\web
-..\backend\node_modules\.bin\firebase.cmd deploy --only hosting --project miff-3d283 --message "Textes legaux 1.3 du 22 novembre 2026"
+..\backend\node_modules\.bin\firebase.cmd deploy --only hosting --project miff-3d283 --message "Textes legaux 1.3 du 24 novembre 2026"
 ```
 
 Attendu : une liste de fichiers envoyés, puis « Deploy complete! » et l'adresse `https://miff-3d283.web.app`. Si le garde-fou refuse (message « DÉPLOIEMENT REFUSÉ… »), **c'est voulu** : ne le contourne pas, relève le message et transmets-le à Claude. Pas de `--force`, jamais.
@@ -198,21 +198,21 @@ Contrôle automatique (rien n'est modifié ; ce sont de simples lectures). Il re
 ```powershell
 $base = "https://miff-3d283.web.app"
 $presents = @(
-  @("/fr/cgu", "Version 1.3 — dernière mise à jour : 22 novembre 2026"),
+  @("/fr/cgu", "Version 1.3 — dernière mise à jour : 24 novembre 2026"),
   @("/fr/cgu", "garde une trace technique de 30 jours"),
   @("/fr/cgu", "la date de ta dernière photo"),
   @("/fr/cgu", "sur iPhone comme sur Android"),
-  @("/fr/confidentialite", "Version 1.3 — dernière mise à jour : 22 novembre 2026"),
+  @("/fr/confidentialite", "Version 1.3 — dernière mise à jour : 24 novembre 2026"),
   @("/fr/confidentialite", "Registre des notifications envoyées"),
   @("/fr/confidentialite", "Date de ta dernière photo"),
   @("/fr/confidentialite", "2026-11-v04"),
   @("/fr/confidentialite", "marque de retrait en attente"),
   @("/fr/supprimer-mon-compte", "registre de 30 jours"),
   @("/fr/supprimer-mon-compte", "la date de ta dernière photo"),
-  @("/en/terms", "Version 1.3 — last updated: November 22, 2026"),
+  @("/en/terms", "Version 1.3 — last updated: November 24, 2026"),
   @("/en/terms", "keeps a 30-day technical trace"),
   @("/en/terms", "on iPhone as on Android"),
-  @("/en/privacy", "Version 1.3 — last updated: November 22, 2026"),
+  @("/en/privacy", "Version 1.3 — last updated: November 24, 2026"),
   @("/en/privacy", "Record of notifications sent"),
   @("/en/privacy", "Date of your last photo"),
   @("/en/privacy", "only exist in French and English"),
@@ -240,10 +240,10 @@ Attendu : 21 lignes `OK` avec `(200)`, trois lignes `… -> 200` (accueil FR, ac
 
 | Page | Ce qu'on doit lire |
 |---|---|
-| `/fr/cgu` | « **Version 1.3 — dernière mise à jour : 22 novembre 2026** » sous le titre ; juste après, l'encadré « Ce qui a changé depuis la version 1.2 (21 novembre 2026) » (puis « Ce qui avait changé dans la version 1.2 ») ; dans l'article 3, **le retrait des statistiques dans les Réglages « sur iPhone comme sur Android »** et « Continuer avec Apple » sur iPhone ; dans l'article 6, la **trace technique de 30 jours** des notifications envoyées à un proche et la **date de ta dernière photo** (effacée avec le statut) ; l'article 17 (« Divers ») : textes légaux en français et en anglais seulement |
-| `/en/terms` | « **Version 1.3 — last updated: November 22, 2026** » ; l'encadré « What has changed since version 1.2 (November 21, 2026) » ; article 3 : « on iPhone as on Android » et « Continue with Apple » ; article 6 : « 30-day technical trace » et « the date of your last photo » ; article 17 (« Miscellaneous ») : textes légaux en français et en anglais seulement |
-| `/fr/confidentialite` | « **Version 1.3 — dernière mise à jour : 22 novembre 2026** » ; article 3 : **« Comment les retirer » : « sur iPhone comme sur Android » dans Réglages > Confidentialité, et plus aucune phrase « tant que cet interrupteur n'est pas livré »** ; la ligne « Preuves de consentement » avec la **« marque de retrait en attente »** (« jamais envoyée », « pas effacée par une simple déconnexion ») ; les lignes **« Date de ta dernière photo »** et **« Registre des notifications envoyées »** (« Jamais de prénom, de nom, de photo, de description, de lieu, de position ni de nom de Miff ») ; la phrase « mis en service progressivement » ; **suppression à 30 jours**, par « Supprimer cette notification » ou « Tout effacer », ou avec le compte ; article 4 : consentement **version 4 (`2026-11-v04`)** et la carte « Une précision sur ce que tu partages » pour les comptes restés en version 3 ; article 7 : la ligne **« Marque de retrait en attente (sur ton téléphone seulement) »** ; article 13 (« Droit applicable et langues ») : FR et EN seulement. **L'ancienne phrase « nous ne gardons aucun historique des notifications envoyées » ne doit plus apparaître** |
-| `/en/privacy` | « **Version 1.3 — last updated: November 22, 2026** » ; « Date of your last photo » ; « Record of notifications sent » (« Never a first name, last name, photo, description, place, location or Miff name ») ; « being put into service gradually » ; « 30-day record » ; version 4 (`2026-11-v04`) ; « only exist in French and English » ; « on iPhone as on Android » (Settings > Privacy) et « pending-withdrawal mark » ; plus aucune phrase « as long as this switch is not delivered » |
+| `/fr/cgu` | « **Version 1.3 — dernière mise à jour : 24 novembre 2026** » sous le titre ; juste après, l'encadré « Ce qui a changé depuis la version 1.2 (21 novembre 2026) » (puis « Ce qui avait changé dans la version 1.2 ») ; dans l'article 3, **le retrait des statistiques dans les Réglages « sur iPhone comme sur Android »** et « Continuer avec Apple » sur iPhone ; dans l'article 6, la **trace technique de 30 jours** des notifications envoyées à un proche et la **date de ta dernière photo** (effacée avec le statut) ; l'article 17 (« Divers ») : textes légaux en français et en anglais seulement |
+| `/en/terms` | « **Version 1.3 — last updated: November 24, 2026** » ; l'encadré « What has changed since version 1.2 (November 21, 2026) » ; article 3 : « on iPhone as on Android » et « Continue with Apple » ; article 6 : « 30-day technical trace » et « the date of your last photo » ; article 17 (« Miscellaneous ») : textes légaux en français et en anglais seulement |
+| `/fr/confidentialite` | « **Version 1.3 — dernière mise à jour : 24 novembre 2026** » ; article 3 : **« Comment les retirer » : « sur iPhone comme sur Android » dans Réglages > Confidentialité, et plus aucune phrase « tant que cet interrupteur n'est pas livré »** ; la ligne « Preuves de consentement » avec la **« marque de retrait en attente »** (« jamais envoyée », « pas effacée par une simple déconnexion ») ; les lignes **« Date de ta dernière photo »** et **« Registre des notifications envoyées »** (« Jamais de prénom, de nom, de photo, de description, de lieu, de position ni de nom de Miff ») ; la phrase « mis en service progressivement » ; **suppression à 30 jours**, par « Supprimer cette notification » ou « Tout effacer », ou avec le compte ; article 4 : consentement **version 4 (`2026-11-v04`)** et la carte « Une précision sur ce que tu partages » pour les comptes restés en version 3 ; article 7 : la ligne **« Marque de retrait en attente (sur ton téléphone seulement) »** ; article 13 (« Droit applicable et langues ») : FR et EN seulement. **L'ancienne phrase « nous ne gardons aucun historique des notifications envoyées » ne doit plus apparaître** |
+| `/en/privacy` | « **Version 1.3 — last updated: November 24, 2026** » ; « Date of your last photo » ; « Record of notifications sent » (« Never a first name, last name, photo, description, place, location or Miff name ») ; « being put into service gradually » ; « 30-day record » ; version 4 (`2026-11-v04`) ; « only exist in French and English » ; « on iPhone as on Android » (Settings > Privacy) et « pending-withdrawal mark » ; plus aucune phrase « as long as this switch is not delivered » |
 | `/fr/supprimer-mon-compte`, `/en/delete-account` | La phrase sur le **registre de 30 jours** supprimé avec le compte (« registre de 30 jours » / « 30-day record »), avec la réserve « avec une version plus ancienne, seule la suppression automatique à 30 jours s'applique » ; la phrase sur l'arrêt du partage cite **la date de ta dernière photo** (« the date of your last photo ») |
 | `/fr/`, `/en/`, `/reset-password` | Ils s'affichent normalement (inchangés) : ni erreur 404, ni image cassée |
 
