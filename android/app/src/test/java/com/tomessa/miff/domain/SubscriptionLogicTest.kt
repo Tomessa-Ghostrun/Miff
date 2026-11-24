@@ -3,12 +3,10 @@ package com.tomessa.miff.domain
 import com.tomessa.miff.domain.subscription.EntitlementDocument
 import com.tomessa.miff.domain.subscription.StoreState
 import com.tomessa.miff.domain.subscription.SubscriptionPlan
-import com.tomessa.miff.domain.subscription.SubscriptionReminder
 import com.tomessa.miff.domain.subscription.SubscriptionSource
 import com.tomessa.miff.domain.subscription.SubscriptionStatus
 import com.tomessa.miff.domain.subscription.formatLongDate
 import com.tomessa.miff.domain.subscription.interpretSubscription
-import com.tomessa.miff.domain.subscription.reminderFor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -164,32 +162,6 @@ class SubscriptionLogicTest {
         val expired = status(doc(state = "expired", active = false, end = now - 10))
         assertTrue(expired is SubscriptionStatus.Store)
         assertFalse(expired.hasAccess)
-    }
-
-    // ---- the reminder of the deletion of the account (section 9.5) ---------------------------------------------------------------------------
-
-    @Test
-    fun theReminder_existsOnlyForASubscriptionThatCanStillBeBilled() {
-        assertEquals(
-            SubscriptionReminder(SubscriptionSource.GOOGLE_PLAY, trial = true),
-            reminderFor(status(doc(state = "trial", trial = true))),
-        )
-        assertEquals(
-            SubscriptionReminder(SubscriptionSource.GOOGLE_PLAY, trial = false),
-            reminderFor(status(doc(state = "active"))),
-        )
-        assertEquals(
-            SubscriptionReminder(SubscriptionSource.APP_STORE, trial = false),
-            reminderFor(status(doc(source = "app_store", state = "grace"))),
-        )
-        // A cancelled one ends by itself, an expired or refunded one is over, a manual grant has nothing to cancel: no reminder.
-        assertNull(reminderFor(status(doc(state = "canceled"))))
-        assertNull(reminderFor(status(doc(state = "expired", active = false, end = now - 1))))
-        assertNull(reminderFor(status(doc(state = "revoked", active = false, end = now))))
-        assertNull(reminderFor(status(doc(state = "on_hold", active = false, end = now - 1))))
-        assertNull(reminderFor(status(doc(source = "manual"))))
-        assertNull(reminderFor(SubscriptionStatus.Free))
-        assertNull(reminderFor(null))
     }
 
     // ---- the date in the long format of the language (F4: never 02/18/12) -------------------------------------------------------------------

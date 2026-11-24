@@ -1346,7 +1346,7 @@
     <string name="android_about_licenses_address_search">Adressen: Photon-Dienst von komoot, Daten © OpenStreetMap-Mitwirkende</string>
     <string name="android_about_licenses_map_tiles_notice">Die Karten werden mit den Kacheln von OpenFreeMap (https://openfreemap.org) dargestellt, die das Schema © OpenMapTiles verwenden. Die Daten sind © OpenStreetMap-Mitwirkende und unter der Lizenz ODbL 1.0 verfügbar (https://opendatacommons.org/licenses/odbl/1-0/). Der Hinweis bleibt unter jeder Karte sichtbar.</string>
     <string name="android_about_licenses_address_search_notice">Die Adressen, die dir beim Tippen vorgeschlagen werden, stammen von Photon, dem öffentlichen Dienst von komoot (https://photon.komoot.io), dessen Software unter der Lizenz Apache 2.0 veröffentlicht ist. Seine Daten sind © OpenStreetMap-Mitwirkende und unter der Lizenz ODbL 1.0 verfügbar (https://opendatacommons.org/licenses/odbl/1-0/).</string>
-    <!-- SRV-8A (premium purchase, docs/tickets/premium-achat-reel.md): Abonnement screen states, reminder at the deletion of the account, refusal of a purchase already used by another account. Prices and dates arrive as arguments: never written in a translation. -->
+    <!-- SRV-8A (premium purchase, docs/tickets/premium-achat-reel.md): Abonnement screen states, refusal of a purchase already used by another account. Prices and dates arrive as arguments: never written in a translation. -->
     <string name="paywall_other_account">Dieses Abonnement wird bereits mit einem anderen Miff-Konto verwendet. Um es zu übertragen, schreib uns: %1$s.</string>
     <string name="settings_subscription_free">Du nutzt die kostenlose Version. Miff+ schaltet unbegrenzt viele vertraute Orte und Miffs frei – und die Gefahrenzonen.</string>
     <string name="settings_subscription_trial">Kostenlose Testphase bis %1$s. Danach %2$s pro Jahr, es sei denn, du kündigst vorher.</string>
@@ -1366,10 +1366,4 @@
     <string name="settings_subscription_refresh_failed">Wir konnten dein Abonnement gerade nicht aktualisieren. Versuch es in einem Moment noch einmal.</string>
     <string name="settings_subscription_other_store">Dein Abonnement wurde im App Store abgeschlossen: Du kannst es in den Einstellungen deiner Apple-ID verwalten.</string>
     <string name="settings_subscription_test_note">Testkauf: keine echte Zahlung.</string>
-    <string name="settings_delete_sub_title">Dein Abonnement ist nicht gekündigt</string>
-    <string name="settings_delete_sub_body_play">Wenn du dein Konto löschst, wird dein Miff+-Abonnement nicht gekündigt. Damit nichts mehr abgebucht wird, kündige es bei Google Play.</string>
-    <string name="settings_delete_sub_body_appstore">Wenn du dein Konto löschst, wird dein Miff+-Abonnement nicht gekündigt. Damit nichts mehr abgebucht wird, kündige es im App Store.</string>
-    <string name="settings_delete_sub_body_unknown">Falls du ein Miff+-Abonnement hast, wird es durch das Löschen deines Kontos nicht gekündigt. Damit nichts mehr abgebucht wird, kündige es bei Google Play oder im App Store, wo du es abgeschlossen hast.</string>
-    <string name="settings_delete_sub_trial">Deine Testphase läuft weiter, bis du sie kündigst: Wenn sie endet, beginnt das Jahresabonnement.</string>
-    <string name="settings_delete_sub_manage">Mein Abonnement verwalten</string>
 </resources>

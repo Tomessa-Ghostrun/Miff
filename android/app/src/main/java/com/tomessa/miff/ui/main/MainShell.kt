@@ -870,13 +870,6 @@ internal fun NavGraphBuilder.deleteAccountRoutes(
                                 currentUid = { container.authGateway.currentUid },
                                 network = container.networkMonitor,
                                 appleLinked = SignInProvider.APPLE in container.authGateway.linkedProviders(),
-                                // SRV-8A: the reminder "Ton abonnement n'est pas résilié" (only while the purchase is switched on).
-                                subscriptionStatus =
-                                    if (BuildConfig.PREMIUM_PURCHASE) {
-                                        { container.subscriptionRepository.load() }
-                                    } else {
-                                        null
-                                    },
                             )
                         }
                     },
@@ -891,9 +884,6 @@ internal fun NavGraphBuilder.deleteAccountRoutes(
             onKeep = viewModel::onKeep,
             onConfirm = { if (viewModel.onConfirm()) navController.open(DeleteAccountVerifyRoute) },
             // AUTH-5b, "Prévenir mes proches" (decision QM9): the share sheet only; nothing is sent by the app, the deletion does not move.
-            onManageSubscription = { source ->
-                MiffPlusProducts.manageUrlFor(source, BuildConfig.APPLICATION_ID)?.let { LegalLinks.open(context, it) }
-            },
             onWarn = { miffName ->
                 if (miffName !=
                     null

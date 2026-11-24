@@ -11,9 +11,6 @@ import com.tomessa.miff.data.auth.NetworkMonitor
 import com.tomessa.miff.domain.auth.AuthFailure
 import com.tomessa.miff.domain.auth.GoogleTokenResult
 import com.tomessa.miff.domain.auth.SignInProvider
-import com.tomessa.miff.domain.subscription.SubscriptionReminder
-import com.tomessa.miff.domain.subscription.SubscriptionStatus
-import com.tomessa.miff.domain.subscription.reminderFor
 import com.tomessa.miff.ui.auth.AuthMessage
 import com.tomessa.miff.ui.auth.orNoConnectionIf
 import com.tomessa.miff.ui.auth.toMessage
@@ -22,7 +19,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withTimeoutOrNull
 
 /*
  * SECURITY, for this file: no password, token, e-mail, id or Miff name is logged, put in an event or kept in a state. The password
@@ -43,10 +39,6 @@ data class DeleteInfoUiState(
     val confirming: Boolean = false,
     /** The network went away between the information screen and the dialog: a calm notice, the button stays active. */
     val confirmOffline: Boolean = false,
-    /** SRV-8A: a subscription the store keeps billing (a trial, an active one, a grace period): deleting the account does NOT cancel it, the screen says so (ticket 9.5). Null = nothing to say. */
-    val reminder: SubscriptionReminder? = null,
-    /** The purchase is on but the server could not say whether there is a subscription: a prudent sentence for everybody ("si tu as un abonnement..."), never a silence. */
-    val reminderUnknown: Boolean = false,
 ) {
     /** Only on a complete list (SC2): loading, offline and a failed read all keep "Continuer" grey. */
     val canContinue: Boolean get() = inventory == DeleteInventory.LOADED
@@ -66,9 +58,6 @@ data class DeleteInfoUiState(
             return WarnPlan(named, generic)
         }
 }
-
-/** The reminder of the subscription never keeps the information screen waiting longer than this (the deletion itself does not depend on it). */
-private const val SUBSCRIPTION_READ_TIMEOUT_MILLIS = 10_000L
 
 /** The Miffs the information screen names (the others are counted: "et {k} autres"). */
 const val MAX_LISTED_OWNED = 3
@@ -99,11 +88,6 @@ class DeleteAccountInfoViewModel(
     private val currentUid: () -> String?,
     private val network: NetworkMonitor,
     appleLinked: Boolean,
-    /**
-     * The Miff+ status of the account read on the SERVER, for the reminder "Ton abonnement n'est pas résilié" (SRV-8A). Null while the purchase is switched off: no reminder, as before.
-     * It returns null when the status cannot be read: the screen then says the prudent sentence instead of staying silent.
-     */
-    private val subscriptionStatus: (suspend () -> SubscriptionStatus?)? = null,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(DeleteInfoUiState(appleLinked = appleLinked))
     val uiState: StateFlow<DeleteInfoUiState> = mutableState.asStateFlow()
@@ -146,24 +130,8 @@ class DeleteAccountInfoViewModel(
                         }
                     }
                 }
-            // The subscription is read only on a complete answer (the screen is not usable otherwise), never holds the screen for long, and its failure never blocks the deletion.
-            var reminder: SubscriptionReminder? = null
-            var unknown = false
-            val source = subscriptionStatus
-            if (source != null && result == DeleteInventory.LOADED) {
-                val status = withTimeoutOrNull(SUBSCRIPTION_READ_TIMEOUT_MILLIS) { source() }
-                reminder = reminderFor(status)
-                unknown = status == null
-            }
             loading = false
-            mutableState.update {
-                it.copy(
-                    inventory = result,
-                    miffs = loaded ?: AccountMiffsSummary.NONE,
-                    reminder = reminder,
-                    reminderUnknown = unknown,
-                )
-            }
+            mutableState.update { it.copy(inventory = result, miffs = loaded ?: AccountMiffsSummary.NONE) }
         }
     }
 

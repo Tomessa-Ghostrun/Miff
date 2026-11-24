@@ -58,7 +58,6 @@ import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.R
 import com.tomessa.miff.data.account.OwnedMiff
 import com.tomessa.miff.domain.auth.AuthForm
-import com.tomessa.miff.domain.subscription.SubscriptionSource
 import com.tomessa.miff.ui.auth.AuthMessage
 import com.tomessa.miff.ui.auth.AuthTextField
 import com.tomessa.miff.ui.auth.FieldLink
@@ -250,8 +249,6 @@ fun DeleteAccountInfoScreen(
     onConfirm: () -> Unit,
     /** The share sheet: the name of the Miff in the message (decision QM9), or null for the message without a name (several Miffs). */
     onWarn: (miffName: String?) -> Unit = {},
-    /** "Gérer mon abonnement" of the reminder: the page of the store the subscription lives in (nothing is cancelled by the app). */
-    onManageSubscription: (SubscriptionSource) -> Unit = {},
 ) {
     SettingsScaffold(
         title = stringResource(R.string.settings_delete_title),
@@ -325,10 +322,6 @@ fun DeleteAccountInfoScreen(
                     Spacer(Modifier.size(Spacing.m))
                     OwnedMiffsBlock(owned = miffs.owned, plan = state.warnPlan, onWarn = onWarn)
                 }
-                if (state.reminder != null || state.reminderUnknown) {
-                    Spacer(Modifier.size(Spacing.m))
-                    SubscriptionReminderBlock(state = state, onManage = onManageSubscription)
-                }
                 Spacer(Modifier.size(Spacing.s))
                 ContactSentence(
                     format = R.string.settings_delete_copy,
@@ -350,55 +343,6 @@ fun DeleteAccountInfoScreen(
             onKeep = onKeep,
             onConfirm = onConfirm,
             ownsMiffs = state.ownsMiffs,
-        )
-    }
-}
-
-/**
- * SRV-8A (ticket premium-achat-reel.md section 9.5): deleting the account does NOT cancel a subscription that the store keeps billing. The sentence says so, calmly (no alarm, no
- * blame), names the store, adds ONE stronger sentence during the free trial (the yearly subscription starts by itself at its end) and offers "Gérer mon abonnement". When the
- * server could not say whether there is a subscription, a prudent sentence is shown instead of silence.
- */
-@Composable
-private fun SubscriptionReminderBlock(
-    state: DeleteInfoUiState,
-    onManage: (SubscriptionSource) -> Unit,
-) {
-    val reminder = state.reminder
-    val source = reminder?.source ?: SubscriptionSource.GOOGLE_PLAY
-    val body =
-        when {
-            reminder == null -> {
-                stringResource(R.string.settings_delete_sub_body_unknown)
-            }
-
-            reminder.source == SubscriptionSource.APP_STORE -> {
-                stringResource(
-                    R.string.settings_delete_sub_body_appstore,
-                )
-            }
-
-            else -> {
-                stringResource(R.string.settings_delete_sub_body_play)
-            }
-        }
-    Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        if (reminder != null) {
-            Text(
-                text = stringResource(R.string.settings_delete_sub_title),
-                style = textBodyBold16,
-                color = colorTextForm,
-                modifier = Modifier.semantics { heading() },
-            )
-        }
-        InfoBox(text = body, boldLead = true)
-        if (reminder?.trial == true) {
-            InfoBox(text = stringResource(R.string.settings_delete_sub_trial), boldLead = false)
-        }
-        MiffSecondaryButton(
-            text = stringResource(R.string.settings_delete_sub_manage),
-            onClick = { onManage(source) },
-            modifier = Modifier.fillMaxWidth(),
         )
     }
 }

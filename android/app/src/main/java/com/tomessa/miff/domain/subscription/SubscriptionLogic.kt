@@ -165,24 +165,6 @@ fun interpretSubscription(
 }
 
 /**
- * The reminder of the deletion of the account (ticket section 9.5): deleting the account does NOT cancel a subscription that the store keeps billing. Only a subscription that
- * can still be billed counts: a free trial, an active one, one in its grace period. A cancelled one ends by itself and an expired one is over: no reminder.
- */
-data class SubscriptionReminder(
-    val source: SubscriptionSource,
-    /** During the free trial the yearly subscription STARTS BY ITSELF at its end: a stronger sentence. */
-    val trial: Boolean,
-)
-
-fun reminderFor(status: SubscriptionStatus?): SubscriptionReminder? {
-    val store = status as? SubscriptionStatus.Store ?: return null
-    val billable =
-        store.state == StoreState.TRIAL || store.state == StoreState.ACTIVE || store.state == StoreState.GRACE
-    if (!billable) return null
-    return SubscriptionReminder(store.source, trial = store.state == StoreState.TRIAL)
-}
-
-/**
  * A date in the long format of the language ("12 janvier 2027", "January 12, 2027"), in the time zone of the phone: the
  * formatter of the system, never a hand-made text (contract `docs/contracts/i18n-keys.md`, ticket criterion F4).
  */
