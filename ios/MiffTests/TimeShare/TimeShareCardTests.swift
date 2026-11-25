@@ -14,7 +14,7 @@ final class TimeShareCardTests: XCTestCase {
     // MARK: - Les états et leur priorité
 
     func testNoPlaceOrNoPlacesYetMeansHidden() {
-        let outcome = TimeShareOutcome.notEnough(daysLeft: 7)
+        let outcome = TimeShareOutcome.notEnough(daysLeft: 3)
 
         XCTAssertEqual(
             TimeShareCardState.make(
@@ -38,12 +38,12 @@ final class TimeShareCardTests: XCTestCase {
     }
 
     func testTheStoppedTrackingReasonsComeBeforeNotEnoughDataInThisOrder() {
-        let outcome = TimeShareOutcome.notEnough(daysLeft: 7)
+        let outcome = TimeShareOutcome.notEnough(daysLeft: 3)
         func state(_ conditions: TimeShareConditions) -> TimeShareCardState {
             TimeShareCardState.make(places: [Scn.home], readFailed: false, outcome: outcome, conditions: conditions)
         }
 
-        XCTAssertEqual(state(TimeShareConditions()), .notEnough(daysLeft: 7))
+        XCTAssertEqual(state(TimeShareConditions()), .notEnough(daysLeft: 3))
         XCTAssertEqual(state(TimeShareConditions(locationInsufficient: true)), .locationInsufficient)
         XCTAssertEqual(state(TimeShareConditions(sharingStopped: true, locationInsufficient: true)), .sharingStopped)
         XCTAssertEqual(
@@ -53,14 +53,14 @@ final class TimeShareCardTests: XCTestCase {
     }
 
     func testTheOverTwentyZonesNoteDoesNotChangeTheState() {
-        let outcome = TimeShareOutcome.notEnough(daysLeft: 7)
+        let outcome = TimeShareOutcome.notEnough(daysLeft: 3)
 
         let state = TimeShareCardState.make(
             places: [Scn.home], readFailed: false, outcome: outcome,
             conditions: TimeShareConditions(overWatchedLimit: true)
         )
 
-        XCTAssertEqual(state, .notEnough(daysLeft: 7))
+        XCTAssertEqual(state, .notEnough(daysLeft: 3))
     }
 
     func testEnoughDataIsNominalAndAStoppedTrackingOnlyAddsAPauseLine() throws {
@@ -121,10 +121,10 @@ final class TimeShareCardTests: XCTestCase {
             String.localizedStringWithFormat(L10n.string("profile_timeshare_not_enough", bundle: bundle), days)
         }
 
-        XCTAssertEqual(text(french, 7), "Ton graphique arrive dans 7 jours, nous analysons tes habitudes")
+        XCTAssertEqual(text(french, 2), "Ton graphique arrive dans 2 jours, nous analysons tes habitudes")
         XCTAssertEqual(text(french, 3), "Ton graphique arrive dans 3 jours, nous analysons tes habitudes")
         XCTAssertEqual(text(french, 1), "Ton graphique arrive dans 1 jour, nous analysons tes habitudes")
-        XCTAssertEqual(text(english, 7), "Your chart arrives in 7 days, we're analysing your habits")
+        XCTAssertEqual(text(english, 3), "Your chart arrives in 3 days, we're analysing your habits")
         XCTAssertEqual(text(english, 1), "Your chart arrives in 1 day, we're analysing your habits")
         XCTAssertEqual(TimeShareTexts.notEnough(daysLeft: 2).contains("2"), true)
     }

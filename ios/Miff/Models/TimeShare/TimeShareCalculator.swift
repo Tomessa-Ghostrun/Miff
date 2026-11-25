@@ -25,7 +25,7 @@ enum TimeShareCalculator {
         nowMillis: Int
     ) -> TimeShareOutcome {
         let totals = measure(facts: facts, places: places, windowDays: windowDays, nowMillis: nowMillis)
-        // Le journal de cette Miff doit avoir au moins 7 jours (son premier enregistrement) ET du temps mesuré dans la fenêtre choisie.
+        // Le journal de cette Miff doit avoir au moins 3 jours (son premier enregistrement) ET du temps mesuré dans la fenêtre choisie.
         let elapsed = facts.first.map { max(0, nowMillis - $0.atMillis) } ?? 0
         guard elapsed >= TimeShareLimits.minimumHistoryMillis, totals.measured > 0 else {
             return .notEnough(daysLeft: TimeShareLimits.daysLeft(elapsedMillis: elapsed))

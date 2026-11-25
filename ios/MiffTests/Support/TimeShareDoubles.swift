@@ -65,7 +65,7 @@ final class MemoryPresenceHistory: PresenceHistory {
     }
 }
 
-/// Fabrique de scénarios de calcul : l'heure est en HEURES avant « maintenant » (168 h = 7 jours).
+/// Fabrique de scénarios de calcul : l'heure est en HEURES avant « maintenant » (168 h = 7 jours, 72 h = 3 jours, le seuil).
 enum TimeShareFixtures {
     /// Un segment d'une suite d'états : (état, lieu, durée en heures).
     typealias Segment = (PresenceState, String?, Double) // swiftlint:disable:this large_tuple
@@ -91,7 +91,7 @@ enum TimeShareFixtures {
 
     /// Une suite d'états qui finit à « maintenant » : chaque segment (état, lieu, durée en heures) commence quand le précédent finit.
     /// Les segments se SUIVENT : deux segments identiques de suite n'en feraient qu'un (T5), donc on les alterne.
-    /// `aged` (par défaut) : le journal a plus de 7 jours (un premier fait « inconnue » ancien, non mesuré) ; faux : le premier fait est
+    /// `aged` (par défaut) : le journal a plus de 3 jours (un premier fait « inconnue » ancien, non mesuré) ; faux : le premier fait est
     /// celui du premier segment (un journal tout neuf).
     static func timeline(
         _ segments: [TimeShareFixtures.Segment],
@@ -102,7 +102,7 @@ enum TimeShareFixtures {
         var cursor = now - Int(total * Double(hour))
         var facts: [PresenceFact] = []
         if aged {
-            let old = min(now - 8 * TimeShareLimits.dayMillis, cursor - hour)
+            let old = min(now - (TimeShareLimits.minimumHistoryDays + 5) * TimeShareLimits.dayMillis, cursor - hour)
             facts.append(PresenceFact(miffId: miff, state: .unknown, placeId: nil, atMillis: old))
         }
         for (state, placeId, hours) in segments {

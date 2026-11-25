@@ -195,7 +195,7 @@ struct TimeShareCard: View {
         .buttonStyle(.miffSecondaryFullWidth)
     }
 
-    /// Moins de 7 jours d'historique, suivi actif : PAS de graphique et PAS d'anneau vide, seulement le texte figé par le PM (ticket §7).
+    /// Moins de 3 jours d'historique, suivi actif : PAS de graphique et PAS d'anneau vide, seulement le texte figé par le PM (ticket §7).
     private func notEnough(_ daysLeft: Int) -> some View {
         Text(verbatim: TimeShareTexts.notEnough(daysLeft: daysLeft))
             .miffTextStyle(textBodyRegular14)

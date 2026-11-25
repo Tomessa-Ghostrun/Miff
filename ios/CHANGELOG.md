@@ -2,6 +2,18 @@
 
 ## Non publié
 
+### Répartition du temps : le graphique s'affiche dès 3 jours d'historique (seuil abaissé de 7 à 3 jours) [numéro provisoire : à renuméroter à la fusion]
+
+Branche `ios/profil-temps-seuil-3j`. Retour du PM après la recette Android : « le compteur ne décroît pas de jour en jour, et 3 jours suffisent à ce que le graphique s'affiche ». Ticket `docs/tickets/profil-repartition-temps.md` (§6.2, §7, D8 ; révision du 2026-11-25). Recette : `docs/qa/checklists/profil-repartition-temps-ios-recette-pm.md`. **Rien n'est compilé en local** (poste Windows : la CI fait foi). **Coût ajouté : 0 €.**
+
+Ce que le PM doit voir sur l'iPhone : la carte dit « Ton graphique arrive dans **3** jours… », puis **2**, puis « dans **1** jour », puis le graphique, **trois jours** après le premier enregistrement de la Miff. L'historique **déjà mesuré compte tout de suite** : un journal qui a déjà 3 jours ou plus affiche le graphique dès la mise à jour (rien n'est effacé ni remis à zéro).
+
+Modifié :
+- **Une seule constante** : `TimeShareLimits.minimumHistoryDays = 3` (`minimumHistoryMillis` et `daysLeft` en dérivent ; plus aucun « 7 » en dur pour le seuil). X = 3 − jours entiers écoulés depuis le premier enregistrement, jamais sous 1, 3 sans enregistrement. Le wording figé et son pluriel (« dans 1 jour ») sont inchangés : **aucune clé de texte ajoutée ni renommée** (`profile_timeshare_not_enough` suffit, mêmes clés et mêmes textes qu'Android). Les fenêtres 7 / 14 / 30 jours, la rétention de 35 jours et le plafond de 48 h ne changent pas.
+- Textes légaux : **non touchés**.
+
+Constat sur le compteur : **aucun défaut identifié côté iPhone** dans le code (le décompte part du premier enregistrement du journal, que ni la relecture, ni l'oubli d'un lieu supprimé, ni la purge des Miffs quittées ne raccourcissent ; il est recalculé à chaque retour sur le Profil et à chaque reprise de l'app). Des tests de non-régression le verrouillent maintenant de bout en bout : calcul pur (3, 2, 1, puis graphique), carte (`TimeShareViewModel`) relue jour après jour, et journal **sur disque** relu par une nouvelle instance à chaque « relance » (`PresenceHistoryFileStoreTests`).
+
 ### L'interrupteur « statistiques d'usage et rapports de plantage » dans Réglages > Confidentialité (ONB-3b côté iPhone, miroir d'Android) [numéro provisoire : à renuméroter à la fusion]
 
 Branche `ios/interrupteur-statistiques`. Ticket `docs/tickets/feed-profil-reglages.md` (critères B5 / RG6) ; décision du PM sur le consentement groupé à l'inscription, **modifiable à tout moment** (`docs/tickets/authentification.md`, décision du 2026-10-28). Ferme l'écart J72 côté app (`docs/legal/README.md`). Recette : `docs/qa/checklists/onb-3b-ios-recette-pm.md`. **Rien n'est compilé en local** (poste Windows : la CI fait foi). **Coût ajouté : 0 €** (une transaction Firestore par choix, aucune lecture de plus au démarrage).

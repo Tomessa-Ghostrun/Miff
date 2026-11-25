@@ -30,7 +30,7 @@ enum TimeShareCardState: Equatable, CustomStringConvertible {
     case travel
     case sharingStopped
     case locationInsufficient
-    /// Moins de 7 jours d'historique, suivi actif : seulement le texte figé par le PM (ni anneau, ni sélecteur).
+    /// Moins de 3 jours d'historique, suivi actif : seulement le texte figé par le PM (ni anneau, ni sélecteur).
     case notEnough(daysLeft: Int)
     /// Assez de données ; `pause` : le suivi est arrêté maintenant (ligne calme sous l'anneau).
     case nominal(TimeShareResult, pause: Bool)

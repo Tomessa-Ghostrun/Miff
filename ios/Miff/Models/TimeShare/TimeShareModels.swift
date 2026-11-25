@@ -114,8 +114,8 @@ struct TimeShareResult: Equatable, CustomStringConvertible {
 }
 
 enum TimeShareOutcome: Equatable, CustomStringConvertible {
-    /// Moins de 7 jours d'historique (ou rien de mesuré dans la fenêtre) : aucun graphique, aucun pourcentage.
-    /// `daysLeft` : les jours qui restent avant les 7 jours d'historique (de 7 à 1), pour « Ton graphique arrive dans X jours ».
+    /// Moins de 3 jours d'historique (ou rien de mesuré dans la fenêtre) : aucun graphique, aucun pourcentage.
+    /// `daysLeft` : les jours qui restent avant le seuil d'historique (de 3 à 1), pour « Ton graphique arrive dans X jours ».
     case notEnough(daysLeft: Int)
     case ready(TimeShareResult)
 
