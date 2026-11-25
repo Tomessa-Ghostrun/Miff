@@ -1220,6 +1220,7 @@
     <!-- PAY-UI : ecran d'offre Miff+ (ticket paywall-v2.md) ; cles ajoutees par la PR iOS pour la parite, a reprendre par PAY-UI-A -->
     <string name="paywall_soon_body">This option isn\'t open yet.</string>
     <string name="paywall_cta_trial">Start your 7-day free trial</string>
+    <!-- No longer shown on Android (decision of the PM, 2026-11-25); kept because the iOS offer screen still uses it: removed with the iOS screen (SRV-8I). -->
     <string name="paywall_trial_then">Then %1$s per year</string>
     <string name="paywall_monthly_equivalent">that\'s %1$s per month</string>
     <string name="paywall_annual_savings" formatted="false">almost 30% off</string>
@@ -1229,6 +1230,14 @@
         <item quantity="one">The free plan is still available: 1 Miff and %1$d trusted place.</item>
         <item quantity="other">The free plan is still available: 1 Miff and %1$d trusted places.</item>
     </plurals>
+    <plurals name="paywall_feature_places_limit">
+        <item quantity="one">Otherwise, limited to %1$d place</item>
+        <item quantity="other">Otherwise, limited to %1$d places</item>
+    </plurals>
+    <string name="paywall_feature_miffs_limit">Otherwise, limited to a single Miff</string>
+    <string name="paywall_free_trial_link">Free trial</string>
+    <string name="paywall_info_trial_short">7-day free trial, then %1$s per year billed at the end of the trial, then automatic renewal every year.</string>
+    <string name="paywall_unlocked_danger">Declare danger zones</string>
     <string name="paywall_close_available_a11y">You can now close this screen</string>
     <string name="paywall_loading">Loading plans…</string>
     <string name="paywall_unavailable">Plans aren\'t available right now. Check your connection and try again.</string>
@@ -1237,8 +1246,8 @@
     <string name="paywall_error_calm">We couldn\'t complete the purchase this time. If a payment went through, your subscription will show up automatically; otherwise, try again in a moment.</string>
     <string name="paywall_restore">Restore purchases</string>
     <string name="paywall_restore_none">No Miff+ subscription found on this %1$s account.</string>
-    <string name="paywall_subscribed">You have Miff+. Thank you!</string>
-    <string name="paywall_subscribed_detail">Everything is unlocked.</string>
+    <string name="paywall_subscribed">Welcome to Miff+!</string>
+    <string name="paywall_subscribed_detail">Enjoy the unlimited version of Miff</string>
     <string name="paywall_continue">Continue</string>
     <string name="paywall_working">One moment…</string>
     <string name="paywall_plan_annual_title">Annual · %1$s per year</string>
@@ -1462,4 +1471,24 @@
     <string name="android_about_licenses_address_search">Addresses: Photon service by komoot, data © OpenStreetMap contributors</string>
     <string name="android_about_licenses_map_tiles_notice">Maps are drawn with the tiles of OpenFreeMap (https://openfreemap.org), which use the © OpenMapTiles schema. The data is © OpenStreetMap contributors, available under the ODbL 1.0 license (https://opendatacommons.org/licenses/odbl/1-0/). The credit stays visible under every map.</string>
     <string name="android_about_licenses_address_search_notice">The addresses suggested while you type come from Photon, the public service of komoot (https://photon.komoot.io), whose software is published under the Apache 2.0 license. Its data is © OpenStreetMap contributors, available under the ODbL 1.0 license (https://opendatacommons.org/licenses/odbl/1-0/).</string>
+    <!-- SRV-8A (premium purchase, docs/tickets/premium-achat-reel.md): Abonnement screen states, refusal of a purchase already used by another account. Prices and dates arrive as arguments: never written in a translation. -->
+    <string name="paywall_other_account">This subscription is already used with another Miff account. To move it, write to us: %1$s.</string>
+    <string name="settings_subscription_free">You\'re on the free plan. Miff+ unlocks unlimited trusted places and Miffs, and danger zones.</string>
+    <string name="settings_subscription_trial">Free trial until %1$s. Then %2$s per year, unless you cancel before.</string>
+    <string name="settings_subscription_trial_noprice">Free trial until %1$s. The yearly subscription starts after that, unless you cancel before.</string>
+    <string name="settings_subscription_renews">Active. Next renewal on %1$s (%2$s).</string>
+    <string name="settings_subscription_renews_noprice">Active. Next renewal on %1$s.</string>
+    <string name="settings_subscription_ends">You cancelled Miff+: it stays active until %1$s, without renewal.</string>
+    <string name="settings_subscription_grace">The payment for your subscription didn\'t go through. Everything still works: update your payment method before %1$s.</string>
+    <string name="settings_subscription_on_hold">Miff+ is on hold: the payment didn\'t go through. Your benefits will be back as soon as it\'s sorted.</string>
+    <string name="settings_subscription_expired">Your Miff+ subscription has ended. You can start it again whenever you like.</string>
+    <string name="settings_subscription_revoked">Your Miff+ subscription was refunded: the benefits are no longer active.</string>
+    <string name="settings_subscription_manage">Manage my subscription</string>
+    <string name="settings_subscription_refresh">Refresh my subscription</string>
+    <string name="settings_subscription_discover">Discover Miff+</string>
+    <string name="settings_subscription_resume">Get Miff+ again</string>
+    <string name="settings_subscription_unreadable">We couldn\'t read your subscription right now. Please try again in a moment.</string>
+    <string name="settings_subscription_refresh_failed">We couldn\'t refresh your subscription right now. Please try again in a moment.</string>
+    <string name="settings_subscription_other_store">Your subscription was taken out in the App Store: you can manage it in your Apple ID settings.</string>
+    <string name="settings_subscription_test_note">Test purchase: no real payment.</string>
 </resources>

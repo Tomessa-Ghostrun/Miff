@@ -5,6 +5,8 @@ import com.tomessa.miff.data.auth.CachePurger
 import com.tomessa.miff.data.session.SessionTeardown
 import com.tomessa.miff.domain.miff.MiffSummary
 import com.tomessa.miff.domain.notification.MiffIdShape
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -184,6 +186,41 @@ class MiffDirectory(
     /** The Miff a tap asked for before the list was loaded (see [preselect]). */
     @Volatile
     private var requestedActive: String? = null
+
+    /**
+     * Miff+ was just granted (a purchase, a restoration, a purchase found by the silent look): the plan this list holds (read BEFORE) is "free" no more. Without this, the gates that read
+     * it ("Créer une Miff" of the selector and of the Profile, which open the offer for a free account that already has a Miff) went on opening the offer for a person who has just
+     * subscribed, and the offer answered "Tu as Miff+". The plan is put right at once; the server is read again right after (see [followPremiumGrants]), which settles any doubt.
+     */
+    fun onPremiumGranted() {
+        val ready = mutableState.value as? DirectoryState.Ready ?: return
+        if (ready.premium && ready.premiumKnown) return
+        mutableState.value =
+            DirectoryState.Ready(
+                ready.miffs,
+                ready.activeId,
+                premium = true,
+                fromCache = ready.fromCache,
+                premiumKnown = true,
+            )
+    }
+
+    /**
+     * Follows the grants of Miff+ (`PremiumCoordinator.accessGranted`) for as long as it is collected: the plan of the list is put right at once, then the Miffs and the plan are read again
+     * from the server. A failure of that read is silent (the next opening of the Feed reads again).
+     */
+    suspend fun followPremiumGrants(grants: Flow<Unit>) {
+        grants.collect {
+            onPremiumGranted()
+            try {
+                refresh()
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // Nothing to say: the plan is already right, and the Feed reads the list again when it opens.
+            }
+        }
+    }
 
     /** The person picked another Miff in the selector (Premium). */
     fun select(miffId: String) {

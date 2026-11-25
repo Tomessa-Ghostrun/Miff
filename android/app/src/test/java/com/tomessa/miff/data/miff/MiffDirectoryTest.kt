@@ -1,13 +1,17 @@
 package com.tomessa.miff.data.miff
 
 import com.tomessa.miff.domain.miff.MembershipRef
+import com.tomessa.miff.domain.miff.MiffSelector
 import com.tomessa.miff.domain.miff.MiffSummary
+import com.tomessa.miff.domain.miff.SelectorEntry
+import com.tomessa.miff.domain.miff.SelectorTap
 import com.tomessa.miff.testsupport.FakeCachePurger
 import com.tomessa.miff.testsupport.FakeMiffRepository
 import com.tomessa.miff.testsupport.MIFF_ID
 import com.tomessa.miff.testsupport.MemoryActiveMiffStore
 import com.tomessa.miff.testsupport.OTHER_MIFF_ID
 import com.tomessa.miff.testsupport.Timeline
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -68,6 +72,69 @@ class MiffDirectoryTest {
             repo.myMiffsResult = loaded(listOf(MiffSummary(MIFF_ID, "A")), premium = false)
             directory.refresh()
             assertEquals(false, (directory.state.value as DirectoryState.Ready).premiumOrNull)
+        }
+
+    // ---- Miff+ granted after the list was read (regression: "Créer une Miff" opened the offer, which answered "Tu as Miff+", right after the trial) ----
+
+    private fun gateOf(
+        entry: SelectorEntry,
+        directory: MiffDirectory,
+    ): SelectorTap {
+        val ready = directory.state.value as DirectoryState.Ready
+        return MiffSelector.onTap(entry, ready.premiumOrNull, ready.miffs.size)
+    }
+
+    @Test
+    fun beforeTheSubscription_aFreeAccountWithAMiff_isTakenToTheOffer_forCreateAndJoin() =
+        runTest {
+            val directory = directory()
+            repo.myMiffsResult = loaded(listOf(MiffSummary(MIFF_ID, "A")), premium = false)
+            directory.refresh()
+            assertEquals(SelectorTap.OpenOffer, gateOf(SelectorEntry.CREATE, directory))
+            assertEquals(SelectorTap.OpenOffer, gateOf(SelectorEntry.JOIN, directory))
+        }
+
+    @Test
+    fun afterTheSubscription_theGates_goOnToTheCreationAndTheJoin_notToTheOffer() =
+        runTest {
+            val directory = directory()
+            repo.myMiffsResult = loaded(listOf(MiffSummary(MIFF_ID, "A")), premium = false)
+            directory.refresh()
+            // The person subscribes: the list is not read again by itself (the Feed reads it when it opens), so the signal puts the plan right.
+            repo.myMiffsResult = loaded(listOf(MiffSummary(MIFF_ID, "A")), premium = true)
+            directory.followPremiumGrants(flowOf(Unit))
+            assertEquals(SelectorTap.OpenCreate, gateOf(SelectorEntry.CREATE, directory))
+            assertEquals(SelectorTap.OpenJoin, gateOf(SelectorEntry.JOIN, directory))
+        }
+
+    @Test
+    fun theGate_isRightAtOnce_evenBeforeTheServerAnswersAgain() =
+        runTest {
+            val directory = directory()
+            repo.myMiffsResult = loaded(listOf(MiffSummary(MIFF_ID, "A")), premium = false)
+            directory.refresh()
+            directory.onPremiumGranted()
+            assertEquals(SelectorTap.OpenCreate, gateOf(SelectorEntry.CREATE, directory))
+            assertEquals(true, (directory.state.value as DirectoryState.Ready).premiumOrNull)
+        }
+
+    @Test
+    fun aReadThatFailsAfterTheSubscription_doesNotTakeTheNewPlanAway() =
+        runTest {
+            val directory = directory()
+            repo.myMiffsResult = loaded(listOf(MiffSummary(MIFF_ID, "A")), premium = false)
+            directory.refresh()
+            repo.myMiffsResult = MyMiffsLoad.Unavailable
+            directory.followPremiumGrants(flowOf(Unit))
+            assertEquals(SelectorTap.OpenCreate, gateOf(SelectorEntry.CREATE, directory))
+        }
+
+    @Test
+    fun theSignal_neverInventsAPlan_forAListThatIsNotThereYet() =
+        runTest {
+            val directory = directory()
+            directory.onPremiumGranted()
+            assertTrue(directory.state.value is DirectoryState.Loading)
         }
 
     @Test

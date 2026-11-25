@@ -7,6 +7,7 @@
     "bsd-3-protobuf": { "name": "BSD 3-Clause", "file": "bsd-3-protobuf.txt" },
     "bsd-3-go": { "name": "BSD 3-Clause (Go)", "file": "bsd-3-go-re2j.txt" },
     "mit": { "name": "MIT", "file": "mit-animal-sniffer.txt" },
+    "mit-0": { "name": "MIT No Attribution", "file": "mit-0-reactive-streams.txt" },
     "android-sdk": { "name": "Android Software Development Kit License", "file": "android-sdk.txt" },
     "play-integrity-tos": { "name": "Play Integrity API Terms of Service", "file": "play-integrity-tos.txt" },
     "ofl-baloo": { "name": "SIL Open Font License 1.1", "file": "ofl-baloo-thambi-2.txt" },
@@ -66,6 +67,26 @@
       "licenses": ["play-integrity-tos"],
       "includes": "Play Integrity API (used by Firebase App Check)",
       "modules": ["com.google.android.play:integrity"]
+    },
+    {
+      "id": "play-billing",
+      "group": "software",
+      "name": "Google Play Billing Library",
+      "version": "9.1.0",
+      "versionOf": "com.android.billingclient:billing",
+      "licenses": ["android-sdk"],
+      "includes": "Play Billing Library and its Kotlin extensions (the purchase of the Miff+ subscription)",
+      "modules": ["com.android.billingclient:"]
+    },
+    {
+      "id": "reactive-streams",
+      "group": "software",
+      "name": "Reactive Streams",
+      "version": "1.0.4",
+      "versionOf": "org.reactivestreams:reactive-streams",
+      "licenses": ["mit-0"],
+      "includes": "reactive-streams (brought by the Firebase Functions library)",
+      "modules": ["org.reactivestreams:"]
     },
     {
       "id": "play-review",

@@ -1,6 +1,8 @@
 package com.tomessa.miff.data.subscription
 
-import com.tomessa.miff.domain.subscription.SubscriptionInfo
+import com.tomessa.miff.domain.subscription.EntitlementDocument
+import com.tomessa.miff.domain.subscription.StoreState
+import com.tomessa.miff.domain.subscription.SubscriptionStatus
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -15,7 +17,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.IOException
 
-/** Ticket ABO-1: ONE read of `entitlements/{uid}`; hidden (null) whenever it is not an active Miff+ or cannot be read. */
+/**
+ * ONE read of `entitlements/{uid}` each time it is asked: the status when the server answers (a missing document is `Free`: the server said so), null whenever it cannot be read
+ * (a failure is never taken for "free": a screen must not tell a subscriber that nothing is there).
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class SubscriptionRepositoryTest {
     private val now = 5_000L
@@ -44,37 +49,43 @@ class SubscriptionRepositoryTest {
         SubscriptionRepository(store, currentUid = { uid }, nowMillis = { now }, timeoutMillis = timeoutMillis)
 
     @Test
-    fun anActiveManualGrant_isShown_withOneReadOfTheOwnDocument() =
+    fun anActiveManualGrant_isRead_withOneReadOfTheOwnDocument() =
         runTest {
             store.document = EntitlementDocument(active = true, expiresAtMillis = now + 1, source = "manual")
-            assertEquals(SubscriptionInfo(now + 1, grantedByTeam = true), repository().load())
+            assertEquals(SubscriptionStatus.Manual(now + 1), repository().load())
             assertEquals(listOf("uid-1"), store.reads)
         }
 
     @Test
-    fun anotherSource_isShown_withoutTheTeamMention() =
+    fun aStorePurchase_isRead_withItsState() =
         runTest {
-            store.document = EntitlementDocument(active = true, expiresAtMillis = now + 1, source = "google_play")
-            assertEquals(SubscriptionInfo(now + 1, grantedByTeam = false), repository().load())
+            store.document =
+                EntitlementDocument(true, now + 1, "google_play", state = "trial", plan = "yearly", trial = true)
+            val status = repository().load() as SubscriptionStatus.Store
+            assertEquals(StoreState.TRIAL, status.state)
         }
 
     @Test
-    fun noDocument_inactive_expired_orIncomplete_showNothing() =
+    fun aStorePurchaseThatIsOver_isStillRead() =
+        runTest {
+            store.document = EntitlementDocument(false, now - 1, "google_play", state = "expired")
+            val status = repository().load() as SubscriptionStatus.Store
+            assertEquals(StoreState.EXPIRED, status.state)
+        }
+
+    @Test
+    fun noDocument_orAnOverManualGrant_isFree_theServerSaidSo() =
         runTest {
             store.document = null
-            assertNull(repository().load())
+            assertEquals(SubscriptionStatus.Free, repository().load())
             store.document = EntitlementDocument(active = false, expiresAtMillis = now + 1, source = "manual")
-            assertNull(repository().load())
+            assertEquals(SubscriptionStatus.Free, repository().load())
             store.document = EntitlementDocument(active = true, expiresAtMillis = now - 1, source = "manual")
-            assertNull(repository().load())
-            store.document = EntitlementDocument(active = true, expiresAtMillis = null, source = "manual")
-            assertNull(repository().load())
-            store.document = EntitlementDocument(active = null, expiresAtMillis = now + 1, source = "manual")
-            assertNull(repository().load())
+            assertEquals(SubscriptionStatus.Free, repository().load())
         }
 
     @Test
-    fun offlineOrRefused_showNothing_withoutAnException() =
+    fun offlineOrRefused_isNull_notFree_withoutAnException() =
         runTest {
             store.failure = IOException("offline")
             assertNull(repository().load())
@@ -83,7 +94,7 @@ class SubscriptionRepositoryTest {
         }
 
     @Test
-    fun aReadThatNeverAnswers_isGivenUpAfterTheTimeout_andShowsNothing() =
+    fun aReadThatNeverAnswers_isGivenUpAfterTheTimeout_andIsNull() =
         runTest {
             store.hang = true
             val result = async { repository(timeoutMillis = 8_000L).load() }
@@ -106,7 +117,7 @@ class SubscriptionRepositoryTest {
         }
 
     @Test
-    fun anotherAccountByTheTimeTheAnswerComes_showsNothing() =
+    fun anotherAccountByTheTimeTheAnswerComes_isNull() =
         runTest {
             store.document = EntitlementDocument(true, now + 1, "manual")
             val gate = CompletableDeferred<Unit>()

@@ -69,11 +69,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import com.tomessa.miff.BuildConfig
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.paywall.PaywallNotice
 import com.tomessa.miff.domain.paywall.PaywallOffer
 import com.tomessa.miff.domain.paywall.PaywallPrice
 import com.tomessa.miff.domain.paywall.PaywallProgress
+import com.tomessa.miff.domain.paywall.PaywallSavings
 import com.tomessa.miff.domain.paywall.PaywallUiState
 import com.tomessa.miff.domain.place.PlaceLimits
 import com.tomessa.miff.ui.auth.LegalLinks
@@ -107,6 +109,7 @@ import com.tomessa.miff.ui.theme.colorTextSecondary
 import com.tomessa.miff.ui.theme.miffShadow
 import com.tomessa.miff.ui.theme.textBodyBold14
 import com.tomessa.miff.ui.theme.textBodyBold16
+import com.tomessa.miff.ui.theme.textBodyCaption
 import com.tomessa.miff.ui.theme.textBodyLarge
 import com.tomessa.miff.ui.theme.textBodyRegular
 import com.tomessa.miff.ui.theme.textBodyRegular14
@@ -114,7 +117,7 @@ import com.tomessa.miff.ui.theme.textCaptionBold12
 import com.tomessa.miff.ui.theme.textTitleBold20
 import com.tomessa.miff.ui.theme.textTitleBold24Gradient
 
-/** What a person can do on the offer. Every purchase action is a no-op until SRV-8A plugs the store in: in production only [onClose] is reachable. */
+/** What a person can do on the offer. The purchase actions do nothing while the purchase is switched off (`BuildConfig.PREMIUM_PURCHASE`): then only [onClose] is reachable. */
 data class PaywallActions(
     /** Closes this display (the cross, the system "back", Escape): only ever called once the cross is available (see [PaywallViewModel]). */
     val onClose: () -> Unit,
@@ -123,11 +126,13 @@ data class PaywallActions(
     val onBuyMonthly: () -> Unit = {},
     val onRetry: () -> Unit = {},
     val onRestore: () -> Unit = {},
+    /** "Gérer mon abonnement" (a subscription on hold): the page of the store. */
+    val onManage: () -> Unit = {},
     /** "Continuer" of the confirmation (a person who has Miff+). Closes the screen, like the cross. */
     val onContinue: () -> Unit = onClose,
 )
 
-/** What production shows today: no store, no purchase (the premium is granted by hand): "Miff+ arrive bientôt". SRV-8A replaces this by the real state. */
+/** What a build with the purchase switched off shows: no store, no purchase (the premium is granted by hand): "Miff+ arrive bientôt". */
 internal fun currentPaywallState(): PaywallUiState = PaywallUiState.PRODUCTION
 
 /**
@@ -191,67 +196,85 @@ fun PaywallScreen(
                 else -> R.string.place_paywall_headline
             },
         )
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(Brush.verticalGradient(listOf(colorBgCanvas, colorBgGradientEnd)))
-                .miffScreenInsets()
-                // Escape of a keyboard follows the same rule as "back".
-                .onPreviewKeyEvent { event ->
-                    when (escapeOutcome(event.key == Key.Escape, event.type == KeyEventType.KeyUp, closeVisible)) {
-                        EscapeOutcome.NOT_ESCAPE -> {
-                            false
-                        }
-
-                        EscapeOutcome.IGNORED -> {
-                            true
-                        }
-
-                        EscapeOutcome.CLOSE -> {
-                            actions.onClose()
-                            true
-                        }
-                    }
-                }.semantics { paneTitle = title },
-    ) {
-        TopBar(closeVisible = closeVisible, reduceMotion = reduceMotion, onClose = actions.onClose)
-        var showAll by rememberSaveable { mutableStateOf(false) }
+    Box(Modifier.fillMaxSize()) {
         Column(
             modifier =
                 Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = Spacing.m, vertical = Spacing.s),
-            verticalArrangement = Arrangement.spacedBy(Spacing.m),
+                    .fillMaxSize()
+                    .background(Brush.verticalGradient(listOf(colorBgCanvas, colorBgGradientEnd)))
+                    .miffScreenInsets()
+                    // Escape of a keyboard follows the same rule as "back".
+                    .onPreviewKeyEvent { event ->
+                        when (escapeOutcome(event.key == Key.Escape, event.type == KeyEventType.KeyUp, closeVisible)) {
+                            EscapeOutcome.NOT_ESCAPE -> {
+                                false
+                            }
+
+                            EscapeOutcome.IGNORED -> {
+                                true
+                            }
+
+                            EscapeOutcome.CLOSE -> {
+                                actions.onClose()
+                                true
+                            }
+                        }
+                    }.semantics { paneTitle = title },
         ) {
-            if (offer !is PaywallOffer.Subscribed) {
-                Text(
-                    text = stringResource(R.string.place_paywall_headline),
-                    style = textTitleBold24Gradient,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().semantics { heading() },
-                )
-                Feature(
-                    R.drawable.ic_loc_pin,
-                    R.string.place_paywall_feature_places,
-                    R.string.place_paywall_feature_places_desc,
-                )
-                Feature(
-                    R.drawable.ic_group,
-                    R.string.place_paywall_feature_miffs,
-                    R.string.place_paywall_feature_miffs_desc,
-                )
-                Feature(
-                    R.drawable.ic_loc_warning,
-                    R.string.place_paywall_feature_danger,
-                    R.string.place_paywall_feature_danger_desc,
-                )
+            TopBar(closeVisible = closeVisible, reduceMotion = reduceMotion, onClose = actions.onClose)
+            var showAll by rememberSaveable { mutableStateOf(false) }
+            Column(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = Spacing.m, vertical = Spacing.s),
+                verticalArrangement = Arrangement.spacedBy(Spacing.m),
+            ) {
+                if (offer !is PaywallOffer.Subscribed) {
+                    Text(
+                        text = stringResource(R.string.place_paywall_headline),
+                        style = textTitleBold24Gradient,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().semantics { heading() },
+                    )
+                    // The free plan's limits are said in the cards themselves (decision of the PM, 2026-11-25): the number of places comes from [PlaceLimits], the single Miff from [PlaceLimits.FREE_MIFFS].
+                    Feature(
+                        R.drawable.ic_loc_pin,
+                        R.string.place_paywall_feature_places,
+                        R.string.place_paywall_feature_places_desc,
+                        note =
+                            pluralStringResource(
+                                R.plurals.paywall_feature_places_limit,
+                                PlaceLimits.FREE_PLACES,
+                                PlaceLimits.FREE_PLACES,
+                            ),
+                    )
+                    Feature(
+                        R.drawable.ic_group,
+                        R.string.place_paywall_feature_miffs,
+                        R.string.place_paywall_feature_miffs_desc,
+                        note = stringResource(R.string.paywall_feature_miffs_limit),
+                    )
+                    Feature(
+                        R.drawable.ic_loc_warning,
+                        R.string.place_paywall_feature_danger,
+                        R.string.place_paywall_feature_danger_desc,
+                    )
+                }
+                ScrollingOffer(offer = offer, showAll = showAll)
             }
-            ScrollingOffer(offer = offer, showAll = showAll, onRestore = actions.onRestore)
+            PurchaseZone(
+                state = state,
+                showAll = showAll,
+                onShowAll = { showAll = true },
+                onShowTrial = { showAll = false },
+                actions = actions,
+            )
         }
-        PurchaseZone(state = state, showAll = showAll, onShowAll = { showAll = true }, actions = actions)
+        // The confirmation is celebrated with a short burst of confetti over the whole screen; nothing at all when the animations are turned off (see [ConfettiBurst]).
+        if (offer is PaywallOffer.Subscribed && !reduceMotion) ConfettiBurst()
     }
 }
 
@@ -326,7 +349,6 @@ private fun TopBar(
 private fun ScrollingOffer(
     offer: PaywallOffer,
     showAll: Boolean,
-    onRestore: () -> Unit,
 ) {
     when (offer) {
         PaywallOffer.ComingSoon -> {
@@ -348,60 +370,30 @@ private fun ScrollingOffer(
         }
 
         PaywallOffer.Subscribed -> {
-            Spacer(Modifier.size(Spacing.xl))
-            Text(
-                text = stringResource(R.string.paywall_subscribed),
-                style = textTitleBold24Gradient,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().semantics { heading() },
-            )
-            Text(
-                text = stringResource(R.string.paywall_subscribed_detail),
-                style = textBodyRegular,
-                color = colorTextDescription,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            SubscribedContent()
         }
 
         PaywallOffer.Loading, PaywallOffer.Unavailable -> {
-            FreePlanSentence()
-            LegalAndRestoreLinks(withRestore = false, onRestore = {})
+            LegalLinksBlock()
         }
 
         is PaywallOffer.TrialEligible, is PaywallOffer.Plans -> {
-            InformationBlock(offer = offer, showAll = showAll, onRestore = onRestore)
-            FreePlanSentence()
+            InformationBlock(offer = offer, showAll = showAll)
+            LegalLinksBlock()
         }
     }
 }
 
-/** "La formule gratuite reste disponible : 1 Miff et 3 lieux de confiance." A sentence, never a button: the only way out is the cross. */
-@Composable
-private fun FreePlanSentence() {
-    Text(
-        text =
-            pluralStringResource(
-                R.plurals.paywall_free_plan_stays,
-                PlaceLimits.FREE_PLACES,
-                PlaceLimits.FREE_PLACES,
-            ),
-        style = textBodyRegular14,
-        color = colorTextDescription,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth(),
-    )
-}
-
 /**
- * The information the stores require near the purchase (ticket section 5.4): what is billed and when, the automatic renewal, how to cancel. The
- * prices are the store's own. Plain sentences, dark enough to read (never pale grey).
+ * The information the stores require near the purchase, reduced to what the PM asked for (decision of 2026-11-25, second return after the test of the APK): on the main view of the
+ * trial, ONE sentence (the trial, the price billed at its end, the automatic renewal every year); on the views of the plans without a trial ("Voir toutes les offres", or an account
+ * that cannot have the trial), one sentence per plan shown. The prices are the store's own (the fake store's in a debug build), never written in a translation. No "how to cancel"
+ * paragraph here: that is the page of the store, reached from the screen Abonnement (iOS keeps its own texts).
  */
 @Composable
 private fun InformationBlock(
     offer: PaywallOffer,
     showAll: Boolean,
-    onRestore: () -> Unit,
 ) {
     val (annual, monthly, trial) =
         when (offer) {
@@ -409,41 +401,79 @@ private fun InformationBlock(
             is PaywallOffer.Plans -> Triple(offer.annual, offer.monthly, false)
             else -> return
         }
-    val showMonthly = showAll || !trial
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        InfoLine(
-            if (trial) {
-                stringResource(R.string.paywall_info_trial, annual.formatted)
-            } else {
-                stringResource(R.string.paywall_info_annual, annual.formatted)
-            },
-        )
-        if (showMonthly) InfoLine(stringResource(R.string.paywall_info_monthly, monthly.formatted))
-        InfoLine(stringResource(R.string.paywall_info_cancel, stringResource(R.string.android_paywall_store_name)))
+        if (trial && !showAll) {
+            InfoLine(stringResource(R.string.paywall_info_trial_short, annual.formatted))
+        } else {
+            InfoLine(stringResource(R.string.paywall_info_annual, annual.formatted))
+            InfoLine(stringResource(R.string.paywall_info_monthly, monthly.formatted))
+        }
     }
-    LegalAndRestoreLinks(withRestore = true, onRestore = onRestore)
 }
 
 @Composable
 private fun InfoLine(text: String) {
-    Text(text = text, style = textBodyRegular14, color = colorTextPrimary, modifier = Modifier.fillMaxWidth())
+    Text(
+        text = text,
+        style = textBodyRegular14,
+        color = colorTextPrimary,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
-/** The two legal pages (same pages as everywhere else in the app) and, when a purchase exists, "Restaurer mes achats". */
+/** The two legal pages (same pages as everywhere else in the app), on ONE line. No "Restaurer mes achats" here: see [LegalLinksRow]. */
 @Composable
-private fun LegalAndRestoreLinks(
-    withRestore: Boolean,
-    onRestore: () -> Unit,
-) {
+private fun LegalLinksBlock() {
     val context = LocalContext.current
-    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        LinkButton(
-            stringResource(R.string.paywall_terms_link),
-        ) { LegalLinks.open(context, LegalLinks.termsUrl(context)) }
-        LinkButton(
-            stringResource(R.string.paywall_privacy_link),
-        ) { LegalLinks.open(context, LegalLinks.privacyUrl(context)) }
-        if (withRestore) LinkButton(stringResource(R.string.paywall_restore), onClick = onRestore)
+    LegalLinksRow(
+        terms = stringResource(R.string.paywall_terms_link),
+        privacy = stringResource(R.string.paywall_privacy_link),
+        onTerms = { LegalLinks.open(context, LegalLinks.termsUrl(context)) },
+        onPrivacy = { LegalLinks.open(context, LegalLinks.privacyUrl(context)) },
+    )
+}
+
+/**
+ * "Conditions d'utilisation" and "Politique de confidentialité" side by side, centred, on the SAME line, in the caption size (12) so that the longest pair (French) fits a 360 dp screen
+ * on one line each; each link takes at most half of the width and, on a very narrow screen or with a huge font, wraps INSIDE its own half (never one under the other). Stateless so that a test
+ * can give it the texts of each language (PaywallLegalLinksTest).
+ */
+@Composable
+internal fun LegalLinksRow(
+    terms: String,
+    privacy: String,
+    onTerms: () -> Unit,
+    onPrivacy: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.s, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        LegalLink(terms, onTerms, Modifier.weight(1f, fill = false))
+        LegalLink(privacy, onPrivacy, Modifier.weight(1f, fill = false))
+    }
+}
+
+@Composable
+private fun LegalLink(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier,
+) {
+    TextButton(
+        onClick = onClick,
+        contentPadding = PaddingValues(horizontal = Spacing.xs, vertical = Spacing.s),
+        modifier = modifier.heightIn(min = Spacing.minTouchTarget),
+    ) {
+        Text(
+            text = text,
+            style = textBodyCaption,
+            color = colorActionPrimary,
+            textDecoration = TextDecoration.Underline,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 
@@ -470,6 +500,7 @@ private fun PurchaseZone(
     state: PaywallUiState,
     showAll: Boolean,
     onShowAll: () -> Unit,
+    onShowTrial: () -> Unit,
     actions: PaywallActions,
 ) {
     val offer = state.offer
@@ -516,8 +547,17 @@ private fun PurchaseZone(
             is PaywallOffer.TrialEligible -> {
                 if (showAll) {
                     Plans(offer.annual, offer.monthly, state, actions)
+                    // The way back: "Essai gratuit" returns to the main view AND opens the store sheet of the trial at once (one touch, nothing to look for; if the sheet is closed, the person is on the
+                    // main view, whose trial button is there). Same style as "Voir toutes les offres".
+                    LinkButton(
+                        text = stringResource(R.string.paywall_free_trial_link),
+                        onClick = {
+                            onShowTrial()
+                            actions.onStartTrial()
+                        },
+                    )
                 } else {
-                    TrialButton(offer, state, onShowAll, actions)
+                    TrialButton(state, onShowAll, actions)
                 }
             }
 
@@ -577,16 +617,25 @@ private fun StatusLine(
                         PaywallNotice.PENDING -> R.string.paywall_pending
                         PaywallNotice.ERROR -> R.string.paywall_error_calm
                         PaywallNotice.RESTORE_NONE -> R.string.paywall_restore_none
+                        PaywallNotice.OTHER_ACCOUNT -> R.string.paywall_other_account
+                        PaywallNotice.ON_HOLD -> R.string.settings_subscription_on_hold
                     },
-                    // Only "restore: nothing found" names the store; the other two sentences have no placeholder.
-                    stringResource(R.string.android_paywall_store_name),
+                    // "Restore: nothing found" names the store; "already used by another account" gives the contact; the other sentences have no placeholder.
+                    if (notice == PaywallNotice.OTHER_ACCOUNT) {
+                        BuildConfig.SUPPORT_EMAIL
+                    } else {
+                        stringResource(R.string.android_paywall_store_name)
+                    },
                 ),
             style = textBodyRegular14,
             color = colorTextPrimary,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
-        if (notice != PaywallNotice.PENDING) {
+        if (notice == PaywallNotice.ON_HOLD) {
+            // A subscription put on hold by the store (payment failing) is mended on the page of the store, never bought a second time.
+            LinkButton(text = stringResource(R.string.settings_subscription_manage), onClick = actions.onManage)
+        } else if (notice != PaywallNotice.PENDING && notice != PaywallNotice.OTHER_ACCOUNT) {
             LinkButton(
                 text = stringResource(R.string.paywall_retry),
                 onClick = if (notice == PaywallNotice.RESTORE_NONE) actions.onRestore else actions.onRetry,
@@ -595,10 +644,12 @@ private fun StatusLine(
     }
 }
 
-/** Mockup 1: the trial button, "Annulable à tout moment" on its corner, THEN the billed price (the most visible price line), the monthly equivalent smaller. */
+/**
+ * Mockup 1: the trial button, "Annulable à tout moment" on its corner, then "Voir toutes les offres". NO price line under the button (decision of the PM, 2026-11-25, risk assumed: the
+ * stores normally want the price after the trial in view; it stays in the information block, in "Voir toutes les offres" and in the sheet of the store).
+ */
 @Composable
 private fun TrialButton(
-    offer: PaywallOffer.TrialEligible,
     state: PaywallUiState,
     onShowAll: () -> Unit,
     actions: PaywallActions,
@@ -608,23 +659,6 @@ private fun TrialButton(
             text = stringResource(R.string.paywall_cta_trial),
             onClick = actions.onStartTrial,
             enabled = !state.busy,
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
-    // The billed price is the biggest price on the screen: 16 bold, against 14 regular for the monthly equivalent.
-    Text(
-        text = stringResource(R.string.paywall_trial_then, offer.annual.formatted),
-        style = textBodyBold16,
-        color = colorTextPrimary,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth().padding(top = Spacing.xs),
-    )
-    offer.annual.perMonth()?.let { perMonth ->
-        Text(
-            text = stringResource(R.string.paywall_monthly_equivalent, perMonth),
-            style = textBodyRegular14,
-            color = colorTextDescription,
-            textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
     }
@@ -639,7 +673,7 @@ private fun Plans(
     state: PaywallUiState,
     actions: PaywallActions,
 ) {
-    WithBubble(stringResource(R.string.paywall_annual_savings)) {
+    val annualButton: @Composable () -> Unit = {
         PlanButton(
             title = stringResource(R.string.paywall_plan_annual_title, annual.formatted),
             note = annual.perMonth()?.let { stringResource(R.string.paywall_monthly_equivalent, it) },
@@ -647,6 +681,12 @@ private fun Plans(
             enabled = !state.busy,
             onClick = actions.onBuyAnnual,
         )
+    }
+    // "presque 30 % d'économie" is written once, but the prices are the store's: the label is only shown while the saving computed from them stays true (>= 25 %).
+    if (PaywallSavings.isWorthShowing(annual, monthly)) {
+        WithBubble(stringResource(R.string.paywall_annual_savings), content = annualButton)
+    } else {
+        annualButton()
     }
     PlanButton(
         title = stringResource(R.string.paywall_plan_monthly_title, monthly.formatted),
@@ -756,6 +796,8 @@ private fun Feature(
     icon: Int,
     title: Int,
     description: Int,
+    /** The limit of the free plan, in a third line (null: none). */
+    note: String? = null,
 ) {
     Row(
         modifier =
@@ -784,6 +826,7 @@ private fun Feature(
         Column {
             Text(text = stringResource(title), style = textBodyBold16, color = colorTextPrimary)
             Text(text = stringResource(description), style = textBodyRegular14, color = colorTextDescription)
+            if (note != null) Text(text = note, style = textBodyBold14, color = colorTextDescription)
         }
     }
 }

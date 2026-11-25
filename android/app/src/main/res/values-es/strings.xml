@@ -1119,6 +1119,15 @@
         <item quantity="many">El plan gratuito sigue disponible: 1 Miff y %1$d lugares de confianza.</item>
         <item quantity="other">El plan gratuito sigue disponible: 1 Miff y %1$d lugares de confianza.</item>
     </plurals>
+    <plurals name="paywall_feature_places_limit">
+        <item quantity="one">Si no, límite de %1$d lugar</item>
+        <item quantity="many">Si no, límite de %1$d lugares</item>
+        <item quantity="other">Si no, límite de %1$d lugares</item>
+    </plurals>
+    <string name="paywall_feature_miffs_limit">Si no, límite de una sola Miff</string>
+    <string name="paywall_free_trial_link">Prueba gratuita</string>
+    <string name="paywall_info_trial_short">Prueba gratuita de 7 días y, después, %1$s al año, que se cobran al terminar la prueba; luego, renovación automática cada año.</string>
+    <string name="paywall_unlocked_danger">Declarar zonas de peligro</string>
     <string name="paywall_close_available_a11y">Ya puedes cerrar esta pantalla</string>
     <string name="paywall_loading">Cargando planes…</string>
     <string name="paywall_unavailable">Los planes no están disponibles por ahora. Comprueba tu conexión e inténtalo de nuevo.</string>
@@ -1127,8 +1136,8 @@
     <string name="paywall_error_calm">No se ha podido completar la compra esta vez. Si se ha realizado un pago, tu suscripción aparecerá automáticamente; si no, inténtalo de nuevo en un momento.</string>
     <string name="paywall_restore">Restaurar compras</string>
     <string name="paywall_restore_none">No se ha encontrado ninguna suscripción de Miff+ en esta cuenta de %1$s.</string>
-    <string name="paywall_subscribed">Tienes Miff+. ¡Gracias!</string>
-    <string name="paywall_subscribed_detail">Todo está desbloqueado.</string>
+    <string name="paywall_subscribed">¡Te damos la bienvenida a Miff+!</string>
+    <string name="paywall_subscribed_detail">Disfruta de Miff en su versión ilimitada</string>
     <string name="paywall_continue">Continuar</string>
     <string name="paywall_working">Un momento…</string>
     <string name="paywall_plan_annual_title">Anual · %1$s al año</string>
@@ -1360,4 +1369,24 @@
     <string name="android_about_licenses_address_search">Direcciones: servicio Photon de komoot, datos © colaboradores de OpenStreetMap</string>
     <string name="android_about_licenses_map_tiles_notice">Los mapas se muestran con las teselas de OpenFreeMap (https://openfreemap.org), que usan el esquema © OpenMapTiles. Los datos son © colaboradores de OpenStreetMap, disponibles bajo la licencia ODbL 1.0 (https://opendatacommons.org/licenses/odbl/1-0/). La mención sigue visible bajo cada mapa.</string>
     <string name="android_about_licenses_address_search_notice">Las direcciones propuestas mientras escribes proceden de Photon, el servicio público de komoot (https://photon.komoot.io), cuyo software se publica bajo licencia Apache 2.0. Sus datos son © colaboradores de OpenStreetMap, disponibles bajo la licencia ODbL 1.0 (https://opendatacommons.org/licenses/odbl/1-0/).</string>
+    <!-- SRV-8A (premium purchase, docs/tickets/premium-achat-reel.md): Abonnement screen states, refusal of a purchase already used by another account. Prices and dates arrive as arguments: never written in a translation. -->
+    <string name="paywall_other_account">Esta suscripción ya se usa con otra cuenta de Miff. Para moverla, escríbenos: %1$s.</string>
+    <string name="settings_subscription_free">Estás en el plan gratuito. Miff+ desbloquea lugares de confianza y Miffs sin límite, además de las zonas de peligro.</string>
+    <string name="settings_subscription_trial">Prueba gratuita hasta el %1$s. Después, %2$s al año, salvo que la canceles antes.</string>
+    <string name="settings_subscription_trial_noprice">Prueba gratuita hasta el %1$s. Después empieza la suscripción anual, salvo que la canceles antes.</string>
+    <string name="settings_subscription_renews">Activa. Próxima renovación el %1$s (%2$s).</string>
+    <string name="settings_subscription_renews_noprice">Activa. Próxima renovación el %1$s.</string>
+    <string name="settings_subscription_ends">Has cancelado Miff+: sigue activo hasta el %1$s, sin renovación.</string>
+    <string name="settings_subscription_grace">El pago de tu suscripción no se ha completado. Todo sigue funcionando: actualiza tu método de pago antes del %1$s.</string>
+    <string name="settings_subscription_on_hold">Miff+ está en pausa: el pago no se ha completado. Tus ventajas volverán en cuanto se resuelva.</string>
+    <string name="settings_subscription_expired">Tu suscripción de Miff+ ha terminado. Puedes retomarla cuando quieras.</string>
+    <string name="settings_subscription_revoked">Tu suscripción de Miff+ se ha reembolsado: las ventajas ya no están activas.</string>
+    <string name="settings_subscription_manage">Gestionar mi suscripción</string>
+    <string name="settings_subscription_refresh">Actualizar mi suscripción</string>
+    <string name="settings_subscription_discover">Descubrir Miff+</string>
+    <string name="settings_subscription_resume">Retomar Miff+</string>
+    <string name="settings_subscription_unreadable">No hemos podido consultar tu suscripción por ahora. Inténtalo de nuevo en un momento.</string>
+    <string name="settings_subscription_refresh_failed">No hemos podido actualizar tu suscripción por ahora. Inténtalo de nuevo en un momento.</string>
+    <string name="settings_subscription_other_store">Tu suscripción se contrató en la App Store: puedes gestionarla en los ajustes de tu ID de Apple.</string>
+    <string name="settings_subscription_test_note">Compra de prueba: no hay ningún pago real.</string>
 </resources>

@@ -56,6 +56,7 @@ import com.tomessa.miff.data.alert.SendStep
 import com.tomessa.miff.data.alert.TriggerResult
 import com.tomessa.miff.data.miff.DirectoryState
 import com.tomessa.miff.domain.auth.SignInProvider
+import com.tomessa.miff.domain.billing.MiffPlusProducts
 import com.tomessa.miff.domain.feed.StateLabel
 import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
@@ -64,7 +65,6 @@ import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.domain.place.PlaceViewerRole
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.review.ReviewSituation
-import com.tomessa.miff.domain.subscription.SubscriptionInfo
 import com.tomessa.miff.domain.tracking.StatusLevel
 import com.tomessa.miff.domain.update.PromptLevel
 import com.tomessa.miff.ui.alert.AlertBanner
@@ -76,6 +76,7 @@ import com.tomessa.miff.ui.alert.AlertSentRoute
 import com.tomessa.miff.ui.alert.AlertUpdateHooks
 import com.tomessa.miff.ui.alert.AlertViewModel
 import com.tomessa.miff.ui.alert.shouldOfferSeeMiff
+import com.tomessa.miff.ui.auth.LegalLinks
 import com.tomessa.miff.ui.components.ConnectionGate
 import com.tomessa.miff.ui.components.ConnectionHost
 import com.tomessa.miff.ui.components.LocalBottomOverlayPadding
@@ -152,6 +153,8 @@ import com.tomessa.miff.ui.settings.MyInfoViewModel
 import com.tomessa.miff.ui.settings.PrivacyScreen
 import com.tomessa.miff.ui.settings.PrivacyViewModel
 import com.tomessa.miff.ui.settings.SettingsScreen
+import com.tomessa.miff.ui.settings.SubscriptionActions
+import com.tomessa.miff.ui.settings.SubscriptionRowViewModel
 import com.tomessa.miff.ui.settings.SubscriptionScreen
 import com.tomessa.miff.ui.settings.SubscriptionViewModel
 import com.tomessa.miff.ui.settings.rememberLocationPrivacy
@@ -165,6 +168,7 @@ import com.tomessa.miff.ui.update.UpdateStage
 import com.tomessa.miff.ui.update.UpdateTab
 import com.tomessa.miff.ui.update.UpdateViewModel
 import com.tomessa.miff.ui.update.glassVariantFor
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.serialization.Serializable
@@ -177,14 +181,11 @@ data object TabsRoute
 data object SettingsRoute
 
 /**
- * ABO-1: the read-only subscription screen. The two values come from the read made when the Settings opened (a date and a flag,
- * nothing sensitive), so that this screen never reads again.
+ * The Abonnement screen (ABO-1, then SRV-8A): it reads `entitlements/{uid}` itself (the state, the plan, the end, written by the server), so nothing about the subscription travels in the
+ * route.
  */
 @Serializable
-data class SubscriptionRoute(
-    val expiresAtMillis: Long,
-    val grantedByTeam: Boolean,
-)
+data object SubscriptionRoute
 
 @Serializable
 data object MyInfoRoute
@@ -229,6 +230,29 @@ fun MainShell(
         MainNavigation(container, tabBar, navController)
         LostAccessOverlay(container, navController)
         DeletionNotices(container, navController)
+        PremiumReconcile(container)
+    }
+}
+
+/**
+ * SRV-8A (ticket premium-achat-reel.md section 6, point 6): each time the app is opened with a signed-in account, the store is looked at (silently, spaced to once every 5 minutes)
+ * and, ONLY if a purchase of Miff+ is there that the server does not know yet (a new phone, a reinstall, a payment made while offline, a lost notification), the server is asked to
+ * check it. Nothing is drawn, nothing is said. Nothing runs while the purchase is switched off.
+ */
+@Composable
+private fun PremiumReconcile(container: AppContainer) {
+    val premium = container.premium ?: return
+    // Miff+ just granted (a purchase, a restoration, a purchase found silently): the list of Miffs, which holds the plan the gates of "Créer / Rejoindre une Miff" read, is read again.
+    LaunchedEffect(premium) { container.miffDirectory.followPremiumGrants(premium.accessGranted) }
+    val tick by container.foregroundTicks.ticks.collectAsStateWithLifecycle()
+    LaunchedEffect(premium, tick) {
+        try {
+            premium.reconcile()
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            // A silent look must never take the app down: nothing is shown, the next opening looks again.
+        }
     }
 }
 
@@ -694,20 +718,21 @@ private fun MainNavigation(
             ColorsInfoScreen(onBack = { navController.popBackStackIfSafe() })
         }
         composable<SettingsRoute> {
-            // ABO-1: ONE read of entitlements/{uid} per opening of the Settings; the line exists only for an active Miff+.
-            val subscriptionViewModel: SubscriptionViewModel =
+            // ABO-1 / SRV-8A: with the purchase switched on the line is always there; switched off, ONE read of entitlements/{uid} per opening of the Settings and the line exists only for an active Miff+.
+            val subscriptionRowViewModel: SubscriptionRowViewModel =
                 viewModel(
                     key = "settings-subscription-$scopeKey",
                     factory =
                         viewModelFactory {
                             initializer {
-                                SubscriptionViewModel(
+                                SubscriptionRowViewModel(
                                     container.subscriptionRepository,
+                                    BuildConfig.PREMIUM_PURCHASE,
                                 )
                             }
                         },
                 )
-            val subscription by subscriptionViewModel.subscription.collectAsStateWithLifecycle()
+            val subscriptionVisible by subscriptionRowViewModel.visible.collectAsStateWithLifecycle()
             SettingsScreen(
                 onBack = { navController.popBackStackIfSafe() },
                 onOpenMyInfo = { navController.open(MyInfoRoute) },
@@ -716,17 +741,45 @@ private fun MainNavigation(
                 onOpenPrivacy = { navController.open(PrivacyRoute) },
                 onOpenAbout = { navController.openAbout() },
                 onOpenNotifications = { navController.openNotificationSettings() },
-                onOpenSubscription =
-                    subscription?.let { active ->
-                        { navController.open(SubscriptionRoute(active.expiresAtMillis, active.grantedByTeam)) }
-                    },
+                onOpenSubscription = if (subscriptionVisible) ({ navController.open(SubscriptionRoute) }) else null,
             )
         }
-        composable<SubscriptionRoute> { entry ->
-            val route = entry.toRoute<SubscriptionRoute>()
+        composable<SubscriptionRoute> {
+            val context = LocalContext.current
+            val premium = container.premium
+            val viewModel: SubscriptionViewModel =
+                viewModel(
+                    key = "subscription-$scopeKey",
+                    factory =
+                        viewModelFactory {
+                            initializer {
+                                SubscriptionViewModel(
+                                    container.subscriptionRepository,
+                                    premium,
+                                )
+                            }
+                        },
+                )
+            val state by viewModel.uiState.collectAsStateWithLifecycle()
+            // Back from the offer or from the page of the store: what the server knows may have changed.
+            LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { viewModel.onReturned() }
             SubscriptionScreen(
-                subscription = SubscriptionInfo(route.expiresAtMillis, route.grantedByTeam),
-                onBack = { navController.popBackStackIfSafe() },
+                state = state,
+                actions =
+                    SubscriptionActions(
+                        onBack = { navController.popBackStackIfSafe() },
+                        // Cancelling, resuming and changing the plan happen on the page of the store: nothing is cancelled in the app.
+                        onManage = { source ->
+                            MiffPlusProducts
+                                .manageUrlFor(
+                                    source,
+                                    BuildConfig.APPLICATION_ID,
+                                )?.let { LegalLinks.open(context, it) }
+                        },
+                        onOffer = { navController.open(PlacePaywallRoute.of(PaywallReason.SUBSCRIPTION)) },
+                        onRefresh = if (premium != null) viewModel::refresh else null,
+                        onRetry = viewModel::load,
+                    ),
             )
         }
         composable<MyInfoRoute> {
