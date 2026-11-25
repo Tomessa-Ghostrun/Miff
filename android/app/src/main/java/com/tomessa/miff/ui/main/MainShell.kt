@@ -242,6 +242,8 @@ fun MainShell(
 @Composable
 private fun PremiumReconcile(container: AppContainer) {
     val premium = container.premium ?: return
+    // Miff+ just granted (a purchase, a restoration, a purchase found silently): the list of Miffs, which holds the plan the gates of "Créer / Rejoindre une Miff" read, is read again.
+    LaunchedEffect(premium) { container.miffDirectory.followPremiumGrants(premium.accessGranted) }
     val tick by container.foregroundTicks.ticks.collectAsStateWithLifecycle()
     LaunchedEffect(premium, tick) {
         try {

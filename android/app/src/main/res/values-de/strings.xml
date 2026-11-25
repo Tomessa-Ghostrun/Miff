@@ -1112,6 +1112,12 @@
         <item quantity="one">Die kostenlose Version bleibt verfügbar: 1 Miff und %1$d vertrauter Ort.</item>
         <item quantity="other">Die kostenlose Version bleibt verfügbar: 1 Miff und %1$d vertraute Orte.</item>
     </plurals>
+    <plurals name="paywall_feature_places_limit">
+        <item quantity="one">Sonst begrenzt auf %1$d Ort</item>
+        <item quantity="other">Sonst begrenzt auf %1$d Orte</item>
+    </plurals>
+    <string name="paywall_feature_miffs_limit">Sonst begrenzt auf eine einzige Miff</string>
+    <string name="paywall_free_trial_link">Kostenlos testen</string>
     <string name="paywall_close_available_a11y">Du kannst diesen Bildschirm jetzt schließen</string>
     <string name="paywall_loading">Angebote werden geladen…</string>
     <string name="paywall_unavailable">Die Angebote sind gerade nicht verfügbar. Prüfe deine Verbindung und versuch es noch einmal.</string>
@@ -1120,8 +1126,8 @@
     <string name="paywall_error_calm">Der Kauf konnte diesmal nicht abgeschlossen werden. Falls eine Zahlung erfolgt ist, erscheint dein Abonnement automatisch; andernfalls versuch es gleich noch einmal.</string>
     <string name="paywall_restore">Käufe wiederherstellen</string>
     <string name="paywall_restore_none">Kein Miff+-Abonnement für dieses Konto bei %1$s gefunden.</string>
-    <string name="paywall_subscribed">Du hast Miff+. Danke!</string>
-    <string name="paywall_subscribed_detail">Alles ist freigeschaltet.</string>
+    <string name="paywall_subscribed">Willkommen bei Miff+!</string>
+    <string name="paywall_subscribed_detail">Genieße die unbegrenzte Version von Miff</string>
     <string name="paywall_continue">Weiter</string>
     <string name="paywall_working">Einen Moment…</string>
     <string name="paywall_plan_annual_title">Jährlich · %1$s pro Jahr</string>

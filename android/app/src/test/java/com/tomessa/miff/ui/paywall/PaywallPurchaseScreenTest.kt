@@ -74,7 +74,8 @@ class PaywallPurchaseScreenTest {
         see("Start your 7-day free trial")
         // The bubble of the trial button (exact text: the information block also starts with "Cancel anytime in your ... account settings").
         rule.onNodeWithText("Cancel anytime").assertIsDisplayed()
-        see("Then 59,88 € per year")
+        // Decision of the PM, 2026-11-25: no "Then ... per year" line under the button (the price stays in the information block and in "See all plans").
+        absent("Then 59,88 € per year")
         see("See all plans")
         // The information the stores require, with the store's price and the name of the store.
         rule
@@ -87,8 +88,8 @@ class PaywallPurchaseScreenTest {
         rule.onNodeWithText("Terms of Use", substring = true).performScrollTo().assertIsDisplayed()
         rule.onNodeWithText("Privacy Policy", substring = true).performScrollTo().assertIsDisplayed()
         rule.onNodeWithText("Restore purchases").performScrollTo().assertIsDisplayed()
-        // The monthly equivalent is a smaller complement, written from the annual price of the store.
-        assertEquals(1, rule.onAllNodesWithText("per month", substring = true).fetchSemanticsNodes().size)
+        // No monthly equivalent either on the main view (decision of the PM, 2026-11-25): it stays in the list of "See all plans".
+        assertEquals(0, rule.onAllNodesWithText("per month", substring = true).fetchSemanticsNodes().size)
     }
 
     @Test
@@ -182,7 +183,7 @@ class PaywallPurchaseScreenTest {
     @Test
     fun aPersonWhoHasMiffPlus_isNeverOfferedAPurchase() {
         show(PaywallUiState(PaywallOffer.Subscribed))
-        see("You have Miff+")
+        see("Welcome to Miff+!")
         absent("€")
         absent("Start your")
         absent("Annual")

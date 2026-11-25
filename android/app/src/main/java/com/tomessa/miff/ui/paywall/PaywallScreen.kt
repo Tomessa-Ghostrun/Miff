@@ -195,67 +195,85 @@ fun PaywallScreen(
                 else -> R.string.place_paywall_headline
             },
         )
-    Column(
-        modifier =
-            Modifier
-                .fillMaxSize()
-                .background(Brush.verticalGradient(listOf(colorBgCanvas, colorBgGradientEnd)))
-                .miffScreenInsets()
-                // Escape of a keyboard follows the same rule as "back".
-                .onPreviewKeyEvent { event ->
-                    when (escapeOutcome(event.key == Key.Escape, event.type == KeyEventType.KeyUp, closeVisible)) {
-                        EscapeOutcome.NOT_ESCAPE -> {
-                            false
-                        }
-
-                        EscapeOutcome.IGNORED -> {
-                            true
-                        }
-
-                        EscapeOutcome.CLOSE -> {
-                            actions.onClose()
-                            true
-                        }
-                    }
-                }.semantics { paneTitle = title },
-    ) {
-        TopBar(closeVisible = closeVisible, reduceMotion = reduceMotion, onClose = actions.onClose)
-        var showAll by rememberSaveable { mutableStateOf(false) }
+    Box(Modifier.fillMaxSize()) {
         Column(
             modifier =
                 Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = Spacing.m, vertical = Spacing.s),
-            verticalArrangement = Arrangement.spacedBy(Spacing.m),
+                    .fillMaxSize()
+                    .background(Brush.verticalGradient(listOf(colorBgCanvas, colorBgGradientEnd)))
+                    .miffScreenInsets()
+                    // Escape of a keyboard follows the same rule as "back".
+                    .onPreviewKeyEvent { event ->
+                        when (escapeOutcome(event.key == Key.Escape, event.type == KeyEventType.KeyUp, closeVisible)) {
+                            EscapeOutcome.NOT_ESCAPE -> {
+                                false
+                            }
+
+                            EscapeOutcome.IGNORED -> {
+                                true
+                            }
+
+                            EscapeOutcome.CLOSE -> {
+                                actions.onClose()
+                                true
+                            }
+                        }
+                    }.semantics { paneTitle = title },
         ) {
-            if (offer !is PaywallOffer.Subscribed) {
-                Text(
-                    text = stringResource(R.string.place_paywall_headline),
-                    style = textTitleBold24Gradient,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth().semantics { heading() },
-                )
-                Feature(
-                    R.drawable.ic_loc_pin,
-                    R.string.place_paywall_feature_places,
-                    R.string.place_paywall_feature_places_desc,
-                )
-                Feature(
-                    R.drawable.ic_group,
-                    R.string.place_paywall_feature_miffs,
-                    R.string.place_paywall_feature_miffs_desc,
-                )
-                Feature(
-                    R.drawable.ic_loc_warning,
-                    R.string.place_paywall_feature_danger,
-                    R.string.place_paywall_feature_danger_desc,
-                )
+            TopBar(closeVisible = closeVisible, reduceMotion = reduceMotion, onClose = actions.onClose)
+            var showAll by rememberSaveable { mutableStateOf(false) }
+            Column(
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = Spacing.m, vertical = Spacing.s),
+                verticalArrangement = Arrangement.spacedBy(Spacing.m),
+            ) {
+                if (offer !is PaywallOffer.Subscribed) {
+                    Text(
+                        text = stringResource(R.string.place_paywall_headline),
+                        style = textTitleBold24Gradient,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().semantics { heading() },
+                    )
+                    // The free plan's limits are said in the cards themselves (decision of the PM, 2026-11-25): the number of places comes from [PlaceLimits], the single Miff from [PlaceLimits.FREE_MIFFS].
+                    Feature(
+                        R.drawable.ic_loc_pin,
+                        R.string.place_paywall_feature_places,
+                        R.string.place_paywall_feature_places_desc,
+                        note =
+                            pluralStringResource(
+                                R.plurals.paywall_feature_places_limit,
+                                PlaceLimits.FREE_PLACES,
+                                PlaceLimits.FREE_PLACES,
+                            ),
+                    )
+                    Feature(
+                        R.drawable.ic_group,
+                        R.string.place_paywall_feature_miffs,
+                        R.string.place_paywall_feature_miffs_desc,
+                        note = stringResource(R.string.paywall_feature_miffs_limit),
+                    )
+                    Feature(
+                        R.drawable.ic_loc_warning,
+                        R.string.place_paywall_feature_danger,
+                        R.string.place_paywall_feature_danger_desc,
+                    )
+                }
+                ScrollingOffer(offer = offer, showAll = showAll, onRestore = actions.onRestore)
             }
-            ScrollingOffer(offer = offer, showAll = showAll, onRestore = actions.onRestore)
+            PurchaseZone(
+                state = state,
+                showAll = showAll,
+                onShowAll = { showAll = true },
+                onShowTrial = { showAll = false },
+                actions = actions,
+            )
         }
-        PurchaseZone(state = state, showAll = showAll, onShowAll = { showAll = true }, actions = actions)
+        // The confirmation is celebrated with a short burst of confetti over the whole screen; nothing at all when the animations are turned off (see [ConfettiBurst]).
+        if (offer is PaywallOffer.Subscribed && !reduceMotion) ConfettiBurst()
     }
 }
 
@@ -352,20 +370,7 @@ private fun ScrollingOffer(
         }
 
         PaywallOffer.Subscribed -> {
-            Spacer(Modifier.size(Spacing.xl))
-            Text(
-                text = stringResource(R.string.paywall_subscribed),
-                style = textTitleBold24Gradient,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth().semantics { heading() },
-            )
-            Text(
-                text = stringResource(R.string.paywall_subscribed_detail),
-                style = textBodyRegular,
-                color = colorTextDescription,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            SubscribedContent()
         }
 
         PaywallOffer.Loading, PaywallOffer.Unavailable -> {
@@ -474,6 +479,7 @@ private fun PurchaseZone(
     state: PaywallUiState,
     showAll: Boolean,
     onShowAll: () -> Unit,
+    onShowTrial: () -> Unit,
     actions: PaywallActions,
 ) {
     val offer = state.offer
@@ -520,8 +526,17 @@ private fun PurchaseZone(
             is PaywallOffer.TrialEligible -> {
                 if (showAll) {
                     Plans(offer.annual, offer.monthly, state, actions)
+                    // The way back: "Essai gratuit" returns to the main view AND opens the store sheet of the trial at once (one touch, nothing to look for; if the sheet is closed, the person is on the
+                    // main view, whose trial button is there). Same style as "Voir toutes les offres".
+                    LinkButton(
+                        text = stringResource(R.string.paywall_free_trial_link),
+                        onClick = {
+                            onShowTrial()
+                            actions.onStartTrial()
+                        },
+                    )
                 } else {
-                    TrialButton(offer, state, onShowAll, actions)
+                    TrialButton(state, onShowAll, actions)
                 }
             }
 
@@ -608,10 +623,12 @@ private fun StatusLine(
     }
 }
 
-/** Mockup 1: the trial button, "Annulable à tout moment" on its corner, THEN the billed price (the most visible price line), the monthly equivalent smaller. */
+/**
+ * Mockup 1: the trial button, "Annulable à tout moment" on its corner, then "Voir toutes les offres". NO price line under the button (decision of the PM, 2026-11-25, risk assumed: the
+ * stores normally want the price after the trial in view; it stays in the information block, in "Voir toutes les offres" and in the sheet of the store).
+ */
 @Composable
 private fun TrialButton(
-    offer: PaywallOffer.TrialEligible,
     state: PaywallUiState,
     onShowAll: () -> Unit,
     actions: PaywallActions,
@@ -621,23 +638,6 @@ private fun TrialButton(
             text = stringResource(R.string.paywall_cta_trial),
             onClick = actions.onStartTrial,
             enabled = !state.busy,
-            modifier = Modifier.fillMaxWidth(),
-        )
-    }
-    // The billed price is the biggest price on the screen: 16 bold, against 14 regular for the monthly equivalent.
-    Text(
-        text = stringResource(R.string.paywall_trial_then, offer.annual.formatted),
-        style = textBodyBold16,
-        color = colorTextPrimary,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth().padding(top = Spacing.xs),
-    )
-    offer.annual.perMonth()?.let { perMonth ->
-        Text(
-            text = stringResource(R.string.paywall_monthly_equivalent, perMonth),
-            style = textBodyRegular14,
-            color = colorTextDescription,
-            textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
     }
@@ -775,6 +775,8 @@ private fun Feature(
     icon: Int,
     title: Int,
     description: Int,
+    /** The limit of the free plan, in a third line (null: none). */
+    note: String? = null,
 ) {
     Row(
         modifier =
@@ -803,6 +805,7 @@ private fun Feature(
         Column {
             Text(text = stringResource(title), style = textBodyBold16, color = colorTextPrimary)
             Text(text = stringResource(description), style = textBodyRegular14, color = colorTextDescription)
+            if (note != null) Text(text = note, style = textBodyBold14, color = colorTextDescription)
         }
     }
 }

@@ -13,8 +13,12 @@ import com.tomessa.miff.domain.subscription.SubscriptionStatus
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -75,6 +79,15 @@ class PremiumCoordinator(
 ) {
     private val mutableSession = MutableStateFlow<PurchaseSession>(PurchaseSession.Idle)
     val session: StateFlow<PurchaseSession> = mutableSession.asStateFlow()
+
+    private val mutableAccessGranted =
+        MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
+
+    /**
+     * Said each time Miff+ is confirmed for the account (a purchase, a restoration, a purchase found by the silent look, or an offer that finds the account already subscribed): the screens
+     * that hold a copy of the plan read it again (see `MiffDirectory.followPremiumGrants`). Nothing is said when nothing changed for the person.
+     */
+    val accessGranted: SharedFlow<Unit> = mutableAccessGranted.asSharedFlow()
 
     private val busy = AtomicBoolean(false)
     private val serial = AtomicLong(0L)
@@ -182,6 +195,12 @@ class PremiumCoordinator(
     ) {
         mutableSession.value = PurchaseSession.Finished(serial.incrementAndGet(), outcome, restore)
         busy.set(false)
+        if (outcome == PurchaseOutcome.GRANTED || restore == RestoreOutcome.FOUND) noteAccessGranted()
+    }
+
+    /** Miff+ is on for this account (confirmed by the server): tells the screens that keep a copy of the plan. */
+    fun noteAccessGranted() {
+        mutableAccessGranted.tryEmit(Unit)
     }
 
     private suspend fun runPurchase(
@@ -349,6 +368,7 @@ class PremiumCoordinator(
         // A purchase of another account, or one the server refuses for good (unknown product, other package...), is not sent again by itself: only an explicit restoration does.
         val result = syncSpaced(token, patient = false)
         if (result == SyncResult.AlreadyLinked || result == SyncResult.Rejected) refusedTokens.add(token)
+        if (result is SyncResult.Synced && grantsAccess(result.state)) noteAccessGranted()
     }
 
     // ---------------------------------------------------------------------------------------------------------------------

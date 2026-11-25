@@ -20273,37 +20273,37 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Du hast Miff+. Danke!"
+            "value": "Willkommen bei Miff+!"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You have Miff+. Thank you!"
+            "value": "Welcome to Miff+!"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tienes Miff+. ¡Gracias!"
+            "value": "¡Te damos la bienvenida a Miff+!"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu as Miff+. Merci !"
+            "value": "Bienvenue sur Miff+ !"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hai Miff+. Grazie!"
+            "value": "Ti diamo il benvenuto su Miff+!"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tens a Miff+. Agradecemos!"
+            "value": "Damos-te as boas-vindas à Miff+!"
           }
         }
       }
@@ -20314,37 +20314,37 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Alles ist freigeschaltet."
+            "value": "Genieße die unbegrenzte Version von Miff"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Everything is unlocked."
+            "value": "Enjoy the unlimited version of Miff"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Todo está desbloqueado."
+            "value": "Disfruta de Miff en su versión ilimitada"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tout est débloqué."
+            "value": "Profite de Miff en version illimitée"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tutto è sbloccato."
+            "value": "Goditi Miff nella versione illimitata"
           }
         },
         "pt": {
           "stringUnit": {
             "state": "translated",
-            "value": "Está tudo desbloqueado."
+            "value": "Aproveita a Miff na versão ilimitada"
           }
         }
       }
@@ -54614,6 +54614,228 @@
           "stringUnit": {
             "state": "translated",
             "value": "Compra de teste: nenhum pagamento real."
+          }
+        }
+      }
+    },
+    "paywall_feature_miffs_limit": {
+      "extractionState": "manual",
+      "comment": "Ligne sous « Nombre de Miffs illimité » de l'offre ; la formule gratuite n'a qu'une Miff.",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonst begrenzt auf eine einzige Miff"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Otherwise, limited to a single Miff"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Si no, límite de una sola Miff"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Limite d'une seule Miff sinon"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Altrimenti, limite di una sola Miff"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caso contrário, limite de uma só Miff"
+          }
+        }
+      }
+    },
+    "paywall_free_trial_link": {
+      "extractionState": "manual",
+      "comment": "Lien de la vue « Voir toutes les offres » : revient à l'offre avec l'essai et ouvre la fenêtre du store.",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kostenlos testen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Free trial"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prueba gratuita"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Essai gratuit"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prova gratuita"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teste gratuito"
+          }
+        }
+      }
+    },
+    "paywall_feature_places_limit": {
+      "extractionState": "manual",
+      "comment": "Argument : le nombre de lieux de la formule gratuite (constante de l'app, jamais écrite dans la traduction). Ligne sous « Lieux de confiance illimités » de l'offre.",
+      "localizations": {
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Sonst begrenzt auf %1$lld Ort"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Sonst begrenzt auf %1$lld Orte"
+                }
+              }
+            }
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Otherwise, limited to %1$lld place"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Otherwise, limited to %1$lld places"
+                }
+              }
+            }
+          }
+        },
+        "es": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Si no, límite de %1$lld lugar"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Si no, límite de %1$lld lugares"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Si no, límite de %1$lld lugares"
+                }
+              }
+            }
+          }
+        },
+        "fr": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Limite de %1$lld lieu sinon"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Limite de %1$lld lieux sinon"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Limite de %1$lld lieux sinon"
+                }
+              }
+            }
+          }
+        },
+        "it": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Altrimenti, limite di %1$lld luogo"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Altrimenti, limite di %1$lld luoghi"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Altrimenti, limite di %1$lld luoghi"
+                }
+              }
+            }
+          }
+        },
+        "pt": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Caso contrário, limite de %1$lld local"
+                }
+              },
+              "many": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Caso contrário, limite de %1$lld locais"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Caso contrário, limite de %1$lld locais"
+                }
+              }
+            }
           }
         }
       }

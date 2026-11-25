@@ -1220,6 +1220,7 @@
     <!-- PAY-UI : ecran d'offre Miff+ (ticket paywall-v2.md) ; cles ajoutees par la PR iOS pour la parite, a reprendre par PAY-UI-A -->
     <string name="paywall_soon_body">This option isn\'t open yet.</string>
     <string name="paywall_cta_trial">Start your 7-day free trial</string>
+    <!-- No longer shown on Android (decision of the PM, 2026-11-25); kept because the iOS offer screen still uses it: removed with the iOS screen (SRV-8I). -->
     <string name="paywall_trial_then">Then %1$s per year</string>
     <string name="paywall_monthly_equivalent">that\'s %1$s per month</string>
     <string name="paywall_annual_savings" formatted="false">almost 30% off</string>
@@ -1229,6 +1230,12 @@
         <item quantity="one">The free plan is still available: 1 Miff and %1$d trusted place.</item>
         <item quantity="other">The free plan is still available: 1 Miff and %1$d trusted places.</item>
     </plurals>
+    <plurals name="paywall_feature_places_limit">
+        <item quantity="one">Otherwise, limited to %1$d place</item>
+        <item quantity="other">Otherwise, limited to %1$d places</item>
+    </plurals>
+    <string name="paywall_feature_miffs_limit">Otherwise, limited to a single Miff</string>
+    <string name="paywall_free_trial_link">Free trial</string>
     <string name="paywall_close_available_a11y">You can now close this screen</string>
     <string name="paywall_loading">Loading plans…</string>
     <string name="paywall_unavailable">Plans aren\'t available right now. Check your connection and try again.</string>
@@ -1237,8 +1244,8 @@
     <string name="paywall_error_calm">We couldn\'t complete the purchase this time. If a payment went through, your subscription will show up automatically; otherwise, try again in a moment.</string>
     <string name="paywall_restore">Restore purchases</string>
     <string name="paywall_restore_none">No Miff+ subscription found on this %1$s account.</string>
-    <string name="paywall_subscribed">You have Miff+. Thank you!</string>
-    <string name="paywall_subscribed_detail">Everything is unlocked.</string>
+    <string name="paywall_subscribed">Welcome to Miff+!</string>
+    <string name="paywall_subscribed_detail">Enjoy the unlimited version of Miff</string>
     <string name="paywall_continue">Continue</string>
     <string name="paywall_working">One moment…</string>
     <string name="paywall_plan_annual_title">Annual · %1$s per year</string>

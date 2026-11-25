@@ -1,5 +1,7 @@
 package com.tomessa.miff.domain.miff
 
+import com.tomessa.miff.domain.place.PlaceLimits
+
 /**
  * The selector of Miffs in the header of the Feed (decision of the PM, 2026-11-08, which REPLACES D12 / Q2 of the Feed ticket: "avec une seule Miff,
  * pastille non cliquable; Rejoindre / Créer réservés au Premium").
@@ -26,7 +28,7 @@ object MiffSelector {
         miffCount: Int,
     ): SelectorTap =
         when {
-            premium == false && miffCount >= 1 -> SelectorTap.OpenOffer
+            premium == false && miffCount >= PlaceLimits.FREE_MIFFS -> SelectorTap.OpenOffer
             entry == SelectorEntry.JOIN -> SelectorTap.OpenJoin
             else -> SelectorTap.OpenCreate
         }

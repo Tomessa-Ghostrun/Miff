@@ -62,6 +62,8 @@ class PaywallPurchaseViewModel(
             when {
                 already -> {
                     mutableState.update { it.copy(offer = PaywallOffer.Subscribed, notice = null) }
+                    // The offer was opened by a gate that did not know yet (a copy of the plan read before the purchase): the screens that hold such a copy read it again.
+                    premium.noteAccessGranted()
                 }
 
                 else -> {

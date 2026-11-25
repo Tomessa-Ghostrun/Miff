@@ -70,6 +70,16 @@ class SubscriptionWiringRuleTest {
     }
 
     @Test
+    fun theListOfMiffs_isReadAgain_whenMiffPlusIsGranted_soTheGatesNeverOpenTheOfferForSomeoneWhoHasIt() {
+        // Regression: after the trial, "Créer une Miff" opened the offer (the list still held "free"), which answered "Tu as Miff+".
+        val text = mainShell
+        assertTrue(
+            "MainShell follows the grants of Miff+ to put the plan of the list right",
+            Regex("""miffDirectory\s*\.followPremiumGrants\(\s*premium\.accessGranted\s*\)""").containsMatchIn(text),
+        )
+    }
+
+    @Test
     fun theRowIsDrawnOnlyWhenTheCallbackIsGiven() {
         val text = code(File(main, "ui/settings/SettingsScreens.kt"))
         assertTrue("onOpenSubscription: (() -> Unit)? = null" in text)

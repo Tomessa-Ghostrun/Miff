@@ -32,6 +32,12 @@ object PlaceLimits {
     const val FREE_PLACES = 3
     val FREE_IDS = listOf("p1", "p2", "p3")
 
+    /**
+     * Free plan: ONE Miff at a time (the membership key "free", `backend/firestore.rules`). The offer says it in words ("Limite d'une seule Miff sinon"): a test ties that sentence to this
+     * number, and [com.tomessa.miff.domain.miff.MiffSelector] opens the offer from it.
+     */
+    const val FREE_MIFFS = 1
+
     /** A place is written in at most 5 Miffs at a time (decision Q4): the rules read at most 20 documents per lot. */
     const val MAX_MIFFS = 5
 

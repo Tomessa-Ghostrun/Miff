@@ -26,6 +26,8 @@ L'APK debug des PR (artefact du workflow `android`) contient un **faux magasin**
 2. Ouvrir l'offre (Feed : 4e lieu, ou **Réglages > Abonnement > Découvrir Miff+**) : prix et boutons apparaissent, l'achat joue le scénario choisi.
 3. **Réglages > Abonnement** : un message par état (§8 du ticket), « Gérer mon abonnement » ouvre la vraie page des abonnements de Google Play, « Actualiser mon abonnement » rejoue la restauration.
 4. **Réglages > Mon compte > Supprimer mon compte** : **aucun rappel d'abonnement** (décision du PM du 2026-11-21) ; supprimer son compte ne résilie pas l'abonnement du store, la résiliation se fait sur l'écran Abonnement (« Gérer mon abonnement ») ou la page du store.
+5. **Retours du PM du 2026-11-25** à vérifier sur l'offre : sous « Lieux de confiance illimités », « Limite de 3 lieux sinon » ; sous « Nombre de Miffs illimité », « Limite d'une seule Miff sinon » ; **aucune ligne de prix sous le bouton d'essai** (le prix reste dans le bloc d'information plus bas, dans « Voir toutes les offres » et dans la fenêtre du store) ; dans « Voir toutes les offres », le lien **« Essai gratuit »** ramène à la vue principale et ouvre aussitôt la fenêtre d'essai.
+6. **Après l'essai** (faux magasin, scénario « essai possible » puis « Réussi ») : l'écran **« Bienvenue sur Miff+ ! »** (logo, ce qui est débloqué, confettis ; **sans confettis** si les animations sont désactivées dans les options pour développeurs). Revenir au Feed : **« Créer une Miff »** et **« Rejoindre une Miff »** du sélecteur ouvrent leurs écrans (plus l'offre), de même que le carrousel du Profil ; **le 4e lieu** s'ajoute sans offre.
 
 ---
 

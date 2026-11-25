@@ -16,7 +16,9 @@ import com.tomessa.miff.testsupport.FakeBillingBackend
 import com.tomessa.miff.testsupport.FakeBillingGateway
 import com.tomessa.miff.testsupport.FakeEntitlementStore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -496,6 +498,83 @@ class PremiumCoordinatorTest {
             quiet.gateway.shared.tryEmit(PurchaseEvent.Network)
             runCurrent()
             assertTrue(quiet.backend.syncs.isEmpty())
+        }
+
+    // ---- the signal "Miff+ is on" (the screens that hold a copy of the plan read it again; regression of "Créer une Miff" after the trial) ----------------
+
+    /** Collects what [PremiumCoordinator.accessGranted] says, from the very start. */
+    private fun TestScope.grantsOf(w: World): MutableList<Unit> {
+        val grants = mutableListOf<Unit>()
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            w.coordinator.accessGranted.collect {
+                grants +=
+                    it
+            }
+        }
+        return grants
+    }
+
+    @Test
+    fun aPurchaseThatGrantsAccess_saysSo_once() =
+        runTest {
+            val w = world(this)
+            val grants = grantsOf(w)
+            w.gateway.afterLaunch = { w.gateway.shared.tryEmit(PurchaseEvent.Updated(listOf(purchased()))) }
+            assertEquals(PurchaseOutcome.GRANTED, finishedAfterPurchase(w).outcome)
+            assertEquals(1, grants.size)
+        }
+
+    @Test
+    fun aPurchaseThatGrantsNothing_saysNothing() =
+        runTest {
+            val w = world(this)
+            val grants = grantsOf(w)
+            w.gateway.afterLaunch = { w.gateway.shared.tryEmit(PurchaseEvent.Canceled) }
+            assertEquals(PurchaseOutcome.CANCELED, finishedAfterPurchase(w).outcome)
+            val pendingOne = world(this)
+            val pendingGrants = grantsOf(pendingOne)
+            pendingOne.gateway.afterLaunch =
+                { pendingOne.gateway.shared.tryEmit(PurchaseEvent.Updated(listOf(pending()))) }
+            assertEquals(PurchaseOutcome.PENDING, finishedAfterPurchase(pendingOne).outcome)
+            assertTrue(grants.isEmpty())
+            assertTrue(pendingGrants.isEmpty())
+        }
+
+    @Test
+    fun aRestorationThatFindsMiffPlus_saysSo_aRestorationThatFindsNothing_doesNot() =
+        runTest {
+            val found = world(this)
+            val foundGrants = grantsOf(found)
+            found.gateway.owned = OwnedResult.Loaded(listOf(purchased(acknowledged = true)))
+            found.backend.default = SyncResult.Synced("active")
+            assertEquals(RestoreOutcome.FOUND, finishedAfterRestore(found).restore)
+            assertEquals(1, foundGrants.size)
+
+            val none = world(this)
+            val noneGrants = grantsOf(none)
+            none.gateway.owned = OwnedResult.Loaded(emptyList())
+            assertEquals(RestoreOutcome.NONE_FOUND, finishedAfterRestore(none).restore)
+            assertTrue(noneGrants.isEmpty())
+        }
+
+    @Test
+    fun aPurchaseFoundByTheSilentLook_saysSo() =
+        runTest {
+            val w = world(this)
+            val grants = grantsOf(w)
+            w.gateway.owned = OwnedResult.Loaded(listOf(purchased()))
+            w.store.document = null
+            w.coordinator.reconcile()
+            assertEquals(1, grants.size)
+        }
+
+    @Test
+    fun anOfferThatFindsTheAccountAlreadySubscribed_canSaySo() =
+        runTest {
+            val w = world(this)
+            val grants = grantsOf(w)
+            w.coordinator.noteAccessGranted()
+            assertEquals(1, grants.size)
         }
 
     // ---- offers and privacy -------------------------------------------------------------------------------------------------------------------
