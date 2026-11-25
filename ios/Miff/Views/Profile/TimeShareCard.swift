@@ -175,6 +175,8 @@ struct TimeShareCard: View {
             action("update_action_open_settings", actions.onOpenLocationSettings)
         case .notEnough(let daysLeft):
             notEnough(daysLeft)
+        case .noTimeYet:
+            message("profile_timeshare_no_time_yet")
         case .nominal(let result, let pause):
             nominal(result, pause: pause)
         }

@@ -164,6 +164,27 @@ final class TimeShareViewModelTests: XCTestCase {
         XCTAssertEqual(card.display.state, .notEnough(daysLeft: 2))
     }
 
+    func testAnEmptyJournalButADetectionArmedOneDayAgoSaysTwoDaysNotThree() async {
+        // Personne n'a bougé : aucun fait. Le décompte part de l'armement de la détection (le compteur ne reste plus figé).
+        history.begin(miffId: miff, atMillis: TimeShareFixtures.now - TimeShareLimits.dayMillis)
+        let card = model()
+
+        card.show(miffId: miff, places: [place("p1", "Maison")])
+        await waitUntil { card.display.state != .hidden }
+
+        XCTAssertEqual(card.display.state, .notEnough(daysLeft: 2))
+    }
+
+    func testAfterThreeDaysWithoutAnyTimeInAPlaceTheCardSaysWhatIsMissingInsteadOfACountdown() async {
+        history.begin(miffId: miff, atMillis: TimeShareFixtures.now - 4 * TimeShareLimits.dayMillis)
+        let card = model()
+
+        card.show(miffId: miff, places: [place("p1", "Maison")])
+        await waitUntil { card.display.state != .hidden }
+
+        XCTAssertEqual(card.display.state, .noTimeYet)
+    }
+
     func testTheCounterGoesDownDayByDayThenTheChartShowsUpAndErasingStartsAgain() async {
         // Premier fait il y a 12 h : « dans 3 jours ».
         for fact in TimeShareFixtures.timeline([(.trusted, "p1", 6), (.out, nil, 6)], miff: miff, aged: false) {

@@ -32,6 +32,8 @@ enum TimeShareCardState: Equatable, CustomStringConvertible {
     case locationInsufficient
     /// Moins de 3 jours d'historique, suivi actif : seulement le texte figé par le PM (ni anneau, ni sélecteur).
     case notEnough(daysLeft: Int)
+    /// Le seuil d'historique est passé mais la personne n'a encore passé de temps dans aucun lieu : un texte sans décompte.
+    case noTimeYet
     /// Assez de données ; `pause` : le suivi est arrêté maintenant (ligne calme sous l'anneau).
     case nominal(TimeShareResult, pause: Bool)
 
@@ -60,16 +62,24 @@ enum TimeShareCardState: Equatable, CustomStringConvertible {
             return .nominal(result, pause: conditions.trackingStopped)
         case .some(.notEnough(let daysLeft)):
             // Le texte « nous analysons ta situation » n'est dit QUE si le suivi est actif : sinon, la vraie raison (risque R6 du ticket).
-            if conditions.travelActive {
-                return .travel
-            }
-            if conditions.sharingStopped {
-                return .sharingStopped
-            }
-            if conditions.locationInsufficient {
-                return .locationInsufficient
-            }
-            return .notEnough(daysLeft: daysLeft)
+            return stoppedReason(conditions) ?? .notEnough(daysLeft: daysLeft)
+        case .some(.noTimeMeasured):
+            // Mêmes raisons d'arrêt : la vraie raison passe avant le texte « dès que tu auras passé du temps dans l'un de tes lieux ».
+            return stoppedReason(conditions) ?? .noTimeYet
         }
+    }
+
+    /// Pourquoi le suivi est arrêté maintenant (voyage, puis partage arrêté, puis localisation insuffisante), ou nil s'il tourne.
+    private static func stoppedReason(_ conditions: TimeShareConditions) -> TimeShareCardState? {
+        if conditions.travelActive {
+            return .travel
+        }
+        if conditions.sharingStopped {
+            return .sharingStopped
+        }
+        if conditions.locationInsufficient {
+            return .locationInsufficient
+        }
+        return nil
     }
 }

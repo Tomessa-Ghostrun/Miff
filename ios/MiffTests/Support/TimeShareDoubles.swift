@@ -10,11 +10,23 @@ final class MemoryPresenceHistory: PresenceHistory {
     private(set) var clearAllCalls = 0
     private(set) var eraseFactsCalls = 0
     private(set) var purged: [String] = []
+    /// Le début du suivi de chaque Miff (le premier appel de `begin` compte).
+    private(set) var starts: [String: Int] = [:]
     /// Vrai : le stockage est illisible (« Réessayer »).
     var unreadable = false
 
     func record(_ fact: PresenceFact) {
         facts.append(fact)
+    }
+
+    func begin(miffId: String, atMillis: Int) {
+        if starts[miffId] == nil {
+            starts[miffId] = atMillis
+        }
+    }
+
+    func startedAt(miffId: String) -> Int? {
+        [starts[miffId], facts.first { $0.miffId == miffId }?.atMillis].compactMap { $0 }.min()
     }
 
     func read(miffId: String) -> PresenceHistoryRead {
@@ -41,20 +53,24 @@ final class MemoryPresenceHistory: PresenceHistory {
 
     func purge(miffId: String) {
         purged.append(miffId)
+        starts[miffId] = nil
         facts.removeAll { $0.miffId == miffId }
     }
 
     func retainOnly(miffIds: Set<String>) {
+        starts = starts.filter { miffIds.contains($0.key) }
         facts.removeAll { !miffIds.contains($0.miffId) }
     }
 
     func eraseFacts() {
         eraseFactsCalls += 1
+        starts = [:]
         facts = []
     }
 
     func clearAll() {
         clearAllCalls += 1
+        starts = [:]
         facts = []
         window = TimeShareLimits.defaultWindowDays
     }

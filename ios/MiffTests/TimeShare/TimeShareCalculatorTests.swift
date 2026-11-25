@@ -120,11 +120,11 @@ final class TimeShareCalculatorTests: XCTestCase {
         XCTAssertEqual(Scn.compute(facts, places: [Scn.home]), .notEnough(daysLeft: 1))
     }
 
-    func testT9dThreeDaysOfHistoryButNothingMeasuredInTheWindowIsNotEnough() {
-        // Rien de mesuré (voyage, suivi arrêté) : pas de graphique, jamais « dans 0 jour ».
+    func testT9dThreeDaysOfHistoryButNothingMeasuredInTheWindowSaysWhatIsMissingInsteadOfACountdown() {
+        // Rien de mesuré (jamais dans un lieu, voyage, suivi arrêté) : pas de graphique, jamais « dans 0 jour » ni « dans 1 jour » sans fin.
         let facts = Scn.timeline([(.unknown, nil, 100)])
 
-        XCTAssertEqual(Scn.compute(facts, places: [Scn.home]), .notEnough(daysLeft: 1))
+        XCTAssertEqual(Scn.compute(facts, places: [Scn.home]), .noTimeMeasured)
     }
 
     func testTheThresholdIsOneSingleConstantOfThreeDays() {

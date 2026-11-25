@@ -52,6 +52,19 @@ final class TimeShareCardTests: XCTestCase {
         )
     }
 
+    func testEnoughHistoryWithoutAnyMeasuredTimeShowsTheWordsUnlessTrackingIsStopped() {
+        func state(_ conditions: TimeShareConditions) -> TimeShareCardState {
+            TimeShareCardState.make(
+                places: [Scn.home], readFailed: false, outcome: .noTimeMeasured, conditions: conditions
+            )
+        }
+
+        XCTAssertEqual(state(TimeShareConditions()), .noTimeYet)
+        XCTAssertEqual(state(TimeShareConditions(locationInsufficient: true)), .locationInsufficient)
+        XCTAssertEqual(state(TimeShareConditions(sharingStopped: true)), .sharingStopped)
+        XCTAssertEqual(state(TimeShareConditions(travelActive: true)), .travel)
+    }
+
     func testTheOverTwentyZonesNoteDoesNotChangeTheState() {
         let outcome = TimeShareOutcome.notEnough(daysLeft: 3)
 

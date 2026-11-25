@@ -17,20 +17,36 @@ struct TimeShareTotals: Equatable {
 
 enum TimeShareCalculator {
     /// La répartition du temps d'UNE Miff sur les `windowDays` derniers jours. `facts` : les faits de cette Miff dans l'ordre où ils ont été
-    /// enregistrés. `places` : la liste ACTUELLE des lieux de la Miff.
+    /// enregistrés. `places` : la liste ACTUELLE des lieux de la Miff. `startedAtMillis` : l'instant où la détection a été armée pour cette
+    /// Miff sur ce téléphone (`PresenceHistory.startedAt`) ; nil : inconnu (rien d'armé encore).
     static func compute(
         facts: [PresenceFact],
         places: [TimeSharePlace],
         windowDays: Int,
-        nowMillis: Int
+        nowMillis: Int,
+        startedAtMillis: Int? = nil
     ) -> TimeShareOutcome {
         let totals = measure(facts: facts, places: places, windowDays: windowDays, nowMillis: nowMillis)
-        // Le journal de cette Miff doit avoir au moins 3 jours (son premier enregistrement) ET du temps mesuré dans la fenêtre choisie.
-        let elapsed = facts.first.map { max(0, nowMillis - $0.atMillis) } ?? 0
-        guard elapsed >= TimeShareLimits.minimumHistoryMillis, totals.measured > 0 else {
+        // L'historique part du DÉBUT du suivi de la Miff : le plus ancien du premier enregistrement du journal et de l'armement de la
+        // détection. Sans lui, le décompte restait au maximum tant que la personne n'était ni entrée ni sortie d'un lieu (retour du PM,
+        // 2026-11-25). Un début dans le futur compte 0.
+        let elapsed = elapsedHistory(facts: facts, startedAtMillis: startedAtMillis, nowMillis: nowMillis)
+        guard elapsed >= TimeShareLimits.minimumHistoryMillis else {
             return .notEnough(daysLeft: TimeShareLimits.daysLeft(elapsedMillis: elapsed))
         }
+        // Assez d'historique mais aucun temps mesuré : jamais « dans 1 jour » indéfiniment.
+        guard totals.measured > 0 else {
+            return .noTimeMeasured
+        }
         return .ready(result(totals: totals, places: places, windowDays: windowDays))
+    }
+
+    /// Le temps écoulé depuis le début du suivi de la Miff (0 sans aucun repère ; un repère dans le futur compte 0).
+    static func elapsedHistory(facts: [PresenceFact], startedAtMillis: Int?, nowMillis: Int) -> Int {
+        guard let start = [facts.first?.atMillis, startedAtMillis].compactMap({ $0 }).min() else {
+            return 0
+        }
+        return max(0, nowMillis - start)
     }
 
     // MARK: - Le temps mesuré
