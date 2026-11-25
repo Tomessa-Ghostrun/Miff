@@ -1085,7 +1085,7 @@ La carte « Répartition de ton temps » de l'onglet Profil montre, en anneau, c
 
 | Chemin | Rôle |
 |---|---|
-| `Models/TimeShare/PresenceFact.swift` | Un fait (Miff, état, lieu, heure) et les constantes partagées avec Android (7 / 14 / 30 jours, 7 jours d’historique, 48 h, 35 jours, 5 lieux nommés, 4 lignes de légende) |
+| `Models/TimeShare/PresenceFact.swift` | Un fait (Miff, état, lieu, heure) et les constantes partagées avec Android (7 / 14 / 30 jours, 3 jours d’historique, 48 h, 35 jours, 5 lieux nommés, 4 lignes de légende) |
 | `Models/TimeShare/TimeShareCalculator.swift`, `TimeSharePercentages.swift` | Le calcul (contrat du ticket §6.2) et les pourcentages entiers (plus grand reste, en entiers) |
 | `Models/TimeShare/TimeShareCardState.swift`, `TimeShareTexts.swift`, `TimeShareDonutLayout.swift` | Les états de la carte (§7), les textes et la description du lecteur d'écran, la géométrie de l'anneau |
 | `Services/TimeShare/PresenceHistoryFileStore.swift` | Le journal sur disque (privé, exclu des sauvegardes, 35 jours) ; `PresenceHistoryPruner` efface le journal d'une Miff quittée ; `TimeShareContext` dit l'état du suivi (autorisations, voyage, zones) |

@@ -171,6 +171,23 @@ final class TimeShareCalculatorTests: XCTestCase {
         XCTAssertNotNil(Scn.ready(outcome(afterHours: 84)))
     }
 
+    func testTheThresholdIsCountedInElapsedMillisecondsSoADaylightSavingChangeDoesNotMoveIt() {
+        // Le seuil est une durée écoulée (72 h exactes), jamais « 3 jours de calendrier » : un changement d'heure ou de fuseau dans la
+        // période ne le décale pas (le calcul n'utilise ni `Calendar` ni fuseau). 72 h exactes : graphique ; 71 h : « dans 1 jour ».
+        let places = [Scn.home]
+        func outcome(afterHours: Int) -> TimeShareOutcome {
+            let facts = [
+                PresenceFact(miffId: "m1", state: .trusted, placeId: "p1", atMillis: Scn.now - afterHours * hour),
+                PresenceFact(miffId: "m1", state: .out, placeId: nil, atMillis: Scn.now - (afterHours - 24) * hour)
+            ]
+            return Scn.compute(facts, places: places)
+        }
+
+        XCTAssertNotNil(Scn.ready(outcome(afterHours: 72)))
+        XCTAssertEqual(outcome(afterHours: 71), .notEnough(daysLeft: 1))
+        XCTAssertEqual(TimeShareLimits.daysLeft(elapsedMillis: 72 * hour - 1), 1)
+    }
+
     func testAnEmptyJournalAndAFutureFirstRecordSayTheMaximum() {
         XCTAssertEqual(Scn.compute([], places: [Scn.home]), .notEnough(daysLeft: 3))
         XCTAssertEqual(TimeShareLimits.daysLeft(elapsedMillis: -5 * hour), 3)

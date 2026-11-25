@@ -6,7 +6,7 @@ import SwiftUI
 // dans tes zones de confiance » avec la coche et 🎉. Tout est calculé sur le téléphone ; rien n'est
 // envoyé. Accessibilité : l'anneau est décoratif, UNE description liste TOUTES les parts (le NOM de la catégorie, jamais l'emoji), le sélecteur est
 // annoncé « Période, 7 jours » (le choix actuel « choisi »), la ligne de la zone de danger est un bouton qui ouvre le détail ; aux grandes tailles de
-// texte la légende passe SOUS l'anneau. Sans 7 jours de données : pas de graphique, pas de sélecteur, seulement le texte figé par le PM.
+// texte la légende passe SOUS l'anneau. Sans 3 jours de données : pas de graphique, pas de sélecteur, seulement le texte figé par le PM.
 
 /// Les gestes de la carte.
 struct TimeShareActions {
