@@ -1,6 +1,6 @@
 # Mise à jour des textes légaux du 21 novembre 2026 (version 1.2) : ce qui change, dans quel ordre publier, ce que tu dois valider
 
-> **Remplacé par `maj-1-3-a-publier.md` (version 1.3, 24 novembre 2026), qui contient tout ce que contient la 1.2 et y ajoute le retrait des statistiques sur iPhone.** Ce document est gardé pour le détail de la 1.2.
+> **Remplacé par `maj-1-3-a-publier.md` (version 1.3, 25 novembre 2026), qui contient tout ce que contient la 1.2 et y ajoute le retrait des statistiques sur iPhone.** Ce document est gardé pour le détail de la 1.2.
 
 Préparé le 2026-11-21 par `release-manager`. **Rien n'est publié.** C'est toi, et toi seul, qui publies le site (aucun agent ne publie ni ne déploie). Ces textes sont écrits par l'équipe d'agents et publiés sous ta responsabilité ; **aucun juriste ne les a relus et aucun texte ne le prétend** (décision du 2026-10-23, risque assumé).
 
@@ -37,7 +37,7 @@ Ce que **je ne peux pas savoir** : si la 1.1 (19 novembre) a été mise en ligne
 2. **La date de la dernière photo (risque J68).** Le ticket « Feed, ordre par photo » est un brouillon dont les défauts s'appliquent par ta délégation : tu n'as pas écrit que tu assumes ce risque (donnée gardée après la disparition de la photo ; l'ordre des cartes trahit « qui a donné des nouvelles en dernier » ; non vérifiable par le serveur). **Confirme que tu l'assumes**, ou dis-moi ce qu'il faut adoucir dans le texte.
 3. **Date et état de la 1.1.** Dis-moi si la 1.1 est déjà en ligne et quel jour tu publies la 1.2 (le jour est écrit dans les quatre textes et dans un test).
 
-4. **(SANS OBJET depuis la version 1.3 du 2026-11-24 : l'interrupteur iPhone est livré par la PR #311, le retrait se fait dans les Réglages sur iPhone comme sur Android, et les textes 1.3 ne disent plus « écris-nous » : voir `maj-1-3-a-publier.md`.)** *Texte d'origine :* **iPhone : retrait du consentement aux statistiques (J72).** Sur iPhone, il n'y a pas encore d'interrupteur dans les Réglages : le retrait se fait en écrivant à l'adresse de contact, et la phrase d'inscription mentionne aussi « Continuer avec Apple ». J'ai corrigé la politique (article 3) et les conditions (article 3) pour le dire ; le résumé (point 8) et l'article 8 de la politique parlent encore des Réglages sans distinguer l'iPhone. **Décide** : livrer l'interrupteur iOS avant toute distribution iPhone, ou assumer l'écart par écrit.
+4. **(SANS OBJET depuis la version 1.3 du 2026-11-25 : l'interrupteur iPhone est livré par la PR #311, le retrait se fait dans les Réglages sur iPhone comme sur Android, et les textes 1.3 ne disent plus « écris-nous » : voir `maj-1-3-a-publier.md`.)** *Texte d'origine :* **iPhone : retrait du consentement aux statistiques (J72).** Sur iPhone, il n'y a pas encore d'interrupteur dans les Réglages : le retrait se fait en écrivant à l'adresse de contact, et la phrase d'inscription mentionne aussi « Continuer avec Apple ». J'ai corrigé la politique (article 3) et les conditions (article 3) pour le dire ; le résumé (point 8) et l'article 8 de la politique parlent encore des Réglages sans distinguer l'iPhone. **Décide** : livrer l'interrupteur iOS avant toute distribution iPhone, ou assumer l'écart par écrit.
 
 ## 4. Ce que cette mise à jour ne fait pas
 

@@ -1,6 +1,6 @@
 # Miff Terms of Use
 
-**Version 1.3 — last updated: November 24, 2026**
+**Version 1.3 — last updated: November 25, 2026**
 
 > **What has changed since version 1.2 (November 21, 2026)**
 > - **On iPhone as on Android, you can turn off usage statistics and crash reports at any time in the app Settings**: you no longer need to write to us to withdraw this agreement (article 3, and the Privacy Policy). The sign-up sentence also quotes "Continue with Apple" on iPhone.

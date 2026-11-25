@@ -1,6 +1,6 @@
 # Conditions Générales d'Utilisation de Miff
 
-**Version 1.3 — dernière mise à jour : 24 novembre 2026**
+**Version 1.3 — dernière mise à jour : 25 novembre 2026**
 
 > **Ce qui a changé depuis la version 1.2 (21 novembre 2026)**
 > - **Sur iPhone comme sur Android, tu peux désactiver à tout moment les statistiques d'usage et les rapports de plantage dans les Réglages de l'app** : il n'est plus nécessaire d'écrire pour retirer cet accord (article 3, et la Politique de confidentialité). La phrase d'inscription cite aussi « Continuer avec Apple » sur iPhone.

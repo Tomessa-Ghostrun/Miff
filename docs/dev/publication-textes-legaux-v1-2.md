@@ -1,6 +1,6 @@
 # Publier les textes légaux en version 1.2 (site Firebase Hosting) : procédure pour le PM
 
-> **ARCHIVE (2026-11-22) : ne plus suivre ce document.** La version 1.3 (24 novembre 2026) le remplace : `docs/dev/publication-textes-legaux-v1-3.md` (mêmes commandes, contrôles de version, de date et de contenu mis à jour, et le point d'ordre sur le build iPhone). Gardé pour l'historique de la 1.2 ; ses chaînes (« 21 novembre 2026 », « Version 1.2 ») ne correspondent plus aux textes.
+> **ARCHIVE (2026-11-22) : ne plus suivre ce document.** La version 1.3 (25 novembre 2026) le remplace : `docs/dev/publication-textes-legaux-v1-3.md` (mêmes commandes, contrôles de version, de date et de contenu mis à jour, et le point d'ordre sur le build iPhone). Gardé pour l'historique de la 1.2 ; ses chaînes (« 21 novembre 2026 », « Version 1.2 ») ne correspondent plus aux textes.
 
 Préparé le 2026-11-21 par `release-manager`. **C'est toi, et toi seul, qui tapes les commandes de déploiement** : aucun agent ne déploie, ne se connecte à Firebase ni ne soumet quoi que ce soit à un store. Chaque commande Firebase porte `--project miff-3d283` (jamais `ghostrun-app`, même s'il est visible depuis ton compte Google), jamais `--force`, jamais `firebase use`.
 

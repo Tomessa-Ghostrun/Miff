@@ -1,4 +1,4 @@
-// Textes légaux en version 1.1 (2026-11-19), 1.2 (2026-11-21, tests « VERSION 1.2 ») puis 1.3 (2026-11-24, tests « VERSION 1.3 » en fin de fichier) : version et date visibles, alerte « Je suis en danger »,
+// Textes légaux en version 1.1 (2026-11-19), 1.2 (2026-11-21, tests « VERSION 1.2 ») puis 1.3 (2026-11-25, tests « VERSION 1.3 » en fin de fichier) : version et date visibles, alerte « Je suis en danger »,
 // journal local du temps et description de photo décrits sans mensonge. Tests sans dépendance (node:test).
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -8,8 +8,8 @@ import { buildTemp, htmlPages, visibleText } from './helpers.mjs';
 // Version et date des quatre textes : UN SEUL endroit à changer ici si la publication n'a pas lieu le jour prévu
 // (avec la ligne « **Version … — dernière mise à jour : … **» en tête des quatre fichiers de docs/legal/).
 const VERSION = '1.3';
-const DATE_FR = '24 novembre 2026';
-const DATE_EN = 'November 24, 2026';
+const DATE_FR = '25 novembre 2026';
+const DATE_EN = 'November 25, 2026';
 const versionFr = new RegExp(`Version ${VERSION.replace('.', '\\.')} — dernière mise à jour : ${DATE_FR}`);
 const versionEn = new RegExp(`Version ${VERSION.replace('.', '\\.')} — last updated: ${DATE_EN}`);
 
@@ -305,7 +305,7 @@ test('PROCEDURE 1.3 - les chaînes de contrôle de docs/dev/publication-textes-l
   for (const command of procedure.match(/firebase\.cmd (deploy|hosting:channel:deploy)[^\n]*/g)) assert.match(command, /--project miff-3d283/);
 });
 
-// Version 1.3 (2026-11-24) : l'interrupteur « statistiques d'usage et rapports de plantage » existe aussi sur iPhone (PR #311, ONB-3b iPhone) : le retrait se fait dans l'app
+// Version 1.3 (2026-11-25) : l'interrupteur « statistiques d'usage et rapports de plantage » existe aussi sur iPhone (PR #311, ONB-3b iPhone) : le retrait se fait dans l'app
 // sur les deux plateformes, plus par e-mail ; la marque de retrait en attente (retrait fait hors ligne) est décrite ; rien n'est annoncé qui ne soit pas en service (Miff+, prix).
 test('VERSION 1.3 - le retrait des statistiques se fait dans les Réglages sur iPhone comme sur Android, et la phrase d\'inscription cite « Continuer avec Apple » sur iPhone (FR et EN)', () => {
   for (const pattern of [
