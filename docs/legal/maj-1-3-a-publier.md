@@ -1,6 +1,6 @@
 # Mise à jour des textes légaux du 24 novembre 2026 (version 1.3) : ce qui change, dans quel ordre publier, ce que tu dois valider
 
-Préparé le 2026-11-22 par `release-manager`. **Rien n'est publié.** C'est toi, et toi seul, qui publies le site (aucun agent ne publie ni ne déploie). Ces textes sont écrits par l'équipe d'agents et publiés sous ta responsabilité ; **aucun juriste ne les a relus et aucun texte ne le prétend** (décision du 2026-10-23, risque assumé).
+Préparé le 2026-11-22 par `release-manager`. **État : PUBLIÉE le 2026-11-25 par le PM (commit f9db3a17), date affichée « 24 novembre 2026 », décalage assumé** (au moment de la rédaction, rien n'était publié). C'est toi, et toi seul, qui publies le site (aucun agent ne publie ni ne déploie). Ces textes sont écrits par l'équipe d'agents et publiés sous ta responsabilité ; **aucun juriste ne les a relus et aucun texte ne le prétend** (décision du 2026-10-23, risque assumé).
 
 Cette note **complète** `maj-2026-11-21-a-publier.md` (version 1.2), qu'elle ne remplace pas : le dépôt ne garde aucune trace de la mise en ligne de la 1.2 ni de la 1.1. **La 1.3 contient tout ce que contenait la 1.2** (date de la dernière photo, registre de 30 jours, consentement v4, langues) **et y ajoute** ce qui suit. Si la 1.2 n'a jamais été publiée, la 1.3 la remplace d'un coup ; si elle l'a été, la 1.3 en est la suite.
 
