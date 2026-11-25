@@ -1205,6 +1205,7 @@
     <string name="profile_timeshare_percent_tiny">&lt;&#160;1%</string>
     <string name="profile_timeshare_detail_close">Fechar</string>
     <string name="profile_timeshare_summary">Passaste %1$s do teu tempo nas tuas zonas de confiança</string>
+    <string name="profile_timeshare_no_time_yet">O teu gráfico vai aparecer assim que passares algum tempo num dos teus locais de confiança</string>
     <plurals name="profile_timeshare_not_enough">
         <item quantity="one">O teu gráfico chega daqui a %1$d dia, estamos a analisar os teus hábitos</item>
         <item quantity="many">O teu gráfico chega daqui a %1$d dias, estamos a analisar os teus hábitos</item>

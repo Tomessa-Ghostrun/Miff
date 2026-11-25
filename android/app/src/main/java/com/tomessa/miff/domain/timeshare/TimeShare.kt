@@ -83,8 +83,14 @@ sealed interface TimeShareResult {
         /** How far back the follow-up of the Miff goes (from its start to now, see [TimeShare.history]); 0 when it has none. */
         val historyMillis: Long,
     ) : TimeShareResult {
-        /** The number of days left before the chart can be shown (see [TimeShare.daysLeft]). */
+        /** The number of days left before the chart can be shown (see [TimeShare.daysLeft]); only meaningful while [historyReached] is false. */
         val daysLeft: Int get() = TimeShare.daysLeft(historyMillis)
+
+        /**
+         * The wait of [TimeShareRules.MIN_HISTORY_DAYS] days is over, but nothing was measured in the window (the person has not spent time in a place yet): there is no
+         * countdown to show any more, a calm text says what is awaited (PM default, 2026-11-25: a "dans 1 jour" that never changes looked like the original defect).
+         */
+        val historyReached: Boolean get() = historyMillis >= TimeShareRules.MIN_HISTORY_MILLIS
     }
 
     class Ready(

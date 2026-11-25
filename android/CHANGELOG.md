@@ -11,21 +11,24 @@ Retour du PM après recette sur l'OPPO : « le compteur ne décroît pas de jour
 
 ### Modifié
 - **Seuil de données : 3 jours au lieu de 7** (décision du PM). **Une seule constante** `TimeShareRules.MIN_HISTORY_DAYS = 3` ; X vaut 3, puis 2, puis 1, puis le graphique s'affiche. Les fenêtres du sélecteur restent 7 / 14 / 30 jours. **L'historique déjà mesuré compte tout de suite** : aucune remise à zéro (un journal qui remonte déjà à 3 jours ou plus affiche le graphique dès la mise à jour ; un fichier écrit avant cette version, sans l'instant de début, reste lu).
-- **Textes** : aucun changement. Le wording figé « Ton graphique arrive dans X jours, nous analysons tes habitudes » et son singulier « dans 1 jour » existent déjà dans les 6 langues (pluriel `profile_timeshare_not_enough`, `one` / `many` / `other`).
+- **Après les 3 jours, sans aucun temps mesuré : plus de décompte** (relecture de la PR). Avant, une personne qui n'entre jamais dans un lieu voyait « dans 1 jour » indéfiniment, ce qui ressemblait au défaut d'origine. Maintenant : « Ton graphique apparaîtra dès que tu auras passé du temps dans l'un de tes lieux de confiance » (`TimeShareResult.NotEnoughData.historyReached`).
+- **Début du suivi borné par l'horloge** : `StoredPresenceLog.begin` n'enregistre jamais un instant postérieur à l'heure du téléphone.
+- **Textes** : le décompte « Ton graphique arrive dans X jours, nous analysons tes habitudes » et son singulier « dans 1 jour » sont inchangés (pluriel `profile_timeshare_not_enough`). **Nouvelle clé** `profile_timeshare_no_time_yet` (fr, en, es, it, pt, de, selon le glossaire G47 « lieu de confiance » ; entrée équivalente dans le catalogue iOS `Localizable.xcstrings`, à brancher par l'agent iOS).
 
 ### Données locales et vie privée
-- **Un nouvel élément dans le journal local** : pour chaque Miff, **un instant** (premier armement de la détection), à côté de l'identifiant de la Miff. **Ni lieu, ni position, ni nom.** Même fichier privé, exclu des sauvegardes, effacé dans les mêmes cas que le journal (déconnexion, suppression du compte, Miff quittée ou supprimée pour cette Miff, « Effacer mon historique de temps »). Le test de contenu du journal (clés fermées, pas de décimale, pas de nom) couvre la nouvelle clé `since`. **À signaler au PM** : la politique de confidentialité décrit le journal comme les arrivées et départs ; cet instant de début de suivi n'y est pas cité (texte légal non modifié ici).
+- **Un nouvel élément dans le journal local** : pour chaque Miff, **un instant** (premier armement de la détection), à côté de l'identifiant de la Miff. **Ni lieu, ni position, ni nom.** Même fichier privé, exclu des sauvegardes, effacé dans les mêmes cas que le journal (déconnexion, suppression du compte, Miff quittée ou supprimée pour cette Miff, « Effacer mon historique de temps »). Le test de contenu du journal (clés fermées, pas de décimale, pas de nom) couvre la nouvelle clé `since`. **Risque assumé (décision du PM, 2026-11-25)** : la politique de confidentialité ne cite pas cet instant de début de suivi ; aucune mise à jour des textes légaux pour l'instant (`docs/legal/README.md` J75).
 
 ### Tests
 - `TrackingEnginePresenceLogTest` : le compteur baisse d'un jour par jour sans aucun fait (3, 2, 1) ; le début est le premier armement et non les suivants, par Miff ; aucun début sans Miff armée ; un journal en panne n'arrête pas la détection.
 - `TimeShareTest` : seuil exact à 3 jours (à la milliseconde), X en fonction de l'historique (3 / 2 / 1), début du suivi sans fait, le plus ancien de (début, premier fait), historique déjà mesuré affiché tout de suite.
 - `StoredPresenceLogTest` : début mémorisé une fois (aucune écriture ensuite), le plus ancien de (début, premier fait), contenu sans donnée personnelle, effacé avec la Miff / le compte / « Effacer », ancien format de fichier lu.
 - `TimeShareViewModelTest` : X décroît depuis le début du suivi sans fait ; 1 jour de journal → 2 ; après effacement → 3.
-- Mises à jour : `docs/qa/checklists/profil-repartition-temps-android-recette-pm.md` (À savoir, étapes 1, 2, 12 et 24).
+- Après les 3 jours sans temps mesuré : `TimeShareTest`, `TimeShareViewModelTest`, `TrackingEnginePresenceLogTest`, `TimeShareCardTest` (texte calme, pas de décompte) ; `StoredPresenceLogTest` (début borné par l'horloge).
+- Mises à jour : `docs/qa/checklists/profil-repartition-temps-android-recette-pm.md` (À savoir, étapes 1, 2, 12, 22 et 24).
 
 ### Écarts et limites
 - **Numéro de révision du ticket** : le PM a parlé de « Révision 3 » ; ce numéro est déjà pris dans le ticket (18/11), la décision est donc la **Révision 5**.
-- **iOS** : le même défaut existe (historique compté depuis le premier fait, `TimeShareCalculator.compute`) et le seuil y est encore de 7 jours (`TimeShareLimits.minimumHistoryMillis`) ; non touché ici, à aligner par l'agent iOS (début du suivi mémorisé à l'armement, constante à 3).
+- **iOS** : seule la clé de texte `profile_timeshare_no_time_yet` est ajoutée au catalogue (parité) ; le même défaut existe (historique compté depuis le premier fait, `TimeShareCalculator.compute`) et le seuil y est encore de 7 jours (`TimeShareLimits.minimumHistoryMillis`) ; non touché ici, à aligner par l'agent iOS (début du suivi mémorisé à l'armement, constante à 3).
 
 ## [0.59.0] - 2026-11-20 : alerte « Je suis en danger », retours de recette du PM : le doigt peut sortir du bouton, bulle bleue sans minuterie, titre du bandeau rouge deux fois plus gros
 

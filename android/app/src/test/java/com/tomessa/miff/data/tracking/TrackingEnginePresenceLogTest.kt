@@ -29,6 +29,7 @@ import com.tomessa.miff.testsupport.T0
 import com.tomessa.miff.testsupport.whileInUseOnly
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -165,17 +166,16 @@ class TrackingEnginePresenceLogTest {
 
     // --- The counter "Ton graphique arrive dans X jours" (PM feedback, recette on OPPO, 2026-11-25) ----------------------------------------------------------
 
-    private fun daysLeftNow(miffId: String): Int {
-        val result =
-            TimeShare.compute(
-                log.facts(miffId),
-                listOf(PlaceRef("home", PlaceType.TRUSTED)),
-                7,
-                env.now,
-                startedAtMillis = log.startedAt(miffId),
-            )
-        return (result as TimeShareResult.NotEnoughData).daysLeft
-    }
+    private fun notEnoughNow(miffId: String): TimeShareResult.NotEnoughData =
+        TimeShare.compute(
+            log.facts(miffId),
+            listOf(PlaceRef("home", PlaceType.TRUSTED)),
+            7,
+            env.now,
+            startedAtMillis = log.startedAt(miffId),
+        ) as TimeShareResult.NotEnoughData
+
+    private fun daysLeftNow(miffId: String): Int = notEnoughNow(miffId).daysLeft
 
     @Test
     fun theCounterOfTheChart_goesDownDayAfterDay_evenWhenThePersonHasNotMovedYet() =
@@ -193,8 +193,13 @@ class TrackingEnginePresenceLogTest {
             val third = daysLeftNow(miffA)
             assertEquals("the counter must go down by one a day", listOf(first - 1, first - 2), listOf(second, third))
             assertEquals(3, first)
-            // 49 h after the arming and still no arrival or departure: "1 jour" (the chart needs measured time too, so it stays so until then).
+            // 49 h after the arming and still no arrival or departure: "1 jour", the wait is not over yet.
             assertEquals(1, third)
+            assertFalse(notEnoughNow(miffA).historyReached)
+            // Past 3 days with nothing measured (the person never entered a place): no countdown any more, the calm text takes over.
+            env.now += 24 * hour
+            engine.refresh(TrackingEngine.Reason.OPENED)
+            assertTrue(notEnoughNow(miffA).historyReached)
         }
 
     @Test

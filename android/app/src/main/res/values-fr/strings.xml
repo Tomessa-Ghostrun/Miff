@@ -1290,6 +1290,7 @@
     <string name="profile_timeshare_percent_tiny">&lt; 1 %</string>
     <string name="profile_timeshare_detail_close">Fermer</string>
     <string name="profile_timeshare_summary">Tu as passé %1$s de ton temps dans tes zones de confiance</string>
+    <string name="profile_timeshare_no_time_yet">Ton graphique apparaîtra dès que tu auras passé du temps dans l\'un de tes lieux de confiance</string>
     <plurals name="profile_timeshare_not_enough">
         <item quantity="one">Ton graphique arrive dans %1$d jour, nous analysons tes habitudes</item>
         <item quantity="many">Ton graphique arrive dans %1$d jours, nous analysons tes habitudes</item>

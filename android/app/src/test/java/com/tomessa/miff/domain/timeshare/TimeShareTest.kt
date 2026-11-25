@@ -318,7 +318,23 @@ class TimeShareTest {
                 LoggedPresence(now - 10 * TimeShareRules.DAY_MILLIS, PresenceValue.OUT, null),
                 LoggedPresence(now - 10 * TimeShareRules.DAY_MILLIS + hour, PresenceValue.UNKNOWN, null),
             )
-        assertTrue(compute(facts, listOf(home)) is TimeShareResult.NotEnoughData)
+        val result = compute(facts, listOf(home))
+        assertTrue(result is TimeShareResult.NotEnoughData)
+        // The wait is over: no countdown any more, the card says what is awaited (PM default, 2026-11-25).
+        assertTrue((result as TimeShareResult.NotEnoughData).historyReached)
+    }
+
+    @Test
+    fun historyReached_isFalseUnderThreeDays_trueFromThreeDaysExactly() {
+        val threshold = TimeShareRules.MIN_HISTORY_MILLIS
+
+        fun at(back: Long) =
+            TimeShare.compute(emptyList(), listOf(home), 7, now, now - back) as TimeShareResult.NotEnoughData
+        assertFalse(at(threshold - 1).historyReached)
+        assertTrue(at(threshold).historyReached)
+        assertTrue(at(threshold + 40 * hour).historyReached)
+        // Under 3 days there is a countdown (3, 2, 1), from 3 days on there is none.
+        assertEquals(1, at(threshold - 1).daysLeft)
     }
 
     @Test

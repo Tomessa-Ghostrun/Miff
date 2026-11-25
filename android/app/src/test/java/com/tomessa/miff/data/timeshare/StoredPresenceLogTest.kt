@@ -111,6 +111,16 @@ class StoredPresenceLogTest {
     }
 
     @Test
+    fun theStartOfTheFollowUp_isNeverInTheFuture_itIsBoundedByTheClock() {
+        // A start ahead of the clock (a clock that was wrong, an event dated late) would make the history 0 for good: it is kept as "now".
+        log.begin("miffA", now + 5 * day)
+        assertEquals(now, log.startedAt("miffA"))
+        // And the clock moving on makes the history grow from there.
+        now += 2 * day
+        assertEquals(now - 2 * day, log.startedAt("miffA"))
+    }
+
+    @Test
     fun theStartOfTheFollowUp_isTheOlderOfItsFirstArmingAndItsFirstFact() {
         log.record("miffA", PresenceValue.IN_TRUSTED, "home", now - 3 * day)
         log.begin("miffA", now - day)

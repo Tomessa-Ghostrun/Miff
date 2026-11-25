@@ -746,11 +746,16 @@ private fun NotEnough(
         when (kind) {
             // "Ton graphique arrive dans X jours, nous analysons tes habitudes": the wording fixed by the PM, with its plural (1 jour / X jours).
             NotEnoughKind.COMING_SOON -> {
-                pluralStringResource(
-                    R.plurals.profile_timeshare_not_enough,
-                    body.daysLeft,
-                    body.daysLeft,
-                )
+                // The 3 days are over but nothing was measured yet: no countdown (it would stay at "1 jour"), a calm text that says what is awaited.
+                if (body.historyReached) {
+                    stringResource(R.string.profile_timeshare_no_time_yet)
+                } else {
+                    pluralStringResource(
+                        R.plurals.profile_timeshare_not_enough,
+                        body.daysLeft,
+                        body.daysLeft,
+                    )
+                }
             }
 
             NotEnoughKind.TRAVEL -> {

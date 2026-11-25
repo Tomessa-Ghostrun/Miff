@@ -139,7 +139,8 @@ class StoredPresenceLog(
             val stored = load(uid)
             // Only the first call counts: nothing is written (and the chart not worked out again) once the start is known.
             if (stored.since.containsKey(miffId)) return
-            save(uid, stored.facts, stored.since + (miffId to atMillis))
+            // Never later than now on the clock of this phone... and never in the future either: a start ahead of the clock (a clock set wrong, a late event) would make the history 0 for good.
+            save(uid, stored.facts, stored.since + (miffId to minOf(atMillis, clock())))
         }
     }
 
