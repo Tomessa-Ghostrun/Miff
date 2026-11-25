@@ -72,22 +72,21 @@ class PaywallPurchaseScreenTest {
     fun eligibleToTheTrial_theButtonThePriceAndTheInformationOfTheStoresAreThere() {
         show(PaywallUiState(PaywallOffer.TrialEligible(annual, monthly)))
         see("Start your 7-day free trial")
-        // The bubble of the trial button (exact text: the information block also starts with "Cancel anytime in your ... account settings").
         rule.onNodeWithText("Cancel anytime").assertIsDisplayed()
         // Decision of the PM, 2026-11-25: no "Then ... per year" line under the button (the price stays in the information block and in "See all plans").
         absent("Then 59,88 € per year")
         see("See all plans")
-        // The information the stores require, with the store's price and the name of the store.
+        // ONE sentence (decision of the PM, 2026-11-25), with the store's price; the two legal pages; no restore button, no "how to cancel" paragraph.
         rule
             .onNodeWithText(
-                "7-day free trial, then 59,88 € per year",
-                substring = true,
+                "7-day free trial, then 59,88 € per year billed at the end of the trial, then automatic renewal every year.",
             ).performScrollTo()
             .assertIsDisplayed()
-        rule.onNodeWithText("Google Play", substring = true).performScrollTo().assertIsDisplayed()
+        absent("Google Play")
         rule.onNodeWithText("Terms of Use", substring = true).performScrollTo().assertIsDisplayed()
         rule.onNodeWithText("Privacy Policy", substring = true).performScrollTo().assertIsDisplayed()
-        rule.onNodeWithText("Restore purchases").performScrollTo().assertIsDisplayed()
+        absent("Restore purchases")
+        absent("The free plan is still available")
         // No monthly equivalent either on the main view (decision of the PM, 2026-11-25): it stays in the list of "See all plans".
         assertEquals(0, rule.onAllNodesWithText("per month", substring = true).fetchSemanticsNodes().size)
     }
@@ -157,13 +156,13 @@ class PaywallPurchaseScreenTest {
     }
 
     @Test
-    fun anError_isCalm_withRetryAndRestore_noCode_noExclamation() {
+    fun anError_isCalm_withRetry_noCode_noExclamation() {
         show(PaywallUiState(PaywallOffer.Plans(annual, monthly), notice = PaywallNotice.ERROR))
         see("We couldn't complete the purchase this time")
         rule.onNodeWithText("Try again").performClick()
         assertEquals(1, retried)
-        rule.onNodeWithText("Restore purchases").performScrollTo().performClick()
-        assertEquals(1, restored)
+        // No "Restore purchases" button on the Android offer (decision of the PM, 2026-11-25).
+        absent("Restore purchases")
     }
 
     @Test

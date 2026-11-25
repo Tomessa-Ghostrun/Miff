@@ -1236,6 +1236,8 @@
     </plurals>
     <string name="paywall_feature_miffs_limit">Otherwise, limited to a single Miff</string>
     <string name="paywall_free_trial_link">Free trial</string>
+    <string name="paywall_info_trial_short">7-day free trial, then %1$s per year billed at the end of the trial, then automatic renewal every year.</string>
+    <string name="paywall_unlocked_danger">Declare danger zones</string>
     <string name="paywall_close_available_a11y">You can now close this screen</string>
     <string name="paywall_loading">Loading plans…</string>
     <string name="paywall_unavailable">Plans aren\'t available right now. Check your connection and try again.</string>

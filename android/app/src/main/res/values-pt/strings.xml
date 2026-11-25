@@ -1126,6 +1126,8 @@
     </plurals>
     <string name="paywall_feature_miffs_limit">Caso contrário, limite de uma só Miff</string>
     <string name="paywall_free_trial_link">Teste gratuito</string>
+    <string name="paywall_info_trial_short">Teste gratuito de 7 dias e, depois, %1$s por ano, cobrados no fim do teste; a seguir, renovação automática todos os anos.</string>
+    <string name="paywall_unlocked_danger">Declarar zonas de perigo</string>
     <string name="paywall_close_available_a11y">Já podes fechar este ecrã</string>
     <string name="paywall_loading">A carregar os planos…</string>
     <string name="paywall_unavailable">Os planos não estão disponíveis de momento. Verifica a tua ligação e tenta novamente.</string>

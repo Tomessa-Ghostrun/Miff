@@ -109,6 +109,7 @@ import com.tomessa.miff.ui.theme.colorTextSecondary
 import com.tomessa.miff.ui.theme.miffShadow
 import com.tomessa.miff.ui.theme.textBodyBold14
 import com.tomessa.miff.ui.theme.textBodyBold16
+import com.tomessa.miff.ui.theme.textBodyCaption
 import com.tomessa.miff.ui.theme.textBodyLarge
 import com.tomessa.miff.ui.theme.textBodyRegular
 import com.tomessa.miff.ui.theme.textBodyRegular14
@@ -262,7 +263,7 @@ fun PaywallScreen(
                         R.string.place_paywall_feature_danger_desc,
                     )
                 }
-                ScrollingOffer(offer = offer, showAll = showAll, onRestore = actions.onRestore)
+                ScrollingOffer(offer = offer, showAll = showAll)
             }
             PurchaseZone(
                 state = state,
@@ -348,7 +349,6 @@ private fun TopBar(
 private fun ScrollingOffer(
     offer: PaywallOffer,
     showAll: Boolean,
-    onRestore: () -> Unit,
 ) {
     when (offer) {
         PaywallOffer.ComingSoon -> {
@@ -374,43 +374,26 @@ private fun ScrollingOffer(
         }
 
         PaywallOffer.Loading, PaywallOffer.Unavailable -> {
-            FreePlanSentence()
-            LegalAndRestoreLinks(withRestore = false, onRestore = {})
+            LegalLinksBlock()
         }
 
         is PaywallOffer.TrialEligible, is PaywallOffer.Plans -> {
-            InformationBlock(offer = offer, showAll = showAll, onRestore = onRestore)
-            FreePlanSentence()
+            InformationBlock(offer = offer, showAll = showAll)
+            LegalLinksBlock()
         }
     }
 }
 
-/** "La formule gratuite reste disponible : 1 Miff et 3 lieux de confiance." A sentence, never a button: the only way out is the cross. */
-@Composable
-private fun FreePlanSentence() {
-    Text(
-        text =
-            pluralStringResource(
-                R.plurals.paywall_free_plan_stays,
-                PlaceLimits.FREE_PLACES,
-                PlaceLimits.FREE_PLACES,
-            ),
-        style = textBodyRegular14,
-        color = colorTextDescription,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth(),
-    )
-}
-
 /**
- * The information the stores require near the purchase (ticket section 5.4): what is billed and when, the automatic renewal, how to cancel. The
- * prices are the store's own. Plain sentences, dark enough to read (never pale grey).
+ * The information the stores require near the purchase, reduced to what the PM asked for (decision of 2026-11-25, second return after the test of the APK): on the main view of the
+ * trial, ONE sentence (the trial, the price billed at its end, the automatic renewal every year); on the views of the plans without a trial ("Voir toutes les offres", or an account
+ * that cannot have the trial), one sentence per plan shown. The prices are the store's own (the fake store's in a debug build), never written in a translation. No "how to cancel"
+ * paragraph here: that is the page of the store, reached from the screen Abonnement (iOS keeps its own texts).
  */
 @Composable
 private fun InformationBlock(
     offer: PaywallOffer,
     showAll: Boolean,
-    onRestore: () -> Unit,
 ) {
     val (annual, monthly, trial) =
         when (offer) {
@@ -418,41 +401,79 @@ private fun InformationBlock(
             is PaywallOffer.Plans -> Triple(offer.annual, offer.monthly, false)
             else -> return
         }
-    val showMonthly = showAll || !trial
     Column(verticalArrangement = Arrangement.spacedBy(Spacing.s)) {
-        InfoLine(
-            if (trial) {
-                stringResource(R.string.paywall_info_trial, annual.formatted)
-            } else {
-                stringResource(R.string.paywall_info_annual, annual.formatted)
-            },
-        )
-        if (showMonthly) InfoLine(stringResource(R.string.paywall_info_monthly, monthly.formatted))
-        InfoLine(stringResource(R.string.paywall_info_cancel, stringResource(R.string.android_paywall_store_name)))
+        if (trial && !showAll) {
+            InfoLine(stringResource(R.string.paywall_info_trial_short, annual.formatted))
+        } else {
+            InfoLine(stringResource(R.string.paywall_info_annual, annual.formatted))
+            InfoLine(stringResource(R.string.paywall_info_monthly, monthly.formatted))
+        }
     }
-    LegalAndRestoreLinks(withRestore = true, onRestore = onRestore)
 }
 
 @Composable
 private fun InfoLine(text: String) {
-    Text(text = text, style = textBodyRegular14, color = colorTextPrimary, modifier = Modifier.fillMaxWidth())
+    Text(
+        text = text,
+        style = textBodyRegular14,
+        color = colorTextPrimary,
+        textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth(),
+    )
 }
 
-/** The two legal pages (same pages as everywhere else in the app) and, when a purchase exists, "Restaurer mes achats". */
+/** The two legal pages (same pages as everywhere else in the app), on ONE line. No "Restaurer mes achats" here: see [LegalLinksRow]. */
 @Composable
-private fun LegalAndRestoreLinks(
-    withRestore: Boolean,
-    onRestore: () -> Unit,
-) {
+private fun LegalLinksBlock() {
     val context = LocalContext.current
-    Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        LinkButton(
-            stringResource(R.string.paywall_terms_link),
-        ) { LegalLinks.open(context, LegalLinks.termsUrl(context)) }
-        LinkButton(
-            stringResource(R.string.paywall_privacy_link),
-        ) { LegalLinks.open(context, LegalLinks.privacyUrl(context)) }
-        if (withRestore) LinkButton(stringResource(R.string.paywall_restore), onClick = onRestore)
+    LegalLinksRow(
+        terms = stringResource(R.string.paywall_terms_link),
+        privacy = stringResource(R.string.paywall_privacy_link),
+        onTerms = { LegalLinks.open(context, LegalLinks.termsUrl(context)) },
+        onPrivacy = { LegalLinks.open(context, LegalLinks.privacyUrl(context)) },
+    )
+}
+
+/**
+ * "Conditions d'utilisation" and "Politique de confidentialité" side by side, centred, on the SAME line, in the caption size (12) so that the longest pair (French) fits a 360 dp screen
+ * on one line each; each link takes at most half of the width and, on a very narrow screen or with a huge font, wraps INSIDE its own half (never one under the other). Stateless so that a test
+ * can give it the texts of each language (PaywallLegalLinksTest).
+ */
+@Composable
+internal fun LegalLinksRow(
+    terms: String,
+    privacy: String,
+    onTerms: () -> Unit,
+    onPrivacy: () -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.s, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        LegalLink(terms, onTerms, Modifier.weight(1f, fill = false))
+        LegalLink(privacy, onPrivacy, Modifier.weight(1f, fill = false))
+    }
+}
+
+@Composable
+private fun LegalLink(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier,
+) {
+    TextButton(
+        onClick = onClick,
+        contentPadding = PaddingValues(horizontal = Spacing.xs, vertical = Spacing.s),
+        modifier = modifier.heightIn(min = Spacing.minTouchTarget),
+    ) {
+        Text(
+            text = text,
+            style = textBodyCaption,
+            color = colorActionPrimary,
+            textDecoration = TextDecoration.Underline,
+            textAlign = TextAlign.Center,
+        )
     }
 }
 

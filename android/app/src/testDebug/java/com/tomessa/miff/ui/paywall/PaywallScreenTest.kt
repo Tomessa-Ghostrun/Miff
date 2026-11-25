@@ -600,28 +600,38 @@ class PaywallScreenTest {
     }
 
     @Test
-    fun trial_theInformationBlockIsComplete_andReachable() {
+    fun trial_theInformationIsOneSentence_withTheStorePrice_andNothingElse() {
         host(trial)
-        composeRule.onNodeWithText(text(R.string.paywall_info_trial, "59,88 €")).performScrollTo().assertIsDisplayed()
+        // The sentence of the PM (2026-11-25): the trial, the price billed at its end (the store's, never written in the translation), the automatic renewal.
+        val sentence = text(R.string.paywall_info_trial_short, "59,88 €")
+        assertEquals(
+            "Essai gratuit de 7 jours, puis 59,88 € par an facturés à la fin de l'essai, puis renouvellement automatique chaque année.",
+            sentence,
+        )
+        composeRule.onNodeWithText(sentence).performScrollTo().assertIsDisplayed()
+        // Nothing else of the old block: no "how to cancel" paragraph, no sentence about the free plan, no restore button.
+        composeRule.onAllNodesWithText(text(R.string.paywall_info_trial, "59,88 €")).assertCountEquals(0)
+        composeRule.onAllNodesWithText(text(R.string.paywall_info_cancel, "Google Play")).assertCountEquals(0)
         composeRule
-            .onNodeWithText(
-                text(R.string.paywall_info_cancel, "Google Play"),
-            ).performScrollTo()
-            .assertIsDisplayed()
-        composeRule
-            .onNodeWithText(
+            .onAllNodesWithText(
                 plural(R.plurals.paywall_free_plan_stays, PlaceLimits.FREE_PLACES),
-            ).performScrollTo()
-            .assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.paywall_terms_link)).performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.paywall_privacy_link)).performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.paywall_restore)).performScrollTo().assertIsDisplayed()
+            ).assertCountEquals(0)
+        composeRule.onAllNodesWithText(text(R.string.paywall_restore)).assertCountEquals(0)
+        // The two legal pages stay, on the same line (see PaywallLegalLinksTest for the six languages).
+        val terms = composeRule.onNodeWithText(text(R.string.paywall_terms_link)).performScrollTo().assertIsDisplayed()
+        val privacy = composeRule.onNodeWithText(text(R.string.paywall_privacy_link)).assertIsDisplayed()
+        assertEquals(
+            terms
+                .fetchSemanticsNode()
+                .boundsInRoot.center.y,
+            privacy
+                .fetchSemanticsNode()
+                .boundsInRoot.center.y,
+            1f,
+        )
         // Android: Google Play, never "App Store", never "24 heures" (iOS only).
         composeRule.onAllNodesWithText("App Store", substring = true).assertCountEquals(0)
         composeRule.onAllNodesWithText("24 heures", substring = true).assertCountEquals(0)
-        assertTrue(
-            text(R.string.paywall_info_cancel, text(R.string.android_paywall_store_name)).contains("Google Play"),
-        )
         // No mention of a monthly price in the information of the trial (only the yearly plan has one).
         composeRule.onAllNodesWithText("6,99", substring = true).assertCountEquals(0)
     }
@@ -718,11 +728,7 @@ class PaywallScreenTest {
         composeRule.onAllNodesWithText("Économisez", substring = true).assertCountEquals(0)
         composeRule.onNodeWithText(text(R.string.paywall_info_annual, "59,88 €")).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.paywall_info_monthly, "6,99 €")).performScrollTo().assertIsDisplayed()
-        composeRule
-            .onNodeWithText(
-                text(R.string.paywall_info_cancel, "Google Play"),
-            ).performScrollTo()
-            .assertIsDisplayed()
+        composeRule.onAllNodesWithText(text(R.string.paywall_info_cancel, "Google Play")).assertCountEquals(0)
     }
 
     @Test
@@ -741,10 +747,10 @@ class PaywallScreenTest {
         composeRule.onAllNodesWithText("€", substring = true).assertCountEquals(0)
         composeRule.onAllNodesWithText(text(R.string.paywall_cta_trial)).assertCountEquals(0)
         composeRule
-            .onNodeWithText(
+            .onAllNodesWithText(
                 plural(R.plurals.paywall_free_plan_stays, PlaceLimits.FREE_PLACES),
-            ).performScrollTo()
-            .assertIsDisplayed()
+            ).assertCountEquals(0)
+        composeRule.onNodeWithText(text(R.string.paywall_terms_link)).performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -795,8 +801,6 @@ class PaywallScreenTest {
         assertFalse(Regex("[0-9]{3,}").containsMatchIn(sentence))
         composeRule.onNodeWithText(text(R.string.paywall_retry)).performClick()
         assertEquals(1, retried)
-        composeRule.onNodeWithText(text(R.string.paywall_restore)).performScrollTo().performClick()
-        assertEquals(1, restored)
     }
 
     @Test
@@ -816,12 +820,24 @@ class PaywallScreenTest {
         composeRule.onNodeWithText(text(R.string.paywall_cta_trial)).assertIsNotEnabled()
     }
 
-    @Test
-    fun theRestoreLink_asksForARestoration() {
-        host(trial)
-        composeRule.onNodeWithText(text(R.string.paywall_restore)).performScrollTo().performClick()
-        assertEquals(1, restored)
+    private fun assertNoRestoreButton(state: PaywallUiState) {
+        host(state)
+        composeRule.onAllNodesWithText(text(R.string.paywall_restore)).assertCountEquals(0)
     }
+
+    // Decision of the PM (2026-11-25): no "Restaurer mes achats" on the Android offer (the restoration stays at the opening of the app and on the screen Abonnement; on iOS the button is
+    // REQUIRED by Apple and is kept at SRV-8I).
+    @Test
+    fun noRestoreButton_onTheTrialOffer() = assertNoRestoreButton(trial)
+
+    @Test
+    fun noRestoreButton_onThePlans() = assertNoRestoreButton(plans)
+
+    @Test
+    fun noRestoreButton_whileLoading() = assertNoRestoreButton(PaywallUiState(PaywallOffer.Loading))
+
+    @Test
+    fun noRestoreButton_whenUnavailable() = assertNoRestoreButton(PaywallUiState(PaywallOffer.Unavailable))
 
     // --- Subscribed (PW13, Q-PAY1) ------------------------------------------------------------------------------------------------
 
@@ -834,6 +850,8 @@ class PaywallScreenTest {
         // What is now unlocked: the two limits of the free plan, in the words of the cards.
         composeRule.onNodeWithText(text(R.string.place_paywall_feature_places)).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.place_paywall_feature_miffs)).assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.paywall_unlocked_danger)).assertIsDisplayed()
+        assertEquals("Déclarer des zones de danger", text(R.string.paywall_unlocked_danger))
         composeRule.onAllNodesWithText("€", substring = true).assertCountEquals(0)
         composeRule.onAllNodesWithText(text(R.string.place_paywall_headline)).assertCountEquals(0)
         composeRule.onNodeWithText(text(R.string.paywall_continue)).assertIsEnabled().performClick()
@@ -907,9 +925,13 @@ class PaywallScreenTest {
         val bubble = composeRule.onNodeWithText(text(R.string.paywall_cancel_anytime)).fetchSemanticsNode().boundsInRoot
         val button = composeRule.onNodeWithText(text(R.string.paywall_cta_trial)).fetchSemanticsNode().boundsInRoot
         assertTrue("bubble ${bubble.bottom} above the button text ${button.top}", bubble.bottom <= button.top)
-        composeRule.onNodeWithText(text(R.string.paywall_info_trial, "59,88 €")).performScrollTo().assertIsDisplayed()
+        composeRule
+            .onNodeWithText(
+                text(R.string.paywall_info_trial_short, "59,88 €"),
+            ).performScrollTo()
+            .assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.paywall_terms_link)).performScrollTo().assertIsDisplayed()
-        composeRule.onNodeWithText(text(R.string.paywall_restore)).performScrollTo().assertIsDisplayed()
+        composeRule.onNodeWithText(text(R.string.paywall_privacy_link)).performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -919,11 +941,6 @@ class PaywallScreenTest {
         composeRule.onNodeWithText(text(R.string.paywall_plan_annual_title, "59,88 €")).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.paywall_plan_monthly_title, "6,99 €")).assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.paywall_info_annual, "59,88 €")).performScrollTo().assertIsDisplayed()
-        composeRule
-            .onNodeWithText(
-                text(R.string.paywall_info_cancel, "Google Play"),
-            ).performScrollTo()
-            .assertIsDisplayed()
     }
 
     @Test

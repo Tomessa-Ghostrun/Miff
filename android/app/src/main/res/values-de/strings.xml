@@ -1118,6 +1118,8 @@
     </plurals>
     <string name="paywall_feature_miffs_limit">Sonst begrenzt auf eine einzige Miff</string>
     <string name="paywall_free_trial_link">Kostenlos testen</string>
+    <string name="paywall_info_trial_short">7 Tage kostenlos testen, danach %1$s pro Jahr, abgerechnet am Ende der Testphase; danach verlängert sich das Abonnement jedes Jahr automatisch.</string>
+    <string name="paywall_unlocked_danger">Gefahrenzonen festlegen</string>
     <string name="paywall_close_available_a11y">Du kannst diesen Bildschirm jetzt schließen</string>
     <string name="paywall_loading">Angebote werden geladen…</string>
     <string name="paywall_unavailable">Die Angebote sind gerade nicht verfügbar. Prüfe deine Verbindung und versuch es noch einmal.</string>

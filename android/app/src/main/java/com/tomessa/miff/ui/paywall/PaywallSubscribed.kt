@@ -62,7 +62,7 @@ import kotlin.random.Random
 
 /**
  * The confirmation after a subscription (decision of the PM, 2026-11-25: "Bienvenue sur Miff+ !", warmer and less empty than "Tu as Miff+. Merci !"): the Miff logo with a "+" on a soft
- * halo, the welcome, one line, and what is now unlocked (the two limits of the free plan: places and Miffs). Not designed in Figma: list of the differences in the pull request.
+ * halo, the welcome, one line, and what is now unlocked (the two limits of the free plan, places and Miffs, and the danger zones). Not designed in Figma: list of the differences in the pull request.
  * The burst of confetti is drawn over the whole screen by [ConfettiBurst] (see PaywallScreen), not here.
  */
 @Composable
@@ -125,6 +125,8 @@ internal fun SubscribedContent() {
         ) {
             Unlocked(R.string.place_paywall_feature_places)
             Unlocked(R.string.place_paywall_feature_miffs)
+            // Declaring (or accepting) a danger zone is reserved to the Miff+ of the creator of the Miff (DangerZoneRights.canDeclare / canAccept).
+            Unlocked(R.string.paywall_unlocked_danger)
         }
     }
 }

@@ -54839,6 +54839,90 @@
           }
         }
       }
+    },
+    "paywall_info_trial_short": {
+      "extractionState": "manual",
+      "comment": "Argument : le prix annuel écrit par le store (jamais dans la traduction). UNE phrase : l'essai, le prix facturé à sa fin, le renouvellement automatique.",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7 Tage kostenlos testen, danach %1$@ pro Jahr, abgerechnet am Ende der Testphase; danach verlängert sich das Abonnement jedes Jahr automatisch."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "7-day free trial, then %1$@ per year billed at the end of the trial, then automatic renewal every year."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prueba gratuita de 7 días y, después, %1$@ al año, que se cobran al terminar la prueba; luego, renovación automática cada año."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Essai gratuit de 7 jours, puis %1$@ par an facturés à la fin de l'essai, puis renouvellement automatique chaque année."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prova gratuita di 7 giorni, poi %1$@ all’anno, addebitati al termine della prova; poi rinnovo automatico ogni anno."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Teste gratuito de 7 dias e, depois, %1$@ por ano, cobrados no fim do teste; a seguir, renovação automática todos os anos."
+          }
+        }
+      }
+    },
+    "paywall_unlocked_danger": {
+      "extractionState": "manual",
+      "comment": "Ligne de l'écran « Bienvenue sur Miff+ ! » : ce qui est débloqué. Déclarer (ou accepter) une zone de danger est réservé au Miff+ du créateur de la Miff.",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gefahrenzonen festlegen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Declare danger zones"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Declarar zonas de peligro"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Déclarer des zones de danger"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dichiarare zone di pericolo"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Declarar zonas de perigo"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
