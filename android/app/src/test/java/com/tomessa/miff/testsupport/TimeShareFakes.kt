@@ -103,6 +103,13 @@ class FailingPresenceLog : PresenceLog {
         atMillis: Long,
     ): Unit = throw IllegalStateException("disk full")
 
+    override fun begin(
+        miffId: String,
+        atMillis: Long,
+    ): Unit = throw IllegalStateException("disk full")
+
+    override fun startedAt(miffId: String): Long? = throw IllegalStateException("disk full")
+
     override fun facts(miffId: String): List<LoggedPresence> = throw IllegalStateException("disk full")
 
     override fun forgetPlace(

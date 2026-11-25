@@ -193,79 +193,148 @@ class TimeShareTest {
     // --- T9 to T16 ----------------------------------------------------------------------------------------------------------------------------------
 
     @Test
-    fun t9_underSevenDaysOfHistory_isNotEnoughData_evenWithPlentyMeasured() {
-        // A journal of 3 days (72 h, all measured): the chart waits for 7 days (decision of the PM, 2026-11-17; it used to be 24 h measured).
+    fun t9_underThreeDaysOfHistory_isNotEnoughData_evenWithPlentyMeasured() {
+        // A journal of 1 day (24 h, all measured): the chart waits for 3 days (decision of the PM, 2026-11-25; it was 7 days, and 24 h measured before).
         val facts =
             listOf(
-                LoggedPresence(now - 72 * hour, PresenceValue.IN_TRUSTED, "home"),
-                LoggedPresence(now - 36 * hour, PresenceValue.OUT, null),
+                LoggedPresence(now - 24 * hour, PresenceValue.IN_TRUSTED, "home"),
+                LoggedPresence(now - 12 * hour, PresenceValue.OUT, null),
             )
         val result = compute(facts, listOf(home))
         assertTrue(result is TimeShareResult.NotEnoughData)
         result as TimeShareResult.NotEnoughData
-        assertEquals(72 * hour, result.historyMillis)
-        assertTrue(result.measuredMillis > 24 * hour)
+        assertEquals(24 * hour, result.historyMillis)
+        assertEquals(24 * hour, result.measuredMillis)
+        assertEquals(2, result.daysLeft)
     }
 
     @Test
-    fun daysLeft_isSevenMinusTheDaysElapsed_roundedUp_neverUnderOne_andSevenWithNoJournal() {
+    fun theThresholdIsOneConstant_threeDays() {
+        assertEquals(3, TimeShareRules.MIN_HISTORY_DAYS)
+        assertEquals(3 * TimeShareRules.DAY_MILLIS, TimeShareRules.MIN_HISTORY_MILLIS)
+    }
+
+    @Test
+    fun daysLeft_isThreeMinusTheDaysElapsed_roundedUp_neverUnderOne_andThreeWithNoStart() {
         val day = TimeShareRules.DAY_MILLIS
         val minute = 60_000L
-        assertEquals(7, TimeShare.daysLeft(0))
-        assertEquals(7, TimeShare.daysLeft(1))
-        assertEquals(7, TimeShare.daysLeft(hour))
-        assertEquals(6, TimeShare.daysLeft(day))
-        assertEquals(6, TimeShare.daysLeft(day + hour))
-        assertEquals(4, TimeShare.daysLeft(3 * day))
-        // To the hour: 5 days exactly leaves 2; one minute less leaves 3.
-        assertEquals(2, TimeShare.daysLeft(5 * day))
-        assertEquals(2, TimeShare.daysLeft(5 * day + minute))
-        assertEquals(3, TimeShare.daysLeft(5 * day - minute))
-        // Never under 1 while the chart cannot be shown: 6 days and 2 h elapsed is "1 jour".
-        assertEquals(1, TimeShare.daysLeft(6 * day))
-        assertEquals(1, TimeShare.daysLeft(6 * day + 2 * hour))
-        assertEquals(1, TimeShare.daysLeft(7 * day - minute))
-        assertEquals(1, TimeShare.daysLeft(7 * day))
+        assertEquals(3, TimeShare.daysLeft(0))
+        assertEquals(3, TimeShare.daysLeft(1))
+        assertEquals(3, TimeShare.daysLeft(hour))
+        assertEquals(3, TimeShare.daysLeft(day - minute))
+        // 3, then 2, then 1: one a day.
+        assertEquals(2, TimeShare.daysLeft(day))
+        assertEquals(2, TimeShare.daysLeft(day + hour))
+        assertEquals(2, TimeShare.daysLeft(2 * day - minute))
+        assertEquals(1, TimeShare.daysLeft(2 * day))
+        // Never under 1 while the chart cannot be shown: 2 days and 2 h elapsed is "1 jour".
+        assertEquals(1, TimeShare.daysLeft(2 * day + 2 * hour))
+        assertEquals(1, TimeShare.daysLeft(3 * day - minute))
+        assertEquals(1, TimeShare.daysLeft(3 * day))
         assertEquals(1, TimeShare.daysLeft(30 * day))
     }
 
     @Test
     fun theNotEnoughDataResult_carriesTheDaysLeft_fromTheFirstFact() {
-        // No fact at all: 7.
-        assertEquals(7, (compute(emptyList(), listOf(home)) as TimeShareResult.NotEnoughData).daysLeft)
-        // First fact 3 days ago: 4.
-        val three = listOf(LoggedPresence(now - 3 * TimeShareRules.DAY_MILLIS, PresenceValue.IN_TRUSTED, "home"))
-        assertEquals(4, (compute(three, listOf(home)) as TimeShareResult.NotEnoughData).daysLeft)
-        // First fact 6 days and 2 h ago: 1.
-        val six =
-            listOf(LoggedPresence(now - 6 * TimeShareRules.DAY_MILLIS - 2 * hour, PresenceValue.IN_TRUSTED, "home"))
-        assertEquals(1, (compute(six, listOf(home)) as TimeShareResult.NotEnoughData).daysLeft)
+        val day = TimeShareRules.DAY_MILLIS
+        // No fact and no start at all: 3.
+        assertEquals(3, (compute(emptyList(), listOf(home)) as TimeShareResult.NotEnoughData).daysLeft)
+        // First fact 1 day ago: 2.
+        val one = listOf(LoggedPresence(now - day, PresenceValue.IN_TRUSTED, "home"))
+        assertEquals(2, (compute(one, listOf(home)) as TimeShareResult.NotEnoughData).daysLeft)
+        // First fact 2 days and 2 h ago: 1.
+        val two = listOf(LoggedPresence(now - 2 * day - 2 * hour, PresenceValue.IN_TRUSTED, "home"))
+        assertEquals(1, (compute(two, listOf(home)) as TimeShareResult.NotEnoughData).daysLeft)
     }
 
     @Test
-    fun theThresholdIsExactlySevenDaysSinceTheFirstFact() {
-        val week = 7 * TimeShareRules.DAY_MILLIS
+    fun theCounterGoesDown_fromTheStartOfTheFollowUp_evenWithNoFactAtAll() {
+        val day = TimeShareRules.DAY_MILLIS
+        // The detection was armed 25 h ago and the person has not left or joined a place since: the counter still went down (PM feedback, 2026-11-25).
+        val result = TimeShare.compute(emptyList(), listOf(home), 7, now, startedAtMillis = now - 25 * hour)
+        assertEquals(2, (result as TimeShareResult.NotEnoughData).daysLeft)
+        assertEquals(25 * hour, result.historyMillis)
+        assertEquals(
+            1,
+            (
+                TimeShare.compute(
+                    emptyList(),
+                    listOf(home),
+                    7,
+                    now,
+                    now - 49 * hour,
+                ) as TimeShareResult.NotEnoughData
+            ).daysLeft,
+        )
+        // A start in the future counts 0.
+        assertEquals(0L, TimeShare.history(emptyList(), now, now + day))
+    }
+
+    @Test
+    fun theStartOfTheHistory_isTheOlderOfTheStartOfTheFollowUpAndTheFirstFact() {
+        val day = TimeShareRules.DAY_MILLIS
+        val fact = listOf(LoggedPresence(now - 2 * day, PresenceValue.IN_TRUSTED, "home"))
+        // A start LATER than the first fact does not shorten the history; an EARLIER one lengthens it.
+        assertEquals(2 * day, TimeShare.history(fact, now, now - day))
+        assertEquals(5 * day, TimeShare.history(fact, now, now - 5 * day))
+        assertEquals(2 * day, TimeShare.history(fact, now, null))
+    }
+
+    @Test
+    fun theHistoryAlreadyMeasured_countsAtOnce_nothingStartsAgain() {
+        // A journal that already goes back 4 days (a user who had the 7-day version): the chart is shown right away, with no new waiting.
+        val facts =
+            listOf(
+                LoggedPresence(now - 4 * TimeShareRules.DAY_MILLIS, PresenceValue.IN_TRUSTED, "home"),
+                LoggedPresence(now - 4 * TimeShareRules.DAY_MILLIS + 10 * hour, PresenceValue.OUT, null),
+            )
+        assertTrue(compute(facts, listOf(home)) is TimeShareResult.Ready)
+    }
+
+    @Test
+    fun theThresholdIsExactlyThreeDaysSinceTheStart() {
+        val threshold = 3 * TimeShareRules.DAY_MILLIS
 
         fun at(back: Long) =
             listOf(
                 LoggedPresence(now - back, PresenceValue.IN_TRUSTED, "home"),
                 LoggedPresence(now - back + 10 * hour, PresenceValue.OUT, null),
             )
-        assertTrue(compute(at(week), listOf(home)) is TimeShareResult.Ready)
-        assertTrue(compute(at(week - 1), listOf(home)) is TimeShareResult.NotEnoughData)
-        // The window chosen does not change the rule: 30 days with 8 days of history show the chart.
-        assertTrue(compute(at(8 * TimeShareRules.DAY_MILLIS), listOf(home), days = 30) is TimeShareResult.Ready)
+        assertTrue(compute(at(threshold), listOf(home)) is TimeShareResult.Ready)
+        assertTrue(compute(at(threshold - 1), listOf(home)) is TimeShareResult.NotEnoughData)
+        // The window chosen does not change the rule: 30 days with 4 days of history show the chart.
+        assertTrue(compute(at(4 * TimeShareRules.DAY_MILLIS), listOf(home), days = 30) is TimeShareResult.Ready)
+        // Nor does the start of the follow-up: 3 days exactly with a first fact later is enough, 3 days minus 1 ms is not.
+        val late = listOf(LoggedPresence(now - 2 * hour, PresenceValue.IN_TRUSTED, "home"))
+        assertTrue(TimeShare.compute(late, listOf(home), 7, now, now - threshold) is TimeShareResult.Ready)
+        assertTrue(TimeShare.compute(late, listOf(home), 7, now, now - threshold + 1) is TimeShareResult.NotEnoughData)
     }
 
     @Test
-    fun sevenDaysOfHistory_butNothingMeasuredInTheWindow_isNotEnoughData() {
+    fun enoughHistory_butNothingMeasuredInTheWindow_isNotEnoughData() {
         // Journal of 10 days, but everything after the first facts is unknown: nothing to share out.
         val facts =
             listOf(
                 LoggedPresence(now - 10 * TimeShareRules.DAY_MILLIS, PresenceValue.OUT, null),
                 LoggedPresence(now - 10 * TimeShareRules.DAY_MILLIS + hour, PresenceValue.UNKNOWN, null),
             )
-        assertTrue(compute(facts, listOf(home)) is TimeShareResult.NotEnoughData)
+        val result = compute(facts, listOf(home))
+        assertTrue(result is TimeShareResult.NotEnoughData)
+        // The wait is over: no countdown any more, the card says what is awaited (PM default, 2026-11-25).
+        assertTrue((result as TimeShareResult.NotEnoughData).historyReached)
+    }
+
+    @Test
+    fun historyReached_isFalseUnderThreeDays_trueFromThreeDaysExactly() {
+        val threshold = TimeShareRules.MIN_HISTORY_MILLIS
+
+        fun at(back: Long) =
+            TimeShare.compute(emptyList(), listOf(home), 7, now, now - back) as TimeShareResult.NotEnoughData
+        assertFalse(at(threshold - 1).historyReached)
+        assertTrue(at(threshold).historyReached)
+        assertTrue(at(threshold + 40 * hour).historyReached)
+        // Under 3 days there is a countdown (3, 2, 1), from 3 days on there is none.
+        assertEquals(1, at(threshold - 1).daysLeft)
     }
 
     @Test

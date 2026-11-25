@@ -1313,6 +1313,7 @@
     <string name="profile_timeshare_percent_tiny">&lt; 1%</string>
     <string name="profile_timeshare_detail_close">Close</string>
     <string name="profile_timeshare_summary">You spent %1$s of your time in your trusted zones</string>
+    <string name="profile_timeshare_no_time_yet">Your chart will appear as soon as you\'ve spent time in one of your trusted places</string>
     <plurals name="profile_timeshare_not_enough">
         <item quantity="one">Your chart arrives in %1$d day, we\'re analysing your habits</item>
         <item quantity="other">Your chart arrives in %1$d days, we\'re analysing your habits</item>

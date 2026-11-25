@@ -29,6 +29,7 @@ import com.tomessa.miff.testsupport.T0
 import com.tomessa.miff.testsupport.whileInUseOnly
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -163,6 +164,77 @@ class TrackingEnginePresenceLogTest {
             assertTheJournalFollowsTheStatuses(miffA)
         }
 
+    // --- The counter "Ton graphique arrive dans X jours" (PM feedback, recette on OPPO, 2026-11-25) ----------------------------------------------------------
+
+    private fun notEnoughNow(miffId: String): TimeShareResult.NotEnoughData =
+        TimeShare.compute(
+            log.facts(miffId),
+            listOf(PlaceRef("home", PlaceType.TRUSTED)),
+            7,
+            env.now,
+            startedAtMillis = log.startedAt(miffId),
+        ) as TimeShareResult.NotEnoughData
+
+    private fun daysLeftNow(miffId: String): Int = notEnoughNow(miffId).daysLeft
+
+    @Test
+    fun theCounterOfTheChart_goesDownDayAfterDay_evenWhenThePersonHasNotMovedYet() =
+        runTest {
+            share(miffA)
+            // The app is open and the zones armed, but no arrival or departure has been reported yet (the person stays where they are).
+            engine.refresh(TrackingEngine.Reason.OPENED)
+            assertTrue(log.facts(miffA).isEmpty())
+            val first = daysLeftNow(miffA)
+            env.now += 25 * hour
+            engine.refresh(TrackingEngine.Reason.OPENED)
+            val second = daysLeftNow(miffA)
+            env.now += 24 * hour
+            engine.refresh(TrackingEngine.Reason.OPENED)
+            val third = daysLeftNow(miffA)
+            assertEquals("the counter must go down by one a day", listOf(first - 1, first - 2), listOf(second, third))
+            assertEquals(3, first)
+            // 49 h after the arming and still no arrival or departure: "1 jour", the wait is not over yet.
+            assertEquals(1, third)
+            assertFalse(notEnoughNow(miffA).historyReached)
+            // Past 3 days with nothing measured (the person never entered a place): no countdown any more, the calm text takes over.
+            env.now += 24 * hour
+            engine.refresh(TrackingEngine.Reason.OPENED)
+            assertTrue(notEnoughNow(miffA).historyReached)
+        }
+
+    @Test
+    fun theStartOfTheHistory_isTheFirstArming_notTheLaterOnes_andIsKeptPerMiff() =
+        runTest {
+            share(miffA, miffB)
+            val armed = env.now
+            engine.refresh(TrackingEngine.Reason.OPENED)
+            env.now += 30 * hour
+            engine.refresh(TrackingEngine.Reason.OPENED)
+            // The first arming counts, for each Miff; the later passes change nothing.
+            assertEquals(armed, log.startedAt(miffA))
+            assertEquals(armed, log.startedAt(miffB))
+            assertNull(log.startedAt("miffC"))
+        }
+
+    @Test
+    fun theStartOfTheHistory_isRecordedOnlyForTheMiffsTheDetectionIsArmedFor() =
+        runTest {
+            // Nobody shares anywhere (no consent of version 3): nothing is watched, so no history starts.
+            store.memberships = listOf(MembershipRef("k$miffA", miffA))
+            engine.refresh(TrackingEngine.Reason.OPENED)
+            assertNull(log.startedAt(miffA))
+        }
+
+    @Test
+    fun aJournalThatFailsAtTheStart_neverStopsTheDetection() =
+        runTest {
+            val failing = engineWith(FailingPresenceLog())
+            share(miffA)
+            failing.refresh(TrackingEngine.Reason.OPENED)
+            failing.onTransition(TransitionKind.ENTER, home.key, env.now)
+            assertEquals(1, statusWrites().filter { it.path.startsWith("miffs/$miffA/") }.size)
+        }
+
     // --- T17 and T18: the trusted zone wins ------------------------------------------------------------------------------------------------------------
 
     @Test
@@ -231,7 +303,8 @@ class TrackingEnginePresenceLogTest {
             position.lat = lat + 0.5
             engine.refresh(TrackingEngine.Reason.OPENED)
             assertTrue(log.facts(miffA).isEmpty())
-            assertNull(storage.text)
+            // No fact, no "out" guessed: the file holds only the start of the follow-up (the Miff and an instant), nothing else.
+            assertEquals("""{"uid":"uid1","since":{"miffA":$T0}}""", storage.text)
         }
 
     @Test
@@ -429,12 +502,12 @@ class TrackingEnginePresenceLogTest {
             env.now = start + 18 * hour
             engine.onTransition(TransitionKind.ENTER, home.key, env.now)
             env.now = start + 28 * hour
-            // 28 h of journal: under the 7 days the chart waits for (4 days left to wait... 7 days minus a day and a bit), but the measure is already right.
+            // 28 h of journal: under the 3 days the chart waits for (2 days left to wait: 3 days minus a day and a bit), but the measure is already right.
             val tally = TimeShare.tally(log.facts(miffA), listOf(PlaceRef("home", PlaceType.TRUSTED)), 7, env.now)
             assertEquals(20 * hour, tally.trusted["home"])
             assertEquals(8 * hour, tally.elsewhere)
             val result = TimeShare.compute(log.facts(miffA), listOf(PlaceRef("home", PlaceType.TRUSTED)), 7, env.now)
             assertTrue(result is TimeShareResult.NotEnoughData)
-            assertEquals(6, (result as TimeShareResult.NotEnoughData).daysLeft)
+            assertEquals(2, (result as TimeShareResult.NotEnoughData).daysLeft)
         }
 }
