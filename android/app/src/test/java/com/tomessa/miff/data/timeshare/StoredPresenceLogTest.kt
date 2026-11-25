@@ -94,6 +94,93 @@ class StoredPresenceLogTest {
     }
 
     @Test
+    fun theStartOfTheFollowUp_isKeptOnce_theFirstTimeOnly_andWritesNothingTheNextTimes() {
+        assertNull(log.startedAt("miffA"))
+        log.begin("miffA", now - 2 * day)
+        assertEquals(now - 2 * day, log.startedAt("miffA"))
+        val writes = storage.writes
+        val revision = log.revision.value
+        // The following calls change nothing: no write, no new calculation of the chart.
+        log.begin("miffA", now)
+        log.begin("miffA", now - 5 * day)
+        assertEquals(now - 2 * day, log.startedAt("miffA"))
+        assertEquals(writes, storage.writes)
+        assertEquals(revision, log.revision.value)
+        // Per Miff.
+        assertNull(log.startedAt("miffB"))
+    }
+
+    @Test
+    fun theStartOfTheFollowUp_isTheOlderOfItsFirstArmingAndItsFirstFact() {
+        log.record("miffA", PresenceValue.IN_TRUSTED, "home", now - 3 * day)
+        log.begin("miffA", now - day)
+        assertEquals(now - 3 * day, log.startedAt("miffA"))
+        log.record("miffB", PresenceValue.IN_TRUSTED, "home", now - day)
+        log.begin("miffB", now - 3 * day)
+        assertEquals(now - 3 * day, log.startedAt("miffB"))
+        // A start recorded with no fact at all is enough (the person has not moved yet).
+        log.begin("miffC", now - 2 * day)
+        assertTrue(log.facts("miffC").isEmpty())
+        assertEquals(now - 2 * day, log.startedAt("miffC"))
+    }
+
+    @Test
+    fun theStartOfTheFollowUp_holdsOnlyAnIdentifierAndAnInstant_neverWithoutAnAccountOrWithABadId() {
+        log.begin("miffA", now - day)
+        val text = storage.text!!
+        val keys = Regex("\"([a-z]+)\":").findAll(text).map { it.groupValues[1] }.toSet()
+        // A closed set of keys (the Miff identifier "miffA" has a capital, so the pattern above does not take it for a key): the account and the starts.
+        assertEquals(setOf("uid", "since"), keys)
+        assertTrue(text.contains("\"miffA\":"))
+        assertFalse(
+            Regex("(?i)lat|lng|longitude|latitude|address|adresse|nom\\b").containsMatchIn(text.replace("\"uid\"", "")),
+        )
+        assertFalse(Regex("[0-9]\\.[0-9]").containsMatchIn(text))
+        log.begin("a miff name", now)
+        log.begin("48.85,2.35", now)
+        assertNull(log.startedAt("a miff name"))
+        uid = null
+        log.begin("miffB", now)
+        uid = "uid1"
+        assertNull(log.startedAt("miffB"))
+    }
+
+    @Test
+    fun theStartOfTheFollowUp_goesWithTheMiff_theAccountAndTheErasure() {
+        log.begin("miffA", now - 2 * day)
+        log.begin("miffB", now - 2 * day)
+        log.begin("miffC", now - 2 * day)
+        log.forgetMiff("miffA")
+        assertNull(log.startedAt("miffA"))
+        log.retainOnly(setOf("miffB"))
+        assertNull(log.startedAt("miffC"))
+        assertEquals(now - 2 * day, log.startedAt("miffB"))
+        // Another account on the same phone never sees it, and the file is replaced.
+        uid = "uid2"
+        assertNull(log.startedAt("miffB"))
+        uid = "uid1"
+        log.begin("miffB", now - day)
+        log.clear()
+        assertNull(log.startedAt("miffB"))
+        assertNull(storage.text)
+    }
+
+    @Test
+    fun aStartOfTheFollowUpAloneIsErasedWithTheLastMiff_andTheFileIsEmptied() {
+        log.begin("miffA", now - day)
+        log.forgetMiff("miffA")
+        assertNull(storage.text)
+    }
+
+    @Test
+    fun aFileWrittenBeforeTheStartExisted_stillWorks() {
+        // The format of the first versions (no "since" key): read as no start, the first fact is the start.
+        storage.text = "{\"uid\":\"uid1\",\"facts\":[{\"m\":\"miffA\",\"s\":\"out\",\"t\":${now - 4 * day}}]}"
+        assertEquals(now - 4 * day, log.startedAt("miffA"))
+        assertEquals(1, log.facts("miffA").size)
+    }
+
+    @Test
     fun aStateThatMustNameAPlaceButDoesNot_isAnUnknown() {
         log.record("miffA", PresenceValue.IN_TRUSTED, "home", now - 3000)
         log.record("miffA", PresenceValue.IN_RISK, null, now - 1000)

@@ -116,7 +116,7 @@ import java.text.NumberFormat
 /*
  * "Répartition du temps", the card of the Profile (docs/tickets/profil-repartition-temps.md, TIME-2; mockup 19.webp of the PM, gaps listed in the PR). Layout of the PM (2026-11-17):
  * header (green badge, title, selector), the small RING on the left and the LEGEND on the right (the four biggest shares), then the green band with the
- * tick, the sentence and the party emoji. No chart before 7 days of history: the words only, without selector. No subtitle and no line about the data staying on the phone (PM).
+ * tick, the sentence and the party emoji. No chart before 3 days of history: the words only, without selector. No subtitle and no line about the data staying on the phone (PM).
  * Everything is drawn by Compose itself (a ring on a Canvas): no chart library. No colour is written here, only tokens (ui/theme/ChartColor.kt). Nothing is logged.
  *
  * Accessibility (section 9.2): the ring is decorative (hidden), the legend carries the same words as the ring (emoji + name + percentage, in the order of the slices), ONE
@@ -247,7 +247,7 @@ private fun ShownCard(
 ) {
     val chart = state.body as? TimeShareBody.Chart
     CardFrame(modifier) {
-        // The selector and the subtitle exist only with the chart (before 7 days of history there is nothing to choose a window for).
+        // The selector and the subtitle exist only with the chart (before 3 days of history there is nothing to choose a window for).
         Header(windowDays = state.windowDays, withChart = chart != null, onWindowChosen = actions.onWindowChosen)
         when (val body = state.body) {
             is TimeShareBody.NotEnough -> NotEnough(state, body, actions)
@@ -734,7 +734,7 @@ private fun SummaryBand(body: TimeShareBody.Chart) {
     }
 }
 
-/** Under 7 days of history, or a tracking that is not running: no chart at all, only the words that are TRUE for the situation (never the colour of an alert). */
+/** Under 3 days of history, or a tracking that is not running: no chart at all, only the words that are TRUE for the situation (never the colour of an alert). */
 @Composable
 private fun NotEnough(
     state: TimeShareUiState.Shown,

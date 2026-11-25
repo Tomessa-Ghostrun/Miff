@@ -40,6 +40,18 @@ interface PresenceLog {
         atMillis: Long,
     )
 
+    /**
+     * The detection is armed for [miffId] at [atMillis]: the follow-up of this Miff on this phone starts (only the FIRST call counts, the following ones change nothing). It is
+     * the start of the history of the chart, so that the days left count down even when no arrival or departure has been seen yet. Only an identifier and an instant.
+     */
+    fun begin(
+        miffId: String,
+        atMillis: Long,
+    ) = Unit
+
+    /** When the follow-up of [miffId] started (the older of its first [begin] and its first fact); null when it never did. */
+    fun startedAt(miffId: String): Long? = null
+
     /** The facts of [miffId], in the order they were recorded (the order is meaningful: see the rule of a fact dated before the previous one). */
     fun facts(miffId: String): List<LoggedPresence>
 

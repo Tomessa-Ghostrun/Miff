@@ -119,15 +119,29 @@ class TimeShareViewModelTest {
     // --- The states ---------------------------------------------------------------------------------------------------------------------------------------
 
     @Test
-    fun withAJournalOfThreeDays_itIsNotEnoughData_withTheDaysLeft_andAfterAnErasureItStartsAtSeven() {
-        log.record("miffA", PresenceValue.IN_TRUSTED, "home", now - 3 * TimeShareRules.DAY_MILLIS)
+    fun withAJournalOfOneDay_itIsNotEnoughData_withTheDaysLeft_andAfterAnErasureItStartsAtThree() {
+        log.record("miffA", PresenceValue.IN_TRUSTED, "home", now - TimeShareRules.DAY_MILLIS)
         val vm = viewModel()
         vm.onInputs("miffA", places)
         dispatcher.scheduler.runCurrent()
-        assertEquals(4, (vm.shown().body as TimeShareBody.NotEnough).daysLeft)
+        assertEquals(2, (vm.shown().body as TimeShareBody.NotEnough).daysLeft)
         log.clear()
         dispatcher.scheduler.runCurrent()
-        assertEquals(7, (vm.shown().body as TimeShareBody.NotEnough).daysLeft)
+        assertEquals(3, (vm.shown().body as TimeShareBody.NotEnough).daysLeft)
+    }
+
+    @Test
+    fun theDaysLeftCountDownFromTheStartOfTheFollowUp_withoutAnyFact() {
+        // The detection was armed 25 h ago and nothing was seen since (the person did not move): 2 days left, then 1.
+        log.begin("miffA", now - 25 * hour)
+        val vm = viewModel()
+        vm.onInputs("miffA", places)
+        dispatcher.scheduler.runCurrent()
+        assertEquals(2, (vm.shown().body as TimeShareBody.NotEnough).daysLeft)
+        log.clear()
+        log.begin("miffA", now - 49 * hour)
+        dispatcher.scheduler.runCurrent()
+        assertEquals(1, (vm.shown().body as TimeShareBody.NotEnough).daysLeft)
     }
 
     @Test

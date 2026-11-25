@@ -61,9 +61,9 @@ class DetailItem(
 }
 
 sealed interface TimeShareBody {
-    /** The journal goes back less than 7 days (or nothing was measured): no chart, no selector. */
+    /** The history goes back less than 3 days (or nothing was measured): no chart, no selector. */
     data class NotEnough(
-        /** The days left before the chart can be shown, 1 to 7 ("Ton graphique arrive dans X jours"). */
+        /** The days left before the chart can be shown, 1 to 3 ("Ton graphique arrive dans X jours"). */
         val daysLeft: Int,
     ) : TimeShareBody
 
@@ -192,6 +192,7 @@ class TimeShareViewModel(
                 places = places.map { PlaceRef(it.id, it.type) },
                 windowDays = days,
                 nowMillis = nowMillis(),
+                startedAtMillis = log.startedAt(miffId),
             )
         val status = tracking.of(miffId)
         val body =

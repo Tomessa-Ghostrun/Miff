@@ -339,6 +339,20 @@ class TrackingEngine(
         }
     }
 
+    /**
+     * TIME-1: the detection is armed for these Miffs: the history of the chart starts (only the first time counts, see [PresenceLog.begin]). Same safety as [logPresence].
+     */
+    private fun beginHistory(
+        miffIds: Collection<String>,
+        atMillis: Long,
+    ) {
+        try {
+            miffIds.forEach { presenceLog.begin(it, atMillis) }
+        } catch (e: Exception) {
+            // The chart is a convenience: it must never stop the detection of the arrivals and departures.
+        }
+    }
+
     private fun forgetPlaceInLog(
         miffId: String,
         placeId: String,
@@ -494,6 +508,8 @@ class TrackingEngine(
         //    cleaning by the phone, location switched off and on, data of Play services erased) comes back; the call is idempotent.
         val fullRegistration = reason == Reason.OPENED || reason == Reason.REARM || reason == Reason.SHARING_CHANGED
         state = armZones(state, state.fix(), fullRegistration)
+        // TIME-1: the follow-up of these Miffs starts now (the first time only): "Ton graphique arrive dans X jours" counts down from here, with or without a first arrival.
+        beginHistory(state.miffs.keys, now)
         local.save(state.copyWith(resumedMiffs = flagsBeforeTake))
 
         // 2. The position (bounded wait), only if it is recent (review I2).
