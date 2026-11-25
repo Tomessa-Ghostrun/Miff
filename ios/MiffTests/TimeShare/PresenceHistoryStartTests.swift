@@ -84,7 +84,7 @@ final class PresenceHistoryStartTests: XCTestCase {
         XCTAssertNil(history.startedAt(miffId: "miffC"))
         XCTAssertNotNil(history.startedAt(miffId: "miffB"))
         history.eraseFacts()
-        XCTAssertNil(history.startedAt(miffId: "miffB"), "« Effacer mon historique de temps » : le décompte repart de 3")
+        XCTAssertNil(history.startedAt(miffId: "miffB"), "« Effacer » : le décompte repart de 3")
         history.begin(miffId: "miffB", atMillis: clockNow)
         history.clearAll()
         XCTAssertNil(history.startedAt(miffId: "miffB"))
