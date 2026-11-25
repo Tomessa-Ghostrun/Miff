@@ -29676,6 +29676,47 @@
         }
       }
     },
+    "profile_timeshare_no_time_yet": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Diagramm erscheint, sobald du Zeit an einem deiner vertrauten Orte verbracht hast"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your chart will appear as soon as you've spent time in one of your trusted places"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu gráfico aparecerá en cuanto hayas pasado tiempo en uno de tus lugares de confianza"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton graphique apparaîtra dès que tu auras passé du temps dans l'un de tes lieux de confiance"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il tuo grafico apparirà non appena avrai trascorso del tempo in uno dei tuoi luoghi di fiducia"
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O teu gráfico vai aparecer assim que passares algum tempo num dos teus locais de confiança"
+          }
+        }
+      }
+    },
     "profile_timeshare_not_enough": {
       "extractionState": "manual",
       "localizations": {

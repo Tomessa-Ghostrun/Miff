@@ -17,11 +17,14 @@ object TimeShareRules {
     const val HOUR_MILLIS = 60L * 60L * 1000L
     const val DAY_MILLIS = 24L * HOUR_MILLIS
 
+    /** The days of history before the chart can appear (decision of the PM, 2026-11-25: 3 days are enough; it was 7 days since 2026-11-17 and 24 h before). One definition. */
+    const val MIN_HISTORY_DAYS = 3
+
     /**
-     * The chart appears only when the journal of the Miff goes back at least this far: 7 days elapsed since its FIRST recorded fact (decision of the PM, 2026-11-17, which
-     * replaces the 24 h of the first version). Before that: "pas assez de données", whatever the window chosen, and the window selector is not shown either.
+     * The chart appears only when the history of the Miff goes back at least this far: [MIN_HISTORY_DAYS] days elapsed since the START of its follow-up on this phone (see
+     * [TimeShare.history]). Before that: "pas assez de données", whatever the window chosen, and the window selector is not shown either.
      */
-    const val MIN_HISTORY_MILLIS = 7L * DAY_MILLIS
+    const val MIN_HISTORY_MILLIS = MIN_HISTORY_DAYS * DAY_MILLIS
 
     /** A state is counted 48 h at most without a new fact (D9): beyond, "not measured". */
     const val MAX_STATE_MILLIS = 48L * HOUR_MILLIS
@@ -74,14 +77,20 @@ class Slice(
 }
 
 sealed interface TimeShareResult {
-    /** The journal goes back less than 7 days, or nothing was measured in the window: no chart, no percentage at all. */
+    /** The history goes back less than [TimeShareRules.MIN_HISTORY_DAYS] days, or nothing was measured in the window: no chart, no percentage at all. */
     class NotEnoughData(
         val measuredMillis: Long,
-        /** How far back the journal of the Miff goes (from its first fact to now); 0 when it has none. */
+        /** How far back the follow-up of the Miff goes (from its start to now, see [TimeShare.history]); 0 when it has none. */
         val historyMillis: Long,
     ) : TimeShareResult {
-        /** The number of days left before the chart can be shown (see [TimeShare.daysLeft]). */
+        /** The number of days left before the chart can be shown (see [TimeShare.daysLeft]); only meaningful while [historyReached] is false. */
         val daysLeft: Int get() = TimeShare.daysLeft(historyMillis)
+
+        /**
+         * The wait of [TimeShareRules.MIN_HISTORY_DAYS] days is over, but nothing was measured in the window (the person has not spent time in a place yet): there is no
+         * countdown to show any more, a calm text says what is awaited (PM default, 2026-11-25: a "dans 1 jour" that never changes looked like the original defect).
+         */
+        val historyReached: Boolean get() = historyMillis >= TimeShareRules.MIN_HISTORY_MILLIS
     }
 
     class Ready(
@@ -104,10 +113,12 @@ object TimeShare {
         places: List<PlaceRef>,
         windowDays: Int,
         nowMillis: Long,
+        /** When the detection was first armed for this Miff on this phone ([PresenceLog.startedAt]); null when unknown (tests, nothing armed yet). */
+        startedAtMillis: Long? = null,
     ): TimeShareResult {
         val tally = tally(facts, places, windowDays, nowMillis)
-        val history = history(facts, nowMillis)
-        // The rule of the chart: the journal covers 7 days since its first fact AND something was measured in the window (nothing to share out otherwise).
+        val history = history(facts, nowMillis, startedAtMillis)
+        // The rule of the chart: the history covers the minimum of days since the start of the follow-up AND something was measured in the window (nothing to share out otherwise).
         if (history < TimeShareRules.MIN_HISTORY_MILLIS || tally.measured <= 0L) {
             return TimeShareResult.NotEnoughData(tally.measured, history)
         }
@@ -115,8 +126,9 @@ object TimeShare {
     }
 
     /**
-     * "Ton graphique arrive dans X jours": X = 7 days minus the days elapsed since the first fact of the journal, rounded UP so that it never goes under 1 while the chart cannot be
-     * shown (6 days and 2 h elapsed: 1 day), and 7 with no fact at all (decision of the PM, 2026-11-17: this wording is fixed, no variant). Recomputed at each display, no timer.
+     * "Ton graphique arrive dans X jours": X = the minimum of days ([TimeShareRules.MIN_HISTORY_DAYS], 3) minus the days elapsed since the start of the follow-up, rounded UP so
+     * that it never goes under 1 while the chart cannot be shown (2 days and 2 h elapsed: 1 day), and 3 with no start at all (decision of the PM, 2026-11-17: this wording is
+     * fixed, no variant). Recomputed at each display, no timer.
      */
     fun daysLeft(historyMillis: Long): Int {
         val remaining = (TimeShareRules.MIN_HISTORY_MILLIS - historyMillis).coerceAtLeast(0L)
@@ -124,11 +136,19 @@ object TimeShare {
         return days.coerceIn(1, (TimeShareRules.MIN_HISTORY_MILLIS / TimeShareRules.DAY_MILLIS).toInt())
     }
 
-    /** Elapsed time from the first fact of the journal to now (0 without a fact; a first fact in the future counts 0). */
+    /**
+     * Elapsed time since the START of the follow-up of the Miff on this phone: the OLDER of the first fact of the journal and [startedAtMillis] (the first arming of the
+     * detection for this Miff). Without the second, the counter stayed at its maximum for as long as the person had not left or joined a place (PM feedback, 2026-11-25).
+     * 0 without any of them; a start in the future counts 0.
+     */
     fun history(
         facts: List<LoggedPresence>,
         nowMillis: Long,
-    ): Long = facts.firstOrNull()?.let { (nowMillis - it.atMillis).coerceAtLeast(0L) } ?: 0L
+        startedAtMillis: Long? = null,
+    ): Long {
+        val start = listOfNotNull(facts.firstOrNull()?.atMillis, startedAtMillis).minOrNull() ?: return 0L
+        return (nowMillis - start).coerceAtLeast(0L)
+    }
 
     /** The time of each category inside the window, before any rounding (exposed to be tested: T2, T3, T4, T8, T11, T16, T22, T23). */
     class Tally(

@@ -70,6 +70,34 @@ Ticket `docs/tickets/premium-achat-reel.md` (§4, §5, §6, §8, §12, §16 crit
 - **Parité des clés avec iOS** : les 24 clés sont **aussi ajoutées au catalogue iOS** (`ios/Miff/Resources/Localizable.xcstrings`, ajouts seuls, mêmes noms, mêmes textes en six langues, `%1$s` devenu `%1$@`, ordre et format du catalogue conservés) **en avance pour SRV-8I** : aucun code Swift. Leurs traductions es / it / pt / de passent par une **relecture dédiée** (rétro-traduction à l'aveugle) lancée par la coordination ; si elle change des textes, ils seront corrigés dans les deux catalogues.
 - **Pas de relecture indépendante par un sous-agent** (aucun outil de sous-agent dans cette session) : relecture de sécurité faite par l'auteur seulement, à refaire en contexte neuf avant « prêt à merger ».
 
+## [0.59.1] - 2026-11-25 : « Répartition du temps », le graphique arrive après 3 jours (et non 7) et le compteur « dans X jours » baisse enfin d'un jour par jour
+
+Retour du PM après recette sur l'OPPO : « le compteur ne décroît pas de jour en jour ; 3 jours doivent suffire ». Branche `android/profil-temps-seuil-3j`. **Numéro de version provisoire** (le PM renumérote à la fusion). **Coût ajouté : 0 €.** Ticket : `docs/tickets/profil-repartition-temps.md` (Révision 5, §6.2 point 7, D8, T9, T9b, T9c).
+
+### Corrigé
+- **Le compteur « Ton graphique arrive dans X jours » restait figé** (`TimeShare.history`, `StoredPresenceLog`, `TrackingEngine`). **Cause** : l'historique se comptait depuis le **premier fait du journal**, c'est-à-dire la première arrivée ou le premier départ détecté. Tant que la personne n'avait ni rejoint ni quitté un lieu (ou que le téléphone n'avait rien signalé, ce qui arrive sur une surcouche qui retarde les événements), il n'y avait **aucun fait** : historique à 0, donc « 7 jours » **toujours**. Le calcul de X lui-même (arrondi, bornes) était juste. **Correctif** : le journal mémorise, une seule fois par Miff, l'**instant du premier armement de la détection** (`PresenceLog.begin`, appelé par le moteur dès que les zones sont armées) ; l'historique est la durée écoulée depuis le plus ancien de cet instant et du premier fait. Le compteur baisse donc d'un jour par jour, avec ou sans arrivée ni départ. Reproduit d'abord par un test qui échouait (`[7, 7]` au lieu de `[6, 5]`).
+
+### Modifié
+- **Seuil de données : 3 jours au lieu de 7** (décision du PM). **Une seule constante** `TimeShareRules.MIN_HISTORY_DAYS = 3` ; X vaut 3, puis 2, puis 1, puis le graphique s'affiche. Les fenêtres du sélecteur restent 7 / 14 / 30 jours. **L'historique déjà mesuré compte tout de suite** : aucune remise à zéro (un journal qui remonte déjà à 3 jours ou plus affiche le graphique dès la mise à jour ; un fichier écrit avant cette version, sans l'instant de début, reste lu).
+- **Après les 3 jours, sans aucun temps mesuré : plus de décompte** (relecture de la PR). Avant, une personne qui n'entre jamais dans un lieu voyait « dans 1 jour » indéfiniment, ce qui ressemblait au défaut d'origine. Maintenant : « Ton graphique apparaîtra dès que tu auras passé du temps dans l'un de tes lieux de confiance » (`TimeShareResult.NotEnoughData.historyReached`).
+- **Début du suivi borné par l'horloge** : `StoredPresenceLog.begin` n'enregistre jamais un instant postérieur à l'heure du téléphone.
+- **Textes** : le décompte « Ton graphique arrive dans X jours, nous analysons tes habitudes » et son singulier « dans 1 jour » sont inchangés (pluriel `profile_timeshare_not_enough`). **Nouvelle clé** `profile_timeshare_no_time_yet` (fr, en, es, it, pt, de, selon le glossaire G47 « lieu de confiance » ; entrée équivalente dans le catalogue iOS `Localizable.xcstrings`, à brancher par l'agent iOS).
+
+### Données locales et vie privée
+- **Un nouvel élément dans le journal local** : pour chaque Miff, **un instant** (premier armement de la détection), à côté de l'identifiant de la Miff. **Ni lieu, ni position, ni nom.** Même fichier privé, exclu des sauvegardes, effacé dans les mêmes cas que le journal (déconnexion, suppression du compte, Miff quittée ou supprimée pour cette Miff, « Effacer mon historique de temps »). Le test de contenu du journal (clés fermées, pas de décimale, pas de nom) couvre la nouvelle clé `since`. **Risque assumé (décision du PM, 2026-11-25)** : la politique de confidentialité ne cite pas cet instant de début de suivi ; aucune mise à jour des textes légaux pour l'instant (`docs/legal/README.md` J75).
+
+### Tests
+- `TrackingEnginePresenceLogTest` : le compteur baisse d'un jour par jour sans aucun fait (3, 2, 1) ; le début est le premier armement et non les suivants, par Miff ; aucun début sans Miff armée ; un journal en panne n'arrête pas la détection.
+- `TimeShareTest` : seuil exact à 3 jours (à la milliseconde), X en fonction de l'historique (3 / 2 / 1), début du suivi sans fait, le plus ancien de (début, premier fait), historique déjà mesuré affiché tout de suite.
+- `StoredPresenceLogTest` : début mémorisé une fois (aucune écriture ensuite), le plus ancien de (début, premier fait), contenu sans donnée personnelle, effacé avec la Miff / le compte / « Effacer », ancien format de fichier lu.
+- `TimeShareViewModelTest` : X décroît depuis le début du suivi sans fait ; 1 jour de journal → 2 ; après effacement → 3.
+- Après les 3 jours sans temps mesuré : `TimeShareTest`, `TimeShareViewModelTest`, `TrackingEnginePresenceLogTest`, `TimeShareCardTest` (texte calme, pas de décompte) ; `StoredPresenceLogTest` (début borné par l'horloge).
+- Mises à jour : `docs/qa/checklists/profil-repartition-temps-android-recette-pm.md` (À savoir, étapes 1, 2, 12, 22 et 24).
+
+### Écarts et limites
+- **Numéro de révision du ticket** : le PM a parlé de « Révision 3 » ; ce numéro est déjà pris dans le ticket (18/11), la décision est donc la **Révision 5**.
+- **iOS** : seule la clé de texte `profile_timeshare_no_time_yet` est ajoutée au catalogue (parité) ; le même défaut existe (historique compté depuis le premier fait, `TimeShareCalculator.compute`) et le seuil y est encore de 7 jours (`TimeShareLimits.minimumHistoryMillis`) ; non touché ici, à aligner par l'agent iOS (début du suivi mémorisé à l'armement, constante à 3).
+
 ## [0.59.0] - 2026-11-20 : alerte « Je suis en danger », retours de recette du PM : le doigt peut sortir du bouton, bulle bleue sans minuterie, titre du bandeau rouge deux fois plus gros
 
 Trois retours du PM sur la recette de l'alerte (`docs/tickets/alerte-danger.md`, §7.1, 7.2, 7.4). Branche `android/alerte-retours-recette`. **Numéro de version provisoire** (le PM renumérote à la fusion). **Coût ajouté : 0 €** (aucun service, aucune bibliothèque). **À savoir : français et anglais seulement ; les traductions es / it / pt / de ne sont pas touchées** (passe dédiée ensuite).

@@ -61,10 +61,12 @@ class DetailItem(
 }
 
 sealed interface TimeShareBody {
-    /** The journal goes back less than 7 days (or nothing was measured): no chart, no selector. */
+    /** The history goes back less than 3 days (or nothing was measured): no chart, no selector. */
     data class NotEnough(
-        /** The days left before the chart can be shown, 1 to 7 ("Ton graphique arrive dans X jours"). */
+        /** The days left before the chart can be shown, 1 to 3 ("Ton graphique arrive dans X jours"). */
         val daysLeft: Int,
+        /** The 3 days are over but no time was measured yet: no countdown, a calm text instead ("dès que tu auras passé du temps dans l'un de tes lieux"). */
+        val historyReached: Boolean = false,
     ) : TimeShareBody
 
     class Chart(
@@ -192,11 +194,12 @@ class TimeShareViewModel(
                 places = places.map { PlaceRef(it.id, it.type) },
                 windowDays = days,
                 nowMillis = nowMillis(),
+                startedAtMillis = log.startedAt(miffId),
             )
         val status = tracking.of(miffId)
         val body =
             when (result) {
-                is TimeShareResult.NotEnoughData -> TimeShareBody.NotEnough(result.daysLeft)
+                is TimeShareResult.NotEnoughData -> TimeShareBody.NotEnough(result.daysLeft, result.historyReached)
                 is TimeShareResult.Ready -> chart(result, places)
             }
         return TimeShareUiState.Shown(miffId, days, body, status)

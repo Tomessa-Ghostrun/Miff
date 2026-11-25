@@ -422,6 +422,16 @@ class TimeShareCardTest {
     }
 
     @Test
+    fun afterTheWait_withNothingMeasured_noCountdown_aCalmTextSaysWhatIsAwaited() {
+        show(shown(TimeShareBody.NotEnough(daysLeft = 1, historyReached = true)))
+        node(
+            "Ton graphique apparaîtra dès que tu auras passé du temps dans l'un de tes lieux de confiance",
+        ).assertIsDisplayed()
+        nodes("Ton graphique arrive dans 1 jour, nous analysons tes habitudes").assertCountEquals(0)
+        nodes("7 jours").assertCountEquals(0)
+    }
+
+    @Test
     fun theWordingIsSingularForOneDay_andSevenWithNoJournalYet() {
         show(shown(TimeShareBody.NotEnough(daysLeft = 1)))
         node("Ton graphique arrive dans 1 jour, nous analysons tes habitudes").assertIsDisplayed()

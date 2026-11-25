@@ -22,6 +22,7 @@ import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -119,15 +120,48 @@ class TimeShareViewModelTest {
     // --- The states ---------------------------------------------------------------------------------------------------------------------------------------
 
     @Test
-    fun withAJournalOfThreeDays_itIsNotEnoughData_withTheDaysLeft_andAfterAnErasureItStartsAtSeven() {
-        log.record("miffA", PresenceValue.IN_TRUSTED, "home", now - 3 * TimeShareRules.DAY_MILLIS)
+    fun withAJournalOfOneDay_itIsNotEnoughData_withTheDaysLeft_andAfterAnErasureItStartsAtThree() {
+        log.record("miffA", PresenceValue.IN_TRUSTED, "home", now - TimeShareRules.DAY_MILLIS)
         val vm = viewModel()
         vm.onInputs("miffA", places)
         dispatcher.scheduler.runCurrent()
-        assertEquals(4, (vm.shown().body as TimeShareBody.NotEnough).daysLeft)
+        assertEquals(2, (vm.shown().body as TimeShareBody.NotEnough).daysLeft)
         log.clear()
         dispatcher.scheduler.runCurrent()
-        assertEquals(7, (vm.shown().body as TimeShareBody.NotEnough).daysLeft)
+        assertEquals(3, (vm.shown().body as TimeShareBody.NotEnough).daysLeft)
+    }
+
+    @Test
+    fun theDaysLeftCountDownFromTheStartOfTheFollowUp_withoutAnyFact() {
+        // The detection was armed 25 h ago and nothing was seen since (the person did not move): 2 days left, then 1.
+        log.begin("miffA", now - 25 * hour)
+        val vm = viewModel()
+        vm.onInputs("miffA", places)
+        dispatcher.scheduler.runCurrent()
+        assertEquals(2, (vm.shown().body as TimeShareBody.NotEnough).daysLeft)
+        log.clear()
+        log.begin("miffA", now - 49 * hour)
+        dispatcher.scheduler.runCurrent()
+        assertEquals(1, (vm.shown().body as TimeShareBody.NotEnough).daysLeft)
+        assertFalse((vm.shown().body as TimeShareBody.NotEnough).historyReached)
+    }
+
+    @Test
+    fun afterThreeDaysWithNothingMeasured_noCountdownAnyMore_theCalmTextIsAsked() {
+        // The detection is armed for 4 days and the person never entered a place: nothing measured, but the wait is over.
+        log.begin("miffA", now - 4 * TimeShareRules.DAY_MILLIS)
+        val vm = viewModel()
+        vm.onInputs("miffA", places)
+        dispatcher.scheduler.runCurrent()
+        val body = vm.shown().body as TimeShareBody.NotEnough
+        assertTrue(body.historyReached)
+        // And under 3 days there is still the countdown.
+        log.clear()
+        log.begin("miffA", now - 2 * TimeShareRules.DAY_MILLIS - 2 * hour)
+        dispatcher.scheduler.runCurrent()
+        val before = vm.shown().body as TimeShareBody.NotEnough
+        assertFalse(before.historyReached)
+        assertEquals(1, before.daysLeft)
     }
 
     @Test
