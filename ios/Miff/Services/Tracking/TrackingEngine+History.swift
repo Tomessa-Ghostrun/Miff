@@ -12,6 +12,14 @@ extension TrackingEngine {
         history.record(PresenceFact(miffId: miffId, fact: fact))
     }
 
+    /// La détection est armée pour ces Miffs : le début de leur suivi (le journal ne retient que le PREMIER appel par Miff ; un instant dans le
+    /// futur est ramené à « maintenant »). Seuls un identifiant de Miff et une heure passent ici.
+    func noteBegin(_ miffIds: Set<String>, at millis: Int) {
+        for miffId in miffIds.sorted() {
+            history.begin(miffId: miffId, atMillis: millis)
+        }
+    }
+
     /// La présence d'une Miff ne peut plus être confirmée (lieu supprimé ou modifié, suivi arrêté, voyage, fin de session...) : le temps qui
     /// suit est « non mesuré », jamais une supposition.
     func noteUnknown(_ miffId: String, at millis: Int) {

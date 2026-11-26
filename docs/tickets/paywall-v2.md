@@ -117,7 +117,7 @@ Reprise des clés `place_paywall_*` existantes vers le préfixe `paywall_` (l'é
 
 | Clé | FR | EN |
 |---|---|---|
-| `paywall_cta_trial` | Tester gratuitement (7 jours) (décision PM 2026-11-26, iPhone ; Android à aligner) | Start your 7-day free trial |
+| `paywall_cta_trial` | Tester gratuitement (7 jours) | Start your 7-day free trial |
 | `paywall_trial_then` | Puis {prix} par an | Then {price} per year |
 | `paywall_monthly_equivalent` | soit {prix} par mois | that's {price} per month |
 | `paywall_annual_savings` | presque 30 % d'économie | almost 30% off |

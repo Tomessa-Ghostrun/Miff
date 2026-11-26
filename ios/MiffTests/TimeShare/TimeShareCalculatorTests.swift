@@ -98,37 +98,38 @@ final class TimeShareCalculatorTests: XCTestCase {
         XCTAssertEqual(result.rows.map { $0.percent }, [71, 29])
     }
 
-    func testT9UnderSevenDaysOfHistoryThereIsNoChart() {
-        // 20 h mesurées dans un journal tout neuf : « Ton graphique arrive dans 7 jours ».
+    func testT9UnderThreeDaysOfHistoryThereIsNoChart() {
+        // 20 h mesurées dans un journal tout neuf : « Ton graphique arrive dans 3 jours ».
         let outcome = Scn.compute(Scn.timeline([(.trusted, "p1", 20)], aged: false), places: [Scn.home])
 
-        XCTAssertEqual(outcome, .notEnough(daysLeft: 7))
+        XCTAssertEqual(outcome, .notEnough(daysLeft: 3))
     }
 
-    func testT9bExactlySevenDaysOfHistoryIsEnough() {
-        // Le premier enregistrement a exactement 7 jours (168 h) : le graphique s'affiche.
-        let segments: [TimeShareFixtures.Segment] = [
-            (.trusted, "p1", 40), (.out, nil, 40), (.trusted, "p1", 40), (.out, nil, 48)
-        ]
+    func testT9bExactlyThreeDaysOfHistoryIsEnough() {
+        // Le premier enregistrement a exactement 3 jours (72 h) : le graphique s'affiche.
+        let segments: [TimeShareFixtures.Segment] = [(.trusted, "p1", 24), (.out, nil, 24), (.trusted, "p1", 24)]
         let facts = Scn.timeline(segments, aged: false)
 
         XCTAssertNotNil(Scn.ready(Scn.compute(facts, places: [Scn.home])))
     }
 
-    func testT9cOneHourShortOfSevenDaysIsStillNotEnough() {
-        let segments: [TimeShareFixtures.Segment] = [
-            (.trusted, "p1", 40), (.out, nil, 40), (.trusted, "p1", 40), (.out, nil, 47)
-        ]
+    func testT9cOneHourShortOfThreeDaysIsStillNotEnough() {
+        let segments: [TimeShareFixtures.Segment] = [(.trusted, "p1", 24), (.out, nil, 24), (.trusted, "p1", 23)]
         let facts = Scn.timeline(segments, aged: false)
 
         XCTAssertEqual(Scn.compute(facts, places: [Scn.home]), .notEnough(daysLeft: 1))
     }
 
-    func testT9dSevenDaysOfHistoryButNothingMeasuredInTheWindowIsNotEnough() {
-        // Rien de mesuré (voyage, suivi arrêté) : pas de graphique, jamais « dans 0 jour ».
+    func testT9dThreeDaysOfHistoryButNothingMeasuredInTheWindowSaysWhatIsMissingInsteadOfACountdown() {
+        // Rien de mesuré (jamais dans un lieu, voyage, suivi arrêté) : pas de graphique, jamais « dans 0 jour » ni « dans 1 jour » sans fin.
         let facts = Scn.timeline([(.unknown, nil, 100)])
 
-        XCTAssertEqual(Scn.compute(facts, places: [Scn.home]), .notEnough(daysLeft: 1))
+        XCTAssertEqual(Scn.compute(facts, places: [Scn.home]), .noTimeMeasured)
+    }
+
+    func testTheThresholdIsOneSingleConstantOfThreeDays() {
+        XCTAssertEqual(TimeShareLimits.minimumHistoryDays, 3)
+        XCTAssertEqual(TimeShareLimits.minimumHistoryMillis, 3 * TimeShareLimits.dayMillis)
     }
 
     // MARK: - « Ton graphique arrive dans X jours »
@@ -139,31 +140,75 @@ final class TimeShareCalculatorTests: XCTestCase {
             return TimeShareLimits.daysLeft(elapsedMillis: elapsed)
         }
 
-        XCTAssertEqual(left(0), 7, "aucun jour écoulé")
-        XCTAssertEqual(left(0, 23, 59), 7, "23 h 59 : toujours 0 jour entier")
-        XCTAssertEqual(left(1), 6)
-        XCTAssertEqual(left(3), 4)
-        XCTAssertEqual(left(5, 12), 2)
-        XCTAssertEqual(left(6), 1)
-        XCTAssertEqual(left(6, 2), 1, "6 jours et 2 h : « dans 1 jour »")
-        XCTAssertEqual(left(6, 23, 59), 1, "jamais sous 1 tant que le graphique n'est pas affichable")
+        XCTAssertEqual(left(0), 3, "aucun jour écoulé")
+        XCTAssertEqual(left(0, 23, 59), 3, "23 h 59 : toujours 0 jour entier")
+        XCTAssertEqual(left(1), 2)
+        XCTAssertEqual(left(1, 12), 2)
+        XCTAssertEqual(left(2), 1)
+        XCTAssertEqual(left(2, 2), 1, "2 jours et 2 h : « dans 1 jour »")
+        XCTAssertEqual(left(2, 23, 59), 1, "jamais sous 1 tant que le graphique n'est pas affichable")
+        XCTAssertEqual(left(3), 1, "jamais sous 1")
         XCTAssertEqual(left(9), 1, "jamais sous 1")
     }
 
+    func testTheCounterGoesDownOneDayAtATimeThenTheChartShowsUp() {
+        // Un premier enregistrement, puis le même journal relu 12 h, 1 jour, 2 jours, 3 jours plus tard : 3, 2, 1, puis le graphique.
+        let places = [Scn.home]
+        let first = Scn.now
+        let facts = [
+            PresenceFact(miffId: "m1", state: .trusted, placeId: "p1", atMillis: first),
+            PresenceFact(miffId: "m1", state: .out, placeId: nil, atMillis: first + 6 * hour)
+        ]
+        func outcome(afterHours: Int) -> TimeShareOutcome {
+            let now = first + afterHours * hour
+            return TimeShareCalculator.compute(facts: facts, places: places, windowDays: 7, nowMillis: now)
+        }
+
+        XCTAssertEqual(outcome(afterHours: 12), .notEnough(daysLeft: 3))
+        XCTAssertEqual(outcome(afterHours: 36), .notEnough(daysLeft: 2))
+        XCTAssertEqual(outcome(afterHours: 60), .notEnough(daysLeft: 1))
+        XCTAssertNotNil(Scn.ready(outcome(afterHours: 72)))
+        XCTAssertNotNil(Scn.ready(outcome(afterHours: 84)))
+    }
+
+    func testTheThresholdIsCountedInElapsedMillisecondsSoADaylightSavingChangeDoesNotMoveIt() {
+        // Le seuil est une durée écoulée (72 h exactes), jamais « 3 jours de calendrier » : un changement d'heure ou de fuseau dans la
+        // période ne le décale pas (le calcul n'utilise ni `Calendar` ni fuseau). 72 h exactes : graphique ; 71 h : « dans 1 jour ».
+        let places = [Scn.home]
+        func outcome(afterHours: Int) -> TimeShareOutcome {
+            let facts = [
+                PresenceFact(miffId: "m1", state: .trusted, placeId: "p1", atMillis: Scn.now - afterHours * hour),
+                PresenceFact(miffId: "m1", state: .out, placeId: nil, atMillis: Scn.now - (afterHours - 24) * hour)
+            ]
+            return Scn.compute(facts, places: places)
+        }
+
+        XCTAssertNotNil(Scn.ready(outcome(afterHours: 72)))
+        XCTAssertEqual(outcome(afterHours: 71), .notEnough(daysLeft: 1))
+        XCTAssertEqual(TimeShareLimits.daysLeft(elapsedMillis: 72 * hour - 1), 1)
+    }
+
     func testAnEmptyJournalAndAFutureFirstRecordSayTheMaximum() {
-        XCTAssertEqual(Scn.compute([], places: [Scn.home]), .notEnough(daysLeft: 7))
-        XCTAssertEqual(TimeShareLimits.daysLeft(elapsedMillis: -5 * hour), 7)
+        XCTAssertEqual(Scn.compute([], places: [Scn.home]), .notEnough(daysLeft: 3))
+        XCTAssertEqual(TimeShareLimits.daysLeft(elapsedMillis: -5 * hour), 3)
         let future = [Scn.fact(.trusted, "p1", hoursAgo: -3)]
-        XCTAssertEqual(Scn.compute(future, places: [Scn.home]), .notEnough(daysLeft: 7))
+        XCTAssertEqual(Scn.compute(future, places: [Scn.home]), .notEnough(daysLeft: 3))
     }
 
     func testTheDaysLeftOfTheOutcomeCountFromTheFirstFactOfTheJournal() {
         let places = [Scn.home]
-        let threeDays = [Scn.fact(.trusted, "p1", hoursAgo: 72)]
-        let sixDaysTwoHours = [Scn.fact(.trusted, "p1", hoursAgo: 146), Scn.fact(.out, nil, hoursAgo: 100)]
+        let oneDay = [Scn.fact(.trusted, "p1", hoursAgo: 24)]
+        let twoDaysTwoHours = [Scn.fact(.trusted, "p1", hoursAgo: 50), Scn.fact(.out, nil, hoursAgo: 20)]
 
-        XCTAssertEqual(Scn.compute(threeDays, places: places), .notEnough(daysLeft: 4))
-        XCTAssertEqual(Scn.compute(sixDaysTwoHours, places: places), .notEnough(daysLeft: 1))
+        XCTAssertEqual(Scn.compute(oneDay, places: places), .notEnough(daysLeft: 2))
+        XCTAssertEqual(Scn.compute(twoDaysTwoHours, places: places), .notEnough(daysLeft: 1))
+    }
+
+    func testThePastHistoryAlreadyMeasuredCountsAtOnce() throws {
+        // Un journal qui remonte déjà à 5 jours (mesuré avec l'ancien seuil de 7 jours) : le graphique s'affiche tout de suite.
+        let facts = Scn.timeline([(.trusted, "p1", 60), (.out, nil, 60)], aged: false)
+
+        XCTAssertNotNil(Scn.ready(Scn.compute(facts, places: [Scn.home])))
     }
 
     func testT10SevenPlacesGiveFiveNamedAndTwoOthers() throws {

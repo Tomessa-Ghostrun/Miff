@@ -2,6 +2,16 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.61.1] - 2026-11-26 : le bouton d'essai de l'offre Miff+ devient « Tester gratuitement (7 jours) » (changement de wording seul)
+
+Demande du PM, sans recette PM. Branche `android/cta-tester-gratuitement`. **Numéro de version provisoire** (`main` est à 0.61.0 ; le PM renumérote à la fusion). **Coût ajouté : 0 €.** Aucun nouvel écran, aucune clé nouvelle, aucun comportement modifié.
+
+### Modifié
+- **Français uniquement** : la valeur de `paywall_cta_trial` (`values-fr`) passe de « Commencer l'essai gratuit (7 jours) » à « **Tester gratuitement (7 jours)** ». Les autres langues (en, es, it, pt, de) sont **inchangées** : à décider par le PM. La parité des clés reste verte.
+- Documentation alignée sur le nouveau libellé français : `docs/tickets/paywall-v2.md`, `docs/i18n/chaines-reference.md` (S29), `docs/qa/checklists/paywall-v2-android-recette-pm.md`.
+- Aucun test ne figeait l'ancien texte (ils passent par `R.string.paywall_cta_trial`).
+- Non touchés : le catalogue iOS (`ios/Miff/Resources/Localizable.xcstrings`, autre plateforme), le fichier d'échange `docs/i18n/echange/source-fr-en.json` (instantané déjà périmé, régénéré par script) et les textes historiques de ce journal.
+
 ## [0.61.0] - 2026-11-26 : l'offre Miff+ s'ouvre d'elle-même « toutes les 15 ouvertures » pour une personne sans Miff+ (PAY-PER-A)
 
 Ticket `docs/tickets/paywall-periodique.md` (critères PP1 à PP24, plan §9), recette `docs/qa/checklists/paywall-periodique-android-recette-pm.md`. Branche `android/paywall-periodique`. **Numéro de version provisoire** (`main` est à 0.60.1 ; le PM renumérote à la fusion). **Coût ajouté : 0 €.** **Aucun nouveau texte** (aucune clé, aucune traduction, aucun catalogue iOS touché) : l'écran d'offre existant est repris tel quel, **aucun nouvel écran**.
