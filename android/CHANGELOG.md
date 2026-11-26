@@ -33,6 +33,7 @@ Ticket `docs/tickets/paywall-periodique.md` (critères PP1 à PP24, plan §9), r
 
 ### Tests
 `PeriodicPaywallRulesTest` (règle pure : ouverture, 30 min exactes, plafond, un seul affichage par session, remise à zéro, une situation interdite par test sans toucher au compteur, Miff+ jamais, session d'une alerte, seuil 0 = règle éteinte), `PeriodicPaywallTouchesTest` (un bouton oui ; le vide, un défilement non), `PeriodicPaywallWatcherTest` (1,5 s, un toucher qui repousse, une seule ouverture, doigt posé, droit inconnu), `PeriodicPaywallEntryTest` (chaque entrée remet le compteur à zéro, sans consentement aussi ; l'événement `periodic` ne porte que le mot fixe), `PeriodicPaywallStoreTest` (un seul entier dans le fichier, valeur abîmée), `PeriodicPaywallBuildTest` (aucun drapeau, seuil abaissable en Debug seulement), `AccountLocalDataTest`, `AnalyticsContractTest`.
+
 ## [0.60.1] - 2026-11-25 : finitions issues de revues indépendantes (SRV-8A et consentement), aucun texte ni écran nouveau
 
 Branche `android/finitions-revues`. **Numéro provisoire** (le PM renumérote à la fusion). **Coût ajouté : 0 €.** Six points non bloquants relevés par des revues ; aucune clé de texte créée ni modifiée (donc rien à traduire, rien à changer dans le catalogue iOS).
