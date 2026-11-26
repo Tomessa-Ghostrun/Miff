@@ -11,11 +11,12 @@ struct SettingsActions {
     let onOpenNotifications: () -> Void
     /// ABOUT-1I : la ligne « À propos et aide ». Valeur par défaut : un aperçu qui ne la montre pas n'a rien à fournir.
     var onOpenAbout: () -> Void = {}
+    /// SRV-8I : la ligne « Abonnement ». Nil : l'achat est éteint dans ce build (aucune ligne), ou ce sont les Réglages restreints d'un compte sans Miff.
+    var onOpenSubscription: (() -> Void)?
 }
 
 /// Réglages (maquettes « réglages », ticket Profil / Réglages critère A4) : Mes informations, Mon compte, Notifications (NOTIF-2I, absente
-/// des Réglages restreints), Langue, Confidentialité. Rien d'autre : pas d'encart Premium ni d'abonnement (rien ne peut être acheté
-/// encore). La ligne « Langue » ouvre l'écran Langue de l'app (décision du PM du 2026-11-13, comme sur
+/// des Réglages restreints), Langue, Confidentialité, et « Abonnement » SEULEMENT quand l'achat est allumé dans ce build (SRV-8I ; jamais d'encart Premium). La ligne « Langue » ouvre l'écran Langue de l'app (décision du PM du 2026-11-13, comme sur
 /// Android) et dit la langue en cours ; elle n'ouvre plus les réglages de l'iPhone.
 struct SettingsListView: View {
     let actions: SettingsActions
@@ -26,6 +27,10 @@ struct SettingsListView: View {
         MiffFrame(title: L10n.string("settings_title"), onBack: actions.onBack, usesCanvas: true) {
             VStack(spacing: 0) {
                 ForEach(SettingsAccess.rows(restricted: restricted), id: \.self) { row in
+                    // « À propos et aide » reste TOUJOURS la dernière ligne : « Abonnement » se glisse juste avant.
+                    if row == .about, !restricted, let openSubscription = actions.onOpenSubscription {
+                        subscriptionRow(openSubscription)
+                    }
                     rowView(row)
                 }
             }
@@ -36,6 +41,15 @@ struct SettingsListView: View {
 extension SettingsListRow: Hashable {}
 
 extension SettingsListView {
+    fileprivate func subscriptionRow(_ openSubscription: @escaping () -> Void) -> some View {
+        SettingsRow(
+            systemImage: "plus",
+            title: L10n.string("settings_subscription_title"),
+            subtitle: L10n.string("settings_subscription_subtitle"),
+            action: openSubscription
+        )
+    }
+
     @ViewBuilder
     fileprivate func rowView(_ row: SettingsListRow) -> some View {
         switch row {

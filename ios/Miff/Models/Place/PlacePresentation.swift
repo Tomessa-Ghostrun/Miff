@@ -56,7 +56,7 @@ struct PlaceListUi: Equatable, CustomStringConvertible {
 
 /// Les événements Analytics de l'offre : seulement « l'offre s'est ouverte / fermée », avec un déclencheur fixe et rien d'autre
 /// (critère LIM5). Le contrat a un déclencheur par point d'entrée : le 3e lieu (`extra_trusted_place`), la 2e Miff (`extra_miff`) et la
-/// zone de danger (`danger_zone`, ajouté par PAY-UI, ticket `paywall-v2.md` Q-PAY5).
+/// zone de danger (`danger_zone`, ajouté par PAY-UI, ticket `paywall-v2.md` Q-PAY5) et l'offre ouverte depuis Réglages > Abonnement (`subscription`, SRV-8I).
 enum PlacePaywall {
     static func trigger(for reason: PaywallReason) -> AnalyticsEvent.PaywallTrigger? {
         switch reason {
@@ -66,6 +66,8 @@ enum PlacePaywall {
             return .extraMiff
         case .danger:
             return .dangerZone
+        case .subscription:
+            return .subscription
         }
     }
 

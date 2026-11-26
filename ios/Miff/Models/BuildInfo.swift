@@ -75,6 +75,26 @@ enum BuildFlavor {
         #endif
     }
 
+    /// L'ACHAT réel de Miff+ (docs/tickets/premium-achat-reel.md, SRV-8I) : présent seulement quand la condition de compilation `PREMIUM_PURCHASE` existe (project.yml : Debug oui ;
+    /// Internal et Release NON par défaut, seulement par le réglage explicite `MIFF_PREMIUM_CONDITIONS`). Même drapeau que `BuildConfig.PREMIUM_PURCHASE` d'Android. Éteint :
+    /// « Miff+ arrive bientôt », aucune connexion à l'App Store, aucune ligne « Abonnement » dans les Réglages, aucun appel au serveur d'achat.
+    static var includesPremiumPurchase: Bool {
+        #if PREMIUM_PURCHASE
+        return true
+        #else
+        return false
+        #endif
+    }
+
+    /// Le FAUX magasin (`BILLING_FAKE`, Debug et, sur demande, Internal) : jamais en Release. Implique l'achat allumé.
+    static var includesBillingFake: Bool {
+        #if BILLING_FAKE
+        return true
+        #else
+        return false
+        #endif
+    }
+
     static var includesReviewPrompt: Bool {
         #if REVIEW_PROMPT
         return true
