@@ -53,6 +53,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.DialogWindowProvider
 import com.tomessa.miff.R
 import com.tomessa.miff.ui.components.MiffButton
+import com.tomessa.miff.ui.components.OverlayPresent
 import com.tomessa.miff.ui.navigation.holdForDiagnostic
 import com.tomessa.miff.ui.theme.ShadowDefault
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -100,6 +101,8 @@ fun ReviewPromptWindow(
                 usePlatformDefaultWidth = false,
             ),
     ) {
+        // PAY-PER-A: the periodic offer waits while this window is open and 1.5 s after it closes (a separate window: the tabs behind it do not change).
+        OverlayPresent()
         BlurBehindWindow()
         Box(modifier = Modifier.fillMaxSize().holdForDiagnostic(), contentAlignment = Alignment.Center) {
             ReviewCard {

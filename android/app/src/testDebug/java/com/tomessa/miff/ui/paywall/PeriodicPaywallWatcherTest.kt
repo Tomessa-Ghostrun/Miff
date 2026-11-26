@@ -27,7 +27,7 @@ class PeriodicPaywallWatcherTest {
     val composeRule = createComposeRule()
 
     private class MemoryStore(
-        var value: Int = 15,
+        var value: Int = 10,
     ) : PeriodicPaywallCounterStore {
         override fun read() = value
 
@@ -139,7 +139,7 @@ class PeriodicPaywallWatcherTest {
         tap()
         pass(10_000L)
         assertEquals(0, opened)
-        assertEquals("the counter is untouched", 15, store.value)
+        assertEquals("the counter is untouched", 10, store.value)
         composeRule.runOnIdle { situation = calm }
         pass(100L)
         assertEquals("tapped and calm for a long time: it comes at once", 1, opened)

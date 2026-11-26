@@ -50,6 +50,7 @@ import com.tomessa.miff.ui.auth.SignInScreen
 import com.tomessa.miff.ui.auth.SignInViewModel
 import com.tomessa.miff.ui.auth.SignUpScreen
 import com.tomessa.miff.ui.auth.SignUpViewModel
+import com.tomessa.miff.ui.components.LocalOverlayPresence
 import com.tomessa.miff.ui.main.MainShell
 import com.tomessa.miff.ui.miff.LocalAlertMiffId
 import com.tomessa.miff.ui.miff.MiffOnboardingHost
@@ -202,7 +203,10 @@ fun AppRoot(container: AppContainer) {
         }
     }
     // A deletion cancelled because a Miff showed up: one calm message over whatever screen the routing chose (AUTH-5a).
-    DeletionBlockedNotice(session)
+    // This level is outside the provider of MainShell, and the message can come over the tabs: it gets the registry here so that the periodic offer waits for it (PAY-PER-A).
+    CompositionLocalProvider(LocalOverlayPresence provides container.periodicPaywall) {
+        DeletionBlockedNotice(session)
+    }
 }
 
 /** The screen of an account that could not be read: retry or sign out (no deletion here: decision of the PM, 2026-11-07, Settings only). */

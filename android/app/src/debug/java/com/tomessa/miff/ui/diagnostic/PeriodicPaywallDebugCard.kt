@@ -15,7 +15,7 @@ import com.tomessa.miff.ui.theme.colorTextPrimary
 import com.tomessa.miff.ui.theme.textBodyRegular14
 
 /**
- * DEBUG BUILD ONLY. Lets the PM try the periodic offer (docs/tickets/paywall-periodique.md, docs/qa/checklists/paywall-periodique-android-recette-pm.md) without opening the app 15
+ * DEBUG BUILD ONLY. Lets the PM try the periodic offer (docs/tickets/paywall-periodique.md, docs/qa/checklists/paywall-periodique-android-recette-pm.md) without opening the app 10
  * times: it shows the counter, the threshold and the state of the session, and puts the counter at "threshold - 1" (the next opening of the app, then a first tap, brings the offer) or at
  * zero. The threshold itself can be lowered at build time with -Pmiff.periodicPaywallOpenings=N (debug build only). Nothing here exists in a release build (debug source set).
  */

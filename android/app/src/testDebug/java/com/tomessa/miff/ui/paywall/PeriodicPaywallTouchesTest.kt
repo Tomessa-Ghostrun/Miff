@@ -46,7 +46,7 @@ class PeriodicPaywallTouchesTest {
     val composeRule = createComposeRule()
 
     private class MemoryStore(
-        var value: Int = 15,
+        var value: Int = 10,
     ) : PeriodicPaywallCounterStore {
         override fun read() = value
 

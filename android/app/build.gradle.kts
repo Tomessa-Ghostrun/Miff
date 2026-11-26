@@ -48,8 +48,8 @@ val premiumPurchaseProperty: String? = providers.gradleProperty("miff.premiumPur
 // not even compiled there (src/release has its own factory) and the CI looks for its marker in the bundle.
 val billingFakeProperty: String? = providers.gradleProperty("miff.billingFake").orNull
 
-// PERIODIC OFFER (ticket docs/tickets/paywall-periodique.md, decision of the PM of 2026-11-25): it is ON in EVERY build, with NO switch. The one number is PeriodicPaywallDefaults.OPENINGS_BETWEEN (15).
-// DEBUG BUILD ONLY: -Pmiff.periodicPaywallOpenings=N (1 to 99) LOWERS the threshold (to try the rule without opening the app 15 times; a value of 15 or more changes nothing). The release and
+// PERIODIC OFFER (ticket docs/tickets/paywall-periodique.md, decision of the PM of 2026-11-25): it is ON in EVERY build, with NO switch. The one number is PeriodicPaywallDefaults.OPENINGS_BETWEEN (10).
+// DEBUG BUILD ONLY: -Pmiff.periodicPaywallOpenings=N (1 to 9) LOWERS the threshold (to try the rule without opening the app 10 times; a value of 10 or more changes nothing). The release and
 // releaseLike builds always get 0 ("no override") and ignore the property. Checked by PeriodicPaywallBuildTest.
 val periodicPaywallOpeningsProperty: String? = providers.gradleProperty("miff.periodicPaywallOpenings").orNull
 
@@ -215,8 +215,8 @@ android {
         buildConfigField("boolean", "STARTUP_METRICS", "false")
         // Periodic offer: no override of the threshold outside the debug build (see buildTypes).
         require(
-            periodicPaywallOpeningsProperty == null || Regex("[1-9][0-9]?").matches(periodicPaywallOpeningsProperty),
-        ) { "miff.periodicPaywallOpenings must be a whole number from 1 to 99" }
+            periodicPaywallOpeningsProperty == null || Regex("[1-9]").matches(periodicPaywallOpeningsProperty),
+        ) { "miff.periodicPaywallOpenings must be a whole number from 1 to 9" }
         buildConfigField("int", "PERIODIC_PAYWALL_OPENINGS_DEBUG", "0")
     }
 

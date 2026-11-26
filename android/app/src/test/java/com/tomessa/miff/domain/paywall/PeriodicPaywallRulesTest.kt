@@ -33,7 +33,7 @@ class PeriodicPaywallRulesTest {
     private val store = MemoryStore()
 
     private fun rules(
-        openings: Int = 15,
+        openings: Int = 10,
         counter: Int = 0,
     ): PeriodicPaywallRules {
         store.value = counter
@@ -85,7 +85,7 @@ class PeriodicPaywallRulesTest {
 
     @Test
     fun theConstants_areTheOnesOfThePm() {
-        assertEquals(15, PeriodicPaywallDefaults.OPENINGS_BETWEEN)
+        assertEquals(10, PeriodicPaywallDefaults.OPENINGS_BETWEEN)
         assertEquals(30 * 60 * 1000L, PeriodicPaywallDefaults.BACKGROUND_MILLIS)
         assertEquals(1_500L, PeriodicPaywallDefaults.QUIET_AFTER_TOUCH_MILLIS)
         assertEquals(3_000L, PaywallCloseDelay.MILLIS)
@@ -93,12 +93,12 @@ class PeriodicPaywallRulesTest {
 
     @Test
     fun theDebugOverride_canOnlyLowerTheThreshold() {
-        assertEquals(15, PeriodicPaywallDefaults.openingsFor(0))
+        assertEquals(10, PeriodicPaywallDefaults.openingsFor(0))
         assertEquals(3, PeriodicPaywallDefaults.openingsFor(3))
-        assertEquals(14, PeriodicPaywallDefaults.openingsFor(14))
-        assertEquals(15, PeriodicPaywallDefaults.openingsFor(15))
-        assertEquals(15, PeriodicPaywallDefaults.openingsFor(40))
-        assertEquals(15, PeriodicPaywallDefaults.openingsFor(-2))
+        assertEquals(9, PeriodicPaywallDefaults.openingsFor(9))
+        assertEquals(10, PeriodicPaywallDefaults.openingsFor(10))
+        assertEquals(10, PeriodicPaywallDefaults.openingsFor(40))
+        assertEquals(10, PeriodicPaywallDefaults.openingsFor(-2))
     }
 
     // ---- PP1, PP2, PP5: what is an opening ---------------------------------------------------------------------------------------------
@@ -166,12 +166,12 @@ class PeriodicPaywallRulesTest {
 
     @Test
     fun theCounter_isCappedAtTheThreshold() {
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.coldStart()
-        assertEquals(15, store.value)
+        assertEquals(10, store.value)
         rules.away(PeriodicPaywallDefaults.BACKGROUND_MILLIS)
         rules.away(PeriodicPaywallDefaults.BACKGROUND_MILLIS)
-        assertEquals(15, store.value)
+        assertEquals(10, store.value)
     }
 
     @Test
@@ -197,7 +197,7 @@ class PeriodicPaywallRulesTest {
 
     @Test
     fun aRotation_keepsTheFirstTap_andCountsNothing() {
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.coldStart()
         rules.onTouch(pressed = true)
         rules.onActivation()
@@ -205,7 +205,7 @@ class PeriodicPaywallRulesTest {
         // The screen is built again: the shell goes and comes back, with no return to the foreground in between.
         rules.onShellGone()
         rules.onShellShown()
-        assertEquals(15, store.value)
+        assertEquals(10, store.value)
         clock.now += PeriodicPaywallDefaults.QUIET_AFTER_TOUCH_MILLIS
         assertEquals(PeriodicPaywallDecision.Show, rules.evaluate(calm()))
     }
@@ -214,7 +214,7 @@ class PeriodicPaywallRulesTest {
 
     @Test
     fun withoutAnyTap_theOfferNeverComes_whateverTheDuration() {
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.coldStart()
         clock.now += 3 * 60 * 60_000L
         assertEquals(PeriodicPaywallDecision.No, rules.evaluate(calm()))
@@ -222,7 +222,7 @@ class PeriodicPaywallRulesTest {
 
     @Test
     fun aScrollOrATouchOnNothing_isNotAnActivation() {
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.coldStart()
         // The view layer only calls onActivation for a tap that something consumed: touches alone never make the offer possible.
         rules.onTouch(pressed = true)
@@ -233,7 +233,7 @@ class PeriodicPaywallRulesTest {
 
     @Test
     fun afterTheFirstTap_theOfferComesOnlyAfterOneAndAHalfSecondsWithoutTouching() {
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.coldStart()
         rules.onTouch(pressed = true)
         rules.onActivation()
@@ -247,7 +247,7 @@ class PeriodicPaywallRulesTest {
 
     @Test
     fun aFingerStillOnTheScreen_isNeverACalmMoment_evenAfterALongTime() {
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.coldStart()
         rules.onTouch(pressed = true)
         rules.onActivation()
@@ -257,7 +257,7 @@ class PeriodicPaywallRulesTest {
 
     @Test
     fun aNewTouch_startsTheWaitAgain() {
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.coldStart()
         rules.tapAndSettle()
         assertEquals(PeriodicPaywallDecision.Show, rules.evaluate(calm()))
@@ -267,7 +267,7 @@ class PeriodicPaywallRulesTest {
 
     @Test
     fun theTap_thatIsNotOnTheSignedInApp_doesNotCount() {
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.onForeground()
         rules.onActivation()
         rules.onShellShown()
@@ -277,30 +277,30 @@ class PeriodicPaywallRulesTest {
 
     @Test
     fun theCounterBelowTheThreshold_neverShows() {
-        val rules = rules(counter = 12)
+        val rules = rules(counter = 7)
         rules.coldStart()
-        assertEquals(13, store.value)
+        assertEquals(8, store.value)
         rules.tapAndSettle()
         assertEquals(PeriodicPaywallDecision.No, rules.evaluate(calm()))
     }
 
     @Test
-    fun theFifteenthOpening_isTheFirstThatCanShow() {
+    fun theTenthOpening_isTheFirstThatCanShow() {
         val rules = rules()
         rules.coldStart()
-        repeat(13) { rules.away(PeriodicPaywallDefaults.BACKGROUND_MILLIS) }
-        assertEquals(14, store.value)
+        repeat(8) { rules.away(PeriodicPaywallDefaults.BACKGROUND_MILLIS) }
+        assertEquals(9, store.value)
         rules.tapAndSettle()
         assertEquals(PeriodicPaywallDecision.No, rules.evaluate(calm()))
         rules.away(PeriodicPaywallDefaults.BACKGROUND_MILLIS)
-        assertEquals(15, store.value)
+        assertEquals(10, store.value)
         rules.tapAndSettle()
         assertEquals(PeriodicPaywallDecision.Show, rules.evaluate(calm()))
     }
 
     @Test
     fun oneAppearancePerSession_thenAnotherSessionOnlyWhenTheCounterIsFullAgain() {
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.coldStart()
         rules.tapAndSettle()
         assertEquals(PeriodicPaywallDecision.Show, rules.evaluate(calm()))
@@ -321,7 +321,7 @@ class PeriodicPaywallRulesTest {
         assertEquals(1, store.value)
         assertEquals(PeriodicPaywallDecision.No, rules.evaluate(calm()))
         // A new session with a full counter: it may show again.
-        store.value = 14
+        store.value = 9
         rules.away(PeriodicPaywallDefaults.BACKGROUND_MILLIS)
         rules.tapAndSettle()
         assertEquals(PeriodicPaywallDecision.Show, rules.evaluate(calm()))
@@ -329,26 +329,26 @@ class PeriodicPaywallRulesTest {
 
     @Test
     fun anOfferThatIsDueButNeverShown_staysDueForTheNextSession_andTheCounterIsNotReset() {
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.coldStart()
         // No tap in this session.
         rules.away(PeriodicPaywallDefaults.BACKGROUND_MILLIS)
-        assertEquals(15, store.value)
+        assertEquals(10, store.value)
         rules.tapAndSettle()
         assertEquals(PeriodicPaywallDecision.Show, rules.evaluate(calm()))
-        assertEquals(15, store.value)
+        assertEquals(10, store.value)
     }
 
     // ---- PP11: reset at the display ---------------------------------------------------------------------------------------------------
 
     @Test
     fun theCounterGoesToZeroAtTheDisplay_notBefore() {
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.coldStart()
         rules.tapAndSettle()
         assertEquals(PeriodicPaywallDecision.Show, rules.evaluate(calm()))
         rules.onLaunched()
-        assertEquals("not yet: the offer is not on view", 15, store.value)
+        assertEquals("not yet: the offer is not on view", 10, store.value)
         rules.onPaywallDisplayed()
         assertEquals(0, store.value)
     }
@@ -356,11 +356,11 @@ class PeriodicPaywallRulesTest {
     @Test
     fun anOfferOpenedByThePerson_resetsTheCounter_andCountsAsShownInTheSession() {
         // A 4th place, a 2nd Miff, a danger zone or the Abonnement screen: the same call at the display.
-        val rules = rules(counter = 9)
+        val rules = rules(counter = 4)
         rules.coldStart()
         rules.onPaywallDisplayed()
         assertEquals(0, store.value)
-        store.value = 15
+        store.value = 10
         rules.tapAndSettle()
         assertEquals(
             "the person has just seen the offer: not again in this session",
@@ -375,11 +375,11 @@ class PeriodicPaywallRulesTest {
         name: String,
         situation: PeriodicPaywallSituation,
     ) {
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.coldStart()
         rules.tapAndSettle()
         assertEquals("$name: no offer", PeriodicPaywallDecision.No, rules.evaluate(situation))
-        assertEquals("$name: the counter is left alone", 15, store.value)
+        assertEquals("$name: the counter is left alone", 10, store.value)
         // The situation ends: the offer is still due and comes.
         assertEquals(PeriodicPaywallDecision.Show, rules.evaluate(calm()))
     }
@@ -395,7 +395,7 @@ class PeriodicPaywallRulesTest {
     fun neverWithTheKeyboardOpen() = assertNeverIn("keyboard", calm(keyboardOpen = true))
 
     @Test
-    fun neverOverAMessageOfTheApp_orTheReviewWindow() = assertNeverIn("message", calm(messageOpen = true))
+    fun neverOverAMessageOfTheApp() = assertNeverIn("message", calm(messageOpen = true))
 
     @Test
     fun neverDuringMyOwnAlert() = assertNeverIn("own alert", calm(ownAlertInProgress = true))
@@ -409,12 +409,12 @@ class PeriodicPaywallRulesTest {
 
     @Test
     fun aSessionOpenedByAnAlertNotification_neverShows_evenWhenCalm() {
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.excludeSession()
         rules.coldStart()
         rules.tapAndSettle()
         assertEquals(PeriodicPaywallDecision.No, rules.evaluate(calm()))
-        assertEquals(15, store.value)
+        assertEquals(10, store.value)
         // The next session is a normal one.
         rules.away(PeriodicPaywallDefaults.BACKGROUND_MILLIS)
         rules.tapAndSettle()
@@ -423,7 +423,7 @@ class PeriodicPaywallRulesTest {
 
     @Test
     fun anAlertNotificationTapped_afterTheSessionStarted_excludesIt_andTheNextSessionIsFree() {
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.coldStart()
         rules.tapAndSettle()
         rules.excludeSession()
@@ -437,7 +437,7 @@ class PeriodicPaywallRulesTest {
     @Test
     fun anAlertNotificationTapped_whileTheAppWasAway_excludesTheSessionItOpens() {
         // onNewIntent comes BEFORE the return to the foreground.
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.coldStart()
         rules.onBackground()
         clock.now += PeriodicPaywallDefaults.BACKGROUND_MILLIS
@@ -451,18 +451,18 @@ class PeriodicPaywallRulesTest {
 
     @Test
     fun anOverlayOpenOverTheTabs_blocksTheOffer_andTheCounterIsLeftAlone() {
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.coldStart()
         rules.tapAndSettle()
         rules.onOverlayOpened()
         clock.now += 60_000L
         assertEquals(PeriodicPaywallDecision.No, rules.evaluate(calm()))
-        assertEquals(15, store.value)
+        assertEquals(10, store.value)
     }
 
     @Test
     fun afterTheOverlayCloses_theOfferWaitsForACalmMomentCountedFromTheClosing() {
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.coldStart()
         rules.tapAndSettle()
         rules.onOverlayOpened()
@@ -475,7 +475,7 @@ class PeriodicPaywallRulesTest {
 
     @Test
     fun twoOverlaysAtOnce_blockUntilTheLastOneCloses_andACloseWithoutAnOpenNeverGoesBelowZero() {
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.coldStart()
         rules.tapAndSettle()
         rules.onOverlayOpened()
@@ -494,7 +494,7 @@ class PeriodicPaywallRulesTest {
     @Test
     fun aFirstTapThatOpensAnOverlay_doesNotBringTheOfferOverIt() {
         // The first tap on the selector of Miffs or on a photo: the tap counts, the overlay it opens holds the offer back.
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.coldStart()
         rules.onTouch(pressed = true)
         rules.onActivation()
@@ -516,17 +516,17 @@ class PeriodicPaywallRulesTest {
 
     @Test
     fun withMiffPlus_neverShown_andTheCounterGoesBackToZero_atFifteenToo() {
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.coldStart()
         rules.tapAndSettle()
-        assertEquals(15, store.value)
+        assertEquals(10, store.value)
         assertEquals(PeriodicPaywallDecision.No, rules.evaluate(calm(miffPlus = true)))
         assertEquals(0, store.value)
     }
 
     @Test
     fun afterTheEndOfASubscription_thePersonStartsFromZero_notFromAnOfferThatWasDue() {
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.coldStart()
         rules.tapAndSettle()
         rules.evaluate(calm(miffPlus = true))
@@ -537,11 +537,11 @@ class PeriodicPaywallRulesTest {
 
     @Test
     fun anUnknownRight_neverShows_andTheCounterIsLeftAlone() {
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.coldStart()
         rules.tapAndSettle()
         assertEquals(PeriodicPaywallDecision.No, rules.evaluate(calm(miffPlus = null)))
-        assertEquals(15, store.value)
+        assertEquals(10, store.value)
         assertEquals(
             "known later in the same session: it comes",
             PeriodicPaywallDecision.Show,
@@ -551,7 +551,7 @@ class PeriodicPaywallRulesTest {
 
     @Test
     fun miffPlusAppearingDuringTheWait_cancelsTheOffer() {
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.coldStart()
         rules.onTouch(pressed = true)
         rules.onActivation()
@@ -565,7 +565,7 @@ class PeriodicPaywallRulesTest {
 
     @Test
     fun signOutAndDeletionOfTheAccount_eraseTheCounter_andTheNextPersonStartsFromZero() {
-        val rules = rules(counter = 14)
+        val rules = rules(counter = 9)
         rules.coldStart()
         rules.tapAndSettle()
         rules.clear()
@@ -608,7 +608,7 @@ class PeriodicPaywallRulesTest {
     fun theDiagnosticCounter_isClampedBetweenZeroAndTheThreshold() {
         val rules = rules()
         rules.setCounterForDiagnostic(40)
-        assertEquals(15, rules.counterForDiagnostic())
+        assertEquals(10, rules.counterForDiagnostic())
         rules.setCounterForDiagnostic(-3)
         assertEquals(0, rules.counterForDiagnostic())
     }
