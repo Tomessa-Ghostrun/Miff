@@ -2,6 +2,16 @@
 
 ## Non publié
 
+### Paywall : le bouton d'essai devient « Tester gratuitement (7 jours) » (numéro provisoire : à renuméroter à la fusion)
+
+Branche `ios/cta-tester-gratuitement`. Changement de wording seul demandé par le PM, sans recette PM.
+
+Modifié :
+- **Clé `paywall_cta_trial`, valeur française seulement** : « Commencer l'essai gratuit (7 jours) » devient « Tester gratuitement (7 jours) » (`ios/Miff/Resources/Localizable.xcstrings`). Aucun code, aucune autre langue touchés.
+- Ticket `docs/tickets/paywall-v2.md` (comportement « éligible à l'essai », tableau des textes, critère PW4) aligné sur le nouveau libellé français.
+
+Écart à décider par le PM : en, es, it, pt et de gardent leur texte actuel (le PM n'a précisé que le français). Android a déjà le même libellé français (PR #326).
+
 ### SRV-8I : l'achat réel de Miff+ sur iPhone (StoreKit 2), écran Abonnement, restauration, retours du PM sur l'offre [numéro provisoire : à renuméroter à la fusion]
 
 Branche `ios/premium-srv8i`. Ticket `docs/tickets/premium-achat-reel.md` (§4, §7, §8, §16 critères IO1 à IO7 et AN1 à AN15, §22 pour le contrat du serveur), parité avec Android (PR #312, SRV-8A). Le serveur est SRV-7 (**non déployé**). Recette : `docs/qa/checklists/premium-ios-recette-pm.md` ; pas à pas : `docs/dev/premium-achat-ios-test.md`. **Rien n'est compilé en local** (poste Windows : la CI fait foi). **Aucun achat réel n'a pu être essayé** (aucun produit dans App Store Connect, serveur non déployé). **Coût ajouté : 0 €** (fonctions du serveur et lectures Firestore dans les quotas gratuits ; `FirebaseFunctions` vient du même paquet Firebase, aucun paquet de plus dans `Package.resolved`).
