@@ -38,7 +38,7 @@ class PlaceAddEntryPointsTest {
             setOf(
                 "PlacePaywallRoute.of(PaywallReason.MIFF)",
                 "PlacePaywallRoute.of(PaywallReason.SUBSCRIPTION)",
-                // The periodic offer (PAY-PER-A): opened by the rule once per 15 openings, never for a place.
+                // The periodic offer (PAY-PER-A): opened by the rule once per 10 openings, never for a place.
                 "PlacePaywallRoute.of(PaywallReason.PERIODIC)",
             )
         assertTrue("unexpected offer: $offers", offers.all { it in allowed })

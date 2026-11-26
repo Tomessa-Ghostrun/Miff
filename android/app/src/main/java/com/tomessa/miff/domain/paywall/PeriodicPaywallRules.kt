@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.update
 
 /*
  * The periodic offer (ticket docs/tickets/paywall-periodique.md, PAY-PER-A; decisions of the PM of 2026-11-25): a person WITHOUT Miff+ sees the existing offer screen once every
- * 15 openings of the app, after her first tap of the session, once per session. PURE LOGIC: no Android class here, so that every rule is tested on the JVM.
+ * 10 openings of the app, after her first tap of the session, once per session. PURE LOGIC: no Android class here, so that every rule is tested on the JVM.
  *
  * PRIVACY: the only thing kept on the phone is ONE whole number (the openings counted since the offer was last shown, see [PeriodicPaywallCounterStore]). No date, no identifier, no name,
  * no position; it is never sent anywhere and no analytics event carries it. THERE IS NO SWITCH: the rule is on in every build (decision of the PM, P1); the only way to turn it off is
@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.update
 /** THE constants of the periodic offer, in one place (the 3 seconds of the close cross are [PaywallCloseDelay.MILLIS]). Changing one is a one-line pull request. */
 object PeriodicPaywallDefaults {
     /** Openings of the app between two appearances of the offer. 0 (or less) switches the whole rule off, counting included. */
-    const val OPENINGS_BETWEEN = 15
+    const val OPENINGS_BETWEEN = 10
 
     /** An "opening" is a cold start, or a return to the foreground after at least this long in the background (same threshold as the "last visit" of the notifications). */
     const val BACKGROUND_MILLIS: Long = 30L * 60_000L
@@ -27,7 +27,7 @@ object PeriodicPaywallDefaults {
 
     /**
      * The threshold really used. [debugOverride] (the build property `miff.periodicPaywallOpenings`, DEBUG BUILD ONLY: 0 in every other build) can only LOWER it, to try the rule
-     * without opening the app 15 times; a release build always passes 0 here, so it always uses [OPENINGS_BETWEEN].
+     * without opening the app 10 times; a release build always passes 0 here, so it always uses [OPENINGS_BETWEEN].
      */
     fun openingsFor(debugOverride: Int): Int =
         if (OPENINGS_BETWEEN > 0 && debugOverride in 1 until OPENINGS_BETWEEN) debugOverride else OPENINGS_BETWEEN
@@ -52,7 +52,7 @@ data class PeriodicPaywallSituation(
     /** The viewfinder of the Update is the screen in use (photo, camera, preview). */
     val updateScreenOpen: Boolean,
     val keyboardOpen: Boolean,
-    /** A message or a window of the app is on screen or waits (lost access, agreement, "Localiser", "Pas de connexion", the Travel windows, the review window...). */
+    /** A message of the app is on screen or waits (lost access, agreement, "Localiser", "Pas de connexion", the Travel windows...). The windows that are dialogs, sheets or menus (the review window too) say it themselves: see [OverlayPresence]. */
     val messageOpen: Boolean,
     /** MY alert of danger is on its way or active, whatever the Miff. */
     val ownAlertInProgress: Boolean,
@@ -224,7 +224,7 @@ class PeriodicPaywallRules(
     /**
      * Decides at one moment. Shows only if EVERYTHING is true: the rule is on; the signed-in app is there; the person has no Miff+ (known); the session is not excluded and has not shown the
      * offer yet; she tapped something; the counter reached the threshold; the situation allows it; and she has not touched the screen for [PeriodicPaywallDefaults.QUIET_AFTER_TOUCH_MILLIS].
-     * A person who HAS Miff+ resets the counter here (so that the end of a subscription starts from zero, never from "15 already reached"). In every "no", the counter is left alone.
+     * A person who HAS Miff+ resets the counter here (so that the end of a subscription starts from zero, never from "10 already reached"). In every "no", the counter is left alone.
      */
     fun evaluate(situation: PeriodicPaywallSituation): PeriodicPaywallDecision {
         if (!isOn) return PeriodicPaywallDecision.No

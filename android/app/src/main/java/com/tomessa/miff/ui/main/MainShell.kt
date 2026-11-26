@@ -1480,7 +1480,8 @@ fun MainTabs(
                     tabsInFront = tabsState == Lifecycle.State.RESUMED,
                     updateScreenOpen = selected == MainTab.UPDATE,
                     keyboardOpen = keyboardOpen,
-                    messageOpen = blockingMessageOpen || reviewStage != ReviewStage.Hidden || travelWindowOpen,
+                    // The review window is NOT here: it tells it is open itself (OverlayPresent), one signal for it.
+                    messageOpen = blockingMessageOpen || travelWindowOpen,
                     ownAlertInProgress = alertActive,
                     lovedOneAlertUnseen =
                         lovedOneAlertLineUnread || feedContent?.cards?.any { it.alertActive } == true,
