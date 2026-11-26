@@ -109,22 +109,18 @@ class SubscriptionScreenTest {
     }
 
     @Test
-    fun anActiveSubscription_saysTheNextRenewal_withThePriceOfItsPlan() {
+    fun anActiveSubscription_saysTheNextRenewalDate_withoutAPrice() {
+        // Renewed at the same price: the catalog price of today is not necessarily the one billed, so the sentence gives the date only (see SubscriptionUiState.renewalPrice).
         show(store(StoreState.ACTIVE, SubscriptionPlan.YEARLY))
-        see("Active. Next renewal on $date (59,88 €).")
+        see("Active. Next renewal on $date.")
+        absent("€")
     }
 
     @Test
-    fun aMonthlySubscription_showsTheMonthlyPrice() {
+    fun aMonthlySubscription_saysTheNextRenewalDate_withoutAPrice() {
         show(store(StoreState.ACTIVE, SubscriptionPlan.MONTHLY), prices = SubscriptionPrices("59,88 €", "6,99 €"))
-        // The price in the sentence is the monthly one of the store; the state of the screen decides it (see SubscriptionUiState.renewalPrice).
-        val state =
-            SubscriptionUiState(
-                loading = false,
-                status = store(StoreState.ACTIVE, SubscriptionPlan.MONTHLY),
-                prices = SubscriptionPrices("59,88 €", "6,99 €"),
-            )
-        assertEquals("6,99 €", state.renewalPrice())
+        see("Active. Next renewal on $date.")
+        absent("€")
     }
 
     @Test

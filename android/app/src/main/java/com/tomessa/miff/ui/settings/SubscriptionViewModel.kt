@@ -8,7 +8,6 @@ import com.tomessa.miff.data.subscription.SubscriptionRepository
 import com.tomessa.miff.domain.billing.OffersResult
 import com.tomessa.miff.domain.billing.RestoreOutcome
 import com.tomessa.miff.domain.subscription.StoreState
-import com.tomessa.miff.domain.subscription.SubscriptionPlan
 import com.tomessa.miff.domain.subscription.SubscriptionStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -69,22 +68,23 @@ data class SubscriptionUiState(
     val refreshing: Boolean = false,
     val notice: SubscriptionNotice? = null,
 ) {
-    /** The price in the next renewal sentence: the annual price for a trial or a yearly plan, the monthly one for a monthly plan; null = unknown (sentence without price). */
+    /**
+     * The price in the next-charge sentence; null = unknown (sentence without price, the date only).
+     *
+     * Only a TRIAL has one: the annual price of the offer the person has just accepted. A subscription already running is renewed at the SAME price (decision of the PM, 2026-10-31,
+     * docs/specs/paywall-premium.md), which may no longer be the one of today's catalog (an old subscriber keeps the price he subscribed at): the catalog price would be a promise the
+     * store may not keep. The server does not give the price really billed (`entitlements/{uid}` has no amount), so none is shown until it does.
+     */
     fun renewalPrice(): String? {
         val store = status as? SubscriptionStatus.Store ?: return null
-        return when {
-            store.state == StoreState.TRIAL -> prices?.annual
-            store.plan == SubscriptionPlan.MONTHLY -> prices?.monthly
-            store.plan == SubscriptionPlan.YEARLY -> prices?.annual
-            else -> null
-        }
+        return if (store.state == StoreState.TRIAL) prices?.annual else null
     }
 }
 
 /**
  * The Abonnement screen (ticket premium-achat-reel.md section 8 and criteria AN2, AN6, AN7, AN8, AN9, AN10): reads `entitlements/{uid}` (the rights, written by the SERVER only),
- * and, only for a subscription that renews, the prices of the store for the sentence "Prochain renouvellement le … (prix)" (the price is NEVER read from the document: if the store
- * is out of reach the sentence is written without a price). "Actualiser mon abonnement" asks the coordinator to look at the store and have the server check it.
+ * and, only during a trial, the prices of the store for the sentence "Essai gratuit jusqu'au …, puis (prix)" (the price is NEVER read from the document: if the store is out of reach the
+ * sentence is written without a price; a running subscription shows its renewal DATE only, see [SubscriptionUiState.renewalPrice]). "Actualiser mon abonnement" asks the coordinator to look at the store and have the server check it.
  *
  * [premium] is null while the purchase is switched off: there is then nothing to refresh and no price to read.
  */
@@ -173,8 +173,9 @@ class SubscriptionViewModel(
     }
 
     private fun SubscriptionStatus?.needsPrices(): Boolean {
+        // Only the trial sentence shows a price (see SubscriptionUiState.renewalPrice): no call to the store for the others.
         val store = this as? SubscriptionStatus.Store ?: return false
-        return store.state == StoreState.TRIAL || store.state == StoreState.ACTIVE
+        return store.state == StoreState.TRIAL
     }
 
     companion object {

@@ -11,7 +11,11 @@ import com.tomessa.miff.testsupport.MIFF_ID
 import com.tomessa.miff.testsupport.MemoryActiveMiffStore
 import com.tomessa.miff.testsupport.OTHER_MIFF_ID
 import com.tomessa.miff.testsupport.Timeline
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -126,6 +130,28 @@ class MiffDirectoryTest {
             directory.refresh()
             repo.myMiffsResult = MyMiffsLoad.Unavailable
             directory.followPremiumGrants(flowOf(Unit))
+            assertEquals(SelectorTap.OpenCreate, gateOf(SelectorEntry.CREATE, directory))
+        }
+
+    @Test
+    fun aReadStartedBeforeThePurchase_doesNotWriteTheOldPlanOverTheNewOne() =
+        runTest {
+            val directory = directory()
+            repo.myMiffsResult = loaded(listOf(MiffSummary(MIFF_ID, "A")), premium = false)
+            directory.refresh()
+            // A read starts BEFORE the purchase (its answer says "free") and is slow...
+            val gate = CompletableDeferred<Unit>()
+            repo.myMiffsGate = gate
+            val staleRead = launch { directory.refresh() }
+            runCurrent()
+            // ...the purchase is granted meanwhile...
+            val grant = launch { directory.onPremiumGranted() }
+            runCurrent()
+            // ...and the late answer must not take the plan away: the plan is put right AFTER it.
+            gate.complete(Unit)
+            advanceUntilIdle()
+            assertTrue(staleRead.isCompleted && grant.isCompleted)
+            assertEquals(true, (directory.state.value as DirectoryState.Ready).premiumOrNull)
             assertEquals(SelectorTap.OpenCreate, gateOf(SelectorEntry.CREATE, directory))
         }
 

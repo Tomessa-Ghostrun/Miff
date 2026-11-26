@@ -91,6 +91,11 @@ data class PaywallUiState(
     val offer: PaywallOffer,
     val progress: PaywallProgress = PaywallProgress.NONE,
     val notice: PaywallNotice? = null,
+    /**
+     * The person has JUST become a subscriber in this display (a purchase or a restoration that ended here): the confirmation is celebrated with confetti. False when the offer is
+     * opened by an account that already has Miff+ (the confirmation is then shown calmly, with no celebration).
+     */
+    val celebrate: Boolean = false,
 ) {
     /** Buttons are inactive while the store is working. */
     val busy: Boolean get() = progress != PaywallProgress.NONE

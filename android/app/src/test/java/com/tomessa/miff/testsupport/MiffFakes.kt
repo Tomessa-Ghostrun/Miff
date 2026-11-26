@@ -330,6 +330,9 @@ class FakeMiffRepository : MiffRepository {
     var myMiffsResult: MyMiffsLoad = MyMiffsLoad.Loaded(emptyList(), emptyList(), premium = false, fromCache = false)
     val observer = FakeMiffObserver()
 
+    /** When set, [myMiffs] waits for it (completed by the test) before answering. */
+    var myMiffsGate: kotlinx.coroutines.CompletableDeferred<Unit>? = null
+
     val calls = mutableListOf<String>()
     val created = mutableListOf<String>()
     val prepareJoinCodes = mutableListOf<String>()
@@ -395,7 +398,10 @@ class FakeMiffRepository : MiffRepository {
 
     override suspend fun myMiffs(uid: String): MyMiffsLoad {
         calls += "myMiffs"
-        return myMiffsResult
+        val result = myMiffsResult
+        // A slow server: the answer (the one that was set when the read STARTED) only comes back once the gate is opened.
+        myMiffsGate?.await()
+        return result
     }
 
     // --- MIFF-2 -------------------------------------------------------------------------------------------------------

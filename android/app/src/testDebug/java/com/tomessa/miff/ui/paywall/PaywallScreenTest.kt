@@ -870,7 +870,7 @@ class PaywallScreenTest {
     @Test
     fun subscribed_confettiPlay_whenAnimationsAreOn() {
         composeRule.mainClock.autoAdvance = false
-        host(PaywallUiState(PaywallOffer.Subscribed), reduceMotion = false)
+        host(PaywallUiState(PaywallOffer.Subscribed, celebrate = true), reduceMotion = false)
         composeRule.mainClock.advanceTimeBy(500)
         composeRule.onAllNodesWithTag(CONFETTI_TAG).assertCountEquals(1)
         // Over: the burst plays once and leaves nothing behind.
@@ -880,9 +880,19 @@ class PaywallScreenTest {
     }
 
     @Test
+    fun subscribed_noConfetti_whenTheAccountAlreadyHadMiffPlus() {
+        // The offer opened by an account that is already a subscriber (celebrate = false): the confirmation is shown, calmly, with no confetti.
+        composeRule.mainClock.autoAdvance = false
+        host(PaywallUiState(PaywallOffer.Subscribed), reduceMotion = false)
+        composeRule.mainClock.advanceTimeBy(500)
+        composeRule.onAllNodesWithTag(CONFETTI_TAG).assertCountEquals(0)
+        composeRule.onNodeWithText(text(R.string.paywall_subscribed)).assertIsDisplayed()
+    }
+
+    @Test
     fun subscribed_noConfetti_whenAnimationsAreOff() {
         composeRule.mainClock.autoAdvance = false
-        host(PaywallUiState(PaywallOffer.Subscribed), reduceMotion = true)
+        host(PaywallUiState(PaywallOffer.Subscribed, celebrate = true), reduceMotion = true)
         composeRule.mainClock.advanceTimeBy(500)
         composeRule.onAllNodesWithTag(CONFETTI_TAG).assertCountEquals(0)
         composeRule.onNodeWithText(text(R.string.paywall_subscribed)).assertIsDisplayed()

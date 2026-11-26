@@ -33,6 +33,21 @@ Ticket `docs/tickets/paywall-periodique.md` (critères PP1 à PP24, plan §9), r
 
 ### Tests
 `PeriodicPaywallRulesTest` (règle pure : ouverture, 30 min exactes, plafond, un seul affichage par session, remise à zéro, une situation interdite par test sans toucher au compteur, Miff+ jamais, session d'une alerte, seuil 0 = règle éteinte), `PeriodicPaywallTouchesTest` (un bouton oui ; le vide, un défilement non), `PeriodicPaywallWatcherTest` (1,5 s, un toucher qui repousse, une seule ouverture, doigt posé, droit inconnu), `PeriodicPaywallEntryTest` (chaque entrée remet le compteur à zéro, sans consentement aussi ; l'événement `periodic` ne porte que le mot fixe), `PeriodicPaywallStoreTest` (un seul entier dans le fichier, valeur abîmée), `PeriodicPaywallBuildTest` (aucun drapeau, seuil abaissable en Debug seulement), `AccountLocalDataTest`, `AnalyticsContractTest`.
+## [0.60.1] - 2026-11-25 : finitions issues de revues indépendantes (SRV-8A et consentement), aucun texte ni écran nouveau
+
+Branche `android/finitions-revues`. **Numéro provisoire** (le PM renumérote à la fusion). **Coût ajouté : 0 €.** Six points non bloquants relevés par des revues ; aucune clé de texte créée ni modifiée (donc rien à traduire, rien à changer dans le catalogue iOS).
+
+### Corrigé
+- **« Prochain renouvellement » sans prix pour un abonné déjà en cours** (`SubscriptionViewModel.kt`) : la phrase affichait le prix **du catalogue d'aujourd'hui**, or le PM a décidé une reconduction **au même tarif** (`docs/specs/paywall-premium.md`) : un ancien abonné peut ne plus payer ce prix, et le serveur ne donne pas le montant réellement facturé (`entitlements/{uid}` n'en a pas). Un abonnement en cours (annuel ou mensuel) affiche donc **la date seulement** (« Actif. Prochain renouvellement le … ») ; l'**essai** garde « puis {prix} par an » (le prix de l'offre que la personne vient d'accepter). Plus aucun appel à Google Play pour lire les prix d'un abonnement en cours. Le texte avec prix (`settings_subscription_renews`) reste dans les six langues pour le jour où le serveur donnera le prix de la dernière facturation. **Signal pour revenir au prix** : un champ « montant de la dernière facturation » dans `entitlements/{uid}` (ticket serveur à ouvrir).
+- **Confettis seulement quand on VIENT de devenir abonné** : `PaywallUiState.celebrate` (vrai après un achat réussi ou une restauration trouvée dans cet affichage, faux quand un compte déjà abonné rouvre l'offre) ; avant, ils se rejouaient à chaque réouverture.
+- **`MiffDirectory.onPremiumGranted` écrit sous le verrou** (devenu `suspend`) : une lecture lancée avant l'achat (réponse « gratuit ») ne peut plus écraser le plan juste ; elle se termine d'abord, puis le plan est remis à jour. Test de course (`MiffDirectoryTest`).
+- **Retrait du consentement statistiques : la marque d'abord, ici et tout de suite** (`PrivacyViewModel`, `ConsentWithdrawals.markWithdrawal`) : la marque « retrait en attente » est posée **sur le disque dans le toucher lui-même**, avant la coupure de la collecte et avant tout lancement de coroutine (avant, elle ne l'était que dans la coroutine, donc après un tour de dispatcher : un processus tué entre les deux pouvait reprendre la collecte au démarrage suivant). Même garantie que `PrivacyViewModel.withdraw` d'iOS (PR #311).
+
+### Tests
+- Le comportement de la suppression du compte est testé (`DeleteProfileAfterBillingPurgeTest`, temps virtuel) : la purge des données d'abonnement passe **avant** la suppression du profil, un échec est toléré, une purge trop lente est coupée à **8 s**, rien n'est fait quand l'achat est éteint ; `deleteProfile` passe par `deleteProfileAfterBillingPurge` (extrait pour être testable). Le test qui lisait le texte du code ne vérifie plus que le câblage du drapeau d'achat.
+
+### Commentaires périmés corrigés
+- `build.gradle.kts` (« le rappel à la suppression du compte » : abandonné le 2026-11-21) et `SettingsScreens.kt` (« nothing can be bought yet »).
 
 ## [0.60.0] - 2026-11-21 : achat réel de Miff+ sur Android (SRV-8A) : prix lus dans Google Play, offre branchée, écran Abonnement complet, restauration
 

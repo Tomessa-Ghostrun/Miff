@@ -36,7 +36,7 @@ val notifJournalProperty: String? = providers.gradleProperty("miff.notifJournal"
 
 // MIFF+ PURCHASE (ticket docs/tickets/premium-achat-reel.md, SRV-8A, decision of the PM of 2026-11-21). BuildConfig.PREMIUM_PURCHASE is the SWITCH of the real purchase: the offer
 // with prices and buttons, the call to the Google Play Billing Library, the two functions of the server (preparerAchat, synchroniserAchat), the Abonnement screen of the Settings with
-// its states, the reminder at the deletion of the account. It is TRUE in the debug build (internal tests) and FALSE in release and releaseLike: until the five functions of billing
+// its states, the purge of the billing data at the deletion of the account (the reminder to cancel in the store was dropped: no such reminder exists). It is TRUE in the debug build (internal tests) and FALSE in release and releaseLike: until the five functions of billing
 // are deployed by the PM AND the products exist in the Play Console, a distributed build shows the offer as "Miff+ arrive bientôt" with no price and no button, exactly as before.
 // -Pmiff.premiumPurchase=true|false forces it either way for a TEST; a RELEASE build (release, releaseLike) refuses "true" unless -Pmiff.allowPremiumPurchaseInRelease=true is ALSO
 // given, on purpose (the release workflow gives both when the PM chooses "premium_purchase = true", docs/dev/premium-achat-android-test.md). Checked by PremiumPurchaseGuardTest.
