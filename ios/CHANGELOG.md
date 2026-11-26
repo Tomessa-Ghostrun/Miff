@@ -2,6 +2,16 @@
 
 ## Non publié
 
+### Paywall : le bouton d'essai devient « Tester gratuitement (7 jours) » (numéro provisoire : à renuméroter à la fusion)
+
+Branche `ios/cta-tester-gratuitement`. Changement de wording seul demandé par le PM, sans recette PM.
+
+Modifié :
+- **Clé `paywall_cta_trial`, valeur française seulement** : « Commencer l'essai gratuit (7 jours) » devient « Tester gratuitement (7 jours) » (`ios/Miff/Resources/Localizable.xcstrings`). Aucun code, aucune autre langue touchés.
+- Ticket `docs/tickets/paywall-v2.md` (comportement « éligible à l'essai », tableau des textes, critère PW4) aligné sur le nouveau libellé français.
+
+Écart à décider par le PM : en, es, it, pt et de gardent leur texte actuel (le PM n'a précisé que le français) ; le texte français d'Android (`values-fr/strings.xml`) reste aussi l'ancien.
+
 ### L'interrupteur « statistiques d'usage et rapports de plantage » dans Réglages > Confidentialité (ONB-3b côté iPhone, miroir d'Android) [numéro provisoire : à renuméroter à la fusion]
 
 Branche `ios/interrupteur-statistiques`. Ticket `docs/tickets/feed-profil-reglages.md` (critères B5 / RG6) ; décision du PM sur le consentement groupé à l'inscription, **modifiable à tout moment** (`docs/tickets/authentification.md`, décision du 2026-10-28). Ferme l'écart J72 côté app (`docs/legal/README.md`). Recette : `docs/qa/checklists/onb-3b-ios-recette-pm.md`. **Rien n'est compilé en local** (poste Windows : la CI fait foi). **Coût ajouté : 0 €** (une transaction Firestore par choix, aucune lecture de plus au démarrage).
