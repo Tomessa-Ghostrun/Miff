@@ -2,9 +2,9 @@ import Foundation
 
 /// Les états de l'écran d'offre (ticket `paywall-v2.md`, §5.2).
 ///
-/// En production, tant que l'achat réel n'existe pas (SRV-7 et SRV-8 non livrés, le Miff+ est accordé à la main), l'écran n'est
-/// JAMAIS que dans `comingSoon` : aucun prix, aucun bouton d'essai. Les autres états sont livrés ici et testés par des états
-/// simulés ; SRV-8I les branchera sur le store (le contenu d'un état ne dépend que de ce type).
+/// Dans un build où l'achat est éteint (`BuildFlavor.includesPremiumPurchase` faux : tout build distribué tant que le PM ne l'allume pas), l'écran n'est
+/// JAMAIS que dans `comingSoon` : aucun prix, aucun bouton d'essai. Les autres états sont ceux de l'achat réel (SRV-8I) : `PaywallStoreDriver` les branche sur le coordinateur
+/// de l'achat (le contenu d'un état ne dépend que de ce type, et les écrans se testent avec des états simulés).
 enum PaywallState: Equatable {
     /// Variante « sans achat » : « Miff+ arrive bientôt ».
     case comingSoon
@@ -18,13 +18,17 @@ enum PaywallState: Equatable {
     case failed(PaywallOffers)
     case restoring(PaywallOffers)
     case restoreNone(PaywallOffers)
+    /// L'abonnement trouvé est déjà utilisé par un AUTRE compte Miff (un achat = un compte) : refus calme avec le contact, rien n'est dit de l'autre compte.
+    case otherAccount(PaywallOffers)
+    /// Le store a SUSPENDU l'abonnement de ce compte (paiement qui échoue) : dit comme tel, avec le lien vers la gestion du store ; jamais un second achat.
+    case onHold(PaywallOffers)
     case subscribed
 
     /// Les offres connues, quand l'état en montre.
     var offers: PaywallOffers? {
         switch self {
         case .offers(let offers), .purchasing(let offers, _), .pending(let offers), .failed(let offers),
-             .restoring(let offers), .restoreNone(let offers):
+             .restoring(let offers), .restoreNone(let offers), .otherAccount(let offers), .onHold(let offers):
             return offers
         case .comingSoon, .loading, .unavailable, .subscribed:
             return nil
@@ -58,11 +62,20 @@ enum PaywallEvent: Equatable {
     case purchaseCancelled
     case purchasePending
     case purchaseFailed
+    /// Le store dit que le produit n'est pas disponible : l'offre redevient « pas disponible », sans prix ni bouton.
+    case purchaseUnavailable
+    case purchaseOtherAccount
+    case purchaseOnHold
     case purchaseSucceeded
     case restoreStarted
     case restoreFound
     case restoreNothing
     case restoreFailed
+    case restoreOtherAccount
+    case restorePending
+    case restoreOnHold
+    /// La personne a refusé l'identification Apple d'une restauration : aucun message.
+    case restoreCancelled
 }
 
 extension PaywallState {
@@ -91,7 +104,7 @@ extension PaywallState {
         case (.loading, .offersFailed), (.loading, .loadingTimedOut):
             return .unavailable
         case (.unavailable, .offersRequested), (.offers, .offersRequested), (.failed, .offersRequested),
-             (.restoreNone, .offersRequested):
+             (.restoreNone, .offersRequested), (.otherAccount, .offersRequested), (.onHold, .offersRequested):
             return .loading
         default:
             return self
@@ -102,7 +115,8 @@ extension PaywallState {
         switch (self, event) {
         case (.offers(let offers), .purchaseStarted(let plan)),
              (.failed(let offers), .purchaseStarted(let plan)),
-             (.restoreNone(let offers), .purchaseStarted(let plan)):
+             (.restoreNone(let offers), .purchaseStarted(let plan)),
+             (.otherAccount(let offers), .purchaseStarted(let plan)):
             return .purchasing(offers, plan)
         case (.purchasing(let offers, _), .purchaseCancelled):
             return .offers(offers)
@@ -110,9 +124,23 @@ extension PaywallState {
             return .pending(offers)
         case (.purchasing(let offers, _), .purchaseFailed):
             return .failed(offers)
+        case (.purchasing, .purchaseUnavailable):
+            return .unavailable
+        case (.purchasing(let offers, _), .purchaseOtherAccount):
+            return .otherAccount(offers)
+        case (.purchasing(let offers, _), .purchaseOnHold):
+            return .onHold(offers)
+        default:
+            return reducedByRestoration(event)
+        }
+    }
+
+    private func reducedByRestoration(_ event: PaywallEvent) -> PaywallState {
+        switch (self, event) {
         case (.offers(let offers), .restoreStarted),
              (.failed(let offers), .restoreStarted),
-             (.restoreNone(let offers), .restoreStarted):
+             (.restoreNone(let offers), .restoreStarted),
+             (.otherAccount(let offers), .restoreStarted):
             return .restoring(offers)
         case (.restoring, .restoreFound):
             return .subscribed
@@ -120,6 +148,14 @@ extension PaywallState {
             return .restoreNone(offers)
         case (.restoring(let offers), .restoreFailed):
             return .failed(offers)
+        case (.restoring(let offers), .restoreOtherAccount):
+            return .otherAccount(offers)
+        case (.restoring(let offers), .restorePending):
+            return .pending(offers)
+        case (.restoring(let offers), .restoreOnHold):
+            return .onHold(offers)
+        case (.restoring(let offers), .restoreCancelled):
+            return .offers(offers)
         default:
             return self
         }

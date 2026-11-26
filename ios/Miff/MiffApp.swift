@@ -62,6 +62,8 @@ struct MiffApp: App {
             )
             // SRV-2I : au premier plan et à chaque changement de la session, le registre des appareils est regardé (rien d'écrit si rien n'a changé).
             .pushLifecycle(environment.push, session: environment.sessionState)
+            // SRV-8I : au premier plan et à chaque changement de la session, un achat de Miff+ qui attend sa vérification est repris (silencieux, au plus toutes les 5 minutes ; sans effet quand l'achat est éteint).
+            .premiumLifecycle(environment.premium, session: environment.sessionState)
             // NOTIF-P1I : « Depuis ta dernière visite » compare au retour après 30 minutes ou plus loin de l'app (aucune lecture de plus).
             .lastVisitLifecycle(environment.notifications.lastVisit)
         }

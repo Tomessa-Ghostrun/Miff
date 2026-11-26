@@ -174,6 +174,10 @@ shot 95c-fr-offre-sans-achat-croix 3 "${fr_args[@]}" -MiffPreview paywall-soon-c
 shot 95e-fr-offre-essai-croix 3 "${fr_args[@]}" -MiffPreview paywall-trial-cross
 shot 95f-fr-offre-deux-formules-croix 3 "${fr_args[@]}" -MiffPreview paywall-plans-cross
 shot 95m-en-offre-essai-croix 3 -AppleLanguages "(en)" -AppleLocale en_US -MiffPreview paywall-trial-cross
+# SRV-8I : l'écran « Bienvenue sur Miff+ ! » (non designé : à valider sur capture, avec ses confettis en cours de chute) et Réglages > Abonnement (non designé non plus).
+shot 95n-fr-offre-bienvenue-confettis 2 "${fr_args[@]}" -MiffPreview paywall-subscribed-cross
+shot 95o-fr-reglages-abonnement-actif 3 "${fr_args[@]}" -MiffPreview subscription-active
+shot 95p-fr-reglages-abonnement-gratuit 3 "${fr_args[@]}" -MiffPreview subscription-free
 
 # ABOUT-1I : Réglages > À propos et aide (les VRAIS écrans, états fixes : Diagnostic/AboutScreenPreviews.swift, build Debug seulement).
 # La liste des Réglages (ligne « À propos et aide » en dernier), l'écran (contact et retour en cartes EN HAUT, « Informations » en

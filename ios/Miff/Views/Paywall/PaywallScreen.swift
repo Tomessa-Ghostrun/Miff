@@ -47,6 +47,12 @@ struct PaywallScreen: View {
             }
         }
         .background(gradientAuthBackground.ignoresSafeArea())
+        // La confirmation est fêtée par une courte pluie de confettis sur tout l'écran ; AUCUN confetti quand la personne a réduit les animations (seulement la confirmation).
+        .overlay {
+            if model.state == .subscribed && !reduceMotion {
+                PaywallConfetti()
+            }
+        }
         // Glissement de fermeture de la feuille : désactivé tant que la croix n'est pas là (critère CR7), actif ensuite.
         .interactiveDismissDisabled(!model.isCloseAvailable)
         // Le compte à rebours part à l'affichage, même si les prix chargent encore ou s'il n'y a pas de connexion (CR3, CR13).
@@ -72,15 +78,19 @@ struct PaywallScreen: View {
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity)
                 .accessibilityAddTraits(.isHeader)
+            // Les limites de la formule gratuite sont dites dans les cartes elles-mêmes (décision du PM, 2026-11-25) : le nombre de lieux vient de `PlaceLimits.freePlaces`
+            // (jamais un nombre écrit dans le texte), la Miff unique de `PlaceLimits.freeMiffs` (phrase fixe, et un test qui casse si le nombre change).
             PlacePaywallFeature(
                 symbol: "mappin.and.ellipse",
                 title: L10n.string("place_paywall_feature_places"),
-                detail: L10n.string("place_paywall_feature_places_desc")
+                detail: L10n.string("place_paywall_feature_places_desc"),
+                limit: L10n.plural("paywall_feature_places_limit", count: PlaceLimits.freePlaces)
             )
             PlacePaywallFeature(
                 symbol: "person.2",
                 title: L10n.string("place_paywall_feature_miffs"),
-                detail: L10n.string("place_paywall_feature_miffs_desc")
+                detail: L10n.string("place_paywall_feature_miffs_desc"),
+                limit: L10n.string("paywall_feature_miffs_limit")
             )
             PlacePaywallFeature(
                 symbol: "exclamationmark.triangle",
@@ -144,29 +154,5 @@ struct PaywallCloseButton: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(verbatim: L10n.string("place_paywall_close_a11y")))
-    }
-}
-
-/// « Tu as Miff+. Merci ! » : une confirmation, aucune offre.
-struct PaywallSubscribedContent: View {
-    var body: some View {
-        VStack(spacing: Spacing.sm) {
-            Image(systemName: "checkmark.circle")
-                .font(.system(size: 44, weight: .regular))
-                .foregroundColor(colorActionPrimary.color)
-                .accessibilityHidden(true)
-            Text("paywall_subscribed")
-                .miffTextStyle(textTitleBold24)
-                .miffBrandTitleFill()
-                .multilineTextAlignment(.center)
-                .accessibilityAddTraits(.isHeader)
-            Text("paywall_subscribed_detail")
-                .miffTextStyle(textBodyRegular)
-                .foregroundColor(colorTextDescription.color)
-                .multilineTextAlignment(.center)
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, Spacing.lg)
-        .accessibilityElement(children: .combine)
     }
 }

@@ -4,7 +4,7 @@ import SwiftUI
 /// L'écran d'offre montré SEUL avec un état fixe, pour les captures d'écran de la CI
 /// (`xcrun simctl launch ... -MiffPreview paywall-trial`). Nom : `paywall-<état>[-danger|-miff][-cross]` ; états : `soon` (la variante
 /// sans achat, la seule de la production), `trial`, `plans`, `loading`, `unavailable`, `purchasing`, `pending`, `failed`, `restore`,
-/// `subscribed`. Les prix sont des données de démonstration (jamais ceux d'un store) ; aucun réseau, aucun achat.
+/// `other` (abonnement d'un autre compte Miff), `hold` (abonnement suspendu), `subscribed` (« Bienvenue sur Miff+ ! » avec ses confettis). Les prix sont des données de démonstration (jamais ceux d'un store) ; aucun réseau, aucun achat.
 /// Sans `-cross`, la croix est absente (délai de 1 heure : la capture montre l'écran « avant 3 secondes ») ; avec `-cross`, le délai est
 /// de 0 (la croix est là, comme après 3 secondes). Compilé en configuration Debug SEULEMENT, comme `ScreenPreview`.
 @MainActor
@@ -64,6 +64,10 @@ struct PaywallScreenPreview: View {
             return .failed(offers)
         case "restore":
             return .restoreNone(offers)
+        case "other":
+            return .otherAccount(offers)
+        case "hold":
+            return .onHold(offersWithoutTrial)
         case "subscribed":
             return .subscribed
         default:

@@ -15,9 +15,11 @@ final class RestrictedSettingsTests: XCTestCase {
         )
     }
 
-    func testMyInformationTheLanguageAndTheNotificationScreensAreTheOnlyOnesARestrictedAccountCannotOpen() {
+    func testSomeScreensAreTheOnlyOnesARestrictedAccountCannotOpen() {
+        // Mes informations, Langue, Abonnement (SRV-8I) et les écrans des notifications.
         for route in SettingsRoute.allCases {
-            let forbidden = route == .myInfo || route == .language || route.isNotificationScreen
+            let hidden: [SettingsRoute] = [.myInfo, .language, .subscription]
+            let forbidden = hidden.contains(route) || route.isNotificationScreen
             XCTAssertEqual(SettingsAccess.isAllowed(route, restricted: true), !forbidden, "\(route)")
             XCTAssertTrue(SettingsAccess.isAllowed(route, restricted: false), "\(route)")
         }

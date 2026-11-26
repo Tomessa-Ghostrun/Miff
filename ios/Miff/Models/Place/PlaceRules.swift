@@ -23,6 +23,10 @@ enum PlaceLimits {
     static let freePlaces = 3
     static let freeIds = ["p1", "p2", "p3"]
 
+    /// Formule gratuite : UNE seule Miff à la fois. Le texte « Limite d'une seule Miff sinon » de l'offre est une phrase fixe dans six langues : `PaywallLimitsTextsTests` casse, exprès,
+    /// si ce nombre change sans que les six textes soient relus. C'est aussi la porte du sélecteur de Miff du Feed et du carrousel du Profil.
+    static let freeMiffs = 1
+
     /// Un lieu est écrit dans 5 Miffs au plus à la fois (décision Q4) : les règles lisent 20 documents au plus par lot.
     static let maxMiffs = 5
 
@@ -108,11 +112,13 @@ enum PlaceAddressText {
 }
 
 /// Laquelle des limites demande Miff+. La zone de danger est Miff+ seulement (décision du ticket §6.2) ; le 4e lieu est
-/// la limite ; une 2e Miff (Feed, sélecteur de Miff, décision du PM du 2026-11-08) a sa propre phrase.
+/// la limite ; une 2e Miff (Feed, sélecteur de Miff, décision du PM du 2026-11-08) a sa propre phrase. `subscription` : l'offre ouverte volontairement
+/// depuis Réglages > Abonnement (SRV-8I), aucune limite atteinte.
 enum PaywallReason: Hashable {
     case limit
     case danger
     case extraMiff
+    case subscription
 }
 
 enum DraftProblem: Equatable {

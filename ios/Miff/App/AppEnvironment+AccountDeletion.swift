@@ -42,7 +42,9 @@ struct AccountDeletionServices {
             store: FirestoreAccountDataStore(
                 alertsEnabled: BuildFlavor.includesAlertDanger,
                 // CNC-I : le journal des notifications du compte est vidé avant son profil (nil dans un build sans la condition `NOTIF_JOURNAL`).
-                journal: environment.notifications.journalGateway
+                journal: environment.notifications.journalGateway,
+                // SRV-8I : l'identifiant d'achat et les liens d'achat du compte sont purgés AVANT le profil (nil : l'achat est éteint dans ce build). Toléré, borné à 8 s.
+                subscriptionData: environment.premium.purgeSubscriptionData
             ),
             gateway: session.gateway,
             cache: session.cache,

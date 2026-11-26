@@ -48,7 +48,12 @@
 	     - Crashlytics : rapports de plantage et données de diagnostic.
 	     Un retrait fait sans réseau laisse une marque sur l'appareil (fichier privé exclu des sauvegardes : empreinte à sens unique
 	     du compte et heure, jamais envoyée) : le fichier est écrit avec `Data.write` et lu avec `Data(contentsOf:)`, sans aucune des
-	     API « à raison obligatoire » d'Apple (aucun horodatage de fichier lu), donc aucune déclaration de plus ci-dessous. -->
+	     API « à raison obligatoire » d'Apple (aucun horodatage de fichier lu), donc aucune déclaration de plus ci-dessous.
+
+	     ACHAT DE Miff+ (SRV-8I, docs/tickets/premium-achat-reel.md) : quand l'achat est allumé, l'app envoie à NOTRE serveur la transaction signée par Apple (pour qu'il la vérifie), et
+	     le serveur écrit l'état de l'abonnement du compte (essai, actif, date de fin) : « Purchases > Purchase History » (PurchaseHistory), LIÉE au compte, pour le FONCTIONNEMENT
+	     de l'app seulement, jamais pour le suivi. Aucun numéro de carte, aucun montant : Apple reste le seul à les connaître (docs/release/app-store-confidentialite-et-revue.md). StoreKit
+	     n'ajoute aucune API « à raison obligatoire ». -->
 	<key>NSPrivacyTracking</key>
 	<false/>
 	<key>NSPrivacyTrackingDomains</key>
@@ -142,6 +147,18 @@
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeOtherUserContent</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePurchaseHistory</string>
 			<key>NSPrivacyCollectedDataTypeLinked</key>
 			<true/>
 			<key>NSPrivacyCollectedDataTypeTracking</key>

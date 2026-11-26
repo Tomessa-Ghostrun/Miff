@@ -54964,6 +54964,66 @@
           }
         }
       }
+    },
+    "ios_settings_subscription_other_store": {
+      "extractionState": "manual",
+      "comment": "Réglages > Abonnement, iPhone : l'abonnement a été souscrit dans Google Play (sur un téléphone Android). Miroir de settings_subscription_other_store, propre à iOS parce qu'il nomme l'autre store.",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein Abonnement wurde bei Google Play abgeschlossen: Du kannst es in den Einstellungen deines Google-Kontos verwalten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your subscription was taken out in Google Play: you can manage it in your Google account settings."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu suscripción se contrató en Google Play: puedes gestionarla en los ajustes de tu cuenta de Google."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton abonnement a été souscrit dans Google Play : tu peux le gérer dans les réglages de ton compte Google."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il tuo abbonamento è stato sottoscritto su Google Play: puoi gestirlo nelle impostazioni del tuo account Google."
+          }
+        },
+        "pt": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A tua subscrição foi feita no Google Play: podes geri-la nas definições da tua conta Google."
+          }
+        }
+      }
+    },
+    "ios_diag_billing_title": {
+      "extractionState": "manual",
+      "comment": "Diagnostic (builds Debug et Internal) : carte du faux magasin de Miff+. Jamais traduite.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miff+ purchase (fake store)"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Achat Miff+ (faux magasin)"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

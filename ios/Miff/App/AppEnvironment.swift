@@ -1,3 +1,4 @@
+import Combine
 import Foundation
 
 /// Les services des lieux de confiance (LOC-3), construits d'un seul tenant. Rien ici n'ouvre Firestore ni MapKit (MapKit n'est créé qu'au premier usage d'un champ d'adresse) : tout passe par
@@ -117,6 +118,10 @@ final class AppEnvironment {
     let push: PushServices
     /// ALERTE « Je suis en danger » : ce que la coquille reçoit de l'alerte (vide dans un build sans la fonction, voir `DangerAlertShell`).
     let dangerShell: DangerAlertShell
+    /// L'achat de Miff+ (SRV-8I) : le coordinateur, la lecture du droit et la purge à la suppression du compte. Vide dans un build où l'achat est éteint (`PREMIUM_PURCHASE`).
+    let premium: PremiumServices
+    /// L'abonnement de l'annuaire aux accords de Miff+ : sa formule affichée suit l'achat tout de suite (voir `MiffDirectory.onPremiumGranted`).
+    private let premiumGrants: AnyCancellable?
     /// La suppression du compte (AUTH-5c) : procédure, contrôleur et retrait de l'autorisation Apple. Construite à la première demande (les
     /// écrans de la suppression), à partir de ce que la session détient déjà ; seul le marqueur local est donné à la session dès le départ.
     lazy var accountDeletion: AccountDeletionServices = AccountDeletionServices.make(self)
@@ -160,6 +165,9 @@ final class AppEnvironment {
         let drafts = ProfileDraftFileStore()
         let pending = UserDefaultsPendingConsentStore()
         let gateway = FirebaseAuthGateway()
+        // SRV-8I : l'achat de Miff+, créé TOUT DE SUITE : son écoute des transactions (autre appareil, « Ask to Buy » approuvé, transaction restée non terminée) doit être en place
+        // avant le premier écran (critère IO2). Rien n'est créé quand l'achat est éteint dans ce build.
+        let premiumServices = PremiumServices.make(currentUid: { gateway.currentUid })
         // Un seul purgeur de cache pour toute l'app : la session, l'annuaire des Miffs et le dépôt purgent le MÊME cache.
         let cache = FirestoreCachePurger(flags: flagStore)
         let networkMonitor = NWNetworkMonitor()
@@ -294,6 +302,8 @@ final class AppEnvironment {
         profileDrafts = drafts
         pendingConsent = pending
         notifications = notifs
+        premium = premiumServices
+        premiumGrants = premiumServices.coordinator.map { miff.directory.followPremiumGrants($0.accessGranted) }
     }
 
     /// Ce que la fin de session arrête, dans l'ordre : le brouillon (noms, photo, numéro) et les Miffs en mémoire, les suppressions en
