@@ -53,6 +53,8 @@ class MiffApplication :
                         AppVisibility.inForeground = true
                         container.trackingLooksAgain(TrackingEngine.Reason.OPENED)
                         container.foregroundTicks.arrived()
+                        // PAY-PER-A: a cold start, or a return after 30 minutes or more, opens a session of the periodic offer (counted when the signed-in app is on screen).
+                        container.periodicPaywall.onForeground()
                         // NOTIF-1A / 4A: the channels follow the language of the app, and the reminders are brought in line with the plan.
                         container.notificationsLookAgain()
                         // NOTIF-P1A: back after 30 minutes or more (or a cold start) = the next fresh picture of the Feed is compared with the last one seen.
@@ -60,6 +62,7 @@ class MiffApplication :
                     },
                     onBackground = {
                         AppVisibility.inForeground = false
+                        container.periodicPaywall.onBackground()
                         container.lastVisitBackground()
                         container.trackingLooksAgain(TrackingEngine.Reason.BACKGROUNDED)
                     },

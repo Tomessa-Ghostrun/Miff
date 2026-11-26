@@ -63,6 +63,10 @@ object NotificationIntents {
     const val EXTRA_KEY = "miff.notification.key"
     const val EXTRA_MIFF_ID = "miff.notification.miff"
 
+    /** The scheme and the authority of the data of the tap on the notification of an ALERT of a loved one (see [AndroidNotificationPresenter.showCircleAlert]). */
+    const val DATA_SCHEME = "miff-notification"
+    const val ALERT_AUTHORITY = "alert"
+
     /** What the app understands of such an intent: the tab to show and the key; null when it is not one of ours or is malformed (never an error). */
     fun parse(intent: Intent?): Pair<NotificationDestination, String?>? {
         if (intent?.action != ACTION_OPEN) return null
@@ -71,6 +75,13 @@ object NotificationIntents {
                 ?: return null
         return destination to intent.getStringExtra(EXTRA_KEY)?.takeIf { it.length <= 200 }
     }
+
+    /**
+     * True when the tap is on the notification of an ALERT of a loved one (ticket paywall-periodique, P11: no offer in the whole session opened that way). Only the shape of OUR intent counts:
+     * the action and the data it was built with; anything else is false, never an error.
+     */
+    fun isAlert(intent: Intent?): Boolean =
+        intent?.action == ACTION_OPEN && intent.data?.scheme == DATA_SCHEME && intent.data?.authority == ALERT_AUTHORITY
 
     /**
      * The Miff a tap on a notification of the circle is about, or null. The intent can come from ANY application (the activity is the launcher one), so the identifier is
@@ -240,8 +251,8 @@ class AndroidNotificationPresenter(
                 .setData(
                     Uri
                         .Builder()
-                        .scheme("miff-notification")
-                        .authority("alert")
+                        .scheme(NotificationIntents.DATA_SCHEME)
+                        .authority(NotificationIntents.ALERT_AUTHORITY)
                         .appendPath(tag)
                         .build(),
                 ).addFlags(

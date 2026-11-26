@@ -124,6 +124,9 @@ fun DiagnosticScreen(
             // Review window (docs/tickets/pop-ins-avis.md): show it now / reset it, for the recette (debug build only).
             ReviewDebugCard()
 
+            // Periodic offer (docs/tickets/paywall-periodique.md): the counter and its shortcuts for the recette (debug build only).
+            PeriodicPaywallDebugCard()
+
             // Miff+ purchase (SRV-8A, docs/dev/premium-achat-android-test.md): the fake store, the fake server and the fake entitlement (debug build only).
             BillingDebugCard()
 

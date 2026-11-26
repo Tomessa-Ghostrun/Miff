@@ -106,6 +106,7 @@ import com.tomessa.miff.data.onboarding.OnboardingFlags
 import com.tomessa.miff.data.onboarding.ProfileDraftStore
 import com.tomessa.miff.data.onboarding.SharedPreferencesProfileDraftStore
 import com.tomessa.miff.data.onboarding.asTeardown
+import com.tomessa.miff.data.paywall.SharedPreferencesPeriodicPaywallStore
 import com.tomessa.miff.data.permission.AndroidDevicePermissions
 import com.tomessa.miff.data.permission.DevicePermissions
 import com.tomessa.miff.data.permission.NotificationAskStore
@@ -198,6 +199,8 @@ import com.tomessa.miff.domain.notification.CircleNewsKeys
 import com.tomessa.miff.domain.notification.SnapshotMember
 import com.tomessa.miff.domain.notification.VisitState
 import com.tomessa.miff.domain.paywall.MonotonicClock
+import com.tomessa.miff.domain.paywall.PeriodicPaywallDefaults
+import com.tomessa.miff.domain.paywall.PeriodicPaywallRules
 import com.tomessa.miff.domain.profile.AvatarCodec
 import com.tomessa.miff.domain.profile.GooglePhotoPrefill
 import com.tomessa.miff.domain.push.DeviceAppVersion
@@ -845,6 +848,18 @@ class AppContainer(
      */
     val paywallClock: MonotonicClock = MonotonicClock(SystemClock::elapsedRealtime)
 
+    /**
+     * The periodic offer (ticket docs/tickets/paywall-periodique.md): one whole number on the phone, the opening and session logic, the first tap. ON in every build (decision of the PM,
+     * 2026-11-25): no switch; the threshold is [PeriodicPaywallDefaults.OPENINGS_BETWEEN], lowered by the debug build only ([BuildConfig.PERIODIC_PAYWALL_OPENINGS_DEBUG]).
+     */
+    val periodicPaywall: PeriodicPaywallRules by lazy {
+        PeriodicPaywallRules(
+            store = SharedPreferencesPeriodicPaywallStore(context),
+            clock = paywallClock,
+            openingsBetween = PeriodicPaywallDefaults.openingsFor(BuildConfig.PERIODIC_PAYWALL_OPENINGS_DEBUG),
+        )
+    }
+
     /** The Miffs of the person signed in, in memory for the session (Feed, Profile tab); also deals with a loss of access. */
     val miffDirectory: MiffDirectory by lazy {
         MiffDirectory(
@@ -1184,6 +1199,7 @@ class AppContainer(
             timeShareWindow,
             alertLocal = if (BuildConfig.ALERT_DANGER) alertLocal else null,
             clarifyAsks = clarifyAsks,
+            periodicPaywall = periodicPaywall,
         )
     }
 
@@ -1273,6 +1289,7 @@ class AppContainer(
                         addressSearch,
                         mapTileCache,
                         alertTeardown,
+                        SessionTeardown { periodicPaywall.clear() },
                     ),
                 scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
                 device = deviceSession,

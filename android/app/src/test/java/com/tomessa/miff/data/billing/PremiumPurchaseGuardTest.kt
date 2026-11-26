@@ -95,9 +95,10 @@ class PremiumPurchaseGuardTest {
         val navigation = normalised(File(main, "ui/place/PlaceNavigation.kt"))
         assertTrue(
             "the coordinator of the container goes to the single offer route",
-            navigation.contains(
-                "paywallRoute(container.analyticsTracker, container.paywallClock, navController, container.premium)",
-            ),
+            // Spotless may put the arguments on several lines and add a trailing comma: the whitespace is normalised, so the comma is optional.
+            Regex(
+                """paywallRoute\( ?container\.analyticsTracker, container\.paywallClock, navController, container\.premium, container\.periodicPaywall""",
+            ).containsMatchIn(navigation),
         )
         assertTrue(
             "without a coordinator the offer is the one without purchase",

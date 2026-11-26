@@ -98,7 +98,8 @@ final class TimeShareViewModel: ObservableObject {
             readFailed = true
         case .facts(let facts):
             outcome = TimeShareCalculator.compute(
-                facts: facts, places: request.places, windowDays: days, nowMillis: clock()
+                facts: facts, places: request.places, windowDays: days, nowMillis: clock(),
+                startedAtMillis: history.startedAt(miffId: request.miffId)
             )
         }
         let state = TimeShareCardState.make(

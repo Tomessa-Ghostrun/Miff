@@ -123,6 +123,9 @@ extension TrackingEngine {
         // 1. Les zones sont armées D'ABORD, sans attendre une position : un démarrage lent ne doit pas coûter l'armement (une fenêtre de
         //    relance a quelques secondes). Le système fait foi de ce qu'il surveille : ce qui manque est ajouté, le reste retiré.
         state = await armZones(state, fix: state.fix, reregister: full.contains(reason))
+        // TIME-3 : le suivi de ces Miffs commence ICI (la première fois seulement) : « Ton graphique arrive dans X jours » décompte à partir
+        // de cet armement, avec ou sans première arrivée ou sortie.
+        noteBegin(Set(state.miffs.keys), at: now)
         deps.local.save(state)
         // 2. La position (attente bornée), seulement si elle est récente.
         let fix = await chooseFix(state, supplied: supplied, reason: reason, now: now)

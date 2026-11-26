@@ -35,6 +35,9 @@ sealed class AnalyticsEvent(
 
         /** The offer opened on purpose from Settings > Abonnement (SRV-8A, ticket premium-achat-reel.md; value added to the contract on 2026-11-21). */
         SUBSCRIPTION("subscription"),
+
+        /** The offer that comes by itself once every 15 openings to a person without Miff+ (PAY-PER-A, ticket paywall-periodique.md; value added to the contract on 2026-11-25). */
+        PERIODIC("periodic"),
     }
 
     /** [slideIndex] must be 0, 1 or 2 (anything else is refused by the allow-list). */

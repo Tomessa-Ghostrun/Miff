@@ -55,7 +55,7 @@ object AnalyticsContract {
     private val signInMethods = ParamSpec.Text(setOf("email", "google", "apple"))
     private val paywallTriggers =
         ParamSpec.Text(
-            setOf("extra_miff", "extra_trusted_place", "danger_zone", "subscription"),
+            setOf("extra_miff", "extra_trusted_place", "danger_zone", "subscription", "periodic"),
         )
 
     /** The eight product events of contract version 1. */

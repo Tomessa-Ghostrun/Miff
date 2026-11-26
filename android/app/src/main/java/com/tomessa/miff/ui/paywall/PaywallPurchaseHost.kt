@@ -41,6 +41,8 @@ internal fun PurchasePaywallDestination(
     clock: MonotonicClock,
     premium: PremiumCoordinator,
     onClose: () -> Unit,
+    /** Once per display, when the offer is really on view (PAY-PER-A: the counter of the periodic offer goes back to zero). */
+    onDisplayed: () -> Unit = {},
 ) {
     val model: PaywallPurchaseViewModel =
         viewModel(factory = viewModelFactory { initializer { PaywallPurchaseViewModel(premium) } })
@@ -52,6 +54,7 @@ internal fun PurchasePaywallDestination(
         clock = clock,
         state = state,
         onClose = onClose,
+        onDisplayed = onDisplayed,
         store =
             PaywallStoreActions(
                 // The sheet of the store needs the activity that is on screen; without one (never in practice) the button does nothing.

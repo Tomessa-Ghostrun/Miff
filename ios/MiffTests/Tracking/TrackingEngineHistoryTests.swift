@@ -54,6 +54,29 @@ final class TrackingEngineHistoryTests: XCTestCase {
         await rig.engine.onTransition(.enter, zoneKey: rig.homeKey, atMillis: rig.env.now - 60 * minute)
     }
 
+    // MARK: - Le début du suivi (décompte « Ton graphique arrive dans X jours »)
+
+    func testArmingTheDetectionStartsTheFollowUpOfEachMiffEvenWithoutAnyFact() async {
+        rig.addMiff(testOtherMiffId, places: [TrackingFixtures.home])
+        let first = rig.env.now
+
+        await rig.engine.refresh(.opened)
+
+        XCTAssertEqual(rig.history.starts[testMiffId], first)
+        XCTAssertEqual(rig.history.starts[testOtherMiffId], first)
+        XCTAssertTrue(rig.history.facts.isEmpty, "aucune arrivée ni sortie : le décompte part quand même")
+    }
+
+    func testTheStartOfTheFollowUpIsTheFirstArmingOnly() async {
+        let first = rig.env.now
+        await rig.engine.refresh(.opened)
+
+        rig.env.now += 5 * hour
+        await rig.engine.refresh(.opened)
+
+        XCTAssertEqual(rig.history.starts[testMiffId], first)
+    }
+
     // MARK: - Ce que le moteur écrit dans le statut, le journal le recopie
 
     func testArrivalAndDepartureAreJournalledWithTheSameStateThePlaceAndTheInstantAsTheStatus() async {

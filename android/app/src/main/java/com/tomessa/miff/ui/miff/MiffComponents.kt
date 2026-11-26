@@ -70,6 +70,7 @@ import com.tomessa.miff.domain.miff.MiffRole
 import com.tomessa.miff.domain.profile.Initials
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
+import com.tomessa.miff.ui.components.OverlayPresent
 import com.tomessa.miff.ui.navigation.holdForDiagnostic
 import com.tomessa.miff.ui.profile.ProfileAvatar
 import com.tomessa.miff.ui.theme.CodeLetterSpacing
@@ -497,6 +498,7 @@ private fun MemberMenu(
             containerColor = colorBgSurface,
             modifier = Modifier.holdForDiagnostic(),
         ) {
+            OverlayPresent()
             DropdownMenuItem(
                 text = {
                     Text(
@@ -703,6 +705,7 @@ fun MiffConfirmDialog(
         onDismissRequest = { if (!busy) onCancel() },
         properties = DialogProperties(dismissOnBackPress = !busy, dismissOnClickOutside = false),
     ) {
+        OverlayPresent()
         Column(
             modifier =
                 modifier
@@ -788,6 +791,7 @@ fun MiffProgressDialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(dismissOnBackPress = true, dismissOnClickOutside = false),
     ) {
+        OverlayPresent()
         Column(
             modifier =
                 modifier

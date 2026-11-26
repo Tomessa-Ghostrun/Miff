@@ -12,7 +12,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -60,6 +62,8 @@ import com.tomessa.miff.domain.billing.MiffPlusProducts
 import com.tomessa.miff.domain.feed.StateLabel
 import com.tomessa.miff.domain.navigation.MainTab
 import com.tomessa.miff.domain.navigation.TabBarConfig
+import com.tomessa.miff.domain.notification.NotificationType
+import com.tomessa.miff.domain.paywall.PeriodicPaywallSituation
 import com.tomessa.miff.domain.place.MiffPlacesView
 import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.domain.place.PlaceViewerRole
@@ -80,6 +84,7 @@ import com.tomessa.miff.ui.auth.LegalLinks
 import com.tomessa.miff.ui.components.ConnectionGate
 import com.tomessa.miff.ui.components.ConnectionHost
 import com.tomessa.miff.ui.components.LocalBottomOverlayPadding
+import com.tomessa.miff.ui.components.LocalOverlayPresence
 import com.tomessa.miff.ui.components.miffBottomInsets
 import com.tomessa.miff.ui.components.miffKeyboardVisible
 import com.tomessa.miff.ui.feed.ColorsInfoScreen
@@ -113,6 +118,9 @@ import com.tomessa.miff.ui.notification.openNotificationCenter
 import com.tomessa.miff.ui.notification.openNotificationSettings
 import com.tomessa.miff.ui.notification.rememberNotificationPermissionRequest
 import com.tomessa.miff.ui.notification.rememberNotificationPermissionState
+import com.tomessa.miff.ui.paywall.PeriodicPaywallHost
+import com.tomessa.miff.ui.paywall.PeriodicPaywallWatcher
+import com.tomessa.miff.ui.paywall.periodicPaywallTouches
 import com.tomessa.miff.ui.place.PlaceDetailRoute
 import com.tomessa.miff.ui.place.PlaceFormRoute
 import com.tomessa.miff.ui.place.PlacePaywallRoute
@@ -226,11 +234,20 @@ fun MainShell(
     tabBar: TabBarConfig,
 ) {
     val navController = rememberNavController()
-    Box(Modifier.fillMaxSize()) {
-        MainNavigation(container, tabBar, navController)
-        LostAccessOverlay(container, navController)
-        DeletionNotices(container, navController)
-        PremiumReconcile(container)
+    // PAY-PER-A: the signed-in app (onboarding over) is on screen: the opening of the session is counted here, and only here do the touches count (never on the sign-in or the onboarding).
+    val periodic = container.periodicPaywall
+    DisposableEffect(periodic) {
+        periodic.onShellShown()
+        onDispose { periodic.onShellGone() }
+    }
+    // The overlays (dialogs, sheets, menus, the full-screen photo) tell the rules they are open: their window hides the tabs without changing their state.
+    CompositionLocalProvider(LocalOverlayPresence provides periodic) {
+        Box(Modifier.fillMaxSize().periodicPaywallTouches(periodic)) {
+            MainNavigation(container, tabBar, navController)
+            LostAccessOverlay(container, navController)
+            DeletionNotices(container, navController)
+            PremiumReconcile(container)
+        }
     }
 }
 
@@ -494,6 +511,13 @@ private fun MainNavigation(
                 viewModel(key = profileRequestsKey(scopeKey), factory = profileRequestsFactory(container))
             val profileRequests by profileRequestsViewModel.state.collectAsStateWithLifecycle()
             val notificationsState by notificationsViewModel.uiState.collectAsStateWithLifecycle()
+            // The line of the centre of notifications that tells a loved one's alert is unread: the periodic offer does not come while it waits (ticket D2).
+            val centerItems by container.notificationCenter.items.collectAsState()
+            // With the real purchase in this build the offer shows prices read in the store: offline, it would only say "not available": nothing is shown by surprise (ticket C6).
+            val online by remember(container) {
+                container.networkMonitor.onlineChanges()
+            }.collectAsState(container.networkMonitor.isOnline())
+            val offerReachable = container.premium == null || online
             val focusMember by container.tabRequests.pendingFocus.collectAsStateWithLifecycle()
             // FEED-REFRESH-POSITION: the one calm note of "Actualiser" (the access to the location is not enough to refresh my position): a short toast, no screen, no button.
             val noteContext = LocalContext.current
@@ -612,6 +636,19 @@ private fun MainNavigation(
                     ),
                 // The review window (docs/tickets/pop-ins-avis.md): null in a build without it (BuildConfig.REVIEW_PROMPT false, the default of release).
                 review = rememberReviewHost(container, scopeKey),
+                // The periodic offer (docs/tickets/paywall-periodique.md, PAY-PER-A): ON in every build, it opens the single offer route with the reason PERIODIC.
+                periodicPaywall =
+                    remember(container, navController) {
+                        PeriodicPaywallHost(
+                            rules = container.periodicPaywall,
+                            open = { navController.open(PlacePaywallRoute.of(PaywallReason.PERIODIC)) },
+                        )
+                    },
+                lovedOneAlertLineUnread =
+                    centerItems.any {
+                        it.type == NotificationType.N10 && it.readAtMillis == null
+                    },
+                offerReachable = offerReachable,
                 lostAccessNoticeOpen = lostNotices.isNotEmpty(),
                 travelWindowOpen = travelState.picker != null || travelState.confirm != null,
                 // A request to add a place waits for the creator in the list of places: a dot on the Profile tab until the list is seen (ticket LIEU-REQ-C).
@@ -1005,6 +1042,12 @@ fun MainTabs(
     travelWindowOpen: Boolean = false,
     /** A request to add a place waits for the creator in the list of places of the Profile (ticket LIEU-REQ-C): a dot on the Profile tab until the list is seen. */
     profileDot: Boolean = false,
+    /** The periodic offer (docs/tickets/paywall-periodique.md): null in a screen test that does not need it. */
+    periodicPaywall: PeriodicPaywallHost? = null,
+    /** The line of the centre of notifications about a loved one's alert is still unread. */
+    lovedOneAlertLineUnread: Boolean = false,
+    /** False when the offer could not show its prices (the real purchase is on in this build and the phone is offline). */
+    offerReachable: Boolean = true,
 ) {
     var selected by rememberSaveable { mutableStateOf(MainTab.FEED) }
     // Never two windows at once (docs/tickets/pop-ins-avis.md, C5): the pop-in "Pas de connexion" waits for the lost-access message, the review window and the
@@ -1401,6 +1444,15 @@ fun MainTabs(
             }
         }
     }
+    // A message of the app is on screen or waits for the person (shared by the review window and the periodic offer: neither covers it nor hides it).
+    val blockingMessageOpen =
+        ReviewSituation.messageOpen(
+            lostAccessNotice = lostAccessNoticeOpen,
+            connectionPopInOpen = feed.connection.state.popInVisible || profileConnection.state.popInVisible,
+            awaitingAgreement = agreement.waiting.isNotEmpty(),
+            locateSheetOpen = feed.locate != LocateUiState.Idle,
+            myLabel = feedContent?.myLabel,
+        )
     // The review window sits over the tabs and their bar. The condition on the build flag is a constant: in a release build the whole call is removed.
     if (BuildConfig.REVIEW_PROMPT && review != null) {
         ReviewPromptHost(
@@ -1411,15 +1463,28 @@ fun MainTabs(
                     friendStatusSeen = ReviewSituation.friendStatusSeen(feedContent),
                     updateScreenOpen = selected == MainTab.UPDATE,
                     keyboardOpen = keyboardOpen,
-                    blockingMessageOpen =
-                        ReviewSituation.messageOpen(
-                            lostAccessNotice = lostAccessNoticeOpen,
-                            connectionPopInOpen =
-                                feed.connection.state.popInVisible || profileConnection.state.popInVisible,
-                            awaitingAgreement = agreement.waiting.isNotEmpty(),
-                            locateSheetOpen = feed.locate != LocateUiState.Idle,
-                            myLabel = feedContent?.myLabel,
-                        ),
+                    blockingMessageOpen = blockingMessageOpen,
+                ),
+        )
+    }
+    // The periodic offer (docs/tickets/paywall-periodique.md, PAY-PER-A): ON in every build (decision of the PM, 2026-11-25). It draws nothing itself: once every condition holds it opens the single
+    // offer route. "Tabs in front" = this entry is RESUMED: nothing pushed over it (a form, the Settings, the offer), no window of the system, the app in the foreground.
+    if (periodicPaywall != null) {
+        val tabsState by LocalLifecycleOwner.current.lifecycle.currentStateFlow
+            .collectAsState()
+        PeriodicPaywallWatcher(
+            host = periodicPaywall,
+            situation =
+                PeriodicPaywallSituation(
+                    miffPlus = ready?.premiumOrNull,
+                    tabsInFront = tabsState == Lifecycle.State.RESUMED,
+                    updateScreenOpen = selected == MainTab.UPDATE,
+                    keyboardOpen = keyboardOpen,
+                    messageOpen = blockingMessageOpen || reviewStage != ReviewStage.Hidden || travelWindowOpen,
+                    ownAlertInProgress = alertActive,
+                    lovedOneAlertUnseen =
+                        lovedOneAlertLineUnread || feedContent?.cards?.any { it.alertActive } == true,
+                    offerReachable = offerReachable,
                 ),
         )
     }

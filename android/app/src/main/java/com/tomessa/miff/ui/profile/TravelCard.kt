@@ -39,6 +39,7 @@ import androidx.compose.ui.semantics.stateDescription
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.travel.TravelDay
 import com.tomessa.miff.domain.travel.TravelPlan
+import com.tomessa.miff.ui.components.OverlayPresent
 import com.tomessa.miff.ui.miff.MiffConfirmDialog
 import com.tomessa.miff.ui.miff.MiffNotice
 import com.tomessa.miff.ui.navigation.holdForDiagnostic
@@ -296,6 +297,7 @@ private fun DayPicker(
                     .toEpochMilli(),
             selectableDates = selectable,
         )
+    OverlayPresent()
     DatePickerDialog(
         modifier = Modifier.holdForDiagnostic(),
         onDismissRequest = actions.onPickerDismissed,

@@ -114,9 +114,12 @@ struct TimeShareResult: Equatable, CustomStringConvertible {
 }
 
 enum TimeShareOutcome: Equatable, CustomStringConvertible {
-    /// Moins de 7 jours d'historique (ou rien de mesuré dans la fenêtre) : aucun graphique, aucun pourcentage.
-    /// `daysLeft` : les jours qui restent avant les 7 jours d'historique (de 7 à 1), pour « Ton graphique arrive dans X jours ».
+    /// Moins de 3 jours d'historique (depuis le DÉBUT du suivi de la Miff sur ce téléphone) : aucun graphique, aucun pourcentage.
+    /// `daysLeft` : les jours qui restent avant le seuil d'historique (de 3 à 1), pour « Ton graphique arrive dans X jours ».
     case notEnough(daysLeft: Int)
+    /// Le seuil de 3 jours est passé mais RIEN n'a été mesuré dans la fenêtre (la personne n'est jamais entrée dans un lieu) : aucun graphique,
+    /// et surtout pas de décompte qui resterait bloqué à « dans 1 jour » : un texte qui dit ce qui manque.
+    case noTimeMeasured
     case ready(TimeShareResult)
 
     var description: String {

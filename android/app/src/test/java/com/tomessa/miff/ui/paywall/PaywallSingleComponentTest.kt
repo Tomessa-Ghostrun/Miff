@@ -42,7 +42,7 @@ class PaywallSingleComponentTest {
     fun theOfferIsPluggedInTheGraphOnce_throughTheSharedDestination() {
         val navigation = File(root, "ui/place/PlaceNavigation.kt").readText()
         assertEquals(1, Regex("composable<PlacePaywallRoute>").findAll(navigation).count())
-        assertEquals(1, Regex("""paywallRoute\(container""").findAll(navigation).count())
+        assertEquals(1, Regex("""paywallRoute\(\s*container""").findAll(navigation).count())
         val all = sources().joinToString("\n") { it.readText() }
         val callers = Regex("""(?<!fun )\bPaywallScreen\(""").findAll(all).count()
         assertEquals("only the destination builds the screen", 1, callers)
