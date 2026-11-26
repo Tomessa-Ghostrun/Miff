@@ -48,6 +48,11 @@ val premiumPurchaseProperty: String? = providers.gradleProperty("miff.premiumPur
 // not even compiled there (src/release has its own factory) and the CI looks for its marker in the bundle.
 val billingFakeProperty: String? = providers.gradleProperty("miff.billingFake").orNull
 
+// PERIODIC OFFER (ticket docs/tickets/paywall-periodique.md, decision of the PM of 2026-11-25): it is ON in EVERY build, with NO switch. The one number is PeriodicPaywallDefaults.OPENINGS_BETWEEN (15).
+// DEBUG BUILD ONLY: -Pmiff.periodicPaywallOpenings=N (1 to 99) LOWERS the threshold (to try the rule without opening the app 15 times; a value of 15 or more changes nothing). The release and
+// releaseLike builds always get 0 ("no override") and ignore the property. Checked by PeriodicPaywallBuildTest.
+val periodicPaywallOpeningsProperty: String? = providers.gradleProperty("miff.periodicPaywallOpenings").orNull
+
 // VERSIONS (docs/release/checklist-android.md). Nothing is frozen here any more:
 // - versionName = the first "## [x.y.z]" heading of android/CHANGELOG.md (one place: the changelog the team already keeps), or -Pmiff.versionName=... for a test.
 // - versionCode = -Pmiff.versionCode=N when given (the release workflow gives its own run number: Google Play only accepts a code HIGHER than every one it has
@@ -208,6 +213,11 @@ android {
         buildConfigField("String", "FEEDBACK_FORM_URL", "\"$feedbackFormUrl\"")
         // Durations of the launch (journal line + readout on screen), for the PM. Only the debug and releaseLike builds turn it on.
         buildConfigField("boolean", "STARTUP_METRICS", "false")
+        // Periodic offer: no override of the threshold outside the debug build (see buildTypes).
+        require(
+            periodicPaywallOpeningsProperty == null || Regex("[1-9][0-9]?").matches(periodicPaywallOpeningsProperty),
+        ) { "miff.periodicPaywallOpenings must be a whole number from 1 to 99" }
+        buildConfigField("int", "PERIODIC_PAYWALL_OPENINGS_DEBUG", "0")
     }
 
     buildFeatures {
@@ -241,6 +251,7 @@ android {
             buildConfigField("boolean", "NOTIF_JOURNAL", notifJournalProperty ?: "true")
             buildConfigField("boolean", "PREMIUM_PURCHASE", premiumPurchaseProperty ?: "true")
             buildConfigField("boolean", "BILLING_FAKE", billingFakeProperty ?: "true")
+            buildConfigField("int", "PERIODIC_PAYWALL_OPENINGS_DEBUG", periodicPaywallOpeningsProperty ?: "0")
             // en-XA (long accented text) and ar-XB (right-to-left) pseudo-locales, to test layouts without translations.
             isPseudoLocalesEnabled = true
         }

@@ -65,6 +65,7 @@ import com.tomessa.miff.data.profile.AvatarCapture
 import com.tomessa.miff.domain.profile.PhoneNumbers
 import com.tomessa.miff.domain.profile.ProfileForm
 import com.tomessa.miff.ui.auth.MessageText
+import com.tomessa.miff.ui.components.OverlayPresent
 import com.tomessa.miff.ui.components.miffBottomInsets
 import com.tomessa.miff.ui.components.rememberSystemCamera
 import com.tomessa.miff.ui.navigation.holdForDiagnostic
@@ -329,6 +330,7 @@ internal fun PhotoSourceSheet(
         containerColor = colorBgSurface,
         modifier = Modifier.holdForDiagnostic(),
     ) {
+        OverlayPresent()
         Column(
             modifier = Modifier.miffBottomInsets().padding(horizontal = Spacing.l, vertical = Spacing.s),
             verticalArrangement = Arrangement.spacedBy(Spacing.xs),

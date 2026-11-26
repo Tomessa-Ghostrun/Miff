@@ -460,7 +460,7 @@ Clés avec préfixes `onboarding_`, `profile_`, `settings_`, `permission_`, `tab
 - **Contenu** : le titre et le corps de §6.11 ; les quatre bénéfices du Figma (lieux de confiance illimités, Miffs illimitées, zones de danger, notifications intelligentes) présentés comme **à venir**. **Aucun prix, aucun essai gratuit, aucune mention d'abonnement ni d'« annulable à tout moment », aucun bouton d'achat** : le Figma 15 montre un paywall fonctionnel (« Commencer l'essai gratuit (7 j), puis 4,99 €/mois ») qui **ne doit pas être repris**, car il promettrait un service qui n'existe pas.
 - **Facile à passer** : bouton « Continuer » visible sans défilement, croix de fermeture, bouton « retour » du système qui ferme l'écran ; aucun délai, aucun compte à rebours, aucun bouton de fermeture camouflé ; l'écran ne dépend pas du réseau.
 - **Non fonctionnel** : aucun appel à l'App Store ou à Google Play Billing, aucune écriture de `entitlements`.
-- **Aucune relance automatique** (décision Q5) : ni à la première arrivée sur le Feed, ni à une connexion, ni « toutes les 10 visites », ni depuis les Réglages. Le déclenchement du vrai paywall (limite atteinte, entrée d'abonnement) relève du ticket Premium.
+- **Aucune relance automatique** (décision Q5 ; **pour la règle d'après onboarding, voir `docs/tickets/paywall-periodique.md`** (« toutes les 15 ouvertures », décision du PM du 2026-11-25) : l'**écran provisoire** de fin d'onboarding reste **jamais relancé**) : ni à la première arrivée sur le Feed, ni à une connexion, ni « toutes les 10 visites », ni depuis les Réglages. Le déclenchement du vrai paywall (limite atteinte, entrée d'abonnement) relève du ticket Premium.
 - **Honnêteté** : « bientôt disponible », sans engagement ni date ; pas de pression.
 - **Analyse** : aucun événement (`paywall_shown` et `paywall_dismissed` du contrat sont réservés au vrai paywall).
 - **Risque de relecture des stores** : un écran qui annonce une fonction « à venir » peut être questionné (R17). Même interrupteur de configuration à la compilation que pour l'amorce de notifications : l'écran peut être retiré du build soumis aux stores sans toucher au code.
@@ -755,7 +755,7 @@ Découpage : **SP** splash, **IC** identité (logo et icône), **CA** carrousel,
 - [ ] **PW1** L'écran apparaît **une seule fois** par compte, en fin d'onboarding, après l'amorce de notifications et avant le Feed.
 - [ ] **PW2** Aucun prix, aucun essai gratuit, aucune mention d'abonnement, aucun bouton d'achat ; le texte dit « bientôt » et n'engage à rien.
 - [ ] **PW3** « Continuer » est visible sans défilement ; la croix et le bouton « retour » du système ferment l'écran ; aucun délai, aucun compte à rebours ; fonctionne hors connexion.
-- [ ] **PW4** Aucune relance automatique : pas à la connexion, pas après N visites, pas depuis les Réglages.
+- [ ] **PW4** (l'écran provisoire de fin d'onboarding n'est jamais relancé ; la règle d'après onboarding est celle de `docs/tickets/paywall-periodique.md`) Aucune relance automatique : pas à la connexion, pas après N visites, pas depuis les Réglages.
 - [ ] **PW5** Aucun appel à l'App Store ni à Google Play Billing, aucune écriture de `entitlements`.
 - [ ] **PW6** Aucun événement d'analyse n'est envoyé par cet écran.
 

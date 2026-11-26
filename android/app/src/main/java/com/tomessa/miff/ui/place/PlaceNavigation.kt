@@ -28,6 +28,7 @@ import com.tomessa.miff.domain.analytics.AnalyticsEvent
 import com.tomessa.miff.domain.analytics.AnalyticsTracker
 import com.tomessa.miff.domain.paywall.MonotonicClock
 import com.tomessa.miff.domain.paywall.PaywallUiState
+import com.tomessa.miff.domain.paywall.PeriodicPaywallRules
 import com.tomessa.miff.domain.place.PaywallReason
 import com.tomessa.miff.ui.main.TabsRoute
 import com.tomessa.miff.ui.navigation.popBackStackIfSafe
@@ -70,7 +71,7 @@ data class PlaceDetailRoute(
     val placeId: String,
 )
 
-/** The offer, with the reason it shows ([reason] is "limit", "danger", "miff" or "subscription": a fixed word, nothing else travels). */
+/** The offer, with the reason it shows ([reason] is "limit", "danger", "miff", "subscription" or "periodic": a fixed word, nothing else travels). */
 @Serializable
 data class PlacePaywallRoute(
     val reason: String,
@@ -81,6 +82,7 @@ data class PlacePaywallRoute(
             "limit" -> PaywallReason.LIMIT
             "miff" -> PaywallReason.MIFF
             "subscription" -> PaywallReason.SUBSCRIPTION
+            "periodic" -> PaywallReason.PERIODIC
             else -> PaywallReason.DANGER
         }
 
@@ -92,6 +94,7 @@ data class PlacePaywallRoute(
                     PaywallReason.MIFF -> "miff"
                     PaywallReason.DANGER -> "danger"
                     PaywallReason.SUBSCRIPTION -> "subscription"
+                    PaywallReason.PERIODIC -> "periodic"
                 },
             )
     }
@@ -104,6 +107,7 @@ internal fun paywallTrigger(reason: PaywallReason): AnalyticsEvent.PaywallTrigge
         PaywallReason.MIFF -> AnalyticsEvent.PaywallTrigger.EXTRA_MIFF
         PaywallReason.DANGER -> AnalyticsEvent.PaywallTrigger.DANGER_ZONE
         PaywallReason.SUBSCRIPTION -> AnalyticsEvent.PaywallTrigger.SUBSCRIPTION
+        PaywallReason.PERIODIC -> AnalyticsEvent.PaywallTrigger.PERIODIC
     }
 
 /**
@@ -275,7 +279,13 @@ fun NavGraphBuilder.placeRoutes(
             onPaywall = navController::openRequestOffer,
         )
     }
-    paywallRoute(container.analyticsTracker, container.paywallClock, navController, container.premium)
+    paywallRoute(
+        container.analyticsTracker,
+        container.paywallClock,
+        navController,
+        container.premium,
+        container.periodicPaywall,
+    )
 }
 
 /**
@@ -289,6 +299,8 @@ fun NavGraphBuilder.paywallRoute(
     navController: NavController,
     /** The purchase of Miff+ (SRV-8A); null while it is switched off (BuildConfig.PREMIUM_PURCHASE): the offer is then "Miff+ arrive bientôt". */
     premium: PremiumCoordinator? = null,
+    /** PAY-PER-A: told once per display, when the offer is really on view, whatever opened it: the counter of the periodic offer goes back to zero (ticket PP11). */
+    periodic: PeriodicPaywallRules? = null,
 ) {
     composable<PlacePaywallRoute> { entry ->
         val paywall = entry.toRoute<PlacePaywallRoute>()
@@ -300,6 +312,7 @@ fun NavGraphBuilder.paywallRoute(
                 clock = clock,
                 state = currentPaywallState(),
                 onClose = { navController.popBackStackIfSafe() },
+                onDisplayed = { periodic?.onPaywallDisplayed() },
             )
         } else {
             PurchasePaywallDestination(
@@ -308,6 +321,7 @@ fun NavGraphBuilder.paywallRoute(
                 clock = clock,
                 premium = premium,
                 onClose = { navController.popBackStackIfSafe() },
+                onDisplayed = { periodic?.onPaywallDisplayed() },
             )
         }
     }
@@ -323,6 +337,8 @@ internal fun PaywallDestination(
     onClose: () -> Unit,
     /** The purchase buttons (null while the purchase is switched off: they do nothing). */
     store: PaywallStoreActions? = null,
+    /** The offer is really on view (once per display): the counter of the periodic offer goes back to zero. Runs even without the consent to the statistics. */
+    onDisplayed: () -> Unit = {},
 ) {
     val model: PaywallViewModel = viewModel(factory = viewModelFactory { initializer { PaywallViewModel(clock) } })
     val trigger = paywallTrigger(reason)
@@ -348,6 +364,9 @@ internal fun PaywallDestination(
                 onRestore = store?.onRestore ?: {},
                 onManage = store?.onManage ?: {},
             ),
-        onShown = { tracker.track(AnalyticsEvent.PaywallShown(trigger)) },
+        onShown = {
+            onDisplayed()
+            tracker.track(AnalyticsEvent.PaywallShown(trigger))
+        },
     )
 }

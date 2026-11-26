@@ -96,6 +96,8 @@ class MainActivity : ComponentActivity() {
     private fun openFromNotification(intent: Intent?) {
         val (destination, key) = NotificationIntents.parse(intent) ?: return
         val container = (application as MiffApplication).container
+        // PAY-PER-A (ticket P11): a person who comes for a loved one's alert never sees the periodic offer, in the WHOLE session.
+        if (NotificationIntents.isAlert(intent)) container.periodicPaywall.excludeSession()
         container.tabRequests.request(
             if (destination ==
                 NotificationDestination.UPDATE

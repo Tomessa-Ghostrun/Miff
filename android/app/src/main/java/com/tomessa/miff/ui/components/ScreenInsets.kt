@@ -307,6 +307,7 @@ fun MiffFullBleedDialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(usePlatformDefaultWidth = false, decorFitsSystemWindows = false),
     ) {
+        OverlayPresent()
         FullBleedWindow()
         content()
     }

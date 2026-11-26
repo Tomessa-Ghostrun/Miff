@@ -152,7 +152,7 @@ Les prix, devises et pourcentages calculés **ne sont jamais écrits dans les tr
 | 2e Miff : sélecteur du Feed, carte « Créer une Miff » du Profil, saisie d'un code pour rejoindre une 2e Miff | `extra_miff` | oui (écran provisoire) |
 | Zone de danger (compte gratuit) | `danger_zone` **[Proposé : valeur à ajouter à `docs/contracts/analytics-events.md`]** | oui (écran provisoire), déclencheur non encore au contrat |
 | **Profil / écran Abonnement** (encart d'achat) | à définir avec SRV-8 | **non** : l'écran Abonnement reste masqué en bêta (`feed-profil-reglages.md` B5) ; la règle s'appliquera quand il existera |
-| Paywall automatique à la première arrivée sur le Feed ou « toutes les 10 visites » (notes Notion) | n/a | **non retenu** (décisions Onboarding Q5) : aucune relance automatique |
+| Paywall automatique à la première arrivée sur le Feed ou « toutes les 10 visites » (notes Notion) | n/a | **non retenu** (décisions Onboarding Q5) : aucune relance automatique. **Remplacé le 2026-11-25 par `docs/tickets/paywall-periodique.md`** (« toutes les 15 ouvertures », pour les personnes sans Miff+ ; l'écran provisoire de fin d'onboarding reste « jamais relancé ») |
 
 La **règle s'applique à toute entrée future** sans nouvelle décision. L'écran provisoire de fin d'onboarding (« Continuer », sans offre) est **un autre écran** : hors de cette règle (Q-PAY2).
 

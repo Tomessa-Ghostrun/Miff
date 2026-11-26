@@ -100,8 +100,9 @@ object PlaceAddressText {
 /**
  * Which limit asks for Miff+. The danger zone is Miff+ only (decision of the ticket 6.2); the 3rd place is the limit; MIFF is a 2nd Miff,
  * asked from the selector of the Feed (decision of the PM, 2026-11-08). SUBSCRIPTION: the offer opened on purpose from Settings > Abonnement (SRV-8A), no limit was hit.
+ * PERIODIC: the offer that comes by itself once every 15 openings to a person without Miff+ (docs/tickets/paywall-periodique.md, PAY-PER-A): no limit was hit and the person asked for nothing.
  */
-enum class PaywallReason { LIMIT, DANGER, MIFF, SUBSCRIPTION }
+enum class PaywallReason { LIMIT, DANGER, MIFF, SUBSCRIPTION, PERIODIC }
 
 /**
  * Who may do what with a danger zone (type `risk`), in ONE place (decision of the PM, 2026-11-17, ticket docs/tickets/lieu-danger-demande-gratuite.md):

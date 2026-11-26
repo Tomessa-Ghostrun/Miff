@@ -136,4 +136,37 @@ class AccountLocalDataTest {
             assertEquals(1, log.cleared)
             assertEquals(null, window.days)
         }
+
+    @Test
+    fun theCounterOfThePeriodicOffer_goesWithTheAccount() =
+        runTest {
+            val store =
+                object : com.tomessa.miff.domain.paywall.PeriodicPaywallCounterStore {
+                    var value = 9
+
+                    override fun read() = value
+
+                    override fun write(count: Int) {
+                        value = count
+                    }
+
+                    override fun clear() {
+                        value = 0
+                    }
+                }
+            val rules =
+                com.tomessa.miff.domain.paywall.PeriodicPaywallRules(
+                    store,
+                    com.tomessa.miff.domain.paywall
+                        .MonotonicClock { 1L },
+                )
+            accountLocalDataErasers(
+                Asks(),
+                MemoryPendingDeletions(emptySet()),
+                MemoryPublishLedger(),
+                MemoryReviewState(),
+                periodicPaywall = rules,
+            ).forEach { it.erase("uid-1") }
+            assertEquals(0, store.value)
+        }
 }
