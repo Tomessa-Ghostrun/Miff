@@ -12,7 +12,7 @@ import UIKit.UIGestureRecognizerSubclass
 final class PeriodicTouchRecognizer: UIGestureRecognizer, UIGestureRecognizerDelegate {
     private let rules: PeriodicPaywallRules
     private let menuAreas: PeriodicMenuAreas
-    private var tracker = PeriodicTapTracker()
+    private var tapShape = PeriodicTapTracker()
     /// Au moins un doigt est posé, tel que le reconnaisseur l'a vu.
     private var touching = false
 
@@ -32,7 +32,7 @@ final class PeriodicTouchRecognizer: UIGestureRecognizer, UIGestureRecognizerDel
         let fingers = event.allTouches?.count ?? touches.count
         if let touch = touches.first {
             let point = touch.location(in: nil)
-            tracker.began(fingers: fingers, x: Double(point.x), y: Double(point.y))
+            tapShape.began(fingers: fingers, x: Double(point.x), y: Double(point.y))
         }
         touching = true
         rules.onTouch(pressed: true)
@@ -42,7 +42,7 @@ final class PeriodicTouchRecognizer: UIGestureRecognizer, UIGestureRecognizerDel
         let fingers = event.allTouches?.count ?? touches.count
         if let touch = touches.first {
             let point = touch.location(in: nil)
-            tracker.moved(fingers: fingers, x: Double(point.x), y: Double(point.y))
+            tapShape.moved(fingers: fingers, x: Double(point.x), y: Double(point.y))
         }
         rules.onTouchMoved()
     }
@@ -57,7 +57,7 @@ final class PeriodicTouchRecognizer: UIGestureRecognizer, UIGestureRecognizerDel
             let point = touch.location(in: nil)
             x = Double(point.x)
             y = Double(point.y)
-            tapped = tracker.ended(fingers: fingers, x: x, y: y)
+            tapped = tapShape.ended(fingers: fingers, x: x, y: y)
         }
         touching = stillDown
         rules.onTouch(pressed: stillDown)
@@ -73,7 +73,7 @@ final class PeriodicTouchRecognizer: UIGestureRecognizer, UIGestureRecognizerDel
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent) {
-        tracker.cancelled()
+        tapShape.cancelled()
         let stillDown = event.allTouches?.contains { $0.phase != .ended && $0.phase != .cancelled } ?? false
         touching = stillDown
         rules.onTouch(pressed: stillDown)
@@ -85,7 +85,7 @@ final class PeriodicTouchRecognizer: UIGestureRecognizer, UIGestureRecognizerDel
     /// UIKit remet le reconnaisseur à zéro à la fin de tous les doigts : si un « relevé » s'était perdu, le doigt est tout de même levé pour les règles.
     override func reset() {
         super.reset()
-        tracker.cancelled()
+        tapShape.cancelled()
         if touching {
             touching = false
             rules.onTouch(pressed: false)
