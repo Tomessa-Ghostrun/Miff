@@ -32,10 +32,15 @@ class PlaceAddEntryPointsTest {
         // The only offer opened from the shell is the 2nd Miff, asked from the selector of the Feed (decision of the PM, 2026-11-08); never for a place.
         // (The last card of the carousel of the Profile asks for the same offer through `miffOfferRoute()`, in ui/profile.) Zero or one such route here,
         // depending on whether the selector of the Feed already is in the shell: never anything else, but the offer opened on purpose from Settings > Abonnement
-        // (SRV-8A: `PaywallReason.SUBSCRIPTION`, no limit was hit).
+        // (SRV-8A: `PaywallReason.SUBSCRIPTION`, no limit was hit) and the periodic offer (PAY-PER-A: `PaywallReason.PERIODIC`, the person asked for nothing).
         val offers = Regex("""PlacePaywallRoute[.]of[(][^)]*[)]""").findAll(code).map { it.value }.toList()
         val allowed =
-            setOf("PlacePaywallRoute.of(PaywallReason.MIFF)", "PlacePaywallRoute.of(PaywallReason.SUBSCRIPTION)")
+            setOf(
+                "PlacePaywallRoute.of(PaywallReason.MIFF)",
+                "PlacePaywallRoute.of(PaywallReason.SUBSCRIPTION)",
+                // The periodic offer (PAY-PER-A): opened by the rule once per 15 openings, never for a place.
+                "PlacePaywallRoute.of(PaywallReason.PERIODIC)",
+            )
         assertTrue("unexpected offer: $offers", offers.all { it in allowed })
         assertFalse(code.contains("PaywallReason.LIMIT"))
         assertFalse(code.contains("PaywallReason.DANGER"))

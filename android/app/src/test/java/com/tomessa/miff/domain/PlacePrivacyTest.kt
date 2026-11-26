@@ -73,7 +73,7 @@ class PlacePrivacyTest {
                 "PaywallShown(trigger)" in line ||
                     "PaywallDismissed(trigger)" in line ||
                     Regex(
-                        """PaywallReason\.\w+ -> AnalyticsEvent\.PaywallTrigger\.(EXTRA_TRUSTED_PLACE|EXTRA_MIFF|DANGER_ZONE|SUBSCRIPTION)""",
+                        """PaywallReason\.\w+ -> AnalyticsEvent\.PaywallTrigger\.(EXTRA_TRUSTED_PLACE|EXTRA_MIFF|DANGER_ZONE|SUBSCRIPTION|PERIODIC)""",
                     ).containsMatchIn(line) ||
                     line.contains("fun paywallTrigger(reason: PaywallReason): AnalyticsEvent.PaywallTrigger") ||
                     line.startsWith("import "),

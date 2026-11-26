@@ -7,6 +7,7 @@ import com.tomessa.miff.data.permission.NotificationAskStore
 import com.tomessa.miff.data.review.ReviewStateStore
 import com.tomessa.miff.data.timeshare.TimeShareWindowStore
 import com.tomessa.miff.data.update.PublishLedger
+import com.tomessa.miff.domain.paywall.PeriodicPaywallRules
 import com.tomessa.miff.domain.timeshare.NoPresenceLog
 import com.tomessa.miff.domain.timeshare.PresenceLog
 
@@ -28,6 +29,8 @@ fun accountLocalDataErasers(
     alertLocal: AlertLocalStore? = null,
     /** CONS-4-A: how many times the calm card "Une précision" was shown to this account: a counter, erased with the account. */
     clarifyAsks: ClarifyAskStore? = null,
+    /** PAY-PER-A: the one whole number of the periodic offer (openings counted since it was last shown) goes with the account. */
+    periodicPaywall: PeriodicPaywallRules? = null,
 ): List<LocalDataEraser> =
     listOf(
         LocalDataEraser { uid -> notificationAsks.forget(uid) },
@@ -41,4 +44,5 @@ fun accountLocalDataErasers(
         LocalDataEraser { _ -> timeShareWindow?.clear() },
         LocalDataEraser { _ -> alertLocal?.clearAccount() },
         LocalDataEraser { uid -> clarifyAsks?.forget(uid) },
+        LocalDataEraser { _ -> periodicPaywall?.clear() },
     )

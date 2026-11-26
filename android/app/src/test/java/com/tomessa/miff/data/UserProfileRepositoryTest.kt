@@ -304,7 +304,7 @@ class UserProfileRepositoryTest {
         assertTrue(
             flat.contains(
                 "teardown = listOf(profileDrafts.asTeardown(), currentProfile, consentWithdrawals, miffDirectory, " +
-                    "trackingEngine, awaitingAgreement, notificationTeardown, photoCache, SessionTeardown { publishLedger.clear() }, SessionTeardown { reviewStateStore.clear() }, timeShareTeardown, placeNotices, requesterDirectory, memberFaces, addressSearch, mapTileCache, alertTeardown)",
+                    "trackingEngine, awaitingAgreement, notificationTeardown, photoCache, SessionTeardown { publishLedger.clear() }, SessionTeardown { reviewStateStore.clear() }, timeShareTeardown, placeNotices, requesterDirectory, memberFaces, addressSearch, mapTileCache, alertTeardown, SessionTeardown { periodicPaywall.clear() })",
             ),
         )
         assertTrue(source.contains("drafts = profileDrafts"))

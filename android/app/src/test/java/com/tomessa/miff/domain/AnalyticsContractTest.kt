@@ -36,6 +36,9 @@ class AnalyticsContractTest {
                 "paywall_dismissed" to mapOf("trigger" to "extra_trusted_place"),
                 "paywall_shown" to mapOf("trigger" to "danger_zone"),
                 "paywall_dismissed" to mapOf("trigger" to "danger_zone"),
+                "paywall_shown" to mapOf("trigger" to "subscription"),
+                "paywall_shown" to mapOf("trigger" to "periodic"),
+                "paywall_dismissed" to mapOf("trigger" to "periodic"),
             ) + if (BuildConfig.DEBUG) listOf("analytics_diagnostic_test" to emptyMap()) else emptyList()
         accepted.forEach { (name, params) ->
             assertEquals("$name $params", AnalyticsValidation.Allowed, AnalyticsContract.validate(name, params))
