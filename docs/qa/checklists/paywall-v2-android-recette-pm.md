@@ -44,7 +44,7 @@ Pour **chacune** des quatre entrées (étapes 1 à 4), contrôlez la même chose
 15. [ ] **Contenu unique (décision du 2026-11-12)** : l'écran est **identique depuis les cinq entrées**, sans aucune phrase qui dise quelle limite a été atteinte (ni « Tu as atteint 3 lieux », ni « Une seule Miff… », ni « Les zones de danger font partie de Miff+ », ni « La demande reste en attente ») et sans carte mise en avant.
 15 bis. [ ] **Fidélité aux maquettes** : fond en dégradé clair, logo Miff en haut, titre en deux lignes bleu-vert, **trois** cartes blanches avec pastille bleue (lieux, Miffs, zones de danger). Comparez avec `Paywall.png` (les écarts sont listés dans la PR).
 16. [ ] **« Notifications intelligentes » n'apparaît nulle part.**
-17. [ ] **Aucun prix, aucun « € », aucun bouton « Commencer l'essai », aucun « Économisez » / « presque 30 % », aucun bouton « Plus tard », aucun lien « Restaurer »** : seulement « Miff+ arrive bientôt » et la phrase « Cette option n'est pas encore ouverte. ».
+17. [ ] **Aucun prix, aucun « € », aucun bouton « Tester gratuitement », aucun « Économisez » / « presque 30 % », aucun bouton « Plus tard », aucun lien « Restaurer »** : seulement « Miff+ arrive bientôt » et la phrase « Cette option n'est pas encore ouverte. ».
 18. [ ] **Ton** : tutoiement partout, rien d'alarmant ; essayez l'anglais.
 
 ## Partie E : analytique (facultatif, développeur)
