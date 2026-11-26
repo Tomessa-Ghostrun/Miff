@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// Sous l'offre : le bloc d'information OBLIGATOIRE des stores (renouvellement automatique, annulation facile), la phrase qui dit que
-/// la formule gratuite continue (accès sans essai, exigé par Google, retenu pour les deux : ticket §5.4), « Restaurer mes achats »
-/// et les liens vers les conditions et la politique de confidentialité. Atteignable par défilement à toutes les tailles de texte.
+/// Sous l'offre : l'information des stores, réduite à ce que le PM a demandé (retour du 2026-11-25, comme sur Android) : UNE phrase sous l'essai (le prix facturé, le renouvellement
+/// automatique), ou une phrase par formule dans « Voir toutes les offres » ; puis « Restaurer mes achats » (OBLIGATOIRE chez Apple : conservé sur iPhone, contrairement à Android) et
+/// les liens vers les conditions et la politique de confidentialité, SUR LA MÊME LIGNE. Atteignable par défilement à toutes les tailles de texte.
 ///
 /// Rien de cela n'est montré en variante « sans achat » : il n'y a ni abonnement à décrire ni achat à restaurer.
 struct PaywallInformationView: View {
@@ -16,16 +16,11 @@ struct PaywallInformationView: View {
             VStack(spacing: Spacing.sm) {
                 ForEach(paragraphs, id: \.self) { paragraph in
                     Text(verbatim: paragraph)
-                        .miffTextStyle(textBodyCaption)
+                        .miffTextStyle(textBodyRegular14)
                         .foregroundColor(colorTextPrimary.color)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                 }
-                Text(verbatim: PaywallInformation.freePlanSentence())
-                    .miffTextStyle(textBodyRegular14)
-                    .foregroundColor(colorTextPrimary.color)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
                 links
             }
             .frame(maxWidth: .infinity)
@@ -39,34 +34,49 @@ struct PaywallInformationView: View {
         return PaywallInformation.paragraphs(offers: offers, layout: layout)
     }
 
-    /// Une colonne de liens de 44 pt de haut (grandes tailles de texte : elle ne se tronque pas, elle s'allonge). « Restaurer » n'existe
-    /// que quand il y a une offre à restaurer, et sur iOS elle ne part JAMAIS toute seule : seulement sur ce toucher (critère PW12).
+    /// « Restaurer » n'existe que quand il y a une offre à restaurer, et sur iOS elle ne part JAMAIS toute seule : seulement sur ce toucher (critère PW12). Dessous, « Conditions
+    /// d'utilisation » et « Politique de confidentialité » côte à côte, centrées, en petit : chacune passe à la ligne DANS sa moitié (jamais l'une sous l'autre).
     private var links: some View {
         VStack(spacing: 0) {
             if model.state.offers != nil {
-                link("paywall_restore", enabled: !model.state.isBusy) {
-                    actions.onRestore()
+                restoreLink
+            }
+            HStack(alignment: .center, spacing: Spacing.sm) {
+                legalLink("paywall_terms_link") {
+                    open(AppLinks.termsURL())
+                }
+                legalLink("paywall_privacy_link") {
+                    open(AppLinks.privacyURL())
                 }
             }
-            link("paywall_terms_link", enabled: true) {
-                open(AppLinks.termsURL())
-            }
-            link("paywall_privacy_link", enabled: true) {
-                open(AppLinks.privacyURL())
-            }
+            .frame(maxWidth: .infinity)
         }
     }
 
-    private func link(_ key: String, enabled: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Text(verbatim: L10n.string(key))
+    private var restoreLink: some View {
+        Button {
+            actions.onRestore()
+        } label: {
+            Text("paywall_restore")
                 .miffTextStyle(textBodyBold14)
                 .underline()
                 .foregroundColor(colorActionPrimary.color)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: .infinity, minHeight: Spacing.minTouchTarget)
         }
-        .disabled(!enabled)
+        .disabled(model.state.isBusy)
+    }
+
+    private func legalLink(_ key: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(verbatim: L10n.string(key))
+                .miffTextStyle(textBodyCaption)
+                .underline()
+                .foregroundColor(colorActionPrimary.color)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, minHeight: Spacing.minTouchTarget)
+        }
     }
 
     private func open(_ url: URL?) {

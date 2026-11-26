@@ -1,12 +1,11 @@
 import XCTest
 @testable import Miff
 
-/// Les prix (toujours ceux du store, jamais écrits à la main) et le bloc d'information obligatoire (ticket `paywall-v2.md` §5.4 ;
-/// critères PW4 à PW6, PW2).
+/// Les prix (toujours ceux du store, jamais écrits à la main) et l'information sous l'offre (ticket `paywall-v2.md` §5.4 ; critères PW4 à PW6, PW2 ; retours du PM du
+/// 2026-11-25 reproduits sur iPhone : UNE phrase sous l'essai, plus de paragraphe « comment annuler » ni de « la formule gratuite reste disponible »).
 final class PaywallOffersTests: XCTestCase {
     private let french = Locale(identifier: "fr_FR")
     private let american = Locale(identifier: "en_US")
-    private let trial24h = L10n.string("ios_paywall_info_cancel_trial")
 
     private func normalized(_ text: String) -> String {
         text.replacingOccurrences(of: "\u{00A0}", with: " ").replacingOccurrences(of: "\u{202F}", with: " ")
@@ -47,49 +46,50 @@ final class PaywallOffersTests: XCTestCase {
         XCTAssertEqual(PaywallLayout.of(PaywallFixtures.withoutTrial, showsAllOffers: true), .plans)
     }
 
-    // MARK: - Bloc d'information (PW6)
+    // MARK: - Information sous l'offre (PW6)
 
     private func paragraphs(_ offers: PaywallOffers, _ layout: PaywallLayout) -> [String] {
-        PaywallInformation.paragraphs(offers: offers, layout: layout, storeName: "App Store", locale: french)
+        PaywallInformation.paragraphs(offers: offers, layout: layout, locale: french).map(normalized)
     }
 
-    func testTheTrialParagraphsNameTheBilledPriceTheRenewalAndTheCancellation() {
-        let text = paragraphs(PaywallFixtures.withTrial, .trial).map(normalized)
+    func testTheTrialViewHasOneSingleSentenceWithTheBilledPriceAndTheRenewal() {
+        let text = paragraphs(PaywallFixtures.withTrial, .trial)
 
-        XCTAssertEqual(text.count, 2, "l'essai, puis l'annulation")
-        XCTAssertTrue(text[0].contains("59,88 €"), "le prix facturé après l'essai")
+        XCTAssertEqual(text.count, 1, "une seule phrase sous les cartes (retour du PM)")
+        XCTAssertTrue(text[0].contains("59,88 €"), "le prix facturé après l'essai, celui du store")
         XCTAssertFalse(text[0].contains("4,99"), "l'équivalent mensuel n'est pas le prix annoncé ici")
-        XCTAssertFalse(text.joined().contains("6,99"), "le mensuel n'est pas décrit dans la disposition de l'essai")
-        XCTAssertTrue(text[1].contains("App Store"), "le nom du store")
-        XCTAssertTrue(text[1].contains(trial24h), "iOS : 24 heures avant la fin de l'essai")
+        XCTAssertFalse(text[0].contains("6,99"), "le mensuel n'est pas décrit dans la vue de l'essai")
     }
 
-    func testThePlansParagraphsDescribeBothPlansWithoutTheTrialWhenThereIsNone() {
-        let text = paragraphs(PaywallFixtures.withoutTrial, .plans).map(normalized)
+    func testTheViewsWithoutTheTrialHaveOneSentencePerPlan() {
+        for offers in [PaywallFixtures.withoutTrial, PaywallFixtures.withTrial] {
+            let text = paragraphs(offers, .plans)
 
-        XCTAssertEqual(text.count, 3, "annuel, mensuel, annulation")
-        XCTAssertTrue(text[0].contains("59,88 €"))
-        XCTAssertTrue(text[1].contains("6,99 €"))
-        XCTAssertTrue(text[2].contains("App Store"))
-        XCTAssertFalse(text.joined().contains(trial24h), "pas d'essai : pas de « 24 heures »")
+            XCTAssertEqual(text.count, 2, "annuel, mensuel : plus rien d'autre")
+            XCTAssertTrue(text[0].contains("59,88 €"))
+            XCTAssertTrue(text[1].contains("6,99 €"))
+        }
     }
 
-    func testAnEligibleAccountThatOpenedAllOffersStillReadsAboutItsTrial() {
-        let text = paragraphs(PaywallFixtures.withTrial, .plans).map(normalized)
+    func testTheSentencesAreTheOnesOfTheCatalogWithThePriceOfTheStoreAsTheirOnlyValue() {
+        let price = PaywallPriceFormat.string(PaywallFixtures.annual, locale: french)
 
-        XCTAssertEqual(text.count, 3)
-        let trialOnly = paragraphs(PaywallFixtures.withTrial, .trial).map(normalized)
-        XCTAssertEqual(text[0], trialOnly[0], "le même paragraphe d'essai")
-        XCTAssertTrue(text[1].contains("6,99 €"))
-        XCTAssertTrue(text[2].contains(trial24h))
+        XCTAssertEqual(
+            PaywallInformation.paragraphs(offers: PaywallFixtures.withTrial, layout: .trial, locale: french),
+            [L10n.format("paywall_info_trial_short", price)]
+        )
     }
 
-    func testTheFreePlanSentenceUsesTheLimitReallyApplied() {
-        let text = PaywallInformation.freePlanSentence(freePlaces: 7)
-
-        XCTAssertTrue(text.contains("7"), "jamais un nombre figé dans le texte : il suit la limite de l'app")
-        XCTAssertNotEqual(text, "paywall_free_plan_stays")
-        XCTAssertTrue(PaywallInformation.freePlanSentence().contains(String(PlaceLimits.freePlaces)))
+    func testThereIsNoCancellationParagraphAnyMore() {
+        let cancellation = normalized(L10n.string("ios_paywall_info_cancel_trial"))
+        for offers in [PaywallFixtures.withTrial, PaywallFixtures.withoutTrial] {
+            for layout in [PaywallLayout.trial, .plans] {
+                for sentence in paragraphs(offers, layout) {
+                    XCTAssertFalse(sentence.contains(cancellation), "plus de « 24 heures avant la fin »")
+                    XCTAssertFalse(sentence.contains("App Store"), "plus de « annule dans les réglages de ton compte »")
+                }
+            }
+        }
     }
 
     func testTheStoreNameIsTheAppStoreOnIos() {

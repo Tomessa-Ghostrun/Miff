@@ -211,6 +211,26 @@ final class MiffDirectory: ObservableObject {
         notices = Array(notices.dropFirst())
     }
 
+    /// Miff+ vient d'être ACCORDÉ (achat, restauration, achat retrouvé en silence, offre qui trouve le compte déjà abonné) : la formule que cette liste garde (lue AVANT) n'est plus
+    /// « gratuite ». Sans cela, les portes qui la lisent (« Créer une Miff » du sélecteur et du Profil, qui ouvrent l'offre pour un compte gratuit qui a déjà une Miff) continuaient
+    /// d'ouvrir l'offre pour une personne qui vient de s'abonner, et l'offre répondait « Tu as Miff+ » (bug vu à la recette Android du 2026-11-25). La formule est corrigée tout de
+    /// suite ; le serveur est relu juste après (voir `followPremiumGrants`), ce qui tranche tout doute. Ce n'est JAMAIS un droit : le serveur et les règles décident, ceci ne change
+    /// que ce que l'écran affiche.
+    func onPremiumGranted() {
+        guard case .ready(let ready) = state, !(ready.premium && ready.premiumKnown) else {
+            return
+        }
+        state = .ready(
+            DirectoryReady(
+                miffs: ready.miffs,
+                activeId: ready.activeId,
+                premium: true,
+                fromCache: ready.fromCache,
+                premiumKnown: true
+            )
+        )
+    }
+
     /// La personne a choisi une autre Miff dans le sélecteur (Premium).
     func select(miffId: String) {
         guard case .ready(let ready) = state, ready.miffs.contains(where: { $0.id == miffId }) else {
@@ -271,3 +291,23 @@ final class MiffDirectory: ObservableObject {
         notices.append(notice)
     }
 }
+
+#if canImport(Combine)
+extension MiffDirectory {
+    /// Suit les accords de Miff+ (`PremiumCoordinator.accessGranted`) tant que l'abonnement rendu est gardé : la formule de la liste est corrigée tout de suite
+    /// (`onPremiumGranted`), puis les Miffs et la formule sont relues auprès du serveur. Un échec de cette relecture est silencieux (le Feed relit la liste à son ouverture).
+    func followPremiumGrants<Grants: Publisher>(
+        _ grants: Grants
+    ) -> AnyCancellable where Grants.Output == Void, Grants.Failure == Never {
+        grants.sink { [weak self] in
+            guard let self else {
+                return
+            }
+            self.onPremiumGranted()
+            Task {
+                await self.refresh()
+            }
+        }
+    }
+}
+#endif

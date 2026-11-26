@@ -21,6 +21,9 @@ enum SettingsRoute: Hashable, CaseIterable {
     /// Permis aussi aux Réglages restreints : c'est là qu'on a le plus besoin d'aide.
     case about
     case licenses
+    /// SRV-8I : Réglages > Abonnement (l'état du Miff+, sa gestion chez Apple, la restauration). Seulement quand l'achat est allumé dans ce build
+    /// (`BuildFlavor.includesPremiumPurchase`) ; absent des Réglages restreints d'un compte sans Miff, comme Langue et Notifications.
+    case subscription
 
     /// Les écrans des notifications n'existent pas pour un compte sans Miff : rien à notifier (l'état de l'autorisation reste visible
     /// dans Confidentialité).
@@ -55,7 +58,7 @@ enum SettingsAccess {
         guard restricted else {
             return true
         }
-        return route != .myInfo && route != .language && !route.isNotificationScreen
+        return route != .myInfo && route != .language && route != .subscription && !route.isNotificationScreen
     }
 
     /// Les écrans qu'ouvre un écran des Réglages (la liste ouvre les trois premiers, Mon compte ouvre la suppression, Confidentialité
@@ -63,7 +66,7 @@ enum SettingsAccess {
     static func children(of route: SettingsRoute) -> [SettingsRoute] {
         switch route {
         case .settings:
-            return [.myInfo, .account, .notifications, .language, .privacy, .about]
+            return [.myInfo, .account, .notifications, .language, .privacy, .subscription, .about]
         case .account:
             return [.deleteAccount]
         case .privacy:
@@ -76,7 +79,7 @@ enum SettingsAccess {
             return [.notificationCenter, .notificationsHelp]
         case .notificationCenter:
             return [.notificationsHelp]
-        case .myInfo, .deleteAccount, .detectionHelp, .notificationsHelp, .language:
+        case .myInfo, .deleteAccount, .detectionHelp, .notificationsHelp, .language, .subscription:
             return []
         }
     }

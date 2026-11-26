@@ -19,15 +19,24 @@ final class FirestoreAccountDataStore: AccountDataStore {
     /// CNC-I : le journal des notifications `users/{uid}/notifications`, vidé AVANT le profil quand il est donné (nil : le build ne le lit pas, rien n'y est écrit
     /// ni lu). Ne lève jamais, ne bloque jamais la suppression : ce qui reste est supprimé par la règle d'expiration et n'est lisible de personne.
     private let journal: NotificationJournalGateway?
+    /// SRV-8I : demande au serveur de supprimer l'identifiant d'achat et les liens d'achat du compte (`supprimerDonneesAbonnement`) ; elle exige la connexion, donc elle part AVANT
+    /// le profil et le compte d'authentification. Nil : l'achat est éteint dans ce build, rien n'est appelé. Elle ne résilie PAS l'abonnement chez le store. Un échec est TOLÉRÉ
+    /// (ce qui reste est purgé par les règles d'expiration et ne contient aucune donnée personnelle) et la demande est bornée : elle ne retient jamais la suppression longtemps.
+    private let subscriptionData: (() async -> Bool)?
+
+    /// Le délai maximal de la purge des données d'achat, en secondes.
+    static let subscriptionPurgeTimeout: TimeInterval = 8
 
     init(
         writer: MiffStore = FirestoreMiffStore(),
         alertsEnabled: Bool = false,
-        journal: NotificationJournalGateway? = nil
+        journal: NotificationJournalGateway? = nil,
+        subscriptionData: (() async -> Bool)? = nil
     ) {
         self.writer = writer
         self.alertsEnabled = alertsEnabled
         self.journal = journal
+        self.subscriptionData = subscriptionData
     }
 
     func membershipCount(uid: String) async throws -> Int {
@@ -50,6 +59,10 @@ final class FirestoreAccountDataStore: AccountDataStore {
 
     func deleteProfile(uid: String) async throws {
         try Self.check(uid)
+        // L'achat d'abord (il exige la connexion) : borné, toléré, rien à faire quand l'achat est éteint.
+        if let purge = subscriptionData {
+            _ = try? await timedOperation(seconds: Self.subscriptionPurgeTimeout) { await purge() }
+        }
         // Avant `users/{uid}` (contrat §2.21, point 4) : les entrées du journal des notifications. Toléré : `deleteAll` ne lève jamais.
         await journal?.deleteAll(uid: uid)
         if alertsEnabled {

@@ -27,6 +27,7 @@ struct DiagnosticView: View {
                     privacyCard
                     DetectionJournalCard(journal: environment.detectionJournal)
                     ReviewDebugCard(services: environment.reviewPrompt)
+                    BillingDebugCard()
                     TokenGalleryView()
                     languageCard
                 }

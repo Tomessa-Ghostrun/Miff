@@ -19,6 +19,8 @@ enum AnalyticsEvent: Equatable {
         case extraMiff = "extra_miff"
         case extraTrustedPlace = "extra_trusted_place"
         case dangerZone = "danger_zone"
+        /// L'offre ouverte volontairement depuis Réglages > Abonnement (SRV-8I) : seul ce mot fixe voyage, jamais un prix, un montant ni un état d'abonnement.
+        case subscription
     }
 
     /// `slideIndex` doit valoir 0, 1 ou 2 (toute autre valeur est refusée par la liste blanche).

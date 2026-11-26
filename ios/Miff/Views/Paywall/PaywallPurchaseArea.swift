@@ -1,13 +1,15 @@
 import SwiftUI
 
-/// Ce que l'écran d'offre peut demander au store. En production (« Miff+ arrive bientôt », avant SRV-8I) rien n'est branché et rien
-/// n'est montré qui l'appellerait : les gestes n'existent que dans les états à offre, qu'aucun écran de production n'atteint encore.
+/// Ce que l'écran d'offre peut demander au store. Dans un build où l'achat est éteint (« Miff+ arrive bientôt ») rien n'est branché et rien n'est montré qui l'appellerait : les
+/// gestes n'existent que dans les états à offre. Allumé, `PaywallStoreDriver` les branche sur le coordinateur de l'achat.
 struct PaywallActions {
     let onPurchase: (PaywallPlan) -> Void
     let onRestore: () -> Void
     let onRetry: () -> Void
+    /// « Gérer mon abonnement » (un abonnement suspendu) : la gestion des abonnements du système.
+    let onManage: () -> Void
 
-    static let none = PaywallActions(onPurchase: { _ in }, onRestore: {}, onRetry: {})
+    static let none = PaywallActions(onPurchase: { _ in }, onRestore: {}, onRetry: {}, onManage: {})
 }
 
 /// La zone d'achat (fixée en bas de l'écran, sauf aux très grandes tailles de texte) : la ligne de prix la plus proche du bouton
@@ -37,6 +39,10 @@ struct PaywallPurchaseArea: View {
             offersArea(offers, purchasing: nil, message: .working)
         case .restoreNone(let offers):
             offersArea(offers, purchasing: nil, message: .restoreNone)
+        case .otherAccount(let offers):
+            offersArea(offers, purchasing: nil, message: .otherAccount)
+        case .onHold(let offers):
+            offersArea(offers, purchasing: nil, message: .onHold)
         case .subscribed:
             Button(action: onClose) {
                 Text("paywall_continue")
@@ -53,7 +59,8 @@ struct PaywallPurchaseArea: View {
             message: message,
             busy: model.state.isBusy,
             actions: actions,
-            onShowAllOffers: { model.showAllOffers() }
+            onShowAllOffers: { model.showAllOffers() },
+            onShowTrial: { model.showTrial() }
         )
     }
 }

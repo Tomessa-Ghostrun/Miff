@@ -6,24 +6,37 @@ import SwiftUI
 /// C'est LE composant de tous les points d'entrée (4e lieu, zone de danger, 2e Miff) : `PaywallPresentation` le montre en plein écran
 /// et en crée un NOUVEAU à chaque affichage, donc la croix différée de 3 secondes (`PaywallViewModel`) repart de zéro à chaque fois.
 /// Les écrans de l'offre (`PaywallScreen`) ne savent rien de l'analyse.
+///
+/// ACHAT (SRV-8I) : quand l'achat est allumé dans ce build, `premium` est le coordinateur de l'app et l'affichage reçoit son pilote (`PaywallStoreDriver`), qui demande les prix,
+/// lance l'achat et raconte son résultat à l'écran ; sinon (`premium` nil : tout build distribué tant que le PM ne l'allume pas) l'affichage reste « Miff+ arrive bientôt », sans
+/// aucun pilote et sans aucun geste d'achat.
 @MainActor
 struct PlacePaywallView: View {
     let reason: PaywallReason
     let tracker: AnalyticsTracker
     let onClose: () -> Void
 
-    @StateObject private var model: PaywallViewModel
+    @StateObject private var display: PlacePaywallDisplay
     @State private var tracking: PlacePaywallTracking?
 
-    init(reason: PaywallReason, tracker: AnalyticsTracker, onClose: @escaping () -> Void) {
+    init(
+        reason: PaywallReason,
+        tracker: AnalyticsTracker,
+        premium: PremiumCoordinator?,
+        onClose: @escaping () -> Void
+    ) {
         self.reason = reason
         self.tracker = tracker
         self.onClose = onClose
-        _model = StateObject(wrappedValue: PaywallViewModel(reason: reason, announcer: SystemPaywallAnnouncer()))
+        _display = StateObject(wrappedValue: PlacePaywallDisplay(reason: reason, premium: premium))
     }
 
     var body: some View {
-        PaywallScreen(model: model, onClose: onClose)
+        PaywallScreen(model: display.model, actions: display.driver?.actions ?? PaywallActions.none, onClose: onClose)
+            // Les prix arrivent (achat allumé seulement) ; annulé quand l'écran disparaît. Le compte à rebours de la croix part de son côté, sans attendre les prix.
+            .task {
+                await display.driver?.start()
+            }
             .onAppear {
                 let current = tracking ?? PlacePaywallTracking(reason: reason)
                 tracking = current
@@ -40,11 +53,26 @@ struct PlacePaywallView: View {
     }
 }
 
+/// UN affichage de l'offre : son modèle d'écran (la croix différée de 3 secondes, repartie de zéro à chaque affichage) et, quand l'achat est allumé, le pilote qui le branche au store.
+@MainActor
+final class PlacePaywallDisplay: ObservableObject {
+    let model: PaywallViewModel
+    let driver: PaywallStoreDriver?
+
+    init(reason: PaywallReason, premium: PremiumCoordinator?) {
+        let model = PaywallViewModel(reason: reason, announcer: SystemPaywallAnnouncer())
+        self.model = model
+        driver = premium.map { PaywallStoreDriver(model: model, premium: $0) }
+    }
+}
+
 /// Une carte de l'offre (contenu unique, quel que soit le point d'entrée : décision du PM du 2026-11-12).
 struct PlacePaywallFeature: View {
     let symbol: String
     let title: String
     let detail: String
+    /// La limite de la formule gratuite, sur une troisième ligne en gras (« Limite de 3 lieux sinon »). Nil : aucune.
+    var limit: String?
 
     var body: some View {
         HStack(spacing: Spacing.md) {
@@ -64,6 +92,12 @@ struct PlacePaywallFeature: View {
                     .miffTextStyle(textBodyRegular14)
                     .foregroundColor(colorTextDescription.color)
                     .fixedSize(horizontal: false, vertical: true)
+                if let limit {
+                    Text(verbatim: limit)
+                        .miffTextStyle(textBodyBold14)
+                        .foregroundColor(colorTextDescription.color)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
             }
             Spacer(minLength: 0)
         }

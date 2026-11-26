@@ -6,6 +6,8 @@ enum PaywallMessage: Equatable {
     case pending
     case failed
     case restoreNone
+    case otherAccount
+    case onHold
 
     var text: String {
         switch self {
@@ -17,6 +19,10 @@ enum PaywallMessage: Equatable {
             return L10n.string("paywall_error_calm")
         case .restoreNone:
             return L10n.format("paywall_restore_none", L10n.string("ios_paywall_store_name"))
+        case .otherAccount:
+            return L10n.format("paywall_other_account", AppLinks.supportEmail)
+        case .onHold:
+            return L10n.string("settings_subscription_on_hold")
         }
     }
 }
@@ -32,6 +38,8 @@ struct PaywallOffersArea: View {
     let busy: Bool
     let actions: PaywallActions
     let onShowAllOffers: () -> Void
+    /// Le lien « Essai gratuit » de la vue des deux formules : retour à la vue principale, puis la feuille d'essai du store s'ouvre aussitôt.
+    let onShowTrial: () -> Void
 
     var body: some View {
         VStack(spacing: Spacing.xs) {
@@ -51,6 +59,20 @@ struct PaywallOffersArea: View {
             if message == .failed || message == .restoreNone {
                 retryLink
             }
+            if message == .onHold {
+                manageLink
+            }
+        }
+    }
+
+    /// Un abonnement suspendu par le store se règle sur la page du store (la même que Réglages > Abonnement), jamais par un second achat.
+    private var manageLink: some View {
+        Button(action: actions.onManage) {
+            Text("settings_subscription_manage")
+                .miffTextStyle(textBodyBold14)
+                .underline()
+                .foregroundColor(colorActionPrimary.color)
+                .frame(minHeight: Spacing.minTouchTarget)
         }
     }
 
@@ -75,8 +97,9 @@ struct PaywallOffersArea: View {
 
     // MARK: - Maquette « essai gratuit »
 
-    /// Le bouton d'essai, sa bulle « Annulable à tout moment » et, dessous, le PRIX FACTURÉ (« Puis 59,88 € par an ») en gras : c'est la
-    /// ligne de prix la plus visible ; l'équivalent mensuel est plus petit (règle d'Apple et de Google, ticket E2).
+    /// Le bouton d'essai, sa bulle « Annulable à tout moment », puis « Voir toutes les offres ». AUCUNE ligne de prix sous le bouton (décision du PM du 2026-11-25, RISQUE ASSUMÉ :
+    /// les stores demandent normalement que le prix facturé après l'essai soit visible près du bouton, Apple 3.1.2 ; il reste dans l'information sous les cartes, dans « Voir
+    /// toutes les offres » et dans la feuille d'Apple. Retour arrière en quelques lignes si une revue le réclame : voir le ticket §4.4 et le risque R22).
     private var trialLayout: some View {
         VStack(spacing: Spacing.xs) {
             withBubble("paywall_cancel_anytime") {
@@ -84,14 +107,6 @@ struct PaywallOffersArea: View {
                     Text("paywall_cta_trial")
                 }
             }
-            Text(verbatim: L10n.format("paywall_trial_then", annualPrice))
-                .miffTextStyle(textBodyBold16)
-                .foregroundColor(colorTextPrimary.color)
-                .multilineTextAlignment(.center)
-            Text(verbatim: L10n.format("paywall_monthly_equivalent", monthlyEquivalent))
-                .miffTextStyle(textBodyCaption)
-                .foregroundColor(colorTextDescription.color)
-                .multilineTextAlignment(.center)
             Button(action: onShowAllOffers) {
                 Text("paywall_see_all_offers")
                     .miffTextStyle(textBodyBold14)
@@ -105,17 +120,17 @@ struct PaywallOffersArea: View {
 
     // MARK: - Maquette « annuel / sans engagement »
 
-    /// L'annuel (prix annuel d'abord, équivalent mensuel en dessous, plus petit, et la bulle d'économie) et le mensuel (« Sans engagement »).
+    /// L'annuel (prix annuel d'abord, équivalent mensuel en dessous, plus petit, et la bulle d'économie) et le mensuel (« Sans engagement »). La bulle « presque 30 % d'économie »
+    /// n'est montrée que tant que l'économie calculée avec les prix du store reste vraie (25 % au moins : `PaywallSavings`). Pour une personne qui a droit à l'essai, le lien « Essai
+    /// gratuit » ramène à la vue principale ET ouvre aussitôt la feuille d'essai du store (un seul geste, rien à chercher).
     private var plansLayout: some View {
         VStack(spacing: Spacing.xs) {
-            withBubble("paywall_annual_savings") {
-                planButton(.annual) {
-                    VStack(spacing: 0) {
-                        Text(verbatim: L10n.format("paywall_plan_annual_title", annualPrice))
-                        Text(verbatim: L10n.format("paywall_monthly_equivalent", monthlyEquivalent))
-                            .miffTextStyle(textBodyRegular14)
-                    }
+            if PaywallSavings.isWorthShowing(annual: offers.annual, monthly: offers.monthly) {
+                withBubble("paywall_annual_savings") {
+                    annualButton
                 }
+            } else {
+                annualButton
             }
             planButton(.monthly) {
                 VStack(spacing: 0) {
@@ -124,7 +139,34 @@ struct PaywallOffersArea: View {
                         .miffTextStyle(textBodyRegular14)
                 }
             }
+            if offers.trialEligible {
+                freeTrialLink
+            }
         }
+    }
+
+    private var annualButton: some View {
+        planButton(.annual) {
+            VStack(spacing: 0) {
+                Text(verbatim: L10n.format("paywall_plan_annual_title", annualPrice))
+                Text(verbatim: L10n.format("paywall_monthly_equivalent", monthlyEquivalent))
+                    .miffTextStyle(textBodyRegular14)
+            }
+        }
+    }
+
+    private var freeTrialLink: some View {
+        Button {
+            onShowTrial()
+            actions.onPurchase(.annual)
+        } label: {
+            Text("paywall_free_trial_link")
+                .miffTextStyle(textBodyBold14)
+                .underline()
+                .foregroundColor(colorActionPrimary.color)
+                .frame(minHeight: Spacing.minTouchTarget)
+        }
+        .disabled(busy)
     }
 
     /// La bulle est posée AU-DESSUS du bouton, alignée à sa fin, et ne le recouvre que de 4 pt (dans la marge du bouton) : elle ne

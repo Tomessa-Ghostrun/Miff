@@ -56,6 +56,11 @@ enum MiffRoute: Hashable {
         self == .settings(.language)
     }
 
+    /// Réglages > Abonnement : un compte sans Miff n'a pas cette ligne (SRV-8I), donc pas cet écran non plus.
+    var isSubscriptionScreen: Bool {
+        self == .settings(.subscription)
+    }
+
     /// Les écrans des notifications : un compte sans Miff n'en a pas (rien à notifier).
     var isNotificationScreen: Bool {
         if case .settings(let screen) = self {
