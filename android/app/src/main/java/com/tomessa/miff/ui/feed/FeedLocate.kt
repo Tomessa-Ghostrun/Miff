@@ -31,6 +31,7 @@ import com.tomessa.miff.domain.feed.LocateResult
 import com.tomessa.miff.domain.feed.PositionFix
 import com.tomessa.miff.ui.components.MiffButton
 import com.tomessa.miff.ui.components.MiffSecondaryButton
+import com.tomessa.miff.ui.components.OverlayPresent
 import com.tomessa.miff.ui.components.miffBottomInsets
 import com.tomessa.miff.ui.navigation.holdForDiagnostic
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -69,6 +70,7 @@ fun LocateSheet(
         containerColor = colorBgSurface,
         modifier = Modifier.holdForDiagnostic(),
     ) {
+        OverlayPresent()
         Column(
             modifier =
                 Modifier

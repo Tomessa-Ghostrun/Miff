@@ -447,6 +447,71 @@ class PeriodicPaywallRulesTest {
         assertEquals(PeriodicPaywallDecision.No, rules.evaluate(calm()))
     }
 
+    // ---- the overlays over the tabs (a dialog, a sheet, a menu, the full-screen photo): their window hides the tabs without changing their state
+
+    @Test
+    fun anOverlayOpenOverTheTabs_blocksTheOffer_andTheCounterIsLeftAlone() {
+        val rules = rules(counter = 14)
+        rules.coldStart()
+        rules.tapAndSettle()
+        rules.onOverlayOpened()
+        clock.now += 60_000L
+        assertEquals(PeriodicPaywallDecision.No, rules.evaluate(calm()))
+        assertEquals(15, store.value)
+    }
+
+    @Test
+    fun afterTheOverlayCloses_theOfferWaitsForACalmMomentCountedFromTheClosing() {
+        val rules = rules(counter = 14)
+        rules.coldStart()
+        rules.tapAndSettle()
+        rules.onOverlayOpened()
+        clock.now += 10_000L
+        rules.onOverlayClosed()
+        assertEquals(PeriodicPaywallDecision.Wait(1_500L), rules.evaluate(calm()))
+        clock.now += 1_500L
+        assertEquals(PeriodicPaywallDecision.Show, rules.evaluate(calm()))
+    }
+
+    @Test
+    fun twoOverlaysAtOnce_blockUntilTheLastOneCloses_andACloseWithoutAnOpenNeverGoesBelowZero() {
+        val rules = rules(counter = 14)
+        rules.coldStart()
+        rules.tapAndSettle()
+        rules.onOverlayOpened()
+        rules.onOverlayOpened()
+        rules.onOverlayClosed()
+        clock.now += 5_000L
+        assertEquals(PeriodicPaywallDecision.No, rules.evaluate(calm()))
+        rules.onOverlayClosed()
+        rules.onOverlayClosed()
+        clock.now += 1_500L
+        assertEquals(PeriodicPaywallDecision.Show, rules.evaluate(calm()))
+        rules.onOverlayOpened()
+        assertEquals("one open overlay is still one", PeriodicPaywallDecision.No, rules.evaluate(calm()))
+    }
+
+    @Test
+    fun aFirstTapThatOpensAnOverlay_doesNotBringTheOfferOverIt() {
+        // The first tap on the selector of Miffs or on a photo: the tap counts, the overlay it opens holds the offer back.
+        val rules = rules(counter = 14)
+        rules.coldStart()
+        rules.onTouch(pressed = true)
+        rules.onActivation()
+        rules.onTouch(pressed = false)
+        rules.onOverlayOpened()
+        clock.now += 30_000L
+        assertEquals(PeriodicPaywallDecision.No, rules.evaluate(calm()))
+    }
+
+    @Test
+    fun withTheRuleOff_theOverlaysChangeNothing() {
+        val rules = rules(openings = 0)
+        rules.onOverlayOpened()
+        rules.onOverlayClosed()
+        assertFalse(rules.changes.value > 0)
+    }
+
     // ---- PP13, PP14, PP15: Miff+ ---------------------------------------------------------------------------------------------------------
 
     @Test

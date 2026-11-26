@@ -95,7 +95,7 @@ class PeriodicPaywallRules(
     private val openingsBetween: Int = PeriodicPaywallDefaults.OPENINGS_BETWEEN,
     private val backgroundMillis: Long = PeriodicPaywallDefaults.BACKGROUND_MILLIS,
     private val quietMillis: Long = PeriodicPaywallDefaults.QUIET_AFTER_TOUCH_MILLIS,
-) {
+) : OverlayPresence {
     private val lock = Any()
 
     private var started = false
@@ -108,6 +108,7 @@ class PeriodicPaywallRules(
     private var excludeRequestedAt: Long? = null
     private var lastTouchAt: Long? = null
     private var fingerDown = false
+    private var openOverlays = 0
 
     private val mutableChanges = MutableStateFlow(0)
 
@@ -199,6 +200,25 @@ class PeriodicPaywallRules(
         bump()
     }
 
+    // ---- the overlays over the tabs ----------------------------------------------------------------------------------------------------
+
+    override fun onOverlayOpened() {
+        if (!isOn) return
+        synchronized(lock) { openOverlays++ }
+        bump()
+    }
+
+    override fun onOverlayClosed() {
+        if (!isOn) return
+        synchronized(lock) {
+            if (openOverlays > 0) openOverlays--
+            // The tap that closed it happened in another window: the calm moment is counted from now.
+            lastTouchAt = clock.nowMillis()
+            fingerDown = false
+        }
+        bump()
+    }
+
     // ---- the offer --------------------------------------------------------------------------------------------------------------------
 
     /**
@@ -227,6 +247,8 @@ class PeriodicPaywallRules(
             if (excluded || shownThisSession || !tapped) return PeriodicPaywallDecision.No
             if (store.read() < openingsBetween) return PeriodicPaywallDecision.No
             if (situation.forbidden) return PeriodicPaywallDecision.No
+            // A dialog, a sheet, a menu or the full-screen photo is open over the tabs (its touches never reach the root).
+            if (openOverlays > 0) return PeriodicPaywallDecision.No
             val now = clock.nowMillis()
             val sinceTouch = lastTouchAt?.let { now - it }
             if (fingerDown) return PeriodicPaywallDecision.Wait(quietMillis)
@@ -288,7 +310,7 @@ class PeriodicPaywallRules(
             val tap = if (tapped) "fait" else "pas encore"
             val shown = if (shownThisSession) "oui" else "non"
             val blocked = if (excluded) "oui" else "non"
-            "session : $where ; premier appui : $tap ; déjà montrée : $shown ; exclue : $blocked"
+            "session : $where ; premier appui : $tap ; déjà montrée : $shown ; exclue : $blocked ; surcouches ouvertes : $openOverlays"
         }
 
     // ---- private ------------------------------------------------------------------------------------------------------------------------

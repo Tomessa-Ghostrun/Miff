@@ -46,6 +46,7 @@ import com.tomessa.miff.domain.miff.MiffSelector
 import com.tomessa.miff.domain.miff.SelectorEntry
 import com.tomessa.miff.domain.miff.SelectorTap
 import com.tomessa.miff.domain.tracking.StatusLevel
+import com.tomessa.miff.ui.components.OverlayPresent
 import com.tomessa.miff.ui.navigation.holdForDiagnostic
 import com.tomessa.miff.ui.notification.FeedNotifications
 import com.tomessa.miff.ui.notification.NotificationBell
@@ -179,6 +180,7 @@ internal fun MiffPill(
             containerColor = colorBgSurface,
             modifier = Modifier.holdForDiagnostic(),
         ) {
+            OverlayPresent()
             state.miffs.forEach { miff ->
                 val active = miff.id == state.activeId
                 DropdownMenuItem(

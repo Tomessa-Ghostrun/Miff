@@ -99,4 +99,53 @@ class PeriodicPaywallBuildTest {
         }
         assertEquals("exactly one key in the file", 1, Regex("""const val KEY_""").findAll(store).count())
     }
+
+    /**
+     * Ticket 4.1 "no sheet", PP9 and PP12: an overlay (dialog, bottom sheet, menu, full-screen window) is another window, so it cannot be seen from the state of the screen behind it and its touches
+     * never reach the root: it has to say it is open ([com.tomessa.miff.ui.components.OverlayPresent]). Every file of the app that opens one does, EXCEPT the screens that the navigation pushes over the
+     * tabs (the tabs are then not in front, whatever the overlay does) and the review window (counted by its own stage). A new overlay in another file fails here until it says so.
+     */
+    @Test
+    fun everyOverlayOfTheAppTellsThePeriodicOfferItIsOpen() {
+        val pushedOrCovered =
+            setOf(
+                "ui/alert/AlertSentScreen.kt",
+                "ui/notification/NotificationCenterScreen.kt",
+                "ui/place/PlaceFormScreen.kt",
+                "ui/review/ReviewPromptWindow.kt",
+                "ui/settings/AccountScreen.kt",
+                "ui/settings/DeleteAccountHost.kt",
+                "ui/settings/DeleteAccountScreens.kt",
+                "ui/settings/MyInfoScreen.kt",
+            )
+        val overlay =
+            Regex(
+                """\b(Dialog|AlertDialog|BasicAlertDialog|ModalBottomSheet|DropdownMenu|ExposedDropdownMenu|DatePickerDialog|TimePickerDialog|Popup)\(""",
+            )
+        val problems = mutableListOf<String>()
+        var covered = 0
+        kotlinFiles(main).forEach { file ->
+            val relative = file.relativeTo(main).path.replace('\\', '/')
+            val code =
+                file.readLines().filter { line ->
+                    line.trimStart().let {
+                        !it.startsWith("*") &&
+                            !it.startsWith("//") &&
+                            !it.startsWith("/*")
+                    }
+                }
+            val calls = code.count { overlay.containsMatchIn(it) }
+            val told = code.count { it.trim() == "OverlayPresent()" }
+            if (calls == 0 || relative in pushedOrCovered) return@forEach
+            covered += calls
+            if (told < calls) problems += "$relative: $calls overlay(s), $told call(s) of OverlayPresent()"
+        }
+        assertEquals("every overlay of the tabs says it is open: $problems", emptyList<String>(), problems)
+        assertTrue("the scan found the overlays of the tabs ($covered)", covered >= 9)
+        val shell = File(main, "ui/main/MainShell.kt").readText()
+        assertTrue(
+            "the shell gives the registry to the whole app",
+            shell.contains("LocalOverlayPresence provides periodic"),
+        )
+    }
 }

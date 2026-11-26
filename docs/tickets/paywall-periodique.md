@@ -106,6 +106,7 @@ Une ouverture est comptée **une seule fois** quand l'app arrive à l'écran **d
 - **Update** (photo « Donner des nouvelles », caméra, choix d'une photo), **clavier ouvert**, **fenêtre du système** (autorisation, feuille d'achat du store).
 - **Un message de l'app à l'écran** (accès perdu, « En attente de ton accord », feuille « Localiser », « Tu as arrêté de partager », mode voyage, etc.) et **la fenêtre d'avis** (voir §6).
 - **Paywall déjà à l'écran** (aucune superposition de deux offres).
+- **Une surcouche ouverte dans les onglets** (menu du sélecteur de Miff, photo plein écran, feuille, boîte de dialogue, calendrier) : c'est une autre fenêtre, l'écran de derrière reste « au premier plan » ; chaque surcouche le déclare à la règle (Android : `OverlayPresent()`), l'offre attend 1,5 s APRÈS la fermeture [ajouté à la revue de la PR Android].
 
 ---
 

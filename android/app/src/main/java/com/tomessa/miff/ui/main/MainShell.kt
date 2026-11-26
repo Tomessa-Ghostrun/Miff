@@ -84,6 +84,7 @@ import com.tomessa.miff.ui.auth.LegalLinks
 import com.tomessa.miff.ui.components.ConnectionGate
 import com.tomessa.miff.ui.components.ConnectionHost
 import com.tomessa.miff.ui.components.LocalBottomOverlayPadding
+import com.tomessa.miff.ui.components.LocalOverlayPresence
 import com.tomessa.miff.ui.components.miffBottomInsets
 import com.tomessa.miff.ui.components.miffKeyboardVisible
 import com.tomessa.miff.ui.feed.ColorsInfoScreen
@@ -239,11 +240,14 @@ fun MainShell(
         periodic.onShellShown()
         onDispose { periodic.onShellGone() }
     }
-    Box(Modifier.fillMaxSize().periodicPaywallTouches(periodic)) {
-        MainNavigation(container, tabBar, navController)
-        LostAccessOverlay(container, navController)
-        DeletionNotices(container, navController)
-        PremiumReconcile(container)
+    // The overlays (dialogs, sheets, menus, the full-screen photo) tell the rules they are open: their window hides the tabs without changing their state.
+    CompositionLocalProvider(LocalOverlayPresence provides periodic) {
+        Box(Modifier.fillMaxSize().periodicPaywallTouches(periodic)) {
+            MainNavigation(container, tabBar, navController)
+            LostAccessOverlay(container, navController)
+            DeletionNotices(container, navController)
+            PremiumReconcile(container)
+        }
     }
 }
 

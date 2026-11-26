@@ -74,6 +74,7 @@ import com.tomessa.miff.domain.timeshare.TimeShareRules
 import com.tomessa.miff.domain.timeshare.TimeShareTracking
 import com.tomessa.miff.domain.timeshare.TrackingHealth
 import com.tomessa.miff.ui.components.MiffSecondaryButton
+import com.tomessa.miff.ui.components.OverlayPresent
 import com.tomessa.miff.ui.components.miffBottomInsets
 import com.tomessa.miff.ui.navigation.holdForDiagnostic
 import com.tomessa.miff.ui.permission.rememberBackgroundLocationRequest
@@ -353,6 +354,7 @@ private fun WindowSelector(
             )
         }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }, containerColor = colorBgSurface) {
+            OverlayPresent()
             TimeShareRules.WINDOWS_DAYS.forEach { days ->
                 val chosen = days == current
                 DropdownMenuItem(
@@ -843,6 +845,7 @@ private fun DangerDetailSheet(
         containerColor = colorBgSurface,
         modifier = Modifier.holdForDiagnostic(),
     ) {
+        OverlayPresent()
         Column(
             modifier =
                 Modifier

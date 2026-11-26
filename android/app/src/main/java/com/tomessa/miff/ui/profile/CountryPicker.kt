@@ -41,6 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import com.tomessa.miff.R
 import com.tomessa.miff.domain.profile.PhoneCountry
 import com.tomessa.miff.domain.profile.PhoneNumbers
+import com.tomessa.miff.ui.components.OverlayPresent
 import com.tomessa.miff.ui.components.miffBottomInsets
 import com.tomessa.miff.ui.navigation.holdForDiagnostic
 import com.tomessa.miff.ui.theme.ShapeMd
@@ -139,6 +140,7 @@ fun CountryPickerSheet(
         containerColor = colorBgSurface,
         modifier = Modifier.holdForDiagnostic(),
     ) {
+        OverlayPresent()
         Column(
             modifier = Modifier.miffBottomInsets().padding(horizontal = Spacing.l),
             verticalArrangement = Arrangement.spacedBy(Spacing.s),

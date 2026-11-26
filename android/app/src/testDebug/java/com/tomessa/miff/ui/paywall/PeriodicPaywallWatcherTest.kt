@@ -168,6 +168,20 @@ class PeriodicPaywallWatcherTest {
     }
 
     @Test
+    fun anOverlayOpenOverTheTabs_holdsItBack_andItComesOneAndAHalfSecondAfterTheClosing() {
+        host()
+        tap()
+        composeRule.runOnIdle { rules.onOverlayOpened() }
+        pass(30_000L)
+        assertEquals("a menu or a sheet is open: nothing", 0, opened)
+        composeRule.runOnIdle { rules.onOverlayClosed() }
+        pass(1_400L)
+        assertEquals(0, opened)
+        pass(200L)
+        assertEquals(1, opened)
+    }
+
+    @Test
     fun aFingerKeptOnTheScreen_holdsItBack() {
         host()
         composeRule.runOnIdle {
