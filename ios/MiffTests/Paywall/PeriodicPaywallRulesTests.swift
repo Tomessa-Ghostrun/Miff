@@ -181,6 +181,32 @@ final class PeriodicPaywallRulesTests: PeriodicRulesTestCase {
         XCTAssertEqual(rules.evaluate(calmSituation()), .show)
     }
 
+    func testAShortReturnInTheSameSessionWaitsForOneAndAHalfSecondsOfCalmAgain() {
+        // La personne revient (moins de 30 minutes : même session, pas d'ouverture de plus) : l'offre ne tombe pas à l'instant du retour.
+        let rules = makeRules(counter: 9)
+        coldStart(rules)
+        tapAndSettle(rules)
+        XCTAssertEqual(rules.evaluate(calmSituation()), .show)
+
+        away(rules, millis: 5 * 60_000)
+        XCTAssertEqual(store.value, 10, "aucune ouverture de plus")
+        XCTAssertEqual(rules.evaluate(calmSituation()), .wait(1_500))
+        clock.advance(1_500)
+
+        XCTAssertEqual(rules.evaluate(calmSituation()), .show)
+    }
+
+    func testTheControlCenterOrASystemAlertAlsoRestartsTheCalm() {
+        // « inactive » puis « active » sans arrière-plan : un second appel d'activation, sans nouvelle session.
+        let rules = makeRules(counter: 9)
+        coldStart(rules)
+        tapAndSettle(rules)
+
+        rules.onForeground()
+
+        XCTAssertEqual(rules.evaluate(calmSituation()), .wait(1_500))
+    }
+
     func testAFingerStillOnTheScreenIsNeverACalmMoment() {
         let rules = makeRules(counter: 9)
         coldStart(rules)

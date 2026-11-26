@@ -159,6 +159,10 @@ final class PeriodicPaywallRules: OverlayPresence, @unchecked Sendable {
             // Jamais passée en arrière-plan avant = démarrage à froid (le processus vient de naître).
             if !started || (away.map { $0 >= backgroundMillis } ?? false) {
                 startSession(now)
+            } else {
+                // Même session (retour de moins de 30 minutes, centre de contrôle, alerte du système) : la personne vient de revenir, l'offre attend elle aussi 1,5 s de calme.
+                lastTouchAt = now
+                fingerDown = false
             }
             started = true
         }

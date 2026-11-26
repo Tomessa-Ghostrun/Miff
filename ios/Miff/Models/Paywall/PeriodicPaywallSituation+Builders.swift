@@ -27,6 +27,17 @@ extension PeriodicPaywallSituation {
         return myLabel == .sharingStopped || myLabel == .waitingAgreement
     }
 
+    /// MON alerte tient l'offre en arrière : elle est en cours, OU son écran « avertis » est ouvert (alerte envoyée, partage arrêté, indisponible, numéros d'urgence compris : ces
+    /// écrans existent aussi quand l'alerte n'est plus « en cours »).
+    static func ownAlertHolds(inProgress: Bool, sentScreenOpen: Bool) -> Bool {
+        inProgress || sentScreenOpen
+    }
+
+    /// Une ligne calme de l'app est à l'écran un court instant : « Alerte terminée… » (ou « fin non envoyée ») et la bannière de la suppression d'une Miff. L'offre ne les recouvre pas.
+    static func transientMessageOpen(alertNotice: Bool, deletionBanner: Bool) -> Bool {
+        alertNotice || deletionBanner
+    }
+
     /// La ligne « {Prénom} a déclaré une alerte » attend, non lue, dans le centre de notifications : tant qu'elle est là, l'offre ne vient pas (ticket D2).
     static func alertLineUnread(in items: [NotificationItem]) -> Bool {
         items.contains { $0.type == .n10 && $0.isUnread }

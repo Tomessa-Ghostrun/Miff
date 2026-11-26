@@ -78,6 +78,33 @@ final class PeriodicPaywallSituationTests: XCTestCase {
         XCTAssertFalse(PeriodicFeedSnapshot().alertActive)
     }
 
+    // MARK: - Ma propre alerte et les lignes calmes
+
+    func testMyOwnAlertHoldsTheOfferBackWhileInProgressAndWhileItsSentScreenIsOpen() {
+        XCTAssertFalse(PeriodicPaywallSituation.ownAlertHolds(inProgress: false, sentScreenOpen: false))
+        XCTAssertTrue(PeriodicPaywallSituation.ownAlertHolds(inProgress: true, sentScreenOpen: false))
+        // « Partage arrêté », « indisponible » et les numéros d'urgence : l'écran est ouvert alors que l'alerte n'est plus « en cours ».
+        XCTAssertTrue(PeriodicPaywallSituation.ownAlertHolds(inProgress: false, sentScreenOpen: true))
+    }
+
+    func testTheCalmLinesOfTheAppHoldTheOfferBack() {
+        XCTAssertFalse(PeriodicPaywallSituation.transientMessageOpen(alertNotice: false, deletionBanner: false))
+        let notice = PeriodicPaywallSituation.transientMessageOpen(alertNotice: true, deletionBanner: false)
+        let banner = PeriodicPaywallSituation.transientMessageOpen(alertNotice: false, deletionBanner: true)
+        XCTAssertTrue(notice, "« Alerte terminée… »")
+        XCTAssertTrue(banner, "bannière de suppression")
+    }
+
+    @MainActor
+    func testTheSignalOfMyAlertStartsQuiet() {
+        let signal = DangerAlertSignal()
+
+        let holds = PeriodicPaywallSituation.ownAlertHolds(inProgress: signal.inProgress, sentScreenOpen: false)
+        XCTAssertFalse(holds)
+        XCTAssertFalse(signal.sentScreenOpen)
+        XCTAssertFalse(signal.noticeShown)
+    }
+
     // MARK: - Ce qui interdit
 
     func testEverySituationThatForbidsIsReportedAndACalmOneIsNot() {

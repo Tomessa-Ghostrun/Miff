@@ -95,12 +95,12 @@ final class PeriodicPaywallGuardTests: XCTestCase {
 
     // MARK: - Chaque surcouche des onglets se déclare (équivalent de PeriodicPaywallBuildTest d'Android)
 
-    /// Les écrans qui ne sont PAS des onglets ouverts (l'onboarding du profil et ma propre alerte) : l'offre n'y vient de toute façon jamais.
+    /// Les écrans qui ne sont PAS des onglets ouverts (l'onboarding du profil) : l'offre n'y vient de toute façon jamais. L'écran « avertis » de ma propre alerte (`DangerSentView`)
+    /// n'est PLUS exempté : son argument (« l'alerte est en cours ») était faux pour « partage arrêté » et « indisponible » ; il est couvert par `sentScreenOpen` (test plus bas).
     private let exempted: [String: String] = [
         "Miff/Views/Profile/PhoneStepView.swift": "onboarding : la coquille n'est pas à l'écran",
         "Miff/Views/Profile/ProfileFlowView.swift": "onboarding : la coquille n'est pas à l'écran",
-        "Miff/Views/Profile/ProfileStepView.swift": "onboarding : la coquille n'est pas à l'écran",
-        "Miff/Views/Alert/DangerSentView.swift": "ma propre alerte : `ownAlertInProgress` retient déjà l'offre"
+        "Miff/Views/Profile/ProfileStepView.swift": "onboarding : la coquille n'est pas à l'écran"
     ]
 
     private func presentations(in lines: [String]) -> Int {
@@ -131,6 +131,18 @@ final class PeriodicPaywallGuardTests: XCTestCase {
 
             XCTAssertGreaterThan(presentations(in: lines), 0, "\(path) : plus aucune surcouche, retirer l'exemption (\(reason))")
         }
+    }
+
+    func testTheSentScreenOfMyAlertAndTheCalmLinesHoldTheOfferBackInEveryState() throws {
+        let viewModel = try code("Miff/ViewModels/DangerAlertViewModel.swift").joined(separator: "\n")
+        let host = try code("Miff/Views/Paywall/PeriodicPaywallHost.swift").joined(separator: "\n")
+        let hosts = try code("Miff/Views/Miff/MiffHosts.swift").joined(separator: "\n")
+
+        XCTAssertTrue(viewModel.contains("didSet { signal.sentScreenOpen = sentRoute != nil }"), "tout l'écran « avertis », quel que soit son état")
+        XCTAssertTrue(viewModel.contains("didSet { signal.noticeShown = notice != nil }"), "la ligne « Alerte terminée… »")
+        XCTAssertTrue(host.contains("sentScreenOpen: dangerSignal.sentScreenOpen"))
+        XCTAssertTrue(host.contains("alertNotice: dangerSignal.noticeShown, deletionBanner: deletionBannerOpen"))
+        XCTAssertTrue(hosts.contains("deletionBannerOpen: banner != nil"), "la bannière de la suppression d'une Miff")
     }
 
     func testTheReviewWindowAndTheMenusDeclareThemselves() throws {

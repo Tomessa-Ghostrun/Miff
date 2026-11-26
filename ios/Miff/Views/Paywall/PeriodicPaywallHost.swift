@@ -18,6 +18,7 @@ extension View {
         environment: AppEnvironment,
         directory: MiffDirectory,
         onTabs: Bool,
+        deletionBannerOpen: Bool,
         open: @escaping () -> Void
     ) -> some View {
         // L'offre n'a des prix à lire que si l'achat est allumé dans ce build : hors connexion, rien n'est montré par surprise (ticket C6). Sans achat (« Miff+ arrive
@@ -34,6 +35,7 @@ extension View {
                 beacon: environment.periodicPaywall.beacon,
                 offerReachable: { !purchaseIsOn || network.isOnline() },
                 onTabs: onTabs,
+                deletionBannerOpen: deletionBannerOpen,
                 open: open
             )
         )
@@ -119,6 +121,8 @@ private struct PeriodicPaywallHostModifier: ViewModifier {
     @ObservedObject var beacon: PeriodicPaywallBeacon
     let offerReachable: () -> Bool
     let onTabs: Bool
+    /// La bannière courte de la suppression d'une Miff est à l'écran.
+    let deletionBannerOpen: Bool
     let open: () -> Void
 
     @Environment(\.scenePhase) private var scenePhase
@@ -147,13 +151,18 @@ private struct PeriodicPaywallHostModifier: ViewModifier {
     private func situation() -> PeriodicPaywallSituation {
         let signals = services.signals
         let feed = signals.feed()
-        let message = PeriodicPaywallSituation.messageOpen(
+        let appMessage = PeriodicPaywallSituation.messageOpen(
             lostAccessNotice: !directory.notices.isEmpty,
             awaitingAgreement: !awaiting.waiting.isEmpty,
             locateSheetOpen: feed.locateSheetOpen,
             myLabel: feed.myLabel,
             connectionPopInOpen: feed.connectionPopInOpen || signals.profileConnectionPopInOpen()
         )
+        // La ligne « Alerte terminée… » et la bannière de la suppression d'une Miff sont des messages de l'app, courts mais réels.
+        let transient = PeriodicPaywallSituation.transientMessageOpen(
+            alertNotice: dangerSignal.noticeShown, deletionBanner: deletionBannerOpen
+        )
+        let message = appMessage || transient
         let alertLine = PeriodicPaywallSituation.alertLineUnread(in: center.history.items)
         return PeriodicPaywallSituation(
             miffPlus: PeriodicPaywallSituation.miffPlus(of: directory.state),
@@ -161,7 +170,9 @@ private struct PeriodicPaywallHostModifier: ViewModifier {
             updateScreenOpen: signals.updateScreenOpen,
             keyboardOpen: keyboardOpen,
             messageOpen: message,
-            ownAlertInProgress: dangerSignal.inProgress,
+            ownAlertInProgress: PeriodicPaywallSituation.ownAlertHolds(
+                inProgress: dangerSignal.inProgress, sentScreenOpen: dangerSignal.sentScreenOpen
+            ),
             lovedOneAlertUnseen: feed.alertActive || alertLine,
             offerReachable: offerReachable()
         )

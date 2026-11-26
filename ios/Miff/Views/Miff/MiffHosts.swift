@@ -304,6 +304,7 @@ struct MiffHomeHost: View {
             environment: environment,
             directory: directory,
             onTabs: path.isEmpty && paywall == nil,
+            deletionBannerOpen: banner != nil,
             open: { presentPaywall(.periodic) }
         )
     }

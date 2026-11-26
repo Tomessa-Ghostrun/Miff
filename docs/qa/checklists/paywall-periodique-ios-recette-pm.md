@@ -34,10 +34,12 @@
 5. [ ] Fermez avec la croix. Touchez d'autres boutons, restez 1 minute : **pas de second affichage** dans cette session (une seule apparition par session). La carte du diagnostic affiche **compteur : 0 / 10**, « offre déjà montrée : oui ».
 6. [ ] **PR3** : carte « Compteur = 10 », mettez l'app en arrière-plan **plus de 30 minutes**, revenez, touchez un bouton : l'offre revient (nouvelle session, compteur plein). Refaites avec **moins de 30 minutes** : pas de nouvelle session, pas de nouveau comptage (la carte garde le même compteur). **Changez aussi l'heure du téléphone** (Réglages > Général > Date et heure, désactivez « Réglage automatique ») pendant l'absence : cela ne change **rien** au comptage.
 
+6 bis. [ ] **Retour rapide, même session** : carte « Compteur = 10 », fermez complètement l'app et rouvrez-la, touchez un bouton, puis, **avant que 1 seconde ne passe**, mettez l'app en arrière-plan et revenez **aussitôt** (moins de 30 minutes). L'offre **ne tombe pas à l'instant du retour** : elle attend, elle aussi, **environ 1,5 s de calme** après votre retour. Même chose après un passage par le centre de contrôle (glisser depuis le coin, refermer).
+
 ## Partie B : ce qui ne compte pas comme une ouverture (PP1, PP2)
 
 7. [ ] Notez le compteur de la carte, puis **faites pivoter** le téléphone (si l'écran pivote), changez de langue dans les Réglages, ouvrez l'appareil photo de l'Update puis revenez, ouvrez le centre de contrôle puis refermez-le (moins de 30 minutes) : rouvrez la carte, le compteur **n'a pas bougé**.
-8. [ ] Un **lieu franchi** pendant que l'app est fermée (ou une notification reçue sans ouvrir l'app) : le compteur **ne bouge pas**. (Le réveil par la surveillance des lieux n'est pas une ouverture.)
+8. [ ] **Notez le compteur n** (carte du diagnostic), fermez complètement l'app, puis faites franchir un **lieu** pendant qu'elle est fermée (ou faites-lui recevoir une notification sans l'ouvrir). Rouvrez l'app et relisez la carte : lire la carte demande d'ouvrir l'app, et **cette ouverture compte pour 1** ; le compteur vaut donc **n + 1, et non n + 2** : le lieu franchi ou la notification n'ont rien ajouté. (Le réveil par la surveillance des lieux n'est pas une ouverture.)
 9. [ ] Fermez complètement l'app puis rouvrez-la : **+1** (démarrage à froid).
 
 ## Partie C : jamais dans ces situations (PP12, PR5)
