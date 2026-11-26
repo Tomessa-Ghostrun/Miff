@@ -2,6 +2,23 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.61.1] - 2026-11-26 : l'offre périodique passe de « toutes les 15 ouvertures » à « toutes les 10 ouvertures », et finitions de la revue indépendante de la PR 324 (PAY-PER-A)
+
+Branche `android/finitions-paywall-periodique`. **Numéro de version provisoire** (au-dessus de 0.61.0 ; le PM renumérote à la fusion). **Seul changement de comportement : la fréquence** (demande du PM du 2026-11-26) ; aucun nouveau texte, coût ajouté : 0 €. Le PM n'a pas de recette à faire.
+
+### Modifié : cadence de 15 à 10 ouvertures (décision du PM, 2026-11-26)
+- `PeriodicPaywallDefaults.OPENINGS_BETWEEN` passe de **15 à 10** : une personne sans Miff+ voit l'offre **toutes les 10 ouvertures** (à 2 ou 3 ouvertures par jour, environ 3 à 5 jours au lieu de 5 à 7). **Rien d'autre ne change** (premier appui, moment calme, une seule fois par session, croix à 3 s, conditions d'exclusion, remise à zéro).
+- Ce qui suit le seuil : le plafond du compteur (10) ; la carte de diagnostic debug (boutons et affichage lisent le seuil : « Compteur = 9 (seuil moins un) », « Compteur = 10 », « n / 10 » ; aucun libellé n'écrit le chiffre en dur) ; le seuil réduit debug `-Pmiff.periodicPaywallOpenings=N`, qui **ne fait toujours que baisser** le seuil et est maintenant validé de **1 à 9** (une valeur de 10 ou plus ne changerait rien) ; les tests qui figeaient 15 et 14 (maintenant 10 et 9) ; la recette, le README Android, le ticket `docs/tickets/paywall-periodique.md` (D7 et toutes les mentions), `docs/contracts/analytics-events.md` et la ligne J76 de `docs/legal/README.md`. Aucun texte publié (politique, CGU) ne cite le chiffre.
+- Une personne dont le compteur valait déjà plus de 10 avec l'ancien seuil (jusqu'à 14) est simplement « due » à sa prochaine ouverture, puis remise à zéro à l'affichage : aucun cas à traiter.
+
+### Corrigé
+- **Fenêtre d'avis** (`ui/review/ReviewPromptWindow.kt`) : elle ne signalait pas sa fermeture, donc l'offre périodique, si elle était due, pouvait suivre sa fermeture tout de suite au lieu d'attendre 1,5 s. Elle appelle maintenant `OverlayPresent()` comme les autres surcouches. Un seul signal pour elle : le terme « fenêtre d'avis ouverte » est **retiré** du calcul `messageOpen` de l'offre périodique dans `MainShell` (l'ancien et le nouveau signal ne se contredisaient pas, mais disaient la même chose deux fois). Le comportement de la fenêtre d'avis elle-même n'est pas touché.
+- **Message « suppression annulée »** (`DeletionBlockedDialog`, hébergé par `AppRoot`, donc hors du fournisseur de `MainShell`) : il peut apparaître par-dessus les onglets sans que l'offre le sache. `AppRoot` lui fournit maintenant le registre des surcouches et la boîte appelle `OverlayPresent()`.
+
+### Tests et documents
+- `PeriodicPaywallBuildTest` : la liste des fichiers exemptés est maintenant explicite et justifiée un par un (uniquement des écrans empilés par la navigation) ; `DeleteAccountHost.kt` (exemption inexacte « empilé ») et `ReviewPromptWindow.kt` n'y sont plus. Chaque surcouche doit avoir son `OverlayPresent()` **juste à côté** de son appel (et non « quelque part dans le fichier ») ; un test vérifie que la liste d'exemptions ne pourrit pas (fichier toujours là, surcouche toujours là) et que `AppRoot` fournit le registre au message de suppression annulée.
+- Recette `docs/qa/checklists/paywall-periodique-android-recette-pm.md`, étape 17 bis : la feuille « photo de profil » est retirée de la liste (elle ne s'ouvre que dans Mes infos, écran empilé, et dans l'onboarding : elle ne testait rien).
+
 ## [0.61.0] - 2026-11-26 : l'offre Miff+ s'ouvre d'elle-même « toutes les 15 ouvertures » pour une personne sans Miff+ (PAY-PER-A)
 
 Ticket `docs/tickets/paywall-periodique.md` (critères PP1 à PP24, plan §9), recette `docs/qa/checklists/paywall-periodique-android-recette-pm.md`. Branche `android/paywall-periodique`. **Numéro de version provisoire** (`main` est à 0.60.1 ; le PM renumérote à la fusion). **Coût ajouté : 0 €.** **Aucun nouveau texte** (aucune clé, aucune traduction, aucun catalogue iOS touché) : l'écran d'offre existant est repris tel quel, **aucun nouvel écran**.

@@ -56,6 +56,7 @@ import com.tomessa.miff.data.account.DeletionStep
 import com.tomessa.miff.data.session.SessionManager
 import com.tomessa.miff.ui.auth.LoadingIndicator
 import com.tomessa.miff.ui.components.MiffButton
+import com.tomessa.miff.ui.components.OverlayPresent
 import com.tomessa.miff.ui.components.miffScreenInsets
 import com.tomessa.miff.ui.components.miffTopInsets
 import com.tomessa.miff.ui.navigation.googleSourceFor
@@ -564,6 +565,8 @@ fun DeletionBlockedDialog(onDismiss: () -> Unit) {
         modifier = Modifier.holdForDiagnostic(),
         onDismissRequest = onDismiss,
         text = {
+            // PAY-PER-A: this message can come over the tabs (a deletion cancelled while the app is open): the periodic offer waits for it (AppRoot gives the registry to this level).
+            OverlayPresent()
             Text(
                 text = stringResource(R.string.settings_delete_miffs_blocked, BuildConfig.SUPPORT_EMAIL),
                 style = textBodyRegular,

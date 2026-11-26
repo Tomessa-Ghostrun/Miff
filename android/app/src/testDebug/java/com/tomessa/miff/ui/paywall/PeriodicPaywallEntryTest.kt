@@ -38,7 +38,7 @@ class PeriodicPaywallEntryTest {
     val composeRule = createComposeRule()
 
     private class MemoryStore(
-        var value: Int = 15,
+        var value: Int = 10,
     ) : PeriodicPaywallCounterStore {
         override fun read() = value
 
@@ -117,11 +117,11 @@ class PeriodicPaywallEntryTest {
 
     private fun everyEntryResetsTheCounter(reason: PaywallReason) {
         host()
-        assertEquals(15, store.value)
+        assertEquals(10, store.value)
         open(reason)
         assertEquals("${reason.name}: back to zero when the offer is on view", 0, store.value)
         // And the periodic rule leaves this session alone: the person has just seen the offer.
-        store.value = 15
+        store.value = 10
         tapAndSettle()
         assertEquals(PeriodicPaywallDecision.No, rules.evaluate(calm))
     }

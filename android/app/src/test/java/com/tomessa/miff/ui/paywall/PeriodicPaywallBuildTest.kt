@@ -54,7 +54,7 @@ class PeriodicPaywallBuildTest {
         val rest = gradle.substringAfter("release {").substringBefore("compileOptions")
         assertFalse(rest.contains("periodicPaywallOpeningsProperty"))
         // A bad value is refused at configuration time (never a silent 0 or a huge number).
-        assertTrue(gradle.contains("miff.periodicPaywallOpenings must be a whole number from 1 to 99"))
+        assertTrue(gradle.contains("miff.periodicPaywallOpenings must be a whole number from 1 to 9"))
     }
 
     @Test
@@ -101,51 +101,96 @@ class PeriodicPaywallBuildTest {
     }
 
     /**
+     * The files of the app that open a dialog, a sheet or a menu WITHOUT telling the periodic offer, each with the reason why that is right. The only valid reason: the overlay is part of a screen
+     * that the navigation PUSHES over the tabs (then the tabs are not in front and the offer waits anyway). A dialog hosted anywhere else, even one that looks like a screen's, does NOT belong
+     * here: it tells ([com.tomessa.miff.ui.settings.DeletionBlockedDialog] is hosted by AppRoot, over the tabs, and tells). Adding a file to this list is a decision to justify.
+     */
+    private val overlaysOfPushedScreens =
+        mapOf(
+            "ui/alert/AlertSentScreen.kt" to "AlertSentRoute, pushed (and the offer never comes during my own alert)",
+            "ui/notification/NotificationCenterScreen.kt" to "NotificationCenterRoute, pushed",
+            "ui/place/PlaceFormScreen.kt" to "PlaceFormRoute, pushed",
+            "ui/settings/AccountScreen.kt" to "AccountRoute, pushed (Settings)",
+            "ui/settings/DeleteAccountScreens.kt" to "DeleteAccountRoute, pushed (deletion of the account)",
+            "ui/settings/MyInfoScreen.kt" to "MyInfoRoute, pushed (Settings)",
+        )
+
+    /** The code of a file without its comment lines (KDoc, block and line comments). */
+    private fun codeLines(file: File): List<String> =
+        file.readLines().filter { line ->
+            line.trimStart().let { !it.startsWith("*") && !it.startsWith("//") && !it.startsWith("/*") }
+        }
+
+    private val overlayCall =
+        Regex(
+            """\b(Dialog|AlertDialog|BasicAlertDialog|ModalBottomSheet|DropdownMenu|ExposedDropdownMenu|DatePickerDialog|TimePickerDialog|Popup)\(""",
+        )
+
+    /**
      * Ticket 4.1 "no sheet", PP9 and PP12: an overlay (dialog, bottom sheet, menu, full-screen window) is another window, so it cannot be seen from the state of the screen behind it and its touches
-     * never reach the root: it has to say it is open ([com.tomessa.miff.ui.components.OverlayPresent]). Every file of the app that opens one does, EXCEPT the screens that the navigation pushes over the
-     * tabs (the tabs are then not in front, whatever the overlay does) and the review window (counted by its own stage). A new overlay in another file fails here until it says so.
+     * never reach the root: it has to say it is open ([com.tomessa.miff.ui.components.OverlayPresent]). Every file of the app that opens one does, EXCEPT the files of [overlaysOfPushedScreens]. For
+     * each call, the line `OverlayPresent()` has to be NEAR it (from the line before the call to its next 30 lines, never past the next overlay of the file): a call placed in another part of the file
+     * does not count for it. A new overlay in another file fails here until it says so.
      */
     @Test
     fun everyOverlayOfTheAppTellsThePeriodicOfferItIsOpen() {
-        val pushedOrCovered =
-            setOf(
-                "ui/alert/AlertSentScreen.kt",
-                "ui/notification/NotificationCenterScreen.kt",
-                "ui/place/PlaceFormScreen.kt",
-                "ui/review/ReviewPromptWindow.kt",
-                "ui/settings/AccountScreen.kt",
-                "ui/settings/DeleteAccountHost.kt",
-                "ui/settings/DeleteAccountScreens.kt",
-                "ui/settings/MyInfoScreen.kt",
-            )
-        val overlay =
-            Regex(
-                """\b(Dialog|AlertDialog|BasicAlertDialog|ModalBottomSheet|DropdownMenu|ExposedDropdownMenu|DatePickerDialog|TimePickerDialog|Popup)\(""",
-            )
         val problems = mutableListOf<String>()
         var covered = 0
         kotlinFiles(main).forEach { file ->
             val relative = file.relativeTo(main).path.replace('\\', '/')
-            val code =
-                file.readLines().filter { line ->
-                    line.trimStart().let {
-                        !it.startsWith("*") &&
-                            !it.startsWith("//") &&
-                            !it.startsWith("/*")
-                    }
+            if (relative in overlaysOfPushedScreens) return@forEach
+            val code = codeLines(file)
+            val calls = code.indices.filter { overlayCall.containsMatchIn(code[it]) }
+            if (calls.isEmpty()) return@forEach
+            covered += calls.size
+            calls.forEachIndexed { k, at ->
+                val from = maxOf(at - 1, 0)
+                val until = minOf(at + 30, (calls.getOrNull(k + 1)?.minus(1) ?: code.size) - 1, code.size - 1)
+                val told = (from..until).any { code[it].trim() == "OverlayPresent()" }
+                if (!told) {
+                    problems +=
+                        "$relative: the overlay near code line ${at + 1} does not call OverlayPresent() just after it"
                 }
-            val calls = code.count { overlay.containsMatchIn(it) }
-            val told = code.count { it.trim() == "OverlayPresent()" }
-            if (calls == 0 || relative in pushedOrCovered) return@forEach
-            covered += calls
-            if (told < calls) problems += "$relative: $calls overlay(s), $told call(s) of OverlayPresent()"
+            }
         }
         assertEquals("every overlay of the tabs says it is open: $problems", emptyList<String>(), problems)
-        assertTrue("the scan found the overlays of the tabs ($covered)", covered >= 9)
+        assertTrue("the scan found the overlays of the tabs ($covered)", covered >= 13)
         val shell = File(main, "ui/main/MainShell.kt").readText()
         assertTrue(
             "the shell gives the registry to the whole app",
             shell.contains("LocalOverlayPresence provides periodic"),
         )
+    }
+
+    /** Both overlays that are NOT inside the provider of the shell are given the registry where they are hosted: the root of the app. */
+    @Test
+    fun theMessageOfTheCancelledDeletion_isHostedWithTheRegistry_andTheReviewWindowIsNotExempt() {
+        val root = normalised(File(main, "ui/navigation/AppRoot.kt"))
+        assertTrue(
+            "AppRoot gives the registry to the cancelled-deletion message",
+            root.contains(
+                "LocalOverlayPresence provides container.periodicPaywall) { DeletionBlockedNotice(session) }",
+            ),
+        )
+        assertFalse("the review window tells it is open", "ui/review/ReviewPromptWindow.kt" in overlaysOfPushedScreens)
+        assertFalse(
+            "the deletion message tells it is open",
+            "ui/settings/DeleteAccountHost.kt" in overlaysOfPushedScreens,
+        )
+    }
+
+    /** The list of exceptions does not rot: each file still exists and still opens at least one overlay (otherwise the entry is removed). */
+    @Test
+    fun theExemptFilesStillExist_andStillOpenAnOverlay() {
+        overlaysOfPushedScreens.keys.forEach { relative ->
+            val file = File(main, relative)
+            assertTrue("$relative still exists", file.exists())
+            assertTrue(
+                "$relative still opens an overlay (else drop it from the list)",
+                codeLines(file).any {
+                    overlayCall.containsMatchIn(it)
+                },
+            )
+        }
     }
 }
