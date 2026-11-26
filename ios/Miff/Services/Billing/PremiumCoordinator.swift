@@ -18,8 +18,6 @@ import Foundation
 /// Ni jeton, ni identifiant, ni montant n'est journalisé ou envoyé dans un événement.
 @MainActor
 final class PremiumCoordinator: ObservableObject {
-    /// Les états d'un abonnement qui allument Miff+ (ceux de `StoreState.grantsAccess`, écrits par le serveur).
-    private static let grantingStates: Set<String> = ["trial", "active", "canceled", "grace"]
     /// Une vérification par minute côté serveur : un peu plus, pour les horloges.
     static let defaultSyncSpacing: TimeInterval = 61
     /// Le regard silencieux sur le store à l'ouverture de l'app : toutes les 5 minutes au plus.
@@ -215,7 +213,7 @@ final class PremiumCoordinator: ObservableObject {
         case .synced(let state):
             // Le serveur a répondu : la transaction est livrée, le store peut l'oublier.
             await transaction.finish()
-            return purchaseOutcome(ofState: state)
+            return PurchaseServerState.outcome(of: state)
         case .alreadyLinked:
             return .otherAccount
         case .rateLimited, .unavailable:
@@ -261,7 +259,7 @@ final class PremiumCoordinator: ObservableObject {
         switch await syncSpaced(transaction.signed, patient: true) {
         case .synced(let state):
             await transaction.finish()
-            if grantsAccess(state) {
+            if PurchaseServerState.grantsAccess(state) {
                 return .found
             }
             return state == "on_hold" ? .onHold : .noneFound
@@ -325,7 +323,7 @@ final class PremiumCoordinator: ObservableObject {
         case .synced(let state):
             handledIds.insert(transaction.id)
             await transaction.finish()
-            if grantsAccess(state) {
+            if PurchaseServerState.grantsAccess(state) {
                 noteAccessGranted()
             }
         case .alreadyLinked, .rejected:
@@ -367,22 +365,5 @@ final class PremiumCoordinator: ObservableObject {
             }
         }
         return result
-    }
-
-    private func purchaseOutcome(ofState state: String?) -> PurchaseOutcome {
-        if state == "pending" {
-            return .pending
-        }
-        if state == "on_hold" {
-            return .onHold
-        }
-        return grantsAccess(state) ? .granted : .failed
-    }
-
-    private func grantsAccess(_ state: String?) -> Bool {
-        guard let state else {
-            return false
-        }
-        return Self.grantingStates.contains(state)
     }
 }

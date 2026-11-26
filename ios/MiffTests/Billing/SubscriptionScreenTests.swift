@@ -116,9 +116,11 @@ final class SubscriptionScreenTests: XCTestCase {
     // MARK: - Le modèle
 
     private func makeModel(
-        gateway: StubGateway = StubGateway(),
-        store: StubSubscriptionStore = StubSubscriptionStore()
+        gateway givenGateway: StubGateway? = nil,
+        store givenStore: StubSubscriptionStore? = nil
     ) -> (SubscriptionViewModel, PremiumCoordinator) {
+        let gateway = givenGateway ?? StubGateway()
+        let store = givenStore ?? StubSubscriptionStore()
         let repository = SubscriptionRepository(store: store, currentUid: { "uid-1" }, nowMillis: { testNow })
         let coordinator = PremiumCoordinator(
             gateway: gateway, backend: StubBackend(), subscriptions: repository,

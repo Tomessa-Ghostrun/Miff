@@ -39,6 +39,30 @@ enum RestoreOutcome: Equatable {
     case failed
 }
 
+/// Les états d'abonnement que le SERVEUR renvoie à `synchroniserAchat` (`backend/functions/src/achatRegles.ts`) et ce qu'ils valent pour l'écran : trial, active, canceled et grace
+/// allument Miff+ ; on_hold (suspendu) et pending (paiement différé) n'accordent RIEN ; expired et revoked non plus.
+enum PurchaseServerState {
+    private static let granting: Set<String> = ["trial", "active", "canceled", "grace"]
+
+    static func grantsAccess(_ state: String?) -> Bool {
+        guard let state else {
+            return false
+        }
+        return granting.contains(state)
+    }
+
+    /// Comment un achat se termine d'après l'état que le serveur a calculé.
+    static func outcome(of state: String?) -> PurchaseOutcome {
+        if state == "pending" {
+            return .pending
+        }
+        if state == "on_hold" {
+            return .onHold
+        }
+        return grantsAccess(state) ? .granted : .failed
+    }
+}
+
 /// Ce que le store répond pour les offres : les offres choisies, « pas disponible », ou une erreur qui mérite un second essai.
 enum OffersResult: Equatable {
     case loaded(PaywallOffers)
