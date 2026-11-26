@@ -27,6 +27,13 @@ protocol PresenceHistory: AnyObject {
 
     func read(miffId: String) -> PresenceHistoryRead
 
+    /// « La détection est armée pour cette Miff » à cet instant : le DÉBUT de son suivi sur ce téléphone. Seul le PREMIER appel compte (les
+    /// suivants ne changent rien) ; l'instant est borné à « maintenant ». Un identifiant de Miff et une heure, jamais envoyés nulle part.
+    func begin(miffId: String, atMillis: Int)
+
+    /// Le début du suivi de cette Miff : le plus ancien de son armement et de son premier fait ; nil s'il n'y en a pas (ou stockage illisible).
+    func startedAt(miffId: String) -> Int?
+
     /// Le choix de fenêtre de la personne (7, 14 ou 30 jours), gardé avec le journal et effacé avec lui.
     func windowDays() -> Int
     func setWindowDays(_ days: Int)
@@ -52,6 +59,12 @@ protocol PresenceHistory: AnyObject {
 /// Le journal qui ne garde rien (doubles de test qui ne parlent pas du journal).
 final class NoPresenceHistory: PresenceHistory {
     func record(_ fact: PresenceFact) {}
+
+    func begin(miffId: String, atMillis: Int) {}
+
+    func startedAt(miffId: String) -> Int? {
+        nil
+    }
 
     func read(miffId: String) -> PresenceHistoryRead {
         .facts([])

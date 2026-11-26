@@ -5,6 +5,8 @@ import Foundation
 //   Une valeur qui n'a pas cette forme (une clé de zone, qui porte des coordonnées ; un nom) est REFUSÉE à l'écriture et à la lecture ;
 // - où : UN fichier dans le stockage privé de l'app (Application Support), EXCLU des sauvegardes (iCloud et ordinateur : un téléphone
 //   restauré ne retrouve rien) et jamais envoyé nulle part ;
+//   Avec les faits, le fichier garde, pour chaque Miff, UN seul instant : celui où la détection a été armée pour elle (le début de l'historique
+//   du graphique). Un identifiant de Miff et une heure, ni lieu ni position ; il part avec la Miff et avec tout le reste du journal ;
 // - protection du fichier : « jusqu'à la première authentification » (comme la copie locale du suivi) : écrit téléphone VERROUILLÉ et app
 //   fermée, dès que l'appareil a été déverrouillé une fois après son démarrage. Avant cela, le fait est GARDÉ EN MÉMOIRE et écrit dès que le
 //   stockage redevient lisible (un événement n'est pas perdu parce que le stockage est inaccessible) ;
@@ -29,6 +31,9 @@ final class PresenceHistoryFileStore: PresenceHistory {
     private struct StoredFile: Codable, Equatable {
         var version = PresenceHistoryFileStore.formatVersion
         var windowDays: Int?
+        /// Pour chaque Miff, l'instant où la détection a été armée pour la première fois : le début du suivi, qui fait partir le décompte
+        /// « dans X jours » même avant le premier fait. Absent d'un fichier écrit avant (d'où l'optionnel : il se relit sans erreur).
+        var since: [String: Int]?
         var facts: [StoredFact] = []
     }
 
@@ -44,6 +49,8 @@ final class PresenceHistoryFileStore: PresenceHistory {
     private var cache: StoredFile?
     /// Les faits reçus pendant que le stockage est illisible : écrits dès qu'il ne l'est plus.
     private var waiting: [PresenceFact] = []
+    /// Les débuts de suivi reçus pendant que le stockage est illisible (le plus ancien par Miff) : écrits dès qu'il ne l'est plus.
+    private var waitingBegins: [String: Int] = [:]
 
     private var fileURL: URL {
         directory.appendingPathComponent("presence-history.json")
@@ -73,6 +80,41 @@ final class PresenceHistoryFileStore: PresenceHistory {
             if Self.append(fact, to: &file) {
                 persist(&file)
             }
+        }
+    }
+
+    func begin(miffId: String, atMillis: Int) {
+        guard Self.isMiffId(miffId), atMillis > 0 else {
+            return
+        }
+        queue.sync {
+            // Jamais dans le futur : un début daté d'après « maintenant » compte comme maintenant.
+            let start = min(atMillis, clock())
+            guard var file = loadFile() else {
+                if waitingBegins[miffId] == nil {
+                    waitingBegins[miffId] = start
+                }
+                return
+            }
+            // Seul le PREMIER appel compte : rien n'est réécrit une fois le début connu.
+            guard file.since?[miffId] == nil else {
+                return
+            }
+            var since = file.since ?? [:]
+            since[miffId] = start
+            file.since = since
+            persist(&file)
+        }
+    }
+
+    func startedAt(miffId: String) -> Int? {
+        queue.sync {
+            guard let file = loadFile() else {
+                return nil
+            }
+            let floor = clock() - TimeShareLimits.retentionMillis
+            let firstFact = file.facts.first { $0.miff == miffId && $0.at >= floor }?.at
+            return [file.since?[miffId], firstFact].compactMap { $0 }.min()
         }
     }
 
@@ -117,25 +159,34 @@ final class PresenceHistoryFileStore: PresenceHistory {
     func purge(miffId: String) {
         change { file in
             file.facts.removeAll { $0.miff == miffId }
+            file.since?[miffId] = nil
         }
         queue.sync {
             waiting.removeAll { $0.miffId == miffId }
+            waitingBegins[miffId] = nil
         }
     }
 
     func retainOnly(miffIds: Set<String>) {
         change { file in
             file.facts.removeAll { !miffIds.contains($0.miff) }
+            file.since = file.since?.filter { miffIds.contains($0.key) }
         }
         queue.sync {
             waiting.removeAll { !miffIds.contains($0.miffId) }
+            waitingBegins = waitingBegins.filter { miffIds.contains($0.key) }
         }
     }
 
     func eraseFacts() {
-        change { $0.facts = [] }
+        // Les faits ET le début du suivi : le décompte « dans X jours » repart de 3 (le prochain armement fixera un nouveau début).
+        change {
+            $0.facts = []
+            $0.since = nil
+        }
         queue.sync {
             waiting = []
+            waitingBegins = [:]
         }
     }
 
@@ -143,6 +194,7 @@ final class PresenceHistoryFileStore: PresenceHistory {
         queue.sync {
             cache = nil
             waiting = []
+            waitingBegins = [:]
             try? FileManager.default.removeItem(at: directory)
         }
     }
@@ -173,12 +225,18 @@ final class PresenceHistoryFileStore: PresenceHistory {
             }
             return nil
         case .file(var file):
-            if !waiting.isEmpty {
+            if !waiting.isEmpty || !waitingBegins.isEmpty {
                 let late = waiting
                 waiting = []
                 for fact in late {
                     _ = Self.append(fact, to: &file)
                 }
+                var since = file.since ?? [:]
+                for (miffId, start) in waitingBegins where since[miffId] == nil {
+                    since[miffId] = start
+                }
+                waitingBegins = [:]
+                file.since = since.isEmpty ? nil : since
                 persist(&file)
             }
             return file

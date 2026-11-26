@@ -10,11 +10,23 @@ final class MemoryPresenceHistory: PresenceHistory {
     private(set) var clearAllCalls = 0
     private(set) var eraseFactsCalls = 0
     private(set) var purged: [String] = []
+    /// Le début du suivi de chaque Miff (le premier appel de `begin` compte).
+    private(set) var starts: [String: Int] = [:]
     /// Vrai : le stockage est illisible (« Réessayer »).
     var unreadable = false
 
     func record(_ fact: PresenceFact) {
         facts.append(fact)
+    }
+
+    func begin(miffId: String, atMillis: Int) {
+        if starts[miffId] == nil {
+            starts[miffId] = atMillis
+        }
+    }
+
+    func startedAt(miffId: String) -> Int? {
+        [starts[miffId], facts.first { $0.miffId == miffId }?.atMillis].compactMap { $0 }.min()
     }
 
     func read(miffId: String) -> PresenceHistoryRead {
@@ -41,20 +53,24 @@ final class MemoryPresenceHistory: PresenceHistory {
 
     func purge(miffId: String) {
         purged.append(miffId)
+        starts[miffId] = nil
         facts.removeAll { $0.miffId == miffId }
     }
 
     func retainOnly(miffIds: Set<String>) {
+        starts = starts.filter { miffIds.contains($0.key) }
         facts.removeAll { !miffIds.contains($0.miffId) }
     }
 
     func eraseFacts() {
         eraseFactsCalls += 1
+        starts = [:]
         facts = []
     }
 
     func clearAll() {
         clearAllCalls += 1
+        starts = [:]
         facts = []
         window = TimeShareLimits.defaultWindowDays
     }
@@ -65,7 +81,7 @@ final class MemoryPresenceHistory: PresenceHistory {
     }
 }
 
-/// Fabrique de scénarios de calcul : l'heure est en HEURES avant « maintenant » (168 h = 7 jours).
+/// Fabrique de scénarios de calcul : l'heure est en HEURES avant « maintenant » (168 h = 7 jours, 72 h = 3 jours, le seuil).
 enum TimeShareFixtures {
     /// Un segment d'une suite d'états : (état, lieu, durée en heures).
     typealias Segment = (PresenceState, String?, Double) // swiftlint:disable:this large_tuple
@@ -91,7 +107,7 @@ enum TimeShareFixtures {
 
     /// Une suite d'états qui finit à « maintenant » : chaque segment (état, lieu, durée en heures) commence quand le précédent finit.
     /// Les segments se SUIVENT : deux segments identiques de suite n'en feraient qu'un (T5), donc on les alterne.
-    /// `aged` (par défaut) : le journal a plus de 7 jours (un premier fait « inconnue » ancien, non mesuré) ; faux : le premier fait est
+    /// `aged` (par défaut) : le journal a plus de 3 jours (un premier fait « inconnue » ancien, non mesuré) ; faux : le premier fait est
     /// celui du premier segment (un journal tout neuf).
     static func timeline(
         _ segments: [TimeShareFixtures.Segment],
@@ -102,7 +118,7 @@ enum TimeShareFixtures {
         var cursor = now - Int(total * Double(hour))
         var facts: [PresenceFact] = []
         if aged {
-            let old = min(now - 8 * TimeShareLimits.dayMillis, cursor - hour)
+            let old = min(now - (TimeShareLimits.minimumHistoryDays + 5) * TimeShareLimits.dayMillis, cursor - hour)
             facts.append(PresenceFact(miffId: miff, state: .unknown, placeId: nil, atMillis: old))
         }
         for (state, placeId, hours) in segments {

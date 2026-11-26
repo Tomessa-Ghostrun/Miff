@@ -2,6 +2,25 @@
 
 ## Non publié
 
+### Répartition du temps : le graphique s'affiche dès 3 jours d'historique (seuil abaissé de 7 à 3 jours) [numéro provisoire : à renuméroter à la fusion]
+
+Branche `ios/profil-temps-seuil-3j`. Retour du PM après la recette Android : « le compteur ne décroît pas de jour en jour, et 3 jours suffisent à ce que le graphique s'affiche ». Ticket `docs/tickets/profil-repartition-temps.md` (§6.2, §7, D8 ; révision du 2026-11-25). Recette : `docs/qa/checklists/profil-repartition-temps-ios-recette-pm.md`. **Rien n'est compilé en local** (poste Windows : la CI fait foi). **Coût ajouté : 0 €.**
+
+Ce que le PM doit voir sur l'iPhone : la carte dit « Ton graphique arrive dans **3** jours… », puis **2**, puis « dans **1** jour », puis le graphique, **trois jours** après le premier enregistrement de la Miff. L'historique **déjà mesuré compte tout de suite** : un journal qui a déjà 3 jours ou plus affiche le graphique dès la mise à jour (rien n'est effacé ni remis à zéro).
+
+Modifié :
+- **Une seule constante** : `TimeShareLimits.minimumHistoryDays = 3` (`minimumHistoryMillis` et `daysLeft` en dérivent ; plus aucun « 7 » en dur pour le seuil). X = 3 − jours entiers écoulés depuis le premier enregistrement, jamais sous 1, 3 sans enregistrement. Le wording figé et son pluriel (« dans 1 jour ») sont inchangés : **aucune clé de texte ajoutée ni renommée** (`profile_timeshare_not_enough` suffit, mêmes clés et mêmes textes qu'Android). Les fenêtres 7 / 14 / 30 jours, la rétention de 35 jours et le plafond de 48 h ne changent pas.
+- Textes légaux : **non touchés**.
+
+Cause du compteur figé (même défaut qu'Android, confirmé par la recette) : l'historique se comptait depuis le **premier fait** du journal (une première arrivée ou sortie détectée). Tant que la personne ne bougeait pas, ou que le système retardait les événements, il n'y avait **aucun fait**, l'historique restait à 0 et la carte restait à « dans 3 jours » en permanence (`TimeShareCalculator.compute`).
+
+Corrigé (parité avec Android, PR #321) :
+- **Début du suivi mémorisé à l'armement de la détection** : `TrackingEngine` (`watch`, juste après `armZones`) appelle `PresenceHistory.begin(miffId:atMillis:)` pour chaque Miff suivie ; **seul le premier appel compte**, l'instant est **borné à « maintenant »** (`min(instant, maintenant)`, jamais dans le futur). Il est stocké **dans le journal local** (`presence-history.json`, clé `since` : un identifiant de Miff et une heure, **ni lieu ni position**, jamais envoyé), et il est effacé comme le reste : Miff quittée ou supprimée (`purge`, `retainOnly`), « Effacer mon historique de temps » (le décompte repart de 3), déconnexion et suppression du compte (`clearAll`). Un fichier écrit avant cette version se relit sans erreur.
+- **L'historique part du plus ancien du début du suivi et du premier fait** (`TimeShareCalculator.elapsedHistory`) : un journal vide mais suivi armé depuis 1 jour dit « dans 2 jours », pas 3. **L'historique déjà mesuré compte tout de suite**, sans remise à zéro.
+- **Plus de décompte une fois les 3 jours passés** : si l'historique atteint 3 jours mais qu'**aucun temps n'est mesuré** (la personne n'est jamais entrée dans un lieu), la carte n'affiche plus « dans 1 jour » indéfiniment : un texte calme **sans décompte**, « Ton graphique apparaîtra dès que tu auras passé du temps dans l'un de tes lieux de confiance » (nouvelle clé `profile_timeshare_no_time_yet`, **nom et six traductions identiques à Android**, entrée identique à celle de la PR #321 dans le catalogue). Les raisons d'arrêt du suivi (voyage, partage arrêté, localisation insuffisante) passent toujours avant. Nouveaux cas : `TimeShareOutcome.noTimeMeasured`, `TimeShareCardState.noTimeYet`.
+- **Risque assumé par le PM (2026-11-25)** : l'instant de début du suivi n'est pas cité par la politique de confidentialité ; textes légaux non touchés (voir `docs/legal/README.md`, J75).
+- Tests : calcul (journal vide armé depuis 1 jour : 2, pas 3 ; 72 h : le texte sans décompte ; début dans le futur : 0 ; plus ancien des deux), carte, journal sur disque (premier appel seul, futur ramené à maintenant, purge, effacement, relance, ancien fichier), moteur (début à l'armement, une seule fois).
+
 ### L'interrupteur « statistiques d'usage et rapports de plantage » dans Réglages > Confidentialité (ONB-3b côté iPhone, miroir d'Android) [numéro provisoire : à renuméroter à la fusion]
 
 Branche `ios/interrupteur-statistiques`. Ticket `docs/tickets/feed-profil-reglages.md` (critères B5 / RG6) ; décision du PM sur le consentement groupé à l'inscription, **modifiable à tout moment** (`docs/tickets/authentification.md`, décision du 2026-10-28). Ferme l'écart J72 côté app (`docs/legal/README.md`). Recette : `docs/qa/checklists/onb-3b-ios-recette-pm.md`. **Rien n'est compilé en local** (poste Windows : la CI fait foi). **Coût ajouté : 0 €** (une transaction Firestore par choix, aucune lecture de plus au démarrage).

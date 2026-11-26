@@ -323,4 +323,27 @@ final class PresenceHistoryFileStoreTests: XCTestCase {
         XCTAssertFalse(text.contains("gone"), "aucun identifiant de lieu supprimé ne reste")
         XCTAssertFalse(text.contains("Gone"))
     }
+
+    func testTheDaysLeftGoDownDayByDayAcrossRestartsFromTheFileThenTheChartShowsUp() {
+        // Seuil de 3 jours : le premier fait est écrit une fois ; chaque relance de l'app relit le MÊME fichier, le décompte ne repart jamais.
+        let first = clockNow
+        store().record(fact(.trusted, "p1", at: first))
+        store().record(fact(.out, nil, at: first + 6 * hour))
+        let home = TimeSharePlace(id: "p1", name: "Maison", type: .trusted, category: .home)
+
+        func outcome(afterHours: Int) -> TimeShareOutcome {
+            clockNow = first + afterHours * hour
+            return TimeShareCalculator.compute(
+                facts: facts(store()), places: [home], windowDays: 7, nowMillis: clockNow
+            )
+        }
+
+        XCTAssertEqual(outcome(afterHours: 12), .notEnough(daysLeft: 3))
+        XCTAssertEqual(outcome(afterHours: 36), .notEnough(daysLeft: 2))
+        XCTAssertEqual(outcome(afterHours: 60), .notEnough(daysLeft: 1))
+        if case .ready = outcome(afterHours: 78) {
+            return
+        }
+        XCTFail("3 jours après le premier enregistrement, le graphique s'affiche")
+    }
 }

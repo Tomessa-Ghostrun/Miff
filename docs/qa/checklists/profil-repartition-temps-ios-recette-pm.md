@@ -2,24 +2,24 @@
 
 **Pour qui** : vous, sur votre iPhone 11 Pro (iOS 26.5.2), build TestFlight de la PR `ios/profil-repartition-temps`.
 **Il vous faut** : un compte avec **au moins une Miff** qui a **un lieu de confiance** (idéalement 3 lieux de catégories différentes) ; pour la zone de danger, une Miff dont le créateur est Miff+ avec une zone de danger. **« Toujours » + position précise** accordés à Miff.
-**Durée** : quelques minutes par étape, mais **le graphique n'apparaît qu'après 7 jours réels de port du téléphone** : il n'y a plus d'outil de données de test (le graphique est validé : TestFlight 38). Pour repartir de zéro à tout moment : **Réglages > Confidentialité > « Effacer mon historique de temps »** (le décompte repart à 7 jours). **Source** : ticket `docs/tickets/profil-repartition-temps.md` (critères TS-1 à TS-25), vos retours des 2026-11-17 et 2026-11-18 ; mêmes cas de calcul qu'Android.
+**Durée** : quelques minutes par étape, mais **le graphique n'apparaît qu'après 3 jours réels de port du téléphone (seuil abaissé de 7 à 3 jours sur retour du PM, 2026-11-25)** : il n'y a plus d'outil de données de test (le graphique est validé : TestFlight 38). Pour repartir de zéro à tout moment : **Réglages > Confidentialité > « Effacer mon historique de temps »** (le décompte repart à 3 jours). **Source** : ticket `docs/tickets/profil-repartition-temps.md` (critères TS-1 à TS-25), vos retours des 2026-11-17 et 2026-11-18 ; mêmes cas de calcul qu'Android.
 
 ## À savoir avant de commencer
 
 - **Ce que ça fait** : sous « Mes Miffs », la carte « Répartition du temps » montre **où vous avez passé votre temps** (vos lieux de confiance, une éventuelle zone de danger, « Hors-zone ») sur 7, 14 ou 30 jours. **Seulement votre temps**, jamais celui de vos proches. **Tout reste sur votre téléphone** : rien n'est envoyé, aucune lecture ni écriture sur le serveur, aucune permission de plus.
-- **L'historique commence à l'installation de cette version, et le graphique n'apparaît qu'après 7 jours** : avant, la carte dit **« Ton graphique arrive dans X jours, nous analysons tes habitudes »** (X = 7 le premier jour, puis 6, 5… jusqu'à « 1 jour »), **sans graphique et sans sélecteur**. Le nombre est recalculé quand vous ouvrez le Profil ou rouvrez l'app, pas à la seconde.
+- **L'historique commence à l'installation de cette version, et le graphique n'apparaît qu'après 3 jours** (3 jours écoulés depuis le **début du suivi** de la Miff sur votre iPhone, c'est-à-dire le moment où la détection a été armée pour elle, **même si vous n'êtes encore jamais entré ni sorti d'un lieu** ; **l'historique déjà mesuré compte tout de suite**, rien n'est remis à zéro par la mise à jour) : avant, la carte dit **« Ton graphique arrive dans X jours, nous analysons tes habitudes »** (X = 3 le premier jour, puis 2, puis 1 (« 1 jour », au singulier), puis le graphique), **sans graphique et sans sélecteur**. Le nombre est recalculé quand vous ouvrez le Profil ou rouvrez l'app, pas à la seconde.
 - Un défaut : capture d'écran + numéro de l'étape, puis étape suivante.
 
-## Partie A : avant 7 jours
+## Partie A : avant 3 jours
 
 1. [ ] Ouvrez l'onglet **Profil**. La carte est **entre le carrousel « Mes Miffs » et la liste « Les lieux de la Miff » (le titre ne nomme plus la Miff)** ; la carte « Mode voyage » reste **en dernier**. Elle montre le titre **« Répartition du temps »** (**sans** « Sur les N derniers jours »), le texte exact **« Ton graphique arrive dans X jours, nous analysons tes habitudes »** **seul** : **pas d'anneau gris vide**, ni graphique, ni sélecteur. Carte blanche très arrondie, pastille d'icône **verte** à gauche du titre.
-2. [ ] Le lendemain (et chaque jour suivant), X **baisse d'un jour** ; la veille du 7e jour : **« dans 1 jour »** (singulier).
+2. [ ] Le lendemain (et chaque jour suivant), X **baisse d'un jour** : **3, puis 2, puis « dans 1 jour »** (singulier), puis **le graphique apparaît** (3 jours après le début du suivi). **Le compteur baisse même si vous ne bougez pas** (journal vide). **Passé 3 jours sans avoir jamais passé de temps dans un lieu** : plus de décompte, la carte dit **« Ton graphique apparaîtra dès que tu auras passé du temps dans l'un de tes lieux de confiance »** ; le graphique apparaît dès que du temps est mesuré. **Rouvrez l'app ou revenez sur le Profil** pour voir le nombre se mettre à jour (pas de minuterie). **Un historique déjà enregistré depuis 3 jours ou plus s'affiche tout de suite.**
 3. [ ] **Balayez le carrousel** vers une autre Miff : la carte suit **cette Miff** (son propre décompte), **sans clignotement** ; sur la carte « Créer une Miff », la carte garde la dernière Miff regardée.
 4. [ ] **Miff sans lieu** : la carte **n'est pas dessinée** (pas même une marge) ; la section des lieux porte son message.
 5. [ ] **Mode voyage** : activez-le (carte en bas du Profil) : la carte dit **« Tu es en mode voyage : ta répartition est en pause jusqu'à ton retour. »** (pas le texte « nous analysons tes habitudes »). Désactivez-le.
 6. [ ] **Localisation** (seulement si l'app vous laisse sur le Profil : tant que « Toujours » est exigé, l'écran de blocage peut s'afficher à la place, c'est normal) : Réglages iOS > Miff > Localisation > **« Lors de l'utilisation »** : **« Pour mesurer ton temps dans tes lieux, Miff a besoin de la localisation « Toujours » avec la position précise. Tu peux aussi continuer sans. »** et le bouton **« Ouvrir les réglages »**. Remettez « Toujours ».
 
-## Partie B : après 7 jours de port (le graphique)
+## Partie B : après 3 jours de port (le graphique)
 
 7. [ ] La carte **passe du texte au graphique** : l'**anneau est plus petit, à gauche**, avec **toutes** les tranches (la 1re à midi, sens horaire) ; la **légende est à droite** (pastille, emoji de la catégorie comme dans la liste en dessous, nom, pourcentage **aligné à droite**), limitée à **4 lignes**. **Au centre** : un grand pourcentage et **« en zone de confiance »**. Le sélecteur **« 7 jours ⌄ »** est à droite du titre, **sans** sous-titre. En dessous, l'**encart vert très léger** avec la coche et **« Tu as passé x % de ton temps dans tes zones de confiance »**, le **🎉 à droite**.
 8. [ ] **Couleurs** : les lieux de confiance sont des **nuances de vert et de bleu** (en alternance), la **zone de danger** est **exactement le rouge de la bulle de statut danger** du Feed (hachurée, avec le triangle), « **Hors-zone** » est le **gris clair de la maquette**. Le total des pourcentages de la légende **peut ne pas faire 100 %** (la légende n'affiche que 4 lignes) ; l'anneau, lui, est complet.
@@ -40,8 +40,8 @@
 ## Partie D : effacement et vie privée
 
 19. [ ] **Réglages > Confidentialité** : la section **« Historique de temps »** explique que **35 jours** sont gardés **sur le téléphone** et ne le quittent jamais, avec le bouton **« Effacer mon historique de temps »**.
-20. [ ] Touchez-le : **« Effacer l'historique ? Ta répartition repartira de zéro. Cela ne change rien pour tes proches. »** (**Annuler** / **Effacer**). **Effacer** : un message de confirmation ; de retour sur le Profil, la carte dit de nouveau **« Ton graphique arrive dans 7 jours… »**. **Vos proches ne voient aucun changement.**
-21. [ ] **Déconnexion puis reconnexion** (preuve TS-5) : la carte repart de **« dans 7 jours »** ; la fenêtre choisie est **revenue à 7 jours**.
+20. [ ] Touchez-le : **« Effacer l'historique ? Ta répartition repartira de zéro. Cela ne change rien pour tes proches. »** (**Annuler** / **Effacer**). **Effacer** : un message de confirmation ; de retour sur le Profil, la carte dit de nouveau **« Ton graphique arrive dans 3 jours… »** (le décompte repart d'un nouvel armement). **Vos proches ne voient aucun changement.**
+21. [ ] **Déconnexion puis reconnexion** (preuve TS-5) : la carte repart de **« dans 3 jours »** ; la fenêtre choisie est **revenue à 7 jours**.
 22. [ ] **Quitter une Miff** puis la rejoindre : son historique est **reparti de zéro**. **Aucune demande de permission de plus** n'est apparue pendant toute la recette. Mode avion : **aucun effet** sur la carte.
 
 ## Ce qui est volontairement différent d'Android ou connu
