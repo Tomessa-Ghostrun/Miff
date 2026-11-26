@@ -75,10 +75,20 @@ settings:
     # avant, elle est refusée par les règles sans aucun effet visible (message calme, aucune boucle). Pour l'inclure dans la publication, après décision du PM : ajouter NOTIF_JOURNAL à la ligne
     # Release ET lancer le contrôle des binaires avec MIFF_ALLOW_NOTIF_JOURNAL_IN_RELEASE=1 (ios/ci/check-binaries.sh) ; jamais autrement.
     # ATTENTION : un build Internal ouvert à des testeurs EXTERNES lit le journal ; l'en retirer avant de l'ouvrir si le serveur n'est pas déployé.
+    # PREMIUM_PURCHASE = l'ACHAT réel de Miff+ (StoreKit 2 et fonctions du serveur : docs/tickets/premium-achat-reel.md, SRV-8I) : MÊME principe que
+    # `BuildConfig.PREMIUM_PURCHASE` d'Android. ÉTEINT par défaut dans tout build distribué : l'offre reste « Miff+ arrive bientôt », aucune connexion à l'App Store,
+    # aucune ligne « Abonnement » dans les Réglages. BILLING_FAKE = le FAUX magasin (faux StoreKit, faux serveur, faux droit : aucun achat, rien d'écrit sur le vrai
+    # serveur) pour essayer toute l'interface sans produit dans App Store Connect : Debug (simulateur) et, sur demande, le build TestFlight « Internal » ; JAMAIS en
+    # Release (le fichier du faux magasin refuse de compiler, et ci/check-binaries.sh cherche son marqueur dans le binaire).
+    # Pour allumer l'achat (ou le faux magasin) dans un build Internal : entrée `premium_purchase` du workflow ios-testflight (off, fake ou real), qui pose le réglage
+    # MIFF_PREMIUM_CONDITIONS ci-dessous (« PREMIUM_PURCHASE BILLING_FAKE » ou « PREMIUM_PURCHASE »). Pour l'allumer dans un build de publication : le même réglage ET
+    # MIFF_ALLOW_PREMIUM_PURCHASE_IN_RELEASE=1 pour le contrôle des binaires, après décision du PM ; jamais autrement.
     Debug:
-      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG REVIEW_PROMPT ALERT_DANGER NOTIF_JOURNAL
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: DEBUG REVIEW_PROMPT ALERT_DANGER NOTIF_JOURNAL PREMIUM_PURCHASE BILLING_FAKE
     Internal:
-      SWIFT_ACTIVE_COMPILATION_CONDITIONS: INTERNAL REVIEW_PROMPT ALERT_DANGER NOTIF_JOURNAL
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: INTERNAL REVIEW_PROMPT ALERT_DANGER NOTIF_JOURNAL $(MIFF_PREMIUM_CONDITIONS)
+    Release:
+      SWIFT_ACTIVE_COMPILATION_CONDITIONS: $(MIFF_PREMIUM_CONDITIONS)
 
 targets:
   Miff:
@@ -109,6 +119,10 @@ targets:
       # paquet de plus (les dépendances de Messaging sont déjà dans Package.resolved). Éteint tant que la personne n'a rien accordé (voir Info.plist).
       - package: Firebase
         product: FirebaseMessaging
+      # SRV-8I : les trois fonctions appelables de l'achat de Miff+ (preparerAchat, synchroniserAchat, supprimerDonneesAbonnement). Même version exacte de Firebase,
+      # aucun paquet de plus (ses dépendances sont déjà dans Package.resolved). Seul `FirebasePurchaseBackend` l'importe, sous la condition PREMIUM_PURCHASE.
+      - package: Firebase
+        product: FirebaseFunctions
       - package: GoogleSignIn
         product: GoogleSignIn
       - package: PhoneNumberKit
@@ -238,6 +252,8 @@ targets:
         ENABLE_USER_SCRIPT_SANDBOXING: NO
         # Interrupteur de compilation du blocage de la localisation (LOC-4a) : voir la cle MiffLocationBlocking de l'Info.plist.
         MIFF_LOCATION_BLOCKING: "YES"
+        # Conditions de compilation de l'ACHAT de Miff+ (voir PREMIUM_PURCHASE et BILLING_FAKE plus haut) : VIDE par défaut, donc éteint dans Internal et Release.
+        MIFF_PREMIUM_CONDITIONS: ""
       configs:
         # Capacites App Attest (App Check), Sign in with Apple, push et Time Sensitive (alerte de danger) : seulement pour les builds qui seront signes et installes sur iPhone (signature automatique).
         # En Debug (simulateur, fournisseur de debogage), aucune entitlement.

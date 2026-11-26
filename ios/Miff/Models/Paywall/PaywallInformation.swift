@@ -13,36 +13,17 @@ enum PaywallLayout: Equatable {
     }
 }
 
-/// Le bloc d'information OBLIGATOIRE des stores (ticket §5.4) : prix facturé, renouvellement automatique, annulation facile. Les
-/// phrases sont complètes, une par cas ; les prix sont ceux du store, écrits par le formateur du système.
+/// L'information des stores sous l'offre, réduite à ce que le PM a demandé (retour du 2026-11-25, comme sur Android) : sur la vue principale de l'essai, UNE phrase (l'essai, le prix
+/// facturé à sa fin, le renouvellement automatique chaque année) ; sur les vues sans essai (« Voir toutes les offres », ou un compte qui n'y a pas droit), une phrase par formule
+/// montrée. Les prix sont ceux du store, jamais écrits dans une traduction. Plus de paragraphe « comment annuler » ni de phrase « la formule gratuite reste disponible » : l'annulation
+/// se fait sur la page d'Apple, atteinte depuis Réglages > Abonnement (le PM l'a décidé ; risque assumé, voir le ticket §4.4).
 enum PaywallInformation {
-    /// Les paragraphes sous l'offre, dans l'ordre. L'essai (et « au moins 24 heures avant sa fin », propre à iOS) n'est mentionné que si
-    /// le store le propose à ce compte.
-    static func paragraphs(
-        offers: PaywallOffers,
-        layout: PaywallLayout,
-        storeName: String = L10n.string("ios_paywall_store_name"),
-        locale: Locale = .current
-    ) -> [String] {
+    static func paragraphs(offers: PaywallOffers, layout: PaywallLayout, locale: Locale = .current) -> [String] {
         let annual = PaywallPriceFormat.string(offers.annual, locale: locale)
+        if layout == .trial {
+            return [L10n.format("paywall_info_trial_short", annual)]
+        }
         let monthly = PaywallPriceFormat.string(offers.monthly, locale: locale)
-        var result = [
-            L10n.format(offers.trialEligible ? "paywall_info_trial" : "paywall_info_annual", annual)
-        ]
-        if layout == .plans {
-            result.append(L10n.format("paywall_info_monthly", monthly))
-        }
-        var cancellation = L10n.format("paywall_info_cancel", storeName)
-        if offers.trialEligible {
-            cancellation += " " + L10n.string("ios_paywall_info_cancel_trial")
-        }
-        result.append(cancellation)
-        return result
-    }
-
-    /// « La formule gratuite reste disponible : 1 Miff et N lieux de confiance. » N est la limite RÉELLEMENT appliquée par l'app
-    /// (`PlaceLimits.freePlaces`), jamais un nombre écrit dans le texte : si la limite change, la phrase reste vraie.
-    static func freePlanSentence(freePlaces: Int = PlaceLimits.freePlaces) -> String {
-        L10n.plural("paywall_free_plan_stays", count: freePlaces)
+        return [L10n.format("paywall_info_annual", annual), L10n.format("paywall_info_monthly", monthly)]
     }
 }

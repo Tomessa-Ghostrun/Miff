@@ -15,6 +15,8 @@ struct SettingsDestinationView: View {
     let onBack: () -> Void
     /// Toucher une ligne du centre de notifications : le centre se referme et l'onglet demandé s'ouvre (jamais une erreur).
     var onOpenNotification: (NotificationDestination) -> Void = { _ in }
+    /// SRV-8I : « Découvrir / Reprendre Miff+ » de Réglages > Abonnement : l'offre s'ouvre en plein écran, comme depuis les autres portes.
+    var onOpenOffer: () -> Void = {}
 
     var body: some View {
         if SettingsAccess.isAllowed(route, restricted: restricted) {
@@ -34,7 +36,8 @@ struct SettingsDestinationView: View {
                     onOpenLanguage: { navigate(.language) },
                     onOpenPrivacy: { navigate(.privacy) },
                     onOpenNotifications: { navigate(.notifications) },
-                    onOpenAbout: { navigate(.about) }
+                    onOpenAbout: { navigate(.about) },
+                    onOpenSubscription: subscriptionOpener
                 ),
                 restricted: restricted
             )
@@ -76,8 +79,30 @@ struct SettingsDestinationView: View {
             )
         case .licenses:
             LicensesView(onBack: onBack)
+        case .subscription:
+            subscriptionScreen
         case .notifications, .notificationCenter, .notificationsHelp:
             notificationScreen
+        }
+    }
+
+    /// La ligne « Abonnement » : seulement quand l'achat est allumé dans ce build (SRV-8I).
+    private var subscriptionOpener: (() -> Void)? {
+        guard environment.premium.coordinator != nil else {
+            return nil
+        }
+        return { navigate(.subscription) }
+    }
+
+    /// SRV-8I : Réglages > Abonnement. Rien quand l'achat est éteint dans ce build (la ligne n'existe pas non plus).
+    @ViewBuilder
+    private var subscriptionScreen: some View {
+        if let premium = environment.premium.coordinator, let subscriptions = environment.premium.subscriptions {
+            SubscriptionHost(
+                subscriptions: subscriptions,
+                premium: premium,
+                actions: SubscriptionActions(onBack: onBack, onOffer: onOpenOffer)
+            )
         }
     }
 
@@ -108,6 +133,21 @@ struct SettingsDestinationView: View {
         default:
             NotificationHelpView(onBack: onBack)
         }
+    }
+}
+
+/// L'écran de l'abonnement : garde son modèle le temps où il est dans la pile (revenir de l'offre ne le recrée pas).
+private struct SubscriptionHost: View {
+    @StateObject private var model: SubscriptionViewModel
+    let actions: SubscriptionActions
+
+    init(subscriptions: SubscriptionRepository, premium: PremiumCoordinator, actions: SubscriptionActions) {
+        self.actions = actions
+        _model = StateObject(wrappedValue: SubscriptionViewModel(subscriptions: subscriptions, premium: premium))
+    }
+
+    var body: some View {
+        SubscriptionView(model: model, actions: actions)
     }
 }
 

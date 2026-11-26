@@ -61,6 +61,10 @@ struct ScreenPreview: View {
             // L'offre Miff+ dans ses états (variante sans achat, essai, deux formules, chargement, erreurs) : voir `PaywallScreenPreview`.
             PaywallScreenPreview(name: name)
 
+        case _ where name.hasPrefix("subscription-"):
+            // Réglages > Abonnement dans ses états (SRV-8I) : voir `SubscriptionScreenPreview`.
+            SubscriptionScreenPreview(name: name)
+
         case _ where name.hasPrefix("place-"):
             // Les lieux de confiance (formulaire, liste, détail, offre) : voir `PlaceScreenPreview`.
             PlaceScreenPreview(name: name)

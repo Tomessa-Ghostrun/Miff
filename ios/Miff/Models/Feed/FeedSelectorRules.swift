@@ -60,7 +60,7 @@ enum FeedSelectorRules {
     /// Gratuit avec au moins une Miff : l'offre. Miff+ : le parcours normal. Formule inconnue (hors connexion, cache) : le parcours
     /// normal aussi, et c'est le SERVEUR qui tranche (le parcours relit l'abonnement et dit calmement « une seule Miff » si besoin).
     static func outcome(formula: FeedSelectorFormula, miffCount: Int) -> FeedSelectorOutcome {
-        formula == .free && miffCount >= 1 ? .openPaywall : .openFlow
+        formula == .free && miffCount >= PlaceLimits.freeMiffs ? .openPaywall : .openFlow
     }
 
     static func outcome(for ready: DirectoryReady?) -> FeedSelectorOutcome {

@@ -230,6 +230,8 @@ struct MiffHomeHost: View {
             PlacePaywallView(
                 reason: presentation.reason,
                 tracker: environment.analyticsTracker,
+                // SRV-8I : le coordinateur de l'achat (nil quand l'achat est éteint dans ce build : « Miff+ arrive bientôt »).
+                premium: environment.premium.coordinator,
                 onClose: { paywall = nil }
             )
         }
@@ -237,7 +239,9 @@ struct MiffHomeHost: View {
         // décision du PM du 2026-11-07) ; les autres écrans des Réglages restent où ils sont.
         .onChange(of: MainShellRules.hasNoMiff(directory.state)) { noMiff in
             if noMiff {
-                path.removeAll { $0.isMyInfoScreen || $0.isLanguageScreen || $0.isNotificationScreen }
+                path.removeAll {
+                    $0.isMyInfoScreen || $0.isLanguageScreen || $0.isNotificationScreen || $0.isSubscriptionScreen
+                }
             }
         }
         // De retour à l'écran racine après un lieu ou un formulaire : la liste des lieux du Profil est relue si un créateur y a touché.
@@ -360,7 +364,9 @@ struct MiffHomeHost: View {
                 restricted: MainShellRules.hasNoMiff(directory.state),
                 navigate: { open(.settings($0)) },
                 onBack: { pop() },
-                onOpenNotification: { openNotification($0) }
+                onOpenNotification: { openNotification($0) },
+                // SRV-8I : « Découvrir Miff+ » de Réglages > Abonnement ouvre l'offre, aucune limite atteinte (déclencheur `subscription`).
+                onOpenOffer: { presentPaywall(.subscription) }
             )
         default:
             placeDestination(route)

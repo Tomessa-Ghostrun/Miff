@@ -153,7 +153,9 @@ final class AppConfigurationTests: XCTestCase {
         let accountTypes = [
             "UserID", "EmailAddress", "Name", "PhotosorVideos", "PhoneNumber", "PreciseLocation",
             // LOC-3 : l'adresse et le nom des lieux d'une Miff, écrits dans Firestore, visibles des membres.
-            "PhysicalAddress", "OtherUserContent"
+            "PhysicalAddress", "OtherUserContent",
+            // SRV-8I : l'état de l'abonnement du compte, écrit par le serveur après vérification de la transaction signée.
+            "PurchaseHistory"
         ].map { "NSPrivacyCollectedDataType\($0)" }
         for entry in collected {
             let type = entry["NSPrivacyCollectedDataType"] as? String ?? ""

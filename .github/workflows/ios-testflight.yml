@@ -34,6 +34,18 @@ on:
           - "yes"
           - "no"
         default: "yes"
+      premium_purchase:
+        description: >-
+          SRV-8I, l'ACHAT de Miff+ dans ce build (docs/dev/premium-achat-ios-test.md). off = ETEINT (DEFAUT : « Miff+ arrive bientot », aucune ligne Abonnement, aucune connexion
+          a l'App Store). fake = le FAUX magasin (Debug et Internal seulement : tout l'ecran d'offre et d'abonnement s'essaie sans produit dans App Store Connect, rien n'est accorde sur
+          le vrai serveur ; la carte « Achat Miff+ » du diagnostic choisit les scenarios). real = le VRAI achat (StoreKit en BAC A SABLE, fonctions du serveur) : seulement APRES le
+          deploiement du serveur (deploiement-functions.md §12) et la creation des produits dans App Store Connect ; jamais un oubli.
+        type: choice
+        options:
+          - "off"
+          - fake
+          - real
+        default: "off"
 
 permissions:
   contents: read
@@ -72,6 +84,7 @@ jobs:
       - name: Ouvrir le résumé et vérifier Xcode
         env:
           ARCHIVE_MODE: ${{ inputs.archive_mode }}
+          PREMIUM_PURCHASE: ${{ inputs.premium_purchase }}
           BUILD_NUMBER: ${{ github.run_number }}
         run: |
           set -euo pipefail
@@ -79,6 +92,13 @@ jobs:
             unsigned|signed) ;;
             *)
               echo "::error::archive_mode doit valoir « unsigned » ou « signed » (reçu : « ${ARCHIVE_MODE} »)."
+              exit 1
+              ;;
+          esac
+          case "$PREMIUM_PURCHASE" in
+            off|fake|real) ;;
+            *)
+              echo "::error::premium_purchase doit valoir « off », « fake » ou « real » (reçu : « ${PREMIUM_PURCHASE} »)."
               exit 1
               ;;
           esac
@@ -90,6 +110,7 @@ jobs:
             echo
             echo "- Numéro de build : ${BUILD_NUMBER}"
             echo "- Mode d'archive : ${ARCHIVE_MODE}"
+            echo "- Achat de Miff+ (premium_purchase) : ${PREMIUM_PURCHASE}"
             echo "- Xcode : ${xcode_version} ($(xcodebuild -version | awk 'NR==2'))"
             echo "- Image du runner : ${ImageVersion:-inconnue}"
             echo
@@ -220,6 +241,7 @@ jobs:
           BUILD_NUMBER: ${{ github.run_number }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           MIFF_LOCATION_BLOCKING: ${{ inputs.location_blocking == 'no' && 'NO' || 'YES' }}
+          MIFF_PREMIUM_CONDITIONS: ${{ inputs.premium_purchase == 'fake' && 'PREMIUM_PURCHASE BILLING_FAKE' || (inputs.premium_purchase == 'real' && 'PREMIUM_PURCHASE' || '') }}
         run: |
           set -uo pipefail
           bash ci/timed.sh "Archive (non signée)" bash -c '
@@ -233,6 +255,7 @@ jobs:
               DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
               CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
               MIFF_LOCATION_BLOCKING="$MIFF_LOCATION_BLOCKING" \
+              MIFF_PREMIUM_CONDITIONS="$MIFF_PREMIUM_CONDITIONS" \
               2>&1 | tee build/xcodebuild-archive.log | xcbeautify
           '
 
@@ -246,6 +269,7 @@ jobs:
           ASC_KEY_P8_B64: ${{ secrets.ASC_KEY_P8_B64 }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           MIFF_LOCATION_BLOCKING: ${{ inputs.location_blocking == 'no' && 'NO' || 'YES' }}
+          MIFF_PREMIUM_CONDITIONS: ${{ inputs.premium_purchase == 'fake' && 'PREMIUM_PURCHASE BILLING_FAKE' || (inputs.premium_purchase == 'real' && 'PREMIUM_PURCHASE' || '') }}
         run: |
           set -uo pipefail
           # Pas de "set -x" : la ligne de commande contient des identifiants.
@@ -265,6 +289,7 @@ jobs:
               DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
               CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
               MIFF_LOCATION_BLOCKING="$MIFF_LOCATION_BLOCKING" \
+              MIFF_PREMIUM_CONDITIONS="$MIFF_PREMIUM_CONDITIONS" \
               2>&1 | tee build/xcodebuild-archive.log | xcbeautify
           '
 
@@ -318,6 +343,7 @@ jobs:
         if: success()
         env:
           ARCHIVE_MODE: ${{ inputs.archive_mode }}
+          PREMIUM_PURCHASE: ${{ inputs.premium_purchase }}
         run: |
           set -uo pipefail
           app="$(ls -d build/Miff.xcarchive/Products/Applications/*.app 2>/dev/null | head -n 1)"
@@ -357,6 +383,20 @@ jobs:
           # Configuration Firebase embarquée = projet Miff (compte Apple et Firebase partagés avec un autre projet).
           project_id="$(plutil -extract PROJECT_ID raw -o - "$app/GoogleService-Info.plist" 2>/dev/null || echo absent)"
           if [ "$project_id" = "miff-3d283" ]; then note "GoogleService-Info.plist embarqué : projet miff-3d283 (OK)"; else bad "Le projet Firebase embarqué n'est pas miff-3d283"; fi
+          # SRV-8I : l'achat de Miff+ est dans l'archive SEULEMENT si l'entrée premium_purchase l'a demandé (off : ni l'achat ni le faux magasin ; real : l'achat, pas le faux ; fake : les deux).
+          purchase_hits="$(strings -a "$binary" | grep -c -E 'StoreKitBillingGateway|FirebasePurchaseBackend|PREMIUMPURCHASEPROBE' || true)"
+          fake_hits="$(strings -a "$binary" | grep -c -E 'FAKEBILLINGPROBE|FakeBillingGateway|FakePurchaseBackend|FakeSubscriptionStore|FakeBillingControl' || true)"
+          case "$PREMIUM_PURCHASE" in
+            off)
+              if [ "${purchase_hits:-0}" -ne 0 ] || [ "${fake_hits:-0}" -ne 0 ]; then bad "L'archive contient l'achat (${purchase_hits}) ou le faux magasin (${fake_hits}) alors que premium_purchase vaut off"; else note "Achat de Miff+ : éteint, aucun faux magasin (OK)"; fi
+              ;;
+            real)
+              if [ "${purchase_hits:-0}" -eq 0 ] || [ "${fake_hits:-0}" -ne 0 ]; then bad "premium_purchase = real : l'achat doit être présent (${purchase_hits}) et le faux magasin absent (${fake_hits})"; else note "Achat de Miff+ : le VRAI achat (bac à sable) est dans cette archive, aucun faux magasin"; fi
+              ;;
+            fake)
+              if [ "${purchase_hits:-0}" -eq 0 ] || [ "${fake_hits:-0}" -eq 0 ]; then bad "premium_purchase = fake : l'achat (${purchase_hits}) et le faux magasin (${fake_hits}) doivent être présents"; else note "Achat de Miff+ : le FAUX magasin est dans cette archive (aucun achat réel, rien d'accordé sur le serveur)"; fi
+              ;;
+          esac
           # Diagnostic présent (build Internal), fournisseur App Check de débogage absent, pas d'identifiant publicitaire.
           if [ "$(strings -a "$binary" | grep -c DIAGNOSTICPROBE || true)" -eq 0 ]; then bad "Le diagnostic est absent du build Internal"; else note "Diagnostic présent (OK)"; fi
           if [ "$(strings -a "$binary" | grep -c MiffDebugAppCheck || true)" -ne 0 ]; then bad "Le fournisseur App Check de débogage est présent"; else note "Fournisseur App Check de débogage absent (OK)"; fi

@@ -94,4 +94,16 @@ final class PaywallViewModel: ObservableObject {
             showsAllOffers = true
         }
     }
+
+    /// Le lien « Essai gratuit » de « Voir toutes les offres » : retour à la vue principale (le bouton d'essai), AVANT que la feuille du store s'ouvre.
+    func showTrial() {
+        showsAllOffers = false
+    }
+
+    /// L'achat est allumé dans ce build : l'offre passe de « arrive bientôt » à « les prix arrivent ». Appelé une fois, au début d'un affichage, par `PaywallStoreDriver`.
+    func beginStore() {
+        if state == .comingSoon {
+            state = .loading
+        }
+    }
 }

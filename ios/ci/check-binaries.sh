@@ -300,4 +300,66 @@ case "$mode" in
     ;;
 esac
 
+# --- Achat de Miff+ (docs/tickets/premium-achat-reel.md, SRV-8I) : le VRAI achat (StoreKit, fonctions du serveur) est derrière la condition de compilation PREMIUM_PURCHASE et le FAUX
+#     magasin derrière BILLING_FAKE (project.yml : Debug les a toutes deux ; Internal et Release AUCUNE par défaut, seulement par le réglage MIFF_PREMIUM_CONDITIONS, que le workflow ios-testflight
+#     pose selon son entrée premium_purchase). Marqueurs : les noms de leurs types et deux textes (PREMIUMPURCHASEPROBE, FAKEBILLINGPROBE). Règles :
+#       debug    : les deux sont présents (TÉMOIN POSITIF : sans lui, un « absent » ne prouve rien) ;
+#       internal : selon MIFF_EXPECT_PREMIUM (off par défaut : aucun des deux ; real : l'achat, pas le faux ; fake : les deux) ;
+#       release  : le FAUX magasin est absent SANS EXCEPTION ; l'achat est absent sauf MIFF_ALLOW_PREMIUM_PURCHASE_IN_RELEASE=1 (décision du PM : jamais un oubli).
+purchase_markers='StoreKitBillingGateway|FirebasePurchaseBackend|PREMIUMPURCHASEPROBE'
+fake_markers='FAKEBILLINGPROBE|FakeBillingGateway|FakePurchaseBackend|FakeSubscriptionStore|FakeBillingControl'
+purchase_hits="$(count_strings "$purchase_markers")"
+fake_hits="$(count_strings "$fake_markers")"
+expected_premium="${MIFF_EXPECT_PREMIUM:-off}"
+case "$mode" in
+  debug)
+    if [ "${purchase_hits:-0}" -eq 0 ] || [ "${fake_hits:-0}" -eq 0 ]; then
+      fail "Témoin positif en échec : le build Debug devrait contenir l'achat (${purchase_hits}) et le faux magasin (${fake_hits}). La recherche de chaînes ne prouve rien."
+    else
+      report "Achat de Miff+ : l'achat (${purchase_hits} traces) et le faux magasin (${fake_hits}) sont présents dans le build Debug (OK)"
+    fi
+    ;;
+  internal)
+    case "$expected_premium" in
+      off)
+        if [ "${purchase_hits:-0}" -ne 0 ] || [ "${fake_hits:-0}" -ne 0 ]; then
+          fail "Le build Internal contient l'achat (${purchase_hits}) ou le faux magasin (${fake_hits}) alors qu'il devrait être éteint par défaut."
+        else
+          report "Internal : achat de Miff+ éteint, aucun faux magasin (OK)"
+        fi
+        ;;
+      real)
+        if [ "${purchase_hits:-0}" -eq 0 ] || [ "${fake_hits:-0}" -ne 0 ]; then
+          fail "Internal (achat réel demandé) : l'achat doit être présent (${purchase_hits}) et le faux magasin absent (${fake_hits})."
+        else
+          report "Internal : le VRAI achat de Miff+ est présent, sans faux magasin (voulu : MIFF_EXPECT_PREMIUM=real)"
+        fi
+        ;;
+      fake)
+        if [ "${purchase_hits:-0}" -eq 0 ] || [ "${fake_hits:-0}" -eq 0 ]; then
+          fail "Internal (faux magasin demandé) : l'achat (${purchase_hits}) et le faux magasin (${fake_hits}) doivent être présents."
+        else
+          report "Internal : le FAUX magasin de Miff+ est présent (voulu : MIFF_EXPECT_PREMIUM=fake)"
+        fi
+        ;;
+      *)
+        fail "MIFF_EXPECT_PREMIUM vaut « ${expected_premium} » au lieu de off, fake ou real."
+        ;;
+    esac
+    ;;
+  release)
+    if [ "${fake_hits:-0}" -ne 0 ]; then
+      fail "Le build Release contient le FAUX magasin de Miff+ (${fake_hits} trace(s)) : jamais dans un build de publication, sans exception."
+      strings -a "$binary" | grep -E "$fake_markers" | head -n 5
+    elif [ "${purchase_hits:-0}" -ne 0 ] && [ "${MIFF_ALLOW_PREMIUM_PURCHASE_IN_RELEASE:-0}" != "1" ]; then
+      fail "Le build Release contient l'achat de Miff+ (${purchase_hits} trace(s)) : il doit être éteint tant que le PM n'en a pas décidé la mise en service (MIFF_ALLOW_PREMIUM_PURCHASE_IN_RELEASE=1 en toute connaissance de cause)."
+      strings -a "$binary" | grep -E "$purchase_markers" | head -n 5
+    elif [ "${purchase_hits:-0}" -ne 0 ]; then
+      report "Release : l'achat de Miff+ est PRÉSENT (voulu : MIFF_ALLOW_PREMIUM_PURCHASE_IN_RELEASE=1), aucun faux magasin"
+    else
+      report "Release : aucune trace de l'achat de Miff+ ni du faux magasin (OK)"
+    fi
+    ;;
+esac
+
 exit "$failed"
