@@ -86,7 +86,7 @@ Les écarts E1 à E3, E5, E9 et E10 sont **imposés** (stores ou décisions) ; E
 
 | État | Quand | Ce que voit la personne [Proposé] | Commandes |
 |---|---|---|---|
-| **Éligible à l'essai** (M1) | Le store indique que l'essai est proposé à ce compte | Bouton principal « **Commencer l'essai gratuit (7 jours)** » ; ligne la plus visible sous le bouton : « **Puis {prix annuel} par an** » ; ligne secondaire plus petite : « soit {équivalent mensuel} par mois » ; bulle « Annulable à tout moment » ; bloc d'information §5.4 ; lien « Voir toutes les offres » | Bouton d'essai ; « Voir toutes les offres » ; « Restaurer mes achats » ; liens légaux ; croix (§6) |
+| **Éligible à l'essai** (M1) | Le store indique que l'essai est proposé à ce compte | Bouton principal « **Tester gratuitement (7 jours)** » ; ligne la plus visible sous le bouton : « **Puis {prix annuel} par an** » ; ligne secondaire plus petite : « soit {équivalent mensuel} par mois » ; bulle « Annulable à tout moment » ; bloc d'information §5.4 ; lien « Voir toutes les offres » | Bouton d'essai ; « Voir toutes les offres » ; « Restaurer mes achats » ; liens légaux ; croix (§6) |
 | **Non éligible à l'essai** (M2) | Le store ne propose pas l'essai (déjà utilisé, ou autre raison : on ne l'affiche pas) | Deux boutons : **Annuel** « {prix annuel} par an » + « soit {équivalent mensuel} par mois » + bulle « presque 30 % d'économie » ; **Mensuel** « {prix mensuel} par mois » + « Sans engagement » ; bloc d'information §5.4 | Deux boutons d'achat ; « Restaurer mes achats » ; liens ; croix |
 | **Chargement des prix** | Les offres sont demandées au store | Cartes et titre visibles ; zone d'offre en **repères de chargement** de la hauteur finale (pas de saut de mise en page) ; bouton d'achat **inactif** ; texte « Chargement des offres… » | Croix (§6), liens légaux |
 | **Prix indisponibles** | Échec ou plus de 10 s sans réponse, hors connexion, store injoignable | « Les offres ne sont pas disponibles pour le moment. Vérifie ta connexion et réessaie. » ; **aucun prix, aucun bouton d'achat** | « Réessayer » ; croix ; liens |
@@ -117,7 +117,7 @@ Reprise des clés `place_paywall_*` existantes vers le préfixe `paywall_` (l'é
 
 | Clé | FR | EN |
 |---|---|---|
-| `paywall_cta_trial` | Commencer l'essai gratuit (7 jours) | Start your 7-day free trial |
+| `paywall_cta_trial` | Tester gratuitement (7 jours) | Start your 7-day free trial |
 | `paywall_trial_then` | Puis {prix} par an | Then {price} per year |
 | `paywall_monthly_equivalent` | soit {prix} par mois | that's {price} per month |
 | `paywall_annual_savings` | presque 30 % d'économie | almost 30% off |
@@ -220,7 +220,7 @@ Ce document ne prétend **à aucune relecture par un juriste**.
 - [ ] **PW1** Titre, **3** cartes (lieux, Miffs, zones de danger ; **aucune** « Notifications intelligentes »), bouton principal bleu, bulle jaune, croix en haut à gauche : conformes à `design/exports/paywall/` ; chaque écart de §4.2 est listé et justifié dans la PR.
 - [ ] **PW2** Textes en **tutoiement**, FR et EN, sans chaîne en dur ; aucun prix, devise ni durée écrits dans le code ni dans les traductions (hors « presque 30 % »).
 - [ ] **PW3** La phrase de contexte (« Tu as atteint 3 lieux », « Une seule Miff avec la formule gratuite », zone de danger) est présente selon l'entrée, sans prix ni « Premium » dans la variante « sans achat ».
-- [ ] **PW4** **État éligible** : bouton « Commencer l'essai gratuit (7 jours) », ligne « Puis {prix annuel} par an » **plus visible** que « soit {équivalent} par mois » (taille et graisse du texte supérieures), bulle « Annulable à tout moment », lien « Voir toutes les offres » qui bascule vers la disposition à deux boutons.
+- [ ] **PW4** **État éligible** : bouton « Tester gratuitement (7 jours) », ligne « Puis {prix annuel} par an » **plus visible** que « soit {équivalent} par mois » (taille et graisse du texte supérieures), bulle « Annulable à tout moment », lien « Voir toutes les offres » qui bascule vers la disposition à deux boutons.
 - [ ] **PW5** **État non éligible** : annuel (prix annuel plus visible que l'équivalent mensuel, bulle « presque 30 % d'économie ») et mensuel (« Sans engagement »), sans mention d'essai.
 - [ ] **PW6** **Bloc d'information** (§5.4) présent dans tous les états à offre : renouvellement automatique, annulation, liens Conditions d'utilisation et Politique de confidentialité, « Restaurer mes achats », phrase d'accès sans essai ; nom du store correct (« App Store » sur iOS, « Google Play » sur Android) ; « 24 heures avant » seulement sur iOS pour l'essai.
 - [ ] **PW7** **Dynamic Type / grande police** (taille maximale) : rien n'est tronqué, la bulle ne couvre pas le bouton, l'écran défile, le bloc d'information est atteignable, la ligne de prix reste visible près du bouton.

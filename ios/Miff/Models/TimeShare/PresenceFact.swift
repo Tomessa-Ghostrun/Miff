@@ -67,16 +67,19 @@ enum TimeShareLimits {
     static let defaultWindowDays = 7
     static let hourMillis = 3_600_000
     static let dayMillis = 24 * hourMillis
-    /// Tant que le PREMIER enregistrement du journal de la Miff a moins de 7 jours, « pas assez de données » : aucun graphique, aucun
-    /// pourcentage (retour du PM, 2026-11-17 : le seuil de 24 h du ticket d'origine est remplacé). Il faut en plus du temps MESURÉ dans la fenêtre.
-    static let minimumHistoryMillis = 7 * dayMillis
+    /// L'UNIQUE définition du seuil : « pas assez de données » tant que le PREMIER enregistrement du journal de la Miff a moins de 3 jours
+    /// (retour du PM après la recette Android, 2026-11-25 : 3 jours suffisent ; avant : 7 jours le 2026-11-17, 24 h dans le ticket d'origine).
+    /// Aucun graphique ni pourcentage avant. Il faut en plus du temps MESURÉ dans la fenêtre. Même valeur qu'Android (`MIN_HISTORY_MILLIS`).
+    static let minimumHistoryDays = 3
+    static let minimumHistoryMillis = minimumHistoryDays * dayMillis
 
-    /// « Ton graphique arrive dans X jours » : les jours qui restent avant les 7 jours d'historique, d'après le temps écoulé depuis le PREMIER
-    /// enregistrement du journal de la Miff (aucun enregistrement : 0 écoulé, donc 7). Jamais moins de 1 tant que le graphique n'est pas
-    /// affichable (6 jours et 2 h écoulés : « 1 jour »), jamais plus de 7. Les jours écoulés sont comptés ENTIERS (6 j 23 h : 6 jours écoulés).
+    /// « Ton graphique arrive dans X jours » : les jours qui restent avant le seuil d'historique, d'après le temps écoulé depuis le PREMIER
+    /// enregistrement du journal de la Miff (aucun enregistrement : 0 écoulé, donc 3). Jamais moins de 1 tant que le graphique n'est pas
+    /// affichable (2 jours et 2 h écoulés : « 1 jour »), jamais plus que le seuil. Les jours écoulés sont comptés ENTIERS (2 j 23 h : 2 jours
+    /// écoulés). Résultat : 3, puis 2, puis 1, puis le graphique.
     static func daysLeft(elapsedMillis: Int) -> Int {
         let elapsedDays = max(0, elapsedMillis) / dayMillis
-        return min(7, max(1, 7 - elapsedDays))
+        return min(minimumHistoryDays, max(1, minimumHistoryDays - elapsedDays))
     }
     /// Un état n'est compté que 48 h au plus sans nouveau fait : au-delà, non mesuré (sortie manquée, téléphone éteint, app tuée).
     static let openStateCapMillis = 48 * hourMillis

@@ -6,7 +6,7 @@ import SwiftUI
 // dans tes zones de confiance » avec la coche et 🎉. Tout est calculé sur le téléphone ; rien n'est
 // envoyé. Accessibilité : l'anneau est décoratif, UNE description liste TOUTES les parts (le NOM de la catégorie, jamais l'emoji), le sélecteur est
 // annoncé « Période, 7 jours » (le choix actuel « choisi »), la ligne de la zone de danger est un bouton qui ouvre le détail ; aux grandes tailles de
-// texte la légende passe SOUS l'anneau. Sans 7 jours de données : pas de graphique, pas de sélecteur, seulement le texte figé par le PM.
+// texte la légende passe SOUS l'anneau. Sans 3 jours de données : pas de graphique, pas de sélecteur, seulement le texte figé par le PM.
 
 /// Les gestes de la carte.
 struct TimeShareActions {
@@ -175,6 +175,8 @@ struct TimeShareCard: View {
             action("update_action_open_settings", actions.onOpenLocationSettings)
         case .notEnough(let daysLeft):
             notEnough(daysLeft)
+        case .noTimeYet:
+            message("profile_timeshare_no_time_yet")
         case .nominal(let result, let pause):
             nominal(result, pause: pause)
         }
@@ -195,7 +197,7 @@ struct TimeShareCard: View {
         .buttonStyle(.miffSecondaryFullWidth)
     }
 
-    /// Moins de 7 jours d'historique, suivi actif : PAS de graphique et PAS d'anneau vide, seulement le texte figé par le PM (ticket §7).
+    /// Moins de 3 jours d'historique, suivi actif : PAS de graphique et PAS d'anneau vide, seulement le texte figé par le PM (ticket §7).
     private func notEnough(_ daysLeft: Int) -> some View {
         Text(verbatim: TimeShareTexts.notEnough(daysLeft: daysLeft))
             .miffTextStyle(textBodyRegular14)

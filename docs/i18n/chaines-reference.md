@@ -351,11 +351,11 @@
 
 ### S29 · `paywall_cta_trial` et `paywall_cancel_anytime`
 
-**fr** : Commencer l'essai gratuit (7 jours) / Annulable à tout moment
+**fr** : Tester gratuitement (7 jours) / Annulable à tout moment
 
 | Langue | Traduction proposée | Rétro-traduction |
 |---|---|---|
-| es | Empezar la prueba gratuita (7 días) / Cancela cuando quieras | Commencer l'essai gratuit (7 jours) / Annule quand tu veux |
+| es | Empezar la prueba gratuita (7 días) / Cancela cuando quieras | Tester gratuitement (7 jours) / Annule quand tu veux |
 | it | Inizia la prova gratuita (7 giorni) / Annulla quando vuoi | Commence l'essai gratuit (7 jours) / Annule quand tu veux |
 | pt-PT | Começar o teste gratuito (7 dias) / Cancela quando quiseres | Commencer le test gratuit (7 jours) / Annule quand tu voudras |
 | de | 7 Tage kostenlos testen / Jederzeit kündbar | Essayer 7 jours gratuitement / Résiliable à tout moment |

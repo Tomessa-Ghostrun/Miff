@@ -2,9 +2,9 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
-## [0.61.1] - 2026-11-26 : l'offre périodique passe de « toutes les 15 ouvertures » à « toutes les 10 ouvertures », et finitions de la revue indépendante de la PR 324 (PAY-PER-A)
+## [0.61.2] - 2026-11-26 : l'offre périodique passe de « toutes les 15 ouvertures » à « toutes les 10 ouvertures », et finitions de la revue indépendante de la PR 324 (PAY-PER-A)
 
-Branche `android/finitions-paywall-periodique`. **Numéro de version provisoire** (au-dessus de 0.61.0 ; le PM renumérote à la fusion). **Seul changement de comportement : la fréquence** (demande du PM du 2026-11-26) ; aucun nouveau texte, coût ajouté : 0 €. Le PM n'a pas de recette à faire.
+Branche `android/finitions-paywall-periodique`. **Numéro de version provisoire** (au-dessus de la 0.61.1 de la PR 326 ; le PM renumérote à la fusion). **Seul changement de comportement : la fréquence** (demande du PM du 2026-11-26) ; aucun nouveau texte, coût ajouté : 0 €. Le PM n'a pas de recette à faire.
 
 ### Modifié : cadence de 15 à 10 ouvertures (décision du PM, 2026-11-26)
 - `PeriodicPaywallDefaults.OPENINGS_BETWEEN` passe de **15 à 10** : une personne sans Miff+ voit l'offre **toutes les 10 ouvertures** (à 2 ou 3 ouvertures par jour, environ 3 à 5 jours au lieu de 5 à 7). **Rien d'autre ne change** (premier appui, moment calme, une seule fois par session, croix à 3 s, conditions d'exclusion, remise à zéro).
@@ -18,6 +18,16 @@ Branche `android/finitions-paywall-periodique`. **Numéro de version provisoire*
 ### Tests et documents
 - `PeriodicPaywallBuildTest` : la liste des fichiers exemptés est maintenant explicite et justifiée un par un (uniquement des écrans empilés par la navigation) ; `DeleteAccountHost.kt` (exemption inexacte « empilé ») et `ReviewPromptWindow.kt` n'y sont plus. Chaque surcouche doit avoir son `OverlayPresent()` **juste à côté** de son appel (et non « quelque part dans le fichier ») ; un test vérifie que la liste d'exemptions ne pourrit pas (fichier toujours là, surcouche toujours là) et que `AppRoot` fournit le registre au message de suppression annulée.
 - Recette `docs/qa/checklists/paywall-periodique-android-recette-pm.md`, étape 17 bis : la feuille « photo de profil » est retirée de la liste (elle ne s'ouvre que dans Mes infos, écran empilé, et dans l'onboarding : elle ne testait rien).
+
+## [0.61.1] - 2026-11-26 : le bouton d'essai de l'offre Miff+ devient « Tester gratuitement (7 jours) » (changement de wording seul)
+
+Demande du PM, sans recette PM. Branche `android/cta-tester-gratuitement`. **Numéro de version provisoire** (`main` est à 0.61.0 ; le PM renumérote à la fusion). **Coût ajouté : 0 €.** Aucun nouvel écran, aucune clé nouvelle, aucun comportement modifié.
+
+### Modifié
+- **Français uniquement** : la valeur de `paywall_cta_trial` (`values-fr`) passe de « Commencer l'essai gratuit (7 jours) » à « **Tester gratuitement (7 jours)** ». Les autres langues (en, es, it, pt, de) sont **inchangées** : à décider par le PM. La parité des clés reste verte.
+- Documentation alignée sur le nouveau libellé français : `docs/tickets/paywall-v2.md`, `docs/i18n/chaines-reference.md` (S29), `docs/qa/checklists/paywall-v2-android-recette-pm.md`.
+- Aucun test ne figeait l'ancien texte (ils passent par `R.string.paywall_cta_trial`).
+- Non touchés : le catalogue iOS (`ios/Miff/Resources/Localizable.xcstrings`, autre plateforme), le fichier d'échange `docs/i18n/echange/source-fr-en.json` (instantané déjà périmé, régénéré par script) et les textes historiques de ce journal.
 
 ## [0.61.0] - 2026-11-26 : l'offre Miff+ s'ouvre d'elle-même « toutes les 15 ouvertures » pour une personne sans Miff+ (PAY-PER-A)
 
