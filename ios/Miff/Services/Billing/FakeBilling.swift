@@ -216,7 +216,7 @@ final class FakePurchaseBackend: PurchaseBackend {
         return .ready(purchaseId: UUID().uuidString)
     }
 
-    func sync(signedTransaction: String) async -> SyncResult {
+    func sync(signedTransaction: String) async -> PurchaseSyncResult {
         try? await Task.sleep(nanoseconds: 400_000_000)
         switch FakeBillingControl.purchase {
         case .otherAccount:

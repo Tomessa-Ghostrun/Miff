@@ -5,14 +5,6 @@ import Foundation
 
 let testPurchaseId = "7C9E6679-7425-40DE-944B-E07FC1F90AE7"
 
-/// Attend (2 secondes au plus) qu'une condition devienne vraie, en laissant les autres tâches avancer.
-@MainActor
-func waitUntil(_ condition: @MainActor () -> Bool) async {
-    for _ in 0..<200 where !condition() {
-        try? await Task.sleep(nanoseconds: 10_000_000)
-    }
-}
-
 /// Compte combien de fois le store a été prié de « terminer » une transaction.
 final class FinishCounter {
     private(set) var count = 0
@@ -73,7 +65,7 @@ final class StubGateway: BillingGateway {
 final class StubBackend: PurchaseBackend {
     var prepare: PrepareResult = .ready(purchaseId: testPurchaseId)
     /// Les réponses de la vérification, dans l'ordre ; la dernière se répète.
-    var syncResults: [SyncResult] = [.synced(state: "trial")]
+    var syncResults: [PurchaseSyncResult] = [.synced(state: "trial")]
     var purgeResult = true
     private(set) var prepareCalls = 0
     private(set) var syncedSigned: [String] = []
@@ -84,7 +76,7 @@ final class StubBackend: PurchaseBackend {
         return prepare
     }
 
-    func sync(signedTransaction: String) async -> SyncResult {
+    func sync(signedTransaction: String) async -> PurchaseSyncResult {
         syncedSigned.append(signedTransaction)
         let index = min(syncedSigned.count - 1, syncResults.count - 1)
         return syncResults[index]

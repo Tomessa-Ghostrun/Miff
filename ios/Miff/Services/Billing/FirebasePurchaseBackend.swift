@@ -35,7 +35,7 @@ final class FirebasePurchaseBackend: PurchaseBackend, CustomStringConvertible {
         }
     }
 
-    func sync(signedTransaction: String) async -> SyncResult {
+    func sync(signedTransaction: String) async -> PurchaseSyncResult {
         do {
             let body: [String: Any] = ["store": "app_store", "signedTransaction": signedTransaction]
             let result = try await callable(Self.synchronize).call(body)
@@ -82,7 +82,7 @@ final class FirebasePurchaseBackend: PurchaseBackend, CustomStringConvertible {
     }
 
     /// Les codes de `backend/functions/src/achatErreurs.ts`, comme la bibliothèque les rapporte.
-    static func syncFailure(_ code: FunctionsErrorCode?) -> SyncResult {
+    static func syncFailure(_ code: FunctionsErrorCode?) -> PurchaseSyncResult {
         switch code {
         case .alreadyExists?:
             return .alreadyLinked

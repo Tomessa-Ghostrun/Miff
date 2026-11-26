@@ -171,7 +171,7 @@ final class PremiumCoordinatorTests: XCTestCase {
     }
 
     func testARefusalForGoodIsAFailureAndAnUnreachableServerIsNetwork() async {
-        let results: [(SyncResult, PurchaseOutcome)] = [(.rejected, .failed), (.unavailable, .network)]
+        let results: [(PurchaseSyncResult, PurchaseOutcome)] = [(.rejected, .failed), (.unavailable, .network)]
         for (result, expected) in results {
             backend.syncResults = [result]
             gateway.purchaseResult = .purchased(makeTransaction())

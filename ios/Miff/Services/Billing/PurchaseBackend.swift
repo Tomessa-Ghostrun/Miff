@@ -21,7 +21,7 @@ enum PrepareResult: Equatable, CustomStringConvertible {
 }
 
 /// La réponse du serveur à « vérifie cet achat et dis-moi ce qu'il vaut ».
-enum SyncResult: Equatable {
+enum PurchaseSyncResult: Equatable {
     /// Vérifié. `state` est l'état calculé par le serveur : trial, active, canceled, grace, on_hold, expired, revoked, ou pending (payé plus tard : RIEN d'accordé).
     case synced(state: String?)
     /// L'achat appartient à un AUTRE compte Miff (un achat = un compte). Rien n'est dit de cet autre compte.
@@ -38,7 +38,7 @@ enum SyncResult: Equatable {
 protocol PurchaseBackend: AnyObject {
     func preparePurchaseId() async -> PrepareResult
 
-    func sync(signedTransaction: String) async -> SyncResult
+    func sync(signedTransaction: String) async -> PurchaseSyncResult
 
     /// À la suppression du compte, AVANT que le compte d'authentification parte (la fonction exige la connexion) : le serveur supprime l'identifiant d'achat et les liens.
     /// Il ne résilie PAS l'abonnement chez le store. Un échec est TOLÉRÉ par l'appelant (ce qui reste est purgé par les règles d'expiration) : rend faux, ne lève jamais.

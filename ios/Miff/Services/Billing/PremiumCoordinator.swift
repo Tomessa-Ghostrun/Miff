@@ -340,7 +340,7 @@ final class PremiumCoordinator: ObservableObject {
     /// UN appel à `synchroniserAchat` à la fois, au moins `syncSpacing` après le précédent (le serveur en accepte un par minute et par compte et compte chaque appel).
     /// `patient` : une réponse que la personne attend peut attendre son tour et réessayer une fois après « trop tôt » ; un chemin silencieux abandonne (il reviendra à
     /// la prochaine ouverture).
-    private func syncSpaced(_ signed: String, patient: Bool) async -> SyncResult {
+    private func syncSpaced(_ signed: String, patient: Bool) async -> PurchaseSyncResult {
         await syncLock.acquire()
         defer {
             syncLock.release()

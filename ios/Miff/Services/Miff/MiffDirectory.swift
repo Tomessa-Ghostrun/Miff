@@ -231,24 +231,6 @@ final class MiffDirectory: ObservableObject {
         )
     }
 
-    #if canImport(Combine)
-    /// Suit les accords de Miff+ (`PremiumCoordinator.accessGranted`) tant que l'abonnement rendu est gardé : la formule de la liste est corrigée tout de suite, puis les Miffs et la
-    /// formule sont relues auprès du serveur. Un échec de cette relecture est silencieux (le Feed relit la liste à son ouverture).
-    func followPremiumGrants<Grants: Publisher>(
-        _ grants: Grants
-    ) -> AnyCancellable where Grants.Output == Void, Grants.Failure == Never {
-        grants.sink { [weak self] in
-            guard let self else {
-                return
-            }
-            self.onPremiumGranted()
-            Task {
-                await self.refresh()
-            }
-        }
-    }
-    #endif
-
     /// La personne a choisi une autre Miff dans le sélecteur (Premium).
     func select(miffId: String) {
         guard case .ready(let ready) = state, ready.miffs.contains(where: { $0.id == miffId }) else {
@@ -309,3 +291,23 @@ final class MiffDirectory: ObservableObject {
         notices.append(notice)
     }
 }
+
+#if canImport(Combine)
+extension MiffDirectory {
+    /// Suit les accords de Miff+ (`PremiumCoordinator.accessGranted`) tant que l'abonnement rendu est gardé : la formule de la liste est corrigée tout de suite
+    /// (`onPremiumGranted`), puis les Miffs et la formule sont relues auprès du serveur. Un échec de cette relecture est silencieux (le Feed relit la liste à son ouverture).
+    func followPremiumGrants<Grants: Publisher>(
+        _ grants: Grants
+    ) -> AnyCancellable where Grants.Output == Void, Grants.Failure == Never {
+        grants.sink { [weak self] in
+            guard let self else {
+                return
+            }
+            self.onPremiumGranted()
+            Task {
+                await self.refresh()
+            }
+        }
+    }
+}
+#endif
