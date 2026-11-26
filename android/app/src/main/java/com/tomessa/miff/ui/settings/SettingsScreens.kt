@@ -203,15 +203,15 @@ private val RowMinHeight = Spacing.minTouchTarget + Spacing.l
 
 /**
  * Settings list (mockup "reglages", ticket ONB-3a, criterion A4): My information, My account, Language, Notifications (NOTIF-2A: it revises decision
- * Q6, because reminders now exist), Privacy (ONB-3b), and "À propos et aide" LAST (decision of the PM, 2026-11-13). Nothing else: no subscription or Premium banner (nothing can be bought yet), no "Supprimer mon
+ * Q6, because reminders now exist), Privacy (ONB-3b), and "À propos et aide" LAST (decision of the PM, 2026-11-13). Nothing else: no Premium banner or price on the list itself, no "Supprimer mon
  * compte" line (it lives INSIDE "Mon compte").
  *
  * RESTRICTED list (decision of the PM, 2026-11-07, for a person with no Miff yet): [onOpenMyInfo] and [onOpenLanguage] are null and their
  * rows are not drawn; only "Mon compte", "Confidentialité" and "À propos et aide" remain. [onOpenSubscription] is never given there.
  *
- * The "Abonnement" line (ticket ABO-1, mockup "reglages -2") is drawn ONLY when [onOpenSubscription] is given, that is for an ACTIVE
- * Miff+ account whose status was read when the screen opened; for everyone else, and in the restricted list, it is null: no line,
- * no banner, no price, nothing about a subscription.
+ * The "Abonnement" line (ticket ABO-1, mockup "reglages -2") is drawn ONLY when [onOpenSubscription] is given: for everybody when the
+ * purchase is switched on (BuildConfig.PREMIUM_PURCHASE, SRV-8A), otherwise only for an ACTIVE Miff+ account whose status was read when
+ * the screen opened. When it is null (and in the restricted list) there is no line, no banner, no price, nothing about a subscription.
  */
 @Composable
 fun SettingsScreen(

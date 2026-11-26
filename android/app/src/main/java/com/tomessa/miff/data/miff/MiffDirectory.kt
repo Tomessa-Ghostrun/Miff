@@ -192,17 +192,21 @@ class MiffDirectory(
      * it ("Créer une Miff" of the selector and of the Profile, which open the offer for a free account that already has a Miff) went on opening the offer for a person who has just
      * subscribed, and the offer answered "Tu as Miff+". The plan is put right at once; the server is read again right after (see [followPremiumGrants]), which settles any doubt.
      */
-    fun onPremiumGranted() {
-        val ready = mutableState.value as? DirectoryState.Ready ?: return
-        if (ready.premium && ready.premiumKnown) return
-        mutableState.value =
-            DirectoryState.Ready(
-                ready.miffs,
-                ready.activeId,
-                premium = true,
-                fromCache = ready.fromCache,
-                premiumKnown = true,
-            )
+    suspend fun onPremiumGranted() {
+        // Under the mutex, like every other write of the state: a [refresh] started BEFORE the purchase (its answer still says "free") finishes first, then the plan is put right; without the
+        // lock its late answer could write the old plan over this one.
+        mutex.withLock {
+            val ready = mutableState.value as? DirectoryState.Ready ?: return
+            if (ready.premium && ready.premiumKnown) return
+            mutableState.value =
+                DirectoryState.Ready(
+                    ready.miffs,
+                    ready.activeId,
+                    premium = true,
+                    fromCache = ready.fromCache,
+                    premiumKnown = true,
+                )
+        }
     }
 
     /**

@@ -93,31 +93,36 @@ class SubscriptionViewModelTest {
         }
 
     @Test
-    fun theRenewalPrice_isTheStoresPrice_ofThePlan_neverTheDocuments() =
+    fun theTrialPrice_isTheStoresAnnualPrice_neverTheDocuments() =
         runTest(dispatcher) {
-            val yearly = World(this)
-            yearly.store.document = store("active", plan = "yearly")
-            val m1 = SubscriptionViewModel(yearly.repository, yearly.coordinator)
-            runCurrent()
-            assertEquals("59,88 €", m1.uiState.value.renewalPrice())
-            val monthly = World(this)
-            monthly.store.document = store("active", plan = "monthly")
-            val m2 = SubscriptionViewModel(monthly.repository, monthly.coordinator)
-            runCurrent()
-            assertEquals("6,99 €", m2.uiState.value.renewalPrice())
-            // During the trial the next price is the annual one.
             val trial = World(this)
             trial.store.document = store("trial")
-            val m3 = SubscriptionViewModel(trial.repository, trial.coordinator)
+            val model = SubscriptionViewModel(trial.repository, trial.coordinator)
             runCurrent()
-            assertEquals("59,88 €", m3.uiState.value.renewalPrice())
+            assertEquals("59,88 €", model.uiState.value.renewalPrice())
+        }
+
+    @Test
+    fun aRunningSubscription_showsNoRenewalPrice_theBilledOneIsNotKnown_andNeverAsksTheStore() =
+        runTest(dispatcher) {
+            // Renewed at the SAME price (decision of the PM): an old subscriber may no longer pay today's catalog price, and the server gives no billed amount.
+            listOf("yearly", "monthly").forEach { plan ->
+                val w = World(this)
+                w.store.document = store("active", plan = plan)
+                val model = SubscriptionViewModel(w.repository, w.coordinator)
+                runCurrent()
+                assertTrue(model.uiState.value.status is SubscriptionStatus.Store)
+                assertNull(plan, model.uiState.value.renewalPrice())
+                assertNull(plan, model.uiState.value.prices)
+                assertEquals(plan, 0, w.gateway.catalogCalls)
+            }
         }
 
     @Test
     fun withTheStoreOutOfReach_theSentenceHasNoPrice() =
         runTest(dispatcher) {
             val w = World(this)
-            w.store.document = store("active")
+            w.store.document = store("trial")
             w.gateway.catalog = CatalogResult.Error
             val model = SubscriptionViewModel(w.repository, w.coordinator)
             runCurrent()
@@ -125,7 +130,7 @@ class SubscriptionViewModelTest {
             assertTrue(model.uiState.value.status is SubscriptionStatus.Store)
             // A store that is too slow does not hold the screen for ever.
             val slow = World(this)
-            slow.store.document = store("active")
+            slow.store.document = store("trial")
             slow.gateway.catalogDelayMillis = 60_000
             val slowModel = SubscriptionViewModel(slow.repository, slow.coordinator)
             runCurrent()

@@ -85,32 +85,47 @@ class FirestoreAccountDataStore(
 
     override suspend fun deleteProfile(uid: String) {
         // Billing first (it needs the sign-in): bounded, tolerated, nothing to do when the purchase is switched off.
-        subscriptionData?.let { purge -> withTimeoutOrNull(SUBSCRIPTION_PURGE_TIMEOUT_MS) { purge() } }
-        // Before `users/{uid}` (contract 2.21): the entries of the journal. Tolerated: it never throws, and what is left is deleted by the TTL and readable by nobody.
-        journal?.deleteAll(uid)
-        val db = firestore()
-        val ref = db.collection("users").document(uid)
-        val quota = ref.collection("quota").document("alerts")
-        deleteProfileTolerantly(
-            withQuota = alertsEnabled,
-            deleteWithQuota = {
-                db
-                    .runTransaction { transaction ->
-                        transaction.delete(quota)
-                        transaction.delete(ref)
-                    }.await()
-            },
-            deleteProfileOnly = { db.runTransaction { transaction -> transaction.delete(ref) }.await() },
-            refused = {
-                it is com.google.firebase.firestore.FirebaseFirestoreException &&
-                    it.code == com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED
-            },
-        )
+        deleteProfileAfterBillingPurge(subscriptionData) {
+            // Before `users/{uid}` (contract 2.21): the entries of the journal. Tolerated: it never throws, and what is left is deleted by the TTL and readable by nobody.
+            journal?.deleteAll(uid)
+            val db = firestore()
+            val ref = db.collection("users").document(uid)
+            val quota = ref.collection("quota").document("alerts")
+            deleteProfileTolerantly(
+                withQuota = alertsEnabled,
+                deleteWithQuota = {
+                    db
+                        .runTransaction { transaction ->
+                            transaction.delete(quota)
+                            transaction.delete(ref)
+                        }.await()
+                },
+                deleteProfileOnly = { db.runTransaction { transaction -> transaction.delete(ref) }.await() },
+                refused = {
+                    it is com.google.firebase.firestore.FirebaseFirestoreException &&
+                        it.code == com.google.firebase.firestore.FirebaseFirestoreException.Code.PERMISSION_DENIED
+                },
+            )
+        }
     }
 }
 
 /** The purge of the billing data is a courtesy of the deletion, not a condition of it: it never holds the deletion for long. */
-private const val SUBSCRIPTION_PURGE_TIMEOUT_MS = 8_000L
+internal const val SUBSCRIPTION_PURGE_TIMEOUT_MS = 8_000L
+
+/**
+ * The order of the deletion of the profile (SRV-8A): the purge of the billing data FIRST (it needs the sign-in, which the deletion of the profile and of the account takes away), bounded
+ * by [purgeTimeoutMillis] and TOLERATED (a `false`, or a purge that is too slow, never stops the deletion; nothing is done when [purge] is null = purchase switched off), THEN [deleteRest].
+ * Apart from the Firestore calls so that the order and the bound are tested (DeleteProfileAfterBillingPurgeTest).
+ */
+internal suspend fun deleteProfileAfterBillingPurge(
+    purge: (suspend () -> Boolean)?,
+    purgeTimeoutMillis: Long = SUBSCRIPTION_PURGE_TIMEOUT_MS,
+    deleteRest: suspend () -> Unit,
+) {
+    purge?.let { withTimeoutOrNull(purgeTimeoutMillis) { it() } }
+    deleteRest()
+}
 
 /**
  * ALERTE (backend/data-model.md 2.20): the daily counter of the alerts goes with the profile, in the same transaction, when the function is on. The rules may REFUSE that deletion

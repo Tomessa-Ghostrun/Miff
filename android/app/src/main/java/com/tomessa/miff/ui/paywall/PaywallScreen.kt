@@ -273,8 +273,9 @@ fun PaywallScreen(
                 actions = actions,
             )
         }
-        // The confirmation is celebrated with a short burst of confetti over the whole screen; nothing at all when the animations are turned off (see [ConfettiBurst]).
-        if (offer is PaywallOffer.Subscribed && !reduceMotion) ConfettiBurst()
+        // The confirmation is celebrated with a short burst of confetti over the whole screen, only when the person has JUST become a subscriber (not each time an account that already has
+        // Miff+ opens the offer); nothing at all when the animations are turned off (see [ConfettiBurst]).
+        if (offer is PaywallOffer.Subscribed && state.celebrate && !reduceMotion) ConfettiBurst()
     }
 }
 

@@ -50,9 +50,17 @@ class ConsentWithdrawals(
 
     /** The person switched the collection off: mark it, try to record it, and keep trying in the background if needed. */
     suspend fun withdraw(uid: String): ProfileWriteResult {
+        markWithdrawal(uid)
+        return afterTry(uid, settle(uid))
+    }
+
+    /**
+     * The mark alone, written to disk before returning (no suspension, no coroutine): the screen calls it in the very tap that withdraws the consent, BEFORE it cuts the collection
+     * and before any coroutine is launched, so that a process killed right after the tap never restarts a collection the person switched off. [withdraw] marks again (a no-op).
+     */
+    fun markWithdrawal(uid: String) {
         pending.mark(uid)
         gaveUp.remove(uid)
-        return afterTry(uid, settle(uid))
     }
 
     /** "Enregistrer mon choix": one more try now. */
