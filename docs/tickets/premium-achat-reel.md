@@ -682,3 +682,12 @@ Cette section **fait foi** pour iOS en cas de différence avec les §6 à §14. 
 - **R22 (prix après l'essai absent du bouton)** : assumé par le PM le 2026-11-25, reproduit sur iPhone. **Apple 3.1.2 est le risque de rejet le plus probable** ; retour arrière en quelques lignes (`PaywallOffersArea.trialLayout`).
 - `product.purchase(options:)` est utilisé sans scène : si Apple déprécie cette forme, passer à la variante qui reçoit la scène (changement local à la passerelle).
 - `Product.priceFormatStyle` donne le douzième du prix annuel dans la devise du store ; le code de devise des produits vient de la locale de ce format (sert seulement à comparer les deux produits).
+
+### 23.4 Finitions iOS non bloquantes, à traiter dans une PR ultérieure (relecture indépendante de la PR #323, 2026-11-26)
+
+La relecture indépendante conclut « OK à fusionner, aucun bloquant ». Points relevés, **volontairement non traités dans cette PR** (aucun code modifié après la construction TestFlight) :
+- **Transactions révoquées ignorées** : `StoreKitBillingGateway.owned(from:)` écarte une transaction dont `revocationDate` est posée ; le serveur apprend les remboursements par les notifications d'Apple, mais un appareil ne les signale pas lui-même.
+- **`alreadyLinked` / `rejected` du chemin explicite hors `refusedIds`** : une restauration ou un achat refusé par le serveur n'ajoute pas la transaction à `refusedIds` ; seul le chemin silencieux le fait (au pire, un appel de plus par minute à l'ouverture suivante).
+- **Attente jusqu'à 61 s** : un achat ou une restauration qui suit de près une vérification attend son tour (espacement d'une minute du serveur) avec « Un instant… ».
+- **Pas de garde `FirebaseBootstrap.isConfigured` dans `FirebasePurchaseBackend`** : sur un poste sans configuration Firebase l'appel échoue calmement (« indisponible ») au lieu d'être refusé d'avance.
+- **`XCTSkip` si un fichier est introuvable dans `BillingBuildGuardTests`** : un chemin cassé rend le contrôle muet au lieu de le faire échouer (la CI refuse déjà tout test ignoré, ce qui limite le risque).

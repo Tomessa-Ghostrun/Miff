@@ -11,11 +11,11 @@
 - Le build est lancé **par vous** (workflow `ios-testflight`, entrée **`premium_purchase`**) : rien ne part automatiquement. **`off`** (défaut) = rien ne change ; **`fake`** = faux magasin (partie A) ; **`real`** = vrai achat en bac à sable (partie B, **seulement après** le déploiement du serveur et la création des produits).
 - **Un défaut** : capture d'écran + numéro de l'étape, puis étape suivante.
 
-## Partie 0 : le build distribué ne change pas (3 min)
+## Partie 0 : le build distribué ne change presque pas (3 min)
 
 Build avec **`premium_purchase = off`** (le défaut).
 
-1. [ ] Ouvrez l'offre (touchez « Créer une Miff » dans le Profil avec un compte gratuit qui a déjà une Miff) : **« Miff+ arrive bientôt »**, aucun prix, aucun bouton d'essai, la croix apparaît après 3 secondes.
+1. [ ] Ouvrez l'offre (touchez « Créer une Miff » dans le Profil avec un compte gratuit qui a déjà une Miff) : **« Miff+ arrive bientôt »**, aucun prix, aucun bouton d'essai, la croix apparaît après 3 secondes. **Seul changement visible** : les deux cartes « Lieux de confiance illimités » et « Nombre de Miffs illimité » portent une 3e ligne en gras, **« Limite de 3 lieux sinon »** et **« Limite d'une seule Miff sinon »** (décision du PM du 2026-11-25, reprise de l'offre Android).
 2. [ ] Réglages : **aucune ligne « Abonnement »**. Le diagnostic (si présent) dit « L'achat est éteint dans ce build ».
 3. [ ] Le résumé du workflow dit « Achat de Miff+ : éteint, aucun faux magasin (OK) ».
 
@@ -49,7 +49,7 @@ Installez le build. **Diagnostic > « Achat Miff+ (faux magasin) »** choisit ce
 
 ### A4. Le bug « Créer une Miff » et la suppression du compte (3 min)
 
-19. [ ] Compte gratuit avec une Miff : « Créer une Miff » (Profil) ouvre l'offre ; achat « réussi » ; **fermez** : « Créer une Miff » ouvre maintenant le **parcours de création**, pas de nouveau « Tu as Miff+ ». (Le serveur étant non déployé, le vrai droit n'a pas changé : la 2e Miff peut être refusée plus loin, c'est attendu avec le faux magasin.)
+19. [ ] Compte gratuit avec une Miff : « Créer une Miff » (Profil) ouvre l'offre ; achat « réussi » ; **fermez** : « Créer une Miff » ouvre maintenant le **parcours de création**, pas de nouveau « Tu as Miff+ ». **Attention, en mode `fake`** : le faux magasin n'écrit rien sur le vrai serveur ; la relecture du serveur que fait `MiffDirectory` juste après l'achat retombe donc sur « gratuit », et « Créer une Miff » **rouvre l'offre** après l'achat. C'est attendu avec le faux magasin et **ce n'est pas une preuve du correctif** : seule la partie B (`real`, serveur déployé, achat de bac à sable) prouve que « Créer une Miff » ouvre le parcours de création.
 20. [ ] Suppression du compte (Réglages > Mon compte) : **aucune phrase sur l'abonnement**, la suppression se passe comme avant.
 
 ## Partie B : le vrai achat en bac à sable (`premium_purchase = real`), après le déploiement du serveur
