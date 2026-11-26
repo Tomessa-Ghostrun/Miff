@@ -137,7 +137,7 @@ class PaywallPurchaseViewModel(
             val idle = current.copy(progress = PaywallProgress.NONE)
             when (outcome) {
                 PurchaseOutcome.GRANTED -> {
-                    idle.copy(offer = PaywallOffer.Subscribed, notice = null)
+                    idle.copy(offer = PaywallOffer.Subscribed, notice = null, celebrate = true)
                 }
 
                 PurchaseOutcome.PENDING -> {
@@ -175,7 +175,7 @@ class PaywallPurchaseViewModel(
         mutableState.update { current ->
             val idle = current.copy(progress = PaywallProgress.NONE)
             when (outcome) {
-                RestoreOutcome.FOUND -> idle.copy(offer = PaywallOffer.Subscribed, notice = null)
+                RestoreOutcome.FOUND -> idle.copy(offer = PaywallOffer.Subscribed, notice = null, celebrate = true)
                 RestoreOutcome.NONE_FOUND -> idle.copy(notice = PaywallNotice.RESTORE_NONE)
                 RestoreOutcome.OTHER_ACCOUNT -> idle.copy(notice = PaywallNotice.OTHER_ACCOUNT)
                 RestoreOutcome.PENDING -> idle.copy(notice = PaywallNotice.PENDING)

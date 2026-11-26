@@ -31,6 +31,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -130,7 +131,10 @@ class PaywallPurchaseViewModelTest {
         runTest(dispatcher) {
             val w = World(this)
             w.store.document = EntitlementDocument(true, NOW + 10, "google_play", state = "active")
-            assertEquals(PaywallOffer.Subscribed, modelOf(w).state.value.offer)
+            val state = modelOf(w).state.value
+            assertEquals(PaywallOffer.Subscribed, state.offer)
+            // Not a purchase made here: no celebration (the confetti only play for a person who JUST became a subscriber).
+            assertFalse(state.celebrate)
         }
 
     @Test
@@ -183,6 +187,7 @@ class PaywallPurchaseViewModelTest {
             model.startTrial(w.activity)
             runCurrent()
             assertEquals(PaywallOffer.Subscribed, model.state.value.offer)
+            assertTrue("just subscribed: the confirmation is celebrated", model.state.value.celebrate)
             assertEquals(PaywallProgress.NONE, model.state.value.progress)
             assertNull(model.state.value.notice)
         }
@@ -298,6 +303,7 @@ class PaywallPurchaseViewModelTest {
             model.restore()
             runCurrent()
             assertEquals(PaywallOffer.Subscribed, model.state.value.offer)
+            assertTrue("just subscribed: the confirmation is celebrated", model.state.value.celebrate)
         }
 
     @Test

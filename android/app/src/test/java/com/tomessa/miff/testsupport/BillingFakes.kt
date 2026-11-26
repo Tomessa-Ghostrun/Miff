@@ -31,8 +31,10 @@ class FakeBillingGateway : BillingGateway {
 
     /** A store that is slow to answer (virtual time). */
     var catalogDelayMillis = 0L
+    var catalogCalls = 0
 
     override suspend fun loadCatalog(): CatalogResult {
+        catalogCalls++
         if (catalogDelayMillis > 0) delay(catalogDelayMillis)
         return catalog
     }

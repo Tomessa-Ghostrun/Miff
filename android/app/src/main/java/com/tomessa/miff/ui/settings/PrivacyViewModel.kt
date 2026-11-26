@@ -140,12 +140,14 @@ class PrivacyViewModel(
     }
 
     private fun withdraw(me: String) {
-        // At once, whatever the network says: the person asked for nothing to be collected.
+        // The mark first, on disk, here and now (no coroutine in between): whatever happens next (a process killed right after the tap, a dispatcher that is late), the next start keeps
+        // the collection off. Then the collection is cut at once, whatever the network says.
+        withdrawals.markWithdrawal(me)
         privacy.applyAccountConsent(false)
         local.update { it.copy(isWriting = true, message = null) }
         viewModelScope.launch {
             withContext(NonCancellable) {
-                // Marked on the device first, then recorded; if the account cannot be reached the mark does the rest.
+                // Already marked: recorded now; if the account cannot be reached the mark does the rest.
                 withdrawals.withdraw(me)
                 local.update { it.copy(isWriting = false) }
             }

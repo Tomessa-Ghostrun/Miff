@@ -315,6 +315,21 @@ class PrivacyAndAccountViewModelsTest {
         }
 
     @Test
+    fun withdrawing_marksTheChoiceOnTheDeviceInTheTapItself_beforeAnyCoroutineRuns() =
+        runTest(dispatcher) {
+            val e = privacyEnv(startEnabled = true)
+            val vm = e.vm()
+            vm.onAnalyticsToggled(false)
+            // No dispatcher turn yet (a killed process, a late dispatcher): the mark is already on the device and the collection already cut.
+            assertTrue("marked in the tap", e.pending.isPending("uid-1"))
+            assertFalse(e.privacy.analyticsEnabled.value)
+            assertTrue("the account has not been written yet", e.consents.calls.isEmpty())
+            advanceUntilIdle()
+            assertEquals(listOf(false), e.consents.calls)
+            assertFalse("the mark goes once the account knows", e.pending.isPending("uid-1"))
+        }
+
+    @Test
     fun withdrawingWithoutNetwork_cutsTheCollection_marksTheChoiceOnTheDevice_andShowsIt() =
         runTest(dispatcher) {
             val e = privacyEnv(startEnabled = true)
