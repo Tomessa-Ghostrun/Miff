@@ -120,6 +120,8 @@ struct FeedPill: View {
                 Button("feed_selector_join", action: onJoin)
                 Button("feed_selector_create", action: onCreate)
             }
+            // L'offre Miff+ périodique (PAY-PER-I) ne vient jamais par-dessus ce menu, et attend 1,5 s après sa fermeture.
+            .overlayPresent(selectorOpen)
         }
     }
 

@@ -68,6 +68,8 @@ enum PlacePaywall {
             return .dangerZone
         case .subscription:
             return .subscription
+        case .periodic:
+            return .periodic
         }
     }
 

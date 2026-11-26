@@ -21,6 +21,8 @@ enum AnalyticsEvent: Equatable {
         case dangerZone = "danger_zone"
         /// L'offre ouverte volontairement depuis Réglages > Abonnement (SRV-8I) : seul ce mot fixe voyage, jamais un prix, un montant ni un état d'abonnement.
         case subscription
+        /// L'offre qui s'ouvre d'elle-même (PAY-PER-I, `docs/tickets/paywall-periodique.md`) : seul ce mot fixe voyage, jamais le compteur d'ouvertures, une durée, une position ni un nom.
+        case periodic
     }
 
     /// `slideIndex` doit valoir 0, 1 ou 2 (toute autre valeur est refusée par la liste blanche).

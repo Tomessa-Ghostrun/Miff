@@ -25,6 +25,8 @@ final class AnalyticsContractTests: XCTestCase {
             ("paywall_shown", ["trigger": "danger_zone"]),
             ("paywall_shown", ["trigger": "subscription"]),
             ("paywall_dismissed", ["trigger": "subscription"]),
+            ("paywall_shown", ["trigger": "periodic"]),
+            ("paywall_dismissed", ["trigger": "periodic"]),
             ("analytics_diagnostic_test", [:])
         ]
         for (name, params) in accepted {
@@ -119,6 +121,8 @@ final class AnalyticsContractTests: XCTestCase {
             .paywallShown(trigger: .dangerZone),
             .paywallShown(trigger: .subscription),
             .paywallDismissed(trigger: .subscription),
+            .paywallShown(trigger: .periodic),
+            .paywallDismissed(trigger: .periodic),
             .diagnosticTest
         ]
         for event in events {

@@ -113,12 +113,14 @@ enum PlaceAddressText {
 
 /// Laquelle des limites demande Miff+. La zone de danger est Miff+ seulement (décision du ticket §6.2) ; le 4e lieu est
 /// la limite ; une 2e Miff (Feed, sélecteur de Miff, décision du PM du 2026-11-08) a sa propre phrase. `subscription` : l'offre ouverte volontairement
-/// depuis Réglages > Abonnement (SRV-8I), aucune limite atteinte.
+/// depuis Réglages > Abonnement (SRV-8I), aucune limite atteinte. `periodic` : l'offre qui s'ouvre d'elle-même toutes les 10 ouvertures de l'app pour une personne sans Miff+
+/// (PAY-PER-I, `docs/tickets/paywall-periodique.md`) : aucun geste de sa part, aucune limite atteinte, et AUCUNE phrase de contexte (l'écran d'offre n'en a pour aucune raison).
 enum PaywallReason: Hashable {
     case limit
     case danger
     case extraMiff
     case subscription
+    case periodic
 }
 
 enum DraftProblem: Equatable {

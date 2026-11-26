@@ -43,7 +43,9 @@ final class AccountLocalStorageGuardTests: XCTestCase {
         "Services/Tracking/FileDetectionJournal.swift": "journal : AccountLocalData (detectionJournal)",
         "Services/Tracking/TrackingLocalFileStore.swift": "copie locale du suivi : AccountLocalData (trackingLocal)",
         "Services/TimeShare/PresenceHistoryFileStore.swift": "journal de présence : teardown, AccountLocalData",
-        "Services/Review/ReviewStateFileStore.swift": "fenêtre d'avis (dates, issue) : teardown (ReviewPromptServices)"
+        "Services/Review/ReviewStateFileStore.swift": "fenêtre d'avis (dates, issue) : teardown (ReviewPromptServices)",
+        "Services/Paywall/PeriodicPaywallFileStore.swift":
+            "compteur de l'offre périodique (UN entier, aucune date) : teardown (PeriodicPaywallServices.teardowns)"
     ]
 
     func testEveryLocalStorageHasBeenReadForTheDeletionOfAnAccount() throws {

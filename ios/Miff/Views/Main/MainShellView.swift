@@ -302,6 +302,8 @@ struct MainShellView<Feed: View>: View {
         // La fenêtre d'avis ne recouvre jamais l'Update ni la pop-in « Pas de connexion » du Profil (docs/tickets/pop-ins-avis.md). Sans effet
         // dans un build sans le drapeau REVIEW_PROMPT (Release).
         .reviewReportsShell(updateOpen: shownTab == .update, profilePopIn: profile.offlineRetry)
+        // L'offre Miff+ périodique (PAY-PER-I) ne recouvre jamais l'Update ni la pop-in « Pas de connexion » du Profil.
+        .periodicReportsShell(updateOpen: shownTab == .update, profilePopIn: profile.offlineRetry)
         // La dernière Miff a disparu : on repart du Feed.
         .onChange(of: hasNoMiff) { noMiff in
             if noMiff {

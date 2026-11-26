@@ -147,6 +147,8 @@ private struct ReviewPromptHostModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .environment(\.reviewSignals, coordinator.signals)
+            // L'offre Miff+ périodique (PAY-PER-I) ne vient jamais par-dessus la fenêtre d'avis, et attend 1,5 s après sa fermeture.
+            .overlayPresent(coordinator.stage != .hidden)
             .overlay {
                 ReviewPromptOverlay(
                     stage: coordinator.stage,

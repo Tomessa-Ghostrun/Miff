@@ -232,6 +232,9 @@ struct MiffHomeHost: View {
                 tracker: environment.analyticsTracker,
                 // SRV-8I : le coordinateur de l'achat (nil quand l'achat est éteint dans ce build : « Miff+ arrive bientôt »).
                 premium: environment.premium.coordinator,
+                // PAY-PER-I : l'offre est RÉELLEMENT à l'écran, quelle qu'en soit la cause (4e lieu, 2e Miff, zone de danger, Abonnement, ou l'offre périodique) :
+                // le compteur de l'offre périodique retombe à zéro et la session n'en montre plus d'autre.
+                onShown: { environment.periodicPaywall.rules.onPaywallDisplayed() },
                 onClose: { paywall = nil }
             )
         }
@@ -294,6 +297,15 @@ struct MiffHomeHost: View {
         // La fenêtre d'avis (docs/tickets/pop-ins-avis.md) : par-dessus tout, jamais pendant un écran empilé (Réglages, lieux, Miff) ni l'offre.
         // Sans effet dans un build sans le drapeau REVIEW_PROMPT (Release).
         .reviewPromptHost(environment: environment, directory: directory, onTabs: path.isEmpty && paywall == nil)
+        // L'offre périodique (docs/tickets/paywall-periodique.md, PAY-PER-I) : ACTIVE dans tous les builds, sans drapeau (décision du PM, P1). Elle ouvre l'offre par le point
+        // d'entrée unique ci-dessous, après le premier appui de la session, seulement quand les onglets sont devant et que rien d'autre n'est ouvert. POSÉE EN DERNIER : ses
+        // signaux (surcouches, menus) descendent jusqu'à la fenêtre d'avis et aux écrans des onglets.
+        .periodicPaywallHost(
+            environment: environment,
+            directory: directory,
+            onTabs: path.isEmpty && paywall == nil,
+            open: { presentPaywall(.periodic) }
+        )
     }
 
     /// L'onglet Feed (FEED-5 à FEED-7) : il remplace l'accueil provisoire dans la coquille.
