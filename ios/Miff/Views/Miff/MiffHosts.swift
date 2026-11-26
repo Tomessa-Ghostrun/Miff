@@ -301,11 +301,8 @@ struct MiffHomeHost: View {
         // d'entrée unique ci-dessous, après le premier appui de la session, seulement quand les onglets sont devant et que rien d'autre n'est ouvert. POSÉE EN DERNIER : ses
         // signaux (surcouches, menus) descendent jusqu'à la fenêtre d'avis et aux écrans des onglets.
         .periodicPaywallHost(
-            environment: environment,
-            directory: directory,
-            onTabs: path.isEmpty && paywall == nil,
-            deletionBannerOpen: banner != nil,
-            open: { presentPaywall(.periodic) }
+            environment: environment, directory: directory, onTabs: path.isEmpty && paywall == nil,
+            deletionBannerOpen: banner != nil, open: { presentPaywall(.periodic) }
         )
     }
 
