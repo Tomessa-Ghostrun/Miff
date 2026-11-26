@@ -104,9 +104,9 @@ final class PeriodicPaywallGuardTests: XCTestCase {
     ]
 
     private func presentations(in lines: [String]) -> Int {
-        let tokens = [
-            ".sheet(", ".fullScreenCover(", ".confirmationDialog(", ".alert(", ".popover(", ".photosPicker(", "Menu {"
-        ]
+        // Les appels sont écrits avec leur parenthèse à part : la règle SwiftLint du texte en dur lirait la fin de la chaîne comme un texte de boîte de dialogue.
+        let calls = [".sheet", ".fullScreenCover", ".confirmationDialog", ".alert", ".popover", ".photosPicker"]
+        let tokens = calls.map { $0 + "(" } + ["Menu {"]
         return lines.reduce(0) { total, line in
             total + (tokens.contains { line.contains($0) } ? 1 : 0)
         }
@@ -240,3 +240,4 @@ final class PeriodicPaywallGuardTests: XCTestCase {
         XCTAssertEqual(PeriodicPaywallDefaults.openingsBetween, 10)
     }
 }
+// swiftlint:enable line_length

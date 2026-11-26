@@ -130,3 +130,4 @@ final class PeriodicPaywallServicesTests: XCTestCase {
         XCTAssertTrue(source.contains("pushServices.delegate.onAlertOpened"), "la session ouverte par une alerte est exclue (P11)")
     }
 }
+// swiftlint:enable line_length
