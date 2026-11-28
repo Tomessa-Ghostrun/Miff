@@ -127,8 +127,15 @@ class PeriodicPaywallRules(
             val now = clock.nowMillis()
             val away = backgroundedAt?.let { now - it }
             backgroundedAt = null
-            // Never in the background before = a cold start (the process was just born). A second call without a background in between changes nothing.
-            if (!started || (away != null && away >= backgroundMillis)) startSession(now)
+            // Never in the background before = a cold start (the process was just born). A second call without a background in between counts nothing.
+            if (!started || (away != null && away >= backgroundMillis)) {
+                startSession(now)
+            } else {
+                // Same session (a return in under 30 minutes, a system window, a call, a map opened by "Localiser"): the person has just come back, so the offer waits for 1.5 s of
+                // calm here too (the last touch is old, and without this the offer would open at the very instant of the return). Same rule as on iOS.
+                lastTouchAt = now
+                fingerDown = false
+            }
             started = true
         }
         bump()
