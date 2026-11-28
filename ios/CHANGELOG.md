@@ -2,15 +2,15 @@
 
 ## Non publié
 
-### Nettoyage de l'offre Miff+ : retrait de la clé iOS devenue inutile (numéro provisoire : à renuméroter à la fusion)
+### Nettoyage de l'offre Miff+ : retrait des clés de texte du paywall devenues inutilisées, des deux côtés (numéro provisoire : à renuméroter à la fusion)
 
-Branche `ios/nettoyage-paywall`. Aucun changement visible : rien de ce que voit la personne ne change.
+Branche `ios/nettoyage-paywall`. Aucun changement visible, aucun nouveau texte : rien de ce que voit la personne ne change. Suite de la ligne « **Aucune clé retirée** » de l'entrée SRV-8I (« leur retrait est une PR de nettoyage commune »).
 
-Retiré : la clé `ios_paywall_info_cancel_trial` (« Pour un essai, au moins 24 heures avant sa fin. », 6 langues), que plus aucun écran n'affichait depuis le retour du PM du 2026-11-25 (une seule phrase sous les cartes). Elle n'était plus citée que par deux tests, adaptés : `PaywallTextsTests` ne l'exige plus ; `PaywallOffersTests.testThereIsNoCancellationParagraphAnyMore` cherche désormais directement « 24 heures » / « 24 hours » dans les phrases au lieu de relire la clé.
+Retiré du catalogue iOS (`Localizable.xcstrings`, 6 langues) : `ios_paywall_info_cancel_trial`, `paywall_trial_then`, `paywall_info_trial`, `paywall_info_cancel`, `paywall_free_plan_stays`. Aucune n'était plus lue par le code Swift (recherche faite clé par clé) depuis les retours du PM du 2026-11-25 (une seule phrase sous les cartes, `paywall_info_trial_short`). Les quatre clés communes sont retirées **en même temps** des six `strings.xml` d'Android (le contrôle de parité échoue si une clé n'est retirée que d'un côté ; voir `android/CHANGELOG.md` 0.61.4). Parité vérifiée en local : OK (1265 clés communes).
 
-Conservées, volontairement : `paywall_trial_then`, `paywall_info_trial`, `paywall_info_cancel` et `paywall_free_plan_stays` ne sont plus affichées par iOS, mais ce sont des clés **communes** : Android les déclare encore, et le contrôle de parité (`scripts/check-i18n-parity.mjs`) échoue (« Clé présente sur Android seulement ») si elles ne sont retirées que d'un côté. Leur retrait doit se faire dans les deux apps en même temps (PR Android de nettoyage), puis `PaywallTextsTests` et `LimitTextsTests` (`paywall_free_plan_stays`) seront à adapter. Même situation pour `settings_subscription_renews` et `settings_subscription_trial` (avec prix, jamais utilisées par iOS). Parité vérifiée en local après le retrait : OK (1269 clés communes).
+Tests adaptés : `PaywallTextsTests` n'exige plus ces clés (ni le tutoiement de `paywall_info_cancel`) ; `LimitTextsTests` perd `testTheFreePlanSentenceAgreesInNumber` (le texte n'existe plus ; les autres accords singulier / pluriel sont couverts par les autres tests du fichier) ; `PaywallOffersTests.testThereIsNoCancellationParagraphAnyMore` cherche « 24 heures » / « 24 hours » directement.
 
-Documentation : `docs/tickets/premium-achat-reel.md` §8, ligne « Actif » : la phrase de renouvellement s'écrit sans prix (décision du PM), comme le fait déjà l'écran Abonnement d'iOS (`settings_subscription_renews_noprice`).
+Documentation : fichiers d'échange `docs/i18n/echange/source-fr-en.json` et `propres-ios.json` (entrées retirées, compteurs de `meta` mis à jour ; **non régénérés en entier** : l'extraction complète changerait ~1 000 lignes sans rapport, car ces fichiers étaient déjà en retard sur les ressources), `docs/i18n/chaines-reference.md` (S27 retiré), `docs/contracts/i18n-keys.md`, et `docs/tickets/premium-achat-reel.md` §8 (ligne « Actif » : phrase de renouvellement sans prix, décision du PM, comme le fait déjà l'écran Abonnement d'iOS).
 
 ### PAY-PER-I : l'offre Miff+ s'ouvre toutes les 10 ouvertures pour une personne sans Miff+, une fois par session (parité avec Android) [numéro provisoire : à renuméroter à la fusion]
 

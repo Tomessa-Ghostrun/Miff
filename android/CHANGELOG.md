@@ -2,6 +2,15 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.61.4] - 2026-11-28 : nettoyage commun Android + iOS des clés de texte du paywall devenues inutilisées (PR iOS `ios/nettoyage-paywall`)
+
+**Numéro de version provisoire** (au-dessus de la 0.61.3 ; le PM renumérote à la fusion). **Aucun changement visible, aucun nouveau texte, coût ajouté : 0 €.** Recette PM non requise. La PR porte la branche iOS parce que le contrôle de parité exige de retirer ces clés des deux plateformes en même temps (suite de la section « Non fait » de la 0.61.3).
+
+### Retiré
+- `paywall_trial_then`, `paywall_info_trial`, `paywall_info_cancel` et `paywall_free_plan_stays` (pluriel) des **six** fichiers `values*/strings.xml` (anglais de repli, français, allemand, espagnol, italien, portugais) et du catalogue iOS. **Aucune n'était lue par le code de l'app** (vérifié par recherche dans `main`) : depuis les retours du PM du 2026-11-25, le paywall n'affiche plus que `paywall_info_trial_short`. Le commentaire « conservé parce que l'écran iOS l'utilise » est retiré avec `paywall_trial_then`.
+- `PaywallScreenTest` : les assertions « ce texte n'est plus à l'écran » ne dépendent plus des clés supprimées ; elles cherchent un fragment littéral français (« Puis 59,88 », « facturés à la fin de l'essai puis chaque année », « Annule à tout moment », « La formule gratuite reste disponible »).
+- Parité vérifiée en local après le retrait : OK (1265 clés communes).
+
 ## [0.61.3] - 2026-11-28 : l'offre périodique attend 1,5 s de calme aussi au retour au premier plan (alignement sur iOS, PR 328)
 
 Branche `android/finitions-paywall-2`. **Numéro de version provisoire** (au-dessus de la 0.61.2 ; le PM renumérote à la fusion). Petit changement de comportement, **aucun nouveau texte, aucune clé, coût ajouté : 0 €**. Recette PM non requise (décision du PM) ; la checklist reste juste (étape 7 bis).

@@ -57,15 +57,6 @@ final class LimitTextsTests: XCTestCase {
         XCTAssertTrue(oneEnglish.contains("once it's been handled"), oneEnglish)
     }
 
-    func testTheFreePlanSentenceAgreesInNumber() throws {
-        let french = try bundle("fr")
-        let sentence = "paywall_free_plan_stays"
-        let free = PlaceLimits.freePlaces
-
-        XCTAssertTrue(L10n.plural(sentence, count: 1, bundle: french).hasSuffix("1 lieu de confiance."))
-        XCTAssertTrue(L10n.plural(sentence, count: free, bundle: french).hasSuffix("\(free) lieux de confiance."))
-    }
-
     func testTheMaximumOfMiffsPerPlaceIsTheOneOfTheRules() throws {
         for language in ["fr", "en"] {
             let format = L10n.string("place_miffs_max_reached", bundle: try bundle(language))

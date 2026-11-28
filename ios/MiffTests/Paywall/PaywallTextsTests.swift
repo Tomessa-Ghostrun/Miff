@@ -6,13 +6,13 @@ import XCTest
 final class PaywallTextsTests: XCTestCase {
     /// Les clés de l'écran d'offre, avec le nombre de valeurs (`%1$@` ou `%1$lld`) que leur texte reçoit.
     private let keys: [String: Int] = [
-        "paywall_cta_trial": 0, "paywall_trial_then": 1, "paywall_monthly_equivalent": 1, "paywall_annual_savings": 0,
-        "paywall_cancel_anytime": 0, "paywall_see_all_offers": 0, "paywall_free_plan_stays": 1,
+        "paywall_cta_trial": 0, "paywall_monthly_equivalent": 1, "paywall_annual_savings": 0,
+        "paywall_cancel_anytime": 0, "paywall_see_all_offers": 0,
         "paywall_close_available_a11y": 0, "paywall_loading": 0, "paywall_unavailable": 0, "paywall_retry": 0,
         "paywall_pending": 0, "paywall_error_calm": 0, "paywall_restore": 0, "paywall_restore_none": 1,
         "paywall_subscribed": 0, "paywall_subscribed_detail": 0, "paywall_continue": 0, "paywall_working": 0,
         "paywall_plan_annual_title": 1, "paywall_plan_monthly_title": 1, "paywall_no_commitment": 0,
-        "paywall_info_trial": 1, "paywall_info_annual": 1, "paywall_info_monthly": 1, "paywall_info_cancel": 1,
+        "paywall_info_annual": 1, "paywall_info_monthly": 1,
         "paywall_terms_link": 0, "paywall_privacy_link": 0, "ios_paywall_store_name": 0
     ]
 
@@ -70,7 +70,7 @@ final class PaywallTextsTests: XCTestCase {
     }
 
     func testTheFrenchTextsAddressThePersonWithTu() throws {
-        for key in ["paywall_unavailable", "paywall_pending", "paywall_error_calm", "paywall_info_cancel"] {
+        for key in ["paywall_unavailable", "paywall_pending", "paywall_error_calm"] {
             let text = try value(key, "fr").lowercased()
             let formal = text.contains("vous") || text.contains("votre") || text.contains("vos ")
             XCTAssertFalse(formal, "\(key) : tutoiement")

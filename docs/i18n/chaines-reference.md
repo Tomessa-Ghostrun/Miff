@@ -325,18 +325,9 @@
 
 ---
 
-## D. Abonnement et suppression de compte (S27 à S33)
+## D. Abonnement et suppression de compte (S28 à S33)
 
-### S27 · `paywall_info_trial`
-
-**fr** : Essai gratuit de 7 jours, puis %1$s par an, facturés à la fin de l'essai puis chaque année. L'abonnement se renouvelle automatiquement au même tarif tant que tu ne l'annules pas.
-
-| Langue | Traduction proposée | Rétro-traduction |
-|---|---|---|
-| es | Prueba gratuita de 7 días y después %1$s al año, cobrados al terminar la prueba y luego cada año. La suscripción se renueva automáticamente al mismo precio hasta que la canceles. | Essai gratuit de 7 jours puis %1$s par an, prélevés à la fin de l'essai puis chaque année. L'abonnement se renouvelle automatiquement au même prix jusqu'à ce que tu l'annules. |
-| it | Prova gratuita di 7 giorni, poi %1$s all’anno, addebitati al termine della prova e poi ogni anno. L’abbonamento si rinnova automaticamente allo stesso prezzo finché non lo annulli. | Essai gratuit de 7 jours, puis %1$s par an, débités au terme de l'essai puis chaque année. L'abonnement se renouvelle automatiquement au même prix tant que tu ne l'annules pas. |
-| pt-PT | Teste gratuito de 7 dias e depois %1$s por ano, cobrados no fim do teste e depois todos os anos. A subscrição renova automaticamente ao mesmo preço até a cancelares. | Test gratuit de 7 jours puis %1$s par an, facturés à la fin du test puis tous les ans. L'abonnement se renouvelle automatiquement au même prix jusqu'à ce que tu l'annules. |
-| de | 7 Tage kostenlos testen, danach %1$s pro Jahr, abgerechnet am Ende der Testphase und dann jährlich. Das Abonnement verlängert sich automatisch zum selben Preis, bis du es kündigst. | Essayer 7 jours gratuitement, puis %1$s par an, facturés à la fin de la période d'essai et ensuite chaque année. L'abonnement se renouvelle automatiquement au même prix jusqu'à ce que tu le résilies. |
+> S27 (`paywall_info_trial`) a été retiré le 2026-11-28 : la clé a été supprimée des deux apps (plus aucun écran ne l'affiche). La numérotation des autres textes est conservée.
 
 ### S28 · `paywall_error_calm`
 

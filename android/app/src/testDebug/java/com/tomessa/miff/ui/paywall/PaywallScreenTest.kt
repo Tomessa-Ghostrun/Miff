@@ -590,7 +590,7 @@ class PaywallScreenTest {
         composeRule.onNodeWithText(text(R.string.paywall_cta_trial)).assertIsDisplayed().assertIsEnabled()
         composeRule.onNodeWithText(text(R.string.paywall_cancel_anytime)).assertIsDisplayed()
         // Decision of the PM, 2026-11-25 (risk assumed, see the ticket): neither "Puis 59,88 € par an" nor "soit 4,99 € par mois" under the button.
-        composeRule.onAllNodesWithText(text(R.string.paywall_trial_then, "59,88 €")).assertCountEquals(0)
+        composeRule.onAllNodesWithText("Puis 59,88", substring = true).assertCountEquals(0)
         composeRule.onAllNodesWithText("4,99", substring = true).assertCountEquals(0)
         composeRule.onNodeWithText(text(R.string.paywall_see_all_offers)).assertIsDisplayed()
         // Nothing of the old texts: "pendant 1 an", "Économisez 30 %", "Notifications".
@@ -610,12 +610,9 @@ class PaywallScreenTest {
         )
         composeRule.onNodeWithText(sentence).performScrollTo().assertIsDisplayed()
         // Nothing else of the old block: no "how to cancel" paragraph, no sentence about the free plan, no restore button.
-        composeRule.onAllNodesWithText(text(R.string.paywall_info_trial, "59,88 €")).assertCountEquals(0)
-        composeRule.onAllNodesWithText(text(R.string.paywall_info_cancel, "Google Play")).assertCountEquals(0)
-        composeRule
-            .onAllNodesWithText(
-                plural(R.plurals.paywall_free_plan_stays, PlaceLimits.FREE_PLACES),
-            ).assertCountEquals(0)
+        composeRule.onAllNodesWithText("facturés à la fin de l'essai puis chaque année", substring = true).assertCountEquals(0)
+        composeRule.onAllNodesWithText("Annule à tout moment", substring = true).assertCountEquals(0)
+        composeRule.onAllNodesWithText("La formule gratuite reste disponible", substring = true).assertCountEquals(0)
         composeRule.onAllNodesWithText(text(R.string.paywall_restore)).assertCountEquals(0)
         // The two legal pages stay, on the same line (see PaywallLegalLinksTest for the six languages).
         val terms = composeRule.onNodeWithText(text(R.string.paywall_terms_link)).performScrollTo().assertIsDisplayed()
@@ -728,7 +725,7 @@ class PaywallScreenTest {
         composeRule.onAllNodesWithText("Économisez", substring = true).assertCountEquals(0)
         composeRule.onNodeWithText(text(R.string.paywall_info_annual, "59,88 €")).performScrollTo().assertIsDisplayed()
         composeRule.onNodeWithText(text(R.string.paywall_info_monthly, "6,99 €")).performScrollTo().assertIsDisplayed()
-        composeRule.onAllNodesWithText(text(R.string.paywall_info_cancel, "Google Play")).assertCountEquals(0)
+        composeRule.onAllNodesWithText("Annule à tout moment", substring = true).assertCountEquals(0)
     }
 
     @Test
@@ -746,10 +743,7 @@ class PaywallScreenTest {
         composeRule.onNodeWithText(text(R.string.paywall_loading)).assertIsDisplayed().assertIsNotEnabled()
         composeRule.onAllNodesWithText("€", substring = true).assertCountEquals(0)
         composeRule.onAllNodesWithText(text(R.string.paywall_cta_trial)).assertCountEquals(0)
-        composeRule
-            .onAllNodesWithText(
-                plural(R.plurals.paywall_free_plan_stays, PlaceLimits.FREE_PLACES),
-            ).assertCountEquals(0)
+        composeRule.onAllNodesWithText("La formule gratuite reste disponible", substring = true).assertCountEquals(0)
         composeRule.onNodeWithText(text(R.string.paywall_terms_link)).performScrollTo().assertIsDisplayed()
     }
 
