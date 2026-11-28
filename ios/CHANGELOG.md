@@ -2,6 +2,16 @@
 
 ## Non publié
 
+### Nettoyage de l'offre Miff+ : retrait de la clé iOS devenue inutile (numéro provisoire : à renuméroter à la fusion)
+
+Branche `ios/nettoyage-paywall`. Aucun changement visible : rien de ce que voit la personne ne change.
+
+Retiré : la clé `ios_paywall_info_cancel_trial` (« Pour un essai, au moins 24 heures avant sa fin. », 6 langues), que plus aucun écran n'affichait depuis le retour du PM du 2026-11-25 (une seule phrase sous les cartes). Elle n'était plus citée que par deux tests, adaptés : `PaywallTextsTests` ne l'exige plus ; `PaywallOffersTests.testThereIsNoCancellationParagraphAnyMore` cherche désormais directement « 24 heures » / « 24 hours » dans les phrases au lieu de relire la clé.
+
+Conservées, volontairement : `paywall_trial_then`, `paywall_info_trial`, `paywall_info_cancel` et `paywall_free_plan_stays` ne sont plus affichées par iOS, mais ce sont des clés **communes** : Android les déclare encore, et le contrôle de parité (`scripts/check-i18n-parity.mjs`) échoue (« Clé présente sur Android seulement ») si elles ne sont retirées que d'un côté. Leur retrait doit se faire dans les deux apps en même temps (PR Android de nettoyage), puis `PaywallTextsTests` et `LimitTextsTests` (`paywall_free_plan_stays`) seront à adapter. Même situation pour `settings_subscription_renews` et `settings_subscription_trial` (avec prix, jamais utilisées par iOS). Parité vérifiée en local après le retrait : OK (1269 clés communes).
+
+Documentation : `docs/tickets/premium-achat-reel.md` §8, ligne « Actif » : la phrase de renouvellement s'écrit sans prix (décision du PM), comme le fait déjà l'écran Abonnement d'iOS (`settings_subscription_renews_noprice`).
+
 ### PAY-PER-I : l'offre Miff+ s'ouvre toutes les 10 ouvertures pour une personne sans Miff+, une fois par session (parité avec Android) [numéro provisoire : à renuméroter à la fusion]
 
 Branche `ios/paywall-periodique`. Ticket `docs/tickets/paywall-periodique.md` (§9 « iOS », critères PP1 à PP24), parité avec Android (PR 324 PAY-PER-A et 327 finitions : mêmes constantes, mêmes noms, mêmes cas de tests). Recette : `docs/qa/checklists/paywall-periodique-ios-recette-pm.md`. **Décisions du PM** : règle **ACTIVE dans tous les builds, sans drapeau** (2026-11-25, P1) ; **10 ouvertures** et non 15 (2026-11-26) ; **aucune mise à jour des textes légaux** (2026-11-25, risque J76 assumé). **Rien n'est compilé en local** (poste Windows : la CI fait foi). **Coût ajouté : 0 €** (aucune dépendance, aucune lecture ni écriture sur le serveur).

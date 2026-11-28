@@ -13,8 +13,7 @@ final class PaywallTextsTests: XCTestCase {
         "paywall_subscribed": 0, "paywall_subscribed_detail": 0, "paywall_continue": 0, "paywall_working": 0,
         "paywall_plan_annual_title": 1, "paywall_plan_monthly_title": 1, "paywall_no_commitment": 0,
         "paywall_info_trial": 1, "paywall_info_annual": 1, "paywall_info_monthly": 1, "paywall_info_cancel": 1,
-        "paywall_terms_link": 0, "paywall_privacy_link": 0, "ios_paywall_store_name": 0,
-        "ios_paywall_info_cancel_trial": 0
+        "paywall_terms_link": 0, "paywall_privacy_link": 0, "ios_paywall_store_name": 0
     ]
 
     private func value(_ key: String, _ language: String) throws -> String {

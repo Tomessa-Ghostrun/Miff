@@ -216,7 +216,7 @@ Le droit Miff+ dépend uniquement de `entitlements/{uid}` : `active == true` **e
 | État (champ `state`) | Google Play | Apple | `active` | `expiresAt` | Ce que montre l'app (écran Abonnement) [Proposé] |
 |---|---|---|---|---|---|
 | **Essai** (`trial`) | Actif, phase « essai gratuit » | Statut 1, offre d'introduction gratuite | oui | fin de l'essai | « Miff+ : essai gratuit jusqu'au {date}. Ensuite {prix annuel} par an, sauf si tu l'annules avant. » + « Gérer mon abonnement » |
-| **Actif** (`active`) | Actif | Statut 1, renouvellement activé | oui | prochaine échéance | « Miff+ : actif. Prochain renouvellement le {date} ({prix}). » + « Gérer mon abonnement » |
+| **Actif** (`active`) | Actif | Statut 1, renouvellement activé | oui | prochaine échéance | « Miff+ : actif. Prochain renouvellement le {date}. » **sans prix** (décision du PM, pour Android et iOS : la gestion du store montre le prix exact) + « Gérer mon abonnement » |
 | **Annulé, non expiré** (`canceled`) | Annulé | Statut 1, renouvellement désactivé | oui | fin de période payée | « Miff+ se termine le {date}. Tu gardes tout jusqu'à cette date. » + « Gérer mon abonnement » (reprise possible) |
 | **Période de grâce** (`grace`) | En période de grâce (échéance prolongée par Google [Vérifié]) | Statut 4, échéance de grâce | oui | fin de la grâce | « Le paiement de ton abonnement n'a pas abouti. Tout fonctionne encore : mets à jour ton moyen de paiement avant le {date}. » + lien vers le store |
 | **Suspendu** (`on_hold`) | Suspendu (échéance dans le passé [Vérifié]) | Statut 3 (nouvelle tentative de facturation) | **non** | passée | « Miff+ est en pause : le paiement n'a pas abouti. Tes avantages reviendront dès que ce sera réglé. » + lien vers le store |

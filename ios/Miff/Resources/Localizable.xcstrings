@@ -12490,47 +12490,6 @@
         }
       }
     },
-    "ios_paywall_info_cancel_trial": {
-      "extractionState": "manual",
-      "localizations": {
-        "de": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Bei einer Testphase mindestens 24 Stunden vor ihrem Ende."
-          }
-        },
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "For a trial, at least 24 hours before it ends."
-          }
-        },
-        "es": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Para una prueba, al menos 24 horas antes de que termine."
-          }
-        },
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pour un essai, au moins 24 heures avant sa fin."
-          }
-        },
-        "it": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Per una prova, almeno 24 ore prima della sua fine."
-          }
-        },
-        "pt": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Para um teste, pelo menos 24 horas antes do fim."
-          }
-        }
-      }
-    },
     "ios_paywall_store_name": {
       "extractionState": "manual",
       "localizations": {
