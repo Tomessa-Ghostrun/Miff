@@ -610,7 +610,11 @@ class PaywallScreenTest {
         )
         composeRule.onNodeWithText(sentence).performScrollTo().assertIsDisplayed()
         // Nothing else of the old block: no "how to cancel" paragraph, no sentence about the free plan, no restore button.
-        composeRule.onAllNodesWithText("facturés à la fin de l'essai puis chaque année", substring = true).assertCountEquals(0)
+        composeRule
+            .onAllNodesWithText(
+                "facturés à la fin de l'essai puis chaque année",
+                substring = true,
+            ).assertCountEquals(0)
         composeRule.onAllNodesWithText("Annule à tout moment", substring = true).assertCountEquals(0)
         composeRule.onAllNodesWithText("La formule gratuite reste disponible", substring = true).assertCountEquals(0)
         composeRule.onAllNodesWithText(text(R.string.paywall_restore)).assertCountEquals(0)
