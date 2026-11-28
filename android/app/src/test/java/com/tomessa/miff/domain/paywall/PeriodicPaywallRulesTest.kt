@@ -165,6 +165,65 @@ class PeriodicPaywallRulesTest {
     }
 
     @Test
+    fun aShortReturnInTheSameSession_waitsForOneAndAHalfSecondsOfCalmAgain() {
+        // The person comes back in under 30 minutes: same session, no opening more, and the offer does not fall at the instant of the return.
+        val rules = rules(counter = 9)
+        rules.coldStart()
+        rules.tapAndSettle()
+        assertEquals(PeriodicPaywallDecision.Show, rules.evaluate(calm()))
+
+        rules.away(5 * 60_000L)
+        assertEquals("no opening more", 10, store.value)
+        assertEquals(PeriodicPaywallDecision.Wait(1_500L), rules.evaluate(calm()))
+        clock.now += 1_000L
+        assertEquals(PeriodicPaywallDecision.Wait(500L), rules.evaluate(calm()))
+        clock.now += 500L
+        assertEquals(PeriodicPaywallDecision.Show, rules.evaluate(calm()))
+    }
+
+    @Test
+    fun aReturnFromASystemWindow_orAnotherApp_waitsForOneAndAHalfSecondsOfCalmAgain() {
+        // A call, a system window or the map opened by "Localiser": the activity is stopped and started again (a second foreground call, a few seconds later).
+        val rules = rules(counter = 9)
+        rules.coldStart()
+        rules.tapAndSettle()
+        clock.now += 60_000L
+        assertEquals(PeriodicPaywallDecision.Show, rules.evaluate(calm()))
+
+        rules.away(20_000L)
+        assertEquals(PeriodicPaywallDecision.Wait(1_500L), rules.evaluate(calm()))
+        clock.now += 1_500L
+        assertEquals(PeriodicPaywallDecision.Show, rules.evaluate(calm()))
+        assertEquals("still one count", 10, store.value)
+    }
+
+    @Test
+    fun theCalmOfTheReturn_changesNothingElse_oneAppearancePerSession_andANewSessionNeedsItsOwnFirstTap() {
+        val rules = rules(counter = 9)
+        rules.coldStart()
+        rules.tapAndSettle()
+        rules.onLaunched()
+        rules.away(5 * 60_000L)
+        clock.now += 1_500L
+        assertEquals("one appearance per session", PeriodicPaywallDecision.No, rules.evaluate(calm()))
+
+        rules.away(PeriodicPaywallDefaults.BACKGROUND_MILLIS)
+        clock.now += 1_500L
+        assertEquals("a new session without a tap", PeriodicPaywallDecision.No, rules.evaluate(calm()))
+    }
+
+    @Test
+    fun aReturnWithAFingerThatWasDown_doesNotKeepTheOfferWaitingForever() {
+        val rules = rules(counter = 9)
+        rules.coldStart()
+        rules.onTouch(pressed = true)
+        rules.onActivation()
+        rules.away(10_000L)
+        clock.now += PeriodicPaywallDefaults.QUIET_AFTER_TOUCH_MILLIS
+        assertEquals(PeriodicPaywallDecision.Show, rules.evaluate(calm()))
+    }
+
+    @Test
     fun theCounter_isCappedAtTheThreshold() {
         val rules = rules(counter = 9)
         rules.coldStart()

@@ -32,6 +32,8 @@
 6. [ ] Fermez avec la croix. Touchez d'autres boutons, restez 1 minute : **pas de second affichage** dans cette session (une seule apparition par session). La carte de diagnostic affiche **compteur : 0 / 10**, « offre déjà montrée : oui ».
 7. [ ] **PR3** : la carte « Compteur = 10 », mettez l'app en arrière-plan **plus de 30 minutes**, revenez, touchez un bouton : l'offre revient (nouvelle session, compteur plein). Refaites avec **moins de 30 minutes** : pas de nouvelle session, pas de nouveau comptage (la carte garde le même compteur).
 
+7 bis. [ ] **Retour rapide, même session** : carte « Compteur = 10 », fermez complètement l'app et rouvrez-la, touchez un bouton, puis, **avant que 1 seconde ne passe**, mettez l'app en arrière-plan (bouton Accueil) et revenez **aussitôt** (moins de 30 minutes). L'offre **ne tombe pas à l'instant du retour** : elle attend, elle aussi, **environ 1,5 s de calme** après votre retour. Même chose après un retour de **Google Maps** (bouton « Localiser » d'un proche) ou d'une **fenêtre du système** (autorisation, appel entrant refusé).
+
 ## Partie B : ce qui ne compte pas comme une ouverture (PP1, PP2)
 
 8. [ ] Notez le compteur de la carte, puis **faites pivoter** le téléphone, changez de langue dans les Réglages, ouvrez l'appareil photo de l'Update puis revenez (moins de 30 minutes) : rouvrez la carte, le compteur **n'a pas bougé**.

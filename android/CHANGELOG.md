@@ -2,6 +2,19 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.61.3] - 2026-11-28 : l'offre périodique attend 1,5 s de calme aussi au retour au premier plan (alignement sur iOS, PR 328)
+
+Branche `android/finitions-paywall-2`. **Numéro de version provisoire** (au-dessus de la 0.61.2 ; le PM renumérote à la fusion). Petit changement de comportement, **aucun nouveau texte, aucune clé, coût ajouté : 0 €**. Recette PM non requise (décision du PM) ; la checklist reste juste (étape 7 bis).
+
+### Corrigé : l'offre ne tombe plus à l'instant du retour dans l'app
+- `PeriodicPaywallRules.onForeground()` : quand le retour au premier plan **n'ouvre pas de nouvelle session** (retour de moins de 30 minutes, retour d'une fenêtre du système, d'un appel, de Google Maps après « Localiser »), le dernier toucher est ramené à l'instant du retour et un doigt « posé » est tenu pour relevé. Avant, si la session était déjà « due » et le premier appui fait, le dernier toucher était ancien et l'offre pouvait s'ouvrir **immédiatement** au retour ; elle attend maintenant, comme partout ailleurs, **1,5 s de calme**. Même règle que sur iOS (`ios/Miff/Models/Paywall/PeriodicPaywallRules.swift`, PR 328).
+- **Rien d'autre ne change** : seuil de 10, une apparition par session, premier appui, exclusions, comptage des ouvertures (un retour de moins de 30 minutes ne compte toujours pas).
+- Tests (`PeriodicPaywallRulesTest`) : retour rapide de moins de 30 minutes (aucune ouverture de plus, `Wait(1500)` puis `Show`) ; retour d'une fenêtre du système (20 s) ; une seule apparition par session et une nouvelle session sans appui restent sans offre ; un doigt posé avant le départ ne retient pas l'offre indéfiniment.
+- Recette `docs/qa/checklists/paywall-periodique-android-recette-pm.md` : étape 7 bis ajoutée (sans renuméroter).
+
+### Non fait : suppression des clés de texte du paywall devenues inutilisées (`paywall_trial_then`, `paywall_info_trial`, `paywall_info_cancel`, `paywall_free_plan_stays`)
+- **Aucune des quatre n'est lue par le code de l'app Android** (`main`) ; seules `PaywallScreenTest` (assertions « ce texte n'est plus à l'écran ») et des documents les citent encore. **Mais les quatre existent aussi dans le catalogue iOS** (`ios/Miff/Resources/Localizable.xcstrings`) et sont citées par des tests iOS (`PaywallTextsTests`, `LimitTextsTests`). Le contrôle de parité du CI exige les mêmes clés sur Android et iOS : les retirer d'Android seul le fait échouer (essayé : « Clé présente sur iOS seulement »). Elles restent donc, **jusqu'à un nettoyage commun Android + iOS**.
+
 ## [0.61.2] - 2026-11-26 : l'offre périodique passe de « toutes les 15 ouvertures » à « toutes les 10 ouvertures », et finitions de la revue indépendante de la PR 324 (PAY-PER-A)
 
 Branche `android/finitions-paywall-periodique`. **Numéro de version provisoire** (au-dessus de la 0.61.1 de la PR 326 ; le PM renumérote à la fusion). **Seul changement de comportement : la fréquence** (demande du PM du 2026-11-26) ; aucun nouveau texte, coût ajouté : 0 €. Le PM n'a pas de recette à faire.
