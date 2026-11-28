@@ -59,7 +59,8 @@ struct TimeShareCard: View {
         )
         .accessibilityElement(children: .contain)
         .sheet(isPresented: $showsDanger) {
-            dangerSheet
+            // L'offre Miff+ périodique (PAY-PER-I) ne vient jamais par-dessus cette feuille (`overlayPresent`).
+            dangerSheet.overlayPresent()
         }
     }
 
@@ -138,6 +139,8 @@ struct TimeShareCard: View {
             .contentShape(Capsule())
         }
         .accessibilityLabel(Text(verbatim: L10n.format("profile_timeshare_window_a11y", current)))
+        // Un menu du système ne dit pas qu'il est ouvert : un appui dessus empêche l'offre Miff+ périodique (PAY-PER-I) de venir par-dessus, jusqu'au toucher suivant.
+        .reportsMenuArea()
     }
 
     /// Un choix du menu : le choix actuel est coché (et dit « choisi » au lecteur d'écran).

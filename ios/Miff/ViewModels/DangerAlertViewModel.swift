@@ -46,9 +46,14 @@ final class DangerAlertViewModel: ObservableObject {
     @Published private(set) var hintDone: Bool
     @Published private(set) var call: DangerCallState
     /// L'écran « avertis » ouvert, ou nil.
-    @Published var sentRoute: DangerSentRoute?
+    @Published var sentRoute: DangerSentRoute? {
+        didSet { signal.sentScreenOpen = sentRoute != nil }
+    }
+
     /// Une ligne calme dite une fois (fin de l'alerte, fin refusée, abandon non confirmé), retirée d'elle-même par l'hôte.
-    @Published var notice: String?
+    @Published var notice: String? {
+        didSet { signal.noticeShown = notice != nil }
+    }
     /// Les noms des Miffs de la personne (par identifiant), tenus par l'hôte : jamais gardés ailleurs qu'en mémoire.
     var miffNames: [String: String] = [:]
     private var subscription: AnyCancellable?

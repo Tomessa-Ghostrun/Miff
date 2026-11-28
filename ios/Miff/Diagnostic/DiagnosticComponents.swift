@@ -47,19 +47,26 @@ struct DiagLine: View {
 
 /// Carte d'une section du diagnostic (fond « surface », bordure fine, arrondi radius/md).
 struct SectionCard<Content: View>: View {
-    private let titleKey: LocalizedStringKey
+    private let title: Text
     private let section: DiagnosticSection
     private let content: Content
 
     init(_ titleKey: LocalizedStringKey, section: DiagnosticSection, @ViewBuilder content: () -> Content) {
-        self.titleKey = titleKey
+        title = Text(titleKey)
+        self.section = section
+        self.content = content()
+    }
+
+    /// Un titre déjà écrit (une carte de l'équipe, en français seulement, sans clé du catalogue de textes).
+    init(verbatim title: String, section: DiagnosticSection, @ViewBuilder content: () -> Content) {
+        self.title = Text(verbatim: title)
         self.section = section
         self.content = content()
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text(titleKey)
+            title
                 .miffTextStyle(textBodyBold16)
                 .foregroundColor(colorTextPrimary.color)
                 .frame(maxWidth: .infinity, alignment: .leading)

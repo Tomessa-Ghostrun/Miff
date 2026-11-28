@@ -107,10 +107,11 @@ struct FeedScreen: View {
         .restrictedSettingsGear(visible: ready?.miffs.isEmpty == true, action: actions.onOpenSettings)
         .onChange(of: model.refreshing) { refreshing in announceRefresh(refreshing) }
         // La feuille montre une position : elle est masquée dans la vignette du sélecteur d'applications comme le reste du Feed.
-        .sheet(isPresented: locateIsShown) { locateSheet.hidesInAppSwitcher() }
+        // L'offre Miff+ périodique (PAY-PER-I) ne vient jamais par-dessus une surcouche : la feuille et la photo plein écran se déclarent (`overlayPresent`).
+        .sheet(isPresented: locateIsShown) { locateSheet.hidesInAppSwitcher().overlayPresent() }
         // La photo en plein écran (masquée elle aussi dans la vignette du sélecteur d'applications) ; elle se ferme quand l'onglet change,
         // que l'app part en arrière-plan ou que la Miff affichée change : aucune photo ne reste ouverte hors de l'écran du Feed.
-        .fullScreenCover(item: $openedPhoto) { opened in photoFullScreen(opened) }
+        .fullScreenCover(item: $openedPhoto) { opened in photoFullScreen(opened).overlayPresent() }
         .onChange(of: isActive) { active in
             if !active {
                 openedPhoto = nil

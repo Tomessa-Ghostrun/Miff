@@ -234,6 +234,29 @@ final class DangerAlertViewModelTests: XCTestCase {
         XCTAssertEqual(model.sentRoute, DangerSentRoute(miffId: miffA, stopped: true, unavailable: false))
     }
 
+    func testTheSignalTellsWhenTheSentScreenAndTheCalmLineAreOnScreenEvenWithoutAnAlertInProgress() {
+        // L'offre Miff+ périodique ne vient jamais par-dessus ces écrans : « partage arrêté » et « indisponible » existent alors que l'alerte n'est plus « en cours ».
+        let model = makeModel([])
+        XCTAssertFalse(signal.sentScreenOpen)
+        XCTAssertFalse(signal.noticeShown)
+
+        model.controller.onEvent?(.notSent(miffId: miffA, failure: .sharingStopped))
+        XCTAssertTrue(signal.sentScreenOpen)
+        XCTAssertFalse(signal.inProgress)
+        XCTAssertTrue(PeriodicPaywallSituation.ownAlertHolds(inProgress: signal.inProgress, sentScreenOpen: signal.sentScreenOpen))
+        model.sentRoute = nil
+        XCTAssertFalse(signal.sentScreenOpen)
+
+        model.openSent(miffId: miffA, unavailable: true)
+        XCTAssertTrue(signal.sentScreenOpen)
+        model.sentRoute = nil
+
+        model.controller.onEvent?(.endNotSent)
+        XCTAssertTrue(signal.noticeShown)
+        model.notice = nil
+        XCTAssertFalse(signal.noticeShown)
+    }
+
     func testTheSignalFollowsTheAlertForTheShellAndTheMiffScreen() async {
         let model = makeModel([])
         store.startResults = [.started(startedAtMillis: 1, expiresAtMillis: Int.max / 2)]

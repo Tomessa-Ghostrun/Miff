@@ -55,7 +55,9 @@ final class PaywallSourcesTests: XCTestCase {
         // Miff » du Profil (2e Miff), « Découvrir Miff+ » de Réglages > Abonnement (SRV-8I, déclencheur `subscription`) et « Accepter » d'une
         // demande reçue (4e lieu ou zone de danger) ; `openPlacePaywall` (4e lieu et zone de danger depuis le formulaire d'un lieu) est dans
         // `MiffHomeHost+Places.swift`.
-        XCTAssertEqual(count(of: "presentPaywall(", in: hosts), 5)
+        // PAY-PER-I : et l'offre périodique (`open: { presentPaywall(.periodic) }`), la sixième.
+        XCTAssertEqual(count(of: "presentPaywall(", in: hosts), 6)
+        XCTAssertTrue(hosts.contains("open: { presentPaywall(.periodic) }"))
         XCTAssertTrue(hosts.contains("onOpenOffer: { presentPaywall(.subscription) }"))
         XCTAssertTrue(hosts.contains("onOpenOffer: { presentPaywall(.extraMiff) }"))
         let places = try read("Miff/Views/Miff/MiffHomeHost+Places.swift")

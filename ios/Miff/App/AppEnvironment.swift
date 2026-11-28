@@ -84,6 +84,9 @@ final class AppEnvironment {
     let joinLimiter: JoinAttemptLimiter
     /// La fenêtre d'avis (docs/tickets/pop-ins-avis.md) : vide dans un build sans le drapeau `REVIEW_PROMPT` (Release).
     let reviewPrompt: ReviewPromptServices
+    /// L'offre Miff+ périodique (PAY-PER-I, docs/tickets/paywall-periodique.md) : ACTIVE dans tous les builds, sans drapeau (décision du PM, P1). Un seul entier sur le téléphone ;
+    /// aucune écriture sur le serveur. Son compteur est effacé avec la session (déconnexion, suppression du compte).
+    let periodicPaywall: PeriodicPaywallServices
     /// LOC-4a : ce que le téléphone dit des autorisations de Miff (l'ÉTAT seulement, jamais une position), l'écran des
     /// notifications déjà montré, et le renouvellement du consentement.
     let consentRenewals: ConsentRenewals
@@ -217,12 +220,15 @@ final class AppEnvironment {
         )
         // La fenêtre d'avis : son état est effacé avec la session (déconnexion, suppression du compte), comme sur Android.
         let review = ReviewPromptServices.make()
+        // L'offre Miff+ périodique (PAY-PER-I) : son compteur est effacé avec la session (déconnexion, suppression du compte), comme l'état de la fenêtre d'avis.
+        let periodic = PeriodicPaywallServices()
         // SRV-2I : la sortie invalide d'abord le jeton de notification (avant tout le reste), puis arrête le reste. Assemblé pas à pas : une longue chaîne de `+`
         // ralentit le compilateur.
         var allTeardowns: [SessionTeardown] = [pushServices.teardown]
         allTeardowns += Self.teardowns(drafts, miff, places, trackingServices, updateServices)
         allTeardowns += [notifs.teardown, privacyServices.teardown]
         allTeardowns += review.teardowns
+        allTeardowns += periodic.teardowns
         allTeardowns += dangerTeardowns
         var allErasers: [LocalDataEraser] = pushServices.erasers
         allErasers += dangerErasers
@@ -253,6 +259,9 @@ final class AppEnvironment {
         // CNC-I : pendant la fin de la session, le journal du serveur n'est pas lu ; un message du serveur vu au premier plan ou touché écrit sa ligne du centre.
         notifs.journal.sessionValid = { [weak manager] _ in !(manager?.ending ?? false) }
         pushServices.hook.onArrival = notifs.pushArrived
+        // PAY-PER-I (ticket P11) : une personne qui arrive en touchant la notification de l'alerte d'un proche ne voit aucune offre dans TOUTE la session.
+        let periodicRules = periodic.rules
+        pushServices.delegate.onAlertOpened = { @Sendable in periodicRules.excludeSession() }
         // CNC-I : une entrée du journal pour une Miff que l'annuaire connaît et qui n'est pas celle du compte n'entre pas dans le centre (pas de point fantôme sur la cloche).
         let knownDirectory = miff.directory
         notifs.journal.isMyMiff = { miffId in
@@ -291,6 +300,7 @@ final class AppEnvironment {
         placeRequestRepository = places.requests
         joinLimiter = miff.limiter
         reviewPrompt = review
+        periodicPaywall = periodic
         consentRenewals = miff.renewals
         awaitingAgreement = miff.awaiting
         tracking = trackingServices.runtime

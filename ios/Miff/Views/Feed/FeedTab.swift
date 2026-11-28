@@ -169,6 +169,9 @@ struct FeedTab: View {
             // La fenêtre d'avis lit ce que le Feed montre (statut d'un proche vu, ma carte, feuille « Localiser », pop-in « Pas de connexion »)
             // au moment de décider : rien n'est envoyé ni gardé. Sans effet dans un build sans le drapeau REVIEW_PROMPT (Release).
             .reviewReportsFeed(model: model)
+            // L'offre Miff+ périodique (PAY-PER-I) lit, au moment de décider, si le Feed porte une alerte, ce que dit ma carte, et si la feuille « Localiser » ou la
+            // pop-in « Pas de connexion » est là : rien n'est envoyé ni gardé.
+            .periodicReportsFeed(model: model)
     }
 
     private var screenActions: FeedScreenActions {

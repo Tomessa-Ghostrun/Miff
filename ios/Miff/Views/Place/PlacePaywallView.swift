@@ -15,6 +15,9 @@ struct PlacePaywallView: View {
     let reason: PaywallReason
     let tracker: AnalyticsTracker
     let onClose: () -> Void
+    /// PAY-PER-I : appelé UNE fois, à l'affichage effectif de l'offre (là où `paywall_shown` serait émis, avec ou sans consentement aux statistiques), quel que soit le point d'entrée :
+    /// l'offre périodique remet alors son compteur à zéro et ne revient plus dans la session. Sans effet par défaut (aperçus, tests).
+    let onShown: () -> Void
 
     @StateObject private var display: PlacePaywallDisplay
     @State private var tracking: PlacePaywallTracking?
@@ -23,10 +26,12 @@ struct PlacePaywallView: View {
         reason: PaywallReason,
         tracker: AnalyticsTracker,
         premium: PremiumCoordinator?,
+        onShown: @escaping () -> Void = {},
         onClose: @escaping () -> Void
     ) {
         self.reason = reason
         self.tracker = tracker
+        self.onShown = onShown
         self.onClose = onClose
         _display = StateObject(wrappedValue: PlacePaywallDisplay(reason: reason, premium: premium))
     }
@@ -42,6 +47,7 @@ struct PlacePaywallView: View {
                 tracking = current
                 if let event = current.appeared() {
                     tracker.track(event)
+                    onShown()
                 }
             }
             // La croix et la fermeture de la feuille finissent toutes par la disparition de l'écran.

@@ -49,6 +49,9 @@ final class PushNotificationDelegate: NSObject, UNUserNotificationCenterDelegate
     /// affiché), ou au toucher sur la notification (`opened` vrai : le système l'avait affichée). La ligne du centre s'écrit ici ; l'hôte vérifie que la Miff est
     /// celle du compte avant (`PushArrivalRules`).
     var onArrival: ((PushArrival, _ opened: Bool) -> Void)?
+    /// PAY-PER-I : la personne a touché la notification de l'ALERTE d'un proche (seulement dans un build qui contient l'alerte). L'offre Miff+ périodique ne vient alors dans aucun
+    /// moment de la session que ce toucher ouvre (`PeriodicPaywallRules.excludeSession`). Aucune donnée ne voyage : un simple signal.
+    var onAlertOpened: (@Sendable () -> Void)?
     /// Un autre délégué (les rappels locaux) à qui passer tout ce qui n'est PAS un message du serveur. Faible : il appartient à l'app.
     weak var next: UNUserNotificationCenterDelegate?
 
@@ -90,6 +93,8 @@ final class PushNotificationDelegate: NSObject, UNUserNotificationCenterDelegate
                     return .ignore
                 }
                 noteArrival(userInfo, opened: true, deliveredAt: deliveredAt)
+                // PAY-PER-I (ticket P11) : la session que ce toucher ouvre ne montre aucune offre, même longtemps après.
+                onAlertOpened?()
                 onTap?(alert.openTarget)
                 return .open
             }

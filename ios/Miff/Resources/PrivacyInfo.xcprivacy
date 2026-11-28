@@ -230,7 +230,9 @@
 			</array>
 		</dict>
 		<!-- Horloge du système : `ProcessInfo.systemUptime` (`Models/Support/AppClock.swift`) mesure des durées dans l'app
-		     (plancher de durée des réponses, pauses, animation de lancement), jamais pour identifier l'appareil.
+		     (plancher de durée des réponses, pauses, animation de lancement), et `clock_gettime_nsec_np(CLOCK_MONOTONIC)`
+		     (`Models/Paywall/PeriodicPaywallClock.swift`) mesure l'absence de l'app pour l'offre périodique (30 minutes ou plus),
+		     jamais pour identifier l'appareil ; même catégorie, déjà déclarée, aucune raison de plus.
 		     Raison 35F9.1 : mesurer le temps écoulé entre deux événements de l'app. Le test PrivacyManifestApiTests
 		     compare ce manifeste aux API réellement utilisées par le code. -->
 		<dict>

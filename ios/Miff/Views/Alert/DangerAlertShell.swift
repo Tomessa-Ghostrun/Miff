@@ -14,6 +14,11 @@ final class DangerAlertSignal: ObservableObject {
     @Published var inProgress = false
     /// La Miff d'origine de l'alerte en cours (un identifiant seulement), ou nil.
     @Published var miffId: String?
+    /// L'écran « avertis » est ouvert (alerte envoyée, partage arrêté, indisponible, numéros d'urgence compris) : il est à MOI, même quand l'alerte n'est plus « en cours ».
+    /// L'offre Miff+ périodique ne vient jamais par-dessus.
+    @Published var sentScreenOpen = false
+    /// La ligne calme « Alerte terminée… » (ou « fin non envoyée ») est à l'écran.
+    @Published var noticeShown = false
 }
 
 private struct DangerAlertSignalKey: EnvironmentKey {

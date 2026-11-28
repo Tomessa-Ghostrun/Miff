@@ -75,6 +75,8 @@ struct TravelCardView: View {
             },
             message: { Text(verbatim: confirmBody) }
         )
+        // L'offre Miff+ périodique (PAY-PER-I) ne vient jamais par-dessus cette confirmation : la boîte de dialogue se déclare avec la liaison qui l'ouvre.
+        .overlayPresent(confirmBinding.wrappedValue)
         .onAppear { model.reload() }
         .onChange(of: scenePhase) { phase in
             if phase == .active {
@@ -122,6 +124,8 @@ struct TravelCardView: View {
                 onCancel: { model.onPickerDismissed() }
             )
             .onAppear { pickerVisible = true }
+            // L'offre Miff+ périodique (PAY-PER-I) ne vient jamais par-dessus le calendrier du mode voyage (`overlayPresent`).
+            .overlayPresent()
         }
     }
 }
