@@ -2,6 +2,16 @@
 
 ## Non publié
 
+### Nettoyage de l'offre Miff+ : retrait des clés de texte du paywall devenues inutilisées, des deux côtés (numéro provisoire : à renuméroter à la fusion)
+
+Branche `ios/nettoyage-paywall`. Aucun changement visible, aucun nouveau texte : rien de ce que voit la personne ne change. Suite de la ligne « **Aucune clé retirée** » de l'entrée SRV-8I (« leur retrait est une PR de nettoyage commune »).
+
+Retiré du catalogue iOS (`Localizable.xcstrings`, 6 langues) : `ios_paywall_info_cancel_trial`, `paywall_trial_then`, `paywall_info_trial`, `paywall_info_cancel`, `paywall_free_plan_stays`. Aucune n'était plus lue par le code Swift (recherche faite clé par clé) depuis les retours du PM du 2026-11-25 (une seule phrase sous les cartes, `paywall_info_trial_short`). Les quatre clés communes sont retirées **en même temps** des six `strings.xml` d'Android (le contrôle de parité échoue si une clé n'est retirée que d'un côté ; voir `android/CHANGELOG.md` 0.61.4). Parité vérifiée en local : OK (1265 clés communes).
+
+Tests adaptés : `PaywallTextsTests` n'exige plus ces clés (ni le tutoiement de `paywall_info_cancel`) ; `LimitTextsTests` perd `testTheFreePlanSentenceAgreesInNumber` (le texte n'existe plus ; les autres accords singulier / pluriel sont couverts par les autres tests du fichier) ; `PaywallOffersTests.testThereIsNoCancellationParagraphAnyMore` cherche « 24 heures » / « 24 hours » directement.
+
+Documentation : fichiers d'échange `docs/i18n/echange/source-fr-en.json` et `propres-ios.json` (entrées retirées, compteurs de `meta` mis à jour ; **non régénérés en entier** : l'extraction complète changerait ~1 000 lignes sans rapport, car ces fichiers étaient déjà en retard sur les ressources), `docs/i18n/chaines-reference.md` (S27 retiré), `docs/contracts/i18n-keys.md`, et `docs/tickets/premium-achat-reel.md` §8 (ligne « Actif » : phrase de renouvellement sans prix, décision du PM, comme le fait déjà l'écran Abonnement d'iOS).
+
 ### PAY-PER-I : l'offre Miff+ s'ouvre toutes les 10 ouvertures pour une personne sans Miff+, une fois par session (parité avec Android) [numéro provisoire : à renuméroter à la fusion]
 
 Branche `ios/paywall-periodique`. Ticket `docs/tickets/paywall-periodique.md` (§9 « iOS », critères PP1 à PP24), parité avec Android (PR 324 PAY-PER-A et 327 finitions : mêmes constantes, mêmes noms, mêmes cas de tests). Recette : `docs/qa/checklists/paywall-periodique-ios-recette-pm.md`. **Décisions du PM** : règle **ACTIVE dans tous les builds, sans drapeau** (2026-11-25, P1) ; **10 ouvertures** et non 15 (2026-11-26) ; **aucune mise à jour des textes légaux** (2026-11-25, risque J76 assumé). **Rien n'est compilé en local** (poste Windows : la CI fait foi). **Coût ajouté : 0 €** (aucune dépendance, aucune lecture ni écriture sur le serveur).

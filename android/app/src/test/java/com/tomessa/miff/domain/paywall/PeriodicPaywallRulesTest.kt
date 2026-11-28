@@ -157,7 +157,7 @@ class PeriodicPaywallRulesTest {
     }
 
     @Test
-    fun aSecondForegroundCallWithoutABackground_changesNothing() {
+    fun aSecondForegroundCallWithoutABackground_countsNoOpeningMore() {
         val rules = rules()
         rules.coldStart()
         rules.onForeground()
@@ -173,7 +173,6 @@ class PeriodicPaywallRulesTest {
         assertEquals(PeriodicPaywallDecision.Show, rules.evaluate(calm()))
 
         rules.away(5 * 60_000L)
-        assertEquals("no opening more", 10, store.value)
         assertEquals(PeriodicPaywallDecision.Wait(1_500L), rules.evaluate(calm()))
         clock.now += 1_000L
         assertEquals(PeriodicPaywallDecision.Wait(500L), rules.evaluate(calm()))
@@ -194,7 +193,20 @@ class PeriodicPaywallRulesTest {
         assertEquals(PeriodicPaywallDecision.Wait(1_500L), rules.evaluate(calm()))
         clock.now += 1_500L
         assertEquals(PeriodicPaywallDecision.Show, rules.evaluate(calm()))
-        assertEquals("still one count", 10, store.value)
+    }
+
+    @Test
+    fun aReturnInTheSameSession_countsNoOpeningMore() {
+        // Starts well under the cap (5, not 9): a wrong extra count would show (7), where a counter at its cap of 10 would hide it.
+        val rules = rules(counter = 5)
+        rules.coldStart()
+        assertEquals(6, store.value)
+        rules.away(5 * 60_000L)
+        assertEquals("a short return", 6, store.value)
+        rules.away(20_000L)
+        assertEquals("a system window or a call", 6, store.value)
+        rules.away(PeriodicPaywallDefaults.BACKGROUND_MILLIS - 1L)
+        assertEquals("just under 30 minutes", 6, store.value)
     }
 
     @Test
@@ -218,7 +230,9 @@ class PeriodicPaywallRulesTest {
         rules.coldStart()
         rules.onTouch(pressed = true)
         rules.onActivation()
-        rules.away(10_000L)
+        // A second foreground call WITHOUT a background in between (a system window): the finger that was down is not kept down for ever.
+        clock.now += 10_000L
+        rules.onForeground()
         clock.now += PeriodicPaywallDefaults.QUIET_AFTER_TOUCH_MILLIS
         assertEquals(PeriodicPaywallDecision.Show, rules.evaluate(calm()))
     }

@@ -1103,15 +1103,10 @@
     <!-- PAY-UI : ecran d'offre Miff+ (ticket paywall-v2.md) ; cles ajoutees par la PR iOS pour la parite, a reprendre par PAY-UI-A -->
     <string name="paywall_soon_body">Diese Option ist noch nicht verfügbar.</string>
     <string name="paywall_cta_trial">7&#160;Tage kostenlos testen</string>
-    <string name="paywall_trial_then">Dann %1$s pro Jahr</string>
     <string name="paywall_monthly_equivalent">das sind %1$s pro Monat</string>
     <string name="paywall_annual_savings" formatted="false">fast 30&#160;% Ersparnis</string>
     <string name="paywall_cancel_anytime">Jederzeit kündbar</string>
     <string name="paywall_see_all_offers">Alle Angebote ansehen</string>
-    <plurals name="paywall_free_plan_stays">
-        <item quantity="one">Die kostenlose Version bleibt verfügbar: 1 Miff und %1$d vertrauter Ort.</item>
-        <item quantity="other">Die kostenlose Version bleibt verfügbar: 1 Miff und %1$d vertraute Orte.</item>
-    </plurals>
     <plurals name="paywall_feature_places_limit">
         <item quantity="one">Sonst begrenzt auf %1$d Ort</item>
         <item quantity="other">Sonst begrenzt auf %1$d Orte</item>
@@ -1135,10 +1130,8 @@
     <string name="paywall_plan_annual_title">Jährlich · %1$s pro Jahr</string>
     <string name="paywall_plan_monthly_title">Monatlich · %1$s pro Monat</string>
     <string name="paywall_no_commitment">Ohne Mindestlaufzeit</string>
-    <string name="paywall_info_trial">7&#160;Tage kostenlos testen, danach %1$s pro Jahr, abgerechnet am Ende der Testphase und danach jährlich. Das Abonnement verlängert sich automatisch zum selben Preis, bis du es kündigst.</string>
     <string name="paywall_info_annual">%1$s pro Jahr, auf einmal abgerechnet und danach jährlich. Verlängert sich automatisch zum selben Preis, bis du es kündigst.</string>
     <string name="paywall_info_monthly">%1$s pro Monat, ohne Mindestlaufzeit. Verlängert sich automatisch jeden Monat, bis du es kündigst.</string>
-    <string name="paywall_info_cancel">Du kannst jederzeit in den Einstellungen deines Kontos bei %1$s kündigen, vor Ende des laufenden Zeitraums. Du behältst den Zugang bis zum Ende des bezahlten Zeitraums.</string>
     <string name="paywall_terms_link">Nutzungsbedingungen</string>
     <string name="paywall_privacy_link">Datenschutzerklärung</string>
     <string name="android_paywall_store_name">Google Play</string>

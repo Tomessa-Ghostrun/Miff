@@ -2,6 +2,19 @@
 
 Format : une entrée par fonctionnalité livrée, la plus récente en haut. Les choix "économiques" (contournements pour rester gratuit) y sont documentés avec leur limite et le signal de bascule.
 
+## [0.61.4] - 2026-11-28 : nettoyage commun Android + iOS des clés de texte du paywall devenues inutilisées (PR iOS `ios/nettoyage-paywall`)
+
+**Numéro de version provisoire** (au-dessus de la 0.61.3 ; le PM renumérote à la fusion). **Aucun changement visible, aucun nouveau texte, coût ajouté : 0 €.** Recette PM non requise. La PR porte la branche iOS parce que le contrôle de parité exige de retirer ces clés des deux plateformes en même temps (suite de la section « Non fait » de la 0.61.3).
+
+### Retiré
+- `paywall_trial_then`, `paywall_info_trial`, `paywall_info_cancel` et `paywall_free_plan_stays` (pluriel) des **six** fichiers `values*/strings.xml` (anglais de repli, français, allemand, espagnol, italien, portugais) et du catalogue iOS. **Aucune n'était lue par le code de l'app** (vérifié par recherche dans `main`) : depuis les retours du PM du 2026-11-25, le paywall n'affiche plus que `paywall_info_trial_short`. Le commentaire « conservé parce que l'écran iOS l'utilise » est retiré avec `paywall_trial_then`.
+- `PaywallScreenTest` : les assertions « ce texte n'est plus à l'écran » ne dépendent plus des clés supprimées ; elles cherchent un fragment littéral français (« Puis 59,88 », « facturés à la fin de l'essai puis chaque année », « Annule à tout moment », « La formule gratuite reste disponible »).
+- Parité vérifiée en local après le retrait : OK (1265 clés communes).
+
+### Finitions de la revue de la PR 330 (tests et recette, aucun changement de code de l'app)
+- `PeriodicPaywallRulesTest` : `aReturnWithAFingerThatWasDown_doesNotKeepTheOfferWaitingForever` devient discriminant (un **second `onForeground()` sans `onBackground()`** entre les deux, au lieu de `away(10_000)`, dont `onBackground()` relevait déjà le doigt) ; nouveau test `aReturnInTheSameSession_countsNoOpeningMore` qui part de **compteur = 5** et attend **6** (à 9 ou 10, le plafond cachait un comptage en trop) ; `aSecondForegroundCallWithoutABackground_changesNothing` renommé `..._countsNoOpeningMore` (il remet le dernier toucher à « maintenant » et ne compte rien) ; les deux assertions de compte plafonné des tests de retour sont retirées (couvertes par le nouveau test).
+- Recette `docs/qa/checklists/paywall-periodique-android-recette-pm.md` étape 7 bis : Google Maps (« Localiser ») reste l'exemple ; la fenêtre du système et l'appel deviennent facultatifs (selon l'appareil, une boîte d'autorisation ou une bannière d'appel peut ne pas compter comme un retour dans l'app).
+
 ## [0.61.3] - 2026-11-28 : l'offre périodique attend 1,5 s de calme aussi au retour au premier plan (alignement sur iOS, PR 328)
 
 Branche `android/finitions-paywall-2`. **Numéro de version provisoire** (au-dessus de la 0.61.2 ; le PM renumérote à la fusion). Petit changement de comportement, **aucun nouveau texte, aucune clé, coût ajouté : 0 €**. Recette PM non requise (décision du PM) ; la checklist reste juste (étape 7 bis).
@@ -13,7 +26,7 @@ Branche `android/finitions-paywall-2`. **Numéro de version provisoire** (au-des
 - Recette `docs/qa/checklists/paywall-periodique-android-recette-pm.md` : étape 7 bis ajoutée (sans renuméroter).
 
 ### Non fait : suppression des clés de texte du paywall devenues inutilisées (`paywall_trial_then`, `paywall_info_trial`, `paywall_info_cancel`, `paywall_free_plan_stays`)
-- **Aucune des quatre n'est lue par le code de l'app Android** (`main`) ; seules `PaywallScreenTest` (assertions « ce texte n'est plus à l'écran ») et des documents les citent encore. **Mais les quatre existent aussi dans le catalogue iOS** (`ios/Miff/Resources/Localizable.xcstrings`) et sont citées par des tests iOS (`PaywallTextsTests`, `LimitTextsTests`). Le contrôle de parité du CI exige les mêmes clés sur Android et iOS : les retirer d'Android seul le fait échouer (essayé : « Clé présente sur iOS seulement »). Elles restent donc, **jusqu'à un nettoyage commun Android + iOS**.
+- **Aucune des quatre n'est lue par le code de l'app Android** (`main`) ; seules `PaywallScreenTest` (assertions « ce texte n'est plus à l'écran ») et des documents les citent encore. **Mais les quatre existent aussi dans le catalogue iOS** (`ios/Miff/Resources/Localizable.xcstrings`) et sont citées par des tests iOS (`PaywallTextsTests`, `LimitTextsTests`). Le contrôle de parité du CI exige les mêmes clés sur Android et iOS : les retirer d'Android seul le fait échouer (essayé : « Clé présente sur iOS seulement »). Elles restent donc, **jusqu'à un nettoyage commun Android + iOS**. **Fait en 0.61.4** (PR de nettoyage commune #329).
 
 ## [0.61.2] - 2026-11-26 : l'offre périodique passe de « toutes les 15 ouvertures » à « toutes les 10 ouvertures », et finitions de la revue indépendante de la PR 324 (PAY-PER-A)
 

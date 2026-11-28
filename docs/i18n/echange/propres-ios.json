@@ -317,22 +317,6 @@
       "gele": false
     },
     {
-      "cle": "ios_paywall_info_cancel_trial",
-      "plateformes": [
-        "ios"
-      ],
-      "type": "string",
-      "fr": "Pour un essai, au moins 24 heures avant sa fin.",
-      "en": "For a trial, at least 24 hours before it ends.",
-      "placeholders": [],
-      "contexte": {
-        "prefixe": "ios"
-      },
-      "longueurMax": 70,
-      "courte": false,
-      "gele": false
-    },
-    {
       "cle": "ios_paywall_store_name",
       "plateformes": [
         "ios"

@@ -1109,16 +1109,10 @@
     <!-- PAY-UI : ecran d'offre Miff+ (ticket paywall-v2.md) ; cles ajoutees par la PR iOS pour la parite, a reprendre par PAY-UI-A -->
     <string name="paywall_soon_body">Esta opción aún no está disponible.</string>
     <string name="paywall_cta_trial">Empezar la prueba gratuita (7 días)</string>
-    <string name="paywall_trial_then">Después, %1$s al año</string>
     <string name="paywall_monthly_equivalent">es decir, %1$s al mes</string>
     <string name="paywall_annual_savings" formatted="false">casi un 30&#160;% de ahorro</string>
     <string name="paywall_cancel_anytime">Cancela cuando quieras</string>
     <string name="paywall_see_all_offers">Ver todos los planes</string>
-    <plurals name="paywall_free_plan_stays">
-        <item quantity="one">El plan gratuito sigue disponible: 1 Miff y %1$d lugar de confianza.</item>
-        <item quantity="many">El plan gratuito sigue disponible: 1 Miff y %1$d lugares de confianza.</item>
-        <item quantity="other">El plan gratuito sigue disponible: 1 Miff y %1$d lugares de confianza.</item>
-    </plurals>
     <plurals name="paywall_feature_places_limit">
         <item quantity="one">Si no, límite de %1$d lugar</item>
         <item quantity="many">Si no, límite de %1$d lugares</item>
@@ -1143,10 +1137,8 @@
     <string name="paywall_plan_annual_title">Anual · %1$s al año</string>
     <string name="paywall_plan_monthly_title">Mensual · %1$s al mes</string>
     <string name="paywall_no_commitment">Sin compromiso</string>
-    <string name="paywall_info_trial">Prueba gratuita de 7 días y después %1$s al año, que se cobran al terminar la prueba y luego cada año. La suscripción se renueva automáticamente al mismo precio hasta que la canceles.</string>
     <string name="paywall_info_annual">%1$s al año, que se cobran de una sola vez y luego cada año. Renovación automática al mismo precio hasta que la canceles.</string>
     <string name="paywall_info_monthly">%1$s al mes, sin compromiso. Renovación automática cada mes hasta que la canceles.</string>
-    <string name="paywall_info_cancel">Cancela en cualquier momento en los ajustes de tu cuenta de %1$s, antes de que termine el periodo en curso; conservas el acceso hasta el final del periodo pagado.</string>
     <string name="paywall_terms_link">Condiciones de uso</string>
     <string name="paywall_privacy_link">Política de privacidad</string>
     <string name="android_paywall_store_name">Google Play</string>

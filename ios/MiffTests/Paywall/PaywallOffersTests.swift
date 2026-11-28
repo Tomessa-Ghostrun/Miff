@@ -81,11 +81,12 @@ final class PaywallOffersTests: XCTestCase {
     }
 
     func testThereIsNoCancellationParagraphAnyMore() {
-        let cancellation = normalized(L10n.string("ios_paywall_info_cancel_trial"))
         for offers in [PaywallFixtures.withTrial, PaywallFixtures.withoutTrial] {
             for layout in [PaywallLayout.trial, .plans] {
                 for sentence in paragraphs(offers, layout) {
-                    XCTAssertFalse(sentence.contains(cancellation), "plus de « 24 heures avant la fin »")
+                    // L'ancienne clé `ios_paywall_info_cancel_trial` (« Pour un essai, au moins 24 heures avant sa fin. ») n'existe plus.
+                    let mentionsTheDelay = sentence.contains("24 heures") || sentence.contains("24 hours")
+                    XCTAssertFalse(mentionsTheDelay, "plus de « 24 heures avant la fin »")
                     XCTAssertFalse(sentence.contains("App Store"), "plus de « annule dans les réglages de ton compte »")
                 }
             }

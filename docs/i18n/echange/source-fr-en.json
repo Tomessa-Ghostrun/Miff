@@ -5,16 +5,16 @@
     "langueRepli": "en",
     "notation": "Valeurs insérées des textes communs en notation Android (%1$s, %2$d, %2$02d, %s, %d). iOS les reçoit converties (%@, %lld) par le script.",
     "comptes": {
-      "communs": 1244,
+      "communs": 1240,
       "propresAndroid": 56,
-      "propresIos": 86,
+      "propresIos": 85,
       "infoPlist": 4,
-      "parLangue": 1390,
+      "parLangue": 1385,
       "gelees": 1,
       "gelees_communs": 1,
       "divergentes": 14,
-      "pluriels": 14,
-      "sensibles": 584,
+      "pluriels": 13,
+      "sensibles": 580,
       "internes": 101,
       "sensiblesRenforces": 82,
       "motifs": 3,
@@ -27938,35 +27938,6 @@
       "sensible": true
     },
     {
-      "cle": "paywall_trial_then",
-      "plateformes": [
-        "android",
-        "ios"
-      ],
-      "type": "string",
-      "fr": "Puis %1$s par an",
-      "en": "Then %1$s per year",
-      "placeholders": [
-        "%1$s"
-      ],
-      "contexte": {
-        "ecran": "PAY-UI : ecran d'offre Miff+ (ticket paywall-v2.md) ; cles ajoutees par la PR iOS pour la parite, a reprendre …",
-        "prefixe": "paywall",
-        "usages": {
-          "android": [
-            "ui/paywall/PaywallScreen.kt"
-          ],
-          "ios": [
-            "Views/Paywall/PaywallOffersArea.swift"
-          ]
-        }
-      },
-      "longueurMax": 24,
-      "courte": false,
-      "gele": false,
-      "sensible": true
-    },
-    {
       "cle": "paywall_monthly_equivalent",
       "plateformes": [
         "android",
@@ -28072,46 +28043,6 @@
         }
       },
       "longueurMax": 33,
-      "courte": false,
-      "gele": false,
-      "sensible": true
-    },
-    {
-      "cle": "paywall_free_plan_stays",
-      "plateformes": [
-        "android",
-        "ios"
-      ],
-      "type": "plural",
-      "fr": {
-        "one": "La formule gratuite reste disponible : 1 Miff et %1$d lieu de confiance.",
-        "many": "La formule gratuite reste disponible : 1 Miff et %1$d lieux de confiance.",
-        "other": "La formule gratuite reste disponible : 1 Miff et %1$d lieux de confiance."
-      },
-      "en": {
-        "one": "The free plan is still available: 1 Miff and %1$d trusted place.",
-        "other": "The free plan is still available: 1 Miff and %1$d trusted places."
-      },
-      "placeholders": [
-        "%1$d"
-      ],
-      "contexte": {
-        "ecran": "PAY-UI : ecran d'offre Miff+ (ticket paywall-v2.md) ; cles ajoutees par la PR iOS pour la parite, a reprendre …",
-        "prefixe": "paywall",
-        "usages": {
-          "android": [
-            "ui/paywall/PaywallScreen.kt"
-          ],
-          "ios": [
-            "Models/Paywall/PaywallInformation.swift"
-          ]
-        }
-      },
-      "longueurMax": {
-        "one": 108,
-        "many": 109,
-        "other": 109
-      },
       "courte": false,
       "gele": false,
       "sensible": true
@@ -28529,35 +28460,6 @@
       "sensible": true
     },
     {
-      "cle": "paywall_info_trial",
-      "plateformes": [
-        "android",
-        "ios"
-      ],
-      "type": "string",
-      "fr": "Essai gratuit de 7 jours, puis %1$s par an, facturés à la fin de l'essai puis chaque année. L'abonnement se renouvelle automatiquement au même tarif tant que tu ne l'annules pas.",
-      "en": "7-day free trial, then %1$s per year, billed at the end of the trial and every year after. The subscription renews automatically at the same price until you cancel it.",
-      "placeholders": [
-        "%1$s"
-      ],
-      "contexte": {
-        "ecran": "PAY-UI : ecran d'offre Miff+ (ticket paywall-v2.md) ; cles ajoutees par la PR iOS pour la parite, a reprendre …",
-        "prefixe": "paywall",
-        "usages": {
-          "android": [
-            "ui/paywall/PaywallScreen.kt"
-          ],
-          "ios": [
-            "Models/Paywall/PaywallInformation.swift"
-          ]
-        }
-      },
-      "longueurMax": 267,
-      "courte": false,
-      "gele": false,
-      "sensible": true
-    },
-    {
       "cle": "paywall_info_annual",
       "plateformes": [
         "android",
@@ -28611,35 +28513,6 @@
         }
       },
       "longueurMax": 150,
-      "courte": false,
-      "gele": false,
-      "sensible": true
-    },
-    {
-      "cle": "paywall_info_cancel",
-      "plateformes": [
-        "android",
-        "ios"
-      ],
-      "type": "string",
-      "fr": "Annule à tout moment dans les réglages de ton compte %1$s, avant la fin de la période en cours ; tu gardes l'accès jusqu'à la fin de la période payée.",
-      "en": "Cancel anytime in your %1$s account settings, before the end of the current period; you keep access until the end of the paid period.",
-      "placeholders": [
-        "%1$s"
-      ],
-      "contexte": {
-        "ecran": "PAY-UI : ecran d'offre Miff+ (ticket paywall-v2.md) ; cles ajoutees par la PR iOS pour la parite, a reprendre …",
-        "prefixe": "paywall",
-        "usages": {
-          "android": [
-            "ui/paywall/PaywallScreen.kt"
-          ],
-          "ios": [
-            "Models/Paywall/PaywallInformation.swift"
-          ]
-        }
-      },
-      "longueurMax": 225,
       "courte": false,
       "gele": false,
       "sensible": true
