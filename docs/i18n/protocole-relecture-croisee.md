@@ -25,7 +25,7 @@ Documents à fournir à chaque agent : `docs/i18n/glossaire.md`, `docs/i18n/guid
 
 ### Étape 0 : calibrage (avant tout lot)
 
-Le relecteur B relit **les 35 textes de `chaines-reference.md`** pour la langue (traduits ici par le lot 2). Il applique la grille et note : écarts avec le glossaire, tournures qu'il aurait écrites autrement, et **toute traduction qu'il juge fausse**. Si B signale plus de 3 écarts de gravité A ou B, on **corrige d'abord le glossaire et le guide** (petite PR) avant de lancer le lot. Cela évite d'appliquer 1 238 fois une règle discutable.
+Le relecteur B relit **les 34 textes de `chaines-reference.md`** pour la langue (traduits ici par le lot 2). Il applique la grille et note : écarts avec le glossaire, tournures qu'il aurait écrites autrement, et **toute traduction qu'il juge fausse**. Si B signale plus de 3 écarts de gravité A ou B, on **corrige d'abord le glossaire et le guide** (petite PR) avant de lancer le lot. Cela évite d'appliquer 1 238 fois une règle discutable.
 
 ### Phase 1 : lecture aveugle (par lot de 60 à 80 clés)
 

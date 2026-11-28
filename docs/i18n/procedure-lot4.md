@@ -117,7 +117,7 @@ node scripts/i18n-exchange.mjs extraire
 
 ### Étape 2. Calibrage (protocole, étape 0)
 
-Un relecteur B relit les 35 textes de `docs/i18n/chaines-reference.md` ; plus de 3 écarts de gravité A ou B ⇒ corriger d'abord le glossaire et le guide (petite PR), puis relancer l'étape 1 pour que les lots recopient la version corrigée.
+Un relecteur B relit les 34 textes de `docs/i18n/chaines-reference.md` ; plus de 3 écarts de gravité A ou B ⇒ corriger d'abord le glossaire et le guide (petite PR), puis relancer l'étape 1 pour que les lots recopient la version corrigée.
 
 ### Étape 3. Fabriquer les lots de traduction
 
